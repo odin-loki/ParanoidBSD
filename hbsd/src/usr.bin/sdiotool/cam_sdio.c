@@ -204,7 +204,13 @@ sdio_set_bool_for_func(struct cam_device *dev, uint32_t addr, uint8_t func_numbe
 /* Conventional I/O functions */
 uint8_t
 sdio_read_1(struct cam_device *dev, uint8_t func_number, uint32_t addr, int *ret) {
-	uint8_t val;
+	/*
+	 * PBSD: 0, not a stack word.  This returns val whatever *ret
+	 * says, and the CAM transfer that fills it does not run when
+	 * the ccb fails -- so a caller that reads the value before
+	 * the status, and several in this tool do, got the frame.
+	 */
+	uint8_t val = 0;
 	*ret = sdio_rw_direct(dev, func_number, addr, 0, NULL, &val);
 	return val;
 }
@@ -217,7 +223,13 @@ sdio_write_1(struct cam_device *dev, uint8_t func_number, uint32_t addr, uint8_t
 
 uint16_t
 sdio_read_2(struct cam_device *dev, uint8_t func_number, uint32_t addr, int *ret) {
-	uint16_t val;
+	/*
+	 * PBSD: 0, not a stack word.  This returns val whatever *ret
+	 * says, and the CAM transfer that fills it does not run when
+	 * the ccb fails -- so a caller that reads the value before
+	 * the status, and several in this tool do, got the frame.
+	 */
+	uint16_t val = 0;
 	*ret = sdio_rw_extended(dev, func_number, addr,
 				/* is_write */ 0,
 				/* data */ (caddr_t) &val,
@@ -242,7 +254,13 @@ sdio_write_2(struct cam_device *dev, uint8_t func_number, uint32_t addr, uint16_
 
 uint32_t
 sdio_read_4(struct cam_device *dev, uint8_t func_number, uint32_t addr, int *ret) {
-	uint32_t val;
+	/*
+	 * PBSD: 0, not a stack word.  This returns val whatever *ret
+	 * says, and the CAM transfer that fills it does not run when
+	 * the ccb fails -- so a caller that reads the value before
+	 * the status, and several in this tool do, got the frame.
+	 */
+	uint32_t val = 0;
 	*ret = sdio_rw_extended(dev, func_number, addr,
 				/* is_write */ 0,
 				/* data */ (caddr_t) &val,
@@ -327,7 +345,13 @@ sdio_func_read_cis(struct cam_device *dev, uint8_t func_number,
 	uint8_t tuple_id, tuple_len, tuple_count;
 	uint32_t addr;
 
-	char *cis1_info[4];
+	/*
+	 * PBSD: the loop below fills cis1_info[0..count-1] and stops at
+	 * the first 0xff byte the card returns, and the print loop reads
+	 * all four -- so a CIS with fewer than four strings had printf
+	 * handed indeterminate char * to follow as %s.
+	 */
+	char *cis1_info[4] = { NULL, NULL, NULL, NULL };
 	int start, i, ch, count, ret;
 	char cis1_info_buf[256];
 

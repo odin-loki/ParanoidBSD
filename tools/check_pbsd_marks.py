@@ -2737,6 +2737,66 @@ FIXES = {
         "peer setting the MP header's reserved bits chose which "
         "fragments ppp dropped",
     ),
+    "hbsd/src/usr.sbin/bhyve/pci_e82545.c": (
+        "PBSD: zero all of ckinfo, not just ck_valid.",
+        "\tckinfo[0].ck_valid = ckinfo[1].ck_valid = 0;",
+        "e82545_transmit: ck_start, ck_off and ck_len are written only "
+        "in the arms that set ck_valid or under `|| tso', and the VLAN "
+        "insertion correction adds to all six with no ck_valid test -- "
+        "which cannot BE guarded on ck_valid, because a TSO packet "
+        "without IXSM has ck_valid 0 and still uses ck_start",
+    ),
+    "hbsd/src/usr.sbin/bhyve/tpm_intf_crb.c": [
+        (
+            "union tpm_crb_reg_loc_ctrl loc_ctrl = { 0 };",
+            "\t\t\tunion tpm_crb_reg_loc_ctrl loc_ctrl;\n",
+            "tpm_crb_mem_handler: the guest picks the MMIO width and "
+            "tpm_crb_mmiocpy() copies exactly that many bytes into a "
+            "four-byte union, whose bitfields are then read",
+        ),
+        (
+            "union tpm_crb_reg_ctrl_req req = { 0 };",
+            "\t\t\tunion tpm_crb_reg_ctrl_req req;\n",
+            "tpm_crb_mem_handler: the ctrl_req case, same shape",
+        ),
+        (
+            "union tpm_crb_reg_ctrl_start start = { 0 };",
+            "\t\t\tunion tpm_crb_reg_ctrl_start start;\n",
+            "tpm_crb_mem_handler: the ctrl_start case, same shape -- "
+            "this one decides whether a TPM command runs",
+        ),
+    ],
+    "hbsd/src/usr.sbin/bhyve/pci_emul.c": (
+        "PBSD: `value = 0' used to sit inside the baridx == 0",
+        "\tuint32_t value;\n\tint i;",
+        "pci_emul_dior: the memory branch has an `unknown size' arm "
+        "too, and returned a value nothing wrote",
+    ),
+    "hbsd/src/usr.bin/sdiotool/cam_sdio.c": [
+        (
+            "\tuint8_t val = 0;\n\t*ret = sdio_rw_direct",
+            "\tuint8_t val;\n\t*ret = sdio_rw_direct",
+            "sdio_read_1 returns val whatever *ret says, and the CAM "
+            "transfer that fills it does not run when the ccb fails",
+        ),
+        (
+            "\tuint16_t val = 0;\n\t*ret = sdio_rw_extended",
+            "\tuint16_t val;\n\t*ret = sdio_rw_extended",
+            "sdio_read_2, same shape",
+        ),
+        (
+            "\tuint32_t val = 0;\n\t*ret = sdio_rw_extended",
+            "\tuint32_t val;\n\t*ret = sdio_rw_extended",
+            "sdio_read_4, same shape",
+        ),
+        (
+            "char *cis1_info[4] = { NULL, NULL, NULL, NULL };",
+            "\tchar *cis1_info[4];\n",
+            "sdio_func_read_cis fills cis1_info[0..count-1] and stops "
+            "at the first 0xff the card returns; the print loop reads "
+            "all four and hands each to printf as %s",
+        ),
+    ],
     "hbsd/src/usr.sbin/mptutil/mpt_config.c": [
         (
             "PBSD: returns 0, or an errno VALUE -- never -1.",

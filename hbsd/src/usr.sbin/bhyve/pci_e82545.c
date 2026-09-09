@@ -1091,7 +1091,23 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 	uint16_t ipcs, tcpcs, ipid, ohead;
 	bool invalid;
 
-	ckinfo[0].ck_valid = ckinfo[1].ck_valid = 0;
+	/*
+	 * PBSD: zero all of ckinfo, not just ck_valid.
+	 *
+	 * ck_start, ck_off and ck_len are written only inside the arms
+	 * that set ck_valid, or under `IXSM || tso' and `TXSM || tso'.  A
+	 * legacy descriptor without the IC bit leaves ckinfo[0].ck_off and
+	 * ck_len and the whole of ckinfo[1] unwritten -- and the VLAN
+	 * insertion correction below adds ETHER_VLAN_ENCAP_LEN to all six
+	 * fields with no ck_valid test.  Guarding that correction on
+	 * ck_valid would be wrong: a TSO packet without IXSM has
+	 * ck_valid == 0 and still uses ck_start and ck_off at the
+	 * `ipid = ...' and `ipcs = ...' lines, so the correction must
+	 * apply there.  Zeroing the object instead is exact -- every path
+	 * that READS these fields sets them first, so the only values this
+	 * changes are the ones that were indeterminate.
+	 */
+	memset(ckinfo, 0, sizeof(ckinfo));
 	iovcnt = 0;
 	ntype = 0;
 	tso = 0;

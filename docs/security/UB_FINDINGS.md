@@ -14063,3 +14063,104 @@ the analyser gives up what it knew about it — including that
 `ccb.cdm.matches` points at `calloc`'d memory — and every read through
 that pointer is garbage from there on. The same shape as `ifgif.c:83` and
 `ifgre.c:105`: an ioctl fills a buffer the analyser cannot see written.
+
+### bhyve e82545: the VLAN correction adjusts checksum offsets that were never set
+
+`usr.sbin/bhyve/pci_e82545.c:1349`, `:1350`, `:1353`. `e82545_transmit()`
+declares `struct ck_info ckinfo[2]` and initialises exactly one field of
+each:
+
+```c
+	ckinfo[0].ck_valid = ckinfo[1].ck_valid = 0;
+```
+
+`ck_start`, `ck_off` and `ck_len` are written only inside the arms that
+set `ck_valid`, or under `IXSM || tso` and `TXSM || tso`. A **legacy**
+descriptor without the IC bit leaves `ckinfo[0].ck_off`, `ckinfo[0].ck_len`
+and the whole of `ckinfo[1]` unwritten — and the VLAN insertion block
+adds `ETHER_VLAN_ENCAP_LEN` to all six fields with no `ck_valid` test.
+
+The obvious fix — guard the correction on `ck_valid` — is wrong, and
+worth writing down as the second time this shard has offered one. A TSO
+packet without `IXSM` has `ckinfo[0].ck_valid == 0` and still *uses*
+`ck_start` and `ck_off`, at
+
+```c
+	ipid = ntohs(*(uint16_t *)&hdr[ckinfo[0].ck_start + 4]);
+	...
+	ipcs = *(uint16_t *)&hdr[ckinfo[0].ck_off];
+```
+
+where `hdr` is `__builtin_alloca(hdrlen + vlen)`. Guarding on `ck_valid`
+would skip the correction for exactly those packets and index a stack
+buffer four bytes short. `memset(ckinfo, 0, sizeof(ckinfo))` is the exact
+change: every path that *reads* these fields writes them first, so the
+only values it changes are the indeterminate ones.
+
+### bhyve TPM CRB: the guest picks how much of the register it writes
+
+`usr.sbin/bhyve/tpm_intf_crb.c:346`, `:365`, `:396`. Three cases of
+`tpm_crb_mem_handler()`'s write switch have the same shape:
+
+```c
+	union tpm_crb_reg_ctrl_start start;
+
+	if ((size_t)size > sizeof(start))
+		goto err_out;
+
+	*val = *val << shift;
+
+	pthread_mutex_lock(&crb->mutex);
+	tpm_crb_mmiocpy(&start, val, size);
+
+	if (!start.start || crb->regs.ctrl_start.start) {
+```
+
+`size` is the guest's MMIO access width. The check rejects *too large*;
+it says nothing about too small. `tpm_crb_mmiocpy()` copies exactly
+`size` bytes into a union of `uint32_t` bitfields, so a one- or two-byte
+write leaves two or three bytes of the object indeterminate, and the
+bitfields are read out of it — for `ctrl_start`, to decide whether a TPM
+command runs.
+
+**It works today, and the reason it works is not the contract.** The bits
+these three read are the low ones, which on a little-endian target live
+in byte 0, which every `size >= 1` copy writes. Bitfield allocation is
+implementation-defined and PBSD builds big-endian targets. Zeroing each
+union at its declaration costs nothing and makes the layout irrelevant.
+
+### Two more, and a same-tree baseline
+
+`pci_emul.c:2749`: `pci_emul_dior()` sets `value = 0` inside the
+`baridx == 0` branch. The `baridx == 1 || baridx == 2` branch has an
+`unknown size` arm of its own, and takes it for any size that is not 1,
+2, 4 or 8 — then returns a `uint32_t` nothing wrote. The initialiser
+moves to the declaration.
+
+`usr.bin/sdiotool/cam_sdio.c`: `sdio_read_1`, `_2` and `_4` return `val`
+whatever `*ret` says, and the CAM transfer that fills it does not run
+when the ccb fails. `sdio_func_read_cis()` fills `cis1_info[0..count-1]`
+and stops at the first `0xff` byte the card returns, then prints all four
+slots with `%s`. The card supplies the CIS.
+
+```
+--scope usr.sbin/bhyve --scope usr.bin/sdiotool
+  before  35 findings, 93 OK, 2 ERROR
+  after   24 findings, 93 OK, 2 ERROR
+```
+
+Thirteen go and two "arrive" — `pci_e82545.c:1237` and `:1321`
+reappearing at `:1253` and `:1337`, moved by the sixteen-line comment.
+Both are a different premise: `iov[0].iov_len` where no descriptor
+contributed a segment.
+
+**The first attempt at this measurement was against the wrong baseline.**
+`w18-progs.jsonl` gave 35 findings, 91 OK and **4** ERROR for this scope,
+and two of those ERRORs are now OK — the sweep predates the
+`-include opt_global.h` reorder and the userland `-I` filter. Two files
+that did not compile then do now, and a file that does not compile
+reports zero findings and reads as clean. Reverting the four files in the
+current tree and re-running gave 35/93/2, which is the number the "after"
+is comparable to. A before and an after have to be the same tree with one
+change between them, and a stored baseline is only the same tree until
+something else lands.

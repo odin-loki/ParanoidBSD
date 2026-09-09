@@ -2696,7 +2696,13 @@ static uint64_t
 pci_emul_dior(struct pci_devinst *pi, int baridx, uint64_t offset, int size)
 {
 	struct pci_emul_dsoftc *sc = pi->pi_arg;
-	uint32_t value;
+	/*
+	 * PBSD: `value = 0' used to sit inside the baridx == 0 branch only.
+	 * The memory branch below has an `unknown size' arm too, and takes
+	 * it for any size that is not 1, 2, 4 or 8 -- and then returns a
+	 * value nothing wrote.
+	 */
+	uint32_t value = 0;
 	int i;
 
 	if (baridx == 0) {
@@ -2706,7 +2712,6 @@ pci_emul_dior(struct pci_devinst *pi, int baridx, uint64_t offset, int size)
 			return (0);
 		}
 
-		value = 0;
 		if (size == 1) {
 			value = sc->ioregs[offset];
 		} else if (size == 2) {

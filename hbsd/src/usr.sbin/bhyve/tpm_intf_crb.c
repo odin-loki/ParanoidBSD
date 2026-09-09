@@ -335,7 +335,18 @@ tpm_crb_mem_handler(struct vcpu *vcpu __unused, const int dir,
 	} else {
 		switch (off & ~0x3) {
 		case offsetof(struct tpm_crb_regs, loc_ctrl): {
-			union tpm_crb_reg_loc_ctrl loc_ctrl;
+			/*
+			 * PBSD: the guest picks the MMIO access width, and
+			 * tpm_crb_mmiocpy() copies exactly that many bytes
+			 * into a four-byte union.  A one- or two-byte write
+			 * left the rest of the object indeterminate and the
+			 * bitfields below were read out of it.  The bits
+			 * this reads happen to live in the byte a
+			 * little-endian target always writes, which is why
+			 * it works; the layout is not the contract, and
+			 * PBSD builds big-endian targets too.
+			 */
+			union tpm_crb_reg_loc_ctrl loc_ctrl = { 0 };
 
 			if ((size_t)size > sizeof(loc_ctrl))
 				goto err_out;
@@ -354,7 +365,18 @@ tpm_crb_mem_handler(struct vcpu *vcpu __unused, const int dir,
 			break;
 		}
 		case offsetof(struct tpm_crb_regs, ctrl_req): {
-			union tpm_crb_reg_ctrl_req req;
+			/*
+			 * PBSD: the guest picks the MMIO access width, and
+			 * tpm_crb_mmiocpy() copies exactly that many bytes
+			 * into a four-byte union.  A one- or two-byte write
+			 * left the rest of the object indeterminate and the
+			 * bitfields below were read out of it.  The bits
+			 * this reads happen to live in the byte a
+			 * little-endian target always writes, which is why
+			 * it works; the layout is not the contract, and
+			 * PBSD builds big-endian targets too.
+			 */
+			union tpm_crb_reg_ctrl_req req = { 0 };
 
 			if ((size_t)size > sizeof(req))
 				goto err_out;
@@ -383,7 +405,18 @@ tpm_crb_mem_handler(struct vcpu *vcpu __unused, const int dir,
 			break;
 
 		case offsetof(struct tpm_crb_regs, ctrl_start): {
-			union tpm_crb_reg_ctrl_start start;
+			/*
+			 * PBSD: the guest picks the MMIO access width, and
+			 * tpm_crb_mmiocpy() copies exactly that many bytes
+			 * into a four-byte union.  A one- or two-byte write
+			 * left the rest of the object indeterminate and the
+			 * bitfields below were read out of it.  The bits
+			 * this reads happen to live in the byte a
+			 * little-endian target always writes, which is why
+			 * it works; the layout is not the contract, and
+			 * PBSD builds big-endian targets too.
+			 */
+			union tpm_crb_reg_ctrl_start start = { 0 };
 
 			if ((size_t)size > sizeof(start))
 				goto err_out;

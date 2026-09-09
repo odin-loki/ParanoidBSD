@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,483 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,099 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,169 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,123 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,223 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,176** | **114,204** |
+| | **total** | **41,143** | **21,298,254** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -24388,7 +24388,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **5.188.1** `brcmfmac_bus.h` · 27L · `TODO-HDR`
 - [ ] **5.188.2** `brcmfmac_sdio.h` · 161L · `TODO-HDR`
-- [ ] **5.188.3** `cam_sdio.c` · 437L · `TODO-PORT` · 19 fn
+- [ ] **5.188.3** `cam_sdio.c` · 461L · `TODO-PORT` · 19 fn
   - [ ] 5.188.3.1 `sdio_rw_direct()` · `TODO-FN`
   - [ ] 5.188.3.2 `sdio_rw_extended()` · `TODO-FN`
   - [ ] 5.188.3.3 `sdio_read_bool_for_func()` · `TODO-FN`
@@ -26851,7 +26851,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.11.45.55 `pci_ahci_pause()` · `TODO-FN`
   - [ ] 6.11.45.56 `pci_ahci_resume()` · `TODO-FN`
   - [ ] 6.11.45.57 `lba_to_msf()` · `TODO-FN`
-- [ ] **6.11.46** `pci_e82545.c` · 2,539L gen:1 · `TODO-PORT` · 42 fn
+- [ ] **6.11.46** `pci_e82545.c` · 2,555L gen:1 · `TODO-PORT` · 42 fn
   - [ ] 6.11.46.1 `e82545_size_stat_index()` · `TODO-FN`
   - [ ] 6.11.46.2 `e82545_init_eeprom()` · `TODO-FN`
   - [ ] 6.11.46.3 `e82545_write_mdi()` · `TODO-FN`
@@ -26894,7 +26894,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.11.46.40 `e82545_reset()` · `TODO-FN`
   - [ ] 6.11.46.41 `e82545_init()` · `TODO-FN`
   - [ ] 6.11.46.42 `e82545_snapshot()` · `TODO-FN`
-- [ ] **6.11.47** `pci_emul.c` · 2,808L gen:10 · `TODO-PORT` · 82 fn
+- [ ] **6.11.47** `pci_emul.c` · 2,813L gen:10 · `TODO-PORT` · 82 fn
   - [ ] 6.11.47.1 `CFGWRITE()` · `TODO-FN`
   - [ ] 6.11.47.2 `CFGREAD()` · `TODO-FN`
   - [ ] 6.11.47.3 `is_pcir_bar()` · `TODO-FN`
@@ -27465,7 +27465,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.11.89.2 `tpm_swtpm_execute_cmd()` · `TODO-FN`
   - [ ] 6.11.89.3 `tpm_swtpm_deinit()` · `TODO-FN`
 - [ ] **6.11.90** `tpm_intf.h` · 41L · `TODO-HDR`
-- [ ] **6.11.91** `tpm_intf_crb.c` · 628L gen:1 · `TODO-PORT` · 7 fn
+- [ ] **6.11.91** `tpm_intf_crb.c` · 661L gen:1 · `TODO-PORT` · 7 fn
   - [ ] 6.11.91.1 `tpm_crb_thread()` · `TODO-FN`
   - [ ] 6.11.91.2 `tpm_crb_mmiocpy()` · `TODO-FN`
   - [ ] 6.11.91.3 `tpm_crb_mem_handler()` · `TODO-FN`
