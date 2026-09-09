@@ -9787,3 +9787,158 @@ Both lints are in the `lints` job of `.github/workflows/pbsd-verify.yml`.
 
 Two findings sets, 87 findings between them, that are false for reasons
 the tree now states.
+
+---
+
+## Three Allwinner attach paths, from the static-taken class
+
+`param_premise.py` sorts a sweep's findings by what constrains the
+function they are in. Its `static-taken` bucket is the one with no
+deferral available: a `static` function with **no call site in its own
+translation unit** and a mention that is not a call — a `DEVMETHOD`
+entry, a kobj method, a callout. Whatever calls it is outside the unit
+and reaches it through a pointer, so "the callers are all here and they
+constrain the parameters" is not an argument anybody can make about it.
+
+175 of those are uncited in the current kernel sweep, 32 with a parameter
+on the finding's own line. Reading the Allwinner run of them found three
+defects and one false positive. All four are `device_attach` or a kobj
+method — code that runs once, at boot, before anything can be logged.
+
+### `awusb3phy_attach` returns a stack value as its attach status
+
+```c
+	int error, i;
+	...
+	for (i = 0; clk_get_by_ofw_index(dev, 0, i, &clk) == 0; i++) {
+		error = clk_enable(clk);
+		...
+	}
+	for (i = 0; hwreset_get_by_ofw_idx(dev, 0, i, &rst) == 0; i++) {
+		error = hwreset_deassert(rst);
+		...
+	}
+	...
+	return (error);
+```
+
+Both loops have the lookup **as the loop condition**, so both run zero
+times for a device-tree node that names neither clocks nor resets, and
+`error` is never written. The last statement of the function returns it.
+newbus reads that as the attach status: a garbage nonzero fails the
+attach of a USB3 PHY that in fact came up, and a garbage zero claims a
+success the driver never had.
+
+Fixed by initialising it. Not by adding a `return (0)` — the two loops
+genuinely do want to report the last failure they saw.
+
+### `axp8xx_regnode_init` busy-waits on the one path nothing set
+
+```c
+	rv = axp8xx_regnode_set_voltage(regnode, param->min_uvolt,
+	    param->max_uvolt, &udelay);
+	if (rv != 0)
+		DELAY(udelay);
+```
+
+and the callee:
+
+```c
+	if (sc->def->voltage_step1 == 0)
+		return (ENXIO);
+	if (axp8xx_regnode_voltage_to_reg(sc, min_uvolt, max_uvolt, &val) != 0)
+		return (ERANGE);
+	axp8xx_write(sc->base_dev, sc->def->voltage_reg, val);
+	*udelay = 0;
+	return (0);
+```
+
+`*udelay` is written on the success path and on no other. The caller
+reads it on `rv != 0` and on no other. The two conditions are exact
+complements: this `DELAY()` runs **if and only if** `udelay` is
+uninitialised, never otherwise. `DELAY()` busy-waits for the number of
+microseconds it is handed; an `int` of the wrong size is minutes of a
+boot spent spinning in a regulator init.
+
+The same defect was fixed in `rk8xx_regnode_init()` in this tree
+already — same method, same out-parameter contract, same two early
+returns — and the correction here is that one verbatim:
+`if (rv == 0 && udelay != 0)`. That reads the cell only where the callee
+wrote it, and restores the intent, which is to let a voltage settle
+*after* it has been set.
+
+### `aw_gmacclk_attach` leaks its clock definition on every path
+
+```c
+	def.parent_names = malloc(sizeof(char *) * ncells, M_OFWPROP, M_WAITOK);
+	...
+	clk = clknode_create(clkdom, &aw_gmacclk_clknode_class, &def);
+	...
+	return (0);
+
+fail:
+	return (error);
+```
+
+`clknode_create()` **copies** what it is given —
+`strdup(def->name, M_CLOCK)` and
+`strdup_list(def->parent_names, def->parent_cnt)` at `clk.c:89` — so the
+caller still owns both after it returns. This owned them on every path
+out, the success path included, and freed neither. `clk_fixed_attach()`
+is the shape the tree already uses: `OF_prop_free()` on both, at the
+return and again at the fail label.
+
+Fixed by making the success path fall into the label rather than return
+past it, and freeing both there. `free(NULL, ...)` is a no-op in the
+kernel (`kern_malloc.c:1004`), which is what makes one label correct for
+the early `goto fail` where neither has been allocated yet.
+
+### `aw_gpio_pic_setup_intr` is a false positive, and the reason is one function away
+
+```c
+	switch (mode) {
+	case GPIO_INTR_LEVEL_LOW:  irqcfg = ...; break;
+	...five arms, no default...
+	}
+	...
+	reg |= irqcfg;
+```
+
+`uint32_t irqcfg;` with no default arm, then written into the GPIO
+interrupt-configuration register. But `mode` is an out-parameter of
+`aw_gpio_pic_map_gpio()`, which switches on the same five values and
+returns `EINVAL` for anything else *before* writing it — and the caller
+returns on that error. The analyser does not carry the callee's
+validation into the caller's switch. Recorded, not changed.
+
+### Measured
+
+`--scope sys/arm/allwinner`, 48 translation units, all OK before and
+after:
+
+```
+before  8 findings
+after   5 findings
+  aw_gmacclk.c: 1->0
+  aw_usb3phy.c: 1->0
+  axp81x.c:     1->0
+```
+
+Nothing else moved. The five that remain are `aw_cir.c:235`,
+`aw_gpio.c:1452` (above), `aw_rsb.c:362`, `aw_sid.c:408` and
+`axp209.c:1360`.
+
+Each fix is a `check_pbsd_marks.py` entry, and each marker was verified
+by reverting its file and watching the gate fail — the check that
+matters, since a marker whose text also occurs somewhere else in the
+file passes over a fix that is gone.
+
+### Still open, from the same reading
+
+Four drivers `malloc()` a `parent_names` array for a clock definition and
+never free it: `aw_gmacclk.c` (fixed above), `sdhci_fdt.c:157`,
+`rk_usb2phy.c:288` and `sifive_prci.c:478`. `clk_fixed.c` and
+`clock_common.c` are the two that get it right. Only the first was in
+the sweep's findings, so the other three are recorded rather than
+changed — a leak read out of the source is not the same evidence as a
+leak an analyser walked to.

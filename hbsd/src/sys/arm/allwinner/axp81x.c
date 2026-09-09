@@ -767,7 +767,17 @@ axp8xx_regnode_init(struct regnode *regnode)
 	 */
 	rv = axp8xx_regnode_set_voltage(regnode, param->min_uvolt,
 	    param->max_uvolt, &udelay);
-	if (rv != 0)
+	/*
+	 * PBSD: rv == 0, not rv != 0. axp8xx_regnode_set_voltage()
+	 * writes *udelay only on its success path - it returns ENXIO
+	 * for a regulator with no voltage step and ERANGE for a request
+	 * it cannot meet, both before the assignment - so this DELAY()ed
+	 * for a stack value on exactly the paths where nothing had set
+	 * it, and on no other. DELAY() busy-waits: an int of the wrong
+	 * sign or size is minutes of a boot spent spinning. The same
+	 * correction as rk8xx_regnode_init(), whose method this mirrors.
+	 */
+	if (rv == 0 && udelay != 0)
 		DELAY(udelay);
 
 	return (rv);

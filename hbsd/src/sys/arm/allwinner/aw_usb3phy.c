@@ -225,7 +225,19 @@ awusb3phy_attach(device_t dev)
 	clk_t clk;
 	hwreset_t rst;
 	phandle_t node;
-	int error, i;
+	/*
+	 * PBSD: error, not `int error'. Both loops below are
+	 *
+	 *	for (i = 0; <get>_by_ofw_<...>(dev, 0, i, &x) == 0; i++)
+	 *		error = <enable>(x);
+	 *
+	 * so a node that names no clocks and no resets leaves error
+	 * unwritten, and the last statement of this function is
+	 * `return (error);'. newbus reads that as the attach status: a
+	 * garbage nonzero fails the attach, a garbage zero claims a
+	 * success the driver never had.
+	 */
+	int error = 0, i;
 
 	sc = device_get_softc(dev);
 	node = ofw_bus_get_node(dev);

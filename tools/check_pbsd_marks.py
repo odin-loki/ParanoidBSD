@@ -885,6 +885,38 @@ FIXES = {
             "the cell",
         ),
     ],
+    # The same family, one SoC over. axp81x's call site was worse than
+    # rk8xx's: it DELAY()ed on `rv != 0' - exactly and only the paths
+    # where axp8xx_regnode_set_voltage() returns before writing *udelay.
+    "hbsd/src/sys/arm/allwinner/axp81x.c": [
+        (
+            "PBSD: rv == 0, not rv != 0.",
+            "\t    param->max_uvolt, &udelay);\n\tif (rv != 0)\n",
+            "axp8xx_regnode_init() read a stack slot on every path where "
+            "axp8xx_regnode_set_voltage() had returned ENXIO or ERANGE "
+            "without writing it, and DELAY() busy-waits for what it is "
+            "given",
+        ),
+    ],
+    "hbsd/src/sys/arm/allwinner/aw_usb3phy.c": [
+        (
+            "PBSD: error, not `int error'.",
+            "\tint error, i;\n",
+            "awusb3phy_attach() ends `return (error);' and assigns error "
+            "only inside two for-loops whose conditions are the lookups "
+            "themselves, so a node naming neither clocks nor resets "
+            "returned a stack value to newbus as its attach status",
+        ),
+    ],
+    "hbsd/src/sys/arm/allwinner/aw_gmacclk.c": [
+        (
+            "PBSD: clknode_create() COPIES what it is given",
+            "\nfail:\n\treturn (error);\n}\n",
+            "aw_gmacclk_attach() owned def.name and def.parent_names on "
+            "every path out - clknode_create() strdups both - and freed "
+            "neither, the success path included",
+        ),
+    ],
     "hbsd/src/sys/dev/clk/clk.c": [
         (
             "PBSD: `done' is the out-parameter every clknode driver's",

@@ -244,9 +244,19 @@ aw_gmacclk_attach(device_t dev)
 	if (bootverbose)
 		clkdom_dump(clkdom);
 
-	return (0);
+	error = 0;
 
 fail:
+	/*
+	 * PBSD: clknode_create() COPIES what it is given -
+	 * strdup(def->name) and strdup_list(def->parent_names,
+	 * def->parent_cnt) at clk.c:89 - so the caller still owns both,
+	 * and this owned them on every path out, the success path
+	 * included. clk_fixed_attach() is the shape: it frees the pair
+	 * at its return and again at its fail label.
+	 */
+	OF_prop_free(__DECONST(char *, def.name));
+	OF_prop_free(def.parent_names);
 	return (error);
 }
 
