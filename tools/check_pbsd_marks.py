@@ -2737,6 +2737,36 @@ FIXES = {
         "peer setting the MP header's reserved bits chose which "
         "fragments ppp dropped",
     ),
+    "hbsd/src/usr.sbin/mptutil/mpt_config.c": [
+        (
+            "PBSD: returns 0, or an errno VALUE -- never -1.",
+            "state->nsdisks, &i) < 0) {",
+            "build_raid_volume: mpt_lookup_standalone_disk() returns 0 "
+            "or an errno value, and all three callers tested `< 0', so "
+            "EINVAL and ENOENT read as success and disks[] was indexed "
+            "with the *index it had not written",
+        ),
+        (
+            "error = mpt_lookup_standalone_disk(av[1], sdisks, nsdisks,",
+            "if (mpt_lookup_standalone_disk(av[1], sdisks, nsdisks, &i) <",
+            "add_spare: the second of the three `< 0' call sites",
+        ),
+        (
+            "error = mpt_lookup_standalone_disk(av[1], disks, ndisks, "
+            "&i);",
+            "if (mpt_lookup_standalone_disk(av[1], disks, ndisks, &i) < "
+            "0) {",
+            "create_physdisk: the third of the three `< 0' call sites",
+        ),
+        (
+            "PBSD: errno, as the two other mpt_vol_info() failures",
+            "\tif (info == NULL)\n\t\treturn (error);",
+            "find_volume_spare_pool: the last mpt_vol_info() failure "
+            "returned `error', which on every path that reaches it is "
+            "0, so a failed volume page read reported success with "
+            "*pool never written",
+        ),
+    ],
     "hbsd/src/usr.bin/kdump/kdump.c": [
         (
             "PBSD: a record is only as long as the file says it is.",

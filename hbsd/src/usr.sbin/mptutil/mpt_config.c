@@ -132,6 +132,14 @@ mpt_lock_physdisk(struct mpt_standalone_disk *disk)
 	return (0);
 }
 
+/*
+ * PBSD: returns 0, or an errno VALUE -- never -1.  All three callers used
+ * to test `< 0' and then index disks[] with the *index this function had
+ * not written, so a name that is neither <bus>:<id> nor daN walked a
+ * struct mpt_standalone_disk array with a stack word and handed the
+ * result to mpt_lock_physdisk() and mpt_create_physdisk(), which write a
+ * RAID physical-disk page for whatever bus and target it named.
+ */
 static int
 mpt_lookup_standalone_disk(const char *name, struct mpt_standalone_disk *disks,
     int ndisks, int *index)
@@ -418,10 +426,10 @@ parse_volume(int fd, int raid_type, struct config_id_state *state,
 		}
 
 		/* See if it is a standalone disk. */
-		if (mpt_lookup_standalone_disk(cp, state->sdisks,
-		    state->nsdisks, &i) < 0) {
-			error = errno;
-			warn("Unable to lookup drive %s", cp);
+		error = mpt_lookup_standalone_disk(cp, state->sdisks,
+		    state->nsdisks, &i);
+		if (error != 0) {
+			warnc(error, "Unable to lookup drive %s", cp);
 			return (error);
 		}
 		dinfo->sdisk = &state->sdisks[i];
@@ -897,7 +905,16 @@ find_volume_spare_pool(int fd, const char *name, int *pool)
 	/* Add this pool to the volume. */
 	info = mpt_vol_info(fd, VolumeBus, VolumeID, NULL);
 	if (info == NULL)
-		return (error);
+		/*
+		 * PBSD: errno, as the two other mpt_vol_info() failures in
+		 * this function already return.  `error' here is whatever
+		 * mpt_lookup_volume() returned at the top, which on every
+		 * path that reaches this line is 0 -- so a second failure
+		 * to read the volume page reported success to add_spare()
+		 * with *pool never written, and the stack word it read
+		 * went into the physical disk page as the hot spare pool.
+		 */
+		return (errno);
 	info->VolumeSettings.HotSparePool |= (1 << new_pool);
 	error = mpt_raid_action(fd, MPI_RAID_ACTION_CHANGE_VOLUME_SETTINGS,
 	    VolumeBus, VolumeID, 0, *(U32 *)&info->VolumeSettings, NULL, 0,
@@ -962,10 +979,10 @@ add_spare(int ac, char **av)
 			return (error);
 		}
 
-		if (mpt_lookup_standalone_disk(av[1], sdisks, nsdisks, &i) <
-		    0) {
-			error = errno;
-			warn("Unable to lookup drive %s", av[1]);
+		error = mpt_lookup_standalone_disk(av[1], sdisks, nsdisks,
+		    &i);
+		if (error != 0) {
+			warnc(error, "Unable to lookup drive %s", av[1]);
 			mpt_free_pd_list(list);
 			close(fd);
 			return (error);
@@ -1109,9 +1126,9 @@ pd_create(int ac, char **av)
 		return (error);
 	}
 
-	if (mpt_lookup_standalone_disk(av[1], disks, ndisks, &i) < 0) {
-		error = errno;
-		warn("Unable to lookup drive");
+	error = mpt_lookup_standalone_disk(av[1], disks, ndisks, &i);
+	if (error != 0) {
+		warnc(error, "Unable to lookup drive");
 		return (error);
 	}
 

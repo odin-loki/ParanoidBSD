@@ -13991,3 +13991,75 @@ The loop now copies the NULL and stops, which is what `argv` means and
 what the `execv(script, argv)` twenty lines above already assumed;
 `replace_init()` also fills `argv[2]`, so the object is complete either
 way.
+
+### mptutil(8): a lookup that returns errno values, and three callers that test `< 0`
+
+`usr.sbin/mptutil/mpt_config.c:974`, `core.uninitialized.ArraySubscript`,
+in `add_spare()`. The subscript is `i`, and `i` is written by
+
+```c
+	if (mpt_lookup_standalone_disk(av[1], sdisks, nsdisks, &i) < 0) {
+		error = errno;
+		warn("Unable to lookup drive %s", av[1]);
+```
+
+`mpt_lookup_standalone_disk()` returns `0`, `EINVAL`, or `ENOENT` — never
+`-1`. `EINVAL` is 22 and `ENOENT` is 2, so a name that is neither
+`<bus>:<id>` nor `daN` does not take that branch: it falls through to
+`sdisks[i]` with `i` never written, and hands the result to
+`mpt_lock_physdisk()` and `mpt_create_physdisk()`, which write a RAID
+physical-disk page for whatever bus and target the stack word named.
+mptutil(8) runs as root.
+
+There are three call sites and all three are the same. The other two are
+`build_raid_volume()` at `:421` and the `create physdisk` path at
+`:1112`; the analyser reported only the first because the other two index
+through a struct field and a second local. **One finding in a shape
+repeated three times is a reason to grep for the shape.** All three now
+take the returned value as the error and use `warnc()`, which is what the
+rest of this file already does with `mpt_lookup_volume()` and
+`mpt_lookup_drive()` — both of which return errno values too, and both of
+which are called correctly.
+
+### mptutil(8): a failed page read that returns success
+
+`find_volume_spare_pool()` ends
+
+```c
+	/* Add this pool to the volume. */
+	info = mpt_vol_info(fd, VolumeBus, VolumeID, NULL);
+	if (info == NULL)
+		return (error);
+```
+
+The two earlier `mpt_vol_info() == NULL` arms in the same function return
+`errno`. This one returns `error` — and on every path that reaches this
+line `error` is 0, because it was last written by `mpt_lookup_volume()`
+at the top and that call's failure returned. So a volume page that reads
+successfully once and fails the second time reports success to
+`add_spare()` with `*pool` never written, and `add_spare()` writes the
+stack word into the physical disk page as the hot spare pool bitmap.
+
+```
+--scope usr.sbin/mptutil
+  before  10 findings
+  after    9 findings
+```
+
+Only one moves. The `add_spare` finding that stays is now a different
+path: `mpt_vol_info()` returning NULL at `:860` with `errno == 0`.
+Reading `mpt_read_config_page()` says that cannot happen — every `NULL`
+return there either comes from a failed `ioctl(2)`, which sets `errno`,
+or sets `errno = EIO` itself — so that one is a premise, and the fix
+above is not the thing it was reporting. Both fixes are right on reading;
+one of them is also measurable.
+
+### Three premises in the same directory
+
+`mpt_cam.c:162`, `:427` and `:539` all trace to `fetch_path_id()`, which
+writes `*path_id` from `ccb.cdm.matches[0]` after
+`ioctl(xptfd, CAMIOCOMMAND, &ccb)`. The `ccb` is passed by address, so
+the analyser gives up what it knew about it — including that
+`ccb.cdm.matches` points at `calloc`'d memory — and every read through
+that pointer is garbage from there on. The same shape as `ifgif.c:83` and
+`ifgre.c:105`: an ioctl fills a buffer the analyser cannot see written.
