@@ -747,6 +747,7 @@ _gss_get_unix_cred(OM_uint32 *minor_stat, gss_name_t name, gss_OID mech,
     uid_t *uidp, gid_t *gidp, int *numgroups, gid_t *groups)
 {
 	OM_uint32 major_stat;
+	int maxgroups;
 	uid_t uid;
 	char buf[1024], *bufp;
 	struct passwd pwd, *pw;
@@ -777,8 +778,23 @@ _gss_get_unix_cred(OM_uint32 *minor_stat, gss_name_t name, gss_OID mech,
 		}
 		if (pw) {
 			*gidp = pw->pw_gid;
-			getgrouplist(pw->pw_name, pw->pw_gid,
-			    groups, numgroups);
+			/*
+			 * PBSD: clamp.  FreeBSD's getgrouplist() sets
+			 * *grpcnt to the number of groups FOUND, not the
+			 * number stored -- __getgroupmembership() ends
+			 * `return (*grpcnt > maxgrp ? -1 : 0)' -- so a user
+			 * in more groups than the caller's array holds
+			 * comes back with a count larger than the array and
+			 * a -1 nobody was reading.  Both callers then walk
+			 * `groups' that far: gssd(8) is root, the array is
+			 * on its stack, and what it reads past the end goes
+			 * to the kernel GSS layer as that credential's
+			 * supplementary groups.
+			 */
+			maxgroups = *numgroups;
+			if (getgrouplist(pw->pw_name, pw->pw_gid,
+			    groups, numgroups) < 0)
+				*numgroups = maxgroups;
 		} else {
 			major_stat = GSS_S_FAILURE;
 			gssd_verbose_out("get_unix_cred: cannot find"
@@ -1158,16 +1174,27 @@ gssd_pname_to_uid_1_svc(pname_to_uid_args *argp, pname_to_uid_res *result, struc
 					buflen_hint = buflen;
 			}
 			if (pw) {
-				int len = NGROUPS;
-				int groups[NGROUPS];
+				int i, len = NGROUPS;
+				gid_t groups[NGROUPS];
 				result->gid = pw->pw_gid;
-				getgrouplist(pw->pw_name, pw->pw_gid,
-				    groups, &len);
+				/* PBSD: clamp; see _gss_get_unix_cred(). */
+				if (getgrouplist(pw->pw_name, pw->pw_gid,
+				    groups, &len) < 0)
+					len = NGROUPS;
 				result->gidlist.gidlist_len = len;
 				result->gidlist.gidlist_val =
-					mem_alloc(len * sizeof(int));
-				memcpy(result->gidlist.gidlist_val, groups,
-				    len * sizeof(int));
+					mem_alloc(len * sizeof(uint32_t));
+				/*
+				 * PBSD: element by element, and gid_t for
+				 * the array -- the same answer this file
+				 * already gives in gssd_accept_sec_context()
+				 * for the same question, and the reason the
+				 * analyser was calling the mem_alloc() size
+				 * wrong.
+				 */
+				for (i = 0; i < len; i++)
+					result->gidlist.gidlist_val[i] =
+					    groups[i];
 				gssd_verbose_out("gssd_pname_to_uid: mapped"
 				    " to uid=%d, gid=%d\n", (int)result->uid,
 				    (int)result->gid);

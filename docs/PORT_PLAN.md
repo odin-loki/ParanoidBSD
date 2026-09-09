@@ -51,12 +51,12 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,720 | 9,056 |
+| 1 | `lib` | 2,827 | 639,732 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,496 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,249 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,272 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,260 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,299 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,944 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,512** | **114,204** |
+| | **total** | **41,143** | **21,298,562** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -10274,7 +10274,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.272.5.5 `xdr_rpc_gss_unwrap_data()` · `TODO-FN`
   - [ ] 1.272.5.6 `log_debug()` · `TODO-FN`
   - [ ] 1.272.5.7 `log_status()` · `TODO-FN`
-- [ ] **1.272.6** `svc_rpcsec_gss.c` · 1,239L gen:1 · `TODO-PORT` · 21 fn
+- [ ] **1.272.6** `svc_rpcsec_gss.c` · 1,251L gen:1 · `TODO-PORT` · 21 fn
   - [ ] 1.272.6.1 `svc_rpc_gss_init()` · `TODO-FN`
   - [ ] 1.272.6.2 `rpc_gss_set_callback()` · `TODO-FN`
   - [ ] 1.272.6.3 `rpc_gss_set_svc_name()` · `TODO-FN`
@@ -22005,7 +22005,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.92 `usr.bin/id`
 
-- [ ] **5.92.1** `id.c` · 525L · `TODO-PORT` · 11 fn
+- [ ] **5.92.1** `id.c` · 536L · `TODO-PORT` · 11 fn
   - [ ] 5.92.1.1 `main()` · `TODO-FN`
   - [ ] 5.92.1.2 `pretty()` · `TODO-FN`
   - [ ] 5.92.1.3 `id_print()` · `TODO-FN`
@@ -30892,7 +30892,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.100 `usr.sbin/gssd`
 
-- [ ] **6.100.1** `gssd.c` · 1,707L gen:1 · `TODO-PORT` · 32 fn
+- [ ] **6.100.1** `gssd.c` · 1,734L gen:1 · `TODO-PORT` · 32 fn
   - [ ] 6.100.1.1 `main()` · `TODO-FN`
   - [ ] 6.100.1.2 `gssd_load_mech()` · `TODO-FN`
   - [ ] 6.100.1.3 `gssd_find_resource()` · `TODO-FN`

@@ -292,7 +292,15 @@ id_print(struct passwd *pw)
 
 	if (print_dbinfo) {
 		ngroups = ngroups_max;
-		getgrouplist(pw->pw_name, gid, groups, &ngroups);
+		/*
+		 * PBSD: clamp.  getgrouplist() reports the number of groups
+		 * FOUND, which the group database can make larger than
+		 * _SC_NGROUPS_MAX + 1, and returns -1 when it does; the
+		 * printing loop then walks that many out of an array that
+		 * holds ngroups_max.
+		 */
+		if (getgrouplist(pw->pw_name, gid, groups, &ngroups) < 0)
+			ngroups = ngroups_max;
 	}
 	else {
 		ngroups = getgroups(ngroups_max, groups);
@@ -396,7 +404,10 @@ group(struct passwd *pw, bool nflag)
 
 	if (pw) {
 		ngroups = ngroups_max;
-		(void) getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups);
+		/* PBSD: clamp; see id(). */
+		if (getgrouplist(pw->pw_name, pw->pw_gid, groups,
+		    &ngroups) < 0)
+			ngroups = ngroups_max;
 	} else {
 		ngroups = getgroups(ngroups_max, groups);
 	}

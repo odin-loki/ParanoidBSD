@@ -2262,6 +2262,50 @@ FIXES = {
         "where upstream's usr.bin/at/panic.h has carried __dead2 on its "
         "perr() all along",
     ),
+    "hbsd/src/usr.sbin/gssd/gssd.c": [
+        (
+            "PBSD: clamp.  FreeBSD's getgrouplist() sets",
+            "\t\t\tgetgrouplist(pw->pw_name, pw->pw_gid,\n"
+            "\t\t\t    groups, numgroups);",
+            "_gss_get_unix_cred: getgrouplist() sets *grpcnt to the "
+            "number of groups FOUND and returns -1 when that exceeds "
+            "the array, and the caller then walks `groups' that far -- "
+            "a gid_t[NGROUPS] on root's stack whose tail goes to the "
+            "kernel GSS layer as a credential's supplementary groups",
+        ),
+        (
+            "PBSD: clamp; see _gss_get_unix_cred().",
+            "\t\t\t\tint len = NGROUPS;\n\t\t\t\tint groups[NGROUPS];",
+            "gssd_pname_to_uid_1_svc: the same, with a memcpy of "
+            "len * sizeof(int) out of the same stack array -- and the "
+            "array is now gid_t, copied element by element, which is "
+            "what this file already does in "
+            "gssd_accept_sec_context()",
+        ),
+    ],
+    "hbsd/src/lib/librpcsec_gss/svc_rpcsec_gss.c": (
+        "PBSD: clamp.  getgrouplist() sets *grpcnt to the number",
+        "\t\tgetgrouplist(pw->pw_name, pw->pw_gid, uc->gidlist, &len);",
+        "svc_rpc_gss_build_ucred: `uc->gidlen = len' with no bound, so "
+        "a user in more than NGRPS groups left gidlen larger than "
+        "cl_gid_storage -- in the library every RPCSEC_GSS server uses",
+    ),
+    "hbsd/src/usr.bin/id/id.c": [
+        (
+            "PBSD: clamp.  getgrouplist() reports the number of groups",
+            "\t\tgetgrouplist(pw->pw_name, gid, groups, &ngroups);",
+            "id: the group database can list more groups than "
+            "_SC_NGROUPS_MAX + 1, and the printing loop walks ngroups "
+            "out of an array that holds ngroups_max",
+        ),
+        (
+            "PBSD: clamp; see id().",
+            "\t\t(void) getgrouplist(pw->pw_name, pw->pw_gid, groups, "
+            "&ngroups);",
+            "group: the same, with the ignoring made explicit by a "
+            "(void) cast",
+        ),
+    ],
     "hbsd/src/bin/ed/main.c": [
         (
             # TWO sites, so a count: the `%' expansion and the `f'

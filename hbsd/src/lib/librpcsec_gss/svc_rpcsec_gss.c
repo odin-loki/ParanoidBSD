@@ -582,7 +582,19 @@ svc_rpc_gss_build_ucred(struct svc_rpc_gss_client *client,
 		uc->uid = pw->pw_uid;
 		uc->gid = pw->pw_gid;
 		uc->gidlist = client->cl_gid_storage;
-		getgrouplist(pw->pw_name, pw->pw_gid, uc->gidlist, &len);
+		/*
+		 * PBSD: clamp.  getgrouplist() sets *grpcnt to the number
+		 * of groups FOUND, not the number stored, and returns -1
+		 * when that exceeds the array -- see
+		 * __getgroupmembership() in lib/libc/gen/getgrent.c.  So a
+		 * user in more than NGRPS groups used to leave gidlen
+		 * larger than cl_gid_storage, and every consumer that walks
+		 * gidlist[0..gidlen-1] read past it.  This is the library
+		 * every RPCSEC_GSS server uses.
+		 */
+		if (getgrouplist(pw->pw_name, pw->pw_gid, uc->gidlist,
+		    &len) < 0)
+			len = NGRPS;
 		uc->gidlen = len;
 	}
 }

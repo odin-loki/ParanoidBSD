@@ -14411,3 +14411,142 @@ the reason for each, because they are not the same reason:
 The last one is the general case of what col(1) showed earlier in this
 document: **the bug you can measure and the bug that is there are not
 always the same bug.**
+
+## A file that does not compile, and what was inside it
+
+`usr.sbin/gssd/gssd.c` had never compiled. Sweep 19 was the first run
+collected with `--check-errors`, and it said so:
+
+```
+FAIL  usr.sbin/gssd/gssd.c does not compile and is not in EXPECTED
+```
+
+The immediate error was `KRB5_CALLCONV` undefined in
+`gssapi/gssapi_ext.h`. The cause was two directories deeper.
+
+`installed_headers()` builds the include path by asking each Makefile
+what it installs and where, and resolving each name through that
+Makefile's `.PATH`. `krb5/include/krb5/Makefile` installs `krb5.h` into
+`${INCLUDEDIR}/krb5`, and its `.PATH` ends at `${KRB5_DIR}/include` —
+where there is a file called `krb5.h`. It is the 1.5-era compatibility
+stub, and its whole body is
+
+```c
+   /* The MIT Kerberos header file krb5.h used to live here.
+      ...  Please update your code to use the new path ... */
+#include <krb5/krb5.h>
+```
+
+So `krb5/krb5.h` resolved to a file that includes `krb5/krb5.h`. clang
+gave up at its depth limit, nothing was defined, and every translation
+unit that reaches it failed — silently, because a file that does not
+compile reports zero findings and is indistinguishable from a clean one.
+**A wrong header is worse than a missing one: a missing one says so.**
+
+The real header is generated, and the recipe is a concatenation —
+`krb5/include/krb5/Makefile:41` is a guard around `krb5.hin`, no
+configure substitution — so `_installed_generated()` now carries it out,
+beside the osreldate.h and bsdxml.h it already did.
+
+That was half. `gssd.c` then failed differently: MIT's `gssapi_ext.h` and
+`gssapi_krb5.h` beside **Heimdal's** `gssapi/gssapi.h`, which is what
+`include/gssapi/gssapi.h` is. `MK_MITKRB5` is in `src.opts.mk`'s
+`__DEFAULT_YES_OPTIONS`, so this tree's GSS-API is MIT's, and the sweep
+was reading a configuration nobody builds.
+
+**Generating MIT's `gssapi/gssapi.h` into the general farm was wrong, and
+measuring said so:**
+
+```
+--scope lib/libgssapi --scope lib/librpcsec_gss
+  before   2 findings, 58 OK,  1 ERROR
+  after    0 findings, 17 OK, 42 ERROR
+```
+
+`lib/libgssapi` is FreeBSD's *own* GSS-API mechanism switch and compiles
+against `include/gssapi/gssapi.h`. Two implementations install a header
+of the same name, and which one a file wants is not a property of the
+header.
+
+It is a property the build states. `usr.sbin/gssd/Makefile:15` and
+`lib/libpam/modules/pam_ksu/Makefile:44` are the only two places in the
+tree that say `CFLAGS+= -DMK_MITKRB5=yes` — and that flag already arrives
+through `ask_cflags()`. So MIT's `gssapi.h` lives in its own shim,
+reached only by a file whose own flags carry it: read out of the
+Makefile rather than guessed from a path.
+
+```
+--scope lib/libgssapi --scope lib/librpcsec_gss --scope usr.sbin/gssd
+--scope lib/libpam/modules/pam_ksu
+  2 findings, 59 OK, 2 ERROR
+```
+
+`lib/libgssapi` is back where it was, `gssd.c` compiles, and
+`pam_ksu.c` still fails on a different missing header (`profile.h`,
+MIT's, from `crypto/krb5/src/util/profile`) — as it did before, with six
+errors rather than one.
+
+The gate for this is in `test_includes.py` and walks the farm rather than
+the mapping, because the farm is what goes on `-I`: a bad entry the
+generation writes over is harmless, and one it does not is the bug.
+Verified by removing the generation: three checks fail, and pass again on
+restore.
+
+### getgrouplist() reports the groups it FOUND, not the groups it stored
+
+And inside the file, once it compiled: one finding, and a class.
+
+```c
+	int len = NGROUPS;
+	int groups[NGROUPS];
+	getgrouplist(pw->pw_name, pw->pw_gid, groups, &len);
+	result->gidlist.gidlist_len = len;
+	result->gidlist.gidlist_val = mem_alloc(len * sizeof(int));
+	memcpy(result->gidlist.gidlist_val, groups, len * sizeof(int));
+```
+
+`lib/libc/gen/getgrouplist.c` is a one-line wrapper around
+`__getgroupmembership()`, which ends
+
+```c
+	/* too many groups found? */
+	return (*grpcnt > maxgrp ? -1 : 0);
+```
+
+— `*grpcnt` is the number of groups **found**, which can exceed the array,
+and the `-1` says so. Nobody was reading it. A user in more groups than
+`NGROUPS` makes `len > NGROUPS`, and the `memcpy` reads that far past a
+stack array in **gssd(8), which runs as root**, and sends the result to
+the kernel GSS layer as that credential's supplementary group list.
+
+There are five call sites in the tree that ignore the return and then use
+the count as a bound:
+
+| where | what it walks |
+|---|---|
+| `usr.sbin/gssd/gssd.c` `_gss_get_unix_cred()` | its caller's `gid_t groups[NGROUPS]`, in a `for (i = 0; i < len; i++)` |
+| `usr.sbin/gssd/gssd.c` `gssd_pname_to_uid_1_svc()` | its own stack array, by `memcpy` |
+| `lib/librpcsec_gss/svc_rpcsec_gss.c` | `uc->gidlen = len` with no bound at all — **this is the library every RPCSEC_GSS server links** |
+| `usr.bin/id/id.c` ×2 | a `malloc` of `_SC_NGROUPS_MAX + 1`, which the group database can exceed |
+
+`usr.bin/mdo/mdo.c:753` is the one that gets it right —
+`if (ngroups > ngroups_alloc) err(...)` — and it is the model. All five
+now clamp to what they asked for, which is exactly the number
+`getgrouplist()` stored.
+
+`gssd_pname_to_uid_1_svc()`'s array also becomes `gid_t` and the copy
+element-by-element, which is what the same file already does in
+`gssd_accept_sec_context()` for the same question, and the reason the
+analyser was calling the `mem_alloc()` size wrong.
+
+```
+--scope usr.sbin/gssd --scope lib/librpcsec_gss --scope usr.bin/id
+  before  1 finding, 7 OK, 0 ERROR
+  after   0 findings, 7 OK, 0 ERROR
+```
+
+The one finding was `unix.MallocSizeof` on the `sizeof(int)`. The
+out-of-bounds read it sits next to is not something the analyser
+reported — it could not, because `getgrouplist()`'s contract lives in
+another translation unit. **The gate that found this was `--check-errors`,
+not the checkers.**

@@ -2364,12 +2364,20 @@ def _ncurses_headers(d: Path) -> None:
 
 
 def _installed_generated(d: Path) -> None:
-    """The two INCS in that layout that no source file backs.
+    """The INCS in that layout that no source file backs.
 
     installed_headers() maps an installed path to a source path, so a
     header the build GENERATES has nothing to link to and simply is not
-    there. Two of them are asked for by translation units in scope, and
-    both recipes are three lines in the Makefile that installs them.
+    there. Several are asked for by translation units in scope, and each
+    recipe is a few lines in the Makefile that installs them.
+
+    krb5/krb5.h is worse than absent. There IS a file of that name --
+    crypto/krb5/src/include/krb5.h, the 1.5-era compatibility stub whose
+    whole body is `#include <krb5/krb5.h>' -- and it is the last entry
+    on that Makefile's .PATH, so the name resolved to it and the header
+    included ITSELF until clang gave up on the depth. Nothing was
+    defined, and usr.sbin/gssd/gssd.c has never compiled. A wrong header
+    is worse than a missing one: a missing one says so.
     """
     # include/Makefile:341. osreldate.h is __FreeBSD_version out of
     # sys/sys/param.h, formatted by a script beside it.
@@ -2400,6 +2408,64 @@ def _installed_generated(d: Path) -> None:
             (exp / "expat_external.h").read_text())
     except OSError:
         pass
+
+    # krb5/include/krb5/Makefile:41: guard plus template, no configure
+    # substitution. This one is global because nothing else in the tree
+    # provides <krb5/krb5.h>, and what it replaces is strictly worse
+    # than absent. Its sibling <gssapi/gssapi.h> is NOT global -- see
+    # mitkrb5_shim().
+    krb5 = SRC / "crypto" / "krb5" / "src"
+    try:
+        hin = (krb5 / "include" / "krb5" / "krb5.hin").read_text()
+        (d / "krb5").mkdir(parents=True, exist_ok=True)
+        (d / "krb5" / "krb5.h").unlink(missing_ok=True)
+        (d / "krb5" / "krb5.h").write_text(
+            "/* This file is generated, please don't edit it directly."
+            "  */\n"
+            "#ifndef KRB5_KRB5_H_INCLUDED\n"
+            "#define KRB5_KRB5_H_INCLUDED\n"
+            + hin +
+            "#endif /* KRB5_KRB5_H_INCLUDED */\n")
+    except OSError:
+        pass
+
+
+
+@functools.lru_cache(maxsize=None)
+def mitkrb5_shim() -> str:
+    """MIT's <gssapi/gssapi.h>, for the two directories that want it.
+
+    It cannot go in the general farm. lib/libgssapi is FreeBSD's OWN
+    GSS-API mechanism switch and compiles against
+    include/gssapi/gssapi.h; putting MIT's earlier on the path took that
+    directory from 58 OK and 1 ERROR to 17 and 42. Two implementations
+    install a header of the same name, and which one a file wants is not
+    a property of the header.
+
+    It is a property the build states. usr.sbin/gssd/Makefile:15 and
+    lib/libpam/modules/pam_ksu/Makefile:44 are the only two places in
+    the tree that say
+
+        CFLAGS+= -DMK_MITKRB5=yes
+
+    so that flag -- which already arrives through ask_cflags() -- is the
+    predicate, read from the Makefile rather than guessed from a path.
+
+    Recipe: krb5/lib/gssapi/generic/Makefile.inc:44, whose INCLUDE_XOM
+    is `echo "/* no xom.h */"', so the prologue is three comment lines.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_mitkrb5_"))
+    try:
+        hin = (SRC / "crypto" / "krb5" / "src" / "lib" / "gssapi" /
+               "generic" / "gssapi.hin").read_text()
+        (d / "gssapi").mkdir(parents=True, exist_ok=True)
+        (d / "gssapi" / "gssapi.h").write_text(
+            "/* This is the gssapi.h prologue. */\n"
+            "/* no xom.h */\n"
+            "/* End of gssapi.h prologue. */\n" + hin)
+    except OSError:
+        pass
+    return d.as_posix()
 
 
 @functools.lru_cache(maxsize=None)
@@ -3912,6 +3978,11 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
             if keep:
                 flags = [f for f in flags
                          if not f.startswith(inside) or f in keep]
+    if "-DMK_MITKRB5=yes" in flags:
+        # Ahead of -I${SRC}/include, which is where the other
+        # gssapi/gssapi.h lives. See mitkrb5_shim().
+        flags.insert(0, f"-I{mitkrb5_shim()}")
+
     if rel.startswith("lib/libc/csu/"):
         # The C start-up: libc_start1.c is the first C any process runs
         # after the run-time linker, and none of its six translation
