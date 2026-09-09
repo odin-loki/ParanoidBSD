@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,456 | 3,567 |
-| 5 | `usr.bin` | 732 | 247,979 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
+| 5 | `usr.bin` | 732 | 247,994 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,134 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,945** | **114,204** |
+| | **total** | **41,143** | **21,298,009** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -23048,7 +23048,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.131 `usr.bin/mdo`
 
-- [ ] **5.131.1** `mdo.c` · 886L · `TODO-PORT` · 18 fn
+- [ ] **5.131.1** `mdo.c` · 901L · `TODO-PORT` · 18 fn
   - [ ] 5.131.1.1 `usage()` · `TODO-FN`
   - [ ] 5.131.1.2 `alloc_is_empty()` · `TODO-FN`
   - [ ] 5.131.1.3 `alloc_realloc()` · `TODO-FN`
@@ -34375,7 +34375,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.64.15 `m_settype()` · `TODO-FN`
   - [ ] 6.179.64.16 `m_append()` · `TODO-FN`
 - [ ] **6.179.65** `mbuf.h` · 120L · `TODO-HDR`
-- [ ] **6.179.66** `mp.c` · 1,210L · `TODO-PORT` · 34 fn
+- [ ] **6.179.66** `mp.c` · 1,230L · `TODO-PORT` · 34 fn
   - [ ] 6.179.66.1 `peerid_Init()` · `TODO-FN`
   - [ ] 6.179.66.2 `peerid_Equal()` · `TODO-FN`
   - [ ] 6.179.66.3 `inc_seq()` · `TODO-FN`
@@ -35749,7 +35749,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.210.6.1 `rtsock_open()` · `TODO-FN`
   - [ ] 6.210.6.2 `rtsock_input()` · `TODO-FN`
   - [ ] 6.210.6.3 `rtsock_input_ifannounce()` · `TODO-FN`
-- [ ] **6.210.7** `rtsol.c` · 850L · `TODO-PORT` · 9 fn
+- [ ] **6.210.7** `rtsol.c` · 868L · `TODO-PORT` · 9 fn
   - [ ] 6.210.7.1 `recvsockopen()` · `TODO-FN`
   - [ ] 6.210.7.2 `rtsol_input()` · `TODO-FN`
   - [ ] 6.210.7.3 `ra_opt_handler()` · `TODO-FN`
@@ -35876,7 +35876,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.215 `usr.sbin/setaudit`
 
-- [ ] **6.215.1** `setaudit.c` · 159L · `TODO-PORT` · 2 fn
+- [ ] **6.215.1** `setaudit.c` · 170L · `TODO-PORT` · 2 fn
   - [ ] 6.215.1.1 `usage()` · `TODO-FN`
   - [ ] 6.215.1.2 `main()` · `TODO-FN`
 

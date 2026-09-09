@@ -13653,3 +13653,104 @@ number. All three markers verified by restoring from `HEAD`: `exit=1`.
 | `cam/scsi/scsi_enc_ses.c:2762,2792` | `req.result` is a stack field of a request queued on `ses->ses_requests` and read after `cam_periph_sleep()`. Every write is immediately before the `wakeup(req)` that ends that sleep: `ses_encode()`'s result at `:2228`, and `ses_terminate_control_requests()` at `:133`, reached from `:1939`, `:2208` and `:2728`. `cam_periph_sleep` is `xpt_path_sleep` is `msleep` at `PUSER` — no `PCATCH` — with no timeout, so it returns no other way. |
 | `geom/eli/g_eli.c:1202` | `dcw` is assigned at `:1092`, after the `goto failed` at `:1083` that `g_attach()` failure takes. The `failed:` label reads it only inside `if (cp->provider != NULL)`, and `g_attach()` leaves `cp->provider` NULL exactly when it fails. Worth noting that initialising `dcw` would be the *wrong* fix: `g_access(cp, -1, 0, -1)` on a consumer opened with `dcw == 1` would leak a write count, so 0 is not a safe default here — the guard is. |
 | `geom/eli/g_eli.c:1509` | `g_eli_mkey_decrypt_any()` writes `*nkeyp = -1` on entry (`g_eli_key.c:158`), before any loop, so `nkey` is written whether or not a key is found. The callee is in another translation unit, which is the whole of why the analyser cannot see it. |
+
+## Four in userland, three of them reachable by someone else
+
+`--scope bin --scope sbin --scope usr.bin --scope usr.sbin` reports 737
+findings across 1862 translation units. 68 are `core.uninitialized.*`,
+which is where every defect this session has come from, and the four
+below are the ones read first, chosen by what supplies the input.
+
+**`usr.sbin/rtsold/rtsol.c:499` — two defects in three lines.** The DNSSL
+option handler, processing a router advertisement, does
+
+```c
+	if (rao->rao_msg == NULL) {
+		warnmsg(LOG_ERR, __func__, "strdup failed: %s", ...);
+		free(rao);
+		addr++;
+		continue;
+	}
+```
+
+`addr` is the **RDNSS** cursor, assigned at `:396` inside the other
+option's branch; here it has never been written, which is the finding.
+The larger problem is the one the finding leads to: this loop walks the
+DNSSL names with `p`, which the `p += len` at the bottom of the body
+advances, and this `continue` skips it. A second `strdup()` failure
+decodes the same name again — and a third, and a fourth, for as long as
+the allocation failures last. `rtsold` runs as root and the option came
+off the wire. The block is a byte-for-byte copy of the RDNSS block at
+`:435-441`, where `addr++` is the right cursor and correct.
+
+**`usr.bin/mdo/mdo.c:439,443,450` — one past the end, four times, in a
+setuid program.** `remove_groups()` walks two sorted `gid_t` arrays:
+
+```c
+	cand = set->groups[++from];
+	if (from == set->nb)
+		break;
+```
+
+Every arm indexes and *then* asks whether the index has reached `nb`, so
+the last iteration reads one element past the end of a heap array. The
+value is discarded, which is not the same as the read being legal: an
+allocation ending on a page boundary has no obligation to have the next
+page mapped, and `mdo` is setuid with its group arrays coming from the
+target user's group list. The test now precedes the load at all four
+sites; the four breaks are in the same four places.
+
+**`usr.sbin/ppp/mp.c:508,534` — a peer decides which fragments are
+dropped.** `mp_ReadHeader()` rejects a multilink header whose reserved
+bits are set:
+
+```c
+	if (val & 0x3000) {
+		log_Printf(LogWARN, "Oops - MP header without required zero bits\n");
+		return 0;
+	}
+```
+
+and returns without writing `header->begin` or `header->end` (the 24-bit
+arm writes `seq` at `:151` before it looks at it; the 12-bit arm writes
+nothing). Four of the six callers ignore the return value — `:472`,
+`:507`, `:543`, `:598` — and read those fields immediately. Setting the
+reserved bits is exactly what an attacker does, so a malformed fragment
+had `ppp` choosing which fragments to drop and what to set
+`mp->seq.next_in` to from the frame. Both rejects now zero the header, so
+"returned 0" means something about `*header`. That is the smaller half of
+the fix; the larger is that those four callers should test the return,
+and that is a change to the reassembly logic rather than to a
+postcondition.
+
+**`usr.sbin/setaudit/setaudit.c:151` — the ordinary invocation.**
+`term_port` is assigned only under `-p`, and
+
+```c
+	if (!Uflag || sflag) {
+		aia.ai_termid.at_port = term_port;
+		aia.ai_termid.at_type = term_type;
+	}
+```
+
+runs whenever `-U` was *not* given. `setaudit -a user` — no `-p`, no
+`-U` — therefore set the audit terminal ID's port from this frame and
+handed it to `setaudit_addr(2)`, where it becomes part of the process's
+audit state and of every record written for it. `term_type` on the line
+below already had a default at `:72`; `term_port` now has one too.
+
+```
+--scope bin --scope sbin --scope usr.bin --scope usr.sbin
+  before  737 findings, 1821 OK, 41 ERROR
+  after   729 findings, 1821 OK, 41 ERROR
+```
+
+Eight go and none arrives — the six named above plus `mp.c:487`, an
+`UndefinedBinaryOperatorResult` on the same `h.seq` the zeroing defines.
+All four markers verified by restoring from `HEAD`: `exit=1`.
+
+`rtsold`'s marker carries no "must be absent" string, and the reason is
+worth recording: the block it fixes was copied from the RDNSS block
+verbatim, so every string short enough to be worth writing matches the
+site the marker does *not* guard — where `addr++` is correct. A marker
+that matches the wrong site is worse than none.

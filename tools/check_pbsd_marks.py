@@ -2686,6 +2686,42 @@ FIXES = {
             "all-parity-targets case reconstruct_general() is reached with",
         ),
     ],
+    "hbsd/src/usr.sbin/rtsold/rtsol.c": (
+        "PBSD: advance p, not addr.",
+        # No "must be absent" string: the DNSSL block this fixes was a
+        # copy of the RDNSS block at :435-441, byte for byte, and there
+        # `addr' IS the cursor and `addr++' is right. Any string short
+        # enough to be worth writing matches both sites, and a marker
+        # that matches the site it does not guard is worse than none.
+        None,
+        "rtsol_input's DNSSL arm incremented `addr', the RDNSS cursor, "
+        "which it had never written - and skipped the `p += len' at the "
+        "bottom of the loop, so a second strdup() failure decoded the "
+        "same name again",
+    ),
+    "hbsd/src/usr.bin/mdo/mdo.c": (
+        "PBSD: the bound is tested BEFORE the index",
+        "\t\t\tcand = set->groups[++from];\n\t\t\tif (from == set->nb)\n",
+        "remove_groups read one element past the end of a heap array at "
+        "all four sites before asking whether the index had reached nb - "
+        "in a setuid program",
+    ),
+    "hbsd/src/usr.sbin/ppp/mp.c": (
+        "PBSD: a rejected header is zeroed",
+        "      log_Printf(LogWARN, \"Oops - MP header without required "
+        "zero bits\\n\");\n      return 0;\n",
+        "mp_ReadHeader returned 0 without writing header->begin or "
+        "->end, and four of its six callers ignore the return - so a "
+        "peer setting the MP header's reserved bits chose which "
+        "fragments ppp dropped",
+    ),
+    "hbsd/src/usr.sbin/setaudit/setaudit.c": (
+        "term_port = 0;",
+        "\tbzero(&hints, sizeof(hints));\n\tterm_type = AU_IPv4;\n",
+        "term_port is assigned only under `-p' and read whenever `-U' "
+        "was not given, so the ordinary invocation set the audit "
+        "terminal ID's port from the frame",
+    ),
     "hbsd/src/sys/fs/ext2fs/ext2_bmap.c": (
         "daddr_t blkno = -1;",
         "\tdaddr_t blkno;\n\tint error;\n",

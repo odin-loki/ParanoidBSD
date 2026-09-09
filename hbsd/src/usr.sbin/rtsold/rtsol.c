@@ -496,7 +496,25 @@ rtsol_input(int sock)
 						    "strdup failed: %s",
 						    strerror(errno));
 						free(rao);
-						addr++;
+						/*
+						 * PBSD: advance p, not addr.
+						 *
+						 * `addr' is the RDNSS cursor, assigned at
+						 * :396 inside the OTHER option's branch;
+						 * here it has never been written, so
+						 * `addr++' read this frame.
+						 *
+						 * And it was the wrong cursor to advance
+						 * in the bargain: this loop walks the
+						 * DNSSL names with `p', which the
+						 * `p += len' at the bottom of the body
+						 * moves - and this `continue' skips it.
+						 * A second strdup() failure then decodes
+						 * the same name again, for as long as the
+						 * failures last.  rtsold runs as root and
+						 * this option came off the wire.
+						 */
+						p += len;
 						continue;
 					}
 					newent_rao = 1;

@@ -69,6 +69,17 @@ main(int argc, char *argv [])
 	prog = argv[0];
 	bzero(&aia, sizeof(aia));
 	bzero(&hints, sizeof(hints));
+	/*
+	 * PBSD: term_port beside term_type, which was already given a
+	 * default here.  term_port is assigned only under `-p', and the
+	 * block that reads it runs whenever `-U' was NOT given - which is
+	 * the ordinary invocation - so `setaudit -a user' set the audit
+	 * terminal ID's port from this frame and handed it to
+	 * setaudit_addr(2), where it becomes part of the process's audit
+	 * state and of every record written for it.  0 is what no terminal
+	 * port means and what getaudit_addr() would have left there.
+	 */
+	term_port = 0;
 	term_type = AU_IPv4;
 	hints.ai_family = PF_UNSPEC;
 	while ((ch = getopt(argc, argv, "46a:m:p:s:U")) != -1)

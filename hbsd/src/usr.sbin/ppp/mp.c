@@ -135,12 +135,31 @@ isbefore(unsigned is12bit, u_int32_t seq1, u_int32_t seq2)
 static int
 mp_ReadHeader(struct mp *mp, struct mbuf *m, struct mp_header *header)
 {
+  /*
+   * PBSD: a rejected header is zeroed, so that "returned 0" means
+   * something about *header rather than nothing.
+   *
+   * Four of this function's six callers ignore the return value -
+   * :472, :507, :543 and :598 - and read header->begin, header->end
+   * and header->seq straight afterwards.  Both rejects below are
+   * reached by a peer setting the MP header's reserved bits, which is
+   * precisely the case an attacker controls, and neither wrote begin
+   * or end (the 24-bit arm writes seq at :151 before it looks at it,
+   * the 12-bit arm writes nothing at all).  So a malformed fragment
+   * had ppp deciding which fragments to drop, and what to set
+   * mp->seq.next_in to, from this frame.
+   *
+   * Zeroing is the smaller half of the fix.  The larger one is that
+   * those four callers should test the return, and that is a change to
+   * the reassembly logic rather than to a postcondition.
+   */
   if (mp->local_is12bit) {
     u_int16_t val;
 
     ua_ntohs(MBUF_CTOP(m), &val);
     if (val & 0x3000) {
       log_Printf(LogWARN, "Oops - MP header without required zero bits\n");
+      memset(header, '\0', sizeof *header);
       return 0;
     }
     header->begin = val & 0x8000 ? 1 : 0;
@@ -151,6 +170,7 @@ mp_ReadHeader(struct mp *mp, struct mbuf *m, struct mp_header *header)
     ua_ntohl(MBUF_CTOP(m), &header->seq);
     if (header->seq & 0x3f000000) {
       log_Printf(LogWARN, "Oops - MP header without required zero bits\n");
+      memset(header, '\0', sizeof *header);
       return 0;
     }
     header->begin = header->seq & 0x80000000 ? 1 : 0;

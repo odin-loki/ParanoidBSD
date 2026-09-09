@@ -430,26 +430,41 @@ remove_groups(struct group_array *const set,
 	cand = set->groups[0];
 	to_rem = remove->groups[0];
 
+	/*
+	 * PBSD: the bound is tested BEFORE the index, at all four sites.
+	 *
+	 * Every arm below used to read `set->groups[++from]' or
+	 * `remove->groups[++rem]' and only then ask whether the index had
+	 * reached nb - so the last iteration read one element past the end
+	 * of a heap array and discarded it.  The value being unused does
+	 * not make the read legal: with an allocation that ends on a page
+	 * boundary the next page need not be mapped, and this is a setuid
+	 * program whose group arrays come from the target user's group
+	 * list.
+	 *
+	 * The control flow is otherwise unchanged - the same four breaks in
+	 * the same four places, with the load moved below the test.
+	 */
 	for (;;) {
 		if (cand < to_rem) {
 			/* Keep. */
 			if (to != from)
 				set->groups[to] = cand;
 			++to;
-			cand = set->groups[++from];
-			if (from == set->nb)
+			if (++from == set->nb)
 				break;
+			cand = set->groups[from];
 		} else if (cand == to_rem) {
-			cand = set->groups[++from];
-			if (from == set->nb)
+			if (++from == set->nb)
 				break;
-			to_rem = remove->groups[++rem]; /* No duplicates. */
-			if (rem == remove->nb)
+			cand = set->groups[from];
+			if (++rem == remove->nb) /* No duplicates. */
 				break;
+			to_rem = remove->groups[rem];
 		} else {
-			to_rem = remove->groups[++rem];
-			if (rem == remove->nb)
+			if (++rem == remove->nb)
 				break;
+			to_rem = remove->groups[rem];
 		}
 	}
 
