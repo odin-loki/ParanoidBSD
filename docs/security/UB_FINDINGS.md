@@ -10954,10 +10954,27 @@ Widening the proxy to `bus_(space_)?read_(multi|region)_[1248]` gives
   a header the pattern never opens.
 
 A textual proxy for "the finding rests on X" fails on macros in one
-direction and on coincidence in the other. The verified members remain
-the ones that were read: `atmegadci.c:295`, `musb_otg.c:503`,
-`uss820dci.c:326`, `if_mgb.c:434`, `orm.c:131` — **five**. The other
-seventeen the proxy names are not claimed.
+direction and on coincidence in the other.
+
+Three more read since: `hptiop.c:477`, `:813` and `:1110`, all
+`core.uninitialized.Branch`, all
+
+```c
+	bus_space_read_region_4(hba->bar0t, hba->bar0h, req32 +
+		offsetof(struct hpt_iop_request_header, context),
+		(u_int32_t *)&temp64, 2);
+	if (temp64)
+```
+
+— a 64-bit value assembled out of two 32-bit register reads and then
+branched on.
+
+The verified members are the ones that were read: `atmegadci.c:295`,
+`musb_otg.c:503`, `uss820dci.c:326`, `if_mgb.c:434`, `orm.c:131`,
+`hptiop.c:477`, `:813`, `:1110` — **eight**, across six files and three
+subsystems (USB device controllers, an Ethernet MAC, an ISA option-ROM
+probe, a RAID controller). The rest of what the proxy names is not
+claimed.
 
 ---
 
