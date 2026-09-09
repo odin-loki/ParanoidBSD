@@ -2737,6 +2737,15 @@ FIXES = {
         "peer setting the MP header's reserved bits chose which "
         "fragments ppp dropped",
     ),
+    "hbsd/src/usr.bin/gzip/unpack.c": (
+        "PBSD: start the accumulator.",
+        "\tunpack_descriptor_t unpackd;\n\n\tin = dup(in);",
+        "unpack() is the one decompressor in gzip(1) whose byte count "
+        "ACCUMULATES into the caller's variable - accepted_bytes() does "
+        "`(*bytes_in) += newbytes' - and handle_stdin()'s `off_t usize, "
+        "gsize' at gzip.c:1750 is not zeroed, so `gzip -d' on a pack(1) "
+        "file reported a stack word as the compressed size",
+    ),
     "hbsd/src/usr.sbin/setaudit/setaudit.c": (
         "term_port = 0;",
         "\tbzero(&hints, sizeof(hints));\n\tterm_type = AU_IPv4;\n",

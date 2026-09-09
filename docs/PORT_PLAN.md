@@ -55,7 +55,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,465 | 3,567 |
-| 5 | `usr.bin` | 732 | 247,994 | 4,186 |
+| 5 | `usr.bin` | 732 | 248,009 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,152 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,036** | **114,204** |
+| | **total** | **41,143** | **21,298,051** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -21920,7 +21920,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.87.3.24 `lz_decode()` · `TODO-FN`
   - [ ] 5.87.3.25 `lz_get_dict_size()` · `TODO-FN`
   - [ ] 5.87.3.26 `unlz()` · `TODO-FN`
-- [ ] **5.87.4** `unpack.c` · 335L · `TODO-PORT` · 6 fn
+- [ ] **5.87.4** `unpack.c` · 350L · `TODO-PORT` · 6 fn
   - [ ] 5.87.4.1 `unpack_descriptor_fini()` · `TODO-FN`
   - [ ] 5.87.4.2 `unpackd_fill_inodesin()` · `TODO-FN`
   - [ ] 5.87.4.3 `accepted_bytes()` · `TODO-FN`

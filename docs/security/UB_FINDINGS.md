@@ -13831,3 +13831,53 @@ by the comments. All three markers verified by restoring from `HEAD`:
 |---|---|
 | `usr.sbin/traceroute/traceroute.c:798,818` | `sockerrno` is assigned only inside `if (pe)` at `:520-525`. `:793` exits when `pe == NULL`, so the block ran; and `:817`'s read is reached only when `s >= 0`, which is exactly when the `else if` that assigns it ran. Two guards, three hundred lines apart from the assignment. |
 | `usr.sbin/bhyve/pci_virtio_net.c:374` | `info[i].len` for `i` up to the chain count `vq_getchain()` returned, which is also what filled `info[]`. |
+
+### gzip(1) reports a stack word as the compressed size of a pack(1) file
+
+`usr.bin/gzip/unpack.c:139`, `core.uninitialized.Assign`, in
+`accepted_bytes()`. The line is
+
+```c
+	if (bytes_in != NULL)
+		(*bytes_in) += newbytes;
+```
+
+`+=`, not `=`. That makes `unpack()` the one decompressor in gzip(1)
+whose byte count *accumulates* into the caller's variable instead of
+assigning it — `gz_uncompress()` ends `*gsizep = in_tot` (`gzip.c:1052`)
+and `cat_fd()` ends `*gsizep = in_tot` (`gzip.c:1739`), so neither ever
+needed the caller to start the sum. `unpack()` does, and no caller does
+it: `handle_stdin()` declares
+
+```c
+	off_t usize, gsize;
+```
+
+at `gzip.c:1750` with no initialiser and passes `&gsize` straight into
+`unpack()` at `:1819`. So `gzip -d` on a `pack(1)` stream added the
+compressed length to whatever that stack slot held and printed the
+result under `-v` and under `-l`.
+
+The fix is one store at the top of `unpack()`, where the other two
+decompressors' equivalent already effectively is:
+
+```c
+	if (bytes_in != NULL)
+		*bytes_in = 0;
+```
+
+It goes in the callee rather than in `handle_stdin()` because the
+callee is where the contract is wrong — a function that accumulates
+into an out-parameter it never initialises is asking every present and
+future caller to know that about it.
+
+```
+--scope usr.bin/gzip
+  before  2 findings
+  after   1 finding
+```
+
+The survivor is `unix.Malloc` at `gzip.c:554`. Note that the finding is
+reported *through* `gzip.c`: `unpack.c` is `#include`d, not compiled, so
+its own translation unit is an `ERROR` in both runs and contributes
+nothing either way — the count that moved is `gzip.c`'s.

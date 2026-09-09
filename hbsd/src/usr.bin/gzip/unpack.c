@@ -318,6 +318,21 @@ unpack(int in, int out, char *pre, size_t prelen, off_t *bytes_in)
 {
 	unpack_descriptor_t unpackd;
 
+	/*
+	 * PBSD: start the accumulator.
+	 *
+	 * accepted_bytes() does `(*bytes_in) += newbytes' - this is the one
+	 * decompressor in gzip(1) that ACCUMULATES into the caller's
+	 * variable rather than assigning it, and handle_stdin()'s
+	 * `off_t usize, gsize;' at gzip.c:1750 does not zero it.
+	 * gz_uncompress() and cat_fd() both end with `*gsizep = in_tot',
+	 * which is why they never needed the caller to.  So `gzip -d' on a
+	 * pack(1) file added to a stack word and reported the result as the
+	 * compressed size.
+	 */
+	if (bytes_in != NULL)
+		*bytes_in = 0;
+
 	in = dup(in);
 	if (in == -1)
 		maybe_err("dup");
