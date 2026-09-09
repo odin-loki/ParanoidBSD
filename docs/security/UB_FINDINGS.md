@@ -13347,7 +13347,89 @@ Both markers verified by restoring the file from `HEAD`: `exit=1`.
 | `lua/ldebug.c:42`, `lua/lstrlib.c:780` | the interpreter's own invariants (`ci->func` points at a Lua closure when `isLua(ci)`; `str_gsub`'s match state). Reachable only through `zfs program`, which needs pool-owner privilege. Not discharged in detail — named here so the next reader starts from that rather than from zero. |
 | `os/freebsd/zfs/zvol_os.c:816,864` | `zfs_uio_init()` tolerates a NULL `struct uio *` (`if (uio_s != NULL)`) and every caller then dereferences it; the cdev `d_read`/`d_write` entry points are never called with one. The defensive test inside the helper, carried forward. |
 | `os/freebsd/zfs/zfs_acl.c:830` | `zfs_acl_node_alloc(n * sizeof (zfs_object_ace_t))` leaves `z_acldata` NULL when `n` is 0, and a v0 ACL being transformed has at least one ACE. |
-| `unicode/u8_textprep.c:1370,1524,1703` | `l` never exceeds the number of bytes written into the local `t[]`. This is a hand-rolled backtracking buffer — `saved_l` is restored on a failed match at `:1327` — and the analyser cannot follow the index across the restore. The input is filenames, so this is the one in the table worth a closer look than it got here. |
+| `unicode/u8_textprep.c:1370,1524,1703` | three counting invariants, discharged in the section below. |
 | `zstd/lib/decompress/zstd_decompress_block.c:1388,1394` | `ZSTD_decodeSeqHeaders()` writes `*nbSeqPtr` on both of its non-error returns (`:496` and `:509`), and every earlier return is a `RETURN_ERROR_IF` the caller catches with `ZSTD_isError()`. The analyser loses the `size_t` wraparound arithmetic that makes `ZSTD_isError` true for those codes. |
 | `zstd/lib/common/bitstream.h:205` | `assert(nbBits < BIT_MASK_SIZE)` two lines above the `BIT_mask[nbBits]` it guards — compiled out here, and a caller contract besides. Compression side, not decompression. |
 | `zstd/lib/compress/fse_compress.c:251` | `normalizedCounter[symbol++]` bounded by the `maxSymbolValue` the same function validated. Compression side. |
+
+## u8_textprep: three counting invariants, and why one copy loop is bounded and its twin is not
+
+The Unicode normalisation that the `utf8only` and `normalization` dataset
+properties run over **filenames** carried the three findings the table
+above deferred. All three hold, and the invariants are worth writing
+down, because two of the three sites look careless until you have them.
+
+**`do_composition():1370`** — `for (i = 0; i < l; i++) s[i] = t[i];` over
+a `uchar_t t[U8_STREAM_SAFE_TEXT_MAX + 1]` that nothing initialises, with
+`l` advanced by four separate copy loops and *rewound* by `l = saved_l`
+on a failed match at `:1202` and `:1327`. The analyser cannot follow an
+index across a restore, so it reports a read of a `t[]` element it never
+saw written.
+
+The bound:
+
+* `last` is clamped to `U8_UPPER_LIMIT_IN_A_SEQ` (31) at `:1094`, so the
+  sequence is at most 32 characters;
+* `disp[i]` is `u8_number_of_bytes[...]`, whose largest entry in the
+  table at `:237` is 4 — `U8_MB_CUR_MAX`;
+* composition never grows the byte count (the comment at `:1364` says so,
+  and the table entry replaces two or more characters with one);
+* so `l <= 32 * 4 = 128 = U8_STREAM_SAFE_TEXT_MAX`, and `t[l] = '\0'` at
+  `:1371` lands on exactly the last element of a `[129]` array.
+
+That also settles what otherwise reads as an oversight: the copy loop at
+`:1204`
+
+```c
+	l = saved_l;
+	while (*++p != U8_TBL_ELEMENT_FILLER)
+		t[l++] = *p;
+```
+
+has no bound check, while its near-identical twin at `:1329` does
+
+```c
+	if (l >= U8_STREAM_SAFE_TEXT_MAX) {
+		p = saved_p;
+		goto SAFE_RETURN;
+	}
+	t[l++] = *q;
+```
+
+The first writes a composite of characters already counted in the 32.
+The second is in the block from `:1292` that pulls **further** characters
+off the remaining stream `*os`, which is not part of the counted
+sequence — so it is the only one that can exceed the bound, and it is the
+only one that checks.
+
+**`collect_a_seq():1524`** — `comb_class[last - 1]` on a `size_t last`.
+Both arms of the `:1488` decomposition test set it first: the `sz == 1`
+arm assigns `last = 1` outright, and the other fills from
+`saved_sz = do_decomp(...)`, which returns at least the `sz >= 2` it was
+given. `last >= 1`.
+
+**`collect_a_seq():1703`** — the sharpest of the three, and the reason
+`last >= 1` is worth stating rather than assuming:
+
+```c
+	last--;
+	if (last >= saved_last) {
+		for (i = 0; i < last; i++)
+			for (j = last; j > i; j--)
+				if (comb_class[j] && ...)
+					U8_SWAP_COMB_MARKS(j - 1, j);
+	}
+```
+
+`last` is a `size_t`. At zero, `last--` is `SIZE_MAX`, `last >=
+saved_last` is then true for any value, and the doubly-nested loop walks
+`comb_class[]`, `start[]` and `disp[]` — three 32-byte arrays — to
+`SIZE_MAX`, swapping as it goes. The guard against that is not in this
+code; it is the same `last >= 1` above.
+
+Nothing is patched here. That is a different verdict from
+`dis_tables.c`'s `goto done` over the assignment of `dp`, which was also
+unreachable today: there the code was wrong and the invariant accidental,
+and the fix restored an intent the file had lost. Here the code is right
+and maintains what it needs. What it does not do is say so, which is what
+this section is for.
