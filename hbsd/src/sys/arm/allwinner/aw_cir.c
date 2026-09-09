@@ -214,6 +214,34 @@ aw_ir_decode_packets(struct aw_ir_softc *sc)
 	if (bootverbose && __predict_false(aw_cir_debug) != 0)
 		device_printf(sc->dev, "sc->dcnt = %d\n", sc->dcnt);
 
+	/*
+	 * PBSD: nothing buffered, nothing to decode. `val' is assigned
+	 * only inside the three `for (; i < sc->dcnt; i++)' loops below,
+	 * and every one of them is guarded by the same count - so an
+	 * empty buffer runs no loop body and the first bit-separator
+	 * test, `if ((val & VAL_MASK) || ...)', reads a stack byte.
+	 *
+	 * aw_ir_intr() reaches here on AW_IR_RXINT_RPEI_EN (RX packet
+	 * end) whether or not the same interrupt also carried FIFO data:
+	 * a packet-end with AW_IR_RXSTA_COUNTER(val) == 0 fills nothing,
+	 * and aw_ir_buf_reset() has already put sc->dcnt back to 0. Both
+	 * outcomes of the garbage read happen to produce a code
+	 * aw_ir_validate_code() rejects, so no bogus scancode reaches
+	 * evdev - but the read is undefined either way, and the second
+	 * guard branches on it again after the first has let it past.
+	 *
+	 * <= 0, not == 0: sc->dcnt is a plain int. Nothing in this driver
+	 * can make it negative - aw_ir_buf_reset() sets 0 and
+	 * aw_ir_buf_write() only increments - but == 0 left the loops
+	 * still provably skippable and the finding still standing, which
+	 * is the analyser being right about the type it was given.
+	 */
+	if (sc->dcnt <= 0) {
+		if (bootverbose && __predict_false(aw_cir_debug) != 0)
+			device_printf(sc->dev, "no data to decode\n");
+		return (AW_IR_ERROR_CODE);
+	}
+
 	/* Find Lead 1 (bit separator) */
 	active_delay = AW_IR_ACTIVE_T_VAL *
 	    (AW_IR_ACTIVE_T_C_VAL != 0 ? 128 : 1);

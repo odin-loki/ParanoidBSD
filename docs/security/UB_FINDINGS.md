@@ -9942,3 +9942,143 @@ never free it: `aw_gmacclk.c` (fixed above), `sdhci_fdt.c:157`,
 the sweep's findings, so the other three are recorded rather than
 changed — a leak read out of the source is not the same evidence as a
 leak an analyser walked to.
+
+---
+
+## The rest of the Allwinner batch, and what the other four rest on
+
+The three fixes above left five findings in `sys/arm/allwinner/`. One
+more was real; the other four are false, and naming *why* each is false
+is the point — an unread finding and a read one that turns out fine look
+identical in a count.
+
+### `aw_ir_decode_packets` branches on an unread FIFO byte
+
+```c
+	unsigned char val, last;
+	...
+	for (i = 0;  i < sc->dcnt; i++) {
+		val = sc->buf[i];
+		...
+	}
+	if ((val & VAL_MASK) || (len <= AW_IR_L1_MIN))
+		goto error_code;
+```
+
+Three loops assign `val`, and all three are bounded by `sc->dcnt`. Two
+guards branch on it, outside every loop.
+
+`aw_ir_intr()` reaches this on `AW_IR_RXINT_RPEI_EN` — RX packet end —
+whether or not the same interrupt also carried FIFO data. The FIFO drain
+just above it is a separate condition:
+
+```c
+	if (val & (AW_IR_RXINT_RAI_EN | AW_IR_RXINT_RPEI_EN)) {
+		dcnt = AW_IR_RXSTA_COUNTER(val);
+		for (i = 0; i < dcnt; i++) { ... }
+	}
+	if (val & AW_IR_RXINT_RPEI_EN) {
+		ir_code = aw_ir_decode_packets(sc);
+```
+
+so a packet-end interrupt whose counter reads zero fills nothing, and
+`aw_ir_buf_reset()` at the end of the previous packet has already put
+`sc->dcnt` back to 0. The decode then runs no loop body at all.
+
+Both outcomes of the garbage read happen to end in a code
+`aw_ir_validate_code()` rejects, so no bogus scancode reaches evdev
+today. That is a fact about this compilation, not a property of the
+program: the read is undefined, and the second guard branches on the
+same byte again after the first has let it through. Fixed with an early
+return on an empty buffer.
+
+**The first version of that fix did not work, and the measurement is
+what said so.** It was `if (sc->dcnt == 0)`, and the finding came back
+at `:257` — the same finding, moved down by the 22 lines of comment. The
+reason is in the declaration: `int dcnt;`. Nothing in the driver can
+make it negative — `aw_ir_buf_reset()` sets 0 and `aw_ir_buf_write()`
+only increments — but `== 0` leaves the loops provably skippable for a
+negative value, and the analyser was right about the type it had been
+given. `<= 0` clears it.
+
+### The four that stay
+
+| finding | why it is false |
+|---|---|
+| `aw_gpio.c:1452` | `irqcfg`'s switch on `mode` has five arms and no default — but `mode` is an out-parameter of `aw_gpio_pic_map_gpio()`, which switches on the same five values and returns `EINVAL` for anything else *before* writing it, and the caller returns on that error. The validation is one function away. |
+| `aw_rsb.c:362` | `cmd` is assigned only under `if (sc->type == A23_RSB)` and read only under `if (sc->type == A23_RSB)`. Between them are `mtx_sleep()` and register I/O, so the analyser drops what it knew about `sc->type`. |
+| `aw_sid.c:408` | `data[i]` is written by `aw_sid_get_fuse()` for `i < size`, and `size` comes back from the same call. The bound is a table the analyser will not fold. |
+| `axp209.c:1360` | `regdefs` is set by a switch on `sc->type` with cases for `AXP209` and `AXP221` and no default — and `axp2xx_probe()` returns `ENXIO` for anything else, so attach never runs with a third value. probe gating attach is not something the analyser models. |
+
+Two of those four are the same shape as each other and as one more,
+below.
+
+### One cause, seven findings: a value read twice across an opaque call
+
+`sys/amd64/amd64/fpu.c:466` is the clearest instance, because the thing
+being read twice is a global:
+
+```c
+	int cp[4], i, max_ext_n;
+
+	if (use_xsave) {
+		max_ext_n = flsl(xsave_mask | xsave_mask_supervisor);
+		xsave_area_desc = malloc(...);
+	}
+	cpu_thread_alloc(&thread0);
+	saveintr = intr_disable();
+	fpu_enable();
+	fpusave_fxsave(fpu_initialstate);
+	...
+	if (use_xsave) {
+		...
+		for (i = 2; i < max_ext_n; i++) {
+```
+
+Both guards read `use_xsave`, which is written in exactly one place in
+the whole tree — `hammer_time()`, `amd64/machdep.c:1359` — long before
+this SYSINIT runs. But `cpu_thread_alloc()` and `fpusave_fxsave()` are
+opaque to the analyser, and an unknown function may write a global, so
+it allows false-then-true and reports `max_ext_n` unread.
+
+The four `*_marshal_func` findings in libc are the same thing with a
+struct field instead of a global, and the opaque step is a `memcpy`:
+
+```c
+	if (grp->gr_mem != NULL) {
+		mem_size = 0;
+		for (mem = grp->gr_mem; *mem; ++mem) { ...; ++mem_size; }
+	}
+	...
+	memcpy(&new_grp, grp, sizeof(struct group));
+	...
+	if (new_grp.gr_mem != NULL)
+		memcpy(p, new_grp.gr_mem, sizeof(char *) * mem_size);
+```
+
+`new_grp` is a byte copy of `*grp`, so `new_grp.gr_mem` and
+`grp->gr_mem` are the same pointer and the two guards are the same
+question — which is not a relation `memcpy` preserves for the analyser.
+
+`getgrent.c:284`, `gethostnamadr.c:331` and `:345` (the same shape twice
+in one function, for `aliases_size` and `addr_size`), `getnetnamadr.c:190`
+and `getrpcent.c:721`. Five findings, four files, one nsswitch marshalling
+idiom copied five times.
+
+With `aw_rsb.c` and `axp209.c`, that is **seven findings on one cause**,
+and none of them is a defect.
+
+### Where the Allwinner directory stands
+
+48 translation units, all OK:
+
+```
+at the start of this reading   8 findings
+after the three attach fixes   5
+after aw_cir                   4
+```
+
+and every one of the four is named above.
+
+Of the 32 `static-taken` findings with a parameter on their own line,
+this reading accounted for 12: four defects fixed, eight explained.

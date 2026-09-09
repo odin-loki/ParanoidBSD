@@ -898,6 +898,17 @@ FIXES = {
             "given",
         ),
     ],
+    "hbsd/src/sys/arm/allwinner/aw_cir.c": [
+        (
+            "PBSD: nothing buffered, nothing to decode.",
+            "\t\tdevice_printf(sc->dev, \"sc->dcnt = %d\\n\", sc->dcnt);\n\n\t/* Find Lead 1",
+            "aw_ir_decode_packets() assigns `val' only inside three "
+            "loops bounded by sc->dcnt, then branches on it twice. "
+            "aw_ir_intr() calls it on every RX packet-end interrupt, "
+            "including one whose FIFO counter is zero, where "
+            "aw_ir_buf_reset() has already put sc->dcnt back to 0",
+        ),
+    ],
     "hbsd/src/sys/arm/allwinner/aw_usb3phy.c": [
         (
             "PBSD: error, not `int error'.",
