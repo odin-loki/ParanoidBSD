@@ -426,6 +426,20 @@ hn_rndis_query_rsscaps(struct hn_softc *sc, int *rxr_cnt0)
 	    &in, NDIS_RSS_CAPS_SIZE, &caps, &caps_len, NDIS_RSS_CAPS_SIZE_6_0);
 	if (error)
 		return (error);
+	/*
+	 * PBSD: and check how much came back.  hn_rndis_query2() returns 0
+	 * with *odlen0 = 0 and NOTHING COPIED when the completion says
+	 * `rm_infobuflen == 0 || rm_infobufoffset == 0', and returns 0 with
+	 * a short copy when the host sends less than asked - so `caps' below
+	 * could be read entirely uninitialised.  The three hn_rndis_query()
+	 * callers all check the returned length; these two query2 ones did
+	 * not.
+	 */
+	if (caps_len < NDIS_RSS_CAPS_SIZE_6_0) {
+		if_printf(sc->hn_ifp, "invalid NDIS RSS caps len %zu\n",
+		    caps_len);
+		return (EINVAL);
+	}
 
 	/*
 	 * Preliminary verification.
@@ -966,6 +980,12 @@ hn_rndis_query_hwcaps(struct hn_softc *sc, struct ndis_offload *caps)
 	    &in, size, caps, &caps_len, NDIS_OFFLOAD_SIZE_6_0);
 	if (error)
 		return (error);
+	/* PBSD: as above - a `success' can copy nothing at all. */
+	if (caps_len < NDIS_OFFLOAD_SIZE_6_0) {
+		if_printf(sc->hn_ifp, "invalid NDIS offload caps len %zu\n",
+		    caps_len);
+		return (EINVAL);
+	}
 
 	/*
 	 * Preliminary verification.

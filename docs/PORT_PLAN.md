@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,502 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,568 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,561** | **114,204** |
+| | **total** | **41,143** | **21,297,627** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -139,7 +139,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.801.5 | `sys/dev/ixl/i40e_common.c` | 7,740 | 0 | `TODO-PORT` |
 | 8.630.9 | `sys/dev/atkbdc/psm.c` | 7,702 | 0 | `TODO-PORT` |
 | 8.1213.103 | `sys/netinet/sctputil.c` | 7,700 | 0 | `TODO-PORT` |
-| 8.744.5 | `sys/dev/hyperv/netvsc/if_hn.c` | 7,681 | 0 | `TODO-PORT` |
+| 8.744.5 | `sys/dev/hyperv/netvsc/if_hn.c` | 7,690 | 0 | `TODO-PORT` |
 | 8.1147.5 | `sys/fs/nfsserver/nfs_nfsdport.c` | 7,645 | 0 | `TODO-PORT` |
 | 8.1213.101 | `sys/netinet/sctp_usrreq.c` | 7,541 | 0 | `TODO-PORT` |
 | 8.1191.230 | `sys/kern/vfs_subr.c` | 7,518 | 0 | `TODO-PORT` |
@@ -692,7 +692,7 @@ function; a file with two hundred of them is a project.
 | 8.846.1 | `sys/dev/mpt/mpt.c` | 3,148 | 93 | `TODO-PORT` |
 | 8.1061.6 | `sys/dev/usb/wlan/if_rum.c` | 3,293 | 93 | `TODO-PORT` |
 | 8.1191.217 | `sys/kern/vfs_aio.c` | 3,175 | 93 | `TODO-PORT` |
-| 8.124.31 | `sys/compat/linux/linux_misc.c` | 3,128 | 92 | `TODO-PORT` |
+| 8.124.31 | `sys/compat/linux/linux_misc.c` | 3,134 | 92 | `TODO-PORT` |
 | 8.1191.66 | `sys/kern/kern_prot.c` | 3,234 | 92 | `TODO-PORT` |
 | 1.298.2 | `lib/libsysdecode/flags.c` | 1,210 | 91 | `TODO-PORT` |
 | 8.11.1 | `sys/amd64/vmm/vmm.c` | 2,106 | 91 | `TODO-MD` |
@@ -49696,7 +49696,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.124.22** `linux_futex.h` · 101L · `TODO-HDR`
 - [ ] **8.124.23** `linux_getcwd.c` · 80L · `TODO-PORT` · 1 fn
   - [ ] 8.124.23.1 `linux_getcwd()` · `TODO-FN`
-- [ ] **8.124.24** `linux_ioctl.c` · 3,866L gen:19 · `TODO-PORT` · 63 fn
+- [ ] **8.124.24** `linux_ioctl.c` · 3,873L gen:19 · `TODO-PORT` · 63 fn
   - [ ] 8.124.24.1 `linux_ioctl_hdio()` · `TODO-FN`
   - [ ] 8.124.24.2 `linux_ioctl_disk()` · `TODO-FN`
   - [ ] 8.124.24.3 `linux_to_bsd_speed()` · `TODO-FN`
@@ -49817,7 +49817,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.124.29.20 `linux_get_oss_version()` · `TODO-FN`
   - [ ] 8.124.29.21 `linux_set_oss_version()` · `TODO-FN`
 - [ ] **8.124.30** `linux_mib.h` · 69L gen:1 · `TODO-HDR`
-- [ ] **8.124.31** `linux_misc.c` · 3,128L gen:1 · `TODO-PORT` · 92 fn
+- [ ] **8.124.31** `linux_misc.c` · 3,134L gen:1 · `TODO-PORT` · 92 fn
   - [ ] 8.124.31.1 `linux_sysinfo()` · `TODO-FN`
   - [ ] 8.124.31.2 `linux_alarm()` · `TODO-FN`
   - [ ] 8.124.31.3 `linux_brk()` · `TODO-FN`
@@ -49964,7 +49964,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.124.38** `linux_rseq.c` · 85L · `TODO-PORT` · 1 fn
   - [ ] 8.124.38.1 `linux_rseq()` · `TODO-FN`
 - [ ] **8.124.39** `linux_siginfo.h` · 235L · `TODO-HDR`
-- [ ] **8.124.40** `linux_signal.c` · 982L · `TODO-PORT` · 34 fn
+- [ ] **8.124.40** `linux_signal.c` · 990L · `TODO-PORT` · 34 fn
   - [ ] 8.124.40.1 `linux_to_bsd_sigaction()` · `TODO-FN`
   - [ ] 8.124.40.2 `bsd_to_linux_sigaction()` · `TODO-FN`
   - [ ] 8.124.40.3 `linux_do_sigaction()` · `TODO-FN`
@@ -74601,7 +74601,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.744.1.16 `hn_nvs_send_rndis_ctrl()` · `TODO-FN`
   - [ ] 8.744.1.17 `hn_nvs_set_datapath()` · `TODO-FN`
 - [ ] **8.744.2** `hn_nvs.h` · 106L · `TODO-HDR`
-- [ ] **8.744.3** `hn_rndis.c` · 1,066L · `TODO-PORT` · 20 fn
+- [ ] **8.744.3** `hn_rndis.c` · 1,086L · `TODO-PORT` · 20 fn
   - [ ] 8.744.3.1 `hn_rndis_rid()` · `TODO-FN`
   - [ ] 8.744.3.2 `hn_rndis_rx_ctrl()` · `TODO-FN`
   - [ ] 8.744.3.3 `hn_rndis_get_eaddr()` · `TODO-FN`
@@ -74623,14 +74623,14 @@ function; a file with two hundred of them is a project.
   - [ ] 8.744.3.19 `hn_rndis_attach()` · `TODO-FN`
   - [ ] 8.744.3.20 `hn_rndis_detach()` · `TODO-FN`
 - [ ] **8.744.4** `hn_rndis.h` · 50L · `TODO-HDR`
-- [ ] **8.744.5** `if_hn.c` · 7,681L gen:32 · `TODO-PORT`
+- [ ] **8.744.5** `if_hn.c` · 7,690L gen:32 · `TODO-PORT`
 - [ ] **8.744.6** `if_hnreg.h` · 269L gen:11 · `TODO-HDR`
 - [ ] **8.744.7** `if_hnvar.h` · 338L gen:1 · `TODO-HDR`
 - [ ] **8.744.8** `ndis.h` · 421L · `TODO-HDR`
 
 ### 8.745 `sys/dev/hyperv/pcib`
 
-- [ ] **8.745.1** `vmbus_pcib.c` · 2,044L gen:4 · `TODO-PORT` · 52 fn
+- [ ] **8.745.1** `vmbus_pcib.c` · 2,060L gen:4 · `TODO-PORT` · 52 fn
   - [ ] 8.745.1.1 `init_completion()` · `TODO-FN`
   - [ ] 8.745.1.2 `reinit_completion()` · `TODO-FN`
   - [ ] 8.745.1.3 `free_completion()` · `TODO-FN`

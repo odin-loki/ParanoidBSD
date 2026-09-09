@@ -2018,7 +2018,13 @@ linux_prlimit64(struct thread *td, struct linux_prlimit64_args *args)
 	struct proc *p;
 	u_int which;
 	int flags;
-	int error;
+	/*
+	 * PBSD: error, initialised.  With args->pid == 0 and both args->new
+	 * and args->old NULL, nothing below assigns it and `return (error)'
+	 * hands the syscall layer a stack word as the errno.  That is
+	 * prlimit64(0, resource, NULL, NULL) from any Linux binary.
+	 */
+	int error = 0;
 	bool exec_blocked;
 
 	if (args->new == NULL && args->old != NULL) {

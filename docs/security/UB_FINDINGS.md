@@ -12244,3 +12244,117 @@ value alone." Reading the caller's bits is the point of the line.
 --scope sys/dev/ixgbe     1 finding  -> 1   21 units, OK both sides
 --scope sys/dev/iavf      1 finding  -> 1    8 units, OK both sides
 ```
+
+## Task #61, fourth batch: the linuxulator and Hyper-V
+
+### `sys/compat/linux/linux_ioctl.c` — the bound tested before the value arrives
+
+```c
+	bp->format = lp->type;
+	switch (bp->format) {
+	case DVD_STRUCT_PHYSICAL:
+		if (bp->layer_num >= 4)
+			return (EINVAL);
+		bp->layer_num = lp->physical.layer_num;
+```
+
+`bp` is the caller's `struct dvd_struct` on the stack. The check reads
+`bp->layer_num` before anything has written it, and then stores
+`lp->physical.layer_num` — which came from userland — **unchecked**. The
+guard was doing nothing except reading indeterminate memory. Store,
+then check.
+
+### `sys/compat/linux/linux_misc.c` — an errno from the stack
+
+`linux_prlimit64()` with `args->pid == 0` and both `args->new` and
+`args->old` NULL assigns `error` nowhere, and ends `return (error)`. The
+syscall layer takes that as the errno, so `prlimit64(0, resource, NULL,
+NULL)` from any Linux binary returned a stack word.
+
+### `sys/compat/linux/linux_signal.c` — td_retval from an osa nobody wrote
+
+```c
+	error = linux_do_sigaction(td, args->sig, &nsa, &osa);
+	td->td_retval[0] = (int)(intptr_t)osa.lsa_handler;
+```
+
+Every failing return in `linux_do_sigaction()` is before the
+`bsd_to_linux_sigaction(osa, linux_osa)` that fills it. The syscall
+layer discards `td_retval` when `error` is set, which is why nothing was
+ever seen — the read is still undefined, and the guard is one line.
+
+### `sys/dev/hyperv/pcib/vmbus_pcib.c` — a length from the stack, to the hypervisor
+
+`hv_pci_map_msi()` builds an interrupt-creation packet in a `switch
+(hpdev->hbus->protocol_version)` with cases for 1.1 and 1.4, no
+`default`, and then
+
+```c
+	ret = vmbus_chan_send(sc->chan, VMBUS_CHANPKT_TYPE_INBAND,
+	    VMBUS_CHANPKT_FLAG_RC, &ctxt.int_pkts, size,
+```
+
+`size` is the byte count. The switch is exhaustive only as long as
+`pci_protocol_versions[]`, two hundred lines above, holds exactly those
+two entries. It does today. A third would send an unwritten stack word's
+worth of `ctxt.int_pkts` to the host. The `default` makes the invariant
+local and fails where it is broken — the same move as the IOMMU
+`KASSERT` earlier in this document.
+
+### `sys/dev/hyperv/netvsc/hn_rndis.c` — a success that copies nothing
+
+```c
+	if (comp->rm_infobuflen == 0 || comp->rm_infobufoffset == 0) {
+		/* No output data! */
+		if_printf(sc->hn_ifp, "RNDIS query 0x%08x, no data\n", oid);
+		*odlen0 = 0;
+		error = 0;
+		goto done;
+	}
+```
+
+`hn_rndis_query2()` returns 0 with the caller's buffer untouched, and
+also returns 0 after a *short* copy when `comp->rm_infobuflen < odlen`.
+The three `hn_rndis_query()` callers all check the returned length —
+`hn_rndis_get_eaddr()`, `_linkstatus()` and `_mtu()` each reject a
+length that is not exactly what they asked for. The two that call
+`hn_rndis_query2()` directly, for the RSS and offload capability
+structures, read the struct immediately. Both now check the length
+first, which is what the finding at `:433` and `:973` was pointing at.
+
+### `sys/dev/hyperv/netvsc/if_hn.c` — the fifth member
+
+```c
+	info.vlan_info = NULL;
+	info.csum_info = NULL;
+	info.hash_info = NULL;
+	info.pktinfo_id = NULL;
+```
+
+`struct hn_rxinfo` has five members. `hash_value` is the one not
+cleared, and `hn_rsc_add_data()` copies it into `rxr->rsc.hash_value`
+unconditionally. `hn_rndis_rxinfo()` writes it only when the host sends
+an `NDIS_PKTINFO_TYPE_HASHVAL`, and signals its absence by setting
+`hash_info` to NULL instead — so the pointer copied on every other
+packet was whatever was on the stack.
+
+### What is left, and why
+
+`linux_mib.c:383` and `:549` are the M_WAITOK class: `linux_alloc_prison()`
+does `nlpr = malloc(sizeof(struct linux_prison), M_PRISON, M_WAITOK)` and
+hands `nlpr` back through `*lprp`, and the analyser models `malloc` as
+possibly-NULL. Task #36 exists to settle that premise before anything is
+built on it, so these two wait for it.
+
+`linux_emul.c:167` and `hv_sock.c:1401` are the defensive-check class —
+a `td` and a `so` tested for NULL somewhere in the same translation unit.
+
+The 68 remaining in `linux_socket.c` are the socketcall bucket, read in
+full under task #90 and covered by `tools/verify/socketcall_args.py`.
+
+```
+--scope sys/compat/linux   77 findings -> 74   31 units, OK both sides
+--scope sys/dev/hyperv      5 findings ->  1   31 units, OK both sides
+--scope sys/dev/athk        0 translation units - the driver's sources are
+                            not in a directory the sweep reaches
+```

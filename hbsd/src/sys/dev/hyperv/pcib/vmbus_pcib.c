@@ -1970,6 +1970,22 @@ vmbus_pcib_map_msi(device_t pcib, device_t child, int irq,
 		ctxt.int_pkts.v3.int_desc.processor_array[0] = vcpu_id;
 		size = sizeof(ctxt.int_pkts.v3);
 		break;
+
+	/*
+	 * PBSD: a default, because `size' is the LENGTH this function hands
+	 * vmbus_chan_send().  The switch is exhaustive only as long as
+	 * pci_protocol_versions[] two hundred lines above holds exactly the
+	 * two versions listed here; a third would leave size an unwritten
+	 * stack word and send that many bytes of ctxt.int_pkts to the
+	 * hypervisor.  Make the invariant local, and fail where it is
+	 * broken.
+	 */
+	default:
+		device_printf(pcib,
+		    "unknown PCI VMBus protocol version 0x%x\n",
+		    hpdev->hbus->protocol_version);
+		free_completion(&comp.comp_pkt.host_event);
+		return (ENODEV);
 	}
 	ret = vmbus_chan_send(sc->chan,	VMBUS_CHANPKT_TYPE_INBAND,
 	    VMBUS_CHANPKT_FLAG_RC, &ctxt.int_pkts, size,

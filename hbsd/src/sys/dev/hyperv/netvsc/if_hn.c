@@ -7281,6 +7281,15 @@ hn_rndis_rx_data(struct hn_rx_ring *rxr, const void *data, int dlen)
 	info.vlan_info = NULL;
 	info.csum_info = NULL;
 	info.hash_info = NULL;
+	/*
+	 * PBSD: hash_value too - it is the one member of struct hn_rxinfo
+	 * this block did not clear, and hn_rsc_add_data() copies it into
+	 * rxr->rsc.hash_value unconditionally.  hn_rndis_rxinfo() writes it
+	 * only when it finds an NDIS_PKTINFO_TYPE_HASHVAL, and signals the
+	 * absence by setting hash_info to NULL - so the pointer copied was
+	 * indeterminate whenever the host sent no hash value.
+	 */
+	info.hash_value = NULL;
 	info.pktinfo_id = NULL;
 
 	if (__predict_true(pktinfo_len != 0)) {

@@ -245,7 +245,15 @@ linux_signal(struct thread *td, struct linux_signal_args *args)
 	LINUX_SIGEMPTYSET(nsa.lsa_mask);
 
 	error = linux_do_sigaction(td, args->sig, &nsa, &osa);
-	td->td_retval[0] = (int)(intptr_t)osa.lsa_handler;
+	/*
+	 * PBSD: only when it succeeded.  linux_do_sigaction() fills osa from
+	 * kern_sigaction()'s oact, and every one of its failing returns is
+	 * before that - so this read the uninitialised l_sigaction_t above.
+	 * The syscall layer discards td_retval when error is set, which is
+	 * why nothing was ever seen; the read itself is still undefined.
+	 */
+	if (error == 0)
+		td->td_retval[0] = (int)(intptr_t)osa.lsa_handler;
 
 	return (error);
 }

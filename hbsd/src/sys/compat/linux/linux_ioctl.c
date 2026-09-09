@@ -1313,9 +1313,16 @@ linux_to_bsd_dvd_struct(l_dvd_struct *lp, struct dvd_struct *bp)
 	bp->format = lp->type;
 	switch (bp->format) {
 	case DVD_STRUCT_PHYSICAL:
+		/*
+		 * PBSD: store, then check.  The test read bp->layer_num
+		 * BEFORE anything wrote it - bp is the caller's stack
+		 * struct dvd_struct - so it decided on an indeterminate
+		 * value and then took lp->physical.layer_num, which comes
+		 * from userland, without checking it at all.
+		 */
+		bp->layer_num = lp->physical.layer_num;
 		if (bp->layer_num >= 4)
 			return (EINVAL);
-		bp->layer_num = lp->physical.layer_num;
 		break;
 	case DVD_STRUCT_COPYRIGHT:
 		bp->layer_num = lp->copyright.layer_num;

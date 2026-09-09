@@ -1115,6 +1115,63 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/compat/linux/linux_ioctl.c": [
+        (
+            "PBSD: store, then check.",
+            "\tcase DVD_STRUCT_PHYSICAL:\n\t\tif (bp->layer_num >= 4)\n"
+            "\t\t\treturn (EINVAL);\n"
+            "\t\tbp->layer_num = lp->physical.layer_num;\n",
+            "linux_to_bsd_dvd_struct() tested bp->layer_num before "
+            "anything wrote it and then took the userland value without "
+            "checking it at all",
+        ),
+    ],
+    "hbsd/src/sys/compat/linux/linux_misc.c": [
+        (
+            "PBSD: error, initialised.  With args->pid == 0",
+            "\tint flags;\n\tint error;\n\tbool exec_blocked;\n",
+            "linux_prlimit64(0, resource, NULL, NULL) reached "
+            "`return (error)' with error never assigned, handing the "
+            "syscall layer a stack word as the errno",
+        ),
+    ],
+    "hbsd/src/sys/compat/linux/linux_signal.c": [
+        (
+            "PBSD: only when it succeeded.",
+            "\terror = linux_do_sigaction(td, args->sig, &nsa, &osa);\n"
+            "\ttd->td_retval[0] = (int)(intptr_t)osa.lsa_handler;\n",
+            "linux_signal() read osa.lsa_handler whether or not "
+            "linux_do_sigaction() had filled it",
+        ),
+    ],
+    "hbsd/src/sys/dev/hyperv/pcib/vmbus_pcib.c": [
+        (
+            "PBSD: a default, because `size' is the LENGTH",
+            "\t\tsize = sizeof(ctxt.int_pkts.v3);\n\t\tbreak;\n\t}\n",
+            "the protocol-version switch had no default, and `size' is "
+            "the byte count handed to vmbus_chan_send()",
+        ),
+    ],
+    "hbsd/src/sys/dev/hyperv/netvsc/hn_rndis.c": [
+        (
+            "PBSD: and check how much came back.",
+            "\t    &in, NDIS_RSS_CAPS_SIZE, &caps, &caps_len, "
+            "NDIS_RSS_CAPS_SIZE_6_0);\n\tif (error)\n\t\treturn (error);"
+            "\n\n\t/*\n\t * Preliminary verification.\n\t */\n",
+            "hn_rndis_query2() returns 0 having copied nothing when the "
+            "completion reports no info buffer, and the two callers that "
+            "use it directly read the struct anyway",
+        ),
+    ],
+    "hbsd/src/sys/dev/hyperv/netvsc/if_hn.c": [
+        (
+            "PBSD: hash_value too",
+            "\tinfo.hash_info = NULL;\n\tinfo.pktinfo_id = NULL;\n",
+            "four of the five struct hn_rxinfo members were cleared "
+            "before the per-packet-info walk; hn_rsc_add_data() copies "
+            "the fifth unconditionally",
+        ),
+    ],
     "hbsd/src/sys/dev/igc/if_igc.c": [
         (
             "PBSD: packets too.",
