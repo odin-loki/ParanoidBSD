@@ -6562,6 +6562,18 @@ ice_get_link_default_override(struct ice_link_default_override_tlv *ldo,
 	}
 	ldo->fec_options = buf & ICE_LINK_OVERRIDE_FEC_OPT_M;
 
+	/*
+	 * PBSD: clear the two fields this function ACCUMULATES into.  Every
+	 * other field here is assigned, but phy_type_low and phy_type_high
+	 * are built with `|=' one 16-bit word at a time, so they start from
+	 * whatever the caller's storage held.  ice_lib.c:9880 declares its
+	 * tlv as `= { 0 }'; ice_common.c:4082 does not, and that is the one
+	 * the finding follows.  A callee that ORs into its out-parameter has
+	 * to own the zero.
+	 */
+	ldo->phy_type_low = 0;
+	ldo->phy_type_high = 0;
+
 	/* PHY types low */
 	offset = tlv_start + ICE_SR_PFA_LINK_OVERRIDE_PHY_OFFSET;
 	for (i = 0; i < ICE_SR_PFA_LINK_OVERRIDE_PHY_WORDS; i++) {

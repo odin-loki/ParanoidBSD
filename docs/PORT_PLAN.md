@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,442 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,502 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,485** | **114,204** |
+| | **total** | **41,143** | **21,297,545** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -155,7 +155,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.959.14 | `sys/dev/qlnx/qlnxe/ecore_dev.c` | 7,019 | 0 | `TODO-PORT` |
 | 8.1213.89 | `sys/netinet/sctp_pcb.c` | 7,017 | 0 | `TODO-PORT` |
 | 8.74.7 | `sys/cam/scsi/scsi_da.c` | 6,966 | 0 | `TODO-PORT` |
-| 8.755.4 | `sys/dev/ice/ice_common.c` | 6,935 | 0 | `TODO-PORT` |
+| 8.755.4 | `sys/dev/ice/ice_common.c` | 6,947 | 0 | `TODO-PORT` |
 | 8.636.1 | `sys/dev/bge/if_bge.c` | 6,844 | 0 | `TODO-PORT` |
 | 8.1147.6 | `sys/fs/nfsserver/nfs_nfsdserv.c` | 6,827 | 0 | `TODO-PORT` |
 | 8.651.23 | `sys/dev/bxe/ecore_sp.c` | 6,647 | 0 | `TODO-PORT` |
@@ -75363,7 +75363,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.755.1** `ice_adminq_cmd.h` · 3,554L · `TODO-HDR`
 - [ ] **8.755.2** `ice_alloc.h` · 50L · `TODO-HDR`
 - [ ] **8.755.3** `ice_bitops.h` · 540L · `TODO-HDR`
-- [ ] **8.755.4** `ice_common.c` · 6,935L · `TODO-PORT`
+- [ ] **8.755.4** `ice_common.c` · 6,947L · `TODO-PORT`
 - [ ] **8.755.5** `ice_common.h` · 384L · `TODO-HDR`
 - [ ] **8.755.6** `ice_common_sysctls.h` · 155L gen:6 · `TODO-HDR`
 - [ ] **8.755.7** `ice_common_txrx.h` · 424L · `TODO-HDR`
@@ -75755,7 +75755,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.755.33** `ice_lan_tx_rx.h` · 2,379L · `TODO-HDR`
 - [ ] **8.755.34** `ice_lib.c` · 12,113L gen:1 · `TODO-PORT`
 - [ ] **8.755.35** `ice_lib.h` · 1,035L gen:1 · `TODO-HDR`
-- [ ] **8.755.36** `ice_nvm.c` · 2,217L · `TODO-PORT` · 58 fn
+- [ ] **8.755.36** `ice_nvm.c` · 2,226L · `TODO-PORT` · 58 fn
   - [ ] 8.755.36.1 `ice_aq_read_nvm()` · `TODO-FN`
   - [ ] 8.755.36.2 `ice_read_flat_nvm()` · `TODO-FN`
   - [ ] 8.755.36.3 `ice_aq_update_nvm()` · `TODO-FN`
@@ -75918,7 +75918,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.755.58.11 `ice_set_vlan_mode()` · `TODO-FN`
   - [ ] 8.755.58.12 `ice_post_pkg_dwnld_vlan_mode_cfg()` · `TODO-FN`
 - [ ] **8.755.59** `ice_vlan_mode.h` · 44L · `TODO-HDR`
-- [ ] **8.755.60** `if_ice_iflib.c` · 4,627L gen:6 · `TODO-PORT`
+- [ ] **8.755.60** `if_ice_iflib.c` · 4,634L gen:6 · `TODO-PORT`
 - [ ] **8.755.61** `virtchnl.h` · 2,408L gen:57 · `TODO-HDR`
 
 ### 8.756 `sys/dev/ichiic`
@@ -76078,7 +76078,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.760 `sys/dev/igc`
 
-- [ ] **8.760.1** `if_igc.c` · 3,311L gen:11 · `TODO-PORT` · 70 fn
+- [ ] **8.760.1** `if_igc.c` · 3,321L gen:11 · `TODO-PORT` · 70 fn
   - [ ] 8.760.1.1 `igc_register()` · `TODO-FN`
   - [ ] 8.760.1.2 `igc_set_num_queues()` · `TODO-FN`
   - [ ] 8.760.1.3 `igc_if_attach_pre()` · `TODO-FN`
@@ -76283,7 +76283,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.760.13.22 `igc_get_fw_version()` · `TODO-FN`
 - [ ] **8.760.14** `igc_nvm.h` · 49L · `TODO-HDR`
 - [ ] **8.760.15** `igc_osdep.h` · 132L · `TODO-HDR`
-- [ ] **8.760.16** `igc_phy.c` · 1,073L · `TODO-PORT` · 26 fn
+- [ ] **8.760.16** `igc_phy.c` · 1,084L · `TODO-PORT` · 26 fn
   - [ ] 8.760.16.1 `igc_init_phy_ops_generic()` · `TODO-FN`
   - [ ] 8.760.16.2 `igc_null_set_page()` · `TODO-FN`
   - [ ] 8.760.16.3 `igc_null_read_reg()` · `TODO-FN`
@@ -81239,7 +81239,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.801.17** `i40e_register.h` · 5,396L · `TODO-HDR`
 - [ ] **8.801.18** `i40e_status.h` · 109L · `TODO-HDR`
 - [ ] **8.801.19** `i40e_type.h` · 1,749L · `TODO-HDR`
-- [ ] **8.801.20** `if_ixl.c` · 1,980L gen:33 · `TODO-PORT` · 39 fn
+- [ ] **8.801.20** `if_ixl.c` · 1,991L gen:33 · `TODO-PORT` · 39 fn
   - [ ] 8.801.20.1 `ixl_register()` · `TODO-FN`
   - [ ] 8.801.20.2 `ixl_allocate_pci_resources()` · `TODO-FN`
   - [ ] 8.801.20.3 `ixl_setup_ssctx()` · `TODO-FN`

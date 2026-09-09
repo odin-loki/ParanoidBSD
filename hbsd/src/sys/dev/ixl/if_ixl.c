@@ -1393,6 +1393,17 @@ ixl_process_adminq(struct ixl_pf *pf, u16 *pending)
 	u16 opcode;
 	u32 loop = 0, reg;
 
+	/*
+	 * PBSD: the out-parameter, before anything can return without it.
+	 * The ENOMEM arm below returned with *pending unwritten, and so does
+	 * the `break' when i40e_clean_arq_element() fails on the first pass.
+	 * ixl_if_update_admin_status() declares `u16 pending;' on the stack,
+	 * discards this function's return, and then decides between
+	 * iflib_admin_intr_deferred() and going back to sleep on `pending >
+	 * 0'.  Nothing processed means nothing pending.
+	 */
+	*pending = 0;
+
 	event.buf_len = IXL_AQ_BUF_SZ;
 	event.msg_buf = malloc(event.buf_len, M_IXL, M_NOWAIT | M_ZERO);
 	if (!event.msg_buf) {

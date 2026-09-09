@@ -12117,3 +12117,130 @@ Three aliasing puns in one session — `if_sbni_isa.c`, `if_bwn.c`,
 pointer into a narrow array, and every later read of that array reported
 as a garbage value. The analyser is right to refuse to model them: the
 compiler is entitled not to perform the store at all.
+
+## Task #61, third batch: the five Intel network drivers
+
+### `sys/dev/ice/ice_nvm.c` — an NVM checksum decided on a stack word
+
+```c
+	ice_read_sr_word(hw, ICE_SR_SW_CHECKSUM_WORD, &checksum_sr);
+
+	/* Verify read checksum from EEPROM is the same as
+	 * calculated checksum
+	 */
+	if (checksum_local != checksum_sr)
+		status = ICE_ERR_NVM_CHECKSUM;
+```
+
+`ice_read_sr_word()` leaves `checksum_sr` unwritten when it fails, and
+its return here is discarded. So `ice_nvm_validate_checksum()` could
+compare the checksum it computed against whatever was on the stack — and
+report the NVM valid when it never read the stored checksum at all. The
+function above it, `ice_calc_sr_checksum()`, is checked; this one was
+not. A checksum that cannot be read is not a checksum that matches.
+
+### `sys/dev/igc/igc_phy.c` — a "success" that says nothing
+
+```c
+	if (!hw->phy.ops.read_reg)
+		return IGC_SUCCESS;
+```
+
+`*success` is the whole output of `igc_phy_has_link_generic()`, and this
+arm returns without writing it. All four callers declare `bool link;` on
+the stack and branch on it immediately — `igc_phy.c:568` does `if
+(link)` and, when it is set, calls `config_collision_dist()` and
+`igc_config_fc_after_link_up_generic()`. A PHY with no `read_reg` method
+is a PHY whose link state is unknown, which is not a link.
+
+### `sys/dev/igc/if_igc.c` — two of three accumulators zeroed
+
+```c
+	bytes = bytes_per_packet = 0;
+```
+
+`packets` is the third, and it is assigned only inside `if (txpackets !=
+0)` and `if (rxpackets != 0)`. The early return above tests the *byte*
+counters, and all four counters are read with separate
+`atomic_load_long()`, so a ring whose bytes have been accounted before
+its packets reaches `lmax(packets, rxpackets)` and the latency state
+machine with the word never written.
+
+### `sys/dev/ixl/if_ixl.c` — an out-parameter left behind on two paths
+
+`ixl_process_adminq(pf, &pending)` returns `ENOMEM` without writing
+`*pending` when its buffer allocation fails, and `break`s out of its loop
+without writing it if `i40e_clean_arq_element()` fails on the first pass.
+`ixl_if_update_admin_status()` declares `u16 pending;`, discards the
+return, and then chooses between `iflib_admin_intr_deferred()` and going
+back to sleep on `pending > 0`. `*pending = 0` at the top: nothing
+processed means nothing pending.
+
+### `sys/dev/ice/if_ice_iflib.c` — a resource id from the stack
+
+```c
+	int rid;
+	for (i = 0, vector = 1; i < vsi->num_rx_queues; i++, vector++) {
+		...
+		rid = vector + 1;
+	...
+	/* For future interrupt assignments */
+	sc->last_rid = rid + sc->irdma_vectors;
+```
+
+A VSI with no receive queues publishes `sc->last_rid` from an unwritten
+`rid`, and every later allocation counts from it. The right value there
+is 1 — the administrative vector's, allocated above the loop.
+
+### `sys/dev/ice/ice_common.c` — a callee that ORs into its out-parameter
+
+`ice_get_link_default_override()` assigns `options`, `phy_config` and
+`fec_options`, but builds `phy_type_low` and `phy_type_high` with `|=`,
+one 16-bit word at a time. `ice_lib.c:9880` declares its tlv as `= { 0
+}`; `ice_common.c:4082` does not. A callee that ORs into its
+out-parameter has to own the zero, so it now clears both before the
+loops.
+
+### The five that are one idiom
+
+`ixl_txrx.c:399`, `iavf_txrx_iflib.c:386`, `ice_iflib_txrx.c:181`,
+`igc_txrx.c:319` and `ix_txrx.c:240` are the same iflib transmit-encap
+shape in five drivers:
+
+```c
+	struct i40e_tx_desc *txd = NULL;
+	...
+	for (j = 0; j < nsegs; j++) {
+		txd = &txr->tx_base[i];
+		...
+	}
+	/* Set the last descriptor for report */
+	txd->cmd_type_offset_bsz |= ...
+```
+
+`nsegs` is `pi->ipi_nsegs`, and iflib never calls `isc_txd_encap` with
+zero segments. The analyser has no way to know that, and the `= NULL`
+initialiser — which is what makes the code safe to read — is what turns
+the unreachable path into a null dereference it can name.
+
+### And two more that are invariants
+
+`ice_sched.c:279` passes `node->parent` to `ice_sched_remove_elems()`,
+which dereferences it. Four lines below the call the same function says
+`/* root has no parent */`, which is what the analyser follows — but the
+call is guarded by `elem_type != ICE_AQC_ELEM_TYPE_ROOT_PORT`, so the one
+node with no parent never reaches it.
+
+`ice_bitops.h:230` is `dst[i] = (dst[i] & ~mask) | ...`, and the comment
+directly above it says why the old `dst[i]` is read: "we won't directly
+assign the last bitmap, but instead use a bitmask to ensure we only
+modify bits which are within the size, and leave any bits above the size
+value alone." Reading the caller's bits is the point of the line.
+
+```
+--scope sys/dev/ice       6 findings -> 3   22 units, OK both sides
+--scope sys/dev/igc       5 findings -> 1    8 units, OK both sides
+--scope sys/dev/ixl       2 findings -> 1   15 units, OK both sides
+--scope sys/dev/ixgbe     1 finding  -> 1   21 units, OK both sides
+--scope sys/dev/iavf      1 finding  -> 1    8 units, OK both sides
+```

@@ -1115,6 +1115,63 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/igc/if_igc.c": [
+        (
+            "PBSD: packets too.",
+            "\t\tbytes = bytes_per_packet = 0;\n",
+            "igc_neweitr() zeroed two of its three accumulators; "
+            "`packets' was assigned only inside the two `!= 0' arms and "
+            "read in the lmax() and three times in the latency state "
+            "machine",
+        ),
+    ],
+    "hbsd/src/sys/dev/igc/igc_phy.c": [
+        (
+            "PBSD: say what happened.",
+            '\tDEBUGFUNC("igc_phy_has_link_generic");\n\n'
+            "\tif (!hw->phy.ops.read_reg)\n\t\treturn IGC_SUCCESS;\n",
+            "igc_phy_has_link_generic() returned IGC_SUCCESS without "
+            "writing *success when the PHY has no read_reg method, and "
+            "all four callers branch on a stack `bool link' right after",
+        ),
+    ],
+    "hbsd/src/sys/dev/ice/if_ice_iflib.c": [
+        (
+            "PBSD: rid = 1, the administrative vector's",
+            "\tint rid;\n\tfor (i = 0, vector = 1; "
+            "i < vsi->num_rx_queues; i++, vector++) {\n",
+            "rid was assigned only inside the queue loop and read after "
+            "it as `sc->last_rid = rid + sc->irdma_vectors'",
+        ),
+    ],
+    "hbsd/src/sys/dev/ice/ice_nvm.c": [
+        (
+            "PBSD: checked.  ice_read_sr_word() leaves checksum_sr",
+            "\tice_read_sr_word(hw, ICE_SR_SW_CHECKSUM_WORD, "
+            "&checksum_sr);\n",
+            "ice_nvm_validate_checksum() compared its computed checksum "
+            "against a stack word when the shadow RAM read failed",
+        ),
+    ],
+    "hbsd/src/sys/dev/ice/ice_common.c": [
+        (
+            "PBSD: clear the two fields this function ACCUMULATES into.",
+            "\tldo->fec_options = buf & ICE_LINK_OVERRIDE_FEC_OPT_M;\n\n"
+            "\t/* PHY types low */\n",
+            "ice_get_link_default_override() builds phy_type_low and "
+            "phy_type_high with |= and one caller's tlv is not zeroed",
+        ),
+    ],
+    "hbsd/src/sys/dev/ixl/if_ixl.c": [
+        (
+            "PBSD: the out-parameter, before anything can return without it.",
+            "\tu16 opcode;\n\tu32 loop = 0, reg;\n\n"
+            "\tevent.buf_len = IXL_AQ_BUF_SZ;\n",
+            "ixl_process_adminq() returned ENOMEM, and broke out of its "
+            "loop, without writing *pending; the caller discards the "
+            "return and schedules itself again on `pending > 0'",
+        ),
+    ],
     "hbsd/src/sys/dev/mana/hw_channel.c": [
         (
             "PBSD: the NULL arm printed the pointer it had just found NULL",

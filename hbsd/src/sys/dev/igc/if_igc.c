@@ -938,7 +938,17 @@ igc_neweitr(struct igc_softc *sc, struct igc_rx_queue *que,
 			goto igc_set_next_eitr;
 		}
 
-		bytes = bytes_per_packet = 0;
+		/*
+		 * PBSD: packets too.  It is assigned only inside the two
+		 * `!= 0' arms below, and read at the lmax() in the second of
+		 * them and three times in the latency state machine.  The
+		 * early return above tests the BYTE counters, not the packet
+		 * counters, and the four are loaded with separate
+		 * atomic_load_long() - so a ring whose bytes have been
+		 * accounted before its packets, on either side, reaches the
+		 * state machine with this word never written.
+		 */
+		bytes = bytes_per_packet = packets = 0;
 		/* Get largest values from the associated tx and rx ring */
 		txpackets = atomic_load_long(&txr->tx_packets);
 		if (txpackets != 0) {

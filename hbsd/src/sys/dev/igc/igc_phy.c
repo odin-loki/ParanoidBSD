@@ -806,8 +806,19 @@ s32 igc_phy_has_link_generic(struct igc_hw *hw, u32 iterations,
 
 	DEBUGFUNC("igc_phy_has_link_generic");
 
-	if (!hw->phy.ops.read_reg)
+	/*
+	 * PBSD: say what happened.  This arm returned IGC_SUCCESS without
+	 * writing *success, and all four callers declare `bool link;' on the
+	 * stack and branch on it straight afterwards - igc_phy.c:568 does
+	 * `if (link)' and, when it is set, calls config_collision_dist() and
+	 * igc_config_fc_after_link_up_generic().  A PHY with no read_reg
+	 * method is a PHY whose link state we do not know, which is not a
+	 * link.
+	 */
+	if (!hw->phy.ops.read_reg) {
+		*success = false;
 		return IGC_SUCCESS;
+	}
 
 	for (i = 0; i < iterations; i++) {
 		/* Some PHYs require the PHY_STATUS register to be read

@@ -1683,7 +1683,16 @@ int ice_validate_sr_checksum(struct ice_hw *hw, u16 *checksum)
 		return status;
 	}
 
-	ice_read_sr_word(hw, ICE_SR_SW_CHECKSUM_WORD, &checksum_sr);
+	/*
+	 * PBSD: checked.  ice_read_sr_word() leaves checksum_sr unwritten
+	 * when it fails, and the comparison below decided the NVM checksum
+	 * verdict on that stack word - so a shadow RAM read that did not
+	 * happen could report the NVM as valid.  A checksum that cannot be
+	 * read is not a checksum that matches.
+	 */
+	status = ice_read_sr_word(hw, ICE_SR_SW_CHECKSUM_WORD, &checksum_sr);
+	if (status)
+		return status;
 
 	/* Verify read checksum from EEPROM is the same as
 	 * calculated checksum

@@ -1677,7 +1677,14 @@ ice_if_msix_intr_assign(if_ctx_t ctx, int msix)
 	if (ice_test_state(&sc->state, ICE_STATE_RECOVERY_MODE))
 		return (0);
 
-	int rid;
+	/*
+	 * PBSD: rid = 1, the administrative vector's, which was allocated
+	 * above.  It was assigned only inside the loop below, and read after
+	 * it as `sc->last_rid = rid + sc->irdma_vectors' - so a VSI with no
+	 * receive queues published a resource id read off the stack, and
+	 * every later allocation counted from it.
+	 */
+	int rid = 1;
 	for (i = 0, vector = 1; i < vsi->num_rx_queues; i++, vector++) {
 		struct ice_rx_queue *rxq = &vsi->rx_queues[i];
 		struct ice_tx_queue *txq = &vsi->tx_queues[i];
