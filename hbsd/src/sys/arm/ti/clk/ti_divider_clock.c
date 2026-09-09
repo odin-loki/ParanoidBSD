@@ -149,6 +149,30 @@ ti_divider_attach(device_t dev)
 	if (OF_hasprop(node, "ti,max-div")) {
 		OF_getencprop(node, "ti,max-div", &value, sizeof(value));
 		ti_max_div = value;
+	} else {
+		/*
+		 * PBSD: ti_max_div was assigned only here and read
+		 * unconditionally below as fls(ti_max_div) - the bit
+		 * width of the divider field - so a node without this
+		 * property took a stack slot as the width of a clock
+		 * register field, and every consumer of that clock got a
+		 * rate computed from the wrong bits.
+		 *
+		 * It is not a hypothetical node: 16 of the 200
+		 * ti,divider-clock nodes in the device trees this tree
+		 * ships have no ti,max-div, all of them on dra7xx,
+		 * omap44xx, omap54xx, am43xx, dm816x and omap446x. Every
+		 * one uses ti,dividers instead - an explicit divider
+		 * table this driver does not implement and only prints a
+		 * line about. Without either, there is no width to
+		 * compute, so say so and do not attach rather than
+		 * configure a clock from a guess.
+		 */
+		device_printf(sc->sc_dev,
+		    "no ti,max-div: cannot derive the divider width%s\n",
+		    OF_hasprop(node, "ti,dividers") ?
+		    " (ti,dividers is not implemented)" : "");
+		return (ENXIO);
 	}
 
 	if (OF_hasprop(node, "clock-output-names"))

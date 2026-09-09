@@ -291,8 +291,25 @@ mvebu_gpio_pin_toggle(device_t dev, uint32_t pin)
 	if (pin >= sc->gpio_npins)
 		return (EINVAL);
 
+	/*
+	 * PBSD: read the pin here rather than through
+	 * mvebu_gpio_pin_get(), which takes GPIO_LOCK itself. That lock
+	 * is mtx_init(..., MTX_DEF) - not MTX_RECURSE - so taking it
+	 * here and again inside the call is
+	 * `panic: _mtx_lock_sleep: recursed on non-recursive mutex' for
+	 * any GPIOTOGGLE on this controller. Doing the read inline also
+	 * makes the toggle the atomic read-modify-write it was always
+	 * meant to be: the old form dropped the lock between the read
+	 * and the write.
+	 *
+	 * The analyser reported the uninitialised `val' rather than the
+	 * panic - mvebu_gpio_pin_get() returns EINVAL without writing
+	 * *val, and its return was discarded - and that read is gone
+	 * with the call.
+	 */
 	GPIO_LOCK(sc);
-	mvebu_gpio_pin_get(sc->dev, pin, &val);
+	val = gpio_read(sc, GPIO_DATA_IN, &sc->gpio_pins[pin]);
+	val ^= gpio_read(sc, GPIO_DATA_IN_POL, &sc->gpio_pins[pin]);
 	if (val != 0)
 		gpio_write(sc, GPIO_DATA_CLR, &sc->gpio_pins[pin], 1);
 	else

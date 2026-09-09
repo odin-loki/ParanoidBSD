@@ -134,6 +134,18 @@ am335x_pwmss_attach(device_t dev)
 	case PWMSS_REV_2:
 		id = 2;
 		break;
+	/*
+	 * PBSD: `id' had no default and is read two lines down as
+	 * `reg |= (1 << id);'. ti_sysc_get_rev_address() returns what
+	 * the device tree says, so a fourth revision - or a node whose
+	 * ti,hwmods does not resolve - shifted by a stack value:
+	 * undefined for anything at or above the width of int, and an
+	 * arbitrary bit set in SCM_PWMSS_CTRL for anything below it.
+	 */
+	default:
+		device_printf(dev, "unknown PWMSS revision 0x%lx\n",
+		    (u_long)rev_address);
+		return (ENXIO);
 	}
 
 	reg = SYSCON_READ_4(sc->syscon, SCM_PWMSS_CTRL);

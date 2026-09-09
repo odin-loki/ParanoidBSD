@@ -920,6 +920,35 @@ FIXES = {
     ],
     # Three drivers whose `timeout' is assigned only inside the loop
     # that a zero-length transfer skips, and read after it.
+    "hbsd/src/sys/arm/mv/mvebu_gpio.c": [
+        (
+            "PBSD: read the pin here rather than through",
+            "\tGPIO_LOCK(sc);\n\tmvebu_gpio_pin_get(sc->dev, pin, &val);\n",
+            "mvebu_gpio_pin_toggle() held GPIO_LOCK and called "
+            "mvebu_gpio_pin_get(), which takes it again; the mutex is "
+            "MTX_DEF, so every GPIOTOGGLE on this controller panicked "
+            "on a non-recursive mutex",
+        ),
+    ],
+    "hbsd/src/sys/arm/ti/am335x/am335x_pwmss.c": [
+        (
+            "PBSD: `id' had no default and is read two lines down",
+            "\t\tid = 2;\n\t\tbreak;\n\t}\n",
+            "an unrecognised PWMSS revision from the device tree left "
+            "id unset and `reg |= (1 << id)' shifted by a stack value "
+            "into SCM_PWMSS_CTRL",
+        ),
+    ],
+    "hbsd/src/sys/arm/ti/clk/ti_divider_clock.c": [
+        (
+            "PBSD: ti_max_div was assigned only here",
+            "\t\tti_max_div = value;\n\t}\n\n\tif (OF_hasprop(node, \"clock-output-names\"))",
+            "a ti,divider-clock node without ti,max-div took a stack "
+            "slot as fls()'s argument and so as the bit width of a "
+            "clock divider field; 16 of the 200 such nodes in the "
+            "shipped device trees have no ti,max-div",
+        ),
+    ],
     "hbsd/src/sys/arm/mv/mv_spi.c": [
         (
             "PBSD: nonzero, which is what \"did not time out\" reads as",

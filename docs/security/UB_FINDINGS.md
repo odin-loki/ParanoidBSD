@@ -10355,3 +10355,130 @@ Of the 32 `static-taken` findings with a parameter on their own line:
 
 Plus one defect found by reading rather than by the analyser
 (`bus_dma_tag_create` in two drivers), which moves no count at all.
+
+---
+
+## A panic the analyser did not report, next to a finding that it did
+
+Reading the seven findings named as unread above turned up three more
+defects, and the largest of them is not what the analyser was pointing
+at.
+
+### `mvebu_gpio_pin_toggle` panics on every toggle
+
+The finding is `mvebu_gpio.c:296`, *"The left operand of `!=` is a
+garbage value"*:
+
+```c
+	GPIO_LOCK(sc);
+	mvebu_gpio_pin_get(sc->dev, pin, &val);
+	if (val != 0)
+```
+
+`mvebu_gpio_pin_get()` returns `EINVAL` without writing `*val`, and the
+return is discarded — which is what the analyser saw. That path is not
+reachable here, because the caller already made the same `pin >=
+sc->gpio_npins` check.
+
+What *is* reachable is the next line down:
+
+```c
+static int
+mvebu_gpio_pin_get(device_t dev, uint32_t pin, unsigned int *val)
+{
+	...
+	GPIO_LOCK(sc);
+```
+
+and
+
+```c
+#define	GPIO_LOCK_INIT(_sc)	mtx_init(&_sc->mtx, 			\
+	    device_get_nameunit(_sc->dev), "mvebu_gpio", MTX_DEF)
+```
+
+`MTX_DEF`, not `MTX_RECURSE`. So `pin_toggle` takes the mutex and then
+calls a function that takes the same mutex: **`panic:
+_mtx_lock_sleep: recursed on non-recursive mutex`**, on every
+`GPIOTOGGLE` ioctl to any Marvell Armada 3700/7K/8K GPIO controller,
+from anyone who can open `/dev/gpioc*`.
+
+Fixed by doing the two reads inline under the lock that is already held.
+That removes the recursion, removes the uninitialised read with the call
+that caused it, and makes the toggle the atomic read-modify-write it was
+always meant to be — the old form dropped the lock between the read and
+the write.
+
+This is the second time in this reading that a finding was a false
+positive sitting immediately next to a real defect it did not name. It
+is an argument for reading them rather than counting them.
+
+### `am335x_pwmss_attach` shifts by a stack value
+
+```c
+	rev_address = ti_sysc_get_rev_address(device_get_parent(dev));
+	switch (rev_address) {
+	case PWMSS_REV_0: id = 0; break;
+	case PWMSS_REV_1: id = 1; break;
+	case PWMSS_REV_2: id = 2; break;
+	}
+
+	reg = SYSCON_READ_4(sc->syscon, SCM_PWMSS_CTRL);
+	reg |= (1 << id);
+	SYSCON_WRITE_4(sc->syscon, SCM_PWMSS_CTRL, reg);
+```
+
+Three arms, no default, and `rev_address` is whatever the device tree
+says. `1 << id` for an unset `id` is undefined at or above the width of
+`int` and an arbitrary bit in a system-control register below it. A
+`default:` that reports the revision and refuses to attach.
+
+### `ti_divider_attach` takes a stack slot as a register field width
+
+```c
+	uint32_t	ti_max_div;
+	...
+	if (OF_hasprop(node, "ti,max-div")) {
+		OF_getencprop(node, "ti,max-div", &value, sizeof(value));
+		ti_max_div = value;
+	}
+	...
+	if (sc->div_def.div_flags)
+		sc->div_def.i_width = fls(ti_max_div-1);
+	else
+		sc->div_def.i_width = fls(ti_max_div);
+```
+
+Assigned in one place, read unconditionally. `i_width` is the *bit width
+of the divider field in a clock register*, so a node without
+`ti,max-div` configures a clock from a stack value and every consumer of
+that clock gets a rate computed from the wrong bits.
+
+Not hypothetical. Counting the device trees this tree ships:
+
+```
+ti,divider-clock nodes in the shipped TI device trees: 200
+  without ti,max-div: 16
+```
+
+on `dra7xx`, `omap44xx`, `omap54xx`, `am43xx`, `dm816x` and `omap446x`.
+Every one of the 16 uses `ti,dividers` — an explicit divider table this
+driver does not implement and only prints a line about — so there is no
+width to compute from anything.
+
+**This changes behaviour, deliberately.** Those 16 nodes go from
+attaching with a garbage width to not attaching, with a message saying
+why. Configuring a clock divider from a stack slot is not a behaviour
+worth preserving, and a driver that cannot do its job should say so.
+
+### Measured
+
+```
+--scope sys/arm/mv   2 findings -> 1   (mvebu_gpio.c:296)
+--scope sys/arm/ti   5 findings -> 2   (am335x_pwmss.c:140,
+                                        ti_divider_clock.c:170 and :172)
+```
+
+All 44 `sys/arm/ti` units still OK. Over this reading those two
+directories have gone `mv 4 -> 1` and `ti 6 -> 2`. What is left is
+`mv/gpio.c:416` and `ti_adc.c:460` and `:464`, still unread.
