@@ -11256,3 +11256,63 @@ read that did not happen.
 Both sides at the same scope. What remains is `ntb_hw_amd.c:697`,
 `ntb_transport.c:467`, `:604`, `:1337` and two in `ntb_tool.c`, all
 unread.
+
+---
+
+## `hmt_attach`: where `= 0` would have made it worse
+
+`hmt.c:348` was named as unread in an earlier commit here; reading it
+found a defect whose obvious fix is wrong.
+
+```c
+	hid_size_t d_len, fsize, rsize;
+	...
+	if (sc->cont_max_rlen > 1) {
+		err = hid_get_report(dev, fbuf, sc->cont_max_rlen, &rsize, ...);
+		if (err == 0 && (rsize - 1) * 8 >= ...) { ... }
+	}
+	...
+	if (sc->btn_type_rlen > 1 && sc->btn_type_rid != sc->cont_max_rid) {
+		bzero(fbuf, fsize);
+		err = hid_get_report(dev, fbuf, sc->btn_type_rlen, &rsize, ...);
+		...
+	}
+	if (sc->btn_type_rlen > 1 && err == 0 && (rsize - 1) * 8 >=
+	    sc->btn_type_loc.pos + sc->btn_type_loc.size)          /* :348 */
+```
+
+The second block is skipped when `btn_type_rid == cont_max_rid`
+**deliberately** — the two feature reports are the same report, so
+`fbuf` and `rsize` from the first fetch are meant to be reused. That is
+not the bug. The bug is that `cont_max_rlen <= 1` skips the *first*
+fetch as well, and then nothing has ever written `rsize`.
+
+### The obvious fix is a worse bug
+
+`hid_location`'s `pos` and `size` are `uint32_t` (`hid.h:238`). So
+
+```c
+	(rsize - 1) * 8 >= sc->btn_type_loc.pos + sc->btn_type_loc.size
+```
+
+promotes `rsize` to `int`, gives **-8** for `rsize == 0`, and then
+converts that to `unsigned int` for the comparison against an unsigned
+right-hand side: **4294967288**, which is `>=` almost anything. Writing
+`hid_size_t ... rsize = 0;` and stopping there would turn an
+indeterminate read into a guard that reliably *passes*, and the driver
+would decide `is_clickpad` from a buffer nothing filled.
+
+So the fix is the initialiser **and** `rsize > 0` in the guard — which
+also closes the same conversion trap for a report that genuinely comes
+back empty, and preserves the intentional reuse, since in that case the
+first fetch left `rsize` non-zero.
+
+The same `rsize > 0` was added to the contact-count guard at `:324`,
+where a successful `hid_get_report` returning zero bytes has exactly the
+same effect.
+
+```
+--scope sys/dev/hid   1 finding -> 0   18 units, OK on both sides
+```
+
+`sys/dev/hid` is clean.

@@ -298,7 +298,28 @@ hmt_attach(device_t dev)
 	const struct hid_device_info *hw = hid_get_device_info(dev);
 	void *d_ptr;
 	uint8_t *fbuf = NULL;
-	hid_size_t d_len, fsize, rsize;
+	/*
+	 * PBSD: rsize = 0, and the two guards below now test it.
+	 *
+	 * rsize is set by hid_get_report(), and the "Button type" guard
+	 * reads it whether or not the fetch above it ran: that block is
+	 * skipped when btn_type_rid == cont_max_rid, deliberately, so
+	 * fbuf and rsize can be reused from the contact-count fetch.
+	 * But if cont_max_rlen <= 1 that fetch does not happen either,
+	 * and then nothing has ever written rsize.
+	 *
+	 * `= 0' alone would make it WORSE rather than better.
+	 * hid_location's pos and size are uint32_t, so
+	 *
+	 *	(rsize - 1) * 8 >= sc->btn_type_loc.pos + ...
+	 *
+	 * promotes rsize to int, gives -8 for rsize == 0, and then
+	 * converts that to unsigned for the comparison - 4294967288,
+	 * which is >= almost anything. The guard would pass. So the
+	 * fix is the initialiser AND `rsize > 0', which also closes
+	 * the same trap on a report that really does come back empty.
+	 */
+	hid_size_t d_len, fsize, rsize = 0;
 	uint32_t cont_count_max;
 	int nbuttons, btn;
 	size_t i;
@@ -321,7 +342,7 @@ hmt_attach(device_t dev)
 	if (sc->cont_max_rlen > 1) {
 		err = hid_get_report(dev, fbuf, sc->cont_max_rlen, &rsize,
 		    HID_FEATURE_REPORT, sc->cont_max_rid);
-		if (err == 0 && (rsize - 1) * 8 >=
+		if (err == 0 && rsize > 0 && (rsize - 1) * 8 >=
 		    sc->cont_max_loc.pos + sc->cont_max_loc.size) {
 			cont_count_max = hid_get_udata(fbuf + 1,
 			    sc->cont_max_rlen - 1, &sc->cont_max_loc);
@@ -345,7 +366,8 @@ hmt_attach(device_t dev)
 		if (err != 0)
 			DPRINTF("hid_get_report error=%d\n", err);
 	}
-	if (sc->btn_type_rlen > 1 && err == 0 && (rsize - 1) * 8 >=
+	if (sc->btn_type_rlen > 1 && err == 0 && rsize > 0 &&
+	    (rsize - 1) * 8 >=
 	    sc->btn_type_loc.pos + sc->btn_type_loc.size)
 		sc->is_clickpad = hid_get_udata(fbuf + 1, sc->btn_type_rlen - 1,
 		    &sc->btn_type_loc) == 0;

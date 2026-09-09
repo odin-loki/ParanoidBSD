@@ -1082,6 +1082,16 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/hid/hmt.c": [
+        (
+            "PBSD: rsize = 0, and the two guards below now test it.",
+            "\thid_size_t d_len, fsize, rsize;\n",
+            "the Button-type guard reads rsize whether or not the fetch "
+            "above it ran, and `= 0' alone would make the guard PASS "
+            "rather than fail, because (0 - 1) * 8 converts to unsigned "
+            "against hid_location's uint32_t fields",
+        ),
+    ],
     "hbsd/src/sys/dev/hid/u2f.c": [
         (
             "PBSD: error, initialised, like `length' one line up.",
