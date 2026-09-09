@@ -585,12 +585,36 @@ get_inet6_parent_prefix(uint32_t fibnum, const struct in6_addr *paddr, int plen)
 void
 ip6_writemask(struct in6_addr *addr6, uint8_t mask)
 {
-	uint32_t *cp;
+	uint32_t *cp, *ep;
 
-	for (cp = (uint32_t *)addr6; mask >= 32; mask -= 32)
+	/*
+	 * PBSD: write all four words, and never more than four.
+	 *
+	 * This used to stop as soon as the prefix ran out, leaving the
+	 * trailing words at whatever the caller happened to have there.
+	 * Two of the three callers zero the whole sockaddr first and were
+	 * fine; rt_get_inet6_parent() does neither.  Its `struct in6_addr
+	 * mask6' is an uninitialised local, so the first pass masked the
+	 * key with stack garbage, and every later pass reuses the same
+	 * buffer -- which still holds the previous, longer prefix, so the
+	 * widening key kept bits the shorter mask should have cleared and
+	 * the covering route was looked up under the wrong key.
+	 *
+	 * The `ep' bound is the other half.  mask is a uint8_t; all three
+	 * callers range-check it against 128 today, and this stops that
+	 * being the only thing between a bad one and 0xFFFFFFFF written
+	 * past the end of a 16-byte address.
+	 *
+	 * The `mask ?' inside the old `if (mask > 0)' was dead.
+	 */
+	cp = (uint32_t *)addr6;
+	ep = cp + sizeof(*addr6) / sizeof(*cp);
+	for (; mask >= 32 && cp < ep; mask -= 32)
 		*cp++ = 0xFFFFFFFF;
-	if (mask > 0)
-		*cp = htonl(mask ? ~((1 << (32 - mask)) - 1) : 0);
+	if (mask > 0 && cp < ep)
+		*cp++ = htonl(~((1 << (32 - mask)) - 1));
+	while (cp < ep)
+		*cp++ = 0;
 }
 
 /*

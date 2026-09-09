@@ -3232,6 +3232,142 @@ FIXES = {
             "done: dereferences it",
         ),
     ],
+
+    "hbsd/src/sys/vm/vm_page.c": (
+        "\tm = NULL;\n\tif (__predict_false((req & VM_ALLOC_NOFREE) != 0)) {",
+        "again:\n\tif (__predict_false((req & VM_ALLOC_NOFREE) != 0)) {",
+        "vm_page_alloc_noobj_domain: m is only written inside the three "
+        "allocation arms, and the ordinary out-of-memory path takes none "
+        "of them, so the `m == NULL' test read an uninitialised local and "
+        "a garbage non-zero was returned as a page",
+    ),
+    "hbsd/src/sys/kern/link_elf.c": [
+        (
+            ("\terror = link_elf_symbol_values(lf, sym, &symval);", 2),
+            "\tlink_elf_symbol_values(lf, sym, &symval);\n\tif (symval.value == 0) {",
+            "link_elf_lookup_set: both calls ignored the return, and "
+            "link_elf_debug_symbol_values() returns ENOENT without writing "
+            "*symval, so symval.value was read uninitialised and walked as "
+            "a linker set",
+        ),
+        (
+            "&& sym != NULL &&\n\t    off == 0) {",
+            "if (link_elf_search_symbol(lf, val, &sym, &off) == 0 && off == 0) {",
+            "link_elf_ifunc_symbol_value: link_elf_search_symbol() always "
+            "returns 0 and sets *sym NULL when it matches nothing, with "
+            "*diffp the raw address -- so `off == 0' is also true for a "
+            "resolver that returned NULL and es->st_value dereferences it",
+        ),
+    ],
+    "hbsd/src/sys/net/route/route_helpers.c": (
+        "\twhile (cp < ep)\n\t\t*cp++ = 0;",
+        "\t\t*cp = htonl(mask ? ~((1 << (32 - mask)) - 1) : 0);",
+        "ip6_writemask left the words past the prefix at whatever the "
+        "caller had there; rt_get_inet6_parent() passes an uninitialised "
+        "local and then reuses it across a widening loop",
+    ),
+    "hbsd/src/sys/kern/sys_generic.c": (
+        "\tobits[0] = obits[1] = obits[2] = NULL;",
+        "\tsbp = selbits;\n#define\tgetbits(name, x)",
+        "kern_select: a getbits() copyin failure goes to done:, which "
+        "swizzle_fdset()s all three obits -- and on big-endian LP64 that "
+        "macro writes through the pointer it was handed",
+    ),
+    "hbsd/src/sys/net/iflib.c": (
+        "\tint i, err = 0;\n\tiflib_dma_info_t *dmaiter;",
+        "\tint i, err;\n\tiflib_dma_info_t *dmaiter;",
+        "iflib_dma_alloc_multi: for count <= 0 the loop never runs and "
+        "err is returned uninitialised",
+    ),
+    "hbsd/src/sys/net/if_lagg.c": (
+        "\t\tif_type = IFT_INFINIBANDLAG;\n\t\tbreak;\n\tdefault:\n\t\t/*",
+        "\t\tif_type = IFT_INFINIBANDLAG;\n\t\tbreak;\n\tdefault:\n\t\tbreak;",
+        "lagg_port_create: the default arm fell through with if_type "
+        "unset, and it is stored into the member interface's if_type",
+    ),
+    "hbsd/src/sys/kern/uipc_sockbuf.c": (
+        "\tcase SO_RCVLOWAT:\n\t\tbreak;\n\tdefault:\n\t\treturn (EINVAL);\n\t}",
+        "\tcc = optval;\n\n\tsb = NULL;",
+        "sbsetopt: neither switch had a default, so an unmatched name "
+        "left wh undefined and sb NULL for SOCK_BUF_LOCK() and the three "
+        "loads above it",
+    ),
+    "hbsd/src/sys/kern/coredump_vnode.c": (
+        "\tif (error == 0 && nextvp == NULL)\n\t\terror = EINVAL;",
+        "\tnextvp = oldvp = NULL;\n\tcmode = S_IRUSR | S_IWUSR;",
+        "corefile_open_last: debug.ncores can be 0, the loop then never "
+        "runs, and both arms of the tail read error uninitialised -- a "
+        "garbage zero publishes a NULL *vpp as a successful open",
+    ),
+    "hbsd/src/sys/kern/kern_shutdown.c": (
+        "\tif (dip == NULL || di_template == NULL || di_template->blocksize == 0)",
+        "\tif (dip == NULL)\n\t\treturn (EINVAL);",
+        "dumper_create accepted a zero blocksize from the driver "
+        "template, which dump_check_bounds() divides by mid-dump",
+    ),
+    "hbsd/src/sys/kern/kern_timeout.c": (
+        "\tif (count == 0) {\n\t\tprintf(\"Scheduled callouts statistic snapshot:",
+        "\t\tCC_UNLOCK(cc);\n\t}\n\n\tfor (i = 0, tcum = 0;",
+        "sysctl_kern_callout_stat: st / count and spr / count have no "
+        "zero guard, and nothing establishes that count is non-zero",
+    ),
+
+    "hbsd/src/sys/kern/kern_descrip.c": (
+        "\tif (ret != 0)\n\t\tsigiofree(sigio);\n\treturn (ret);",
+        "\t\tsigiofree(osigio);\n\treturn (ret);",
+        "fsetown: every failing path left the new sigio neither stored "
+        "nor freed, so an unprivileged fcntl(F_SETOWN) against a pid in "
+        "another session leaked the allocation and a ucred reference, "
+        "once per call and without bound",
+    ),
+    "hbsd/src/sys/kern/kern_proc.c": (
+        "\t\tstack_destroy(st);\n\t\tfree(kkstp, M_TEMP);\n\t\treturn (error);",
+        "\t\tPROC_UNLOCK(p);\n\t\treturn (error);\n\t}\n\tdo {",
+        "sysctl_kern_proc_kstack: the p_candebug() early return took "
+        "neither of the two allocations with it, so an unprivileged read "
+        "of kern.proc.kstack.<pid> leaked both per call",
+    ),
+    "hbsd/src/sys/kern/uipc_accf.c": (
+        "\t\tif (error != 0)\n\t\t\tfree(p, M_ACCF);\n\t\tbreak;",
+        "\t\terror = accept_filt_add(p);\n\t\tbreak;",
+        "accept_filt_generic_mod_event: accept_filt_add() returns EEXIST "
+        "without freeing its argument, and neither did the caller",
+    ),
+    "hbsd/src/sys/kern/uipc_usrreq.c": (
+        "\t\tuio = NULL;\n\t\tresid = 0;\n\t\tuipc_reset_kernel_mbuf(m, &mc);",
+        "\t} else\n\t\tuipc_reset_kernel_mbuf(m, &mc);",
+        "uipc_sosend_stream_or_seqpacket: uio and resid were left "
+        "undefined on the kernel-mbuf send path, which then tests uio "
+        "and writes uio->uio_resid through it",
+    ),
+    "hbsd/src/sys/netinet/ip_mroute.c": (
+        "\t\tfree(u, M_MRTABLE);\n\t}",
+        'cannot enqueue upcall\\n");\n\tif (buf_ring_count',
+        "bw_meter_prepare_upcall: a full ring does not take the pointer "
+        "and nothing freed it, so the leak is worst under the load that "
+        "fills the ring",
+    ),
+    "hbsd/src/sys/kern/link_elf_obj.c": (
+        "&& sym != NULL &&\n\t    off == 0) {",
+        "if (link_elf_search_symbol(lf, val, &sym, &off) == 0 && off == 0) {",
+        "link_elf_ifunc_symbol_value: the same NULL *sym as link_elf.c, "
+        "in the sibling linker class",
+    ),
+    "hbsd/src/sys/netinet/libalias/alias_sctp.c": (
+        "\t\t\t\tsn_free(G_addr);\n\t\t\t\treturn (0);",
+        "s_addr == iter_G_Addr->g_addr.s_addr)\n\t\t\t\treturn (0);",
+        "Add_Global_Address_to_List declined a duplicate address without "
+        "freeing it, and num_Gaddr is only bumped on success, so the "
+        "caller's limit never trips and a repeated address parameter "
+        "leaks per repeat",
+    ),
+    "hbsd/src/sys/netinet/in_fib_dxr.c": (
+        "\t\tda->updates_low = DIRECT_TBL_SIZE - 1;\n\t\tda->updates_high = 0;",
+        "malloc(sizeof(*dxr->aux), M_DXRAUX, M_NOWAIT);",
+        "dxr_build: the aux struct was allocated without M_ZERO and the "
+        "init block named neither updates_low nor updates_high, which "
+        "index the chunk walk and the updates_mask bzero",
+    ),
 }
 
 

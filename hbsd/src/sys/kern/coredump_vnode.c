@@ -215,6 +215,7 @@ corefile_open_last(struct thread *td, char *name, int indexpos,
 	struct timespec lasttime;
 
 	nextvp = oldvp = NULL;
+	error = 0;
 	cmode = S_IRUSR | S_IWUSR;
 	oflags = VN_OPEN_NOAUDIT | VN_OPEN_NAMECACHE |
 	    (capmode_coredump ? VN_OPEN_NOCAPCHECK : 0);
@@ -278,6 +279,19 @@ corefile_open_last(struct thread *td, char *name, int indexpos,
 			vn_close(oldvp, FWRITE, td->td_ucred, td);
 		}
 	}
+	/*
+	 * PBSD: fail when the loop above never ran.  debug.ncores can be
+	 * zero -- sysctl_debug_num_cores_check() clamps a negative value to
+	 * 0 -- and with a %I in the core format this function is entered
+	 * with ncores == 0, taking neither of the two stores to error.  The
+	 * tail then read it uninitialised: a garbage non-zero came back as
+	 * an errno, and a garbage zero published a NULL *vpp as a
+	 * successful open.  (error is also initialised above, for the same
+	 * path.)  For any positive ncores the loop leaves nextvp set
+	 * whenever error is 0, so this only fires on the zero limit.
+	 */
+	if (error == 0 && nextvp == NULL)
+		error = EINVAL;
 	if (error != 0) {
 		if (nextvp != NULL)
 			vnode_close_locked(td, oldvp);

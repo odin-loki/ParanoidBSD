@@ -1379,6 +1379,20 @@ fsetown(pid_t pgid, struct sigio **sigiop)
 	SIGIO_UNLOCK();
 	if (osigio != NULL)
 		sigiofree(osigio);
+	/*
+	 * PBSD: free the new sigio when we are not keeping it.  On every
+	 * failing path -- pget() not finding the pid, pgfind() not finding
+	 * the group, or either of the two same-session checks refusing --
+	 * sigio was neither stored in *sigiop nor linked onto a list, and
+	 * nothing freed it.  It holds a crhold()ed ucred, so an
+	 * unprivileged fcntl(F_SETOWN) against a pid in another session
+	 * leaked both the allocation and a credential reference, once per
+	 * call and without bound.  sigiofree() touches only sio_ucred,
+	 * which is set before any of this, so it is safe on a sigio that
+	 * was never linked.
+	 */
+	if (ret != 0)
+		sigiofree(sigio);
 	return (ret);
 }
 

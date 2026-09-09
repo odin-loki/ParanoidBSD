@@ -2457,6 +2457,16 @@ vm_page_alloc_noobj_domain(int domain, int req)
 	    ((req & VM_ALLOC_NOFREE) != 0 ? PG_NOFREE : 0);
 	vmd = VM_DOMAIN(domain);
 again:
+	/*
+	 * PBSD: m starts each attempt as NULL.  It used to be written only
+	 * inside the three arms below, and the ordinary out-of-memory path
+	 * takes none of them: no VM_ALLOC_NOFREE in the request, no per-CPU
+	 * cache zone for this domain, and vm_domain_allocate() refusing.
+	 * The `m == NULL' test below then read an uninitialised local, and
+	 * a garbage non-zero fell through to `found:', where the page is
+	 * dressed up and returned to the caller as a real page.
+	 */
+	m = NULL;
 	if (__predict_false((req & VM_ALLOC_NOFREE) != 0)) {
 		m = vm_page_alloc_nofree_domain(domain, req);
 		if (m != NULL)

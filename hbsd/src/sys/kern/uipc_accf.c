@@ -134,6 +134,15 @@ accept_filt_generic_mod_event(module_t mod, int event, void *data)
 		p = malloc(sizeof(*p), M_ACCF, M_WAITOK);
 		bcopy(accfp, p, sizeof(*p));
 		error = accept_filt_add(p);
+		/*
+		 * PBSD: accept_filt_add() frees its argument on the one
+		 * success path that does not keep it, and returns EEXIST
+		 * without freeing anything.  Nothing freed it here either,
+		 * so loading a second module claiming an already-claimed
+		 * filter name leaked the copy.
+		 */
+		if (error != 0)
+			free(p, M_ACCF);
 		break;
 
 	case MOD_UNLOAD:

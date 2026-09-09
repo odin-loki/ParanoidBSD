@@ -2889,6 +2889,16 @@ sysctl_kern_proc_kstack(SYSCTL_HANDLER_ARGS)
 		execve_unblock(ctd, p);
 		_PRELE(p);
 		PROC_UNLOCK(p);
+		/*
+		 * PBSD: the only early return past the two allocations
+		 * above, and it used to take neither of them with it.  The
+		 * tail of this function frees both; this path did not, so
+		 * an unprivileged read of kern.proc.kstack.<pid> for a
+		 * process it may not debug leaked a struct kinfo_kstack
+		 * and a struct stack per call, without bound.
+		 */
+		stack_destroy(st);
+		free(kkstp, M_TEMP);
 		return (error);
 	}
 	do {

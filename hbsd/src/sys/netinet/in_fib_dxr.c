@@ -859,7 +859,7 @@ dxr_build(struct dxr *dxr)
 	MPASS(dxr->d == NULL);
 
 	if (da == NULL) {
-		da = malloc(sizeof(*dxr->aux), M_DXRAUX, M_NOWAIT);
+		da = malloc(sizeof(*dxr->aux), M_DXRAUX, M_NOWAIT | M_ZERO);
 		if (da == NULL) {
 			FIB_PRINTF(LOG_NOTICE, dxr->fd,
 			    "Unable to allocate DXR aux struct");
@@ -875,6 +875,23 @@ dxr_build(struct dxr *dxr)
 		da->range_tbl = NULL;
 		da->xtbl_size = XTBL_SIZE_INCR;
 		da->x_tbl = NULL;
+		/*
+		 * PBSD: state the empty-update-range convention, the one
+		 * the tail of this function restores after every build.
+		 * This allocation had no M_ZERO (it has now) and the block
+		 * did not name these two, so `updates_low > updates_high'
+		 * below read uninitialised heap.  It is benign on the first
+		 * build, where the range table is NULL and the rebuild is
+		 * forced anyway -- but a build that returns early because
+		 * the M_NOWAIT extension table did not come back leaves da
+		 * behind with the range table allocated, and the next build
+		 * reaches that test with the rebuild flag clear.  Garbage
+		 * that happens to read as a valid range then drives the
+		 * chunk walk below and the bzero of updates_mask at the
+		 * end, both indexed by it.
+		 */
+		da->updates_low = DIRECT_TBL_SIZE - 1;
+		da->updates_high = 0;
 		bzero(&da->dst, sizeof(da->dst));
 		bzero(&da->mask, sizeof(da->mask));
 		da->dst.sin_len = sizeof(da->dst);

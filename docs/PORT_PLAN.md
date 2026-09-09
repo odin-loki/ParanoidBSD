@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,985 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,221 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,655** | **114,204** |
+| | **total** | **41,143** | **21,298,891** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -151,7 +151,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.671.20 | `sys/dev/cxgbe/t4_sge.c` | 7,098 | 0 | `TODO-PORT` |
 | 8.887.5 | `sys/dev/pci/pci.c` | 7,079 | 0 | `TODO-PORT` |
 | 8.788.132 | `sys/dev/isci/scil/scic_sds_controller.c` | 7,043 | 0 | `TODO-PORT` |
-| 8.1200.75 | `sys/net/iflib.c` | 7,032 | 0 | `TODO-PORT` |
+| 8.1200.75 | `sys/net/iflib.c` | 7,038 | 0 | `TODO-PORT` |
 | 8.959.14 | `sys/dev/qlnx/qlnxe/ecore_dev.c` | 7,019 | 0 | `TODO-PORT` |
 | 8.1213.89 | `sys/netinet/sctp_pcb.c` | 7,017 | 0 | `TODO-PORT` |
 | 8.74.7 | `sys/cam/scsi/scsi_da.c` | 6,966 | 0 | `TODO-PORT` |
@@ -177,15 +177,15 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.800.23 | `sys/dev/ixgbe/ixgbe_e610.c` | 6,042 | 0 | `TODO-PORT` |
 | 8.1306.15 | `sys/vm/uma_core.c` | 5,983 | 0 | `TODO-PORT` |
 | 8.755.49 | `sys/dev/ice/ice_sched.c` | 5,972 | 0 | `TODO-PORT` |
-| 8.1306.35 | `sys/vm/vm_page.c` | 5,953 | 0 | `TODO-PORT` |
+| 8.1306.35 | `sys/vm/vm_page.c` | 5,963 | 0 | `TODO-PORT` |
 | 8.800.3 | `sys/dev/ixgbe/if_ix.c` | 5,945 | 0 | `TODO-PORT` |
 | 8.800.15 | `sys/dev/ixgbe/ixgbe_common.c` | 5,879 | 0 | `TODO-PORT` |
 | 8.738.18 | `sys/dev/hwpmc/hwpmc_mod.c` | 5,876 | 0 | `TODO-PORT` |
 | 8.1213.79 | `sys/netinet/sctp_input.c` | 5,859 | 0 | `TODO-PORT` |
 | 8.690.39 | `sys/dev/e1000/if_em.c` | 5,776 | 0 | `TODO-PORT` |
 | 8.1213.77 | `sys/netinet/sctp_indata.c` | 5,732 | 0 | `TODO-PORT` |
+| 8.1191.23 | `sys/kern/kern_descrip.c` | 5,695 | 0 | `TODO-PORT` |
 | 8.1191.218 | `sys/kern/vfs_bio.c` | 5,694 | 0 | `TODO-PORT` |
-| 8.1191.23 | `sys/kern/kern_descrip.c` | 5,681 | 0 | `TODO-PORT` |
 | 8.1191.38 | `sys/kern/kern_jail.c` | 5,680 | 0 | `TODO-PORT` |
 | 8.1145.5 | `sys/fs/nfs/nfs_commonsubs.c` | 5,671 | 0 | `TODO-PORT` |
 | 8.1103.1 | `sys/dev/wpi/if_wpi.c` | 5,648 | 0 | `TODO-PORT` |
@@ -114360,7 +114360,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1191 `sys/kern` · 8 module(s) under `pbsd/sys/kern`
 
-- [ ] **8.1191.1** `coredump_vnode.c` · 563L gen:7 · `TODO-PORT` · 8 fn
+- [ ] **8.1191.1** `coredump_vnode.c` · 577L gen:7 · `TODO-PORT` · 8 fn
   - [ ] 8.1191.1.1 `sysctl_kern_corefile()` · `TODO-FN`
   - [ ] 8.1191.1.2 `sysctl_debug_num_cores_check()` · `TODO-FN`
   - [ ] 8.1191.1.3 `vnode_close_locked()` · `TODO-FN`
@@ -114740,7 +114740,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.22.1 `link_elf_ctf_get()` · `TODO-FN`
   - [ ] 8.1191.22.2 `link_elf_ctf_get_ddb()` · `TODO-FN`
   - [ ] 8.1191.22.3 `link_elf_ctf_lookup_typename()` · `TODO-FN`
-- [ ] **8.1191.23** `kern_descrip.c` · 5,681L gen:13 · `TODO-PORT`
+- [ ] **8.1191.23** `kern_descrip.c` · 5,695L gen:13 · `TODO-PORT`
 - [ ] **8.1191.24** `kern_devctl.c` · 612L gen:4 · `TODO-PORT` · 23 fn
   - [ ] 8.1191.24.1 `devctl_init()` · `TODO-FN`
   - [ ] 8.1191.24.2 `devctl_attach_handler()` · `TODO-FN`
@@ -115719,7 +115719,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.63.9 `priv_check_cred_vfs_lookup_nomac()` · `TODO-FN`
   - [ ] 8.1191.63.10 `priv_check_cred_vfs_generation_slow()` · `TODO-FN`
   - [ ] 8.1191.63.11 `priv_check_cred_vfs_generation()` · `TODO-FN`
-- [ ] **8.1191.64** `kern_proc.c` · 3,587L gen:21 · `TODO-PORT` · 84 fn
+- [ ] **8.1191.64** `kern_proc.c` · 3,597L gen:21 · `TODO-PORT` · 84 fn
   - [ ] 8.1191.64.1 `procinit()` · `TODO-FN`
   - [ ] 8.1191.64.2 `proc_ctor()` · `TODO-FN`
   - [ ] 8.1191.64.3 `proc_dtor()` · `TODO-FN`
@@ -116265,7 +116265,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.76.12 `alloc_sv_fxrng_generation()` · `TODO-FN`
   - [ ] 8.1191.76.13 `exec_sysvec_init()` · `TODO-FN`
   - [ ] 8.1191.76.14 `exec_sysvec_init_secondary()` · `TODO-FN`
-- [ ] **8.1191.77** `kern_shutdown.c` · 1,843L gen:33 · `TODO-PORT` · 45 fn
+- [ ] **8.1191.77** `kern_shutdown.c` · 1,852L gen:33 · `TODO-PORT` · 45 fn
   - [ ] 8.1191.77.1 `shutdown_conf()` · `TODO-FN`
   - [ ] 8.1191.77.2 `reroot_conf()` · `TODO-FN`
   - [ ] 8.1191.77.3 `sys_reboot()` · `TODO-FN`
@@ -116712,7 +116712,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.87.63 `itimers_event_exit_exec()` · `TODO-FN`
   - [ ] 8.1191.87.64 `itimers_exec()` · `TODO-FN`
   - [ ] 8.1191.87.65 `itimers_exit()` · `TODO-FN`
-- [ ] **8.1191.88** `kern_timeout.c` · 1,547L gen:20 · `TODO-PORT` · 26 fn
+- [ ] **8.1191.88** `kern_timeout.c` · 1,560L gen:20 · `TODO-PORT` · 26 fn
   - [ ] 8.1191.88.1 `cc_cce_cleanup()` · `TODO-FN`
   - [ ] 8.1191.88.2 `cc_cce_migrating()` · `TODO-FN`
   - [ ] 8.1191.88.3 `callout_callwheel_init()` · `TODO-FN`
@@ -116882,7 +116882,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.96.9 `ksched_get_priority_max()` · `TODO-FN`
   - [ ] 8.1191.96.10 `ksched_get_priority_min()` · `TODO-FN`
   - [ ] 8.1191.96.11 `ksched_rr_get_interval()` · `TODO-FN`
-- [ ] **8.1191.97** `link_elf.c` · 2,171L gen:5 · `TODO-PORT` · 56 fn
+- [ ] **8.1191.97** `link_elf.c` · 2,201L gen:5 · `TODO-PORT` · 56 fn
   - [ ] 8.1191.97.1 `link_elf_kmod_is_insecure()` · `TODO-FN`
   - [ ] 8.1191.97.2 `link_elf_detect_insecure_early()` · `TODO-FN`
   - [ ] 8.1191.97.3 `link_elf_detect_insecure_late()` · `TODO-FN`
@@ -116939,7 +116939,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.97.54 `elf_lookup_ifunc()` · `TODO-FN`
   - [ ] 8.1191.97.55 `link_elf_ireloc()` · `TODO-FN`
   - [ ] 8.1191.97.56 `link_elf_late_ireloc()` · `TODO-FN`
-- [ ] **8.1191.98** `link_elf_obj.c` · 2,034L gen:2 · `TODO-PORT` · 37 fn
+- [ ] **8.1191.98** `link_elf_obj.c` · 2,042L gen:2 · `TODO-PORT` · 37 fn
   - [ ] 8.1191.98.1 `link_elf_kmod_is_insecure()` · `TODO-FN`
   - [ ] 8.1191.98.2 `link_elf_detect_insecure_early()` · `TODO-FN`
   - [ ] 8.1191.98.3 `link_elf_detect_insecure_late()` · `TODO-FN`
@@ -118804,7 +118804,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.180.14 `eventfd_ioctl()` · `TODO-FN`
   - [ ] 8.1191.180.15 `eventfd_stat()` · `TODO-FN`
   - [ ] 8.1191.180.16 `eventfd_fill_kinfo()` · `TODO-FN`
-- [ ] **8.1191.181** `sys_generic.c` · 2,380L gen:6 · `TODO-PORT` · 75 fn
+- [ ] **8.1191.181** `sys_generic.c` · 2,391L gen:6 · `TODO-PORT` · 75 fn
   - [ ] 8.1191.181.1 `devfs_iosize_max()` · `TODO-FN`
   - [ ] 8.1191.181.2 `iosize_max()` · `TODO-FN`
   - [ ] 8.1191.181.3 `sys_read()` · `TODO-FN`
@@ -119308,7 +119308,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.201.32 `ttydisc_getc_poll()` · `TODO-FN`
   - [ ] 8.1191.201.33 `tty_putstrn()` · `TODO-FN`
   - [ ] 8.1191.201.34 `tty_putchar()` · `TODO-FN`
-- [ ] **8.1191.202** `uipc_accf.c` · 312L gen:4 · `TODO-PORT` · 6 fn
+- [ ] **8.1191.202** `uipc_accf.c` · 321L gen:4 · `TODO-PORT` · 6 fn
   - [ ] 8.1191.202.1 `accept_filt_add()` · `TODO-FN`
   - [ ] 8.1191.202.2 `accept_filt_del()` · `TODO-FN`
   - [ ] 8.1191.202.3 `accept_filt_get()` · `TODO-FN`
@@ -119667,7 +119667,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.211.52 `kern_shm_open()` · `TODO-FN`
   - [ ] 8.1191.211.53 `sys_shm_open2()` · `TODO-FN`
   - [ ] 8.1191.211.54 `shm_get_path()` · `TODO-FN`
-- [ ] **8.1191.212** `uipc_sockbuf.c` · 1,892L gen:3 · `TODO-PORT` · 60 fn
+- [ ] **8.1191.212** `uipc_sockbuf.c` · 1,912L gen:3 · `TODO-PORT` · 60 fn
   - [ ] 8.1191.212.1 `sbm_clrprotoflags()` · `TODO-FN`
   - [ ] 8.1191.212.2 `sbready_compress()` · `TODO-FN`
   - [ ] 8.1191.212.3 `sbready()` · `TODO-FN`
@@ -119781,7 +119781,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.214.49 `sockargs()` · `TODO-FN`
   - [ ] 8.1191.214.50 `getsockaddr()` · `TODO-FN`
   - [ ] 8.1191.214.51 `m_dispose_extcontrolm()` · `TODO-FN`
-- [ ] **8.1191.215** `uipc_usrreq.c` · 4,644L gen:18 · `TODO-PORT`
+- [ ] **8.1191.215** `uipc_usrreq.c` · 4,655L gen:18 · `TODO-PORT`
 - [ ] **8.1191.216** `vfs_acl.c` · 600L gen:2 · `TODO-PORT` · 27 fn
   - [ ] 8.1191.216.1 `acl_copy_oldacl_into_acl()` · `TODO-FN`
   - [ ] 8.1191.216.2 `acl_copy_acl_into_oldacl()` · `TODO-FN`
@@ -121182,7 +121182,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1200.45.23 `ipsec_set_tunnel()` · `TODO-FN`
   - [ ] 8.1200.45.24 `ipsec_delete_tunnel()` · `TODO-FN`
 - [ ] **8.1200.46** `if_ipsec.h` · 38L · `TODO-HDR`
-- [ ] **8.1200.47** `if_lagg.c` · 2,749L gen:19 · `TODO-PORT` · 78 fn
+- [ ] **8.1200.47** `if_lagg.c` · 2,757L gen:19 · `TODO-PORT` · 78 fn
   - [ ] 8.1200.47.1 `vnet_lagg_init()` · `TODO-FN`
   - [ ] 8.1200.47.2 `vnet_lagg_uninit()` · `TODO-FN`
   - [ ] 8.1200.47.3 `lagg_modevent()` · `TODO-FN`
@@ -121668,7 +121668,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1200.73.109 `vxlan_unload()` · `TODO-FN`
   - [ ] 8.1200.73.110 `vxlan_modevent()` · `TODO-FN`
 - [ ] **8.1200.74** `if_vxlan.h` · 152L gen:2 · `TODO-HDR`
-- [ ] **8.1200.75** `iflib.c` · 7,032L asm gen:38 · `TODO-PORT`
+- [ ] **8.1200.75** `iflib.c` · 7,038L asm gen:38 · `TODO-PORT`
 - [ ] **8.1200.76** `iflib.h` · 508L · `TODO-HDR`
 - [ ] **8.1200.77** `ifq.c` · 176L · `TODO-PORT` · 10 fn
   - [ ] 8.1200.77.1 `drbr_enqueue()` · `TODO-FN`
@@ -122435,7 +122435,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1202.14.4 `DB_SHOW_COMMAND()` · `TODO-FN`
   - [ ] 8.1202.14.5 `DB_SHOW_COMMAND_FLAGS()` · `TODO-FN`
 - [ ] **8.1202.15** `route_debug.h` · 186L gen:1 · `TODO-HDR`
-- [ ] **8.1202.16** `route_helpers.c` · 684L gen:1 · `TODO-PORT` · 20 fn
+- [ ] **8.1202.16** `route_helpers.c` · 708L gen:1 · `TODO-PORT` · 20 fn
   - [ ] 8.1202.16.1 `rib_walk_ext_locked()` · `TODO-FN`
   - [ ] 8.1202.16.2 `rib_walk_ext_internal()` · `TODO-FN`
   - [ ] 8.1202.16.3 `rib_walk_ext()` · `TODO-FN`
@@ -125337,7 +125337,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1213.19.27 `radix4_end_dump()` · `TODO-FN`
   - [ ] 8.1213.19.28 `radix4_change_cb()` · `TODO-FN`
   - [ ] 8.1213.19.29 `fib4_algo_init()` · `TODO-FN`
-- [ ] **8.1213.20** `in_fib_dxr.c` · 1,394L gen:15 · `TODO-PORT` · 26 fn
+- [ ] **8.1213.20** `in_fib_dxr.c` · 1,411L gen:15 · `TODO-PORT` · 26 fn
   - [ ] 8.1213.20.1 `range_lookup()` · `TODO-FN`
   - [ ] 8.1213.20.2 `DXR_LOOKUP_DEFINE()` · `TODO-FN`
   - [ ] 8.1213.20.3 `initheap()` · `TODO-FN`
@@ -125729,7 +125729,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1213.54.16 `ip_rsvp_init()` · `TODO-FN`
   - [ ] 8.1213.54.17 `ip_rsvp_done()` · `TODO-FN`
   - [ ] 8.1213.54.18 `rsvp_input()` · `TODO-FN`
-- [ ] **8.1213.55** `ip_mroute.c` · 3,031L gen:22 · `TODO-PORT` · 57 fn
+- [ ] **8.1213.55** `ip_mroute.c` · 3,039L gen:22 · `TODO-PORT` · 57 fn
   - [ ] 8.1213.55.1 `mfc_find()` · `TODO-FN`
   - [ ] 8.1213.55.2 `mfc_alloc()` · `TODO-FN`
   - [ ] 8.1213.55.3 `somfctable()` · `TODO-FN`
@@ -126937,7 +126937,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1216.13.9 `ProxyCheck()` · `TODO-FN`
   - [ ] 8.1216.13.10 `ProxyModify()` · `TODO-FN`
   - [ ] 8.1216.13.11 `LibAliasProxyRule()` · `TODO-FN`
-- [ ] **8.1216.14** `alias_sctp.c` · 2,737L gen:15 · `TODO-PORT` · 47 fn
+- [ ] **8.1216.14** `alias_sctp.c` · 2,751L gen:15 · `TODO-PORT` · 47 fn
   - [ ] 8.1216.14.1 `AliasSctpInit()` · `TODO-FN`
   - [ ] 8.1216.14.2 `AliasSctpTerm()` · `TODO-FN`
   - [ ] 8.1216.14.3 `SctpAlias()` · `TODO-FN`
@@ -138724,7 +138724,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1306.33.66 `DB_SHOW_COMMAND()` · `TODO-FN`
   - [ ] 8.1306.33.67 `vm_object_print()` · `TODO-FN`
 - [ ] **8.1306.34** `vm_object.h` · 400L gen:2 · `TODO-HDR`
-- [ ] **8.1306.35** `vm_page.c` · 5,953L gen:15 · `TODO-PORT`
+- [ ] **8.1306.35** `vm_page.c` · 5,963L gen:15 · `TODO-PORT`
 - [ ] **8.1306.36** `vm_page.h` · 994L gen:2 · `TODO-HDR`
 - [ ] **8.1306.37** `vm_pageout.c` · 2,450L gen:17 · `TODO-PORT` · 33 fn
   - [ ] 8.1306.37.1 `sysctl_laundry_weight()` · `TODO-FN`

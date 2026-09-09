@@ -1733,7 +1733,15 @@ link_elf_ifunc_symbol_value(linker_file_t lf, caddr_t *valp, size_t *sizep)
 
 	/* Provide the value and size of the target symbol, if available. */
 	val = ((caddr_t (*)(void))val)();
-	if (link_elf_search_symbol(lf, val, &sym, &off) == 0 && off == 0) {
+	/*
+	 * PBSD: sym != NULL.  link_elf_search_symbol() always returns 0;
+	 * when it matches nothing it sets *sym to NULL and *diffp to the
+	 * raw address, so `off == 0' -- which is meant to mean "an exact
+	 * match" -- is also true for a resolver that returned NULL, and
+	 * es->st_value below then dereferences it.
+	 */
+	if (link_elf_search_symbol(lf, val, &sym, &off) == 0 && sym != NULL &&
+	    off == 0) {
 		es = (const Elf_Sym *)sym;
 		*valp = (caddr_t)ef->address + es->st_value;
 		*sizep = es->st_size;
@@ -1864,7 +1872,18 @@ link_elf_lookup_set(linker_file_t lf, const char *name,
 	error = link_elf_lookup_symbol(lf, setsym, &sym);
 	if (error != 0)
 		goto out;
-	link_elf_symbol_values(lf, sym, &symval);
+	/*
+	 * PBSD: read the return value.  link_elf_symbol_values() returns
+	 * ENOENT without touching *symval -- link_elf_debug_symbol_values()
+	 * does so whenever the symbol is outside symtab and symtab is the
+	 * ddb table, and debug symbols are the default (link_elf_leak_locals
+	 * is true).  symval.value was then an uninitialised local, and
+	 * `start'/`stop' below became garbage kernel pointers that the
+	 * caller walks as a linker set.
+	 */
+	error = link_elf_symbol_values(lf, sym, &symval);
+	if (error != 0)
+		goto out;
 	if (symval.value == 0) {
 		error = ESRCH;
 		goto out;
@@ -1876,7 +1895,18 @@ link_elf_lookup_set(linker_file_t lf, const char *name,
 	error = link_elf_lookup_symbol(lf, setsym, &sym);
 	if (error != 0)
 		goto out;
-	link_elf_symbol_values(lf, sym, &symval);
+	/*
+	 * PBSD: read the return value.  link_elf_symbol_values() returns
+	 * ENOENT without touching *symval -- link_elf_debug_symbol_values()
+	 * does so whenever the symbol is outside symtab and symtab is the
+	 * ddb table, and debug symbols are the default (link_elf_leak_locals
+	 * is true).  symval.value was then an uninitialised local, and
+	 * `start'/`stop' below became garbage kernel pointers that the
+	 * caller walks as a linker set.
+	 */
+	error = link_elf_symbol_values(lf, sym, &symval);
+	if (error != 0)
+		goto out;
 	if (symval.value == 0) {
 		error = ESRCH;
 		goto out;

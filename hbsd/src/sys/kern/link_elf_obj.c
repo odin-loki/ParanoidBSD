@@ -1607,7 +1607,15 @@ link_elf_ifunc_symbol_value(linker_file_t lf, caddr_t *valp, size_t *sizep)
 
 	/* Provide the value and size of the target symbol, if available. */
 	val = ((caddr_t (*)(void))val)();
-	if (link_elf_search_symbol(lf, val, &sym, &off) == 0 && off == 0) {
+	/*
+	 * PBSD: sym != NULL.  link_elf_search_symbol() always returns 0;
+	 * when it matches nothing it sets *sym to NULL and *diffp to the
+	 * raw address, so `off == 0' -- which is meant to mean "an exact
+	 * match" -- is also true for a resolver that returned NULL, and
+	 * es->st_value below then dereferences it.
+	 */
+	if (link_elf_search_symbol(lf, val, &sym, &off) == 0 && sym != NULL &&
+	    off == 0) {
 		es = (const Elf_Sym *)sym;
 		*valp = (caddr_t)es->st_value;
 		*sizep = es->st_size;

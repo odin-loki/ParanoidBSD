@@ -1167,8 +1167,19 @@ uipc_sosend_stream_or_seqpacket(struct socket *so, struct sockaddr *addr,
 		    eor ? M_EOR : 0);
 		if (__predict_false(error))
 			goto out2;
-	} else
+	} else {
+		/*
+		 * PBSD: uio and resid belong to the uio0 path above and
+		 * were left undefined on this one.  The send loop tests
+		 * `uio != NULL' to decide whether to copy in more, and the
+		 * tail writes uio->uio_resid through it -- so a kernel mbuf
+		 * send over an AF_LOCAL stream (sys/rpc does this) read and
+		 * then wrote through an uninitialised stack pointer.
+		 */
+		uio = NULL;
+		resid = 0;
 		uipc_reset_kernel_mbuf(m, &mc);
+	}
 
 	error = SOCK_IO_SEND_LOCK(so, SBLOCKWAIT(flags));
 	if (error)

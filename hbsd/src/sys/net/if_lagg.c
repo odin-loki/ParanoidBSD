@@ -776,7 +776,15 @@ lagg_port_create(struct lagg_softc *sc, struct ifnet *ifp)
 		if_type = IFT_INFINIBANDLAG;
 		break;
 	default:
-		break;
+		/*
+		 * PBSD: was `break', which fell through with if_type unset
+		 * -- and the store further down puts it in the member
+		 * interface's if_type, which the protocol dispatch reads.
+		 * lagg_clone_create() only ever builds an IFT_ETHER or
+		 * IFT_INFINIBAND lagg, so nothing reaches this arm; both
+		 * arms above refuse, and so does this one now.
+		 */
+		return (EPROTONOSUPPORT);
 	}
 
 	/* Allow the first Ethernet member to define the MTU */

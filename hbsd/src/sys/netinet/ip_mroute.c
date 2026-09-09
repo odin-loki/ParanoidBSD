@@ -2242,8 +2242,16 @@ bw_meter_prepare_upcall(struct bw_meter *x, struct timeval *nowp)
 	if (x->bm_flags & BW_METER_LEQ)
 		u->bu_flags |= BW_UPCALL_LEQ;
 
-	if (buf_ring_enqueue(x->bm_mfctable->bw_upcalls, u))
+	if (buf_ring_enqueue(x->bm_mfctable->bw_upcalls, u)) {
 		log(LOG_WARNING, "bw_meter_prepare_upcall: cannot enqueue upcall\n");
+		/*
+		 * PBSD: a full ring does not take the pointer, and nothing
+		 * freed it.  The ring fills exactly when upcalls outrun the
+		 * daemon draining them, so the leak is worst under the load
+		 * that causes it.
+		 */
+		free(u, M_MRTABLE);
+	}
 	if (buf_ring_count(x->bm_mfctable->bw_upcalls) > (BW_UPCALLS_MAX / 2)) {
 		taskqueue_enqueue(V_task_queue, &V_task);
 	}

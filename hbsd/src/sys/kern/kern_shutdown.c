@@ -1252,7 +1252,16 @@ dumper_create(const struct dumperinfo *di_template, const char *devname,
 	struct dumperinfo *newdi;
 	int error = 0;
 
-	if (dip == NULL)
+	/*
+	 * PBSD: blocksize comes straight from the driver's template and
+	 * nothing validated it.  dump_check_bounds() takes `length %
+	 * di->blocksize' and `offset % di->blocksize', _dump_append()
+	 * rounds down by it, and dumper_set_encryption() rounds up by it;
+	 * a zero divides by zero in the middle of a kernel dump, and the
+	 * malloc() below would hand out a zero-length blockbuf that those
+	 * same paths write through.
+	 */
+	if (dip == NULL || di_template == NULL || di_template->blocksize == 0)
 		return (EINVAL);
 
 	/* Allocate a new dumper */

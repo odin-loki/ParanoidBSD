@@ -1478,8 +1478,22 @@ Add_Global_Address_to_List(struct sctp_nat_assoc *assoc,  struct sctp_GlobalAddr
 		LIST_INSERT_HEAD(&(assoc->Gaddr), G_addr, list_Gaddr); /* add new address to beginning of list*/
 	} else {
 		LIST_FOREACH(iter_G_Addr, &(assoc->Gaddr), list_Gaddr) {
-			if (G_addr->g_addr.s_addr == iter_G_Addr->g_addr.s_addr)
+			if (G_addr->g_addr.s_addr == iter_G_Addr->g_addr.s_addr) {
+				/*
+				 * PBSD: free what we decline.  All three
+				 * callers in AddGlobalIPAddresses() hand over
+				 * a fresh sn_malloc()ed address, log the
+				 * refusal and move on; nothing freed it.
+				 * num_Gaddr is only bumped on success, so a
+				 * duplicate never raises it and the
+				 * sysctl_track_global_addresses limit the
+				 * caller checks never trips -- a peer that
+				 * repeats one address parameter leaked a
+				 * struct sctp_GlobalAddress per repeat.
+				 */
+				sn_free(G_addr);
 				return (0); /* already exists, so don't add */
+			}
 		}
 		LIST_INSERT_AFTER(first_G_Addr, G_addr, list_Gaddr); /* add address to end of list*/
 	}

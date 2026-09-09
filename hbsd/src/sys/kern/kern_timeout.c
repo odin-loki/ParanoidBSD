@@ -1428,6 +1428,19 @@ sysctl_kern_callout_stat(SYSCTL_HANDLER_ARGS)
 		CC_UNLOCK(cc);
 	}
 
+	/*
+	 * PBSD: st / count and spr / count below have no zero guard, and
+	 * count is just the sum over every call wheel -- nothing in this
+	 * function establishes that it is non-zero.  Say so and stop
+	 * rather than divide.
+	 */
+	if (count == 0) {
+		printf("Scheduled callouts statistic snapshot:\n");
+		printf("  Callouts: %6d  Buckets: %6d*%-3d\n", count,
+		    callwheelsize, mp_ncpus);
+		return (0);
+	}
+
 	for (i = 0, tcum = 0; i < 64 && tcum < count / 2; i++)
 		tcum += ct[i];
 	medt = (i >= 2) ? (((sbintime_t)1) << (i - 2)) : 0;

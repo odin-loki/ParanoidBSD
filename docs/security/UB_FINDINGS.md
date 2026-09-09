@@ -14779,3 +14779,277 @@ All three verified by deliberate breakage: removing the flag from `progs`
 fails the first, adding `progs` to `UNGATED` fails the second, renaming
 the matrix key from `name:` to `nom:` fails the third, and the file
 restored passes all of them.
+
+## Sweep 20, the kern shard
+
+`sys/kern`, `sys/vm`, `sys/net`, `sys/netinet`, `sys/netinet6` — 466
+translation units, 461 OK, 5 ERROR, 249 findings. The five ERROR are all
+on the record in `expected_errors.py`, so `--check-errors` passes; this
+is the first time the flag has been run against a freshly-triaged kern
+shard, and unlike `progs` it had nothing to say.
+
+169 of the 249 are `core.NullDereference`, the premise-heavy class task
+#51 characterised. The other 80 are where the defects were. Nineteen
+fixes came out of them, in eighteen files.
+
+### Two that hand the caller a garbage pointer
+
+`vm_page_alloc_noobj_domain()` declares `vm_page_t m;` and writes it only
+inside its three allocation arms: the `VM_ALLOC_NOFREE` arm, the per-CPU
+page cache arm, and the arm guarded by `vm_domain_allocate()`. The
+ordinary out-of-memory path takes **none** of them — a request without
+`VM_ALLOC_NOFREE`, a domain whose `vmd_pgcache[VM_FREEPOOL_DIRECT].zone`
+is NULL, and a `vm_domain_allocate()` that refuses because the domain is
+short. `if (m == NULL)` then read an uninitialised local, and a garbage
+non-zero fell through to `found:`, where the page is dressed up with
+flags and returned to the caller as a real page. `m = NULL` now starts
+every attempt, at the `again:` label rather than the declaration, so a
+retry cannot carry a stale value either.
+
+`link_elf_lookup_set()` called `link_elf_symbol_values()` twice and threw
+away the return both times, then read `symval.value`. That return is not
+decorative: `link_elf_debug_symbol_values()` — the default, because
+`debug.link_elf_leak_locals` defaults to true — returns ENOENT without
+writing `*symval` when the symbol is outside `symtab` and `symtab` is the
+ddb table. `start` and `stop` then became garbage kernel pointers, and
+`count = stop - start` a garbage length, which the caller walks as a
+linker set.
+
+### A NULL that a `== 0` test was never going to catch
+
+`link_elf_search_symbol()` **always returns 0**. When it matches nothing
+it sets `*sym = NULL` and `*diffp` to the raw address. Its one caller,
+`link_elf_ifunc_symbol_value()`, tests `... == 0 && off == 0` — meaning
+"an exact match" — and that is also true when the resolver returned NULL
+and nothing matched it, at which point `es->st_value` dereferences NULL.
+The same function, with the same shape, exists in `link_elf_obj.c`. Both
+now test `sym != NULL`.
+
+### Four leaks an unprivileged process can drive
+
+`fsetown()` allocates a `struct sigio` and `crhold()`s a credential
+before it knows whether the operation will succeed. Every failing path —
+`pget()` not finding the pid, `pgfind()` not finding the group, and both
+of the same-session policy checks — leaves it neither stored in `*sigiop`
+nor linked onto a list, and nothing freed it. `fcntl(fd, F_SETOWN, pid)`
+against a process in another session leaks the allocation *and* a ucred
+reference, once per call, without bound.
+
+`sysctl_kern_proc_kstack()` allocates a `struct kinfo_kstack` and a
+`struct stack` before `p_candebug()`. That check's early return is the
+only exit past the two allocations that did not take them along; the tail
+of the function frees both. Reading `kern.proc.kstack.<pid>` for a
+process you may not debug leaked both, per call.
+
+`uipc_sosend_stream_or_seqpacket()` — the AF_LOCAL stream and seqpacket
+send — sets `uio` and `resid` only on the `uio0` path. On the kernel
+mbuf path (`m != NULL`, which `sys/rpc` uses over local sockets) both
+were left undefined, and the send loop then tests `uio != NULL` to decide
+whether to copy in more, and the tail *writes* `uio->uio_resid` through
+it. Not a leak but the worst of the four: a read and then a write
+through an uninitialised stack pointer.
+
+`accept_filt_generic_mod_event()` copies its argument into a fresh
+allocation and hands it to `accept_filt_add()`, which frees it on the one
+success path that does not keep it and returns EEXIST without freeing
+anything. Neither did the caller.
+
+### One a remote peer can drive
+
+`Add_Global_Address_to_List()` in the SCTP NAT returns 0 — "already
+exists, so don't add" — without inserting the address and without freeing
+it. All three callers in `AddGlobalIPAddresses()` log the refusal and
+move on. The loop above them is bounded by `sysctl_track_global_addresses`
+against `assoc->num_Gaddr`, and `num_Gaddr` is only incremented on
+success, so a duplicate never raises it and that limit never trips. A
+peer that repeats one IPv4 address parameter across packets leaks a
+`struct sctp_GlobalAddress` per repeat, in the kernel, through an
+ipfw/natd SCTP NAT. The helper now frees what it declines.
+
+`bw_meter_prepare_upcall()` is the same shape with a different cause: a
+full `buf_ring` does not take the pointer, the code logged and carried
+on, and the ring fills exactly when upcalls outrun the daemon draining
+them — so the leak is worst under the load that causes it.
+
+### An IPv6 netmask that was never fully written
+
+`ip6_writemask()` stops as soon as the prefix runs out, leaving the
+trailing words of the `struct in6_addr` at whatever the caller had there.
+Two of its three callers zero the whole sockaddr first and were fine.
+`rt_get_inet6_parent()` does neither. Its `struct in6_addr mask6` is an
+uninitialised local, so the first pass masks the lookup key with stack
+garbage; and it reuses the same buffer for every pass of a loop that
+walks the prefix length *down*, so each later mask still carries the
+previous, longer prefix in the words it does not reach. Going from /33
+to /32, word 1 keeps `0x80000000` and bit 32 survives a mask that should
+have cleared it — the covering route is then looked up under the wrong
+key. Both halves are fixed in the function itself, which now writes all
+four words and never more than four; `mask` is a `uint8_t`, and all three
+callers range-check it against 128 today, which this stops being the only
+thing between a bad one and `0xFFFFFFFF` written past a 16-byte address.
+
+### Big-endian only, and a write
+
+`kern_select()`'s `getbits()` macro goes straight to `done:` when its
+copyin fails, and `done:` runs `swizzle_fdset()` over `obits[0..2]`
+regardless of how far `getbits()` got. On a little-endian kernel that
+macro is empty and nothing happens. On a big-endian LP64 kernel — which
+PBSD targets — it is not: it tests the pointer and, when it is not NULL,
+byte-swaps in place through it. A failed copyin of the read set wrote
+through two uninitialised stack pointers. All six are now NULL before
+the first `getbits()`.
+
+### Four switches and a loop bound that were never total
+
+`sbsetopt()` has two switches on `sopt->sopt_name` and neither had a
+`default`. An unmatched name left the listening arm's `lowat`/`hiwat`/
+`flags` dangling and the connected arm's `wh` undefined — which
+`SOCK_BUF_LOCK()` switches on — with `sb` still NULL at the three loads
+above that lock. Only `sosetopt()`'s own four-case arm and
+`nl_setsbopt()` reach it, so the four names are validated once, up front,
+before either switch.
+
+`lagg_port_create()`'s switch on the lagg's own `if_type` ends
+`default: break;`, falling through with `if_type` unset — and the store
+at the bottom of the function puts it in the *member* interface's
+`if_type`, which the protocol dispatch reads. `lagg_clone_create()` only
+ever builds an IFT_ETHER or IFT_INFINIBAND lagg, so nothing reaches that
+arm; refusing, which is what the two arms above it do, costs nothing.
+
+`iflib_dma_alloc_multi()` returns `err` without initialising it when
+`count <= 0`, because the only assignment is inside the loop.
+
+`corefile_open_last()` reads `error` uninitialised when `debug.ncores` is
+zero — and it can be, because `sysctl_debug_num_cores_check()` explicitly
+clamps a negative value to 0. With a `%I` in the core format the loop
+then never runs, neither store to `error` happens, and both arms of the
+tail read it: a garbage non-zero comes back as an errno, a garbage zero
+publishes a NULL `*vpp` as a successful open.
+
+`dxr_build()` allocates its aux struct with `M_NOWAIT` and no `M_ZERO`,
+and the initialisation block that follows names ten fields but not
+`updates_low`, `updates_high` or `updates_mask`. `updates_low >
+updates_high` is then read from uninitialised heap. It is benign on the
+first build, where the range table is NULL and the rebuild is forced
+anyway — but a build that returns early because the `M_NOWAIT` extension
+table did not come back leaves the aux struct behind with the range table
+allocated, and the *next* build reaches that test with the rebuild flag
+clear. Garbage that reads as a valid range then drives both the chunk
+walk and the `bzero` of `updates_mask`, which are indexed by it. The
+allocation gets `M_ZERO` and the block states the file's own
+empty-range convention.
+
+### Two divisors nothing established
+
+`dumper_create()` copies `blocksize` out of the driver's template and
+never checked it. `dump_check_bounds()` takes `length % di->blocksize`
+and `offset % di->blocksize`, `_dump_append()` rounds down by it, and the
+`malloc()` in `dumper_create()` itself would hand out a zero-length
+`blockbuf` that those same paths write through. A zero divides by zero in
+the middle of a kernel dump — the one moment there is nothing left to
+report it with.
+
+`sysctl_kern_callout_stat()` prints `st / count` and `spr / count` where
+`count` is just a sum over every call wheel. Nothing in the function
+establishes that it is non-zero. It now says so and stops.
+
+### What the other sixty-one are
+
+Six `core.CallAndMessage` in `kern_condvar.c`, `kern_synch.c` and
+`kern_exit.c` all say "2nd function call argument is an uninitialized
+value" at a `WITNESS_RESTORE()`. `WITNESS_SAVE_DECL(n)` declares
+`n__wfile` and `n__wline`, and `witness_save(lock, &n__wfile, &n__wline)`
+fills them — in `subr_witness.c`, another translation unit. The analyser
+cannot see the write, so the pair stays "uninitialised" and
+`witness_restore(lock, n__wfile, n__wline)` reports its second argument.
+The recurring out-parameter shape, six times over.
+
+`tcp_output.c:1380` and `tcp_syncache.c:2003`/`:2035` read `ulen`, which
+is written under `tp->t_port` / `sc->sc_port` and read under the same
+test, with `sleepq`- and mbuf-level calls in between that take the
+struct by non-const pointer. `uipc_ktls.c:2064` reads `wlocked` under
+`tls->tx`, written under `tls->tx`. `pfil_link()`'s two are the same:
+`in` and `out` are allocated only when `PFIL_UNLINK` is clear, and the
+early return that "leaks" them is taken only when it is set. The
+predicate-tested-twice shape, five times over.
+
+`kern_cpu.c:784` needs the two list walks in `cpufreq_insert_abs()`
+related: the reverse walk fails only when the new frequency exceeds every
+entry, and the forward walk's `>=` then matches the first entry, so
+`level` is always inserted. `vfs_cache.c:2923`, `sysv_shm.c:419` and
+`if_vlan.c:445`/`:508` all rest on a `malloc()` followed by a loop that
+initialises every element, which the analyser does not unroll.
+`subr_sfbuf.c:103`, `vm_phys.c:1160`, `in6_mcast.c:730` and `:2137`,
+`sctp_auth.c:623` and `vfs_mountroot.c:1164` are ownership transfers into
+a list, an RB tree or a callee's out-parameter.
+
+`ifa_alloc()`'s three rest on `M_ZERO`, which the kernel `malloc()` model
+does not carry. `kern_jail.c:663` and `subr_scanf.c:531` rest on
+`M_WAITOK` and on a switch arm respectively — the latter with the
+original author's `/* XXX just to keep gcc happy */` still beside the
+`ccfn = NULL`. `kern_exec.c:1107` needs `namei()`'s `ni_vp` to be
+non-NULL on success; `sys_pipe.c:640`/`:646` need `vm_map_find_locked()`
+to have written its out-parameter on `KERN_SUCCESS`.
+
+`user_setcred()`'s two `core.StackAddressEscape` are real observations
+about a struct that dies with the caller's frame — both callers `return
+(user_setcred(...))` on their own stack copy. `update_rtm_from_rc()`'s
+two are answered by the comment its own caller already carries: *"any
+pointer in @info CANNOT BE USED."*
+
+`sched_ule.c:748`/`:819`, `subr_blist.c:850`, `nhop.c:207`,
+`subr_witness.c:2964`, `tcp_subr.c:1645`, `ip_carp.c:2314`,
+`alias_nbt.c:516`/`:587`, `if_me.c:461`, `kern_linker.c:2207` and
+`ck_pr.h:83` are unconstrained parameters of unexported functions —
+task #51's class, unchanged. `bbr.c`'s three divisors rest on
+`t_maxseg >= V_tcp_minmss` and `rc_last_options <= TCP_MAXOLEN`; note
+that `tcp_bbr_tso_size_check()` guards its subtraction and
+`bbr_get_pacing_delay()`, twenty lines away, does not — an asymmetry
+worth a second look if `t_maxseg`'s floor ever moves.
+`vnode_pager_generic_getpages()`'s two rest on the caller's `count`
+being no more than `atop(maxphys)`, which its own KASSERT asserts.
+`init_main.c:328` is a sysinit's function pointer; `rack.c:22312` reads
+`tso`, which `rack_output()` sets four lines below the `again:` label
+every path to that point passes through.
+
+`rtsock.c:898` is the one premise worth naming: `init_sockaddrs_family()`
+does nothing at all for a family that is neither AF_INET nor AF_INET6,
+and `export_rtaddrs()` then reads `dst->sa_family` from the untouched
+stack, after which `update_rtm_from_rc()` publishes the whole sockaddr
+into a routing message bound for userland. It is dead today — only
+`in_proto.c` and `in6_proto.c` set `dom_rtattach`, so the rib holds no
+other family — but it is a fail-open, and it is on the record here
+rather than fixed because closing it means deciding what a third family
+should do.
+
+### The measurement
+
+Same scope, same tree, the nineteen fixes the only difference:
+
+```
+              before   after
+OK               461     461
+ERROR              5       5     (the same five, all on the record)
+findings         249     229
+```
+
+Sixteen of the eighteen edited files went to the count the reading
+predicted. The two that did not are worth naming, because in both the
+change is right and the number could not have moved:
+
+`kern_shutdown.c:1459` is `dump_check_bounds()`, a **static** function
+whose `struct dumperinfo *` parameter the analyser has no constraint on
+— task #51's class. The fix belongs in `dumper_create()`, where the
+blocksize enters the kernel, and putting it there cannot make an
+unconstrained parameter constrained. It moved from `:1459` to `:1468`
+and stayed.
+
+`route_helpers.c:610` is `IN6_MASK_ADDR(&addr6, &mask6)` in
+`rt_get_inet6_parent()`. `ip6_writemask()` now defines all sixteen bytes
+of `mask6`, but it is a separate function in the same file and the
+analyser declines to inline it — the same reason `kdump`'s `ktr_lenok()`
+helper was invisible earlier in this document. `:610` became `:634` and
+stayed.
+
+Neither is a reason to write the fix differently. A finding that
+survives a correct fix is a statement about the instrument.

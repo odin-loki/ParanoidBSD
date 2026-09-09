@@ -1246,6 +1246,17 @@ kern_select(struct thread *td, int nd, fd_set *fd_in, fd_set *fd_ou,
 	 * together.
 	 */
 	sbp = selbits;
+	/*
+	 * PBSD: define all six before the first getbits().  A getbits()
+	 * copyin failure goes straight to `done:', which runs
+	 * swizzle_fdset() over obits[0..2] no matter how far getbits() got.
+	 * On a big-endian LP64 kernel that macro is not empty: it tests the
+	 * pointer and, when it is not NULL, writes through it -- so a
+	 * failed copyin of the read set wrote through two uninitialised
+	 * stack pointers.
+	 */
+	ibits[0] = ibits[1] = ibits[2] = NULL;
+	obits[0] = obits[1] = obits[2] = NULL;
 #define	getbits(name, x) \
 	do {								\
 		if (name == NULL) {					\

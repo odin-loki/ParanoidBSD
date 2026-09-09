@@ -711,6 +711,26 @@ sbsetopt(struct socket *so, struct sockopt *sopt)
 		return (EINVAL);
 	cc = optval;
 
+	/*
+	 * PBSD: neither switch below has a default, and both leave their
+	 * outputs undefined when none of the four names match.  The
+	 * listening arm leaves lowat/hiwat/flags dangling; the connected
+	 * arm leaves `wh' undefined -- SOCK_BUF_LOCK() switches on it --
+	 * and `sb' at the NULL set just below, which the three lines above
+	 * that lock then dereference.  Only sosetopt()'s own four-case arm
+	 * and nl_setsbopt() reach here, so this rejects nothing that is
+	 * being sent today; it stops the fall-through being undefined.
+	 */
+	switch (sopt->sopt_name) {
+	case SO_SNDBUF:
+	case SO_RCVBUF:
+	case SO_SNDLOWAT:
+	case SO_RCVLOWAT:
+		break;
+	default:
+		return (EINVAL);
+	}
+
 	sb = NULL;
 	SOCK_LOCK(so);
 	if (SOLISTENING(so)) {

@@ -1472,7 +1472,13 @@ iflib_dma_alloc(if_ctx_t ctx, int size, iflib_dma_info_t dma, int mapflags)
 int
 iflib_dma_alloc_multi(if_ctx_t ctx, int *sizes, iflib_dma_info_t *dmalist, int mapflags, int count)
 {
-	int i, err;
+	/*
+	 * PBSD: err starts at 0.  For count <= 0 the loop below never runs,
+	 * neither does the assignment inside it, and both the `if (err)'
+	 * test and the value returned to the caller read an uninitialised
+	 * local.
+	 */
+	int i, err = 0;
 	iflib_dma_info_t *dmaiter;
 
 	dmaiter = dmalist;
