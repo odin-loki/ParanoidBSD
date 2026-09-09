@@ -10082,3 +10082,106 @@ and every one of the four is named above.
 
 Of the 32 `static-taken` findings with a parameter on their own line,
 this reading accounted for 12: four defects fixed, eight explained.
+
+---
+
+## An ioctl that returns a stack word, and a driver that ignored nine returns
+
+Continuing the `static-taken` reading past the Allwinner run. Both of
+these are on hardware that ships in ordinary machines rather than on one
+SoC, and one of them is reachable from userspace without being root.
+
+### `backlight_ioctl` had no default arm
+
+```c
+	int error;
+
+	switch (cmd) {
+	case BACKLIGHTGETSTATUS:  ...  break;
+	case BACKLIGHTUPDATESTATUS: ... break;
+	case BACKLIGHTGETINFO:    ...  break;
+	}
+
+	return (error);
+```
+
+`d_ioctl` is handed whatever number the caller passed — the cdev layer
+does not filter unknown commands — so any `cmd` outside those three
+falls through the switch and returns an uninitialised `int`.
+
+The node is not root-only. `backlight_attach()` makes it
+`UID_ROOT:GID_VIDEO`, so any member of the `video` group can issue
+`ioctl(fd, <anything>, ...)` and get back a word of kernel stack as
+`errno`, or — when the word happens to be zero — a reported success for
+a request nothing served.
+
+`default: error = ENOTTY;`, which is what the rest of the tree returns
+in this position (`spigen.c:274`, `evtchn_dev.c:517`).
+
+### `amdsmb`: one function's ignored return, six findings
+
+```c
+static int
+amdsmb_ec_read(struct amdsmb_softc *sc, u_char addr, u_char *data)
+{
+	if (amdsmb_ec_wait_write(sc))
+		return (1);
+	...
+	if (amdsmb_ec_wait_read(sc))
+		return (1);
+	*data = AMDSMB_ECINB(sc, EC_DATA);
+	return (0);
+}
+```
+
+Three timeout paths, each returning 1 **without writing `*data`**. Nine
+call sites in the file, and every one of them discarded that return:
+
+```c
+	amdsmb_ec_read(sc, SMB_PRTCL, &temp);
+	if (temp != 0)                             /* :283 */
+	...
+	amdsmb_ec_read(sc, SMB_STS, &sts);
+	sts &= SMB_STS_STATUS;                     /* :295 */
+	switch (sts) { ... }
+```
+
+```c
+	if ((error = amdsmb_wait(sc)) == SMB_ENOERR) {
+		amdsmb_ec_read(sc, SMB_BCNT, &len);
+		for (i = 0; i < len; i++) {            /* :531 */
+			amdsmb_ec_read(sc, SMB_DATA + i, &data);
+			if (i < *count)
+				buf[i] = data;
+		}
+		*count = len;                          /* :534 */
+	}
+```
+
+So when the embedded controller does not answer in time — which is the
+entire reason `amdsmb_ec_read` has a return value — the driver spins on
+a stack slot as the protocol register, decodes a stack slot as the
+status byte, composes a word out of two of them, and in `amdsmb_bread`
+uses one as both the loop bound and the byte count it hands back to its
+caller. `buf` itself is safe (`if (i < *count)` guards the write), but a
+consumer that trusts the returned `*count` reads bytes of its own buffer
+that were never filled.
+
+Every call site whose value is then used now checks, and returns
+`SMB_ETIMEOUT` — the code `amdsmb_wait()` already returns for exactly
+this condition.
+
+### Measured
+
+```
+sys/dev/amdsmb/amdsmb.c        6 findings -> 0   (:283 :295 :477 :477 :531 :534)
+sys/dev/backlight/backlight.c  1 finding  -> 0   (:94)
+```
+
+Both still compile; both are one translation unit and the analyser
+reports nothing else in either.
+
+`amdsmb.c:477` was reported twice at the same line — the two bytes of
+`*word = temp[0] | (temp[1] << 8)`, each its own unwritten value. That
+is why the finding list has six entries and the file has five distinct
+sites.

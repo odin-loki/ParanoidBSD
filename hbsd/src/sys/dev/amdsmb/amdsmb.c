@@ -279,19 +279,32 @@ amdsmb_wait(struct amdsmb_softc *sc)
 	int error, count;
 
 	AMDSMB_LOCK_ASSERT(sc);
-	amdsmb_ec_read(sc, SMB_PRTCL, &temp);
+	/*
+	 * PBSD: amdsmb_ec_read() returns 1 from each of its three
+	 * amdsmb_ec_wait_{read,write}() timeouts WITHOUT writing *data,
+	 * and all nine call sites in this file discarded that. Every
+	 * value read out of the embedded controller here - the protocol
+	 * register this loop spins on, the status byte the switch below
+	 * decodes, the length and data bytes the block read returns to
+	 * its caller - was therefore a stack slot whenever the EC did
+	 * not answer in time.
+	 */
+	if (amdsmb_ec_read(sc, SMB_PRTCL, &temp) != 0)
+		return (SMB_ETIMEOUT);
 	if (temp != 0)
 	{
 		count = 10000;
 		do {
 			DELAY(500);
-			amdsmb_ec_read(sc, SMB_PRTCL, &temp);
+			if (amdsmb_ec_read(sc, SMB_PRTCL, &temp) != 0)
+				return (SMB_ETIMEOUT);
 		} while (temp != 0 && count--);
 		if (count == 0)
 			return (SMB_ETIMEOUT);
 	}
 
-	amdsmb_ec_read(sc, SMB_STS, &sts);
+	if (amdsmb_ec_read(sc, SMB_STS, &sts) != 0)
+		return (SMB_ETIMEOUT);
 	sts &= SMB_STS_STATUS;
 	AMDSMB_DEBUG(printf("amdsmb: STS=0x%x\n", sts));
 
@@ -385,8 +398,9 @@ amdsmb_recvb(device_t dev, u_char slave, char *byte)
 	amdsmb_ec_write(sc, SMB_ADDR, slave);
 	amdsmb_ec_write(sc, SMB_PRTCL, SMB_PRTCL_READ | SMB_PRTCL_BYTE);
 
-	if ((error = amdsmb_wait(sc)) == SMB_ENOERR)
-		amdsmb_ec_read(sc, SMB_DATA, byte);
+	if ((error = amdsmb_wait(sc)) == SMB_ENOERR &&
+	    amdsmb_ec_read(sc, SMB_DATA, byte) != 0)
+		error = SMB_ETIMEOUT;
 
 	AMDSMB_DEBUG(printf("amdsmb: RECVB from 0x%x, byte=0x%x, error=0x%x\n",
 	    slave, *byte, error));
@@ -427,8 +441,9 @@ amdsmb_readb(device_t dev, u_char slave, char cmd, char *byte)
 	amdsmb_ec_write(sc, SMB_ADDR, slave);
 	amdsmb_ec_write(sc, SMB_PRTCL, SMB_PRTCL_READ | SMB_PRTCL_BYTE_DATA);
 
-	if ((error = amdsmb_wait(sc)) == SMB_ENOERR)
-		amdsmb_ec_read(sc, SMB_DATA, byte);
+	if ((error = amdsmb_wait(sc)) == SMB_ENOERR &&
+	    amdsmb_ec_read(sc, SMB_DATA, byte) != 0)
+		error = SMB_ETIMEOUT;
 
 	AMDSMB_DEBUG(printf("amdsmb: READB from 0x%x, cmd=0x%x, byte=0x%x, "
 	    "error=0x%x\n", slave, cmd, (unsigned char)*byte, error));
@@ -472,9 +487,11 @@ amdsmb_readw(device_t dev, u_char slave, char cmd, short *word)
 	amdsmb_ec_write(sc, SMB_PRTCL, SMB_PRTCL_READ | SMB_PRTCL_WORD_DATA);
 
 	if ((error = amdsmb_wait(sc)) == SMB_ENOERR) {
-		amdsmb_ec_read(sc, SMB_DATA + 0, &temp[0]);
-		amdsmb_ec_read(sc, SMB_DATA + 1, &temp[1]);
-		*word = temp[0] | (temp[1] << 8);
+		if (amdsmb_ec_read(sc, SMB_DATA + 0, &temp[0]) != 0 ||
+		    amdsmb_ec_read(sc, SMB_DATA + 1, &temp[1]) != 0)
+			error = SMB_ETIMEOUT;
+		else
+			*word = temp[0] | (temp[1] << 8);
 	}
 
 	AMDSMB_DEBUG(printf("amdsmb: READW from 0x%x, cmd=0x%x, word=0x%x, "
@@ -527,13 +544,21 @@ amdsmb_bread(device_t dev, u_char slave, char cmd, u_char *count, char *buf)
 	amdsmb_ec_write(sc, SMB_PRTCL, SMB_PRTCL_READ | SMB_PRTCL_BLOCK_DATA);
 
 	if ((error = amdsmb_wait(sc)) == SMB_ENOERR) {
-		amdsmb_ec_read(sc, SMB_BCNT, &len);
-		for (i = 0; i < len; i++) {
-			amdsmb_ec_read(sc, SMB_DATA + i, &data);
-			if (i < *count)
-				buf[i] = data;
+		if (amdsmb_ec_read(sc, SMB_BCNT, &len) != 0)
+			error = SMB_ETIMEOUT;
+		else {
+			for (i = 0; i < len; i++) {
+				if (amdsmb_ec_read(sc, SMB_DATA + i,
+				    &data) != 0) {
+					error = SMB_ETIMEOUT;
+					break;
+				}
+				if (i < *count)
+					buf[i] = data;
+			}
+			if (error == SMB_ENOERR)
+				*count = len;
 		}
-		*count = len;
 	}
 
 	AMDSMB_DEBUG(printf("amdsmb: READBLK to 0x%x, count=0x%x, cmd=0x%x, "

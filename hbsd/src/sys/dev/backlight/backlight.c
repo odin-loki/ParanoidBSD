@@ -89,6 +89,19 @@ backlight_ioctl(struct cdev *dev, u_long cmd, caddr_t data,
 		if (error == 0)
 			bcopy(&info, data, sizeof(struct backlight_info));
 		break;
+	/*
+	 * PBSD: an unknown cmd fell out of this switch and returned an
+	 * uninitialised `error'. d_ioctl is handed whatever number the
+	 * caller passed - the cdev layer does not filter it - and this
+	 * node is /dev/backlight/backlight<n>, UID_ROOT:GID_VIDEO, so
+	 * any member of the video group could read a word of kernel
+	 * stack out of ioctl(2)'s return, or get a silent success for a
+	 * request nothing served. ENOTTY is what the rest of the tree
+	 * returns here (spigen.c:274, evtchn_dev.c:517).
+	 */
+	default:
+		error = ENOTTY;
+		break;
 	}
 
 	return (error);

@@ -898,6 +898,27 @@ FIXES = {
             "given",
         ),
     ],
+    "hbsd/src/sys/dev/backlight/backlight.c": [
+        (
+            "PBSD: an unknown cmd fell out of this switch",
+            "\t\t\tbcopy(&info, data, sizeof(struct backlight_info));\n\t\tbreak;\n\t}\n",
+            "backlight_ioctl()'s switch had three cases and no "
+            "default, and returned an uninitialised int. d_ioctl gets "
+            "whatever number the caller passed, and the node is "
+            "GID_VIDEO, not root-only",
+        ),
+    ],
+    "hbsd/src/sys/dev/amdsmb/amdsmb.c": [
+        (
+            "PBSD: amdsmb_ec_read() returns 1 from each of its three",
+            "\tamdsmb_ec_read(sc, SMB_PRTCL, &temp);\n\tif (temp != 0)\n",
+            "all nine call sites discarded a return that means *data "
+            "was never written, so the protocol register, the status "
+            "byte, and the length and data bytes a block read hands "
+            "back were stack slots whenever the embedded controller "
+            "timed out",
+        ),
+    ],
     "hbsd/src/sys/arm/allwinner/aw_cir.c": [
         (
             "PBSD: nothing buffered, nothing to decode.",
