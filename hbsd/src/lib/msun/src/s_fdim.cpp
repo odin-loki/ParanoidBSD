@@ -28,14 +28,23 @@
 
 #include <math.h>
 
+/*
+ * PBSD: __builtin_isnan, not isnan.  FreeBSD's <math.h> defines isnan as a
+ * macro over __inline_isnan{f,,l}; libc++'s <math.h> undefines it and puts
+ * std::__math::isnan there instead, and this file instantiates it for
+ * float, double and long double - three std::__1::__math::isnan symbols in
+ * the object that the C original does not have, which is what
+ * check_port_symbols.py reports.  The builtin is the same test in both
+ * languages, is non-signalling like isnan(), and instantiates nothing.
+ */
 #define	DECL(type, fn)			\
 type					\
 fn(type x, type y)			\
 {					\
 					\
-	if (isnan(x))			\
+	if (__builtin_isnan(x))		\
 		return (x);		\
-	if (isnan(y))			\
+	if (__builtin_isnan(y))		\
 		return (y);		\
 	return (x > y ? x - y : 0.0);	\
 }

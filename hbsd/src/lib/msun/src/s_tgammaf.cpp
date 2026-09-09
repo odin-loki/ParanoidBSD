@@ -38,5 +38,12 @@ float
 tgammaf(float x)
 {
 
-	return (tgamma(x));
+	/*
+	 * PBSD: __builtin_tgamma, not tgamma.  In C this is a call to
+	 * tgamma(); as C++, libc++'s <math.h> puts std::__math::tgamma in
+	 * the global namespace, and the instantiation for float is a
+	 * std::__1::__math::tgamma symbol in the object that the C original
+	 * does not have.  Same call, no template.
+	 */
+	return (__builtin_tgamma(x));
 }

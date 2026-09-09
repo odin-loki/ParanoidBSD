@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,704 | 9,056 |
+| 1 | `lib` | 2,827 | 639,720 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,456 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,545** | **114,204** |
+| | **total** | **41,143** | **21,297,561** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -13276,7 +13276,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.349.144.1 `fabsf()` · `TODO-FN`
 - [ ] **1.349.145** `s_fabsl.c` · 44L · `TODO-PORT` · 1 fn
   - [ ] 1.349.145.1 `fabsl()` · `TODO-FN`
-- [ ] **1.349.146** `s_fdim.cpp` · 46L gen:3 · `TODO-PORT`
+- [ ] **1.349.146** `s_fdim.cpp` · 55L gen:3 · `TODO-PORT`
 - [ ] **1.349.147** `s_finite.c` · 26L · `TODO-PORT`
 - [ ] **1.349.148** `s_finitef.cpp` · 30L · `TODO-PORT`
 - [ ] **1.349.149** `s_floor.c` · 75L · `TODO-PORT` · 1 fn
@@ -13506,7 +13506,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.349.256** `s_tanpif.c` · 115L · `TODO-PORT` · 2 fn
   - [ ] 1.349.256.1 `__kernel_tanpif()` · `TODO-FN`
   - [ ] 1.349.256.2 `tanpif()` · `TODO-FN`
-- [ ] **1.349.257** `s_tgammaf.cpp` · 43L · `TODO-PORT` · 1 fn
+- [ ] **1.349.257** `s_tgammaf.cpp` · 50L · `TODO-PORT` · 1 fn
   - [ ] 1.349.257.1 `tgammaf()` · `TODO-FN`
 - [ ] **1.349.258** `s_trunc.c` · 64L · `TODO-PORT` · 1 fn
   - [ ] 1.349.258.1 `trunc()` · `TODO-FN`
