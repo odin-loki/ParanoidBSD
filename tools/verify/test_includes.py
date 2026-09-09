@@ -879,16 +879,18 @@ print("== no installed header resolves to a file that includes it")
 # entry in installed_headers()' mapping that _installed_generated() then
 # writes over is harmless, and one it does not is the bug.
 _farm = Path(includes.incs_shim("amd64"))
+_mit = Path(includes.mitkrb5_shim())
 _selfinc = []
-for _f in _farm.rglob("*.h"):
-    _installed = _f.relative_to(_farm).as_posix()
-    try:
-        _text = _f.read_text(errors="replace")
-    except OSError:
-        continue
-    if _re.search(r'^\s*#\s*include\s*[<"]' + _re.escape(_installed)
-                  + r'[>"]', _text, _re.M):
-        _selfinc.append(_installed)
+for _root in (_farm, _mit):
+    for _f in _root.rglob("*.h"):
+        _installed = _f.relative_to(_root).as_posix()
+        try:
+            _text = _f.read_text(errors="replace")
+        except OSError:
+            continue
+        if _re.search(r'^\s*#\s*include\s*[<"]' + _re.escape(_installed)
+                      + r'[>"]', _text, _re.M):
+            _selfinc.append(_installed)
 check("no header on the include path includes itself",
       sorted(_selfinc), [])
 
@@ -899,14 +901,24 @@ check("no header on the include path includes itself",
 # so gssapi/gssapi.h must be MIT's: without it the farm gave gssd.c MIT's
 # gssapi_ext.h and gssapi_krb5.h beside HEIMDAL's gssapi.h, which is a
 # configuration nobody builds.
-for _h, _want in (("krb5/krb5.h", "KRB5_KRB5_H_INCLUDED"),
-                  ("gssapi/gssapi.h", "gssapi.h prologue")):
+for _where, _h, _want in (
+        (_farm, "krb5/krb5.h", "KRB5_KRB5_H_INCLUDED"),
+        (_mit, "gssapi/gssapi.h", "gssapi.h prologue")):
     try:
-        _body = (_farm / _h).read_text(errors="replace")
+        _body = (_where / _h).read_text(errors="replace")
     except OSError:
         _body = ""
-    check_that(f"the farm generates {_h}", _want in _body,
-               f"{len(_body)} bytes")
+    check_that(f"{'the farm' if _where is _farm else 'the MIT shim'}"
+               f" generates {_h}", _want in _body, f"{len(_body)} bytes")
+
+# ...and only the two directories the build marks reach the MIT one.
+_mitflag = f"-I{_mit}"
+check_that("usr.sbin/gssd gets the MIT shim",
+           _mitflag in includes.include_flags(
+               Path("usr.sbin/gssd/gssd.c"), "amd64"), "")
+check_that("...and lib/libgssapi does not",
+           _mitflag not in includes.include_flags(
+               Path("lib/libgssapi/gss_wrap.c"), "amd64"), "")
 
 print()
 if fails:
