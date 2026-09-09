@@ -240,6 +240,92 @@ def rpcgen_tool() -> str | None:
 
 
 @functools.lru_cache(maxsize=None)
+def lua_tool() -> str | None:
+    """contrib/lua, built from the tree, because a generator is a Lua script.
+
+    lib/libifconfig/Makefile:23-33 generates three files that
+    sbin/ifconfig/sfp.c and lib/libifconfig/libifconfig_sfp.c compile
+    against:
+
+        GEN=    libifconfig_sfp_tables.h \\
+                libifconfig_sfp_tables.c \\
+                libifconfig_sfp_tables_internal.h
+        .tpl.c.c .tpl.h.h: sfp.lua
+                ${LUA} ${.CURDIR}/sfp.lua ${.IMPSRC} >${.TARGET}
+
+    where LUA is the tree's own flua. There is no Lua of any kind on this
+    host, so sfp.c was ERROR on `libifconfig_sfp_tables.h' file not found
+    - a translation unit reporting zero findings because it never
+    compiled.
+
+    Building all of flua is a large job: libexec/flua links contrib/lua
+    with lfbsd, lfs, libhash, libucl and liblyaml. None of that is needed
+    here. sfp.lua does one thing -
+
+        package.path = (os.getenv("SRCTOP") or "/usr/src").."/tools/lua/?.lua"
+        require("template").render(arg[1], { ... })
+
+    - and tools/lua/template.lua is plain Lua 5.4 whose only `require' is
+    a `pcall(require, "table.new")' that is MEANT to fail off LuaJIT. So
+    the interpreter is contrib/lua's own sources, compiled against the
+    tree's lib/liblua/luaconf.local.h, which is the configuration flua
+    itself uses. -DBOOTSTRAPPING is the tree's own name for the variant
+    without LUA_USE_DLOPEN, and nothing here loads a C module.
+
+    Not the host's lua for the same reason usr.bin/rpcgen is built rather
+    than borrowed: a different interpreter is a different answer, and the
+    answer is what the analysed source compiles against. There is no host
+    lua to borrow in any case - which is why this had to be built at all.
+    """
+    src = SRC / "contrib" / "lua" / "src"
+    conf = SRC / "lib" / "liblua"
+    srcs = sorted(p for p in src.glob("*.c") if p.name != "luac.c")
+    if not srcs or not (conf / "luaconf.local.h").is_file():
+        return None
+    d = Path(tempfile.mkdtemp(prefix="pbsd_lua_"))
+    exe = d / "lua"
+    try:
+        subprocess.run(
+            ["cc", "-O1", "-w", "-DBOOTSTRAPPING", f"-I{conf}",
+             "-o", str(exe), *[str(p) for p in srcs], "-lm"],
+            check=True, capture_output=True)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return exe.as_posix() if exe.is_file() else None
+
+
+def _gen_lua_sfp(out: Path, _dir: str = "") -> None:
+    """lib/libifconfig's three sfp tables, from its own templates.
+
+    All three or none: generated_shim() keeps the directory if ANY file
+    landed in it, and a shim with the header but not the internal header
+    is a compile that gets further and means less. So they are rendered
+    into memory first and written only once all three are in hand.
+    """
+    lua = lua_tool()
+    if lua is None:
+        return
+    d = SRC / "lib" / "libifconfig"
+    if not (d / "sfp.lua").is_file():
+        return
+    env = dict(os.environ, SRCTOP=str(SRC))
+    made = {}
+    for tpl in ("libifconfig_sfp_tables.tpl.h",
+                "libifconfig_sfp_tables.tpl.c",
+                "libifconfig_sfp_tables_internal.tpl.h"):
+        if not (d / tpl).is_file():
+            return
+        p = subprocess.run([lua, str(d / "sfp.lua"), tpl], cwd=d,
+                           capture_output=True, text=True, env=env,
+                           timeout=300)
+        if p.returncode != 0 or not p.stdout.strip():
+            return
+        made[tpl.replace(".tpl.", ".")] = p.stdout
+    for name, text in made.items():
+        (out / name).write_text(text)
+
+
+@functools.lru_cache(maxsize=None)
 def libcxx_shim() -> tuple[str, ...]:
     """The two -I a C++ translation unit needs, in front of every C one.
 
@@ -3093,6 +3179,12 @@ _GENERATED = {
     "usr.sbin/bsnmpd/modules/snmp_usm": _gen_bsnmp,
     "usr.sbin/bsnmpd/modules/snmp_vacm": _gen_bsnmp,
     "usr.sbin/bsnmpd/modules/snmp_wlan": _gen_bsnmp,
+    # sbin/ifconfig/Makefile:39 already has -I${OBJTOP}/lib/libifconfig,
+    # so the -I was right and only the generator was missing; the shim
+    # stands in for that object directory. lib/libifconfig's own
+    # libifconfig_sfp.c includes the same header.
+    "sbin/ifconfig": _gen_lua_sfp,
+    "lib/libifconfig": _gen_lua_sfp,
 }
 
 

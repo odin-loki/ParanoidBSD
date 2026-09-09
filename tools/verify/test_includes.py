@@ -591,6 +591,35 @@ if _rg:
     check_that("...and casts the program number",
                "#define\tSM_PROG ((unsigned long)(100024))" in _h)
 
+# == the sfp tables come from the tree's Lua, not from nowhere ==
+# sbin/ifconfig/sfp.c was ERROR on `libifconfig_sfp_tables.h' file not
+# found, because lib/libifconfig generates it with `${LUA} sfp.lua' and
+# there is no Lua on this host. contrib/lua is built the same way
+# usr.bin/rpcgen is - see lua_tool().
+_lua = includes.lua_tool()
+check_that("contrib/lua builds", _lua is not None,
+           "sfp.lua is the generator lib/libifconfig/Makefile names, and "
+           "nothing else can run it")
+if _lua:
+    import subprocess as _sp2
+    _v = _sp2.run([_lua, "-v"], capture_output=True, text=True)
+    check_that("...and it is Lua 5.4, which sfp.lua and template.lua need",
+               _v.stdout.startswith("Lua 5.4"),
+               (_v.stdout or _v.stderr).strip()[:80])
+_shim = includes.generated_shim("sbin/ifconfig")
+check_that("sbin/ifconfig gets the three generated sfp files",
+           _shim is not None and sorted(os.listdir(_shim)) == [
+               "libifconfig_sfp_tables.c",
+               "libifconfig_sfp_tables.h",
+               "libifconfig_sfp_tables_internal.h"],
+           f"got {sorted(os.listdir(_shim)) if _shim else None}")
+if _shim:
+    _t = Path(_shim, "libifconfig_sfp_tables.h").read_text()
+    check_that("...and the header declares what libifconfig_sfp.h uses",
+               "enum sfp_id" in _t and "sfp_id_desc" in _t,
+               "the .tpl.h prepends the sfp_ prefix to each enum's name; "
+               "an empty or partial render would still be a file")
+
 _flags = includes._rpcgen_flags(
     (SRC / "usr.sbin/rpc.tlsclntd/Makefile").read_text())
 check_that("a directory's own RPCGEN flags are read", "-M" in _flags,

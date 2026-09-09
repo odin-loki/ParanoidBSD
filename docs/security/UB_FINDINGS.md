@@ -12762,3 +12762,72 @@ Two things did not fit and left with tasks of their own: the fifty in
 already ruled out), and `linux_mib.c:383`/`:549`, which rest on
 `malloc(..., M_WAITOK)` being able to return NULL — the premise #36
 exists to settle before anything is built on it.
+
+## `sbin/ifconfig/sfp.c`: a translation unit reporting zero findings
+
+Not a defect in the tree — a hole in the instrument, and the last of the
+unexplained `progs` ERRORs.
+
+```
+sbin/ifconfig/sfp.c   missing header: libifconfig_sfp_tables.h
+```
+
+`lib/libifconfig/Makefile:23-33`:
+
+```make
+GEN=	libifconfig_sfp_tables.h \
+	libifconfig_sfp_tables.c \
+	libifconfig_sfp_tables_internal.h
+
+.SUFFIXES: .tpl.c .tpl.h
+.tpl.c.c .tpl.h.h: sfp.lua
+	${LUA} ${.CURDIR}/sfp.lua ${.IMPSRC} >${.TARGET}
+```
+
+`LUA` is the tree's own flua, and there is no Lua of any kind on this
+host, so the header did not exist and `sfp.c` came back ERROR — zero
+findings, indistinguishable from clean.
+
+Building all of flua is a large job: `libexec/flua` links `contrib/lua`
+with `lfbsd`, `lfs`, `libhash`, `libucl` and `liblyaml`. None of it is
+needed. `sfp.lua` does one thing —
+
+```lua
+package.path = (os.getenv("SRCTOP") or "/usr/src").."/tools/lua/?.lua"
+require("template").render(arg[1], { ... })
+```
+
+— and `tools/lua/template.lua` is plain Lua 5.4 whose only other
+`require` is a `pcall(require, "table.new")` that is *meant* to fail off
+LuaJIT. So the interpreter is `contrib/lua`'s own sources, one `cc`,
+compiled against the tree's `lib/liblua/luaconf.local.h` — the
+configuration flua itself uses — with `-DBOOTSTRAPPING`, which is the
+tree's own name for the variant without `LUA_USE_DLOPEN`.
+
+Not the host's lua, for the same reason `usr.bin/rpcgen` is built rather
+than borrowed: a different interpreter is a different answer, and the
+answer is what the analysed source compiles against. There was no host
+lua to borrow in any case.
+
+```
+--scope sbin/ifconfig --check-errors
+  before   14 findings, 22 OK, 1 ERROR    FAIL: sfp.c is not in EXPECTED
+  after    14 findings, 23 OK, 0 ERROR    ok
+
+--scope lib/libifconfig
+  before    1 finding, 9 OK, 2 ERROR
+  after     1 finding, 10 OK, 1 ERROR
+```
+
+`sfp.c` and `libifconfig_sfp.c` both compile now and both are clean — the
+finding count does not move. That is the outcome an ERROR cannot tell you
+from a defect.
+
+The one ERROR that remains in `lib/libifconfig` was there before and is
+not a translation unit at all:
+`libifconfig_sfp_tables.tpl.c` is the *template*, whose body is Lua
+inside `{% %}` and `{* *}` markers, so clang stops at `expected
+identifier` on the first `{%`. `for_arch('amd64')` names ten sources in
+that directory and this is not one of them. It is now in
+`expected_errors.py`, in the same family as `sbin/ipf/common/lexer.c` —
+a sed template, likewise not a source.

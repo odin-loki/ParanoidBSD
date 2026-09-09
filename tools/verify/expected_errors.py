@@ -77,6 +77,23 @@ EXPECTED = {
     "sbin/ipf/common/lexer.c":
         "a sed template, not a translation unit. NOT_NAMED",
 
+    # Not C at all. lib/libifconfig/Makefile:23-33 renders three files
+    # from .tpl.c/.tpl.h templates with `${LUA} sfp.lua', and the
+    # template's body is Lua inside {% %} and {* *} markers:
+    #
+    #     {%
+    #     for _, ent in ipairs(enums) do
+    #         if type(ent) == "string" then
+    #     %}
+    #
+    # so clang stops at `expected identifier' on the first `{%'. bmake
+    # names ten sources in that directory and this is not one of them -
+    # SRCS has the GENERATED libifconfig_sfp_tables.c, which the shim in
+    # includes.py now produces. The same family as the sed template
+    # above.
+    "lib/libifconfig/libifconfig_sfp_tables.tpl.c":
+        "a Lua template, not a translation unit. NOT_NAMED",
+
     # usr.bin/lex's bootstrap copy of the scanner. The Makefile's
     # GENFILES is `parse.c parse.h scan.c skel.c' and its `bootstrap:'
     # target copies init<name> over each when they differ, so the init*
