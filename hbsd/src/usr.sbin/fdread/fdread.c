@@ -159,7 +159,17 @@ static int
 doread(int fd, FILE *of, const char *_devname)
 {
 	char *trackbuf;
-	int rv, fdopts, recoverable, nerrs = 0;
+	/*
+	 * PBSD: 0 is the driver's actual state, and nothing else reads it.
+	 *
+	 * fdopts is OR-ed with FDOPT_NOERROR and handed straight to
+	 * FD_SOPTS, which writes the whole option word -- but there is no
+	 * FD_GOPTS anywhere in this program, so the other bits were the
+	 * frame's.  sys/sys/fdcio.h says these options are "cleared on
+	 * device close", and fdread(8) opens the device itself, so every
+	 * bit but the one it means to set is 0.
+	 */
+	int rv, fdopts = 0, recoverable, nerrs = 0;
 	unsigned int nbytes, tracksize, mediasize, secsize, n;
 	struct fdc_status fdcs;
 	struct fd_type fdt;

@@ -2737,6 +2737,103 @@ FIXES = {
         "peer setting the MP header's reserved bits chose which "
         "fragments ppp dropped",
     ),
+    "hbsd/src/usr.bin/col/col.c": (
+        "PBSD: parenthesise, and clear what was ALLOCATED.",
+        "memset(count, 0, sizeof(int) * l->l_max_col + 1);",
+        "flush_line: `sizeof(int) * l_max_col + 1' is three bytes short "
+        "of the sizeof(int) * count_size the realloc asks for, so the "
+        "top three bytes of count[l_max_col] survived from a previous "
+        "line and the running total sent sorted[count[..]++] past the "
+        "end of sorted -- the input stream decides how far",
+    ),
+    "hbsd/src/usr.bin/fmt/fmt.c": (
+        "PBSD: terminate the buffer.",
+        "\t}\n\t*lengthp = len;",
+        "get_line returns the length out of band and never wrote a NUL; "
+        "might_be_header() walks the line as a wide STRING, so a line "
+        "shorter than the longest seen so far read into what the "
+        "previous one left there",
+    ),
+    "hbsd/src/usr.bin/gprof/arcs.c": (
+        "PBSD: nothing to pick.",
+        "    } else {\n\t/*\n\t *\tlast choice is edge leading to node "
+        "with only this arc as",
+        "compresslist: the three max*arcp are written only when their "
+        "max*cnt rises above 0, and the last arm was an unconditional "
+        "`else' -- so a list whose arcs all have arc_cyclecnt 0 WROTE "
+        "through a pointer nothing had set",
+    ),
+    "hbsd/src/usr.bin/patch/pch.c": (
+        "PBSD: n == 0 means neither the copy loop above nor the "
+        "blank-line",
+        "\t\tn++;\n\t}\n\tif (p_char[0] != '=')",
+        "pch_swap: a hunk with no replacement half leaves p_line[0] and "
+        "p_char[0] fresh from set_hunkmax()'s malloc, and if that byte "
+        "happened to be '=' the loop after it walked an unwritten "
+        "char * to its first NUL",
+    ),
+    "hbsd/src/usr.bin/rpcgen/rpc_parse.c": [
+        (
+            "PBSD: start the fields this function does not always "
+            "write.",
+            "\ttoken tok;\n\n\tget_type(&dec->prefix, &dec->type, "
+            "dkind);",
+            "get_declaration leaves name unwritten on the `void' early "
+            "return and array_max unwritten for every non-array "
+            "declaration, and def_typedef() copies both",
+        ),
+        (
+            "PBSD: `typedef void x;' makes get_declaration() return "
+            "after the",
+            "\tget_declaration(&dec, DEF_TYPEDEF);\n\tdefp->def_name = "
+            "dec.name;",
+            "def_typedef: there is no name to define after `void', and "
+            "check_type_name() strcmp()s it against every reserved word",
+        ),
+        (
+            "PBSD: the same gap as get_declaration(), found by reading "
+            "it.",
+            "\tchar name[10];\t\t/* argument name */\n\n\tif (dkind == "
+            "DEF_PROGRAM) {",
+            "get_prog_declaration: array_max unwritten on the "
+            "no-arguments early return and for every non-array argument",
+        ),
+    ],
+    "hbsd/src/usr.bin/rpcgen/rpc_util.h": (
+        "void error(const char *msg) __dead2;",
+        "void error(const char *msg);\n",
+        "error() and expected1/2/3() all end in crash(), which is "
+        "already __dead2; saying so is what makes a caller's "
+        "`if (x == NULL) error(...)' protect the line below it",
+    ),
+    "hbsd/src/usr.bin/top/commands.c": (
+        "PBSD: reject before negating.",
+        "    if (procnum == -1 || prio < PRIO_MIN || prio > PRIO_MAX)",
+        "renice_procs: scanint() returns -1 without writing *prio, and "
+        "the negation ran before the validity test",
+    ),
+    "hbsd/src/usr.sbin/bluetooth/rtlbtfw/rtlbt_hw.c": (
+        "PBSD: -1, so a loop that runs no iterations fails closed.",
+        "\tint i, j;\n\tint ret, transferred;",
+        "rtlbt_load_fwfile: frag_num is a size_t expression converted "
+        "to int, and `return (ret)' hands the caller a stack word when "
+        "the loop runs no iterations",
+    ),
+    "hbsd/src/usr.sbin/fdread/fdread.c": (
+        "PBSD: 0 is the driver's actual state, and nothing else reads "
+        "it.",
+        "\tint rv, fdopts, recoverable, nerrs = 0;",
+        "doread: fdopts is OR-ed with FDOPT_NOERROR and handed to "
+        "FD_SOPTS, which writes the whole option word -- and there is "
+        "no FD_GOPTS anywhere in this program",
+    ),
+    "hbsd/src/usr.sbin/sa/main.c": (
+        "PBSD: ci_flags is only ever OR-ed into, never started.",
+        "\t\t/* decode it */\n\t\tci.ci_calls = 1;",
+        "acct_load: ci is reused per record and handed whole to "
+        "pacct_add() and usracct_add(), so the flag word entering the "
+        "accounting databases came off the frame",
+    ),
     "hbsd/src/usr.sbin/bhyve/pci_e82545.c": (
         "PBSD: zero all of ckinfo, not just ck_valid.",
         "\tckinfo[0].ck_valid = ckinfo[1].ck_valid = 0;",

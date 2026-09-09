@@ -445,7 +445,26 @@ flush_line(LINE *l)
 			    (unsigned)sizeof(int) * count_size)) == NULL)
 				err(1, NULL);
 		}
-		memset(count, 0, sizeof(int) * l->l_max_col + 1);
+		/*
+		 * PBSD: parenthesise, and clear what was ALLOCATED.
+		 *
+		 * `sizeof(int) * l->l_max_col + 1' is
+		 * (sizeof(int) * l_max_col) + 1 -- three bytes short of the
+		 * sizeof(int) * count_size the realloc above asks for.  So
+		 * the top three bytes of count[l_max_col] survived from
+		 * whatever a previous, longer line left there, the running
+		 * total loop added that into tot, and
+		 * `sorted[count[c->c_column]++] = *c' wrote that far past
+		 * sorted, which holds only l_lsize entries.  count is
+		 * realloc'd, never calloc'd, so the first line's stale bytes
+		 * are the allocator's.
+		 *
+		 * count_size rather than l_max_col + 1 because count_size IS
+		 * the allocated length: it never shrinks, and tying the
+		 * clear to the allocation is what stops the two drifting
+		 * apart again.
+		 */
+		memset(count, 0, sizeof(int) * count_size);
 		for (i = nchars, c = l->l_line; --i >= 0; c++)
 			count[c->c_column]++;
 

@@ -397,6 +397,14 @@ def_typedef(definition *defp)
 
 	defp->def_kind = DEF_TYPEDEF;
 	get_declaration(&dec, DEF_TYPEDEF);
+	/*
+	 * PBSD: `typedef void x;' makes get_declaration() return after the
+	 * type, having read no identifier -- so there is no name to define.
+	 * This used to copy the caller's frame into def_name and hand it to
+	 * check_type_name(), which strcmp()s it against every reserved word.
+	 */
+	if (dec.name == NULL)
+		error("expected an identifier in type definition");
 	defp->def_name = dec.name;
 	check_type_name(dec.name, 1);
 	defp->def.ty.old_prefix = dec.prefix;
@@ -409,6 +417,19 @@ static void
 get_declaration(declaration *dec, defkind dkind)
 {
 	token tok;
+
+	/*
+	 * PBSD: start the fields this function does not always write.
+	 *
+	 * name is left unwritten by the `void' early return below, and
+	 * array_max by every declaration that is not an array or vector --
+	 * which is most of them.  def_typedef() copies both out of the
+	 * caller's frame unconditionally, so `typedef void x;' in a .x file
+	 * gave the definition a stack word for its def_name, a char * that
+	 * is later compared and printed.
+	 */
+	dec->name = NULL;
+	dec->array_max = NULL;
 
 	get_type(&dec->prefix, &dec->type, dkind);
 	dec->rel = REL_ALIAS;
@@ -461,6 +482,10 @@ get_prog_declaration(declaration *dec, defkind dkind, int num)
 {
 	token tok;
 	char name[10];		/* argument name */
+
+	/* PBSD: the same gap as get_declaration(), found by reading it. */
+	dec->name = NULL;
+	dec->array_max = NULL;
 
 	if (dkind == DEF_PROGRAM) {
 		peek(&tok);

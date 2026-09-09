@@ -691,7 +691,7 @@ compresslist(void)
 #	ifdef DEBUG
 	    type = "internal";
 #	endif /* DEBUG */
-    } else {
+    } else if ( maxnoparentcnt > 0 ) {
 	/*
 	 *	last choice is edge leading to node with only this arc as
 	 *	a parent (as it will now be orphaned)
@@ -700,6 +700,18 @@ compresslist(void)
 #	ifdef DEBUG
 	    type = "orphan";
 #	endif /* DEBUG */
+    } else {
+	/*
+	 * PBSD: nothing to pick.
+	 *
+	 * The three max*arcp are written only when their max*cnt goes
+	 * above 0, and this arm used to be the unconditional `else' -- so
+	 * a list in which every arc has arc_cyclecnt 0, and an empty one,
+	 * fell through to `maxarcp -> arc_flags |= DEADARC' and WROTE
+	 * through a pointer nothing had set.  The three counts being 0 is
+	 * exactly "there is no edge to break".
+	 */
+	return;
     }
     maxarcp -> arc_flags |= DEADARC;
     maxarcp -> arc_childp -> parentcnt -= 1;

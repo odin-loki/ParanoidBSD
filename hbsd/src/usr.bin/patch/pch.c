@@ -1313,6 +1313,17 @@ pch_swap(void)
 		p_len[n] = tp_len[i];
 		n++;
 	}
+	/*
+	 * PBSD: n == 0 means neither the copy loop above nor the blank-line
+	 * arm wrote anything, which happens when p_ptrn_lines + 1 > p_end --
+	 * a hunk with no replacement half.  p_line and p_char are fresh from
+	 * set_hunkmax()'s malloc, so the test below read an unwritten byte
+	 * and, if it happened to be '=', the loop after it walked an
+	 * unwritten char * to its first NUL.  The patch file decides this.
+	 */
+	if (n == 0)
+		fatal("Malformed patch at line %ld: hunk has no replacement "
+		    "text\n", p_input_line);
 	if (p_char[0] != '=')
 		fatal("Malformed patch at line %ld: expected '=' found '%c'\n",
 		    p_input_line, p_char[0]);

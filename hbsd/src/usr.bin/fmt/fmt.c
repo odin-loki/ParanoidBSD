@@ -767,6 +767,23 @@ get_line(FILE *stream, size_t *lengthp)
 				--col;
 		}
 	}
+	/*
+	 * PBSD: terminate the buffer.
+	 *
+	 * This returns the length out of band and never wrote a NUL, and
+	 * every caller but one respects that.  The one is
+	 * might_be_header(), which walks the line as a wide STRING looking
+	 * for the colon -- so on an empty line, or any line shorter than
+	 * the longest seen so far, it read past len into what the previous
+	 * line left there, or into XMALLOC's frame on the first.  The
+	 * growth loop above only guarantees room for len, so make room for
+	 * the terminator before writing it.
+	 */
+	if (len >= length) {
+		length = len + 1;
+		buf = xrealloc(buf, length * sizeof(wchar_t));
+	}
+	buf[len] = L'\0';
 	*lengthp = len;
 	return (len > 0 || ch != WEOF) ? buf : 0;
 }

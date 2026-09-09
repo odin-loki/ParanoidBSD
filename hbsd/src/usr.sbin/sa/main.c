@@ -331,6 +331,15 @@ acct_load(const char *pn, int wr)
 		}
 
 		/* decode it */
+		/*
+		 * PBSD: ci_flags is only ever OR-ed into, never started.
+		 * ci is reused for every record in this loop and handed
+		 * whole to pacct_add() and usracct_add(), so the flag word
+		 * that goes into the accounting databases -- CI_UNPRINTABLE
+		 * among them -- came off the frame.  It is reset here rather
+		 * than at the declaration because the reuse is per record.
+		 */
+		ci.ci_flags = 0;
 		ci.ci_calls = 1;
 		for (i = 0; i < (int)sizeof ac.ac_comm && ac.ac_comm[i] != '\0';
 		    i++) {

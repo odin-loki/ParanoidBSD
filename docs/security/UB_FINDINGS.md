@@ -14164,3 +14164,105 @@ current tree and re-running gave 35/93/2, which is the number the "after"
 is comparable to. A before and an after have to be the same tree with one
 change between them, and a stored baseline is only the same tree until
 something else lands.
+
+### col(1): a memset three bytes short of its allocation
+
+`usr.bin/col/col.c:448`. `flush_line()` grows two static buffers and then
+clears the counting one:
+
+```c
+	if (l->l_max_col >= count_size) {
+		count_size = l->l_max_col + 1;
+		if ((count = realloc(count,
+		    (unsigned)sizeof(int) * count_size)) == NULL)
+			err(1, NULL);
+	}
+	memset(count, 0, sizeof(int) * l->l_max_col + 1);
+```
+
+`*` binds tighter than `+`, so the memset clears
+`(sizeof(int) * l_max_col) + 1` bytes — one byte of the last entry, where
+the allocation is `sizeof(int) * (l_max_col + 1)`. The top three bytes of
+`count[l_max_col]` survive from whatever a previous, longer line left
+there; `count` is `realloc`'d and never `calloc`'d, so on the first line
+they are the allocator's.
+
+Those three bytes go into the running total:
+
+```c
+	for (tot = 0, i = 0; i <= l->l_max_col; i++) {
+		save = count[i];
+		count[i] = tot;
+		tot += save;
+	}
+	for (i = nchars, c = l->l_line; --i >= 0; c++)
+		sorted[count[c->c_column]++] = *c;
+```
+
+and `sorted` holds `l->l_lsize` entries. col(1) is a filter; the input
+stream decides how far past the end that writes.
+
+The clear is now `sizeof(int) * count_size` rather than the
+parenthesised `l_max_col + 1`, because `count_size` *is* the allocated
+length — it is what the `realloc` above was given and it never shrinks.
+Tying the clear to the allocation is what stops the two drifting apart
+again.
+
+**And the number does not move.** col.c reports three findings before and
+three after: the analyser was never reporting the memset length. It was
+reporting `count` and `sorted` being NULL — reachable only if
+`l->l_lsize` is 0 while `l->l_line_len` is not, which is a premise about
+`l_lsize` being the allocated length of `l_line`. The bug that is real
+here is the one it was silent about.
+
+### Seven more, and one that made the next layer visible
+
+| where | what |
+|---|---|
+| `fmt/fmt.c:556` | `get_line()` returns the length out of band and never writes a NUL. Every caller respects that except `might_be_header()`, which walks the line as a wide *string* looking for the colon — so a line shorter than the longest seen so far read into what the previous one left there. It now terminates the buffer, growing by one first, since the loop only guarantees room for `len`. |
+| `gprof/arcs.c:699` | `compresslist()` writes `maxexitarcp`, `maxwithparentarcp` and `maxnoparentarcp` only when the matching count rises above 0, and the third arm was an unconditional `else`. A list whose arcs all have `arc_cyclecnt == 0` fell into it and did `maxarcp->arc_flags |= DEADARC` — a *write* through a pointer nothing had set. Three counts at 0 is exactly "there is no edge to break", so that arm now returns. |
+| `patch/pch.c:1320` | `pch_swap()`'s copy loop runs from `p_ptrn_lines + 1` to `p_end`. A hunk with no replacement half leaves `n == 0`, and `p_line[0]`/`p_char[0]` fresh from `set_hunkmax()`'s malloc — and if that byte happened to be `'='` the sanity check passed and `for (s = p_line[0]; *s; s++)` walked an unwritten `char *`. The patch file decides. |
+| `top/commands.c:486` | `scanint()` returns `-1` without writing `*prio`, and `prio = -prio` ran before the `procnum == -1` test. Reject, then negate, then range-check. |
+| `rtlbtfw/rtlbt_hw.c:269` | `frag_num` is a `size_t` expression converted to `int`; `ret` is returned whether the loop ran or not. `-1` at the declaration, so nothing-sent is not success. |
+| `fdread/fdread.c:243` | `fdopts |= FDOPT_NOERROR` and then `ioctl(fd, FD_SOPTS, &fdopts)`, which writes the *whole* option word — and `FD_GOPTS` appears nowhere in the program. `sys/sys/fdcio.h` says these options are "cleared on device close" and fdread(8) opens the device itself, so 0 is the driver's actual state and every other bit was the frame's. |
+| `sa/main.c:341` | `ci_flags` is only ever `|=`'d. `ci` is reused for every record and handed whole to `pacct_add()` and `usracct_add()`, so the flag word entering the accounting databases — `CI_UNPRINTABLE` among them — came off the frame. Reset per record, not per call. |
+
+`rpcgen`'s pair is the interesting one. `get_declaration()` leaves
+`dec->name` unwritten on its `void` early return and `dec->array_max`
+unwritten for every declaration that is not an array or vector — which is
+most of them — and `def_typedef()` copies both out unconditionally.
+Starting them at `NULL` fixed the two reported findings and produced two
+new ones: `check_type_name()` now visibly `strcmp`s a NULL for
+`typedef void x;`. That is not the fix breaking something. It is the fix
+turning a wild pointer into a NULL one and the analyser being able to say
+so — the same defect, one layer up, where it can be handled:
+`def_typedef()` now rejects a declaration with no name.
+
+Which needed one more thing. The guard only protects the line below it if
+`error()` is known not to return, and `error()` — which ends in
+`crash()`, which is already `__dead2` — was declared plainly. So were
+`expected1()`, `expected2()` and `expected3()`, which are three wrappers
+around it. All four are now `__dead2`. **This is the third time in this
+tree**: `patch(1)`'s `fatal()` and `pfatal()` under task #70, and now
+rpcgen's four.
+
+```
+--scope usr.bin/col --scope usr.bin/fmt --scope usr.bin/gprof
+--scope usr.bin/patch --scope usr.bin/rpcgen --scope usr.bin/top
+--scope usr.sbin/bluetooth/rtlbtfw --scope usr.sbin/fdread --scope usr.sbin/sa
+  before  22 findings, 43 OK, 0 ERROR
+  after   12 findings, 43 OK, 0 ERROR
+```
+
+Fourteen go and four arrive, all four relocations: col.c's three moved by
+its nineteen-line comment and gprof's `unix.Malloc` by its twelve.
+`usr.bin/rpcgen` is now clean apart from `rpc_main.c:319`.
+
+### Premises read and dismissed
+
+| where | rests on |
+|---|---|
+| `usr.bin/pr/pr.c` ×8 | `lines`, a global. `-l` rejects anything below 1 at `:1688`; `:1819` defaults it; and the `lines -= HEADLEN + TAILLEN` at `:1828` is the `else` of `lines <= HEADLEN + TAILLEN`. So `lines >= 1` at `vertcol()`'s entry, and `indy[]`, `lindy[]` and `lstdat[]` are filled for exactly `0..lines-1`. Eight findings, one predicate, three hundred lines and one function away. |
+| `usr.sbin/watchdogd/watchdogd.c:280,281,311` | `do_timedog`, a static set once at `:698`. `watchdog_getuptime()` writes `*tp` only under it and `watchdog_check_dogfunction_time()` returns early under it — the same predicate at the write and at the read, with a call in between. |
+| `bin/pax/tables.c:1261` | `val` is filled a byte at a time through a `char *` alias, `sizeof(u_int)` of them, immediately above. |
+| `usr.sbin/mptutil/mpt_cam.c:162,427,539` | `fetch_path_id()` writes `*path_id` from `ccb.cdm.matches[0]` after an ioctl that took `&ccb`; the analyser discards what it knew about `ccb.cdm.matches` at that call. |

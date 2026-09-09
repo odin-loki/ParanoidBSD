@@ -480,6 +480,18 @@ renice_procs(char *str)
     /* use procnum as a temporary holding place and get the number */
     procnum = scanint(str, &prio);
 
+    /*
+     * PBSD: reject before negating.  scanint() returns -1 without writing
+     * *prio, and the negation used to run first -- so a non-numeric
+     * priority had `prio = -prio' read a value nothing wrote.  The
+     * range test still needs the sign applied, so the order is: reject,
+     * negate, range.
+     */
+    if (procnum == -1)
+    {
+	return(bad_pri_value);
+    }
+
     /* negate if necessary */
     if (negate)
     {
@@ -487,7 +499,7 @@ renice_procs(char *str)
     }
 
     /* check for validity */
-    if (procnum == -1 || prio < PRIO_MIN || prio > PRIO_MAX)
+    if (prio < PRIO_MIN || prio > PRIO_MAX)
     {
 	return(bad_pri_value);
     }

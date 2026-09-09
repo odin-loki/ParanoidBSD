@@ -225,7 +225,15 @@ rtlbt_load_fwfile(struct libusb_device_handle *hdl,
 	int frag_num = fw->len / RTLBT_MAX_CMD_DATA_LEN + 1;
 	int frag_len = RTLBT_MAX_CMD_DATA_LEN;
 	int i, j;
-	int ret, transferred;
+	/*
+	 * PBSD: -1, so a loop that runs no iterations fails closed.
+	 * frag_num is `fw->len / RTLBT_MAX_CMD_DATA_LEN + 1' converted from
+	 * size_t to int; for a firmware image past INT_MAX * 252 that
+	 * conversion is implementation-defined and can land negative, and
+	 * `return (ret)' below then hands the caller a stack word to test
+	 * against 0.  Nothing sent is not success.
+	 */
+	int ret = -1, transferred;
 
 	for (i = 0, j = 0; i < frag_num; i++, j++) {
 

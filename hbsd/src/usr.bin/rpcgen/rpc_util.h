@@ -171,10 +171,17 @@ void pvname(const char *pname, const char *vnum);
 void ptype(const char *prefix, const char *type, int follow);
 int isvectordef(const char *type, relation rel);
 int streq(const char *a, const char *b);
-void error(const char *msg);
-void expected1(tok_kind exp1);
-void expected2(tok_kind exp1, tok_kind exp2);
-void expected3(tok_kind exp1, tok_kind exp2, tok_kind exp3);
+/*
+ * PBSD: these four end in crash(), which is already __dead2, and none of
+ * them has a path that returns.  Saying so lets every caller's guard mean
+ * what it was written to mean -- `if (dec.name == NULL) error(...)' only
+ * protects the line below it if error() is known not to come back.  Same
+ * shape as patch(1)'s fatal() and pfatal().
+ */
+void error(const char *msg) __dead2;
+void expected1(tok_kind exp1) __dead2;
+void expected2(tok_kind exp1, tok_kind exp2) __dead2;
+void expected3(tok_kind exp1, tok_kind exp2, tok_kind exp3) __dead2;
 void tabify(FILE *f, int tab);
 void record_open(const char *file);
 bas_type *find_type(const char *type);

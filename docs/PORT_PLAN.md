@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,483 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,123 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,223 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,226 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,250 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,254** | **114,204** |
+| | **total** | **41,143** | **21,298,384** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -20884,7 +20884,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.40 `usr.bin/col`
 
-- [ ] **5.40.1** `col.c` · 593L · `TODO-PORT` · 9 fn
+- [ ] **5.40.1** `col.c` · 612L · `TODO-PORT` · 9 fn
   - [ ] 5.40.1.1 `main()` · `TODO-FN`
   - [ ] 5.40.1.2 `flush_lines()` · `TODO-FN`
   - [ ] 5.40.1.3 `flush_blanks()` · `TODO-FN`
@@ -21464,7 +21464,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.67 `usr.bin/fmt`
 
-- [ ] **5.67.1** `fmt.c` · 785L · `TODO-PORT` · 13 fn
+- [ ] **5.67.1** `fmt.c` · 802L · `TODO-PORT` · 13 fn
   - [ ] 5.67.1.1 `get_positive()` · `TODO-FN`
   - [ ] 5.67.1.2 `get_nonnegative()` · `TODO-FN`
   - [ ] 5.67.1.3 `main()` · `TODO-FN`
@@ -21725,7 +21725,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.84 `usr.bin/gprof` · 1 module(s) under `pbsd/usr.bin/gprof`
 
-- [ ] **5.84.1** `arcs.c` · 948L · `TODO-PORT` · 14 fn
+- [ ] **5.84.1** `arcs.c` · 960L · `TODO-PORT` · 14 fn
   - [ ] 5.84.1.1 `addarc()` · `TODO-FN`
   - [ ] 5.84.1.2 `topcmp()` · `TODO-FN`
   - [ ] 5.84.1.3 `doarcs()` · `TODO-FN`
@@ -23689,7 +23689,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.156.7.16 `similar()` · `TODO-FN`
   - [ ] 5.156.7.17 `handle_creation()` · `TODO-FN`
 - [ ] **5.156.8** `pathnames.h` · 12L · `TODO-HDR`
-- [ ] **5.156.9** `pch.c` · 1,663L · `TODO-PORT` · 30 fn
+- [ ] **5.156.9** `pch.c` · 1,674L · `TODO-PORT` · 30 fn
   - [ ] 5.156.9.1 `re_patch()` · `TODO-FN`
   - [ ] 5.156.9.2 `open_patch_file()` · `TODO-FN`
   - [ ] 5.156.9.3 `set_hunkmax()` · `TODO-FN`
@@ -24141,7 +24141,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.177.4.24 `usage()` · `TODO-FN`
   - [ ] 5.177.4.25 `options_usage()` · `TODO-FN`
   - [ ] 5.177.4.26 `mkfile_output()` · `TODO-FN`
-- [ ] **5.177.5** `rpc_parse.c` · 621L · `TODO-PORT` · 13 fn
+- [ ] **5.177.5** `rpc_parse.c` · 646L · `TODO-PORT` · 13 fn
   - [ ] 5.177.5.1 `get_definition()` · `TODO-FN`
   - [ ] 5.177.5.2 `isdefined()` · `TODO-FN`
   - [ ] 5.177.5.3 `def_struct()` · `TODO-FN`
@@ -24242,7 +24242,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.177.12.28 `xmalloc()` · `TODO-FN`
   - [ ] 5.177.12.29 `xrealloc()` · `TODO-FN`
   - [ ] 5.177.12.30 `xstrdup()` · `TODO-FN`
-- [ ] **5.177.13** `rpc_util.h` · 226L · `TODO-HDR`
+- [ ] **5.177.13** `rpc_util.h` · 233L · `TODO-HDR`
 
 ### 5.178 `usr.bin/rpcinfo`
 
@@ -25361,7 +25361,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.210 `usr.bin/top`
 
-- [ ] **5.210.1** `commands.c` · 519L · `TODO-GEN` · 12 fn
+- [ ] **5.210.1** `commands.c` · 531L · `TODO-GEN` · 12 fn
   - [ ] 5.210.1.1 `show_help()` · `TODO-FN`
   - [ ] 5.210.1.2 `next_field()` · `TODO-FN`
   - [ ] 5.210.1.3 `scanint()` · `TODO-FN`
@@ -28530,7 +28530,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.33.3.10 `rtlbt_parse_fwfile_v2()` · `TODO-FN`
   - [ ] 6.33.3.11 `rtlbt_append_fwfile()` · `TODO-FN`
 - [ ] **6.33.4** `rtlbt_fw.h` · 141L gen:1 · `TODO-HDR`
-- [ ] **6.33.5** `rtlbt_hw.c` · 271L · `TODO-PORT` · 5 fn
+- [ ] **6.33.5** `rtlbt_hw.c` · 279L · `TODO-PORT` · 5 fn
   - [ ] 6.33.5.1 `rtlbt_hci_command()` · `TODO-FN`
   - [ ] 6.33.5.2 `rtlbt_read_local_ver()` · `TODO-FN`
   - [ ] 6.33.5.3 `rtlbt_read_rom_ver()` · `TODO-FN`
@@ -30685,7 +30685,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.88 `usr.sbin/fdread`
 
-- [ ] **6.88.1** `fdread.c` · 335L · `TODO-PORT` · 4 fn
+- [ ] **6.88.1** `fdread.c` · 345L · `TODO-PORT` · 4 fn
   - [ ] 6.88.1.1 `usage()` · `TODO-FN`
   - [ ] 6.88.1.2 `main()` · `TODO-FN`
   - [ ] 6.88.1.3 `doread()` · `TODO-FN`
@@ -35798,7 +35798,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.212.1.2 `db_copy_out()` · `TODO-FN`
   - [ ] 6.212.1.3 `db_destroy()` · `TODO-FN`
 - [ ] **6.212.2** `extern.h` · 111L · `TODO-HDR`
-- [ ] **6.212.3** `main.c` · 526L · `TODO-PORT` · 11 fn
+- [ ] **6.212.3** `main.c` · 535L · `TODO-PORT` · 11 fn
   - [ ] 6.212.3.1 `main()` · `TODO-FN`
   - [ ] 6.212.3.2 `usage()` · `TODO-FN`
   - [ ] 6.212.3.3 `acct_load()` · `TODO-FN`
