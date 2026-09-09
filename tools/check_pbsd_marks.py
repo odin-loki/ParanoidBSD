@@ -2686,6 +2686,14 @@ FIXES = {
             "all-parity-targets case reconstruct_general() is reached with",
         ),
     ],
+    "hbsd/src/sys/sys/mbuf.h": (
+        "M_EXTPG mbuf %p has no linear data area",
+        "\tint adjust;\n\tKASSERT(m->m_data == M_START(m),\n",
+        "m_align: M_START() is NULL for an M_EXTPG mbuf, so the "
+        "assertion that follows was read as BINDING m_data to NULL and "
+        "every one of the 61 M_ALIGN call sites reported a null "
+        "dereference on `p = m->m_data'",
+    ),
     "hbsd/src/sys/contrib/openzfs/module/os/freebsd/zfs/spa_os.c": (
         "nvlist_t *best_cfg = NULL;",
         "\tnvlist_t *best_cfg, *nvtop, *nvroot;\n",

@@ -1212,6 +1212,25 @@ static __inline void
 m_align(struct mbuf *m, int len)
 {
 	int adjust;
+	/*
+	 * PBSD: say the M_EXTPG case out loud.  M_START() is NULL for an
+	 * M_EXTPG mbuf - it has no linear data area - so the assertion
+	 * below already fires on one, by way of `m->m_data == NULL', and
+	 * the arithmetic that follows would be NULL plus an offset.  This
+	 * states the requirement instead of leaving it to be deduced from
+	 * a comparison against a macro three of whose four arms are
+	 * addresses and one of which is not.
+	 *
+	 * It is also what a path-sensitive reader needs.  With M_EXTPG
+	 * unconstrained on a freshly allocated mbuf - m_get() gets it from
+	 * uma_zalloc_arg(), whose zone constructor the analyser cannot see
+	 * - M_START() takes its NULL arm, the assertion below is then read
+	 * as BINDING m_data to NULL, and every caller that does
+	 * `p = m->m_data' after M_ALIGN() reports a null dereference.
+	 * There are 61 M_ALIGN/MH_ALIGN/MEXT_ALIGN call sites in this tree.
+	 */
+	KASSERT((m->m_flags & M_EXTPG) == 0,
+	    ("%s: M_EXTPG mbuf %p has no linear data area", __func__, m));
 	KASSERT(m->m_data == M_START(m),
 	    ("%s: not a virgin mbuf %p", __func__, m));
 

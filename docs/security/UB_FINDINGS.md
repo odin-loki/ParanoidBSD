@@ -13503,3 +13503,83 @@ blake2's generic `.for` rule keeps its flags, and that `vmm_nvhe.c` does
 not acquire its neighbour's — which is what a check for a split like this
 needs: one half proves the new behaviour, the other proves the old one
 was not broken to get it.
+
+## The M_WAITOK premise was wrong twice, and the answer was in `M_START()`
+
+Task #36 was filed on the claim that every `M_WAITOK` allocation is a
+potential NULL to the analyser, with
+`sys/kgssapi/krb5/krb5_mech.c:661` as the instance. A control test had
+already refuted the general claim — clang's analyser says nothing about a
+bare `extern` whose return is unconstrained; it warns when it can
+*constrain* a value to NULL — and a modelling layer built on it was
+built, tested and found to change nothing.
+
+The instance was then re-read as "the NULL is `m->m_data`, a field of the
+mbuf, not the mbuf pointer". That was the right direction and still not
+the cause. The cause is one macro:
+
+```c
+#define	M_START(m)							\
+	(((m)->m_flags & M_EXTPG) ? NULL :				\
+	 ((m)->m_flags & M_EXT) ? (m)->m_ext.ext_buf :			\
+	 ((m)->m_flags & M_PKTHDR) ? &(m)->m_pktdat[0] :		\
+	 &(m)->m_dat[0])
+```
+
+Three of its four arms are addresses. One is a literal `NULL` — the
+M_EXTPG case, an mbuf whose payload is unmapped pages and which therefore
+has no linear data area at all. And `m_align()`, which `M_ALIGN()`,
+`MH_ALIGN()` and `MEXT_ALIGN()` all are, opens with
+
+```c
+	KASSERT(m->m_data == M_START(m),
+	    ("%s: not a virgin mbuf %p", __func__, m));
+```
+
+On a freshly allocated mbuf the analyser has no constraint on `m_flags`:
+`m_get()` takes it from `uma_zalloc_arg()`, whose zone constructor is in
+another translation unit. So it explores the path where M_EXTPG is set,
+`M_START(m)` is `NULL`, and the assertion — which this tree compiles in,
+because `INVARIANTS` is a hardening option here — is read as **binding**
+`m_data` to NULL. Every caller that then does `p = m->m_data` and writes
+through `p` reports a null dereference. There are 61
+`M_ALIGN`/`MH_ALIGN`/`MEXT_ALIGN` call sites in this tree.
+
+Proved rather than argued: adding `if (m == NULL) return (NULL);`
+straight after the `MGET()` in `krb5_make_token()` leaves the finding
+exactly where it was (and adds two more, at the two callers that then
+have a NULL return to dereference). The mbuf is not the NULL. Adding
+
+```c
+	KASSERT((m->m_flags & M_EXTPG) == 0,
+	    ("%s: M_EXTPG mbuf %p has no linear data area", __func__, m));
+```
+
+as the first line of `m_align()` removes it.
+
+That assertion is not a silencer. It says what `m_align()` already
+requires: on an M_EXTPG mbuf the existing assertion would fire anyway, by
+way of `m->m_data == NULL`, and the arithmetic two lines down would be
+NULL plus an offset. The requirement was there to be deduced from a
+comparison against a macro whose arms disagree about what they are; now
+it is written.
+
+```
+--scope sys/kern --scope sys/net --scope sys/netinet --scope sys/netinet6
+--scope sys/netipsec --scope sys/kgssapi --scope sys/net80211
+--scope sys/netlink --scope sys/netpfil --check-errors
+  before  322 findings, 609 OK, 19 ERROR
+  after   319 findings, 609 OK, 19 ERROR
+```
+
+Three go and none arrives: `kern/uipc_mbuf.c:1154`,
+`kgssapi/krb5/krb5_mech.c:661` and `netinet6/ip6_output.c:3315`. Fewer
+than the 61 call sites, because most of them do not read `m->m_data`
+back into a pointer they write through inside the same function — which
+is the other half of what this class needed, and the reason it never
+looked like a class.
+
+The general lesson is the one the control test gave and this confirms:
+the analyser does not invent NULLs from unconstrained returns. When it
+reports one, something in the code said NULL — here, a macro arm nobody
+was reading.

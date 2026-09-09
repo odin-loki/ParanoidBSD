@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,840 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,859 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,899** | **114,204** |
+| | **total** | **41,143** | **21,297,918** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -137641,7 +137641,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1292.214** `loginclass.h` · 54L · `TODO-HDR`
 - [ ] **8.1292.215** `mac.h` · 126L · `TODO-HDR`
 - [ ] **8.1292.216** `malloc.h` · 329L gen:8 · `TODO-HDR`
-- [ ] **8.1292.217** `mbuf.h` · 1,866L gen:13 · `TODO-HDR`
+- [ ] **8.1292.217** `mbuf.h` · 1,885L gen:13 · `TODO-HDR`
 - [ ] **8.1292.218** `mchain.h` · 104L · `TODO-HDR`
 - [ ] **8.1292.219** `md4.h` · 92L · `TODO-HDR`
 - [ ] **8.1292.220** `md5.h` · 101L · `TODO-HDR`
