@@ -39,6 +39,7 @@ import argparse
 import collections
 import concurrent.futures
 import functools
+import hashlib
 import json
 import os
 import re
@@ -51,6 +52,52 @@ HERE = Path(__file__).resolve().parent
 SRC = HERE.parent.parent / "hbsd" / "src"
 SHARE_MK = SRC / "share" / "mk"
 OBJDIR = os.environ.get("PBSD_BMAKE_OBJDIR", "/tmp/pbsd_bmake_obj")
+
+# What _bmake() pins the compiler to. In the cache key because a change
+# here is a change to every answer below it.
+CC_VARS = ("CC=clang", "CXX=clang++", "CPP=clang-cpp")
+
+
+@functools.lru_cache(maxsize=None)
+def compiler_key() -> str:
+    """Which compiler answered - twelve hex digits, for the cache filename.
+
+    The answers cached under /tmp are the BUILD's, and the build's answers
+    depend on the compiler: share/mk's bsd.compiler.mk probes it, and every
+    `.if ${COMPILER_TYPE} == "clang"' and `${COMPILER_FEATURES:M...}' in
+    the tree turns on what it found. Asked as gcc, amd64's build names
+    14,770 sources; asked as clang, 14,959. A cache written under one and
+    read under the other is a reading that has quietly stopped matching -
+    the failure this repository keeps finding in other people's code.
+
+    So the compiler goes in the FILENAME. A different one misses the cache
+    and rebuilds; it is never answered wrongly. Nothing to migrate and no
+    stamp to parse - the stale files simply stop being opened.
+
+    The probe is `clang --version' rather than bmake's COMPILER_TYPE and
+    COMPILER_VERSION because those are DERIVED from this, by
+    bsd.compiler.mk running the same binary, and this costs no bmake and
+    cannot be reached before the cache path is needed. A compiler that is
+    not there hashes as "not found", which is its own key: the one thing
+    this must never do is give two different compilers the same one.
+
+    REBUILD THE CACHES IN ONE PROCESS BEFORE A SWEEP. A cold cache makes
+    for_arch() walk the whole tree with bmake, and every worker in a sweep
+    does it independently - deleting them and starting a sweep took a libs
+    shard from twenty minutes to a projected five hours at load average 45
+    on four cores. `python3 tools/verify/userland_names.py --refresh' per
+    architecture first, serially; installed_headers() is 82s more each.
+    """
+    parts = list(CC_VARS)
+    for exe in ("clang", "clang++"):
+        try:
+            p = subprocess.run([exe, "--version"], capture_output=True,
+                               text=True, timeout=60)
+            first = p.stdout.split("\n")[0].strip()
+            parts.append(f"{exe}: {first or 'no version line'}")
+        except (OSError, subprocess.TimeoutExpired):
+            parts.append(f"{exe}: not found")
+    return hashlib.sha256("\x00".join(parts).encode()).hexdigest()[:12]
 
 # The same six the sweep analyses, spelled the way includes.py spells
 # them, so a caller can hand either table's key to either.
@@ -549,7 +596,7 @@ def build_incs(arch: str, src: Path = SRC, jobs: int = 8) -> dict[str, str]:
 
 def incs_cache_path(arch: str) -> Path:
     return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
-        f"pbsd_userland_incs_{arch}.json"
+        f"pbsd_userland_incs_{arch}_{compiler_key()}.json"
 
 
 @functools.lru_cache(maxsize=None)
@@ -670,12 +717,12 @@ def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
 
 def cache_path(arch: str) -> Path:
     return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
-        f"pbsd_userland_names_{arch}.json"
+        f"pbsd_userland_names_{arch}_{compiler_key()}.json"
 
 
 def builder_cache_path(arch: str) -> Path:
     return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
-        f"pbsd_userland_builder_{arch}.json"
+        f"pbsd_userland_builder_{arch}_{compiler_key()}.json"
 
 
 @functools.lru_cache(maxsize=None)
