@@ -11414,3 +11414,51 @@ Checked that way, the narrowed marker does bite. Every earlier fix in
 this session was revert-tested *before* its commit, where
 `git checkout --` does restore the vendor file, so those tests were
 real.
+
+---
+
+## The fold, confirmed over all 1,862 units
+
+The `ask_cflags` change — folding the seven program-list variables into
+the bmake run the function was already making — was justified on a
+sample: 37 files in 36 directories, old and new answers identical. A
+sample is not the tree.
+
+Re-run over everything, both sides at the same scope:
+
+```
+before (1820, 42, 737)  after (1820, 42, 737)
+1862 units; 0 changed; 0 flag digests changed
+wall 895s
+```
+
+**Zero changed. Zero flag digests changed.** Not one translation unit
+got different flags, so not one could have got a different result. That
+is the claim the sample could only suggest.
+
+### And a wall-clock number worth keeping
+
+895 seconds for the progs shard, with the build-authority caches warm.
+
+The first attempt at this same measurement ran for over half an hour and
+produced 1,104 of 1,862 rows before it was killed, because the caches
+had been deleted immediately before starting it — which puts every
+worker process independently into a whole-tree bmake walk, one per
+architecture, forty-one of them running at once. `for_arch()` with a
+cold cache is exactly the pathology recorded when the libs shard went
+from twenty minutes to a projected five hours at load average 45.
+
+The fix is one line, and it is already written down in this repository's
+history: warm the caches once, serially, before the sweep.
+
+```
+python3 tools/verify/userland_names.py --refresh     # 521s, six architectures
+installed_headers(a, refresh=True) for each a        # ~145s each
+                                                     # 1396s total
+```
+
+Twenty-three minutes of warming, once, against a sweep that then takes
+fifteen. Deleting the caches to be sure they were fresh cost more than
+it could ever have saved, and the reason it looked like progress at the
+time is that a stalled sweep and a slow one produce the same output:
+nothing.
