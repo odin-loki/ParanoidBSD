@@ -2262,6 +2262,34 @@ FIXES = {
         "where upstream's usr.bin/at/panic.h has carried __dead2 on its "
         "perr() all along",
     ),
+    "hbsd/src/usr.sbin/ctladm/ctladm.c": (
+        "PBSD: only when getoption() wrote it.",
+        "\t\t\t\t\t\t   &err_type, &argnum, &subopt);\n"
+        "\t\t\t\terr_desc.lun_error = err_type;",
+        "cctl_error_inject: getoption() writes *cmdnum, *argnum and "
+        "*subopt inside the match branch only, so CC_OR_NOT_FOUND "
+        "writes none of them -- and both arms stored the local into "
+        "err_desc BEFORE the CC_OR_NOT_FOUND test.  This file's two "
+        "other getoption() call sites, at :508 and :4341, check first",
+    ),
+    "hbsd/src/usr.bin/systat/netstat.c": (
+        "PBSD: read the socket on both paths.",
+        "\t\tif (istcp) {\n\t\t\tKREAD(inpcb->inp_socket, &sockb, "
+        "sizeof (sockb));",
+        "fetchnetstat_kvm: the KREAD into sockb was inside the `istcp' "
+        "arm and the UDP arm passed the same &sockb unread, so every "
+        "UDP socket was displayed with the last TCP socket's queue "
+        "counts -- UDP is the second pass, after `goto again'",
+    ),
+    "hbsd/src/usr.sbin/bsdinstall/partedit/gpart_ops.c": (
+        "PBSD: per provider, as the `start = end = 0' above does",
+        "\tmaxsize = 0;\n\tfor (i = 0; i < nparts; i++) {",
+        "gpart_max_free: partstart and partend are written only when "
+        "the provider's config names them, so one that names neither "
+        "silently reused the previous partition's extent and the first "
+        "reused the frame -- this decides where the installer offers "
+        "to write.  maxstart had no initialiser either",
+    ),
     "hbsd/src/usr.sbin/gssd/gssd.c": [
         (
             "PBSD: clamp.  FreeBSD's getgrouplist() sets",

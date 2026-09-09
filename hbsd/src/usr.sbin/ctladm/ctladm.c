@@ -893,13 +893,29 @@ cctl_error_inject(int fd, uint32_t lun, int argc, char **argv,
 				}
 				optret = getoption(cctl_err_types, optarg,
 						   &err_type, &argnum, &subopt);
-				err_desc.lun_error = err_type;
+				/*
+				 * PBSD: only when getoption() wrote it.
+				 *
+				 * getoption() sets *cmdnum, *argnum and
+				 * *subopt inside the match branch only, so on
+				 * CC_OR_NOT_FOUND none of the three is
+				 * written -- and both arms here stored the
+				 * local into err_desc BEFORE the
+				 * CC_OR_NOT_FOUND test below.  The two other
+				 * getoption() call sites in this file, at
+				 * :508 and :4341, both check first; these
+				 * two were the exception.
+				 */
+				if (optret == CC_OR_FOUND)
+					err_desc.lun_error = err_type;
 			} else {
 				ctl_lun_error_pattern pattern;
 
 				optret = getoption(cctl_err_patterns, optarg,
 						   &pattern, &argnum, &subopt);
-				err_desc.error_pattern |= pattern;
+				/* PBSD: see above. */
+				if (optret == CC_OR_FOUND)
+					err_desc.error_pattern |= pattern;
 			}
 
 			if (optret == CC_OR_AMBIGUOUS) {

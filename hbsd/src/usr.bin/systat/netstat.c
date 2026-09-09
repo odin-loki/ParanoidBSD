@@ -213,10 +213,22 @@ again:
 			continue;
 		if (nports && !checkport(&inpcb->inp_inc))
 			continue;
-		if (istcp) {
-			KREAD(inpcb->inp_socket, &sockb, sizeof (sockb));
+		/*
+		 * PBSD: read the socket on both paths.
+		 *
+		 * The KREAD used to be inside the `istcp' arm, and the UDP
+		 * arm passed the same &sockb without ever reading into it.
+		 * enter_kvm() then took so->so_rcv.sb_ccc and
+		 * so->so_snd.sb_ccc out of it.  UDP is scanned on the second
+		 * pass -- the `goto again' below sets istcp = 0 -- so every
+		 * UDP socket was displayed with the LAST TCP socket's queue
+		 * counts, and with this frame's bytes when there were no TCP
+		 * sockets at all.
+		 */
+		KREAD(inpcb->inp_socket, &sockb, sizeof (sockb));
+		if (istcp)
 			enter_kvm(inpcb, &sockb, tcpcb.t_state, "tcp");
-		} else
+		else
 			enter_kvm(inpcb, &sockb, 0, "udp");
 	}
 	if (istcp && (protos&UDP)) {

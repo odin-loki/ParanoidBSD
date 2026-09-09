@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,496 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,260 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,299 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,272 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,944 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,562** | **114,204** |
+| | **total** | **41,143** | **21,298,614** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -24919,7 +24919,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.200.21.8 `selecthost()` · `TODO-FN`
   - [ ] 5.200.21.9 `checkhost()` · `TODO-FN`
   - [ ] 5.200.21.10 `showhosts()` · `TODO-FN`
-- [ ] **5.200.22** `netstat.c` · 633L · `TODO-PORT` · 14 fn
+- [ ] **5.200.22** `netstat.c` · 645L · `TODO-PORT` · 14 fn
   - [ ] 5.200.22.1 `opennetstat()` · `TODO-FN`
   - [ ] 5.200.22.2 `closenetstat()` · `TODO-FN`
   - [ ] 5.200.22.3 `initnetstat()` · `TODO-FN`
@@ -28794,7 +28794,7 @@ function; a file with two hundred of them is a project.
 - [ ] **6.42.1** `diskmenu.c` · 91L · `TODO-PORT` · 1 fn
   - [ ] 6.42.1.1 `diskmenu_show()` · `TODO-FN`
 - [ ] **6.42.2** `diskmenu.h` · 53L · `TODO-HDR`
-- [ ] **6.42.3** `gpart_ops.c` · 1,565L · `TODO-PORT` · 19 fn
+- [ ] **6.42.3** `gpart_ops.c` · 1,589L · `TODO-PORT` · 19 fn
   - [ ] 6.42.3.1 `gpart_show_error()` · `TODO-FN`
   - [ ] 6.42.3.2 `scheme_supports_labels()` · `TODO-FN`
   - [ ] 6.42.3.3 `newfs_command()` · `TODO-FN`
@@ -30069,7 +30069,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.69 `usr.sbin/ctladm`
 
-- [ ] **6.69.1** `ctladm.c` · 4,622L · `TODO-PORT`
+- [ ] **6.69.1** `ctladm.c` · 4,638L · `TODO-PORT`
 - [ ] **6.69.2** `ctladm.h` · 51L · `TODO-HDR`
 - [ ] **6.69.3** `util.c` · 157L · `TODO-PORT` · 3 fn
   - [ ] 6.69.3.1 `iget()` · `TODO-FN`

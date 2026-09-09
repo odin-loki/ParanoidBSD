@@ -881,14 +881,38 @@ gpart_max_free(struct ggeom *geom, intmax_t *npartstart)
 
 	lastend = start - 1;
 	maxsize = 0;
+	/*
+	 * PBSD: and maxstart, which is written only inside the two `if's
+	 * below and returned through *npartstart whether either fired.
+	 */
+	maxstart = 0;
 	for (i = 0; i < nparts; i++) {
 		pp = providers[i];
 
+		/*
+		 * PBSD: per provider, as the `start = end = 0' above does
+		 * for the geom's own config -- the same shape, twelve lines
+		 * up, already initialised.  Without this a provider whose
+		 * config reports neither start nor end silently reused the
+		 * PREVIOUS partition's extent, and the first one reused the
+		 * frame.  This decides where the installer offers to write.
+		 */
+		partstart = partend = -1;
 		LIST_FOREACH(gc, &pp->lg_config, lg_config) {
 			if (strcmp(gc->lg_name, "start") == 0)
 				partstart = strtoimax(gc->lg_val, NULL, 0);
 			if (strcmp(gc->lg_name, "end") == 0)
 				partend = strtoimax(gc->lg_val, NULL, 0);
+		}
+		if (partstart < 0 || partend < 0) {
+			/*
+			 * PBSD: a partition we cannot place. Guessing its
+			 * extent would offer its space as free, so report
+			 * none at all and let the caller say so.
+			 */
+			free(providers);
+			*npartstart = 0;
+			return (0);
 		}
 
 		if (partstart - lastend > maxsize) {

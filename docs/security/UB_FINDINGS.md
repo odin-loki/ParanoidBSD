@@ -14550,3 +14550,97 @@ out-of-bounds read it sits next to is not something the analyser
 reported — it could not, because `getgrouplist()`'s contract lives in
 another translation unit. **The gate that found this was `--check-errors`,
 not the checkers.**
+
+### Three the first pass missed, and the sweep that found them
+
+Sweep 20 is the first `bin`/`sbin`/`usr.bin`/`usr.sbin` sweep collected
+on a clean tree with `--check-errors`, and it passes:
+
+```
+sweep 19  689 findings, 1821 OK, 41 ERROR   FAIL usr.sbin/gssd/gssd.c
+sweep 20  689 findings, 1822 OK, 40 ERROR   ok, all 40 on the record
+```
+
+29 `core.uninitialized.*` remain across 1,862 translation units, and
+reading the list against what this document already records turned up
+**six entries in five files that had never been read.** Three are real.
+
+`usr.sbin/ctladm/ctladm.c:896` and `:902`, in `cctl_error_inject()`:
+
+```c
+	optret = getoption(cctl_err_types, optarg,
+			   &err_type, &argnum, &subopt);
+	err_desc.lun_error = err_type;
+```
+
+`getoption()` sets `*cmdnum`, `*argnum` and `*subopt` inside its match
+branch only, so `CC_OR_NOT_FOUND` writes none of them — and the store
+into `err_desc` happens **before** the `CC_OR_NOT_FOUND` test fourteen
+lines down. The `goto bailout` there means the value never reaches the
+`CTL_ERROR_INJECT` ioctl, so this is a read whose result is discarded;
+the ordering is still wrong, and the file's own two other `getoption()`
+call sites, at `:508` and `:4341`, both check before using. The same
+shape as `top(1)`'s `renice_procs()` earlier in this document.
+
+`usr.bin/systat/netstat.c:321` is not discarded:
+
+```c
+		if (istcp) {
+			KREAD(inpcb->inp_socket, &sockb, sizeof (sockb));
+			enter_kvm(inpcb, &sockb, tcpcb.t_state, "tcp");
+		} else
+			enter_kvm(inpcb, &sockb, 0, "udp");
+```
+
+The `KREAD` is inside the TCP arm. The UDP arm passes the same `&sockb`
+without ever reading into it, and `enter_kvm()` takes
+`so->so_rcv.sb_ccc` and `so->so_snd.sb_ccc` out of it. UDP is the
+*second* pass — the `goto again` twenty lines down sets `istcp = 0` —
+so every UDP socket was displayed with the last TCP socket's queue
+counts, and with the frame's bytes when there were no TCP sockets at all.
+
+`usr.sbin/bsdinstall/partedit/gpart_ops.c:899` decides where the
+installer offers to write:
+
+```c
+		LIST_FOREACH(gc, &pp->lg_config, lg_config) {
+			if (strcmp(gc->lg_name, "start") == 0)
+				partstart = strtoimax(gc->lg_val, NULL, 0);
+			if (strcmp(gc->lg_name, "end") == 0)
+				partend = strtoimax(gc->lg_val, NULL, 0);
+		}
+```
+
+Neither is initialised, so a provider whose config names neither
+silently reused the *previous* partition's extent, and the first one
+reused the frame. The tell is twelve lines up: the same author, the same
+shape, over the geom's own config — and there it reads `start = end = 0;`
+before the loop. `maxstart` had no initialiser either and is returned
+through `*npartstart` whether or not the two `if`s that write it fired.
+A provider that cannot be placed now makes the function report no free
+space at all, because guessing its extent would offer its space to the
+installer.
+
+```
+--scope usr.sbin/ctladm --scope usr.bin/systat --scope usr.sbin/bsdinstall
+  before  92 findings, 42 OK, 0 ERROR
+  after   86 findings, 42 OK, 0 ERROR
+```
+
+Six go — the three `core.uninitialized.Assign` plus `gpart_ops.c`'s two
+`core.UndefinedBinaryOperatorResult` on the same variables — and
+forty-seven "arrive", every one of them a finding in the same function
+shifted by the new comments.
+
+The other three are premises: `usr.sbin/gstat/gstat.c:280`
+(`head_printed` is written only in the `case 'C':` arm that also sets
+`flag_C`, and the read is under `flag_C`), `bin/sh/jobs.c:1518`
+(`cmdputs()`'s parameter, and both callers that pass a stack buffer write
+both of its bytes first), and `usr.bin/fmt/fmt.c:558` — the residue of a
+fix that did land at `:556`, where the analyser knows `buf[len]` is now
+NUL but cannot relate that to index 1.
+
+**Task #119 was closed a step early.** Its list came from sweep 18, and
+sweep 18 was collected before the `-include opt_global.h` reorder and the
+userland `-I` filter changed which files compile. Six findings existed in
+the tree that the list it was closed against did not contain.
