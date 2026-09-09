@@ -10926,3 +10926,35 @@ through `*kbdp` on the line it is allocated — is called only inside
 is zero only because the `malloc` two lines up passed `M_ZERO`, and
 clang has no model for `malloc`'s third argument. So the analyser
 allows the branch to be skipped and the allocation to escape nothing.
+
+### Addendum: the class is wider than the three, and the proxy misses both ways
+
+Two more members read after the section above was written:
+
+- `sys/dev/mgb/if_mgb.c:434` — `mgb_get_ethaddr()` fills a `struct
+  ether_addr` with `CSR_READ_REG_BYTES`, which is
+  `bus_read_region_1((sc)->regs, reg, dest, cnt)`, and the caller then
+  tests `ETHER_IS_BROADCAST(hwaddr.octet)`.
+- `sys/x86/isa/orm.c:131` — `bus_space_read_region_1(bt, bh, 0, buf,
+  sizeof(buf))` then `if (buf[0] != 0x55 || buf[1] != 0xAA ...)`.
+
+So `read_region` belongs beside `read_multi`: both are `static __inline`
+in `sys/x86/include/bus.h` with `insb`/`rep movsb` bodies, and both lose
+the write.
+
+Widening the proxy to `bus_(space_)?read_(multi|region)_[1248]` gives
+**22 uninitialised-value findings in 8 files** — and it is wrong in
+*both* directions, which is the useful part:
+
+- it **over**-counts: `fdc.c`'s eight are `fdc_sense_int()`'s
+  out-parameters, as established above;
+- it **under**-counts: neither `atmegadci.c` nor `if_mgb.c` matches it,
+  because they call the primitive through a driver macro
+  (`ATMEGA_READ_MULTI_1`, `CSR_READ_REG_BYTES`) whose expansion lives in
+  a header the pattern never opens.
+
+A textual proxy for "the finding rests on X" fails on macros in one
+direction and on coincidence in the other. The verified members remain
+the ones that were read: `atmegadci.c:295`, `musb_otg.c:503`,
+`uss820dci.c:326`, `if_mgb.c:434`, `orm.c:131` — **five**. The other
+seventeen the proxy names are not claimed.
