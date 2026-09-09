@@ -280,19 +280,15 @@ _PROG_VARS = ("PROGS", "PROGS_CXX", "PLAIN_TESTS_C", "PLAIN_TESTS_CXX",
 
 
 @functools.lru_cache(maxsize=None)
-def _progs_srcs(d: Path, arch: str, src: Path,
-                timeout: int) -> tuple[tuple[str, frozenset[str]], ...]:
-    """{program: the sources its SRCS.<prog> names} for one directory.
+def _srcs_of(d: Path, arch: str, src: Path, timeout: int,
+             progs: tuple[str, ...]) -> tuple[tuple[str, frozenset[str]], ...]:
+    """{program: the sources its SRCS.<prog> names}, given the programs.
 
-    Cached on the DIRECTORY, not the file. Asked per file this would be
-    two extra bmake runs for each of 1,862 progs units; asked per
-    directory it is two for each directory that lists programs at all,
-    and one cheap one for each that does not.
+    Cached on the DIRECTORY, not the file: SRCS.<prog> is a property of
+    the Makefile, and asking it per file would be one bmake run for each
+    of 1,862 progs units instead of one for each directory that lists
+    programs at all.
     """
-    got = _bmake(d, arch, list(_PROG_VARS), src, timeout)
-    if got is None:
-        return ()
-    progs = [w for line in got for w in line.split()]
     if not progs:
         return ()
     srcs = _bmake(d, arch, [f"SRCS.{p}" for p in progs], src, timeout)
@@ -302,10 +298,86 @@ def _progs_srcs(d: Path, arch: str, src: Path,
                  for p, line in zip(progs, srcs))
 
 
+@functools.lru_cache(maxsize=None)
+def _progs_srcs(d: Path, arch: str, src: Path,
+                timeout: int) -> tuple[tuple[str, frozenset[str]], ...]:
+    """{program: the sources its SRCS.<prog> names} for one directory.
+
+    The standalone form, which pays its own bmake run for the program
+    lists. ask_cflags() does not use it: it folds those seven variables
+    into the run it was already making. This is here for callers that
+    want the answer on its own, and for the test that checks it.
+    """
+    got = _bmake(d, arch, list(_PROG_VARS), src, timeout)
+    if got is None:
+        return ()
+    return _srcs_of(d, arch, src, timeout,
+                    tuple(w for line in got for w in line.split()))
+
+
 def _programs_naming(d: Path, arch: str, name: str, src: Path,
                      timeout: int) -> list[str]:
     """The programs in this directory whose SRCS.<prog> names `name'."""
     return [p for p, s in _progs_srcs(d, arch, src, timeout) if name in s]
+
+
+def _take_flags(got: list[str], out: list[str], seen: set[str],
+                own_from: int) -> None:
+    """Append the -I, -D, -U (and per-file -f/-m) of each bmake line.
+
+    `own_from' is the index at which the lines stop being the
+    component's CFLAGS/CXXFLAGS and start being a single file's or a
+    single program's own - which is the only place -f and -m are taken
+    from, since -flto and -fsanitize live in the component's.
+    """
+    for i, line in enumerate(got):
+        try:
+            words = shlex.split(line)
+        except ValueError:
+            words = line.split()
+        pending = False
+        for w in words:
+            if pending:
+                # The path half of `-include <path>', emitted JOINED to
+                # the flag. clang accepts `-include/path/x.h', and one
+                # word is what every caller of this function expects:
+                # includes.py drops a flag it has already seen, so two
+                # `-include' words deduplicate to one and orphan the
+                # second path, which clang then reads as a source file.
+                # usr.sbin/fstyp has exactly two.
+                pending = False
+                w = INCLUDE_FLAG + w
+            elif w == INCLUDE_FLAG:
+                pending = True
+                continue
+            if w in seen or len(w) <= 2:
+                continue
+            if w.startswith(INCLUDE_FLAG) and len(w) > len(INCLUDE_FLAG):
+                seen.add(w)
+                out.append(w)
+                continue
+            # -f and -m only from the file's own flags, and never the
+            # two the analyser cannot accept.
+            #
+            # PARSE_AFFECTING is the exception, and it comes from the
+            # same reasoning the per-file carve-out already uses:
+            # without them the file does not PARSE, so dropping them
+            # does not produce a differently-optimised compile, it
+            # produces an ERROR. usr.sbin/wlanstat/Makefile:10 is
+            #
+            #     CFLAGS.clang+= -fbracket-depth=512 -Wno-cast-align
+            #
+            # for a file whose ~300 `#define S_X AFTER(S_PREV)' chain
+            # expands to that many nested parentheses; without it,
+            # `fatal error: bracket nesting level exceeded maximum of
+            # 256'. -fblocks is the same shape one extension over, and
+            # appears in component CFLAGS as well as per-file ones.
+            if (w[:2] in ("-I", "-D", "-U")
+                    or w.startswith(PARSE_AFFECTING)
+                    or (i >= own_from and w[:2] in ("-f", "-m")
+                        and not w.startswith(("-fsanitize", "-flto")))):
+                seen.add(w)
+                out.append(w)
 
 
 def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
@@ -366,61 +438,40 @@ def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
         #
         # fake.c has no CFLAGS.fake.c of its own; the -I that lets it
         # find <dhcpd.h> is on the test program's name.
-        for prog in _programs_naming(d, arch, name, src, timeout):
-            want += [f"CFLAGS.{prog}", f"CXXFLAGS.{prog}"]
+        #
+        # Which programs those are needs a bmake run of its own - and
+        # a run per directory is 620 of them over bin sbin usr.bin
+        # usr.sbin, which measured as a third of the sweep's wall time
+        # for an answer that is empty in almost every directory. So the
+        # seven variables ride along in the run this function was
+        # already making: more variables on one bmake invocation cost
+        # nothing, and only a directory that actually lists programs
+        # then pays for the SRCS.<prog> run that follows.
+        prog_from = len(want)
+        want += list(_PROG_VARS)
     got = _bmake(d, arch, want, src, timeout)
     if got is None:
         return []
+
+    progs: tuple[str, ...] = ()
+    if name:
+        progs = tuple(w for line in got[prog_from:] for w in line.split())
+        got = got[:prog_from]
+
     out: list[str] = []
     seen: set[str] = set()
-    for i, line in enumerate(got):
-        try:
-            words = shlex.split(line)
-        except ValueError:
-            words = line.split()
-        pending = False
-        for w in words:
-            if pending:
-                # The path half of `-include <path>', emitted JOINED to
-                # the flag. clang accepts `-include/path/x.h', and one
-                # word is what every caller of this function expects:
-                # includes.py drops a flag it has already seen, so two
-                # `-include' words deduplicate to one and orphan the
-                # second path, which clang then reads as a source file.
-                # usr.sbin/fstyp has exactly two.
-                pending = False
-                w = INCLUDE_FLAG + w
-            elif w == INCLUDE_FLAG:
-                pending = True
-                continue
-            if w in seen or len(w) <= 2:
-                continue
-            if w.startswith(INCLUDE_FLAG) and len(w) > len(INCLUDE_FLAG):
-                seen.add(w)
-                out.append(w)
-                continue
-            # -f and -m only from the file's own flags, and never the
-            # two the analyser cannot accept.
-            #
-            # PARSE_AFFECTING is the exception, and it comes from the
-            # same reasoning the per-file carve-out already uses:
-            # without them the file does not PARSE, so dropping them
-            # does not produce a differently-optimised compile, it
-            # produces an ERROR. usr.sbin/wlanstat/Makefile:10 is
-            #
-            #     CFLAGS.clang+= -fbracket-depth=512 -Wno-cast-align
-            #
-            # for a file whose ~300 `#define S_X AFTER(S_PREV)' chain
-            # expands to that many nested parentheses; without it,
-            # `fatal error: bracket nesting level exceeded maximum of
-            # 256'. -fblocks is the same shape one extension over, and
-            # appears in component CFLAGS as well as per-file ones.
-            if (w[:2] in ("-I", "-D", "-U")
-                    or w.startswith(PARSE_AFFECTING)
-                    or (i >= 2 and w[:2] in ("-f", "-m")
-                        and not w.startswith(("-fsanitize", "-flto")))):
-                seen.add(w)
-                out.append(w)
+    _take_flags(got, out, seen, own_from=2)
+
+    if progs:
+        mine = [pr for pr, s in _srcs_of(d, arch, src, timeout, progs)
+                if name in s]
+        if mine:
+            more = _bmake(d, arch,
+                          [f"{v}.{pr}" for pr in mine
+                           for v in ("CFLAGS", "CXXFLAGS")],
+                          src, timeout)
+            if more:
+                _take_flags(more, out, seen, own_from=0)
     return out
 
 

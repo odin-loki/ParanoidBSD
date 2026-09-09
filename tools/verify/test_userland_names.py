@@ -205,6 +205,46 @@ def main() -> int:
           "CFLAGS.<file> is spelled without the suffix too "
           "(detect_tz_changes_test)")
 
+    # How MANY bmake runs the answer costs, not just what it is. The
+    # program lists used to be a run of their own, per directory: 626 of
+    # them over bin sbin usr.bin usr.sbin, for an answer that is empty in
+    # almost every one. They now ride along in the run ask_cflags was
+    # already making, and only a directory that really lists programs
+    # pays for the SRCS.<prog> run that follows. Counted rather than
+    # asserted, because nothing else would notice the extra run coming
+    # back.
+    real_bmake = u._bmake
+    runs: list[int] = []
+
+    def counting(*a, **k):
+        runs.append(1)
+        return real_bmake(*a, **k)
+
+    u._bmake = counting
+    try:
+        u._srcs_of.cache_clear()
+        u._progs_srcs.cache_clear()
+        runs.clear()
+        u.ask_cflags(u.SRC / "usr.bin/killall", "amd64", name="killall.c")
+        plain = len(runs)
+
+        u._srcs_of.cache_clear()
+        runs.clear()
+        withprog = u.ask_cflags(u.SRC / "sbin/dhclient/tests", "amd64",
+                                name="fake.c")
+        prog = len(runs)
+    finally:
+        u._bmake = real_bmake
+
+    check(plain == 1,
+          "a directory with no programs costs ONE bmake run, not two "
+          f"(got {plain})")
+    check(prog == 3,
+          "a directory with programs pays for SRCS.<prog> and the "
+          f"program's own flags, and no more (got {prog})")
+    check(any(f.endswith("sbin/dhclient") for f in withprog),
+          "...and still returns the program's -I after the fold")
+
     print(f"\n{'FAILED' if FAIL else 'all checks passed'}"
           f"{f' ({FAIL})' if FAIL else ''}")
     return 1 if FAIL else 0
