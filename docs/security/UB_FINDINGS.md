@@ -13433,3 +13433,73 @@ unreachable today: there the code was wrong and the invariant accidental,
 and the fix restored an intent the file had lost. Here the code is right
 and maintains what it needs. What it does not do is say so, which is what
 this section is for.
+
+## A module's explicit rules, and whose flags they are
+
+`ask_module()` asked bmake for `SRCS`, `OBJS` and `.PATH`, and mapped
+every `.o` that was in `OBJS` but not in `SRCS` back to a source. A rule
+whose target is in **neither** was invisible. `sys/modules/vmm`:
+
+```
+CLEANFILES+=  vmm_nvhe_exception.o vmm_nvhe.o
+
+vmm_nvhe.o: vmm_nvhe.c vmm_hyp.c
+	${CC} -c ${NOSAN_CFLAGS:N-mbranch-protection*:N-fstack-protector*} \
+	    ${.IMPSRC} -o ${.TARGET} -fpie
+
+vmm_hyp_blob.elf.full:	vmm_nvhe_exception.o vmm_nvhe.o
+```
+
+`vmm_nvhe.o` is built — the hypervisor blob the module links depends on
+it — and it appears nowhere but `CLEANFILES` and its own rule. bmake's
+`.ALLTARGETS` is the list of every target it has a rule for, and it names
+both. Six Makefiles in the tree have a `.o:` rule and no `OBJS` line, so
+the whole cost is six more bmake runs.
+
+The other half of the change matters more than the first, and it is the
+half the task warned about. A rule's `-D` belong to **its** target. The
+old code harvested every tab-indented line in the Makefile into one list
+and gave it to every rule-built source. `sys/modules/vmm` has two rules
+side by side:
+
+```
+vmm_nvhe_exception.o: ...
+	${CC} -c -x assembler-with-cpp -DLOCORE ...
+vmm_nvhe.o: vmm_nvhe.c vmm_hyp.c
+	${CC} -c ... (no -DLOCORE)
+```
+
+and `sys/modules/linux` has three whose targets are `$`-expanded, of
+which `linux${SFX}_locore.o` and `linux${SFX}_support.o` carry `-DLOCORE`
+and `linux${SFX}_vdso_gtod.o` does not. Handing `-DLOCORE` to a C file
+tells every header it is assembly — the twenty-six-regression mistake of
+sweep 12, one rule further in, and it was already happening.
+
+So the rules are split by target. A literal target gets its own body and
+nothing else; a `$`-expanded target is matched on the literal tail after
+the last `}` — `_vdso_gtod.o` — which is unique among that Makefile's
+three; and a target with no tail at all, blake2's `${src:S/.c/.o/}:`,
+stays in the generic set, which is right, because that rule *is* every
+source it builds.
+
+```
+--scope sys/amd64 --scope sys/arm64 --scope sys/i386 --scope sys/crypto
+--scope sys/dev/hyperv --scope sys/cddl --check-errors
+  before  75 findings, 420 OK, 47 ERROR   FAIL x2, not in EXPECTED
+  after   75 findings, 422 OK, 45 ERROR   ok
+```
+
+Two translation units come back — `sys/amd64/linux32/linux32_genassym.c`
+and `linux32_vdso_gtod.c`, both of which had been compiled as assembly —
+and the finding count does not move. Every other file is byte-identical
+across the pair.
+
+Four checks in `test_includes.py`, made to fail first: with the change
+reverted, "a rule-only target is named" reports `not in by_src` and
+"...nor does linux32_vdso_gtod.c, whose rule is $-expanded" reports
+`-DCOMPAT_FREEBSD32 -DCOMPAT_LINUX32 -DLOCORE`. The two that stay green
+under the revert are the ones holding the *other* direction — that
+blake2's generic `.for` rule keeps its flags, and that `vmm_nvhe.c` does
+not acquire its neighbour's — which is what a check for a split like this
+needs: one half proves the new behaviour, the other proves the old one
+was not broken to get it.

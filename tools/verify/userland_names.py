@@ -658,10 +658,11 @@ def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
     adds - not the module's whole CFLAGS, which is kern.pre.mk's job and
     already in includes.kernel_flag_index().
     """
-    got = _bmake(d, arch, ["SRCS", "OBJS", ".PATH"], src, timeout)
+    got = _bmake(d, arch, ["SRCS", "OBJS", ".PATH", ".ALLTARGETS"],
+                 src, timeout)
     if got is None:
         return {}, [], set()
-    srcs, objs, path = (g.split() for g in got)
+    srcs, objs, path, targets = (g.split() for g in got)
     names = [s for s in srcs if s.endswith(SUFFIXES) and "$" not in s]
     # Which of them came from OBJS, and so are built by a rule of the
     # module's own rather than by the ordinary one. That distinction is
@@ -679,10 +680,28 @@ def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
     # assembly - twenty-six regressions in one sweep.
     have = set(srcs)
     from_objs: set[str] = set()
-    for o in objs:
+    # ...and .ALLTARGETS, for a rule whose target is in NEITHER.
+    #
+    # sys/modules/vmm/Makefile has
+    #
+    #   CLEANFILES+=  vmm_nvhe_exception.o vmm_nvhe.o
+    #   vmm_nvhe.o: vmm_nvhe.c vmm_hyp.c
+    #           ${CC} -c ${NOSAN_CFLAGS:...} ${.IMPSRC} -o ${.TARGET} -fpie
+    #   vmm_hyp_blob.elf.full: vmm_nvhe_exception.o vmm_nvhe.o
+    #
+    # so vmm_nvhe.o IS built - the hypervisor blob the module links
+    # depends on it - and it appears nowhere but CLEANFILES and its own
+    # rule. SRCS and OBJS cannot see it; .ALLTARGETS is bmake's list of
+    # every target it has a rule for, and it names both.
+    #
+    # The test stays "ends in .o and resolves through .PATH to a file
+    # that exists", because CLEANFILES also lists things built from no
+    # source in this tree - vmm_hyp_blob.bin among them - and .ALLTARGETS
+    # carries the module's phony targets too.
+    for o in list(objs) + [t for t in targets if t not in set(objs)]:
         if o.endswith(".o") and "$" not in o and o not in have:
             c = o[:-2] + ".c"
-            if c not in have:
+            if c not in have and c not in from_objs:
                 names.append(c)
                 from_objs.add(c)
     dirs = [str(d)] + [x for x in path if x != "."]

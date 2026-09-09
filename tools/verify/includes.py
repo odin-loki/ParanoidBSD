@@ -1033,7 +1033,15 @@ def kernel_flag_index(arch: str = "amd64"
         # bmake's modifiers; ask bmake. Only where an OBJS line exists -
         # seven Makefiles in the tree - so the cost is seven bmake runs
         # and not a thousand.
-        if re.search(r"^OBJS\s*\+?=", text, re.M):
+        # ...or an explicit rule whose target is an object. bmake's
+        # .ALLTARGETS names those, and sys/modules/vmm is why:
+        # vmm_nvhe.o has a rule of its own, is a prerequisite of the
+        # hypervisor blob the module links, and appears in no SRCS and
+        # no OBJS - only in CLEANFILES. Six Makefiles in the tree have a
+        # `.o:' rule and no OBJS line, so the cost is six more bmake
+        # runs.
+        if (re.search(r"^OBJS\s*\+?=", text, re.M)
+                or re.search(r"^[A-Za-z0-9_.\-]+\.o\s*:", text, re.M)):
             per, _, obj_rels = userland_names.ask_module(mk.parent, arch,
                                                         SRC)
             # A .for rule compiles with its OWN command line, and the -D
@@ -1048,10 +1056,68 @@ def kernel_flag_index(arch: str = "amd64"
             # <stdlib.h>, in a kernel translation unit. The rule bodies
             # are the tab-indented lines; take their literal -D and
             # nothing else.
+            # ...and a rule's -D belong to ITS target, not to every
+            # source the module builds by a rule of its own.
+            # sys/modules/vmm has two rules side by side: the .S one
+            # carries -DLOCORE and the vmm_nvhe.c one does not, and
+            # handing -DLOCORE to a C file tells every header it is
+            # assembly. That is the twenty-six-regression mistake of
+            # sweep 12, one rule further in.
+            #
+            # So the rules are split by target. A target bmake expands
+            # from a variable - blake2's `${src:S/.c/.o/}:' - cannot be
+            # matched textually, and its -D stay in the generic set that
+            # every rule-built source of that module gets; a target
+            # spelled out literally gets its own and nothing else.
+            rules_of: dict[str, list[str]] = {}
+            # A target bmake expands from a variable is still a target
+            # of one file. sys/modules/linux spells three of them
+            #
+            #   linux${SFX}_locore.o:      ... -DLOCORE ...
+            #   linux${SFX}_vdso_gtod.o:   ... (no -DLOCORE)
+            #   linux${SFX}_support.o:     ... -DLOCORE ...
+            #
+            # and pooling their bodies hands the C file the assembly
+            # rules' -DLOCORE. The literal tail after the last `}' -
+            # `_vdso_gtod.o' - is enough to tell them apart, and it is
+            # the whole target for anything without a variable in it.
+            # blake2's `${src:S/.c/.o/}:' has no tail at all and stays
+            # in the generic set, which is right: that rule IS every
+            # source it builds.
+            suffix_of: dict[str, list[str]] = {}
+            generic: list[str] = []
+            cur: list[str] | None = None
+            for line in text.splitlines():
+                if line.startswith("\t"):
+                    if cur is not None:
+                        cur.append(line)
+                    continue
+                m = re.match(r"^([A-Za-z0-9_.\-]+\.o)\s*:", line)
+                if m:
+                    cur = rules_of.setdefault(m.group(1), [])
+                elif re.match(r"^\S.*:", line) and "=" not in line.split(
+                        ":")[0]:
+                    tgt = line.split(":")[0].strip()
+                    tail = tgt.rsplit("}", 1)[-1] if "}" in tgt else ""
+                    if ("$" in tgt and tail.endswith(".o")
+                            and re.fullmatch(r"[A-Za-z0-9_.\-]+", tail)):
+                        cur = suffix_of.setdefault(tail, [])
+                    else:
+                        # some other rule; its body is nobody's in
+                        # particular.
+                        cur = generic
+                elif line.strip() and not line.startswith(" "):
+                    cur = None
+
+            def _rule_d(lines: list[str]) -> list[str]:
+                out = [w for line in lines for w in line.split()
+                       if w.startswith("-D") and "$" not in w and len(w) > 2]
+                if any(":N-nostdinc" in line for line in lines):
+                    out.append("-DPBSD_WANTS_STDINC")
+                return out
+
             rules = [line for line in text.splitlines()
                      if line.startswith("\t")]
-            rule_d = [w for line in rules for w in line.split()
-                      if w.startswith("-D") and "$" not in w and len(w) > 2]
             # ...and `${CFLAGS:N-nostdinc}' is the rule saying it wants
             # the standard headers, which is the other half of the same
             # decision: -D_MM_MALLOC_H_INCLUDED does not silence clang's
@@ -1059,8 +1125,6 @@ def kernel_flag_index(arch: str = "amd64"
             # <immintrin.h> reaches malloc() and free() and needs a real
             # <stdlib.h>. A marker flag the analyser strips later,
             # rather than a second flag list to keep in step.
-            if any(":N-nostdinc" in line for line in rules):
-                rule_d.append("-DPBSD_WANTS_STDINC")
             # ONLY the .for-rule sources. The SRCS the hand reading
             # above already covers, and adding them here again gave
             # sys/compat/linux the module's -DLOCORE, which the reading
@@ -1069,6 +1133,13 @@ def kernel_flag_index(arch: str = "amd64"
             # told the file was assembly.
             for rel_src in sorted(obj_rels):
                 own = per.get(rel_src, ())
+                tgt = Path(rel_src).name[:-2] + ".o"
+                if tgt in rules_of:
+                    body = rules_of[tgt]
+                else:
+                    hit = [v for k, v in suffix_of.items() if tgt.endswith(k)]
+                    body = hit[0] if len(hit) == 1 else (generic or rules)
+                rule_d = _rule_d(body)
                 by_src.setdefault(rel_src, []).extend(
                     list(flags) + rule_d
                     + [f for f in own

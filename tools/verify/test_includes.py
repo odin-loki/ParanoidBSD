@@ -778,6 +778,39 @@ check_that("...so ZFS_DEBUG is set and NDEBUG is not, and ASSERT is a check",
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+print()
+print("== a module's explicit rules, and whose flags they are")
+# sys/modules/vmm builds vmm_nvhe.o from a rule of its own; the target is
+# in no SRCS and no OBJS, only in CLEANFILES and the rule. bmake's
+# .ALLTARGETS names it.
+_k_a = includes.kernel_flag_index("aarch64")[1]
+check_that("a rule-only target is named (sys/arm64/vmm/vmm_nvhe.c)",
+           "sys/arm64/vmm/vmm_nvhe.c" in _k_a,
+           "not in by_src")
+# ...and a rule's -D belong to ITS target. sys/modules/vmm's OTHER rule
+# carries -DLOCORE for an assembly file; sys/modules/linux has three
+# $-expanded targets of which two carry it and the C one does not.
+check_that("...and does not get the neighbouring rule's -DLOCORE",
+           "-DLOCORE" not in _k_a.get("sys/arm64/vmm/vmm_nvhe.c", ()),
+           " ".join(f for f in _k_a.get("sys/arm64/vmm/vmm_nvhe.c", ())
+                    if f.startswith("-D")))
+_k_x = includes.kernel_flag_index("amd64")[1]
+check_that("...nor does linux32_vdso_gtod.c, whose rule is $-expanded",
+           "-DLOCORE" not in _k_x.get(
+               "sys/amd64/linux32/linux32_vdso_gtod.c", ()),
+           " ".join(f for f in _k_x.get(
+               "sys/amd64/linux32/linux32_vdso_gtod.c", ())
+               if f.startswith("-D")))
+# ...while blake2's `${src:S/.c/.o/}:' has no literal tail to match on,
+# so it stays in the generic set - which is right, that rule IS every
+# source it builds.
+check_that("...and blake2 keeps the .for rule's own flags",
+           {"-D_MM_MALLOC_H_INCLUDED", "-DSUFFIX=_avx", "-mavx"}
+           <= set(_k_x.get("sys/crypto/blake2/blake2b-avx.c", ())),
+           " ".join(f for f in _k_x.get("sys/crypto/blake2/blake2b-avx.c", ())
+                    if f.startswith(("-D", "-m"))))
+
 print()
 print("== bmake decides a component's own include path, where it can be asked")
 # The blocks in include_flags() and the Makefile walk are both second
