@@ -9453,3 +9453,56 @@ both cases the value is the one the file's own conventions already use:
     at `:803`, and takes the `ret != 1` arm — `RPCTLS_FLAGS_DISABLED`.
     A TLS server that cannot tell whether it got the peer's name should
     fail closed.
+
+## The last two easy generators, and where the ERROR set stands
+
+`bin/csh/iconv_stub.c` was `use of undeclared identifier
+'dl_iconv_close_t'` — an error one step past the real problem. It opens
+with `#include "iconv.h"`, and `bin/csh/Makefile:103` is
+
+    iconv.h: ${.CURDIR}/iconv_stub.h
+            ${CP} ${.CURDIR}/iconv_stub.h ${.TARGET}
+
+so in a real build that quoted include finds a **copy of
+`iconv_stub.h`**, which declares `dl_iconv_t` and `dl_iconv_close_t`.
+Without the copy it finds the tree's own `include/iconv.h` — a real
+header, for the real `iconv(3)`, which declares neither. A wrong header
+found is worse than a missing one: the file gets further before it
+fails, and the error names a symbol rather than a file.
+
+`usr.sbin/config/mkheaders.c` wanted `y.tab.h`.
+`usr.sbin/config/Makefile:6` puts `config.y` **and** `y.tab.h` in
+`SRCS`, and `share/mk/bsd.suffixes.mk:74` is
+
+    .y.c:
+            ${YACC} ${YFLAGS} ${.IMPSRC}
+            mv y.tab.c ${.TARGET}
+
+with `YFLAGS ?= -d` from `sys.mk:273` — so yacc runs in the objdir and
+leaves `y.tab.h` beside the `.c` it renames away. No `-o` here, unlike
+`localedef`'s generator: `-o` renames the header too, and this one is
+wanted under the name yacc gives it by default.
+
+That leaves **two** unexplained progs ERRORs, both waiting on a third
+and fourth host tool:
+
+| file | needs |
+|---|---|
+| `sbin/ifconfig/sfp.c` | `libifconfig_sfp_tables.h`, which `lib/libifconfig/Makefile:31` makes with `${LUA} sfp.lua` over a `.tpl.h` — `flua`, the tree's own Lua 5.3 |
+| `usr.sbin/gssd/gssd.c` | `krb5/krb5.h`, which `krb5/include/krb5/Makefile` makes by `cat`-ing `krb5.hin` with error-table headers `compile_et` builds first |
+
+Both are the same shape as `gensnmptree` and `rpcgen`: the build runs a
+tool the build builds. Neither is a guess about what the header should
+contain.
+
+Where the number has gone, over this run of work:
+
+| | ERROR | unexplained |
+|---|---|---|
+| at the start | 108 | 83 |
+| four generated headers | 91 | 66 |
+| the ERROR inventory, twice | 91 | 57 |
+| the C++ standard library | 78 | 44 |
+| gensnmptree | 53 | 19 |
+| the tree's rpcgen, and four flag readings | 44 | 4 |
+| these two generators | 42 | 2 |

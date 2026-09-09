@@ -3025,6 +3025,52 @@ def _gen_bsnmp(out: Path, directory: str = "") -> None:
                        stdin=fh, check=True, cwd=out)
 
 
+def _gen_csh_iconv(out: Path, _dir: str = "") -> None:
+    """bin/csh's iconv.h, which is a copy of iconv_stub.h.
+
+        bin/csh/Makefile:101   SRCS+= iconv_stub.c
+                        :103   iconv.h: ${.CURDIR}/iconv_stub.h
+                        :104       ${CP} ${.CURDIR}/iconv_stub.h ${.TARGET}
+
+    iconv_stub.c opens with `#include "iconv.h"' and then uses
+    dl_iconv_t and dl_iconv_close_t, which only that header declares.
+    Without the copy the quoted include finds the tree's own
+    include/iconv.h instead - a real header, for the real iconv(3) -
+    and the file is `use of undeclared identifier dl_iconv_close_t'.
+    A wrong header found is worse than none: it compiles further.
+    """
+    src = SRC / "bin" / "csh" / "iconv_stub.h"
+    if src.is_file():
+        shutil.copyfile(src, out / "iconv.h")
+
+
+def _gen_config_ytab(out: Path, _dir: str = "") -> None:
+    """usr.sbin/config's y.tab.h.
+
+        usr.sbin/config/Makefile:6  SRCS= config.y main.cc lang.l
+                                          mkmakefile.cc mkheaders.c
+                                          mkoptions.cc y.tab.h kernconf.c
+
+    share/mk/bsd.suffixes.mk:74 is
+
+        .y.c:
+                ${YACC} ${YFLAGS} ${.IMPSRC}
+                mv y.tab.c ${.TARGET}
+
+    with `YFLAGS ?= -d' from sys.mk:273, so yacc runs in the objdir and
+    leaves y.tab.h beside the .c it renames away. No -o here, unlike
+    _gen_localedef: -o renames the header too, and this one is wanted
+    under the name yacc gives it by default, which is what mkheaders.c
+    includes.
+    """
+    y = SRC / "usr.sbin" / "config" / "config.y"
+    if not y.is_file():
+        return
+    subprocess.run(["yacc", "-d", str(y)],
+                   check=True, capture_output=True, cwd=out)
+    (out / "y.tab.c").unlink(missing_ok=True)
+
+
 _GENERATED = {
     "bin/sh": _gen_bin_sh,
     "usr.sbin/bsdinstall/partedit": _gen_opt_osname,
@@ -3034,6 +3080,8 @@ _GENERATED = {
     "usr.bin/netstat": _gen_netstat,
     "sbin/route": _gen_route,
     "usr.bin/getaddrinfo": _gen_getaddrinfo,
+    "bin/csh": _gen_csh_iconv,
+    "usr.sbin/config": _gen_config_ytab,
     "usr.sbin/bsnmpd/modules/snmp_bridge": _gen_bsnmp,
     "usr.sbin/bsnmpd/modules/snmp_hast": _gen_bsnmp,
     "usr.sbin/bsnmpd/modules/snmp_hostres": _gen_bsnmp,
