@@ -3771,10 +3771,12 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     # will not give (a directory whose Makefile bmake cannot read) the
     # walk still has it.
     comp = _component_dir(rel)
+    comp_flags: list[str] = []
     if comp is not None:
+        comp_flags = list(userland_names.ask_cflags(comp, arch,
+                                                    name=Path(rel).name))
         seen = set(flags)
-        for f in userland_names.ask_cflags(comp, arch,
-                                           name=Path(rel).name):
+        for f in comp_flags:
             if f not in seen:
                 seen.add(f)
                 flags.append(f)
@@ -3797,6 +3799,48 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
             if d == root or root not in d.parents:
                 break
             d = d.parent
+
+        # bmake decides which of the COMPONENT'S OWN directories are on
+        # the include path, when bmake could be asked at all.
+        #
+        # Everything above this line is a second implementation of the
+        # build: a table of -I written here, and a textual walk of the
+        # component's Makefiles. Neither can evaluate a conditional, so
+        # both contribute directories from branches that do not hold.
+        # lib/msun/Makefile:18 puts x86/ on the path only for i386 and
+        # amd64, and :24 picks ld80/ or ld128/ from LDBL_PREC - and
+        # analysing lib/msun/arm/fenv-softfp.c as armv7 had all three,
+        # plus bsdsrc/ and man/ from the walk. msun/x86 put x86's
+        # <fenv.h> ahead of arm's, which is a compile that succeeds
+        # against the wrong header or fails on a declaration that is in
+        # the other one.
+        #
+        # So: when ask_cflags() answered with at least one -I inside the
+        # component, that answer IS the component's include path, and a
+        # -I into the component that bmake did not name comes off.
+        # Narrowly - only directories under the component root, so the
+        # -I into libc, contrib and the generated shims that the blocks
+        # above add for OTHER components are untouched, and a component
+        # bmake cannot read keeps the walk it always had.
+        #
+        # ...and only for a file the build NAMES at this architecture,
+        # because bmake's answer is the answer for what bmake builds.
+        # lib/libc/Makefile:131 reads softfloat/Makefile.inc only under
+        # `LIBC_ARCH == "arm" && CPUTYPE:M*soft*', so an armv7 build with
+        # no CPUTYPE compiles none of lib/libc/softfloat - and bmake's
+        # CFLAGS for lib/libc rightly carry none of its -I. The sweep
+        # analyses those 39 translation units anyway, deliberately, on
+        # the -I this file supplies; taking bmake's answer for them
+        # turned all 39 from OK to ERROR and moved no finding, which is
+        # 39 files stopping saying anything in exchange for nothing.
+        # A file the build does not build gets the reading it had.
+        if (comp is not None and comp_flags
+                and rel in userland_names.for_arch(arch)):
+            inside = f"-I{comp}/"
+            keep = {f for f in comp_flags if f.startswith(inside)}
+            if keep:
+                flags = [f for f in flags
+                         if not f.startswith(inside) or f in keep]
     if rel.startswith("lib/libc/csu/"):
         # The C start-up: libc_start1.c is the first C any process runs
         # after the run-time linker, and none of its six translation

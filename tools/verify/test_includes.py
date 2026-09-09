@@ -32,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import includes  # noqa: E402
+import userland_names  # noqa: E402
 
 fails: list[str] = []
 
@@ -776,6 +777,35 @@ check_that("...so ZFS_DEBUG is set and NDEBUG is not, and ASSERT is a check",
            f"clang exited {_dr.returncode} with no diagnostics")
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+print()
+print("== bmake decides a component's own include path, where it can be asked")
+# The blocks in include_flags() and the Makefile walk are both second
+# implementations of the build, and neither can evaluate a conditional.
+# lib/msun/Makefile:18 puts x86/ on the path only for i386 and amd64, and
+# :24 picks ld80/ or ld128/ from LDBL_PREC; the walk adds bsdsrc/ and
+# man/. Asking bmake for lib/msun at armv7 gives arm/ and src/ and
+# nothing else, and for a file the build NAMES at that architecture that
+# answer is the answer.
+_mf = "lib/msun/arm/fenv.c"
+_mi = [f for f in includes.include_flags(SRC / _mf, "armv7")
+       if f.startswith(f"-I{SRC}/lib/msun/")]
+check_that("a built armv7 msun file gets arm/ and src/",
+           sorted(set(_mi)) == sorted({f"-I{SRC}/lib/msun/arm",
+                                       f"-I{SRC}/lib/msun/src"}),
+           " ".join(x.rsplit("/lib/", 1)[-1] for x in _mi))
+# ...and a file the build does NOT name keeps the reading it had, because
+# bmake's answer is the answer for what bmake builds. lib/libc's softfloat
+# -I come from a Makefile.inc that lib/libc/Makefile:131 reads only for a
+# soft-float CPUTYPE, and taking bmake's answer for those 39 translation
+# units turned every one of them from OK to ERROR while moving no finding.
+_sf = "lib/libc/softfloat/eqdf2.c"
+_si = [f for f in includes.include_flags(SRC / _sf, "armv7")
+       if f.endswith("/lib/libc/softfloat")]
+check_that("...and one the build does not name keeps its own",
+           bool(_si) and _sf not in userland_names.for_arch("armv7"),
+           f"-I found: {bool(_si)}")
+
 print()
 print("== the target triple is the one the build passes")
 # Makefile.inc1:136-142 picks the arm ABI from CPUTYPE and :893 passes the

@@ -13203,3 +13203,70 @@ string, because the string is not the thing that decides.
 
 `Makefile.inc1` special-cases no other architecture, so the remaining
 five triples are `unknown` in the build too.
+
+## bmake decides a component's include path, for the files bmake builds
+
+`include_flags()` had three sources for a userland component's `-I`: a
+table written in the file, a textual walk of the component's Makefiles,
+and `ask_cflags()`, which asks bmake. The first two cannot evaluate a
+conditional, so both contribute directories from branches that do not
+hold. Analysing `lib/msun/arm/fenv.c` as armv7:
+
+```
+table + walk + bmake   msun/arm  msun/src  msun/ld80  msun/ld128
+                       msun/x86  msun/bsdsrc  msun/man
+bmake alone            msun/arm  msun/src
+```
+
+`lib/msun/Makefile:18` puts `x86/` on the path only for i386 and amd64;
+`:24` picks `ld80/` or `ld128/` from `LDBL_PREC`; `bsdsrc/` and `man/`
+come from the walk. Four of the seven are flags no armv7 build passes.
+
+So: when bmake answered with at least one `-I` inside the component, that
+answer is the component's include path, and a `-I` into the component
+bmake did not name comes off. Narrowly — only directories under the
+component root, so the `-I` into libc, contrib and the generated shims
+that the table adds for *other* components are untouched.
+
+The first attempt applied that to every file, and the measurement said
+no:
+
+```
+--scope lib/libc --scope lib/msun --scope libexec --check-errors
+  before   239 findings, 1599 OK, 31 ERROR
+  first    239 findings, 1560 OK, 70 ERROR
+```
+
+Thirty-nine translation units stopped compiling and no finding moved.
+They are `lib/libc/softfloat` and `lib/libc/arm/aeabi`, and bmake is
+right about them: `lib/libc/Makefile:131` reads `softfloat/Makefile.inc`
+only under `LIBC_ARCH == "arm" && CPUTYPE:M*soft*`, so an armv7 build
+with no `CPUTYPE` compiles none of them and its `CFLAGS` rightly carry
+none of their `-I`. The sweep analyses those files anyway, deliberately,
+on the `-I` the table supplies. Taking bmake's answer for them buys
+nothing and costs 39 files their voice.
+
+So the rule is gated on the build **naming** the file at that
+architecture — `for_arch(arch)`, which is bmake's own answer to "what
+does this tree build". A file the build does not build keeps the reading
+it had.
+
+```
+--scope lib/libc --scope lib/msun --scope libexec --check-errors
+  gated    239 findings, 1600 OK, 30 ERROR
+```
+
+— identical to not applying it at all, over the same 1630 units, with the
+armv7 triple already corrected. No finding moves either way. What changes
+is that four `-I` per armv7 msun file are no longer flags the build never
+passes, and the next time one of them shadows a header the answer will
+not be wrong for that reason.
+
+`bin`, `sbin`, `usr.bin` and `usr.sbin` are unaffected by construction:
+the walk this narrows exists only for `lib` and `libexec`.
+
+Two checks in `test_includes.py`, made to fail first: with the change
+reverted, "a built armv7 msun file gets arm/ and src/" reports all seven
+directories. The second check holds the other half of the rule — that
+`lib/libc/softfloat/eqdf2.c`, which `for_arch('armv7')` does not name,
+still gets `-I lib/libc/softfloat`.
