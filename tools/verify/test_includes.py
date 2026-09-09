@@ -730,6 +730,51 @@ if _r is not None:
                " | ".join(_err[:4]) if _err else
                f"clang exited {_r.returncode} with no diagnostics")
 
+# ---------------------------------------------------------------------------
+print()
+print("== opt_global.h is force-included where the build force-includes it")
+# sys/conf/kern.pre.mk:78 puts `-include opt_global.h' in the BASE kernel
+# CFLAGS; a module Makefile appends its own -include after
+# `.include <bsd.kmod.mk>', so the options are defined before any header a
+# module force-includes gets to read them.
+#
+# openzfs decides whether its assertions exist that way:
+# spl/sys/ccompile.h:39 turns INVARIANTS into ZFS_DEBUG and #undef NDEBUG,
+# and :51 defines NDEBUG when neither is set. With opt_global.h emitted
+# LAST, that header ran before INVARIANTS existed and the whole of
+# sys/contrib/openzfs was analysed with every ASSERT compiled out - 50
+# findings in module/zfs where the kernel this tree builds has 22.
+#
+# INVARIANTS is not a debugging option in this tree.
+# sys/conf/std.hardenedbsd:29-41 turns it on as a HARDENING one and
+# amd64/conf/HARDENEDBSD includes it, so the shipped kernel has every one
+# of those assertions live.
+_zfs_c = SRC / "sys/contrib/openzfs/module/zfs/vdev.c"
+_zf = includes.include_flags(_zfs_c, "amd64")
+_og = [i for i, f in enumerate(_zf) if f == "opt_global.h"]
+_mod = [i for i, f in enumerate(_zf)
+        if f.startswith("-include") and "ccompile.h" in f]
+check_that("a ZFS unit gets -include opt_global.h",
+           len(_og) == 1, f"got {len(_og)} occurrences")
+check_that("...before the module headers that read the options it defines",
+           bool(_og) and bool(_mod) and _og[0] < min(_mod),
+           f"opt_global.h at {_og}, module -include at {_mod}")
+
+# ...and the consequence, asked of the preprocessor rather than of the
+# flag list, because the flag list is not where NDEBUG is decided.
+_dbg = Path(tempfile.mkdtemp(prefix="pbsd_zfsdbg_")) / "probe.c"
+_dbg.write_text("#if defined(NDEBUG) || !defined(ZFS_DEBUG)\n"
+                "#error assertions are compiled out\n"
+                "#endif\n")
+_dr = _sp.run(["clang", "-fsyntax-only", *includes.lang_flags(_zfs_c),
+               *_zf, "-x", "c", str(_dbg)],
+              capture_output=True, text=True, timeout=900)
+_derr = [l for l in (_dr.stderr or "").splitlines() if "error" in l]
+check_that("...so ZFS_DEBUG is set and NDEBUG is not, and ASSERT is a check",
+           _dr.returncode == 0,
+           " | ".join(_derr[:2]) if _derr else
+           f"clang exited {_dr.returncode} with no diagnostics")
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")

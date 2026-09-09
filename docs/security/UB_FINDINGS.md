@@ -12831,3 +12831,91 @@ identifier` on the first `{%`. `for_arch('amd64')` names ten sources in
 that directory and this is not one of them. It is now in
 `expected_errors.py`, in the same family as `sbin/ipf/common/lexer.c` —
 a sed template, likewise not a source.
+
+## `-include opt_global.h` was emitted last, so every ZFS assertion was compiled out
+
+Task #112 opened with a premise, and the premise was checked the wrong
+way. It said the sweep does not pass `-DNDEBUG` for the openzfs tree —
+which is true — and concluded that the analyser therefore sees every
+`ASSERT` as a real check. It does not. `NDEBUG` is not a flag here. It is
+decided by a *header*, and by the order the headers are read in.
+
+```
+sys/contrib/openzfs/include/os/freebsd/spl/sys/ccompile.h:39
+    #if defined(INVARIANTS) && !defined(ZFS_DEBUG)
+    #define ZFS_DEBUG
+    #undef  NDEBUG
+    #endif
+ccompile.h:51
+    #if !defined(ZFS_DEBUG) && !defined(NDEBUG)
+    #define NDEBUG
+    #endif
+```
+
+`sys/modules/zfs/static_ccompile.h:7` does the same `#ifdef INVARIANTS`.
+Both headers are force-included by the module's `CFLAGS`, and both read
+an option that arrives from `opt_global.h`. So the answer depends
+entirely on whether `opt_global.h` has been read yet when they run.
+
+In the build it has. `sys/conf/kern.pre.mk:78` puts `-include
+opt_global.h` in the **base** kernel `CFLAGS`, and
+`sys/modules/zfs/Makefile:391-393` appends its three `-include` *after*
+`.include <bsd.kmod.mk>` — below that line, therefore after it.
+
+`includes.py` appended `-include opt_global.h` at the **end**, after the
+module `CFLAGS`. The reverse. Measured on `vdev.c` with the sweep's own
+flags: `INVARIANTS` defined, `ZFS_DEBUG` **not**, and
+
+```
+ASSERT(string != NULL)
+  -> ((void) sizeof ((uintptr_t)(string != ((void *)0))))
+```
+
+which is `debug.h:260`, the `NDEBUG` form — the assertion evaluated for
+its type and discarded.
+
+This is not an academic configuration in this tree.
+`sys/conf/std.hardenedbsd:29-41` turns `INVARIANTS` on as a **hardening**
+option — the file says so in its own words, "INVARIANTS is a hardening
+option here, not a debugging one" — and `amd64/conf/HARDENEDBSD` includes
+it. The kernel ParanoidBSD ships has every one of those assertions live.
+The sweep was reading a kernel this tree does not build, and an analysis
+of a configuration you do not ship is not a weaker reading of yours. It
+is a reading of a different one.
+
+```
+--scope sys/contrib/openzfs/module/zfs
+  before   50 findings, 137 OK, 0 ERROR
+  after    22 findings, 137 OK, 0 ERROR
+
+--scope sys/cddl
+  before   84 findings, 48 OK, 22 ERROR
+  after    76 findings, 48 OK, 22 ERROR
+```
+
+Nothing stopped compiling on either side: the OK and ERROR counts are
+unchanged, so the twenty-eight that went are answers, not silence.
+
+The direction is worth naming, because it is the opposite of what a
+"stricter flag" intuition expects. Turning the assertions **on** removed
+twenty-eight findings and added three new ones. Removed, because an
+`ASSERT` the analyser can see is a constraint it can use:
+`vdev.c:3562`'s `strlen(NULL)` was reachable only past
+`ASSERT(string != NULL)`, `zil.c:4582`'s `*cookiep` only past
+`ASSERT(cookiep != NULL)`. Added, because `ZFS_DEBUG` also compiles code
+**in** — `vdev_raidz.c:1892` is an assertion that indexes `missing[0]`,
+and it did not exist to be read before.
+
+Blast radius is bounded and was checked rather than assumed: the only
+`-include` any module flag set carries are linuxkpi's `kconfig.h`, whose
+conditionals are all architecture tests and no option, and these two ZFS
+headers. `sys/contrib/openzfs` and `sys/cddl` are the scopes that can
+move, and both were measured.
+
+Three checks in `test_includes.py`, made to fail before being trusted:
+with the fix reverted, "...before the module headers that read the
+options it defines" reports `opt_global.h at [37], module -include at
+[27, 30]` and the `#error assertions are compiled out` probe goes red.
+The third check asks the *preprocessor* whether `ZFS_DEBUG` is set,
+rather than asking the flag list — because the flag list is not where
+`NDEBUG` is decided, which is the whole of what went wrong here.

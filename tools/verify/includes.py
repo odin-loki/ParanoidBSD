@@ -3462,6 +3462,40 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
         # the real header while nothing supplies the replacement --
         # `struct cv p_pwait` in sys/sys/proc.h:775 then has incomplete
         # type, which is a compile error invented entirely by flag order.
+        # opt_global.h FIRST, because that is where the build puts it.
+        #
+        # sys/conf/kern.pre.mk:78 is
+        #
+        #   CFLAGS+= ${INCLUDES} -D_KERNEL -DHAVE_KERNEL_OPTION_HEADERS \
+        #            -include opt_global.h
+        #
+        # in the BASE CFLAGS, and a module Makefile appends its own
+        # -include after `.include <bsd.kmod.mk>' - sys/modules/zfs's
+        # three are lines 391-393, below that include. So every
+        # force-included header a module names is read with the kernel's
+        # options already defined, and this was reading them with none.
+        #
+        # It is not a cosmetic ordering. openzfs decides whether its
+        # assertions exist from an option, in a header that is
+        # force-included:
+        #
+        #   ccompile.h:39   #if defined(INVARIANTS) && !defined(ZFS_DEBUG)
+        #   ccompile.h:40   #define ZFS_DEBUG
+        #   ccompile.h:41   #undef  NDEBUG
+        #   ccompile.h:51   #if !defined(ZFS_DEBUG) && !defined(NDEBUG)
+        #   ccompile.h:52   #define NDEBUG
+        #
+        # and debug.h:259 then makes ASSERT `((void) sizeof (...))'.
+        # With opt_global.h last, INVARIANTS arrives after ccompile.h has
+        # already decided, so the whole of sys/contrib/openzfs was
+        # analysed with every ASSERT compiled out - while the kernel this
+        # tree builds has them all live: sys/conf/std.hardenedbsd:29-41
+        # turns INVARIANTS on as a HARDENING option, not a debugging one,
+        # and amd64/conf/HARDENEDBSD includes it.
+        #
+        # An analysis of a configuration the tree does not build is not a
+        # weaker reading of this tree. It is a reading of a different one.
+        flags += ["-include", "opt_global.h"]
         rel_sys = rel[len("sys/"):]
         flags += list(conf_file_includes(arch).get(rel_sys, ()))
         flags += _module_flags(rel_sys)
@@ -3548,11 +3582,10 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
         flags += ["-DMAXUSERS=0"]
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",
-                  # The kernel build force-includes this into every
-                  # translation unit (sys/conf/kern.pre.mk), and it is
-                  # where config(8) puts the options that are not tied to
-                  # one subsystem - INET's neighbours, INVARIANTS, SMP.
-                  "-include", "opt_global.h",
+                  # opt_global.h itself is emitted at the top of this
+                  # branch, ahead of the module -include that read the
+                  # options it defines; this is only the -I that lets it
+                  # be found.
                   f"-I{opt_shim(arch)}",
                   # device_if.h and friends: generated, not shipped.
                   f"-I{iface_shim(arch)}",
