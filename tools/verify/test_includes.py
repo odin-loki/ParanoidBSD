@@ -644,10 +644,15 @@ _r = _sp.run(["clang-18", "-fsyntax-only",
               *includes.lang_flags(_probe),
               *includes.include_flags(_probe, "amd64"), str(_probe)],
              capture_output=True, text=True, timeout=900)
+# The LAST line of a failing clang run is "N errors generated." - a count,
+# not a diagnosis. This check has been red on the CI runner while green
+# here, and that message said nothing about why. Report the FIRST lines,
+# which name the file, the line and the error.
+_err = [l for l in (_r.stderr or "").splitlines() if l.strip()]
 check_that("...and a C++ translation unit really compiles with them",
            _r.returncode == 0,
-           (_r.stderr or "").strip().splitlines()[-1:] and
-           (_r.stderr or "").strip().splitlines()[-1] or "")
+           " | ".join(_err[:4]) if _err else
+           f"clang exited {_r.returncode} with no diagnostics")
 
 print()
 if fails:
