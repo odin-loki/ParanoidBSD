@@ -310,6 +310,15 @@ jobs:
         run: python3 tools/verify/nowait_check.py --gate
       - name: A masked switch with fewer arms than states
         run: python3 tools/verify/masked_switch_check.py --gate
+      # 72 findings in linux_socket.c rest on the analyser refusing to
+      # fold the bound of `for (i = 0; i < lxs_args_cnt[what]; ++i)'.
+      # They are false only because that table matches the struct each
+      # handler receives - a hand-maintained list of integers in a
+      # different file from most of the structs it describes. Too small
+      # by one and the handler reads a word of kernel stack the copyin
+      # never wrote; for getsockopt that word is an out-pointer.
+      - name: Every socketcall copies as many words as its handler declares
+        run: python3 tools/verify/socketcall_args.py --gate
       # A scope nobody analyses reports zero findings and looks exactly
       # like one that is clean. The first shard list here missed fourteen
       # directories, sys/hardenedbsd among them.
@@ -340,6 +349,27 @@ jobs:
       # of the ten has to say what it did.
       - name: A lock released on some paths out of a function and not others
         run: python3 tools/verify/test_lock_balance.py
+
+      # The socketcall gate above was broken eight ways on the real tree
+      # while it was written, and each of those edits is a case here, so
+      # the gate is never again only ever observed printing "ok". Five of
+      # them are the check going BLIND rather than the tree being wrong -
+      # the table renamed, the opcode block gone, a file absent - and
+      # those fail whether or not --gate was asked for.
+      - name: The socketcall gate still fails on the eight trees it should
+        run: python3 tools/verify/test_socketcall_args.py
+
+      # Fifteen core.DivideZero findings under sys/dev/clk/allwinner/ are
+      # held off by driver DATA, not by code: AW_CLK_FACTOR_ZERO_BASED
+      # gives a clock factor a minimum of zero, and all thirteen uses in
+      # the tree are the `n' of an NKMP_CLK, where n MULTIPLIES. A
+      # fourteenth on an m, p, div or prediv would make all fifteen live,
+      # and nothing in the tree would say so. Per-driver, not per-name:
+      # `n' divides in NM_CLK (aw_clk_nm.c:150).
+      - name: No zero-based clock factor is one the driver divides by
+        run: python3 tools/verify/aw_clk_zero_based.py --gate
+      - name: The clock gate still fails on the six trees it should
+        run: python3 tools/verify/test_aw_clk_zero_based.py
 
       # A landed port that does not COMPILE as C++ raised no [-W...] tag,
       # so the differential above matched its C original's empty set and

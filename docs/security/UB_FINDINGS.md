@@ -9506,3 +9506,284 @@ Where the number has gone, over this run of work:
 | gensnmptree | 53 | 19 |
 | the tree's rpcgen, and four flag readings | 44 | 4 |
 | these two generators | 42 | 2 |
+
+---
+
+## The premise 72 findings rested on, which nobody had checked
+
+Task #90 had been on the list since sweep 14 with this description:
+
+> Model copyin() for the analyser: it explains 71 findings in one file.
+
+The one file is `sys/compat/linux/linux_socket.c`, and the reasoning
+looked sound: `copyin()` has no body the analyser can see, so the buffer
+it fills stays undefined, so everything read out of that buffer is an
+uninitialised read. clang-18 even has the machinery — `model-path=DIR`
+and `faux-bodies` — to hand the analyser a body for exactly this.
+
+**The premise is wrong.** CSA already invalidates a by-pointer argument
+passed to an unknown function: it has to, because the callee may have
+written through it. A caller that checks `copyin`'s return is clean with
+or without a model, and a test with a hand-written model confirmed the
+finding set does not move. Four hours of work were queued against a
+sentence that had never been tested.
+
+So where do the findings come from? Here, and only here:
+
+```c
+	l_ulong a[6];
+#if defined(__amd64__) && defined(COMPAT_LINUX32)
+	register_t l_args[6];
+#endif
+	...
+	error = copyin(PTRIN(args->args), a, LINUX_ARG_SIZE(args->what));
+	if (error != 0)
+		return (error);
+
+#if defined(__amd64__) && defined(COMPAT_LINUX32)
+	for (int i = 0; i < lxs_args_cnt[args->what]; ++i)
+		l_args[i] = a[i];                    /* linux_socket.c:2761 */
+	arg = l_args;
+#endif
+```
+
+The analyser will not fold `lxs_args_cnt[args->what]`, so it cannot
+establish that the loop writes as many words of `l_args` as the handler
+downstream reads, and it reports every one of those reads. 72 findings,
+one loop.
+
+### They are false only because a table is right
+
+`LINUX_ARG_SIZE(x)` is `lxs_args_cnt[x] * sizeof(l_ulong)`, so that
+table decides how much of the user's array is copied in — and the
+handler it dispatches to decides how much is read back out:
+
+```c
+static const unsigned char lxs_args_cnt[] = {
+	0 /* unused*/,		3 /* socket */,
+	...
+	6 /* sendto */,		6 /* recvfrom */,
+```
+
+```c
+struct linux_sendto_args {
+	char s_l_[PADL_(l_int)]; l_int s; char s_r_[PADR_(l_int)];
+	char msg_l_[PADL_(l_uintptr_t)]; ...
+	char len_l_[PADL_(l_int)]; ...
+	char flags_l_[PADL_(l_int)]; ...
+	char to_l_[PADL_(l_uintptr_t)]; ...
+	char tolen_l_[PADL_(l_int)]; ...
+};
+```
+
+Nothing in the language connects those two. The table is 21
+hand-maintained integers in `linux_socket.c`; eighteen of the structs it
+describes are generated into `linux32_proto.h` from `syscalls.master`,
+and the other three (`accept`, `send`, `recv`) are written by hand in
+`linux_socket.h:129` and `linux_socket.c:1197`/`:1240`. Nobody who edits
+one is told about the other.
+
+The failure is quiet and it is one-directional:
+
+| the table says | what happens |
+|---|---|
+| **more** than the handler reads | more of the user's array is copied than is used — harmless |
+| **fewer** than the handler reads | the tail of `a[]` holds whatever the previous frame left on the kernel stack, and the handler reads those words as its last arguments |
+| **more than 6** | the copyin overruns a six-word stack buffer outright |
+
+For `linux_getsockopt` the last argument is `optlen`, an out-pointer the
+kernel then writes through. A count one too small there is an
+unprivileged write to an address the caller never supplied.
+
+### Verified, then made checkable
+
+All 21 were read by hand: **0 mismatches.** `accept`, `send` and `recv`
+declare their own `register_t` structs with 3, 4 and 4 fields, matching
+their table entries; the other 18 match the generated structs field for
+field.
+
+But "somebody read it once" is not a property of a tree — it is a
+property of an afternoon. `tools/verify/socketcall_args.py` counts it on
+every run:
+
+```
+   LINUX_SOCKET           copies 3  struct linux_socket_args has 3  [domain, type, protocol]
+   LINUX_LISTEN           copies 2  struct linux_listen_args has 2  [s, backlog]
+   LINUX_SENDTO           copies 6  struct linux_sendto_args has 6  [s, msg, len, flags, to, tolen]
+   ...
+21 socketcall opcodes: every lxs_args_cnt[] entry matches the field count
+of the struct its handler receives.
+```
+
+It reads the opcode defines out of the `/* Operations for socketcall */`
+block only — `linux_socket.h` names hundreds of other `LINUX_*`
+constants and their values collide with the opcodes freely
+(`LINUX_TCP_NODELAY` is also 1). The first draft did not scope that, and
+reported 43 faults over a tree with none.
+
+Field counting handles both spellings. A generated struct pads every
+argument (`char s_l_[PADL_(l_int)]; l_int s; char s_r_[PADR_(l_int)];`),
+where the padding members are not arguments; counting `PADL_(` counts
+each argument exactly once. A hand-written struct is counted by
+declaration.
+
+### It refuses to pass on absence
+
+This is the same rule the ERROR inventory exists for, one level up
+again: **a reader that finds nothing and a tree with nothing wrong
+produce the same silence.** So the check distinguishes two kinds of bad
+news, and only one of them is a finding:
+
+- a **fault** is a tree that is wrong — a count that disagrees, a
+  handler with no struct, an opcode with no table entry. Reported; fails
+  `--gate`.
+- a **fault to read** is the check going blind — the table renamed, the
+  opcode block comment gone, a proto header not in the tree, a dispatch
+  switch with no `case` labels. It exits 1 **whether or not `--gate` was
+  asked for**, because there is no such thing as a passing run that read
+  nothing.
+
+Eight edits were made to the real tree while it was written, run, and
+reverted:
+
+| edit | what it said |
+|---|---|
+| `6 /* sendto */` → `5` | `lxs_args_cnt says 5, struct linux_sendto_args declares 6 — the handler reads 1 word(s) of kernel stack the copyin never wrote` |
+| `6 /* sendto */` → `7` | `copies 7 words into a 6-word buffer`, and separately `copies more of the user array than the handler reads` |
+| `linux_sendto` → `linux_sendto_nosuch` | `struct linux_sendto_nosuch_args is not declared anywhere searched` |
+| a field added to `linux_sendto_args` in `linux32_proto.h` | `6 fields in .../linux_proto.h, 7 fields in .../linux32_proto.h` |
+| `lxs_args_cnt[]` renamed | `cannot check: lxs_args_cnt[] not found` |
+| the opcode block comment deleted | `cannot check: expected exactly one '/* Operations for socketcall */' block, found 0` |
+| the `LINUX_SENDTO` case deleted | `copied 6 words, dispatched by nothing` |
+| `LINUX_SENDFILE` renumbered to 99 | `lxs_args_cnt[21] (sendfile) has no LINUX_* opcode`, and `dispatched to linux_sendfile, but not in lxs_args_cnt[]` |
+
+Every one of those is a case in `tools/verify/test_socketcall_args.py`
+(25 tests), so the gate is never again only ever observed printing "ok".
+Two of the tests are there for the reader rather than the tree: a struct
+that is not declared must return `None` and not an empty field list —
+otherwise "no struct" would silently agree with a table entry of 0 — and
+the miniature fixture every other case is built from is asserted to pass
+first, since a baseline that fails proves nothing about the cases that
+subtract from it.
+
+Both are in the `lints` job of `.github/workflows/pbsd-verify.yml`.
+
+The 72 findings stay in the sweep. They are false, and now they are
+false for a reason the tree states rather than a reason somebody
+remembers.
+
+---
+
+## The other invariant that was only ever read once
+
+The Allwinner clock section above ends on a sentence that is a liability
+as written:
+
+> the guard is not in the code, it is in thirteen driver-data lines, and
+> a fourteenth that put `AW_CLK_FACTOR_ZERO_BASED` on an `m`, `p`, `div`
+> or `prediv` field would make all fifteen live at once.
+
+That is a correct reading of the tree on the day it was made, recorded
+in a document. It is not a property of the tree, and nothing would have
+told anybody when it stopped being true. Same defect as the socketcall
+table: a fact established by an afternoon's reading, load-bearing for
+fifteen findings, checked by nobody thereafter.
+
+`tools/verify/aw_clk_zero_based.py` checks it by counting:
+
+```
+FRAC_CLK         aw_clk_frac.c divides by m
+MIPI_CLK         aw_clk_mipi.c divides by m
+M_CLK            aw_clk_m.c divides by m
+NKMP_CLK         aw_clk_nkmp.c divides by m, p
+NMM_CLK          aw_clk_nmm.c divides by m0, m1
+NM_CLK           aw_clk_nm.c divides by m, n, prediv
+NP_CLK           aw_clk_np.c divides by p
+PREDIV_CLK       aw_clk_prediv_mux.c divides by div, prediv
+
+   sys/dev/clk/allwinner/ccu_a10.c:302 NKMP_CLK n factor  (multiplies)
+   ... thirteen of these ...
+
+13 zero-based factor(s) in the tree
+no zero-based factor is divided by; the 15 core.DivideZero findings
+under sys/dev/clk/allwinner/ stay unreachable.
+```
+
+Three readings, none of them a re-implementation of anything:
+
+1. **Which argument is which factor's flags.** The definition macros are
+   positional — `NKMP_CLK(_clkname, _id, _name, _pnames, _offset,
+   _n_shift, _n_width, _n_value, _n_flags, ...)` — so nothing in an
+   invocation says which of its twenty-odd arguments is the `m` factor's
+   flags word. The macro *body* does: `.m.flags = _m_flags,`. That is
+   read out of `aw_clk.h`, per macro, and gives argument index → factor
+   field.
+2. **Which factors a driver divides by.** From the frequency arithmetic
+   itself: `cur = (fparent * n * k) / (m * p);` and
+   `*freq = *freq / prediv / div;`. An identifier is a divisor if an odd
+   number of `/` operators governs it, which needs a stack rather than a
+   flag only because `/ (m * p)` inverts a whole parenthesised group.
+   The locals are then traced back to fields through
+   `m = aw_clk_get_factor(val, &sc->m)`.
+3. **Every invocation in the tree**, matched positionally against (1).
+
+### `n` multiplies in NKMP and divides in NM
+
+This is why the check is per-driver and a rule about the letter would be
+wrong:
+
+```c
+	cur = (fparent * n * k) / (m * p);	/* aw_clk_nkmp.c:155 */
+	cur = fparent / n / m;			/* aw_clk_nm.c:150  */
+```
+
+Thirteen `AW_CLK_FACTOR_ZERO_BASED` on NKMP `n` are safe. A fourteenth
+on an `NM_CLK`'s `n` — the same letter, in the same position of a
+similar-looking macro — is a division by zero. The check says so:
+
+```
+sys/dev/clk/allwinner/ccu_a83t.c:397 NM_CLK n factor: aw_clk_nm.c
+DIVIDES by n, and AW_CLK_FACTOR_ZERO_BASED gives it a minimum of 0
+```
+
+### What breaking it found
+
+Six edits, made to the real tree, run, reverted. Four of them the check
+handled; **two found defects in the check itself**, which is the only
+reason they are worth listing:
+
+- **The line number was wrong and looked right.** Comments were stripped
+  with `re.sub(r"/\*.*?\*/", " ", ..., re.S)`, and every clock definition
+  line carries a `/* n factor */`, several of them multi-line. Collapsing
+  those to one space moved every line after them: a definition at
+  `ccu_a83t.c:397` was reported at `:368`. Now the comment is replaced by
+  its own newlines, and the offset reported is the argument's, not the
+  macro name's — those differ by four lines in a twelve-line definition.
+- **An empty divisor set read as a clean bill of health.**
+  `aw_clk_nm.c:214` is `cur = aw_clk_nm_find_best(sc, fparent, fout, &n,
+  &m);` — it matches the frequency-expression pattern and contains no
+  division at all. So a driver whose arithmetic moved into a helper would
+  have reported *"divides by (nothing)"* and waved through every
+  zero-based factor it had. Every one of these drivers divides a
+  frequency by at least one factor — that is what makes the findings
+  reachable — so a kind that comes back with none is now a refusal to
+  answer, not a pass.
+
+The other four: the flag moved from NKMP `n` to NKMP `m` (reported); the
+flag put on an `NM_CLK`'s `n` (reported, with the right line); the
+`min = 0` arm of `aw_clk_factor_get_min()` changed to `min = 1` (refuses
+— the premise it enforces would no longer exist); and every use of the
+flag deleted (refuses — *"either the flag is gone or this reader stopped
+finding it"*).
+
+All six are cases in `tools/verify/test_aw_clk_zero_based.py` (21
+tests), which redirects the tool's single `_read()` rather than editing
+files, so a failing test cannot leave the tree dirty. Writing those
+tests found a third defect: `check()` was globbing and reading the
+`ccu_*.c` files directly while everything else went through `_read()`,
+so the tool had two readers and only one of them could be observed.
+
+Both lints are in the `lints` job of `.github/workflows/pbsd-verify.yml`.
+
+Two findings sets, 87 findings between them, that are false for reasons
+the tree now states.
