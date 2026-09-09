@@ -1902,7 +1902,20 @@ es_pci_detach(device_t dev)
 
 	es = pcm_getdevinfo(dev);
 
-	if (es != NULL && es->num != 0) {
+	/*
+	 * PBSD: honour the NULL the next line already tests for.
+	 * pcm_getdevinfo() returns the softc's devinfo, which pcm_init()
+	 * sets; every use below dereferences es unconditionally, and the
+	 * last of them frees it. Either the check is unnecessary, in
+	 * which case it should not be there, or it is not, in which case
+	 * this function walked past it into six dereferences and a
+	 * free(). Returning here is the reading that keeps the check
+	 * meaning what it says.
+	 */
+	if (es == NULL)
+		return (0);
+
+	if (es->num != 0) {
 		ES_LOCK(es);
 		es->polling = 0;
 		callout_stop(&es->poll_timer);

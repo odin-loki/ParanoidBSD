@@ -10807,3 +10807,122 @@ belong.
 
 Nothing to change in any of the three. Recorded so they can be
 dismissed by name.
+
+---
+
+## Two detach paths that test a pointer and then dereference it
+
+`es137x.c:1913` and `via8233.c:1412` are the same function in two sound
+drivers, and each contradicts itself in three lines:
+
+```c
+	es = pcm_getdevinfo(dev);
+
+	if (es != NULL && es->num != 0) {
+		...
+	}
+
+	bus_teardown_intr(dev, es->irq, es->ih);
+	bus_release_resource(dev, SYS_RES_IRQ, es->irqid, es->irq);
+	bus_release_resource(dev, es->regtype, es->regid, es->reg);
+	bus_dma_tag_destroy(es->parent_dmat);
+	mtx_destroy(&es->lock);
+	free(es, M_DEVBUF);
+```
+
+The `!= NULL` is the author's own statement that NULL is possible here —
+`pcm_getdevinfo()` returns `d->devinfo`, which only `pcm_init()` sets —
+and everything after it dereferences `es` six times and then frees it.
+Either the check is unnecessary and should not be there, or it is not
+and this function walks straight past it.
+
+Fixed by returning on NULL, which is the reading that keeps the check
+meaning what it says. `via8233.c` is the identical shape with three more
+dereferences.
+
+## `ichwd_identify`: a KASSERT decided by a stack slot
+
+```c
+	device_t ich, smb;
+
+	ich = ichwd_find_ich_lpc_bridge(parent, &id_p);
+	if (ich == NULL) {
+		smb = ichwd_find_smb_dev(parent, &id_p);
+		if (smb == NULL)
+			return;
+	}
+
+	KASSERT(id_p->tco_version >= 1, ...);
+	KASSERT(id_p->tco_version != 4 || smb != NULL,
+	    ("could not find PCI SMBus device for TCOv4"));
+```
+
+`smb` is assigned only on the path where the LPC lookup failed, and read
+whenever `tco_version == 4`. On an `INVARIANTS` kernel that would be a
+boot-time panic decided by a stack word.
+
+It cannot happen today, and the reason is in the two device tables, not
+in the code:
+
+```
+ichwd_devices (LPC):     209 entries, tco_version counts {1: 12, 2: 191, 3: 6}
+ichwd_smb_devices (SMB):   6 entries, tco_version counts {4: 6}
+```
+
+No LPC row is TCOv4, so `!= 4` short-circuits before `smb` is read. That
+is the `AW_CLK_FACTOR_ZERO_BASED` shape a third time — an invariant held
+by driver data, one table row from being false. Here it costs nothing to
+put in the code: `smb = NULL` is what the assertion already claims to be
+testing for, so a 210th LPC row with TCOv4 would fire the assertion
+rather than read the stack.
+
+## `mv88e151x_attach` restores a stack word as a PHY capability
+
+```c
+	uint32_t cop_cap, cop_extcap;
+	...
+	cop_cap = sc->mii_capabilities;
+	if (sc->mii_capabilities & BMSR_EXTSTAT) {
+		sc->mii_extcapabilities = PHY_READ(sc, MII_EXTSR);
+		cop_extcap = sc->mii_extcapabilities;
+	}
+	...
+	if (MII_MODEL(ma->mii_id2) == MII_MODEL_xxMARVELL_E1512) {
+		...                                  /* switch to fiber */
+		sc->mii_capabilities = cop_cap;
+		sc->mii_extcapabilities = cop_extcap;
+	}
+```
+
+`cop_cap` is assigned unconditionally; `cop_extcap` is not. An E1512
+whose BMSR does not report `BMSR_EXTSTAT` writes a stack word into the
+PHY's advertised extended capabilities, which `mii_phy_add_media()` and
+`mii_phy_setmedia()` then read to choose media.
+
+Zero is the correct save: when that branch is not taken
+`sc->mii_extcapabilities` was never assigned either, and the softc is
+allocated zeroed, so restoring 0 puts back what was there.
+
+### Measured
+
+```
+--scope sys/dev/ichwd        1 finding   -> 0    2 units, all OK
+--scope sys/dev/mii          2 findings  -> 1   39 units, all OK
+--scope sys/dev/sound/pci   10 findings  -> 8   32 units, all OK
+```
+
+### Two more read and left alone
+
+`micphy.c:299` reads `reg` under
+`if (sc->mii_mpd_model == MII_MODEL_MICREL_KSZ8081)` and assigns it
+under the same test, with `mii_phy_reset(sc)` between them — the
+`fpu.c` / `aw_rsb.c` shape, a value guarded twice across an opaque call.
+
+`kbdmux.c:493`'s "potential leak of `fkeymap`" is the **M_ZERO** class
+this document already established. `kbd_set_maps()` — which stores
+`fkeymap` into `kbd->kb_fkeytab`, and `kbd` escapes to the caller
+through `*kbdp` on the line it is allocated — is called only inside
+`if (!KBD_IS_PROBED(kbd))`. `KBD_IS_PROBED` reads `kbd->kb_flags`, which
+is zero only because the `malloc` two lines up passed `M_ZERO`, and
+clang has no model for `malloc`'s third argument. So the analyser
+allows the branch to be skipped and the allocation to escape nothing.

@@ -620,7 +620,22 @@ static void
 ichwd_identify(driver_t *driver, device_t parent)
 {
 	struct ichwd_device *id_p;
-	device_t ich, smb;
+	/*
+	 * PBSD: smb = NULL. It is assigned only inside
+	 * `if (ich == NULL)', and the KASSERT below reads it as
+	 *
+	 *	KASSERT(id_p->tco_version != 4 || smb != NULL, ...)
+	 *
+	 * so an LPC bridge with tco_version 4 would read a stack slot -
+	 * and on an INVARIANTS kernel decide a boot-time panic by it.
+	 * No such entry exists today: of ichwd_devices[]'s 209 rows the
+	 * tco_versions are 1, 2 and 3, and all six tco_version 4 rows
+	 * are in ichwd_smb_devices[], reached only on the path that
+	 * assigns smb. That is a property of two tables, not of the
+	 * code, and NULL is what the assertion already claims to be
+	 * testing for.
+	 */
+	device_t ich, smb = NULL;
 	device_t dev;
 	uint64_t base_address64;
 	uint32_t base_address;

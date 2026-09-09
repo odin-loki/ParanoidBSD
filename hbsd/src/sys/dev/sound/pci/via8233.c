@@ -1401,7 +1401,20 @@ via_detach(device_t dev)
 
 	via = pcm_getdevinfo(dev);
 
-	if (via != NULL && (via->play_num != 0 || via->rec_num != 0)) {
+	/*
+	 * PBSD: honour the NULL the next line already tests for.
+	 * pcm_getdevinfo() returns the softc's devinfo, which pcm_init()
+	 * sets; every use below dereferences via unconditionally, and the
+	 * last of them frees it. Either the check is unnecessary, in
+	 * which case it should not be there, or it is not, in which case
+	 * this function walked past it into six dereferences and a
+	 * free(). Returning here is the reading that keeps the check
+	 * meaning what it says.
+	 */
+	if (via == NULL)
+		return (0);
+
+	if (via->play_num != 0 || via->rec_num != 0) {
 		mtx_lock(&via->lock);
 		via->polling = 0;
 		callout_stop(&via->poll_timer);

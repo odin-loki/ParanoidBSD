@@ -1004,6 +1004,44 @@ FIXES = {
             "label to decide whether to wait for the bus",
         ),
     ],
+    "hbsd/src/sys/dev/ichwd/ichwd.c": [
+        (
+            "PBSD: smb = NULL.",
+            "\tdevice_t ich, smb;\n",
+            "ichwd_identify() assigns smb only inside "
+            "`if (ich == NULL)' and a KASSERT reads it as "
+            "`id_p->tco_version != 4 || smb != NULL'; safe today only "
+            "because no ichwd_devices[] row has tco_version 4",
+        ),
+    ],
+    "hbsd/src/sys/dev/mii/mv88e151x.c": [
+        (
+            "PBSD: cop_extcap = 0.",
+            "\tuint32_t cop_cap, cop_extcap;\n",
+            "the saved copper extended-capability word was assigned "
+            "only under BMSR_EXTSTAT and restored unconditionally into "
+            "sc->mii_extcapabilities at the end of the E1512 fiber "
+            "block",
+        ),
+    ],
+    # The same detach, twice: check the pointer for NULL and then
+    # dereference it six times and free it.
+    "hbsd/src/sys/dev/sound/pci/es137x.c": [
+        (
+            "PBSD: honour the NULL the next line already tests for.",
+            "\tif (es != NULL && es->num != 0) {\n",
+            "es_pci_detach() tested es != NULL and then dereferenced "
+            "it unconditionally",
+        ),
+    ],
+    "hbsd/src/sys/dev/sound/pci/via8233.c": [
+        (
+            "PBSD: honour the NULL the next line already tests for.",
+            "\tif (via != NULL && (via->play_num != 0 || via->rec_num != 0)) {\n",
+            "via_detach() tested via != NULL and then dereferenced it "
+            "unconditionally",
+        ),
+    ],
     "hbsd/src/sys/dev/pci/pci_user.c": [
         (
             "PBSD: error, before the walk.",

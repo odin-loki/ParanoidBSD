@@ -97,7 +97,22 @@ mv88e151x_attach(device_t dev)
 {
 	const struct mii_attach_args *ma;
 	struct mii_softc *sc;
-	uint32_t cop_cap, cop_extcap;
+	/*
+	 * PBSD: cop_extcap = 0. It is the saved copper extended
+	 * capability word, assigned only inside
+	 * `if (sc->mii_capabilities & BMSR_EXTSTAT)', and restored
+	 * unconditionally at the end of the E1512 fiber block as
+	 * `sc->mii_extcapabilities = cop_extcap;'. An E1512 whose BMSR
+	 * does not report EXTSTAT therefore wrote a stack word into the
+	 * PHY's advertised extended capabilities, which is what
+	 * mii_phy_add_media() and mii_phy_setmedia() go on to read.
+	 *
+	 * Zero is the right save: when that branch is not taken,
+	 * sc->mii_extcapabilities was never assigned either, and the
+	 * softc it lives in is allocated zeroed - so restoring 0 puts
+	 * back exactly what was there.
+	 */
+	uint32_t cop_cap, cop_extcap = 0;
 
 	sc = device_get_softc(dev);
 	ma = device_get_ivars(dev);
