@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,632 | 9,056 |
+| 1 | `lib` | 2,827 | 639,704 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
-| 4 | `sbin` | 533 | 228,447 | 3,567 |
-| 5 | `usr.bin` | 732 | 247,971 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,025 | 9,020 |
+| 4 | `sbin` | 533 | 228,456 | 3,567 |
+| 5 | `usr.bin` | 732 | 247,979 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,495,420 | 81,387 |
+| 8 | `sys` | 14,951 | 10,495,877 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,314** | **114,204** |
+| | **total** | **41,143** | **21,296,920** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -100,7 +100,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | item | path | lines | fn | tag |
 |---|---|---:|---:|---|
 | 8.651.5 | `sys/dev/bxe/57712_init_values.c` | 57,666 | 0 | `TODO-PORT` |
-| 8.1218.2 | `sys/netinet/tcp_stacks/rack.c` | 24,799 | 0 | `TODO-PORT` |
+| 8.1218.2 | `sys/netinet/tcp_stacks/rack.c` | 24,825 | 0 | `TODO-PORT` |
 | 8.903.2 | `sys/dev/pms/RefTisa/tisa/sassata/sata/host/sat.c` | 23,309 | 0 | `TODO-PORT` |
 | 8.897.6 | `sys/dev/pms/RefTisa/sat/src/smsat.c` | 20,820 | 0 | `TODO-PORT` |
 | 8.651.7 | `sys/dev/bxe/bxe.c` | 19,454 | 0 | `TODO-PORT` |
@@ -121,12 +121,12 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.597.5 | `sys/dev/aic7xxx/aic79xx.c` | 10,321 | 0 | `TODO-PORT` |
 | 8.149.1 | `sys/compat/linuxkpi/common/src/linux_80211.c` | 10,166 | 0 | `TODO-PORT` |
 | 8.1223.1 | `sys/netpfil/ipfilter/netinet/fil.c` | 10,076 | 0 | `TODO-PORT` |
-| 8.1146.9 | `sys/fs/nfsclient/nfs_clrpcops.c` | 9,980 | 0 | `TODO-PORT` |
+| 8.1146.9 | `sys/fs/nfsclient/nfs_clrpcops.c` | 9,982 | 0 | `TODO-PORT` |
 | 8.1026.6 | `sys/dev/sym/sym_hipd.c` | 9,603 | 0 | `TODO-PORT` |
 | 8.74.1 | `sys/cam/scsi/scsi_all.c` | 9,430 | 0 | `TODO-PORT` |
 | 8.798.1 | `sys/dev/iwn/if_iwn.c` | 9,230 | 0 | `TODO-PORT` |
 | 8.899.2 | `sys/dev/pms/RefTisa/tisa/sassata/common/ossacmnapi.c` | 9,093 | 0 | `TODO-PORT` |
-| 8.1220.18 | `sys/netipsec/key.c` | 9,023 | 0 | `TODO-PORT` |
+| 8.1220.18 | `sys/netipsec/key.c` | 9,028 | 0 | `TODO-PORT` |
 | 8.1147.8 | `sys/fs/nfsserver/nfs_nfsdstate.c` | 8,862 | 0 | `TODO-PORT` |
 | 8.878.49 | `sys/dev/ocs_fc/sli4.c` | 8,788 | 0 | `TODO-PORT` |
 | 8.901.3 | `sys/dev/pms/RefTisa/tisa/sassata/sas/ini/itddisc.c` | 8,547 | 0 | `TODO-PORT` |
@@ -622,7 +622,7 @@ Files with twenty or more macro invocations that look like generators. The
 | 8.1184.36 | `sys/i386/i386/pmap.c` | 6,481 | 0 | 82 |
 | 8.1200.97 | `sys/net/pfvar.h` | 2,784 | 0 | 82 |
 | 8.124.6 | `sys/compat/linux/linux_dummy.c` | 159 | 0 | 81 |
-| 8.1220.18 | `sys/netipsec/key.c` | 9,023 | 0 | 77 |
+| 8.1220.18 | `sys/netipsec/key.c` | 9,028 | 0 | 77 |
 | 8.1191.219 | `sys/kern/vfs_cache.c` | 6,475 | 0 | 76 |
 | 8.1213.96 | `sys/netinet/sctp_sysctl.c` | 999 | 10 | 76 |
 | 8.232.47 | `sys/contrib/dev/rtw89/rtw8852a_rfk_table.c` | 1,608 | 0 | 74 |
@@ -1015,7 +1015,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.34.1.3 `lib80211_get80211val()` · `TODO-FN`
   - [ ] 1.34.1.4 `lib80211_set80211()` · `TODO-FN`
 - [ ] **1.34.2** `lib80211_ioctl.h` · 70L · `TODO-HDR`
-- [ ] **1.34.3** `lib80211_regdomain.c` · 738L · `TODO-PORT` · 14 fn
+- [ ] **1.34.3** `lib80211_regdomain.c` · 745L · `TODO-PORT` · 14 fn
   - [ ] 1.34.3.1 `start_element()` · `TODO-FN`
   - [ ] 1.34.3.2 `decode_flag()` · `TODO-FN`
   - [ ] 1.34.3.3 `end_element()` · `TODO-FN`
@@ -1137,7 +1137,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.39.3.1 `bt_devaddr()` · `TODO-FN`
   - [ ] 1.39.3.2 `bt_devname()` · `TODO-FN`
   - [ ] 1.39.3.3 `bt_devaddr_match()` · `TODO-FN`
-- [ ] **1.39.4** `hci.c` · 814L · `TODO-PORT` · 19 fn
+- [ ] **1.39.4** `hci.c` · 826L · `TODO-PORT` · 19 fn
   - [ ] 1.39.4.1 `bt_devopen()` · `TODO-FN`
   - [ ] 1.39.4.2 `bt_devclose()` · `TODO-FN`
   - [ ] 1.39.4.3 `bt_devsend()` · `TODO-FN`
@@ -1437,7 +1437,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.59.3.3 `__bt_dnpage()` · `TODO-FN`
   - [ ] 1.59.3.4 `__bt_dpage()` · `TODO-FN`
   - [ ] 1.59.3.5 `__bt_stat()` · `TODO-FN`
-- [ ] **1.59.4** `bt_delete.c` · 632L · `TODO-PORT` · 7 fn
+- [ ] **1.59.4** `bt_delete.c` · 647L · `TODO-PORT` · 7 fn
   - [ ] 1.59.4.1 `__bt_delete()` · `TODO-FN`
   - [ ] 1.59.4.2 `__bt_stkacq()` · `TODO-FN`
   - [ ] 1.59.4.3 `__bt_bdelete()` · `TODO-FN`
@@ -2048,7 +2048,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.81.1 `getpeereid()` · `TODO-FN`
 - [ ] **1.68.82** `getprogname.c` · 15L · `TODO-PORT` · 1 fn
   - [ ] 1.68.82.1 `_getprogname()` · `TODO-FN`
-- [ ] **1.68.83** `getpwent.c` · 2,002L gen:7 · `TODO-PORT` · 43 fn
+- [ ] **1.68.83** `getpwent.c` · 2,018L gen:7 · `TODO-PORT` · 43 fn
   - [ ] 1.68.83.1 `pwd_id_func()` · `TODO-FN`
   - [ ] 1.68.83.2 `pwd_marshal_func()` · `TODO-FN`
   - [ ] 1.68.83.3 `pwd_unmarshal_func()` · `TODO-FN`
@@ -2428,7 +2428,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.156.1 `sysctlbyname()` · `TODO-FN`
 - [ ] **1.68.157** `sysctlnametomib.c` · 55L · `TODO-PORT` · 1 fn
   - [ ] 1.68.157.1 `sysctlnametomib()` · `TODO-FN`
-- [ ] **1.68.158** `syslog.c` · 497L · `TODO-PORT` · 12 fn
+- [ ] **1.68.158** `syslog.c` · 505L · `TODO-PORT` · 12 fn
   - [ ] 1.68.158.1 `writehook()` · `TODO-FN`
   - [ ] 1.68.158.2 `syslog()` · `TODO-FN`
   - [ ] 1.68.158.3 `vsyslog1()` · `TODO-FN`
@@ -10182,7 +10182,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.271 `lib/libradius`
 
-- [ ] **1.271.1** `radlib.c` · 1,593L · `TODO-PORT` · 48 fn
+- [ ] **1.271.1** `radlib.c` · 1,599L · `TODO-PORT` · 48 fn
   - [ ] 1.271.1.1 `clear_password()` · `TODO-FN`
   - [ ] 1.271.1.2 `generr()` · `TODO-FN`
   - [ ] 1.271.1.3 `insert_scrambled_password()` · `TODO-FN`
@@ -12306,7 +12306,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.325.24.6 `in_lts()` · `TODO-FN`
 - [ ] **1.325.25** `login_tty.c` · 57L · `TODO-PORT` · 1 fn
   - [ ] 1.325.25.1 `login_tty()` · `TODO-FN`
-- [ ] **1.325.26** `mntopts.c` · 323L · `TODO-PORT` · 10 fn
+- [ ] **1.325.26** `mntopts.c` · 330L · `TODO-PORT` · 10 fn
   - [ ] 1.325.26.1 `getmntopts()` · `TODO-FN`
   - [ ] 1.325.26.2 `rmslashes()` · `TODO-FN`
   - [ ] 1.325.26.3 `checkpath()` · `TODO-FN`
@@ -12317,7 +12317,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.325.26.8 `build_iovec()` · `TODO-FN`
   - [ ] 1.325.26.9 `build_iovec_argf()` · `TODO-FN`
   - [ ] 1.325.26.10 `free_iovec()` · `TODO-FN`
-- [ ] **1.325.27** `mntopts.h` · 115L · `TODO-HDR`
+- [ ] **1.325.27** `mntopts.h` · 116L · `TODO-HDR`
 - [ ] **1.325.28** `pidfile.c` · 376L · `TODO-PORT` · 10 fn
   - [ ] 1.325.28.1 `pidfile_verify()` · `TODO-FN`
   - [ ] 1.325.28.2 `pidfile_read_impl()` · `TODO-FN`
@@ -19945,7 +19945,7 @@ function; a file with two hundred of them is a project.
 
 ### 4.92 `sbin/route`
 
-- [ ] **4.92.1** `route.c` · 2,027L · `TODO-PORT` · 31 fn
+- [ ] **4.92.1** `route.c` · 2,036L · `TODO-PORT` · 31 fn
   - [ ] 4.92.1.1 `stopit()` · `TODO-FN`
   - [ ] 4.92.1.2 `usage()` · `TODO-FN`
   - [ ] 4.92.1.3 `main()` · `TODO-FN`
@@ -23427,7 +23427,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.147.4.10 `catchalarm()` · `TODO-FN`
   - [ ] 5.147.4.11 `running_stats_banner()` · `TODO-FN`
   - [ ] 5.147.4.12 `sidewaysintpr()` · `TODO-FN`
-- [ ] **5.147.5** `inet.c` · 1,564L · `TODO-PORT` · 15 fn
+- [ ] **5.147.5** `inet.c` · 1,572L · `TODO-PORT` · 15 fn
   - [ ] 5.147.5.1 `pcblist_sysctl()` · `TODO-FN`
   - [ ] 5.147.5.2 `sbtoxsockbuf()` · `TODO-FN`
   - [ ] 5.147.5.3 `sotoxsocket()` · `TODO-FN`
@@ -29074,7 +29074,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.45 `usr.sbin/bsnmpd/modules/snmp_hast`
 
-- [ ] **6.45.1** `hast_snmp.c` · 541L · `TODO-PORT` · 12 fn
+- [ ] **6.45.1** `hast_snmp.c` · 550L · `TODO-PORT` · 12 fn
   - [ ] 6.45.1.1 `hast_init()` · `TODO-FN`
   - [ ] 6.45.1.2 `hast_start()` · `TODO-FN`
   - [ ] 6.45.1.3 `hast_fini()` · `TODO-FN`
@@ -29122,7 +29122,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.46.3.10 `init_disk_storage_tbl()` · `TODO-FN`
   - [ ] 6.46.3.11 `fini_disk_storage_tbl()` · `TODO-FN`
   - [ ] 6.46.3.12 `op_hrDiskStorageTable()` · `TODO-FN`
-- [ ] **6.46.4** `hostres_fs_tbl.c` · 472L gen:2 · `TODO-PORT` · 10 fn
+- [ ] **6.46.4** `hostres_fs_tbl.c` · 479L gen:2 · `TODO-PORT` · 10 fn
   - [ ] 6.46.4.1 `fs_entry_create()` · `TODO-FN`
   - [ ] 6.46.4.2 `fs_entry_delete()` · `TODO-FN`
   - [ ] 6.46.4.3 `fs_find_by_name()` · `TODO-FN`
@@ -29169,7 +29169,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.46.7.8 `fini_printer_tbl()` · `TODO-FN`
   - [ ] 6.46.7.9 `refresh_printer_tbl()` · `TODO-FN`
   - [ ] 6.46.7.10 `op_hrPrinterTable()` · `TODO-FN`
-- [ ] **6.46.8** `hostres_processor_tbl.c` · 430L gen:1 · `TODO-PORT` · 11 fn
+- [ ] **6.46.8** `hostres_processor_tbl.c` · 439L gen:1 · `TODO-PORT` · 11 fn
   - [ ] 6.46.8.1 `get_avg_load()` · `TODO-FN`
   - [ ] 6.46.8.2 `save_sample()` · `TODO-FN`
   - [ ] 6.46.8.3 `proc_create_entry()` · `TODO-FN`
@@ -29314,7 +29314,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.49 `usr.sbin/bsnmpd/modules/snmp_pf`
 
-- [ ] **6.49.1** `pf_snmp.c` · 1,786L gen:5 · `TODO-PORT` · 35 fn
+- [ ] **6.49.1** `pf_snmp.c` · 1,793L gen:5 · `TODO-PORT` · 35 fn
   - [ ] 6.49.1.1 `pf_status()` · `TODO-FN`
   - [ ] 6.49.1.2 `pf_counter()` · `TODO-FN`
   - [ ] 6.49.1.3 `pf_statetable()` · `TODO-FN`
@@ -29353,7 +29353,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.50 `usr.sbin/bsnmpd/modules/snmp_wlan`
 
-- [ ] **6.50.1** `wlan_snmp.c` · 4,514L gen:1 · `TODO-PORT`
+- [ ] **6.50.1** `wlan_snmp.c` · 4,524L gen:1 · `TODO-PORT`
 - [ ] **6.50.2** `wlan_snmp.h` · 286L gen:4 · `TODO-HDR`
 - [ ] **6.50.3** `wlan_sys.c` · 3,146L · `TODO-PORT` · 72 fn
   - [ ] 6.50.3.1 `wlan_ioctl_init()` · `TODO-FN`
@@ -35216,7 +35216,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.196.2.44 `nlm4_nm_lock_4_svc()` · `TODO-FN`
   - [ ] 6.196.2.45 `nlm4_free_all_4_svc()` · `TODO-FN`
   - [ ] 6.196.2.46 `nlm_sm_notify_0_svc()` · `TODO-FN`
-- [ ] **6.196.3** `lockd.c` · 913L gen:1 · `TODO-PORT` · 8 fn
+- [ ] **6.196.3** `lockd.c` · 922L gen:1 · `TODO-PORT` · 8 fn
   - [ ] 6.196.3.1 `main()` · `TODO-FN`
   - [ ] 6.196.3.2 `create_service()` · `TODO-FN`
   - [ ] 6.196.3.3 `complete_service()` · `TODO-FN`
@@ -35328,7 +35328,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.199.1.5 `rpctls_checkhost()` · `TODO-FN`
   - [ ] 6.199.1.6 `rpctls_gethost()` · `TODO-FN`
 - [ ] **6.199.2** `rpc.tlscommon.h` · 67L gen:1 · `TODO-HDR`
-- [ ] **6.199.3** `rpc.tlsservd.c` · 975L · `TODO-PORT` · 15 fn
+- [ ] **6.199.3** `rpc.tlsservd.c` · 984L · `TODO-PORT` · 15 fn
   - [ ] 6.199.3.1 `main()` · `TODO-FN`
   - [ ] 6.199.3.2 `rpctlssd_null_2_svc()` · `TODO-FN`
   - [ ] 6.199.3.3 `rpctlssd_connect_2_svc()` · `TODO-FN`
@@ -41617,7 +41617,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.15.8.5 `sun8i_codec_dai_trigger()` · `TODO-FN`
   - [ ] 8.15.8.6 `sun8i_codec_dai_setup_mixer()` · `TODO-FN`
 - [ ] **8.15.9** `allwinner_pinctrl.h` · 47L · `TODO-MD`
-- [ ] **8.15.10** `aw_cir.c` · 559L gen:4 · `TODO-MD` · 9 fn
+- [ ] **8.15.10** `aw_cir.c` · 587L gen:4 · `TODO-MD` · 9 fn
   - [ ] 8.15.10.1 `aw_ir_buf_reset()` · `TODO-FN`
   - [ ] 8.15.10.2 `aw_ir_buf_write()` · `TODO-FN`
   - [ ] 8.15.10.3 `aw_ir_buf_full()` · `TODO-FN`
@@ -41627,7 +41627,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.15.10.7 `aw_ir_intr()` · `TODO-FN`
   - [ ] 8.15.10.8 `aw_ir_probe()` · `TODO-FN`
   - [ ] 8.15.10.9 `aw_ir_attach()` · `TODO-FN`
-- [ ] **8.15.11** `aw_gmacclk.c` · 269L gen:2 · `TODO-MD` · 4 fn
+- [ ] **8.15.11** `aw_gmacclk.c` · 279L gen:2 · `TODO-MD` · 4 fn
   - [ ] 8.15.11.1 `aw_gmacclk_init()` · `TODO-FN`
   - [ ] 8.15.11.2 `aw_gmacclk_set_mux()` · `TODO-FN`
   - [ ] 8.15.11.3 `aw_gmacclk_probe()` · `TODO-FN`
@@ -41843,7 +41843,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.15.30.1 `aw_ts_intr()` · `TODO-FN`
   - [ ] 8.15.30.2 `aw_ts_probe()` · `TODO-FN`
   - [ ] 8.15.30.3 `aw_ts_attach()` · `TODO-FN`
-- [ ] **8.15.31** `aw_usb3phy.c` · 295L gen:3 · `TODO-MD` · 5 fn
+- [ ] **8.15.31** `aw_usb3phy.c` · 307L gen:3 · `TODO-MD` · 5 fn
   - [ ] 8.15.31.1 `awusb3phy_phy_enable()` · `TODO-FN`
   - [ ] 8.15.31.2 `awusb3phy_get_mode()` · `TODO-FN`
   - [ ] 8.15.31.3 `awusb3phy_set_mode()` · `TODO-FN`
@@ -41895,7 +41895,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.15.35.27 `axp2xx_probe()` · `TODO-FN`
   - [ ] 8.15.35.28 `axp2xx_attach()` · `TODO-FN`
 - [ ] **8.15.36** `axp209reg.h` · 245L · `TODO-MD`
-- [ ] **8.15.37** `axp81x.c` · 1,660L gen:8 · `TODO-MD` · 28 fn
+- [ ] **8.15.37** `axp81x.c` · 1,670L gen:8 · `TODO-MD` · 28 fn
   - [ ] 8.15.37.1 `axp8xx_read()` · `TODO-FN`
   - [ ] 8.15.37.2 `axp8xx_write()` · `TODO-FN`
   - [ ] 8.15.37.3 `axp8xx_regnode_init()` · `TODO-FN`
@@ -43322,7 +43322,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.29.17.5 `src_attach()` · `TODO-FN`
   - [ ] 8.29.17.6 `src_probe()` · `TODO-FN`
 - [ ] **8.29.18** `imx6_src.h` · 33L · `TODO-MD`
-- [ ] **8.29.19** `imx6_ssi.c` · 856L gen:6 · `TODO-MD` · 21 fn
+- [ ] **8.29.19** `imx6_ssi.c` · 870L gen:6 · `TODO-MD` · 21 fn
   - [ ] 8.29.19.1 `ssimixer_init()` · `TODO-FN`
   - [ ] 8.29.19.2 `ssimixer_set()` · `TODO-FN`
   - [ ] 8.29.19.3 `ssichan_init()` · `TODO-FN`
@@ -43559,7 +43559,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.30.17.3 `port_probe()` · `TODO-FN`
   - [ ] 8.30.17.4 `port_attach()` · `TODO-FN`
 - [ ] **8.30.18** `vf_port.h` · 44L · `TODO-MD`
-- [ ] **8.30.19** `vf_sai.c` · 801L gen:5 · `TODO-MD` · 19 fn
+- [ ] **8.30.19** `vf_sai.c` · 815L gen:5 · `TODO-MD` · 19 fn
   - [ ] 8.30.19.1 `saimixer_init()` · `TODO-FN`
   - [ ] 8.30.19.2 `saimixer_set()` · `TODO-FN`
   - [ ] 8.30.19.3 `saichan_init()` · `TODO-FN`
@@ -43734,7 +43734,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.32.2.14 `a37x0_iic_write()` · `TODO-FN`
   - [ ] 8.32.2.15 `a37x0_iic_get_node()` · `TODO-FN`
 - [ ] **8.32.3** `a37x0_iicreg.h` · 68L · `TODO-MD`
-- [ ] **8.32.4** `a37x0_spi.c` · 491L gen:1 · `TODO-MD` · 12 fn
+- [ ] **8.32.4** `a37x0_spi.c` · 502L gen:1 · `TODO-MD` · 12 fn
   - [ ] 8.32.4.1 `a37x0_spi_wait()` · `TODO-FN`
   - [ ] 8.32.4.2 `a37x0_spi_probe()` · `TODO-FN`
   - [ ] 8.32.4.3 `a37x0_spi_attach()` · `TODO-FN`
@@ -43747,7 +43747,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.32.4.10 `a37x0_spi_intr()` · `TODO-FN`
   - [ ] 8.32.4.11 `a37x0_spi_transfer()` · `TODO-FN`
   - [ ] 8.32.4.12 `a37x0_spi_get_node()` · `TODO-FN`
-- [ ] **8.32.5** `gpio.c` · 1,210L gen:1 · `TODO-MD` · 43 fn
+- [ ] **8.32.5** `gpio.c` · 1,231L gen:1 · `TODO-MD` · 43 fn
   - [ ] 8.32.5.1 `mv_gpio_probe()` · `TODO-FN`
   - [ ] 8.32.5.2 `mv_gpio_setup_interrupts()` · `TODO-FN`
   - [ ] 8.32.5.3 `mv_gpio_attach()` · `TODO-FN`
@@ -44033,7 +44033,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.32.17.5 `mv_pcib_ctrl_alloc_resource()` · `TODO-FN`
   - [ ] 8.32.17.6 `mv_pcib_ctrl_fill_ranges()` · `TODO-FN`
   - [ ] 8.32.17.7 `mv_pcib_ctrl_get_devinfo()` · `TODO-FN`
-- [ ] **8.32.18** `mv_spi.c` · 405L gen:1 · `TODO-MD` · 9 fn
+- [ ] **8.32.18** `mv_spi.c` · 417L gen:1 · `TODO-MD` · 9 fn
   - [ ] 8.32.18.1 `mv_spi_probe()` · `TODO-FN`
   - [ ] 8.32.18.2 `mv_spi_attach()` · `TODO-FN`
   - [ ] 8.32.18.3 `mv_spi_detach()` · `TODO-FN`
@@ -44054,7 +44054,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.32.19.8 `mv_thermal_attach()` · `TODO-FN`
   - [ ] 8.32.19.9 `mv_thermal_detach()` · `TODO-FN`
   - [ ] 8.32.19.10 `sign_extend()` · `TODO-FN`
-- [ ] **8.32.20** `mvebu_gpio.c` · 878L gen:1 · `TODO-MD` · 34 fn
+- [ ] **8.32.20** `mvebu_gpio.c` · 895L gen:1 · `TODO-MD` · 34 fn
   - [ ] 8.32.20.1 `gpio_write()` · `TODO-FN`
   - [ ] 8.32.20.2 `gpio_read()` · `TODO-FN`
   - [ ] 8.32.20.3 `gpio_modify()` · `TODO-FN`
@@ -44947,7 +44947,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.43.1.11 `ti_aintc_pic_attach()` · `TODO-FN`
   - [ ] 8.43.1.12 `ti_aintc_probe()` · `TODO-FN`
   - [ ] 8.43.1.13 `ti_aintc_attach()` · `TODO-FN`
-- [ ] **8.43.2** `ti_adc.c` · 970L gen:5 · `TODO-MD` · 24 fn
+- [ ] **8.43.2** `ti_adc.c` · 1,025L gen:5 · `TODO-MD` · 24 fn
   - [ ] 8.43.2.1 `ti_adc_ev_report()` · `TODO-FN`
   - [ ] 8.43.2.2 `ti_adc_enable()` · `TODO-FN`
   - [ ] 8.43.2.3 `ti_adc_disable()` · `TODO-FN`
@@ -45038,7 +45038,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.43.9.40 `ti_gpio_pic_teardown_intr()` · `TODO-FN`
   - [ ] 8.43.9.41 `ti_gpio_get_node()` · `TODO-FN`
 - [ ] **8.43.10** `ti_gpio.h` · 69L · `TODO-MD`
-- [ ] **8.43.11** `ti_i2c.c` · 939L gen:4 · `TODO-MD` · 15 fn
+- [ ] **8.43.11** `ti_i2c.c` · 947L gen:4 · `TODO-MD` · 15 fn
   - [ ] 8.43.11.1 `ti_i2c_read_2()` · `TODO-FN`
   - [ ] 8.43.11.2 `ti_i2c_write_2()` · `TODO-FN`
   - [ ] 8.43.11.3 `ti_i2c_transfer_intr()` · `TODO-FN`
@@ -45381,7 +45381,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.44.12.8 `am335x_pmic_attach()` · `TODO-FN`
   - [ ] 8.44.12.9 `am335x_pmic_shutdown()` · `TODO-FN`
 - [ ] **8.44.13** `am335x_pwm.h` · 34L · `TODO-MD`
-- [ ] **8.44.14** `am335x_pwmss.c` · 177L gen:4 · `TODO-MD` · 3 fn
+- [ ] **8.44.14** `am335x_pwmss.c` · 189L gen:4 · `TODO-MD` · 3 fn
   - [ ] 8.44.14.1 `am335x_pwmss_probe()` · `TODO-FN`
   - [ ] 8.44.14.2 `am335x_pwmss_attach()` · `TODO-FN`
   - [ ] 8.44.14.3 `am335x_pwmss_detach()` · `TODO-FN`
@@ -45458,7 +45458,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.45.7.3 `ti_clkctrl_detach()` · `TODO-FN`
   - [ ] 8.45.7.4 `clkctrl_ofw_map()` · `TODO-FN`
   - [ ] 8.45.7.5 `create_clkctrl()` · `TODO-FN`
-- [ ] **8.45.8** `ti_divider_clock.c` · 261L gen:3 · `TODO-MD` · 5 fn
+- [ ] **8.45.8** `ti_divider_clock.c` · 285L gen:3 · `TODO-MD` · 5 fn
   - [ ] 8.45.8.1 `register_clk()` · `TODO-FN`
   - [ ] 8.45.8.2 `ti_divider_probe()` · `TODO-FN`
   - [ ] 8.45.8.3 `ti_divider_attach()` · `TODO-FN`
@@ -60923,7 +60923,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.607 `sys/dev/amdsmb`
 
-- [ ] **8.607.1** `amdsmb.c` · 578L gen:5 · `TODO-PORT` · 18 fn
+- [ ] **8.607.1** `amdsmb.c` · 603L gen:5 · `TODO-PORT` · 18 fn
   - [ ] 8.607.1.1 `amdsmb_probe()` · `TODO-FN`
   - [ ] 8.607.1.2 `amdsmb_attach()` · `TODO-FN`
   - [ ] 8.607.1.3 `amdsmb_detach()` · `TODO-FN`
@@ -63463,7 +63463,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.633 `sys/dev/backlight`
 
-- [ ] **8.633.1** `backlight.c` · 168L gen:2 · `TODO-PORT` · 4 fn
+- [ ] **8.633.1** `backlight.c` · 181L gen:2 · `TODO-PORT` · 4 fn
   - [ ] 8.633.1.1 `backlight_ioctl()` · `TODO-FN`
   - [ ] 8.633.1.2 `backlight_register()` · `TODO-FN`
   - [ ] 8.633.1.3 `backlight_destroy()` · `TODO-FN`
@@ -73400,7 +73400,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.731.24.21 `ps4dsacc_detach()` · `TODO-FN`
   - [ ] 8.731.24.22 `ps4dshead_detach()` · `TODO-FN`
   - [ ] 8.731.24.23 `ps4dsmtp_detach()` · `TODO-FN`
-- [ ] **8.731.25** `u2f.c` · 605L gen:6 · `TODO-PORT` · 16 fn
+- [ ] **8.731.25** `u2f.c` · 618L gen:6 · `TODO-PORT` · 16 fn
   - [ ] 8.731.25.1 `u2f_probe()` · `TODO-FN`
   - [ ] 8.731.25.2 `u2f_attach()` · `TODO-FN`
   - [ ] 8.731.25.3 `u2f_detach()` · `TODO-FN`
@@ -76005,7 +76005,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.758.1.9 `i6300esbwd_attach()` · `TODO-FN`
   - [ ] 8.758.1.10 `i6300esbwd_detach()` · `TODO-FN`
 - [ ] **8.758.2** `i6300esbwd.h` · 47L · `TODO-HDR`
-- [ ] **8.758.3** `ichwd.c` · 986L gen:1 · `TODO-PORT` · 18 fn
+- [ ] **8.758.3** `ichwd.c` · 1,001L gen:1 · `TODO-PORT` · 18 fn
   - [ ] 8.758.3.1 `ichwd_smi_disable()` · `TODO-FN`
   - [ ] 8.758.3.2 `ichwd_smi_enable()` · `TODO-FN`
   - [ ] 8.758.3.3 `ichwd_smi_is_enabled()` · `TODO-FN`
@@ -82903,7 +82903,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.822.35.11 `mii_phy_dev_attach()` · `TODO-FN`
   - [ ] 8.822.35.12 `mii_phy_flowstatus()` · `TODO-FN`
 - [ ] **8.822.36** `miivar.h` · 310L gen:3 · `TODO-HDR`
-- [ ] **8.822.37** `mv88e151x.c` · 265L gen:1 · `TODO-PORT` · 5 fn
+- [ ] **8.822.37** `mv88e151x.c` · 280L gen:1 · `TODO-PORT` · 5 fn
   - [ ] 8.822.37.1 `mv88e151x_probe()` · `TODO-FN`
   - [ ] 8.822.37.2 `mv88e151x_attach()` · `TODO-FN`
   - [ ] 8.822.37.3 `mv88e151x_service()` · `TODO-FN`
@@ -91473,7 +91473,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.887.22.11 `pci_domain_release_bus()` · `TODO-FN`
   - [ ] 8.887.22.12 `pci_domain_activate_bus()` · `TODO-FN`
   - [ ] 8.887.22.13 `pci_domain_deactivate_bus()` · `TODO-FN`
-- [ ] **8.887.23** `pci_user.c` · 1,568L · `TODO-PORT` · 16 fn
+- [ ] **8.887.23** `pci_user.c` · 1,580L · `TODO-PORT` · 16 fn
   - [ ] 8.887.23.1 `pci_open()` · `TODO-FN`
   - [ ] 8.887.23.2 `pci_close()` · `TODO-FN`
   - [ ] 8.887.23.3 `pci_conf_match_native()` · `TODO-FN`
@@ -100714,7 +100714,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1013.25.63 `envy24ht_pci_attach()` · `TODO-FN`
   - [ ] 8.1013.25.64 `envy24ht_pci_detach()` · `TODO-FN`
 - [ ] **8.1013.26** `envy24ht.h` · 185L · `TODO-HDR`
-- [ ] **8.1013.27** `es137x.c` · 1,940L gen:7 · `TODO-PORT` · 36 fn
+- [ ] **8.1013.27** `es137x.c` · 1,953L gen:7 · `TODO-PORT` · 36 fn
   - [ ] 8.1013.27.1 `es_rd()` · `TODO-FN`
   - [ ] 8.1013.27.2 `es_wr()` · `TODO-FN`
   - [ ] 8.1013.27.3 `es1370_mixinit()` · `TODO-FN`
@@ -101090,7 +101090,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1013.45.33 `tr_pci_suspend()` · `TODO-FN`
   - [ ] 8.1013.45.34 `tr_pci_resume()` · `TODO-FN`
 - [ ] **8.1013.46** `t4dwave.h` · 104L · `TODO-HDR`
-- [ ] **8.1013.47** `via8233.c` · 1,440L gen:7 · `TODO-PORT` · 40 fn
+- [ ] **8.1013.47** `via8233.c` · 1,453L gen:7 · `TODO-PORT` · 40 fn
   - [ ] 8.1013.47.1 `via_chan_active()` · `TODO-FN`
   - [ ] 8.1013.47.2 `sysctl_via8233_spdif_enable()` · `TODO-FN`
   - [ ] 8.1013.47.3 `sysctl_via8233_dxs_src()` · `TODO-FN`
@@ -104460,7 +104460,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1054 `sys/dev/usb/misc`
 
-- [ ] **8.1054.1** `cp2112.c` · 1,435L gen:12 · `TODO-PORT` · 30 fn
+- [ ] **8.1054.1** `cp2112.c` · 1,443L gen:12 · `TODO-PORT` · 30 fn
   - [ ] 8.1054.1.1 `cp2112_get_report()` · `TODO-FN`
   - [ ] 8.1054.1.2 `cp2112_set_report()` · `TODO-FN`
   - [ ] 8.1054.1.3 `cp2112_probe()` · `TODO-FN`
@@ -110772,7 +110772,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1146.8.23 `nfscl_procdoesntexist()` · `TODO-FN`
   - [ ] 8.1146.8.24 `nfssvc_nfscl()` · `TODO-FN`
   - [ ] 8.1146.8.25 `nfscl_modevent()` · `TODO-FN`
-- [ ] **8.1146.9** `nfs_clrpcops.c` · 9,980L gen:4 · `TODO-PORT`
+- [ ] **8.1146.9** `nfs_clrpcops.c` · 9,982L gen:4 · `TODO-PORT`
 - [ ] **8.1146.10** `nfs_clstate.c` · 6,075L · `TODO-PORT`
 - [ ] **8.1146.11** `nfs_clsubs.c` · 392L gen:2 · `TODO-PORT` · 10 fn
   - [ ] 8.1146.11.1 `ncl_uninit()` · `TODO-FN`
@@ -110785,7 +110785,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1146.11.8 `ncl_invaldir()` · `TODO-FN`
   - [ ] 8.1146.11.9 `ncl_clearcommit()` · `TODO-FN`
   - [ ] 8.1146.11.10 `ncl_init()` · `TODO-FN`
-- [ ] **8.1146.12** `nfs_clvfsops.c` · 2,289L gen:13 · `TODO-PORT` · 22 fn
+- [ ] **8.1146.12** `nfs_clvfsops.c` · 2,298L gen:13 · `TODO-PORT` · 22 fn
   - [ ] 8.1146.12.1 `newnfs_iosize()` · `TODO-FN`
   - [ ] 8.1146.12.2 `nfs_convert_oargs()` · `TODO-FN`
   - [ ] 8.1146.12.3 `nfs_convert_diskless()` · `TODO-FN`
@@ -110808,7 +110808,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1146.12.20 `nfscl_printopt()` · `TODO-FN`
   - [ ] 8.1146.12.21 `nfscl_printoptval()` · `TODO-FN`
   - [ ] 8.1146.12.22 `nfscl_retopts()` · `TODO-FN`
-- [ ] **8.1146.13** `nfs_clvnops.c` · 4,852L gen:15 · `TODO-PORT`
+- [ ] **8.1146.13** `nfs_clvnops.c` · 4,857L gen:15 · `TODO-PORT`
 - [ ] **8.1146.14** `nfs_kdtrace.h` · 121L · `TODO-HDR`
 - [ ] **8.1146.15** `nfsmount.h` · 154L · `TODO-HDR`
 - [ ] **8.1146.16** `nfsnode.h` · 198L · `TODO-HDR`
@@ -116070,7 +116070,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.69.49 `rctl_throttle_max_sysctl()` · `TODO-FN`
   - [ ] 8.1191.69.50 `rctl_throttle_pct_sysctl()` · `TODO-FN`
   - [ ] 8.1191.69.51 `rctl_throttle_pct2_sysctl()` · `TODO-FN`
-- [ ] **8.1191.70** `kern_resource.c` · 1,850L gen:1 · `TODO-PORT` · 63 fn
+- [ ] **8.1191.70** `kern_resource.c` · 1,868L gen:1 · `TODO-PORT` · 63 fn
   - [ ] 8.1191.70.1 `sys_getpriority()` · `TODO-FN`
   - [ ] 8.1191.70.2 `kern_getpriority()` · `TODO-FN`
   - [ ] 8.1191.70.3 `sys_setpriority()` · `TODO-FN`
@@ -125390,7 +125390,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1213.22.10 `prison_check_ip4()` · `TODO-FN`
 - [ ] **8.1213.23** `in_kdtrace.c` · 571L gen:357 · `TODO-PORT`
 - [ ] **8.1213.24** `in_kdtrace.h` · 498L gen:357 · `TODO-HDR`
-- [ ] **8.1213.25** `in_mcast.c` · 3,015L gen:9 · `TODO-PORT` · 51 fn
+- [ ] **8.1213.25** `in_mcast.c` · 3,028L gen:9 · `TODO-PORT` · 51 fn
   - [ ] 8.1213.25.1 `inm_is_ifp_detached()` · `TODO-FN`
   - [ ] 8.1213.25.2 `inm_release_wait()` · `TODO-FN`
   - [ ] 8.1213.25.3 `inm_release_list_deferred()` · `TODO-FN`
@@ -127031,7 +127031,7 @@ function; a file with two hundred of them is a project.
 ### 8.1218 `sys/netinet/tcp_stacks`
 
 - [ ] **8.1218.1** `bbr.c` · 14,870L gen:3 · `TODO-PORT`
-- [ ] **8.1218.2** `rack.c` · 24,799L gen:8 · `TODO-PORT`
+- [ ] **8.1218.2** `rack.c` · 24,825L gen:8 · `TODO-PORT`
 - [ ] **8.1218.3** `rack_bbr_common.c` · 960L · `TODO-PORT` · 20 fn
   - [ ] 8.1218.3.1 `ctf_get_enet_type()` · `TODO-FN`
   - [ ] 8.1218.3.2 `ctf_process_inbound_raw()` · `TODO-FN`
@@ -127286,7 +127286,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1219.14.8 `prison_remote_ip6()` · `TODO-FN`
   - [ ] 8.1219.14.9 `prison_check_ip6_locked()` · `TODO-FN`
   - [ ] 8.1219.14.10 `prison_check_ip6()` · `TODO-FN`
-- [ ] **8.1219.15** `in6_mcast.c` · 2,944L gen:11 · `TODO-PORT` · 50 fn
+- [ ] **8.1219.15** `in6_mcast.c` · 2,948L gen:11 · `TODO-PORT` · 50 fn
   - [ ] 8.1219.15.1 `in6m_is_ifp_detached()` · `TODO-FN`
   - [ ] 8.1219.15.2 `im6f_init()` · `TODO-FN`
   - [ ] 8.1219.15.3 `ip6_mfilter_alloc()` · `TODO-FN`
@@ -127921,7 +127921,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1220.16.10 `ipsec4_pcbctl()` · `TODO-FN`
   - [ ] 8.1220.16.11 `ipsec6_pcbctl()` · `TODO-FN`
 - [ ] **8.1220.17** `ipsec_support.h` · 229L · `TODO-HDR`
-- [ ] **8.1220.18** `key.c` · 9,023L gen:77 · `TODO-PORT`
+- [ ] **8.1220.18** `key.c` · 9,028L gen:77 · `TODO-PORT`
 - [ ] **8.1220.19** `key.h` · 107L gen:8 · `TODO-HDR`
 - [ ] **8.1220.20** `key_debug.c` · 1,057L · `TODO-PORT` · 36 fn
   - [ ] 8.1220.20.1 `kdebug_sadb_type()` · `TODO-FN`
