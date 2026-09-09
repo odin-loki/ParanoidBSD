@@ -1229,6 +1229,19 @@ FIXES = {
             "return and schedules itself again on `pending > 0'",
         ),
     ],
+    "hbsd/src/sys/dev/cxgbe/t4_sched.c": [
+        (
+            "PBSD: and the mode.",
+            "\t\t} else if (p->rateunit == SCHED_CLASS_RATEUNIT_PKTS) {\n"
+            "\t\t\t/* maxrate is the absolute value in pps. */\n"
+            "\t\t\tcheck_pktsize = true;\n"
+            "\t\t\tfw_rateunit = FW_SCHED_PARAMS_UNIT_PKTRATE;\n"
+            "\t\t} else\n",
+            "the packet-rate branch set the unit and not the mode, so "
+            "fw_ratemode reached tc->ratemode and t4_sched_params() "
+            "unwritten",
+        ),
+    ],
     "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_vsc.c": [
         (
             "PBSD: = 0, as mlx5_vsc_write() and mlx5_vsc_set_space()",

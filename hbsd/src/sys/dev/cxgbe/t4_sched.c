@@ -144,6 +144,15 @@ set_sched_class_params(struct adapter *sc, struct t4_sched_class_params *p,
 			/* maxrate is the absolute value in pps. */
 			check_pktsize = true;
 			fw_rateunit = FW_SCHED_PARAMS_UNIT_PKTRATE;
+			/*
+			 * PBSD: and the mode.  This branch set the unit and
+			 * not the mode, so fw_ratemode reached
+			 * `tc->ratemode = fw_ratemode' and the sixth argument
+			 * of t4_sched_params() unwritten - the two findings
+			 * here.  ABS is what the comment above says this
+			 * branch means, and what the other absolute arm sets.
+			 */
+			fw_ratemode = FW_SCHED_PARAMS_RATE_ABS;
 		} else
 			return (EINVAL);
 	} else {

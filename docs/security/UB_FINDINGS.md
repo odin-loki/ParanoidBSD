@@ -12442,3 +12442,55 @@ The one that remains, `mlx5_ib_cq.c:1290`, is the `IS_ERR`/`PTR_ERR`
 pair again: `resize_user()` returns `PTR_ERR(umem)` on the only path that
 does not write `*npas`, and `IS_ERR` true implies that value is in
 `[-MAX_ERRNO, -1]`. Same shape as `irdma_cm.c:3965`.
+
+## Task #61, sixth batch: cxgbe, and a warning about counting from a `head`
+
+### `sys/dev/cxgbe/t4_sched.c` — a rate mode never chosen
+
+```c
+		} else if (p->rateunit == SCHED_CLASS_RATEUNIT_PKTS) {
+			/* maxrate is the absolute value in pps. */
+			check_pktsize = true;
+			fw_rateunit = FW_SCHED_PARAMS_UNIT_PKTRATE;
+		} else
+			return (EINVAL);
+```
+
+Every other arm of this decision sets both `fw_rateunit` and
+`fw_ratemode`; the packet-rate one sets the unit only. `fw_ratemode`
+then reaches `tc->ratemode = fw_ratemode` and the sixth argument of
+`t4_sched_params()` — the two findings — unwritten. `ABS` is what the
+comment on that branch says it means and what the other absolute arm
+sets.
+
+```
+--scope sys/dev/cxgbe   21 findings -> 19   47 units, OK both sides
+```
+
+### A counting mistake worth writing down
+
+The first look at this scope was `... | head -30`, which showed fourteen
+findings, and the "after" run reported nineteen. That looked like a
+regression caused by the fix. It was not: the scope had **21**, and
+`head -30` had cut the list at fourteen because each finding takes two
+lines. The saved output file had the real total on its summary line all
+along.
+
+The same shape as `| tail -1` and `$(basename $p)` earlier in this
+session: a number read from a truncated view of the thing that produced
+it. Read the summary line, not the part of the list that fitted.
+
+### The nineteen that remain, by shape
+
+Six are in `t4_sge.c` (`:3643`, `:3720`, `:4189`, `:4365`, `:4420`,
+`:4446`) and are the iflib/mp_ring descriptor idioms — the same family as
+`ixl_txrx.c:399`. Three are in `iw_cxgbe` (`cm.c:186`, `cq.c:791`,
+`qp.c:1846`), all NULL tests on a `cm_id`, a `qhp` and a `ucontext` that
+the RDMA layer guarantees. `t4_cpl_io.c:583` is
+`struct sglist_seg segs[n];`, a VLA whose `n` is "the maximum segments in
+any one mbuf" and is at least 1 whenever the `KASSERT(nsegs > 0)` on the
+next line holds — an invariant one function up. The rest —
+`fastlz_api.c:386`, `cudbg_lib.c:1837`, `t4_hw.c:3550`,
+`t4_mp_ring.c:318`, `t4_filter.c:1259`, `t4_listen.c:1519`,
+`t4_main.c:10240`, `cxgbei.c:630`, `t4_tls.c:1037` — are unread and stay
+on task #61.

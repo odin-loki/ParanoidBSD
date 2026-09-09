@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,619 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,628 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,678** | **114,204** |
+| | **total** | **41,143** | **21,297,687** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -66906,7 +66906,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.671.18.26 `unwrap_nm_fw6_msg()` · `TODO-FN`
   - [ ] 8.671.18.27 `handle_nm_sge_egr_update()` · `TODO-FN`
   - [ ] 8.671.18.28 `service_nm_rxq()` · `TODO-FN`
-- [ ] **8.671.19** `t4_sched.c` · 990L · `TODO-PORT` · 25 fn
+- [ ] **8.671.19** `t4_sched.c` · 999L · `TODO-PORT` · 25 fn
   - [ ] 8.671.19.1 `in_range()` · `TODO-FN`
   - [ ] 8.671.19.2 `set_sched_class_config()` · `TODO-FN`
   - [ ] 8.671.19.3 `set_sched_class_params()` · `TODO-FN`
