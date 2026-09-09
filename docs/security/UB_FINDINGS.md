@@ -10958,3 +10958,60 @@ direction and on coincidence in the other. The verified members remain
 the ones that were read: `atmegadci.c:295`, `musb_otg.c:503`,
 `uss820dci.c:326`, `if_mgb.c:434`, `orm.c:131` — **five**. The other
 seventeen the proxy names are not claimed.
+
+---
+
+## `ti_copy_scratch`: the loop condition itself reads the uninitialised value
+
+`if_ti.c:788` is `core.uninitialized.UndefReturn`, and the defect is
+worse than that:
+
+```c
+	uint32_t segptr;
+	int cnt, error;
+	...
+	segptr = tigon_addr;
+	cnt = len;
+	ptr = buf;
+
+	while (cnt && error == 0) {
+		...
+	}
+
+	return (error);
+```
+
+`error` is never initialised, and it is not only returned — it is in the
+**loop condition**. The very first evaluation of `while (cnt && error ==
+0)` tests a stack slot, so the loop may not run at all on a call that
+had work to do. And when it does not run, whether for that reason or
+because `len` was zero, the `return (error)` hands the slot back.
+`ti_ioctl2()` — the driver's private ioctl — reaches this with a length
+from userspace.
+
+The evidence for what it should be is in the same file:
+`ti_copy_mem()`, the sibling this function was copied from, has the same
+`while (cnt != 0 && error == 0)` and sets `error = 0` explicitly before
+it.
+
+### Measured, and a lesson about how
+
+```
+--scope sys/dev/ti   9 findings -> 7   1 unit, OK on both sides
+  gone: if_ti.c:726 (UndefinedBinaryOperatorResult, the loop condition)
+        if_ti.c:788 (UndefReturn, the return)
+```
+
+The first comparison of this fix looked like a **regression** — three
+findings that were not in the kernel sweep's row for this file appeared,
+including one in `if_tireg.h`. They were not new. The kernel sweep
+reports 6 findings for `if_ti.c` and a `--scope sys/dev/ti` run reports
+9, because the two shards do not compile the file with the same flags.
+
+So a before/after has to put both sides at the same scope, and the
+number in a full sweep's row is not a baseline for a scoped run. Every
+other measurement in this session's driver work was a scoped run against
+the kernel sweep's row — which was safe only because those were all
+*disappearances*, and a finding that vanishes cannot be an artefact of
+the baseline having fewer. This one had a shift and an apparent
+addition, and needed the real A/B.

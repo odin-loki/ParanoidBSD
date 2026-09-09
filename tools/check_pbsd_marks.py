@@ -1004,6 +1004,16 @@ FIXES = {
             "label to decide whether to wait for the bus",
         ),
     ],
+    "hbsd/src/sys/dev/ti/if_ti.c": [
+        (
+            "PBSD: error = 0, which ti_copy_mem()",
+            "\tint cnt, error;\n",
+            "ti_copy_scratch()'s `while (cnt && error == 0)' read error "
+            "on its very first test, and returned it when the loop did "
+            "not run; ti_copy_mem(), the sibling it was copied from, "
+            "sets error = 0 explicitly",
+        ),
+    ],
     "hbsd/src/sys/dev/ichwd/ichwd.c": [
         (
             "PBSD: smb = NULL.",

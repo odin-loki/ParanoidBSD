@@ -697,7 +697,18 @@ ti_copy_scratch(struct ti_softc *sc, uint32_t tigon_addr, uint32_t len,
     caddr_t buf, int useraddr, int readdata, int cpu)
 {
 	uint32_t segptr;
-	int cnt, error;
+	/*
+	 * PBSD: error = 0, which ti_copy_mem() - the sibling this
+	 * function is a copy of - sets explicitly before its own
+	 * `while (cnt != 0 && error == 0)'. Here it was never set, and
+	 * the loop CONDITION reads it: the very first test of
+	 * `while (cnt && error == 0)' is on a stack slot, so the loop
+	 * may not run at all. And when it does not - which is also what
+	 * happens for a zero length - the function's `return (error);'
+	 * hands that slot back. ti_ioctl2() reaches this with a length
+	 * from userspace.
+	 */
+	int cnt, error = 0;
 	uint32_t tmpval, tmpval2;
 	caddr_t ptr;
 
