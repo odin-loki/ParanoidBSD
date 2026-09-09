@@ -12717,3 +12717,48 @@ purpose is to compare a length that does not exist.
 
 **The cxgbe scope is now fully read: 21 -> 12**, and every one of the
 twelve that remain is written up above with the invariant it rests on.
+
+## Task #61 closed: what the bucket contained
+
+The static-taken bucket's remaining drivers have all been read, one
+`--scope` at a time, both sides measured at the same scope.
+
+```
+  sys/dev/adlink          1 ->  0      sys/dev/aic7xxx       7 ->  5
+  sys/dev/acpi_support    3 ->  0      sys/dev/mana          2 ->  0
+  sys/dev/usb/input       1 ->  0      sys/dev/axgbe         3 ->  0
+  sys/contrib/vchiq       1 ->  0      sys/dev/bwn           1 ->  0
+  sys/dev/sbni            1 ->  0      sys/dev/irdma         8 ->  8
+  sys/dev/mgb             1 ->  1      sys/dev/ice           6 ->  3
+  sys/dev/igc             5 ->  1      sys/dev/ixl           2 ->  1
+  sys/dev/ixgbe           1 ->  1      sys/dev/iavf          1 ->  1
+  sys/compat/linux       77 -> 74      sys/dev/hyperv        5 ->  1
+  sys/dev/mlx5            6 ->  1      sys/dev/cxgbe        21 -> 12
+```
+
+Thirty-one defects fixed. Every finding that remains is written up above
+with the invariant it rests on, and they fall into eight shapes:
+
+1. **an iflib or descriptor-ring idiom** — a loop that always runs at
+   least once, and a `= NULL` initialiser that turns the zero-iteration
+   path into a nameable dereference (5 drivers);
+2. **an allocation's own NULL test** carried into code that only runs
+   after it succeeded (aic7xxx, irdma);
+3. **a defensive NULL test in a macro** — `irdma_debug(h, ...)`'s
+   `if (!(h))` makes every argument evaluated under `rf == NULL`;
+4. **one predicate tested twice across a call** that may write through
+   the structure holding it (irdma, aic7xxx, cxgbe, mlx5);
+5. **`IS_ERR`/`PTR_ERR`**, whose pairing the analyser does not model
+   (irdma_cm, mlx5_ib_cq);
+6. **`M_ZERO`**, unmodelled — especially through a flexible-array
+   `__offsetof` size (t4_mp_ring);
+7. **a caller contract** — CAM's `XPT_GET_TRAN_SETTINGS`, `ice_bitops.h`'s
+   deliberate read of bits above the size;
+8. **an inline function whose body is inline assembly** — the class the
+   `inline_asm_write.c` probe established (mgb).
+
+Two things did not fit and left with tasks of their own: the fifty in
+`sys/contrib/openzfs/module/zfs` (#112, with the assertion hypothesis
+already ruled out), and `linux_mib.c:383`/`:549`, which rest on
+`malloc(..., M_WAITOK)` being able to return NULL — the premise #36
+exists to settle before anything is built on it.
