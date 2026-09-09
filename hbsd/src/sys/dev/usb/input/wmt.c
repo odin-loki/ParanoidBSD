@@ -327,7 +327,21 @@ wmt_attach(device_t dev)
 	uint32_t cont_count_max;
 	int nbuttons, btn;
 	size_t i;
-	int err;
+	/*
+	 * PBSD: err, initialised to a FAILURE.  It is assigned only inside
+	 * the two feature-report fetches below, each of which is guarded, and
+	 * read afterwards as `if (err == 0)'.  A device whose Contact Count
+	 * Maximum report is absent (cont_max_rlen == 0) and whose Button Type
+	 * report shares that report's id skips both, and the read decided
+	 * sc->is_clickpad on a stack word - calling hid_get_udata() over
+	 * sc->buf, which nothing had filled.  `= 0' would be worse than
+	 * nothing here: it would make the guard reliably PASS.  The reuse
+	 * that the second fetch's `btn_type_rid != cont_max_rid' condition
+	 * exists for is preserved - in that case the first fetch ran and left
+	 * its own status in err.  Same shape as hmt.c's rsize one driver
+	 * over.
+	 */
+	int err = USB_ERR_INVAL;
 
 	device_set_usb_desc(dev);
 	sc->dev = dev;

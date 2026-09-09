@@ -240,6 +240,23 @@ adlink_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int fflag, struct threa
 				sc->p0->divisor = 4;
 
 			sc->nchunks = sc->p0->ringsize / sc->p0->chunksize;
+			/*
+			 * PBSD: reject an empty ring.  ADLINK_SETRINGSIZE
+			 * only rejects a size that is not a multiple of the
+			 * chunk size WHEN A CHUNK SIZE IS ALREADY SET, and
+			 * the defaults applied three lines up are applied
+			 * after that check can no longer run: set the ring
+			 * to one page, never set a chunk size, and START
+			 * makes the chunk four pages, so nchunks is 0.
+			 * malloc(0, M_WAITOK | M_ZERO) then returns a valid
+			 * pointer, the loop below never runs, and
+			 * `*(pg->sample) = 0' at the DMA setup dereferences
+			 * the NULL that M_ZERO left there.  /dev/adlink%d is
+			 * mode 0444 and this ioctl does not look at fflag,
+			 * so that is any local user.
+			 */
+			if (sc->nchunks == 0)
+				return (EINVAL);
 			if (sc->nchunks * sizeof (*pg->sample) +
 			    sizeof *sc->p0 > PAGE_SIZE)
 				return (EINVAL);

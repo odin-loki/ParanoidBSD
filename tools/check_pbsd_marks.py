@@ -1115,6 +1115,75 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/usb/input/wmt.c": [
+        (
+            "PBSD: err, initialised to a FAILURE.",
+            "\tsize_t i;\n\tint err;\n",
+            "wmt_attach() assigns err only inside two guarded feature "
+            "report fetches and reads it as `err == 0' afterwards; a "
+            "device with no Contact Count Maximum report and a shared "
+            "Button Type report id skips both",
+        ),
+    ],
+    "hbsd/src/sys/contrib/vchiq/interface/vchiq_arm/vchiq_arm.c": [
+        (
+            "PBSD: service1, not service.",
+            "\t\t\t\tUSER_SERVICE_T *user_service =\n"
+            "\t\t\t\t\tservice->base.userdata;\n",
+            "the closed-service block read base.userdata off `service', "
+            "the variable of the loop above it, which is NULL because "
+            "that loop ended when next_service_by_instance() returned "
+            "NULL",
+        ),
+    ],
+    "hbsd/src/sys/dev/sbni/if_sbni_isa.c": [
+        (
+            "PBSD: a union, not `*(u_int32_t *)&flags",
+            "\t*(u_int32_t*)&flags = device_get_flags(dev);\n",
+            "the ISA attach wrote a struct sbni_flags object through a "
+            "u_int32_t lvalue - a strict aliasing violation the compiler "
+            "may discard - and then passed the struct by value",
+        ),
+    ],
+    "hbsd/src/sys/dev/adlink/adlink.c": [
+        (
+            "PBSD: reject an empty ring.",
+            "\t\t\tsc->nchunks = sc->p0->ringsize / sc->p0->chunksize;\n"
+            "\t\t\tif (sc->nchunks * sizeof (*pg->sample) +\n",
+            "ADLINK_START applies its chunk-size default after the "
+            "ioctl that would have rejected the combination, so a ring "
+            "smaller than the default chunk gives nchunks == 0, "
+            "malloc(0, M_ZERO) and a NULL sample pointer - from a "
+            "0444 device",
+        ),
+    ],
+    "hbsd/src/sys/dev/acpi_support/acpi_asus_wmi.c": [
+        (
+            "PBSD: both reads below are checked.",
+            "\t\t\tacpi_wpi_asus_get_devstate(sc,\n"
+            "\t\t\t    ASUS_WMI_DEVID_TOUCHPAD, &val);\n",
+            "acpi_asus_wmi_evaluate_method() returns -EINVAL without "
+            "writing *retval, and the hotkey handler wrote the "
+            "resulting garbage back to the firmware as a backlight "
+            "level or a touchpad state",
+        ),
+    ],
+    "hbsd/src/sys/dev/acpi_support/acpi_asus.c": [
+        (
+            "PBSD: check the evaluation.",
+            '\tAcpiEvaluateObject(sc->handle, "INIT", &Args, &Buf);\n'
+            "\tObj = Buf.Pointer;\n",
+            "a failed AcpiEvaluateObject() leaves Buf.Pointer NULL and "
+            "the next statement read Obj->String.Pointer off it",
+        ),
+        (
+            "PBSD: and stop here.",
+            None,
+            "the Samsung/EeePC block fell through to a strncmp() whose "
+            "first argument is the NULL pointer the block exists "
+            "because of",
+        ),
+    ],
     "hbsd/src/sys/dev/iommu/busdma_iommu.c": [
         (
             "PBSD: this function is reachable only as bus_dma_iommu_impl's",

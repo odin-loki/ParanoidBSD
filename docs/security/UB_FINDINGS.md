@@ -11808,3 +11808,180 @@ as before; with it, the panic now names the reason.
 The one that remains is `iommu_gas.c:187`, which is the `RB_GENERATE()`
 line — a finding inside the generated red-black tree code, of the class
 already triaged in sweep 17, not a defect in this file.
+
+## Task #61, first batch: six drivers, and one finding that is the instrument
+
+The remaining findings from the static-taken bucket were read one
+directory at a time, at `--scope` granularity, rather than from a full
+sweep's row.
+
+### `sys/dev/adlink/adlink.c` — an empty ring, from a 0444 device
+
+`ADLINK_SETRINGSIZE` rejects a size that is not a multiple of the chunk
+size — *when a chunk size has already been set*:
+
+```c
+	case ADLINK_SETRINGSIZE:
+		...
+		if (sc->p0->chunksize != 0 && u % sc->p0->chunksize)
+			return (EINVAL);
+		sc->p0->ringsize = u;
+```
+
+`ADLINK_START` then applies its defaults, after that check can no longer
+run:
+
+```c
+			if (sc->p0->chunksize == 0)
+				sc->p0->chunksize = 4 * PAGE_SIZE;
+			...
+			sc->nchunks = sc->p0->ringsize / sc->p0->chunksize;
+```
+
+So: set the ring to one page, never set a chunk size, START. The chunk
+becomes four pages and `nchunks` is **0**. `malloc(0, M_DEVBUF, M_WAITOK
+| M_ZERO)` returns a valid pointer, the loop that fills `pg->sample`
+never runs, and the DMA setup a few lines later does
+
+```c
+		pg = sc->next = sc->chunks;
+		*(pg->sample) = 0;
+```
+
+on the NULL that `M_ZERO` left there. `make_dev(..., UID_ROOT, GID_WHEEL,
+0444, "adlink%d")` and an ioctl handler that never looks at `fflag` make
+that any local user. One `if (sc->nchunks == 0) return (EINVAL);`.
+
+### `sys/dev/acpi_support/acpi_asus_wmi.c` — a read that failed, written back
+
+```c
+	if (ACPI_FAILURE(ACPI_WMI_EVALUATE_CALL(...))) {
+		acpi_asus_wmi_free_buffer(&out);
+		return (-EINVAL);		/* *retval not written */
+	}
+```
+
+Two hotkey handlers discarded that return and used the uninitialised
+`val` immediately — `val &= 0x3` for the keyboard backlight, `val = !(val
+& 1)` for the touchpad — and then wrote the result **back to the
+firmware** with `acpi_wpi_asus_set_devstate()`, caching it in
+`sc->kbd_bkl_level` in the backlight case. Not reading a value is a
+reason to do nothing, not a reason to write one. The third call site,
+in `acpi_asus_wmi_sysctl_get()`, was already safe: its `val` is
+initialised to 0.
+
+### `sys/dev/acpi_support/acpi_asus.c` — the union that makes the P30 work
+
+```c
+	AcpiEvaluateObject(sc->handle, "INIT", &Args, &Buf);
+	Obj = Buf.Pointer;
+
+	/*
+	 * The Samsung P30 returns a null-pointer from INIT, we
+	 * can identify it from the 'ODEM' string in the DSDT.
+	 */
+	if (Obj->String.Pointer == NULL) {
+```
+
+Two separate things. A failed evaluation leaves `Buf.Pointer` NULL with
+`ACPI_ALLOCATE_BUFFER`, and the next statement reads through it — that
+is not the Samsung case, which works because the method returns an
+*integer* 0 whose `Integer.Value` shares the union offset with
+`String.Pointer`. The new guard covers the machine whose INIT is missing
+or fails and leaves the P30 path exactly where it was.
+
+The finding itself is the other one: when neither `ODEM` nor `ASUS010`
+matches, the block falls through into
+
+```c
+	for (model = acpi_asus_models; model->name != NULL; model++) {
+		if (strncmp(Obj->String.Pointer, model->name, 3) == 0) {
+```
+
+with the NULL the block exists because of. It now returns `ENXIO`.
+
+### `sys/dev/usb/input/wmt.c` — hmt.c's `rsize`, one driver over
+
+`int err;` assigned only inside two guarded feature-report fetches and
+read afterwards as `if (err == 0)`. A device whose Contact Count Maximum
+report is absent and whose Button Type report shares that report's id
+skips both, and `sc->is_clickpad` was decided by calling
+`hid_get_udata()` over a buffer nothing had filled.
+
+`= 0` would be worse than nothing — it makes the guard reliably *pass*.
+The initialiser is `USB_ERR_INVAL`, which preserves the intentional
+reuse the second fetch's `btn_type_rid != cont_max_rid` condition exists
+for (there, the first fetch ran and left its own status) and closes the
+case where neither ran.
+
+### `sys/contrib/vchiq/.../vchiq_arm.c` — `service` where `service1` was meant
+
+```c
+		while (instance->completion_remove !=
+			instance->completion_insert) {
+			...
+			service1 = completion->service_userdata;
+			if (completion->reason == VCHIQ_SERVICE_CLOSED)
+			{
+				USER_SERVICE_T *user_service =
+					service->base.userdata;
+```
+
+`service` is the variable of the loop *directly above*, which ended
+because `next_service_by_instance()` returned NULL — so it is NULL on
+every path that reaches here. Everything else in the block already uses
+`service1`, including the `unlock_service(service1)` two lines down.
+
+### `sys/dev/sbni/if_sbni_isa.c` — a type pun the compiler may delete
+
+```c
+	*(u_int32_t*)&flags = device_get_flags(dev);
+
+	sbni_attach(sc, device_get_unit(dev) * 2, flags);
+```
+
+A `struct sbni_flags` object written through a `u_int32_t` lvalue: a
+strict-aliasing violation, which is why the analyser saw `flags` passed
+by value with every field indeterminate. A union keeps the bit layout
+exactly as it was on every platform and is defined behaviour. The PCI
+attach never had the problem — it does `memset(&flags, 0, sizeof(flags))`.
+
+### `sys/dev/mgb/if_mgb.c:434` — not a defect, the instrument
+
+```c
+	mgb_get_ethaddr(sc, &hwaddr);
+	if (ETHER_IS_BROADCAST(hwaddr.octet) || ...
+```
+
+`mgb_get_ethaddr()` fills the address with `bus_read_region_1()`, and on
+x86 `bus_space_read_region_1()` is a `static __inline` whose entire body
+is `__asm __volatile` — `rep movsb`, or `inb`/`stosb` for I/O space.
+This is the class the `inline_asm_write.c` probe established earlier in
+this session: the analyser steps *into* a visible inline function,
+finds no C store to `*addr`, and comes back with the buffer still
+undefined. It does invalidate a by-pointer argument to an *unknown*
+function; a visible one whose body it cannot interpret is the exact
+inverse. Left alone, and recorded here so it is not read again.
+
+```
+--scope sys/dev/adlink         1 finding  -> 0    1 unit,  OK both sides
+--scope sys/dev/acpi_support   3 findings -> 0   12 units, OK both sides
+--scope sys/dev/usb/input      1 finding  -> 0    9 units, OK both sides
+--scope sys/contrib/vchiq      1 finding  -> 0   11 units, 4 ERROR both sides
+--scope sys/dev/sbni           1 finding  -> 0    3 units, OK both sides
+--scope sys/dev/mgb            1 finding  -> 1    1 unit,  OK both sides
+```
+
+### A method note
+
+Six markers were "verified" in one shell loop that printed `exit=0` for
+every one of them — and they all bite. The loop said
+
+```sh
+    echo "$(basename $p) reverted -> exit=$?"
+```
+
+and `$?` there is the status of `basename`, not of the check. The same
+lesson as `| tail -1` two commits ago, in a new disguise: the verdict has
+to be read from the thing that produced it. Re-run with the status
+captured into a variable first, all six failed as they should.

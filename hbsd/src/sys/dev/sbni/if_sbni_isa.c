@@ -99,7 +99,20 @@ static int
 sbni_attach_isa(device_t dev)
 {
 	struct sbni_softc *sc;
-	struct sbni_flags flags;
+	/*
+	 * PBSD: a union, not `*(u_int32_t *)&flags = device_get_flags(dev)'.
+	 * That wrote a struct object through a u_int32_t lvalue - a strict
+	 * aliasing violation the compiler is entitled to discard, and one the
+	 * analyser does not model, so it saw `flags' passed by value to
+	 * sbni_attach() with every field still indeterminate.  A union pun
+	 * keeps the bit layout exactly as it was on every platform and is
+	 * defined behaviour.  The PCI attach never had the problem; it does
+	 * memset(&flags, 0, sizeof(flags)).
+	 */
+	union {
+		u_int32_t	  raw;
+		struct sbni_flags flags;
+	} u;
 	int error;
    
 	sc = device_get_softc(dev);
@@ -134,9 +147,9 @@ sbni_attach_isa(device_t dev)
 	} 
 #endif	/* SBNI_DUAL_COMPOUND */
 
-	*(u_int32_t*)&flags = device_get_flags(dev);
+	u.raw = device_get_flags(dev);
 
-	sbni_attach(sc, device_get_unit(dev) * 2, flags);
+	sbni_attach(sc, device_get_unit(dev) * 2, u.flags);
 
 	if (sc->irq_res) {
 		error = bus_setup_intr(

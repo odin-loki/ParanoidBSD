@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,257 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,354 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,300** | **114,204** |
+| | **total** | **41,143** | **21,297,397** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -57059,7 +57059,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.532.1** `vchiq.h` · 41L · `SKIP-VENDOR`
 - [ ] **8.532.2** `vchiq_2835.h` · 43L · `SKIP-VENDOR`
 - [ ] **8.532.3** `vchiq_2835_arm.c` · 609L gen:1 · `SKIP-VENDOR`
-- [ ] **8.532.4** `vchiq_arm.c` · 2,927L · `SKIP-VENDOR`
+- [ ] **8.532.4** `vchiq_arm.c` · 2,937L · `SKIP-VENDOR`
 - [ ] **8.532.5** `vchiq_arm.h` · 216L · `SKIP-VENDOR`
 - [ ] **8.532.6** `vchiq_build_info.h` · 38L · `SKIP-VENDOR`
 - [ ] **8.532.7** `vchiq_cfg.h` · 70L · `SKIP-VENDOR`
@@ -58692,7 +58692,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.588 `sys/dev/acpi_support`
 
-- [ ] **8.588.1** `acpi_asus.c` · 1,265L gen:4 · `TODO-PORT` · 12 fn
+- [ ] **8.588.1** `acpi_asus.c` · 1,290L gen:4 · `TODO-PORT` · 12 fn
   - [ ] 8.588.1.1 `acpi_asus_probe()` · `TODO-FN`
   - [ ] 8.588.1.2 `acpi_asus_attach()` · `TODO-FN`
   - [ ] 8.588.1.3 `acpi_asus_detach()` · `TODO-FN`
@@ -58705,7 +58705,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.588.1.10 `acpi_asus_notify()` · `TODO-FN`
   - [ ] 8.588.1.11 `acpi_asus_lcdd_notify()` · `TODO-FN`
   - [ ] 8.588.1.12 `acpi_asus_eeepc_notify()` · `TODO-FN`
-- [ ] **8.588.2** `acpi_asus_wmi.c` · 1,007L gen:7 · `TODO-PORT` · 22 fn
+- [ ] **8.588.2** `acpi_asus_wmi.c` · 1,025L gen:7 · `TODO-PORT` · 22 fn
   - [ ] 8.588.2.1 `devstate_to_kbd_bkl_level()` · `TODO-FN`
   - [ ] 8.588.2.2 `kbd_bkl_level_to_devstate()` · `TODO-FN`
   - [ ] 8.588.2.3 `acpi_asus_wmi_identify()` · `TODO-FN`
@@ -59442,7 +59442,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.592 `sys/dev/adlink`
 
-- [ ] **8.592.1** `adlink.c` · 440L gen:2 · `TODO-PORT` · 5 fn
+- [ ] **8.592.1** `adlink.c` · 457L gen:2 · `TODO-PORT` · 5 fn
   - [ ] 8.592.1.1 `adlink_intr()` · `TODO-FN`
   - [ ] 8.592.1.2 `adlink_mmap()` · `TODO-FN`
   - [ ] 8.592.1.3 `adlink_ioctl()` · `TODO-FN`
@@ -97874,7 +97874,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.991.1.36 `timeout_change_level()` · `TODO-FN`
   - [ ] 8.991.1.37 `sbni_ioctl()` · `TODO-FN`
   - [ ] 8.991.1.38 `calc_crc32()` · `TODO-FN`
-- [ ] **8.991.2** `if_sbni_isa.c` · 159L gen:3 · `TODO-PORT` · 2 fn
+- [ ] **8.991.2** `if_sbni_isa.c` · 172L gen:3 · `TODO-PORT` · 2 fn
   - [ ] 8.991.2.1 `sbni_probe_isa()` · `TODO-FN`
   - [ ] 8.991.2.2 `sbni_attach_isa()` · `TODO-FN`
 - [ ] **8.991.3** `if_sbni_pci.c` · 173L gen:2 · `TODO-PORT` · 3 fn
@@ -104425,7 +104425,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1053.8.24 `usbhid_probe()` · `TODO-FN`
   - [ ] 8.1053.8.25 `usbhid_attach()` · `TODO-FN`
   - [ ] 8.1053.8.26 `usbhid_detach()` · `TODO-FN`
-- [ ] **8.1053.9** `wmt.c` · 1,009L gen:8 · `TODO-PORT` · 11 fn
+- [ ] **8.1053.9** `wmt.c` · 1,023L gen:8 · `TODO-PORT` · 11 fn
   - [ ] 8.1053.9.1 `wmt_probe()` · `TODO-FN`
   - [ ] 8.1053.9.2 `wmt_attach()` · `TODO-FN`
   - [ ] 8.1053.9.3 `wmt_detach()` · `TODO-FN`

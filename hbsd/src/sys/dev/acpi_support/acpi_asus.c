@@ -563,7 +563,22 @@ acpi_asus_probe(device_t dev)
 	Buf.Pointer = NULL;
 	Buf.Length = ACPI_ALLOCATE_BUFFER;
 
-	AcpiEvaluateObject(sc->handle, "INIT", &Args, &Buf);
+	/*
+	 * PBSD: check the evaluation.  With ACPI_ALLOCATE_BUFFER a failed
+	 * AcpiEvaluateObject() leaves Buf.Pointer NULL, and the very next
+	 * statement read Obj->String.Pointer off it.  That is a different
+	 * case from the Samsung one below, where the method DOES return an
+	 * object - an integer 0, whose Value shares the union offset with
+	 * String.Pointer, which is why that pointer reads as NULL.  So this
+	 * guard does not take the P30 path away; it covers the machine whose
+	 * INIT is missing or fails.
+	 */
+	if (ACPI_FAILURE(AcpiEvaluateObject(sc->handle, "INIT", &Args, &Buf)) ||
+	    Buf.Pointer == NULL) {
+		device_printf(dev, "INIT returned nothing\n");
+		AcpiOsFree(Buf.Pointer);
+		return (ENXIO);
+	}
 	Obj = Buf.Pointer;
 
 	/*
@@ -595,6 +610,16 @@ acpi_asus_probe(device_t dev)
 			AcpiOsFree(Buf.Pointer);
 			return (rv);
 		}
+
+		/*
+		 * PBSD: and stop here.  Neither of the two names above
+		 * matched, and the only thing this function does from now on
+		 * is match Obj->String.Pointer against a table - the pointer
+		 * this whole block exists because it is NULL.  Falling
+		 * through passed it to strncmp() as its first argument.
+		 */
+		AcpiOsFree(Buf.Pointer);
+		return (ENXIO);
 	}
 
 	/*

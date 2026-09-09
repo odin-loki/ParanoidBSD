@@ -1318,8 +1318,18 @@ vchiq_close(struct cdev *dev, int flags __unused, int fmt __unused,
 			service1 = completion->service_userdata;
 			if (completion->reason == VCHIQ_SERVICE_CLOSED)
 			{
+				/*
+				 * PBSD: service1, not service.  `service' is
+				 * the variable of the loop directly above,
+				 * which ended because next_service_by_instance()
+				 * returned NULL - so it is NULL here, on every
+				 * path that reaches this block.  Everything
+				 * else in the block already uses service1,
+				 * the completion's own service, including the
+				 * unlock_service() two lines down.
+				 */
 				USER_SERVICE_T *user_service =
-					service->base.userdata;
+					service1->base.userdata;
 
 				/* Wake any blocked user-thread */
 				if (instance->use_close_delivered)

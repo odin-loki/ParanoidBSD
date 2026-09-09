@@ -845,29 +845,47 @@ acpi_asus_wmi_handle_event(struct acpi_asus_wmi_softc *sc, int code)
 #endif
 	}
 	if (code && sc->handle_keys) {
+		/*
+		 * PBSD: both reads below are checked.
+		 * acpi_asus_wmi_evaluate_method() returns -EINVAL WITHOUT
+		 * writing *retval when the WMI call fails - the store is
+		 * after the ACPI_FAILURE return - and `val' here is an
+		 * uninitialised stack word.  Discarding the return meant a
+		 * failed evaluation produced a garbage backlight level or
+		 * touchpad state, which was then written back to the
+		 * firmware by the set_devstate() two lines later, and in the
+		 * backlight case also cached in sc->kbd_bkl_level.  Not
+		 * reading a value is a reason to do nothing, not a reason to
+		 * write one.  (The third call site, in
+		 * acpi_asus_wmi_sysctl_get(), is already safe: its `val' is
+		 * initialised to 0.)
+		 */
 		/* Keyboard backlight control. */
 		if (code == 0xc4 || code == 0xc5) {
-			acpi_wpi_asus_get_devstate(sc,
-			    ASUS_WMI_DEVID_KBD_BACKLIGHT, &val);
-			val &= 0x3;
-			if (code == 0xc4) {
-				if (val < 0x3)
-					val++;
-			} else if (val > 0)
-				val--;
-			if (val != 0)
-				val |= 0x80;
-			acpi_wpi_asus_set_devstate(sc,
-			    ASUS_WMI_DEVID_KBD_BACKLIGHT, val, NULL);
-			sc->kbd_bkl_level = devstate_to_kbd_bkl_level(val);
+			if (acpi_wpi_asus_get_devstate(sc,
+			    ASUS_WMI_DEVID_KBD_BACKLIGHT, &val) == 0) {
+				val &= 0x3;
+				if (code == 0xc4) {
+					if (val < 0x3)
+						val++;
+				} else if (val > 0)
+					val--;
+				if (val != 0)
+					val |= 0x80;
+				acpi_wpi_asus_set_devstate(sc,
+				    ASUS_WMI_DEVID_KBD_BACKLIGHT, val, NULL);
+				sc->kbd_bkl_level =
+				    devstate_to_kbd_bkl_level(val);
+			}
 		}
 		/* Touchpad control. */
 		if (code == 0x6b) {
-			acpi_wpi_asus_get_devstate(sc,
-			    ASUS_WMI_DEVID_TOUCHPAD, &val);
-			val = !(val & 1);
-			acpi_wpi_asus_set_devstate(sc,
-			    ASUS_WMI_DEVID_TOUCHPAD, val, NULL);
+			if (acpi_wpi_asus_get_devstate(sc,
+			    ASUS_WMI_DEVID_TOUCHPAD, &val) == 0) {
+				val = !(val & 1);
+				acpi_wpi_asus_set_devstate(sc,
+				    ASUS_WMI_DEVID_TOUCHPAD, val, NULL);
+			}
 		}
 		/* Throttle thermal policy control. */
 		if (code == 0xae) {
