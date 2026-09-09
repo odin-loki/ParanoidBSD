@@ -316,8 +316,16 @@ int read_chunk_header(struct cudbg_buffer *pc_buff, int *pid, int *poptions,
 	unsigned char buffer[CUDBG_CHUNK_BUF_LEN];
 	int byte_r = read_from_buf(pc_buff->data, pc_buff->size,
 				   &pc_buff->offset, buffer, 16);
+	/*
+	 * PBSD: an error, not success.  This returned 0 having written none
+	 * of the five out-parameters, and decompress_buffer()'s loop reads
+	 * every one of them when it gets 0 back: chunk_id and chunk_size
+	 * decide whether to decompress, chunk_size sizes a get_scratch_buff()
+	 * allocation and bounds an update_adler32() over the buffer.  A
+	 * header that could not be read is a short buffer.
+	 */
 	if (byte_r == 0)
-		return 0;
+		return CUDBG_STATUS_BUFFER_SHORT;
 
 	*pid = readU16(buffer) & 0xffff;
 	*poptions = readU16(buffer+2) & 0xffff;

@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,648 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,680 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,707** | **114,204** |
+| | **total** | **41,143** | **21,297,739** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -67148,7 +67148,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.674.4.8 `cudbg_read_flash_data()` · `TODO-FN`
   - [ ] 8.674.4.9 `cudbg_read_flash()` · `TODO-FN`
   - [ ] 8.674.4.10 `read_flash()` · `TODO-FN`
-- [ ] **8.674.5** `cudbg_lib.c` · 4,453L · `TODO-PORT`
+- [ ] **8.674.5** `cudbg_lib.c` · 4,465L · `TODO-PORT`
 - [ ] **8.674.6** `cudbg_lib.h` · 254L · `TODO-HDR`
 - [ ] **8.674.7** `cudbg_lib_common.h` · 168L · `TODO-HDR`
 - [ ] **8.674.8** `cudbg_wtp.c` · 1,308L · `TODO-PORT` · 5 fn
@@ -67164,7 +67164,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.674.9.4 `FASTLZ_COMPRESSOR()` · `TODO-FN`
   - [ ] 8.674.9.5 `FASTLZ_DECOMPRESSOR()` · `TODO-FN`
 - [ ] **8.674.10** `fastlz.h` · 61L · `TODO-HDR`
-- [ ] **8.674.11** `fastlz_api.c` · 525L · `TODO-PORT` · 13 fn
+- [ ] **8.674.11** `fastlz_api.c` · 533L · `TODO-PORT` · 13 fn
   - [ ] 8.674.11.1 `update_adler32()` · `TODO-FN`
   - [ ] 8.674.11.2 `write_magic()` · `TODO-FN`
   - [ ] 8.674.11.3 `write_to_buf()` · `TODO-FN`
@@ -67181,7 +67181,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.675 `sys/dev/cxgbe/cxgbei`
 
-- [ ] **8.675.1** `cxgbei.c` · 983L gen:5 · `TODO-PORT` · 16 fn
+- [ ] **8.675.1** `cxgbei.c` · 995L gen:5 · `TODO-PORT` · 16 fn
   - [ ] 8.675.1.1 `read_pdu_limits()` · `TODO-FN`
   - [ ] 8.675.1.2 `cxgbei_init()` · `TODO-FN`
   - [ ] 8.675.1.3 `do_rx_iscsi_hdr()` · `TODO-FN`

@@ -1229,6 +1229,37 @@ FIXES = {
             "return and schedules itself again on `pending > 0'",
         ),
     ],
+    "hbsd/src/sys/dev/cxgbe/cudbg/fastlz_api.c": [
+        (
+            "PBSD: an error, not success.",
+            "\tif (byte_r == 0)\n\t\treturn 0;\n",
+            "read_chunk_header() returned 0 having written none of its "
+            "five out-parameters, and decompress_buffer() reads all of "
+            "them on a 0 - chunk_size sizes a scratch allocation and "
+            "bounds an adler32 over the buffer",
+        ),
+    ],
+    "hbsd/src/sys/dev/cxgbe/cudbg/cudbg_lib.c": [
+        (
+            "PBSD: this function owns its out-parameter.",
+            "\tif (nelem != (CTXT_CNM + 1))\n\t\treturn -EINVAL;\n\n"
+            "\tfor (i = 0; i < meminfo->mem_c; i++) {\n",
+            "get_max_ctxt_qid() writes an entry only for a region it "
+            "finds; the caller's array has no initialiser and the "
+            "entries are used as counts",
+        ),
+    ],
+    "hbsd/src/sys/dev/cxgbe/cxgbei/cxgbei.c": [
+        (
+            "PBSD: ip, for the combination neither block above covered.",
+            "\t\ticp = ip_to_icp(ip);\n\t}\n"
+            "\tpdu_len = G_ISCSI_PDU_LEN(be16toh(cpl->pdu_len_ddp));\n",
+            "do_rx_iscsi_cmp() sets ip in the non-DDP block and in the "
+            "allocation block; a DDP-placed PDU arriving while "
+            "toep->ulpcb2 already holds one reached m_copydata() with it "
+            "unassigned",
+        ),
+    ],
     "hbsd/src/sys/dev/cxgbe/t4_sge.c": [
         (
             "PBSD: 0, as alloc_ctrlq(), alloc_rxq(), alloc_txq() and",

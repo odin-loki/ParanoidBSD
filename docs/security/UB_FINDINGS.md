@@ -12595,3 +12595,78 @@ reads whatever was on the stack: it can exit on the first pass and
 | `t4_cpl_io.c:583` | `struct sglist_seg segs[n];`, `n` at least 1 whenever the `KASSERT(nsegs > 0)` on the next line holds — an invariant one function up. |
 | `iw_cxgbe/cm.c:186`, `cq.c:791`, `qp.c:1846` | NULL tests on a `cm_id`, a `qhp` and a `ucontext` that the RDMA layer guarantees. |
 | `t4_filter.c:1259`, `t4_listen.c:1519`, `cxgbei.c:630`, `t4_tls.c:1037`, `fastlz_api.c:386`, `cudbg_lib.c:1837` | Still unread; they stay on task #61. |
+
+## cxgbe, third pass: the debug-dump path
+
+### `cudbg/fastlz_api.c` — a header that could not be read, reported as read
+
+```c
+	int byte_r = read_from_buf(pc_buff->data, pc_buff->size,
+				   &pc_buff->offset, buffer, 16);
+	if (byte_r == 0)
+		return 0;
+
+	*pid = readU16(buffer) & 0xffff;
+	...
+```
+
+`read_chunk_header()` returns **0** — success — having written none of
+its five out-parameters. `decompress_buffer()`'s loop reads every one of
+them when it gets 0 back:
+
+```c
+		rc =  read_chunk_header(pc_buff, &chunk_id, &chunk_options,
+					&chunk_size, &chunk_checksum, &chunk_extra);
+		if (rc != 0)
+			break;
+
+		if ((chunk_id == 1) && (chunk_size > 10) && ...
+```
+
+and `chunk_size` goes on to size a `get_scratch_buff()` allocation and
+to bound an `update_adler32()` over the buffer. `CUDBG_STATUS_BUFFER_SHORT`
+is what a 16-byte header that would not come out of the buffer means.
+
+### `cudbg/cudbg_lib.c` — an out-parameter filled only where a region was found
+
+`get_max_ctxt_qid()` writes `max_ctx_qid[idx]` for each memory region it
+recognises and skips the rest (`continue` on `idx >= ARRAY_SIZE(region)`).
+`collect_dump_context()` declares `u32 max_ctx_qid[CTXT_CNM + 1];` with
+no initialiser. So a queue type whose region is absent left its entry
+unwritten; the block the source calls its "Sanity check" only clamps that
+stack word to the type's maximum; and the caller then uses it as a
+**count**:
+
+```c
+	for (i = CTXT_EGRESS; i <= CTXT_CNM; i++)
+		size += sizeof(struct cudbg_ch_cntxt) * max_ctx_qid[i];
+```
+
+The function already validates `nelem`, so it can zero exactly the array
+it was handed. Not finding a region means no queues of that type.
+
+### `cxgbei/cxgbei.c` — two of three combinations
+
+`do_rx_iscsi_cmp()` sets `ip` in two places: the `(val & F_DDP_PDU) == 0`
+block, and the `icp == NULL` allocation. A DDP-placed PDU arriving while
+`toep->ulpcb2` already holds one is neither, and reaches
+
+```c
+	m_copydata(m, sizeof(*cpl), ISCSI_BHS_SIZE, (caddr_t)ip->ip_bhs);
+```
+
+with `ip` never assigned. `struct icl_cxgbei_pdu` opens with its
+`struct icl_pdu` (`cxgbei.h:88`) and `ip_to_icp()` is exactly that
+inverse, so `ip = &icp->ip` is what the other two cases already compute.
+
+```
+--scope sys/dev/cxgbe   16 findings -> 13   47 units, OK both sides
+```
+
+Across the three passes: **21 -> 13**, with `t4_filter.c:1259` joining the
+read-and-explained list — `ftuple` is assigned under `if (t->fs.hash)`
+and read under `if (t->fs.hash)`, with `t4_l2t_alloc_switching()` and
+`t4_smt_alloc_switching()` in between, which the analyser must assume can
+write through `t`.
+
+`tom/t4_tls.c:1037` is the last one in this scope still unread.

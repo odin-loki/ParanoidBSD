@@ -1770,6 +1770,18 @@ static int get_max_ctxt_qid(struct adapter *padap,
 	if (nelem != (CTXT_CNM + 1))
 		return -EINVAL;
 
+	/*
+	 * PBSD: this function owns its out-parameter.  It writes an entry
+	 * only for a memory region it finds, and the caller declares
+	 * `u32 max_ctx_qid[CTXT_CNM + 1];' with no initialiser - so a queue
+	 * type whose region is absent left its entry unwritten, the
+	 * `Sanity check' below only clamped that stack word to the type's
+	 * maximum, and collect_dump_context() then used it as a COUNT: it
+	 * sizes the dump with it and walks that many contexts.  Not finding
+	 * a region means no queues of that type.
+	 */
+	memset(max_ctx_qid, 0, nelem * sizeof(*max_ctx_qid));
+
 	for (i = 0; i < meminfo->mem_c; i++) {
 		if (meminfo->mem[i].idx >= ARRAY_SIZE(region))
 			continue;                        /* skip holes */

@@ -617,6 +617,18 @@ do_rx_iscsi_cmp(struct sge_iq *iq, const struct rss_header *rss, struct mbuf *m)
 		if (ip == NULL)
 			CXGBE_UNIMPLEMENTED("PDU allocation failure");
 		icp = ip_to_icp(ip);
+	} else {
+		/*
+		 * PBSD: ip, for the combination neither block above covered.
+		 * `ip' is set by the `(val & F_DDP_PDU) == 0' block and by
+		 * the allocation here, so a DDP-placed PDU arriving while
+		 * toep->ulpcb2 already holds one reached the m_copydata()
+		 * below with it never assigned.  struct icl_cxgbei_pdu opens
+		 * with its struct icl_pdu (cxgbei.h:88) and ip_to_icp() is
+		 * exactly this inverse, so the two are the same object in
+		 * every other case too.
+		 */
+		ip = &icp->ip;
 	}
 	pdu_len = G_ISCSI_PDU_LEN(be16toh(cpl->pdu_len_ddp));
 
