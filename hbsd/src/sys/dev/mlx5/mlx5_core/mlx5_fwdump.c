@@ -460,7 +460,15 @@ mlx5_ctl_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int fflag,
 		if (error != 0)
 			break;
 		fw_data = kmem_malloc(fu->img_fw_data_len, M_WAITOK);
-		if (fake_fw.data == NULL) {
+		/*
+		 * PBSD: fw_data, not fake_fw.data.  fake_fw is a local
+		 * struct firmware that nothing has written at this point -
+		 * the bzero() that initialises it is four lines below, inside
+		 * the `error == 0' arm - so this tested an uninitialised
+		 * member.  The allocation on the line above is what the check
+		 * is for.
+		 */
+		if (fw_data == NULL) {
 			error = ENOMEM;
 			break;
 		}

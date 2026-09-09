@@ -158,7 +158,14 @@ int mlx5_vsc_read(struct mlx5_core_dev *mdev, u32 addr, u32 *data)
 	device_t dev = mdev->pdev->dev.bsddev;
 	int vsc_addr = mdev->vsc_addr;
 	int err;
-	u32 in;
+	/*
+	 * PBSD: = 0, as mlx5_vsc_write() and mlx5_vsc_set_space() both have.
+	 * MLX5_VSC_SET() is a read-modify-write of one bitfield, so every bit
+	 * outside `address' - the flag bit among them - kept whatever was on
+	 * the stack, and the whole word went to the device's VSC address
+	 * register in the pci_write_config() four lines down.
+	 */
+	u32 in = 0;
 
 	if (!vsc_addr) {
 		mlx5_core_warn(mdev, "Unable to call vsc read, vsc_addr not initialized\n");

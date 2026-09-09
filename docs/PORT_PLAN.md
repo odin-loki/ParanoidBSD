@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,568 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,619 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,627** | **114,204** |
+| | **total** | **41,143** | **21,297,678** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -655,7 +655,7 @@ function; a file with two hundred of them is a project.
 | 8.1272.1 | `sys/security/mac_biba/mac_biba.c` | 3,798 | 173 | `TODO-PORT` |
 | 8.1280.1 | `sys/security/mac_mls/mac_mls.c` | 3,420 | 166 | `TODO-PORT` |
 | 8.597.23 | `sys/dev/aic7xxx/aic7xxx_reg_print.c` | 1,682 | 150 | `TODO-GEN` |
-| 8.830.20 | `sys/dev/mlx5/mlx5_core/mlx5_fs_core.c` | 3,523 | 135 | `TODO-PORT` |
+| 8.830.20 | `sys/dev/mlx5/mlx5_core/mlx5_fs_core.c` | 3,534 | 135 | `TODO-PORT` |
 | 8.1279.1 | `sys/security/mac_lomac/mac_lomac.c` | 3,070 | 131 | `TODO-PORT` |
 | 8.149.7 | `sys/compat/linuxkpi/common/src/linux_compat.c` | 3,062 | 120 | `TODO-PORT` |
 | 1.263.1 | `lib/libpfctl/libpfctl.c` | 3,634 | 117 | `TODO-PORT` |
@@ -84550,7 +84550,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.830.19.41 `mlx5_fs_cmd_get_fw_cmds()` · `TODO-FN`
   - [ ] 8.830.19.42 `mlx5_fs_cmd_get_stub_cmds()` · `TODO-FN`
   - [ ] 8.830.19.43 `mlx5_fs_cmd_get_default()` · `TODO-FN`
-- [ ] **8.830.20** `mlx5_fs_core.c` · 3,523L gen:17 · `TODO-PORT` · 135 fn
+- [ ] **8.830.20** `mlx5_fs_core.c` · 3,534L gen:17 · `TODO-PORT` · 135 fn
   - [ ] 8.830.20.1 `mlx5_create_vport_flow_table()` · `TODO-FN`
   - [ ] 8.830.20.2 `mlx5_create_lag_demux_flow_table()` · `TODO-FN`
   - [ ] 8.830.20.3 `mlx5_create_auto_grouped_flow_table()` · `TODO-FN`
@@ -84770,7 +84770,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.830.24.25 `mlx5_fsm_cancel()` · `TODO-FN`
   - [ ] 8.830.24.26 `mlx5_fsm_release()` · `TODO-FN`
   - [ ] 8.830.24.27 `mlx5_firmware_flash()` · `TODO-FN`
-- [ ] **8.830.25** `mlx5_fwdump.c` · 539L gen:1 · `TODO-PORT` · 13 fn
+- [ ] **8.830.25** `mlx5_fwdump.c` · 547L gen:1 · `TODO-PORT` · 13 fn
   - [ ] 8.830.25.1 `mlx5_fwdump_getsize()` · `TODO-FN`
   - [ ] 8.830.25.2 `mlx5_fwdump_destroy_dd()` · `TODO-FN`
   - [ ] 8.830.25.3 `mlx5_fwdump_prep()` · `TODO-FN`
@@ -84924,7 +84924,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.830.33** `mlx5_pd.c` · 64L gen:2 · `TODO-PORT` · 2 fn
   - [ ] 8.830.33.1 `mlx5_core_alloc_pd()` · `TODO-FN`
   - [ ] 8.830.33.2 `mlx5_core_dealloc_pd()` · `TODO-FN`
-- [ ] **8.830.34** `mlx5_port.c` · 1,514L gen:37 · `TODO-PORT` · 72 fn
+- [ ] **8.830.34** `mlx5_port.c` · 1,526L gen:37 · `TODO-PORT` · 72 fn
   - [ ] 8.830.34.1 `mlx5_query_mfrl_reg()` · `TODO-FN`
   - [ ] 8.830.34.2 `mlx5_set_mfrl_reg()` · `TODO-FN`
   - [ ] 8.830.34.3 `mlx5_core_access_reg()` · `TODO-FN`
@@ -85173,7 +85173,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.830.41.60 `mlx5_query_vport_port_guid()` · `TODO-FN`
   - [ ] 8.830.41.61 `mlx5_query_hca_vport_state()` · `TODO-FN`
   - [ ] 8.830.41.62 `mlx5_core_query_ib_ppcnt()` · `TODO-FN`
-- [ ] **8.830.42** `mlx5_vsc.c` · 249L · `TODO-PORT` · 9 fn
+- [ ] **8.830.42** `mlx5_vsc.c` · 256L · `TODO-PORT` · 9 fn
   - [ ] 8.830.42.1 `mlx5_vsc_wait_on_flag()` · `TODO-FN`
   - [ ] 8.830.42.2 `mlx5_vsc_lock()` · `TODO-FN`
   - [ ] 8.830.42.3 `mlx5_vsc_unlock()` · `TODO-FN`
@@ -85376,7 +85376,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.831.10.18 `mlx5e_iq_get_producer_index()` · `TODO-FN`
   - [ ] 8.831.10.19 `mlx5e_iq_load_memory_cb()` · `TODO-FN`
   - [ ] 8.831.10.20 `mlx5e_iq_load_memory_single()` · `TODO-FN`
-- [ ] **8.831.11** `mlx5_en_main.c` · 5,220L gen:9 · `TODO-PORT`
+- [ ] **8.831.11** `mlx5_en_main.c` · 5,233L gen:9 · `TODO-PORT`
 - [ ] **8.831.12** `mlx5_en_port_buffer.c` · 340L · `TODO-PORT` · 6 fn
   - [ ] 8.831.12.1 `mlx5e_port_query_buffer()` · `TODO-FN`
   - [ ] 8.831.12.2 `port_set_buffer()` · `TODO-FN`

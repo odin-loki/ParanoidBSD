@@ -119,7 +119,19 @@ void mlx5_toggle_port_link(struct mlx5_core_dev *dev)
 {
 	enum mlx5_port_status ps;
 
-	mlx5_query_port_admin_status(dev, &ps);
+	/*
+	 * PBSD: checked.  mlx5_query_port_admin_status() leaves ps unwritten
+	 * when the firmware command fails, and the test below decides on that
+	 * stack word whether to bring the port back up - so a failed query
+	 * could leave an administratively-up port down, or raise one the
+	 * administrator had put down.  Toggling a port we cannot read the
+	 * state of is worse than not toggling it.
+	 */
+	if (mlx5_query_port_admin_status(dev, &ps) != 0) {
+		mlx5_core_warn(dev,
+		    "cannot read admin status; not toggling the link\n");
+		return;
+	}
 	mlx5_set_port_status(dev, MLX5_PORT_DOWN);
 	if (ps == MLX5_PORT_UP)
 		mlx5_set_port_status(dev, MLX5_PORT_UP);

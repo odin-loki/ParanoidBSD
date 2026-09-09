@@ -1229,6 +1229,52 @@ FIXES = {
             "return and schedules itself again on `pending > 0'",
         ),
     ],
+    "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_vsc.c": [
+        (
+            "PBSD: = 0, as mlx5_vsc_write() and mlx5_vsc_set_space()",
+            "\tint err;\n\tu32 in;\n",
+            "MLX5_VSC_SET() is a read-modify-write, so mlx5_vsc_read() "
+            "built the VSC address word - flag bit included - out of "
+            "the stack and wrote it to PCI config space",
+        ),
+    ],
+    "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_port.c": [
+        (
+            "PBSD: checked.  mlx5_query_port_admin_status() leaves ps",
+            "\tmlx5_query_port_admin_status(dev, &ps);\n"
+            "\tmlx5_set_port_status(dev, MLX5_PORT_DOWN);\n",
+            "mlx5_toggle_port_link() decided whether to bring the port "
+            "back up on a stack word when the admin-status query failed",
+        ),
+    ],
+    "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_fwdump.c": [
+        (
+            "PBSD: fw_data, not fake_fw.data.",
+            "\t\tif (fake_fw.data == NULL) {\n",
+            "the MLX5_FW_UPDATE ioctl checked a member of a local struct "
+            "firmware that is bzero'd four lines later, instead of the "
+            "allocation on the line above",
+        ),
+    ],
+    "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_fs_core.c": [
+        (
+            "PBSD: dest != NULL.  This function tests dest for NULL",
+            "\t\tif (dest->type == MLX5_FLOW_DESTINATION_TYPE_FLOW_TABLE "
+            "&&\n\t\t    ft->type != dest->ft->type)\n",
+            "dest_is_valid() tests dest for NULL above and below this "
+            "line and dereferenced it here",
+        ),
+    ],
+    "hbsd/src/sys/dev/mlx5/mlx5_en/mlx5_en_main.c": [
+        (
+            "PBSD: checked.  mlx5e_get_wqe_sz() returns -ENOMEM",
+            "\tmlx5e_get_wqe_sz(priv, &wqe_sz, &nsegs);\n"
+            "\tMLX5_SET(wq, wq, wq_type, MLX5_WQ_TYPE_LINKED_LIST);\n",
+            "mlx5e_build_rq_param() is void and discarded the return, so "
+            "a failure built the receive queue's stride and size from "
+            "two unwritten stack words",
+        ),
+    ],
     "hbsd/src/sys/dev/mana/hw_channel.c": [
         (
             "PBSD: the NULL arm printed the pointer it had just found NULL",

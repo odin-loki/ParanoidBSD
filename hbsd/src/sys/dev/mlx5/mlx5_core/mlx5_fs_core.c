@@ -1724,7 +1724,18 @@ static bool dest_is_valid(struct mlx5_flow_destination *dest,
 		    ft->type != FS_FT_NIC_TX)
 			return false;
 
-		if (dest->type == MLX5_FLOW_DESTINATION_TYPE_FLOW_TABLE &&
+		/*
+		 * PBSD: dest != NULL.  This function tests dest for NULL
+		 * both above (`dest &&', the counter case) and below
+		 * (`!dest ||', which returns false) - and dereferenced it
+		 * unconditionally here in between.  A rule with
+		 * FLOW_ACT_IGNORE_FLOW_LEVEL and FWD_DEST but no destination
+		 * reached this line.  The added test changes no outcome: a
+		 * NULL dest falls through to the `!dest ||' below and gets
+		 * the same false.
+		 */
+		if (dest != NULL &&
+		    dest->type == MLX5_FLOW_DESTINATION_TYPE_FLOW_TABLE &&
 		    ft->type != dest->ft->type)
 			return false;
 	}

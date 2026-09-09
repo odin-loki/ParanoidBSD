@@ -12358,3 +12358,87 @@ full under task #90 and covered by `tools/verify/socketcall_args.py`.
 --scope sys/dev/athk        0 translation units - the driver's sources are
                             not in a directory the sweep reaches
 ```
+
+## Task #61, fifth batch: mlx5
+
+### `mlx5_fs_core.c` — a function that tests `dest` twice and derefs it between
+
+```c
+	if (dest && (dest->type == MLX5_FLOW_DESTINATION_TYPE_COUNTER))
+		return counter_is_valid(action);
+	...
+	if (ignore_level) {
+		...
+		if (dest->type == MLX5_FLOW_DESTINATION_TYPE_FLOW_TABLE &&
+		    ft->type != dest->ft->type)
+			return false;
+	}
+
+	if (!dest || ((dest->type == ...
+```
+
+`dest_is_valid()` guards `dest` above and below and dereferences it in
+between. A flow rule with `FLOW_ACT_IGNORE_FLOW_LEVEL` and
+`MLX5_FLOW_CONTEXT_ACTION_FWD_DEST` but no destination reaches that line.
+The added `dest != NULL` changes no outcome — a NULL `dest` falls through
+to the `!dest ||` below and gets the same `false`.
+
+### `mlx5_vsc.c` — a config-space write from the stack
+
+`MLX5_VSC_SET()` is a read-modify-write of one bitfield:
+
+```c
+	*((__le32 *)(p) + __mlx5_dw_off(typ, fld)) =
+	cpu_to_le32((le32_to_cpu(*((__le32 *)(p) + __mlx5_dw_off(typ, fld))) &
+		     (~__mlx5_dw_mask(typ, fld))) | ...
+```
+
+`mlx5_vsc_write()` and `mlx5_vsc_set_space()` both declare their word
+`= 0`. `mlx5_vsc_read()` declared `u32 in;` — so every bit outside
+`address`, the flag bit among them, was whatever the stack held, and the
+whole word went to the device's VSC address register.
+
+### `mlx5_port.c` — a link toggled from an unread status
+
+```c
+	mlx5_query_port_admin_status(dev, &ps);
+	mlx5_set_port_status(dev, MLX5_PORT_DOWN);
+	if (ps == MLX5_PORT_UP)
+		mlx5_set_port_status(dev, MLX5_PORT_UP);
+```
+
+A failed firmware command leaves `ps` unwritten, and the test decides
+whether to bring the port back up. Either outcome is wrong: an
+administratively-up port left down, or one the administrator had put
+down raised. Toggling a port whose state cannot be read is worse than
+not toggling it.
+
+### `mlx5_fwdump.c` — the wrong struct member
+
+```c
+		fw_data = kmem_malloc(fu->img_fw_data_len, M_WAITOK);
+		if (fake_fw.data == NULL) {
+```
+
+`fake_fw` is a local `struct firmware` whose `bzero()` is four lines
+below, inside the `error == 0` arm. The check is for the allocation on
+the line above it.
+
+### `mlx5_en_main.c` — a void function that discards an error
+
+`mlx5e_get_wqe_sz()` returns `-ENOMEM` without writing either output when
+the segment count would exceed `MLX5E_MAX_BUSDMA_RX_SEGS`. Its other two
+call sites check; `mlx5e_build_rq_param()` is `void` and did not, so a
+failure built the receive queue's stride and size out of two unwritten
+stack words. The fallback is that function's own answer for an MTU that
+fits in one cluster — `maxs <= MCLBYTES` gives `r = MCLBYTES` and
+`n = roundup_pow_of_two(2) - 1 = 1` — not an invented pair.
+
+```
+--scope sys/dev/mlx5   6 findings -> 1   74 units, 8 ERROR both sides
+```
+
+The one that remains, `mlx5_ib_cq.c:1290`, is the `IS_ERR`/`PTR_ERR`
+pair again: `resize_user()` returns `PTR_ERR(umem)` on the only path that
+does not write `*npas`, and `IS_ERR` true implies that value is in
+`[-MAX_ERRNO, -1]`. Same shape as `irdma_cm.c:3965`.

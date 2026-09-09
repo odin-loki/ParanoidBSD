@@ -2397,7 +2397,20 @@ mlx5e_build_rq_param(struct mlx5e_priv *priv,
 	void *wq = MLX5_ADDR_OF(rqc, rqc, wq);
 	u32 wqe_sz, nsegs;
 
-	mlx5e_get_wqe_sz(priv, &wqe_sz, &nsegs);
+	/*
+	 * PBSD: checked.  mlx5e_get_wqe_sz() returns -ENOMEM without writing
+	 * either output when the segment count would exceed
+	 * MLX5E_MAX_BUSDMA_RX_SEGS, and this function is void, so a failure
+	 * built the receive queue's stride and size out of two unwritten
+	 * stack words.  The other two call sites both check.  The fallback
+	 * is that function's own answer for an MTU that fits in one cluster,
+	 * not an invented pair: maxs <= MCLBYTES gives r = MCLBYTES and
+	 * n = roundup_pow_of_two(2) - 1 = 1.
+	 */
+	if (mlx5e_get_wqe_sz(priv, &wqe_sz, &nsegs) != 0) {
+		wqe_sz = MCLBYTES;
+		nsegs = 1;
+	}
 	MLX5_SET(wq, wq, wq_type, MLX5_WQ_TYPE_LINKED_LIST);
 	MLX5_SET(wq, wq, end_padding_mode, MLX5_WQ_END_PAD_MODE_ALIGN);
 	MLX5_SET(wq, wq, log_wq_stride, ilog2(sizeof(struct mlx5e_rx_wqe) +
