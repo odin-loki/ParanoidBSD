@@ -189,7 +189,15 @@ static struct mbuf *
 async_LayerPull(struct bundle *b __unused, struct link *l, struct mbuf *bp,
                 u_short *proto __unused)
 {
-  struct mbuf *nbp, **last;
+  /*
+   * PBSD: nbp initialised.  `last = &nbp' and the loop writes through
+   * `last', so nbp is written by the first byte decoded - but a bp that
+   * is NULL on entry, or whose mbufs are all m_len 0, decodes no bytes
+   * and `return nbp' hands the caller a wild mbuf pointer to walk and
+   * free.  NULL is what "nothing was reassembled" means, and what the
+   * loop itself stores when async_Decode() returns it.
+   */
+  struct mbuf *nbp = NULL, **last;
   struct physical *p = link2physical(l);
   u_char *ch;
   size_t cnt;

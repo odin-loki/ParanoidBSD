@@ -13754,3 +13754,80 @@ worth recording: the block it fixes was copied from the RDNSS block
 verbatim, so every string short enough to be worth writing matches the
 site the marker does *not* guard — where `addr++` is correct. A marker
 that matches the wrong site is worse than none.
+
+## Three more in userland, and one the number cannot show
+
+**`usr.sbin/ppp/radius.c:209` — the copy of a function already fixed.**
+`demangle()` decrypts an MPPE key attribute:
+
+```c
+	if (mlen % 16 != SALT_LEN) { ...reject... }
+	...
+	Clen = mlen - SALT_LEN;
+	P = alloca(Clen);
+	while (Clen) { ...16 bytes at a time... }
+	*len = *P;
+```
+
+`SALT_LEN` is 2, so `mlen == 2` satisfies `mlen % 16 == SALT_LEN`, `Clen`
+is 0, `alloca(0)` returns a zero-sized object, the decrypt loop never
+runs, and `*P` reads past it. This is `lib/libradius/radlib.c`'s
+`demangle()`, copied into ppp — and that copy was fixed under task #97
+while this one was not. The guard is now the same
+`mlen < SALT_LEN + 16 || mlen % 16 != SALT_LEN`. The attribute's length
+comes from the RADIUS server.
+
+That is the second time today one finding named one of two copies:
+`ufs_bmap.c` was the sibling of `ext2_bmap.c`, and this is the sibling of
+`radlib.c`. Both were found by looking for the other copy rather than by
+the tool.
+
+**`usr.sbin/ppp/async.c:215` — a wild mbuf returned to the layer above.**
+`async_LayerPull()` declares `struct mbuf *nbp, **last;`, sets
+`last = &nbp` and writes through `last` for every byte it decodes. A `bp`
+that is NULL on entry, or whose mbufs are all `m_len == 0`, decodes no
+bytes, and `return nbp` hands the caller a pointer to walk and free.
+NULL is what "nothing was reassembled" means, and what the loop itself
+stores when `async_Decode()` returns it.
+
+**`sbin/ping/ping.c:696` — a guard that names the wrong flag.** On the
+`F_HDRINCL` path, `ip.ip_ttl = ttl` is unconditional, and the one thing
+that writes `ttl` — a `net.inet.ip.ttl` sysctl — is under
+
+```c
+	if (!(options & (F_TTL | F_MTTL))) {
+```
+
+`F_MTTL` is set by `-T`, which assigns `mttl`: a different variable, used
+only for `IP_MULTICAST_TTL` at `:748`. So `-T` without `-m` skipped the
+initialisation and kept the use, and every packet ping built its own
+header for carried a TTL read off the frame. The guard is now `F_TTL`
+alone.
+
+**And the number does not move for that one.** The finding is still
+reported, nine lines further down, because the analyser cannot relate
+`options & F_TTL` at the guard to the `ttl = (int)ltmp` in the `getopt`
+loop three hundred lines earlier — a flag and the variable it stands for,
+coupled only by the programmer. What the fix removes is the `-T` case,
+which the same finding was covering and which is decidable by reading.
+A change that is right and does not move the count is worth making and
+worth saying so about; the alternative is to let the measurement decide
+what is true.
+
+```
+--scope sbin/ping --scope usr.sbin/ppp
+  before  63 findings
+  after   61 findings
+```
+
+Two go — `async.c:215` and `radius.c:209` — and the two that "arrive" are
+`ping.c:1641` and `radius.c:661` reappearing at `:1650` and `:671`, moved
+by the comments. All three markers verified by restoring from `HEAD`:
+`exit=1`.
+
+### Two more from the same list that are premises
+
+| where | rests on |
+|---|---|
+| `usr.sbin/traceroute/traceroute.c:798,818` | `sockerrno` is assigned only inside `if (pe)` at `:520-525`. `:793` exits when `pe == NULL`, so the block ran; and `:817`'s read is reached only when `s >= 0`, which is exactly when the `else if` that assigns it ran. Two guards, three hundred lines apart from the assignment. |
+| `usr.sbin/bhyve/pci_virtio_net.c:374` | `info[i].len` for `i` up to the chain count `vq_getchain()` returned, which is also what filled `info[]`. |

@@ -156,7 +156,17 @@ demangle(struct radius *r, const void *mangled, size_t mlen,
   int Slen, i, Clen, Ppos;
   u_char *P;
 
-  if (mlen % 16 != SALT_LEN) {
+  /*
+   * PBSD: at least one cipher block, as well as the right modulus.
+   * mlen == SALT_LEN satisfies `mlen % 16 == SALT_LEN', and then Clen is
+   * 0, alloca(0) returns a zero-sized object, the decrypt loop never
+   * runs, and `*len = *P' below reads past it.
+   *
+   * This is lib/libradius/radlib.c's demangle() again, copied into ppp.
+   * That copy was fixed and this one was not; the attribute whose length
+   * decides it comes from the RADIUS server.
+   */
+  if (mlen < SALT_LEN + 16 || mlen % 16 != SALT_LEN) {
     log_Printf(LogWARN, "Cannot interpret mangled data of length %ld\n",
                (u_long)mlen);
     *buf = NULL;

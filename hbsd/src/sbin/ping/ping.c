@@ -678,7 +678,16 @@ ping(int argc, char *const *argv)
 		struct ip ip;
 
 		memcpy(&ip, outpackhdr, sizeof(ip));
-		if (!(options & (F_TTL | F_MTTL))) {
+		/*
+		 * PBSD: F_TTL only.  `ip.ip_ttl = ttl' below is
+		 * unconditional, and F_MTTL is set by -T, which assigns
+		 * `mttl' - a different variable, used only for
+		 * IP_MULTICAST_TTL at :748.  With -T and no -m the guard
+		 * skipped the one thing that writes `ttl', so every packet
+		 * ping built its own header for carried a TTL read off this
+		 * frame.
+		 */
+		if (!(options & F_TTL)) {
 			mib[0] = CTL_NET;
 			mib[1] = PF_INET;
 			mib[2] = IPPROTO_IP;

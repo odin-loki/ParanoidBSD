@@ -54,9 +54,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,720 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
-| 4 | `sbin` | 533 | 228,456 | 3,567 |
+| 4 | `sbin` | 533 | 228,465 | 3,567 |
 | 5 | `usr.bin` | 732 | 247,994 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,134 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,152 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,009** | **114,204** |
+| | **total** | **41,143** | **21,298,036** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -19662,7 +19662,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.85.1.3 `pr_summary()` · `TODO-FN`
   - [ ] 4.85.1.4 `usage()` · `TODO-FN`
 - [ ] **4.85.2** `main.h` · 80L · `TODO-HDR`
-- [ ] **4.85.3** `ping.c` · 1,692L · `TODO-PORT` · 9 fn
+- [ ] **4.85.3** `ping.c` · 1,701L · `TODO-PORT` · 9 fn
   - [ ] 4.85.3.1 `ping()` · `TODO-FN`
   - [ ] 4.85.3.2 `pinger()` · `TODO-FN`
   - [ ] 4.85.3.3 `pr_pack()` · `TODO-FN`
@@ -33684,7 +33684,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.3.3 `arp_ClearProxy()` · `TODO-FN`
   - [ ] 6.179.3.4 `arp_EtherAddr()` · `TODO-FN`
 - [ ] **6.179.4** `arp.h` · 37L · `TODO-HDR`
-- [ ] **6.179.5** `async.c` · 220L · `TODO-PORT` · 7 fn
+- [ ] **6.179.5** `async.c` · 228L · `TODO-PORT` · 7 fn
   - [ ] 6.179.5.1 `async_Init()` · `TODO-FN`
   - [ ] 6.179.5.2 `async_Setup()` · `TODO-FN`
   - [ ] 6.179.5.3 `async_SetLinkParams()` · `TODO-FN`
@@ -34639,7 +34639,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.88.3 `proto_LayerPush()` · `TODO-FN`
   - [ ] 6.179.88.4 `proto_LayerPull()` · `TODO-FN`
 - [ ] **6.179.89** `proto.h` · 65L · `TODO-HDR`
-- [ ] **6.179.90** `radius.c` · 1,362L · `TODO-PORT` · 23 fn
+- [ ] **6.179.90** `radius.c` · 1,372L · `TODO-PORT` · 23 fn
   - [ ] 6.179.90.1 `radius_policyname()` · `TODO-FN`
   - [ ] 6.179.90.2 `radius_typesname()` · `TODO-FN`
   - [ ] 6.179.90.3 `demangle()` · `TODO-FN`

@@ -2686,6 +2686,28 @@ FIXES = {
             "all-parity-targets case reconstruct_general() is reached with",
         ),
     ],
+    "hbsd/src/sbin/ping/ping.c": (
+        "PBSD: F_TTL only.",
+        "if (!(options & (F_TTL | F_MTTL))) {",
+        "the F_HDRINCL path skipped the default-TTL sysctl when -T was "
+        "given, and -T assigns `mttl', a different variable - so "
+        "`ip.ip_ttl = ttl' put a stack word in every header ping built",
+    ),
+    "hbsd/src/usr.sbin/ppp/async.c": (
+        "struct mbuf *nbp = NULL, **last;",
+        "  struct mbuf *nbp, **last;\n",
+        "async_LayerPull returned nbp having decoded no bytes - a bp that "
+        "is NULL on entry, or whose mbufs are all m_len 0 - so the caller "
+        "walked and freed a wild mbuf pointer",
+    ),
+    "hbsd/src/usr.sbin/ppp/radius.c": (
+        "if (mlen < SALT_LEN + 16 || mlen % 16 != SALT_LEN) {",
+        "if (mlen % 16 != SALT_LEN) {",
+        "demangle(): mlen == SALT_LEN passes the modulus test, Clen is 0, "
+        "alloca(0) is a zero-sized object and `*len = *P' reads past it - "
+        "lib/libradius/radlib.c's copy of this function was fixed and "
+        "this one was not",
+    ),
     "hbsd/src/usr.sbin/rtsold/rtsol.c": (
         "PBSD: advance p, not addr.",
         # No "must be absent" string: the DNSSL block this fixes was a
