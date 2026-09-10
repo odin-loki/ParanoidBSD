@@ -241,7 +241,16 @@ print_entry(struct snl_parsed_neigh *neigh, struct snl_parsed_link_simple *link)
 	llwidth = strlen(ether_str(&sdl));
 	if (W_ADDR + W_LL - addrwidth > llwidth)
 		llwidth = W_ADDR + W_LL - addrwidth;
-	ifname = link->ifla_ifname;
+	/*
+	 * PBSD: ifla_ifname is an optional attribute -- _nla_p_link_s in
+	 * netlink_snl_route_parsers.h lists IFLA_IFNAME with no required
+	 * flag, and snl_parsed_link_simple is declared `= {}' by both
+	 * callers, so snl_parse_nlmsg() returning true says nothing about
+	 * whether the name arrived.  Today's kernel always sends it in an
+	 * RTM_NEWLINK reply; the parser does not say so, and this walks
+	 * the name with strlen() and prints it with %-*.*s.
+	 */
+	ifname = link->ifla_ifname != NULL ? link->ifla_ifname : "?";
 	ifwidth = strlen(ifname);
 	if (W_ADDR + W_LL + W_IF - addrwidth - llwidth > ifwidth)
 		ifwidth = W_ADDR + W_LL + W_IF - addrwidth - llwidth;

@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,552 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,410 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,587 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,596 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,648** | **114,207** |
+| | **total** | **41,143** | **21,300,657** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -32679,7 +32679,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.151.1.26 `sec2str()` · `TODO-FN`
   - [ ] 6.151.1.27 `ts_print()` · `TODO-FN`
 - [ ] **6.151.2** `ndp.h` · 29L · `TODO-HDR`
-- [ ] **6.151.3** `ndp_netlink.c` · 525L · `TODO-PORT` · 11 fn
+- [ ] **6.151.3** `ndp_netlink.c` · 534L · `TODO-PORT` · 11 fn
   - [ ] 6.151.3.1 `nl_init_socket()` · `TODO-FN`
   - [ ] 6.151.3.2 `get_link_info()` · `TODO-FN`
   - [ ] 6.151.3.3 `has_l2()` · `TODO-FN`

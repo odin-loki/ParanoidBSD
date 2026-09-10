@@ -19115,3 +19115,66 @@ findings            10       9
 ```
 
 One closed — `dup_mem`'s `memcpy` — and none new.
+
+## The progs shard's `unix.cstring.NullArg` set is read
+
+All 49.  **Sixteen were real and are fixed**; the other thirty-three are
+characterised below rather than suppressed.
+
+Fixed:
+
+| where | what |
+|---|---|
+| `route6d` ×4 | `fatal()` ends in `rtdexit()` ends in `exit(1)`, undeclared |
+| `ppp` `physical.c`, `udp.c` | `AbortProgram()` ends in `exit()`, undeclared |
+| `lpr` `lpc.c` | `quit()` ends in `exit()`, undeclared |
+| `dump` `traverse.c` ×2 | `quit()` ends in `dumpabort()`, which was already `__dead2` |
+| `pfctl` `pfctl_table.c` | `usage()` ends in `exit()`, undeclared |
+| `chat` `chat.c` | `fatal()` → `terminate()` → `exit()`, both undeclared |
+| `diff` `diffdir.c` | a name compared with itself |
+| `tftp` `main.c` | `realloc` into the only pointer to the buffer |
+| `fsck` `fsck.c` | `perr()` is only fatal under `-p` |
+| `ctladm` `ctladm.c` | one of two required options checked |
+| `ndp` `ndp_netlink.c` | an optional netlink attribute walked with `strlen` |
+
+Nine of the sixteen are one shape — a helper that exits, and a
+declaration that does not say so — which is why it has its own lint and
+its own section above.
+
+The thirty-three that remain, by class:
+
+- **An unconstrained parameter of a function analysed as its own entry
+  point** (12): `natd`'s `SetAliasAddressFromIfName(ifn)`;
+  `bsdinstall/partedit`'s `provider_for_name(..., name)` twice; `ppp`'s
+  `SetVariable`, where `argp` is `arg->argv[arg->argn]` or `""` and
+  never NULL; `sesutil`'s `devnames`; `ifconfig`'s `cmd_lookup(name)`;
+  `ipf`'s `expand_string`; `jail`'s `dep_setup`; `crunchide`;
+  `calendar`; `ruptime`; and `zfsbootcfg`'s `add_pair(type, ...)`,
+  whose caller writes `if (type == NULL) type = "DATA_TYPE_STRING";`
+  four lines before the call.
+- **A switch that is exhaustive over a validated range** (2): `ppp`'s
+  `chap_Input`.  `chapcodes[]` has five entries so `MAXCHAPCODE` is 4,
+  the header check rejects `code == 0 || code > MAXCHAPCODE`, and the
+  first switch covers all four remaining codes — allocating `ans` on
+  three of them, and the second switch only reads `ans` under the two
+  where it did.
+- **A macro whose guard the analyser will not relate to the use after
+  it** (2): `ed`'s `REALLOC(b, n, i, err)`, whose entire body is under
+  `if ((i) > (n))` and returns `err` when the allocation fails.
+- **A value returned across a translation unit** (1): `ppp`'s
+  `nat_cmd.c` uses `m_get()`, which calls `AbortProgram(EX_OSERR)` on
+  both of its failure paths — but it lives in `mbuf.c`.
+- **A sentinel that is not NULL** (2): `units`' `compareproducts`, where
+  `NULLUNIT` is `static char NULLUNIT[] = ""`.
+- **A ternary chain the analyser will not carry** (1): `diff`'s
+  `diffit(dp, ...)`, where `pos` is 1 exactly when `dent1` is NULL and
+  -1 exactly when `dent2` is, so the first argument is never the NULL
+  one.
+- **A loop invariant across iterations** (1): `lpc`'s `help()`, where
+  the bound tested at the end of each iteration is the next iteration's
+  index.
+- **A stream flushed before it is read** (1): `pkg`'s `config_parse`,
+  where `open_memstream`'s buffer pointer is updated by the `fflush`
+  three lines above the `strcmp`.
+- The rest are `ppp`'s `command.c` and `ipv6cp.c`, all arrays reached
+  through an unconstrained struct pointer.

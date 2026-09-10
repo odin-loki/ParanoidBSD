@@ -4152,6 +4152,16 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/ndp/ndp_netlink.c": (
+        'ifname = link->ifla_ifname != NULL ? link->ifla_ifname : "?";',
+        "\tifname = link->ifla_ifname;\n\tifwidth = strlen(ifname);",
+        "print_entry() walks ifla_ifname with strlen(), but IFLA_IFNAME "
+        "is listed in _nla_p_link_s with no required flag and both "
+        "callers declare snl_parsed_link_simple `= {}', so "
+        "snl_parse_nlmsg() returning true says nothing about whether the "
+        "name arrived",
+    ),
+
     "hbsd/src/usr.sbin/jail/jail.c": (
         "((jp->jp_ctltype & CTLTYPE) ==\n\t\t\t\t    CTLTYPE_STRING\n"
         "\t\t\t\t    ? strncmp(rtjp->jp_value, jp_value,",
