@@ -90,6 +90,46 @@ class ParseParams(unittest.TestCase):
                          [("bool", "a"), ("double", "b")])
 
 
+class TypeShapes(unittest.TestCase):
+    """Answers the ERROR histogram named, once it was bucketed."""
+
+    def parse(self, text, fn="f"):
+        return fusebmc.parse_params(text, fn)
+
+    def test_an_enum_is_an_int(self):
+        # An enum is an integer type in C whatever its tag is. 23 came
+        # back "not a known scalar", which is true of the table and
+        # false of the language.
+        self.assertEqual(self.parse("int f(enum ev_type t)\n{\n}\n"),
+                         [("int", "t")])
+
+    def test_a_struct_by_value_says_which_it_is(self):
+        # Not an unknown type: a known one this cannot make. `struct
+        # in_addr' is 21 of them, and inventing an aggregate is the same
+        # dishonesty as inventing a buffer behind a pointer.
+        r = self.parse("int f(struct in_addr a)\n{\n}\n")
+        self.assertIsInstance(r, str)
+        self.assertIn("aggregate", r)
+
+    def test_a_union_by_value_too(self):
+        self.assertIn("aggregate", self.parse("int f(union key k)\n{\n}\n"))
+
+    def test_a_complex_is_a_scalar(self):
+        self.assertEqual(self.parse("int f(double complex z)\n{\n}\n"),
+                         [("double complex", "z")])
+
+    def test_the_harness_can_name_a_complex_type(self):
+        # <complex.h> for the `complex' keyword: without it the harness
+        # for cpow() does not compile, and a type this CAN synthesise
+        # would be reported as one it cannot.
+        h = fusebmc.build_harness(Path("x.c"), "f", [("double complex", "z")])
+        self.assertIn("#include <complex.h>", h)
+
+    def test_quad_t_is_an_int64(self):
+        self.assertEqual(self.parse("int f(quad_t q)\n{\n}\n"),
+                         [("quad_t", "q")])
+
+
 class Layout(unittest.TestCase):
     def test_natural_alignment(self):
         slots, total = fusebmc.layout([("char", "a"), ("uint64_t", "b")])
@@ -228,6 +268,17 @@ class SanitizerBroke(unittest.TestCase):
         # -- memalign came back CRASH a second time with the line that
         # classifies it three screens above the cut.
         self.assertIn("CHECK failed", fusebmc.evidence(self.ASAN))
+
+    def test_evidence_keeps_the_verdict_lines_out_of_the_frames(self):
+        # A real report buries its verdict among forty stack frames, and
+        # the first thing recorded for the two convtbl crashes was the
+        # frames. The lines that name the defect are the ones to keep.
+        report = ("==1==ERROR: AddressSanitizer: SEGV on unknown address\n"
+                  + "    #%d 0x00 (/tmp/t+0x0)\n" * 60 % tuple(range(60))
+                  + "SUMMARY: AddressSanitizer: SEGV convtbl.c:99 in convert\n")
+        got = fusebmc.evidence(report)
+        self.assertIn("SUMMARY: AddressSanitizer: SEGV convtbl.c:99", got)
+        self.assertNotIn("#59", got)
 
     def test_evidence_falls_back_to_the_tail(self):
         # A compiler puts its verdict last, which is what _tail is for.

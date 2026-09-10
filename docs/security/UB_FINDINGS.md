@@ -20715,3 +20715,68 @@ directory.  A function in `sbin/ipfw/tables.c` is compiled and linked
 *with the rest of ipfw*; on its own it names symbols that live in the
 other twenty translation units, and the harness gets the linker's own
 words rather than a number that pretends otherwise.
+
+### The progs scopes, closed
+
+Same tree layout, same scope, same budget, after the two fixes and the
+self-kill recognition:
+
+```
+before   CLEAN 14  CRASH 3  SANFAIL 0  NOSEED 681  ERROR 16385  NOFUNC 132  NORETURN 623
+after    CLEAN 15  CRASH 0  SANFAIL 0  NOSEED 684  ERROR 16379  NOFUNC 132  NORETURN 628
+```
+
+Zero CRASH: two closed in the tree, one reclassified as what it always
+was.  `NORETURN` 623 → 628 is the five functions the `kill(getpid(), …)`
+rule now recognises.
+
+## What the ERROR histogram named next
+
+Bucketing the reason rather than the text is what made the last three
+corrections visible, so the tail was read again.  932 pairs across the
+libs and progs runs came back "parameter type `X` is not a known
+scalar", over **244 distinct type names** — and the shape of that tail
+is three answers, not 244:
+
+* **An `enum` is an integer type in C**, whatever its tag is.  23 of them
+  (`enum ev_type` and its neighbours) were reported as an unknown type,
+  which is true of the table and false of the language.
+* **A `struct` or `union` passed by value** is not an unknown type — it
+  is a known one this cannot make.  `struct in_addr` is 21 of them.
+  Inventing an aggregate is the same dishonesty as inventing a buffer
+  behind a pointer, so it gets its own reason rather than being filed
+  under ignorance.
+* **A complex is two floats end to end**, and every bit pattern in one
+  is a value — possibly a NaN, which is a value the function has to
+  cope with rather than a trap.  66 of them.  The harness now includes
+  `<complex.h>`, without which a `cpow()` harness does not compile and a
+  type this *can* synthesise would be reported as one it cannot.
+
+The named integer typedefs went in from the histogram, each read out of
+the tree: `quad_t`, `u_quad_t`, `lba_t`, `ufs1_daddr_t`, `ufs2_daddr_t`,
+`ufs_time_t`, the `rpc*_t` family, and softfloat's `float32` and
+`float64` — which are `unsigned int` and `unsigned long long`, not
+floating types at all.
+
+Two names the histogram offered are deliberately **not** there.  `acl_t`
+is `struct acl_info` in one header and a pointer in another; `iconv_t`
+is `int` in a contrib copy and `void *` in the real one.  A table that
+is right about one of those is wrong about the other, which is precisely
+the failure the histogram exists to catch.
+
+### And the evidence, again
+
+The two real `convtbl` crashes were first recorded as their *stack
+frames*.  `_tail()` was doing what it is for — a compiler puts its
+verdict last — and a sanitizer buries its verdict among forty frames and
+build IDs.  `evidence()` now keeps the lines that carry one:
+
+```
+==1==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000
+SUMMARY: AddressSanitizer: SEGV convtbl.c:99 in convert
+```
+
+That is the third time in this engine's short life that the *reporting*
+was the defect rather than the finding, and all three were the same
+mistake in different clothes: a true statement about the tool presented
+as a statement about the code.

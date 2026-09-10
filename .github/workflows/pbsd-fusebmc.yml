@@ -111,9 +111,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: libc, scopes: '--scope lib/libc' }
-          - { name: msun, scopes: '--scope lib/msun' }
-          - { name: progs, scopes: '--scope bin --scope sbin' }
+          # Measured on a 4-core box at these exact settings: libs is
+          # 4,390 pairs in about 20 minutes, and the four program scopes
+          # are 17,838 in about 45. Both fit a job, so there is no
+          # --limit: a cap picked before the run is a cap that decides
+          # what does not get looked at, and the shard boundary is the
+          # honest place to make that decision.
+          - { name: libs,   scopes: '--scope lib/libc --scope lib/msun' }
+          - { name: progs,  scopes: '--scope bin --scope sbin' }
+          - { name: uprogs, scopes: '--scope usr.bin --scope usr.sbin' }
     steps:
       - uses: actions/checkout@v4
       - name: Install the instruments
@@ -132,12 +138,6 @@ jobs:
           command -v cbmc
       - name: Build the function ledger
         run: python3 tools/port_plan.py
-      # --limit, because the budget is per FUNCTION and the wall clock is
-      # per JOB. The pairs that cost nothing - NOFUNC, NORETURN, and the
-      # ERROR majority - are decided by a regex and drain fast, so the
-      # limit binds on the RUNNABLE ones, which are the only ones being
-      # paid for.
-      #
       # --resume is set even though each run starts from an empty --out:
       # a job reclaimed mid-run leaves a partial .jsonl in the artifact,
       # and restoring it into out/ makes the re-run continue.
@@ -145,7 +145,7 @@ jobs:
         run: |
           mkdir -p out
           python3 tools/verify/fusebmc.py ${{ matrix.scopes }} \
-            --jobs 4 --budget 20 --cbmc-timeout 20 --limit 1500 --resume \
+            --jobs 4 --budget 20 --cbmc-timeout 20 --resume \
             --out out/fusebmc-${{ matrix.name }}.jsonl \
             2>&1 | tail -400 | tee out/${{ matrix.name }}.txt
       # The only line anybody needs: what died on a concrete input.
@@ -161,18 +161,31 @@ jobs:
             python3 - <<'PY'
           import json, pathlib
           p = pathlib.Path("out/fusebmc-${{ matrix.name }}.jsonl")
-          n = 0
+          rows = []
           for line in p.read_text(errors="replace").splitlines() if p.is_file() else []:
               try:
-                  r = json.loads(line)
+                  rows.append(json.loads(line))
               except ValueError:
-                  continue
-              if r.get("status") == "CRASH":
-                  n += 1
-                  print("- `%s` %s -- %s" % (r.get("file"), r.get("function"),
-                                             (r.get("detail") or "")[:200]))
-          if not n:
+                  pass
+          def show(status):
+              n = 0
+              for r in rows:
+                  if r.get("status") == status:
+                      n += 1
+                      print("- `%s` %s -- %s"
+                            % (r.get("file"), r.get("function"),
+                               (r.get("detail") or "")[:200]))
+              return n
+          if not show("CRASH"):
               print("None this run. That is not a proof of anything.")
+          # SANFAIL is the sanitizer aborting on its OWN invariant. It
+          # is not a finding about the code and it is not nothing
+          # either: it is a function this engine cannot see through,
+          # and a limit nobody counts is a limit nobody knows about.
+          print("")
+          print("#### SANFAIL (the sanitizer, not the code)")
+          if not show("SANFAIL"):
+              print("None this run.")
           PY
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
