@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,544 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,376 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,532 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,544 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,551** | **114,207** |
+| | **total** | **41,143** | **21,300,563** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -26795,7 +26795,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.11.43.2 `net_parsemtu()` · `TODO-FN`
   - [ ] 6.11.43.3 `net_genmac()` · `TODO-FN`
 - [ ] **6.11.44** `net_utils.h` · 39L · `TODO-HDR`
-- [ ] **6.11.45** `pci_ahci.c` · 2,790L gen:3 · `TODO-PORT` · 57 fn
+- [ ] **6.11.45** `pci_ahci.c` · 2,802L gen:3 · `TODO-PORT` · 57 fn
   - [ ] 6.11.45.1 `ahci_generate_intr()` · `TODO-FN`
   - [ ] 6.11.45.2 `ahci_port_intr()` · `TODO-FN`
   - [ ] 6.11.45.3 `ahci_write_fis()` · `TODO-FN`

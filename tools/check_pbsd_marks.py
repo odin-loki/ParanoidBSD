@@ -4141,6 +4141,18 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/bhyve/pci_ahci.c": (
+        "\tif (done >= len) {",
+        "/* All remaining ranges were empty. */\n\tif (done == len) {",
+        "ahci_handle_next_trim()'s \"all ranges empty\" test was "
+        "`done == len' while the loop above it exits on `done < len' "
+        "being false, so the test only matches the loop's own exit when "
+        "done lands exactly on len -- and elba scales into "
+        "breq->br_offset and elen into br_resid, so a pair the loop never "
+        "wrote is a discard of a range of the backing store taken from "
+        "the stack",
+    ),
+
     "hbsd/src/usr.sbin/rpcbind/rpcb_svc_com.c": (
         "\treply_msg.rm_xid = 0;",
         "\tchar *uaddr;\n#endif\n\n\tbuffer = malloc(RPC_BUF_MAX);",

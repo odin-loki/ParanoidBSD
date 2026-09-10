@@ -18426,3 +18426,80 @@ OK                  37      37
 ERROR                0       0
 findings            13       9
 ```
+
+## bhyve: a TRIM whose "nothing left" test is not the loop's exit test
+
+`ahci_handle_next_trim()` walks the DSM ranges the guest queued:
+
+```c
+	while (done < len) {
+		entry = &buf[done];
+		elba = ...;			/* six bytes */
+		elen = (uint16_t)entry[7] << 8 | entry[6];
+		done += 8;
+		if (elen != 0)
+			break;
+	}
+
+	/* All remaining ranges were empty. */
+	if (done == len) {
+		...
+		return;
+	}
+	...
+	breq->br_offset = elba * blockif_sectsz(p->bctx);
+	breq->br_resid = elen * blockif_sectsz(p->bctx);
+```
+
+The loop exits on `done < len` being false; the test below it is
+`done == len`.  Those are the same condition only while `done` lands
+exactly on `len`, and everything after it reads an `elba`/`elen` pair
+the loop was supposed to have set — scaled into a block offset and a
+length, and handed to the backing store as a discard.
+
+It does land exactly today: `ahci_handle_dsm_trim()` computes `len` as a
+sector count times 512, the continuation at the completion handler
+passes `aior->len`/`aior->done` straight back, and `done` only ever
+advances by 8.  So the pair is always written.  But the guard should be
+the loop's own exit condition rather than a special case of it, and
+`done >= len` costs nothing.
+
+### The other three bhyve findings, read and not defects
+
+- `pci_e82545.c:1346` — `MIN(left, iov->iov_len)` in the writable-header
+  copy.  The walk is bounded by `if (pktlen < hdrlen + vlen) goto done;`
+  and `pktlen` is incremented in the very block that fills
+  `iov[iovcnt].iov_len`, so it is exactly the sum of the iovec.  The
+  analyser will not carry a sum invariant across the descriptor loop.
+- `pci_passthru.c:330` — `msixcap.pba_info` under
+  `if (sc->psc_msix.capoff != 0)`.  `msixcap` is filled in the `cap ==
+  PCIY_MSIX` arm, which is the same arm that sets `capoff`: one
+  predicate, two spellings, a capability-list walk in between.
+- `bootrom.c:282` — `ptr + i * PAGE_SIZE` after
+  `bootrom_alloc(..., &ptr, NULL) != 0` is checked.  `bootrom_alloc()`
+  has one `return (0)` and it writes `*region_out`; the other seven
+  returns are all failures.
+
+```
+                usr.sbin/bhyve
+                before  after
+OK                  90      90
+ERROR                2       2
+findings            20      19
+```
+
+Both ERROR translation units are on the record (`snapshot.c` and one
+more, missing `ucl.h`), unchanged across the pair.
+
+### The progs shard's `core.UndefinedBinaryOperatorResult` set is now read
+
+All 54 of them.  Fixed: `mlxcontrol` (4), `ifpfsync` (2), `makefs` (8),
+`msdosfs` (1 here and 1 in the kernel copy), `ul` (2), `usbhidctl` (2),
+`ipfw`/`natd` `StrToPortRange` (6), `rpcbind` (1), `tabs` (1),
+`vidcontrol` (1), `nscd` (1), `pkg` (1, plus one that only became
+visible once a dead store was removed), `bhyve` (1).  The rest are the
+classes already on the record here — an out-parameter written in another
+translation unit, an unconstrained parameter of a function analysed as
+its own entry point, one predicate tested twice across an intervening
+call, a loop the analyser will not unroll, and a macro that assigns
+through its argument.

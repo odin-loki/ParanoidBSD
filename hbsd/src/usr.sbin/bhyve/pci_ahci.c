@@ -892,8 +892,20 @@ ahci_handle_next_trim(struct ahci_port *p, int slot, uint8_t *cfis,
 			break;
 	}
 
-	/* All remaining ranges were empty. */
-	if (done == len) {
+	/*
+	 * All remaining ranges were empty.
+	 *
+	 * PBSD: this was `done == len', while the loop above exits on
+	 * `done < len' being false -- so the test only matches the loop's
+	 * own exit when done lands exactly on len, and every use below
+	 * reads the elba and elen the loop was supposed to have set.  It
+	 * does land exactly today (len is a sector count times 512 and
+	 * done advances by 8), but the two conditions should be the same
+	 * condition: elba scales into breq->br_offset and elen into
+	 * br_resid, so a pair the loop never wrote is a discard of a range
+	 * of the backing store taken from the stack.
+	 */
+	if (done >= len) {
 		free(buf);
 		if (ncq) {
 			if (first)
