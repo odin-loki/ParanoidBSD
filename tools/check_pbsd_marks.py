@@ -3485,6 +3485,37 @@ FIXES = {
         "writing *idx, which __mlx4_counter_alloc() does and which "
         "mlx4_allocate_default_counters() relies on",
     ),
+
+    "hbsd/src/sys/dev/mpr/mpr_config.c": [
+        (
+            ("\tif (error || (cm == NULL) || (reply == NULL)) {", 24),
+            "\tif (error || (reply == NULL)) {",
+            "mpr_config_*: mpr_wait_command() writes *cmp = NULL when it "
+            "reclaims a command, and `reply' is a function-scope local -- "
+            "so on the second command of a pair the NULL test passes on "
+            "the first command's reply and the bcopy dereferences the "
+            "NULL cm; on the first, reply itself is uninitialised",
+        ),
+        (
+            ("\tif (cm != NULL)\n\t\treply = (MPI2_CONFIG_REPLY *)cm->cm_reply;", 24),
+            "\terror = mpr_wait_command(sc, &cm, 60, CAN_SLEEP);\n\treply = (MPI2_CONFIG_REPLY *)cm->cm_reply;\n",
+            "two of the twenty-four sites read cm->cm_reply with no "
+            "cm != NULL guard at all",
+        ),
+    ],
+    "hbsd/src/sys/dev/mps/mps_config.c": (
+        ("\tif (error || (cm == NULL) || (reply == NULL)) {", 18),
+        "\tif (error || (reply == NULL)) {",
+        "mps_config_*: the same stale-reply guard as mpr_config.c, "
+        "eighteen times",
+    ),
+    "hbsd/src/sys/dev/aacraid/aacraid.c": (
+        "\tif (sc->aac_max_msix == 0)\n\t\tsc->aac_max_msix = 1;",
+        "\t}\n\tsc->aac_vector_cap = sc->aac_max_fibs / sc->aac_max_msix;",
+        "aac_define_int_mode: the legacy arm floors aac_max_msix at 1 "
+        "and the MSI-X arm only clamps it down, so firmware reporting "
+        "zero vectors reaches the division with a zero divisor",
+    ),
 }
 
 

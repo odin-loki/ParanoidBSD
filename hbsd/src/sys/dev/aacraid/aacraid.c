@@ -1924,6 +1924,14 @@ aac_define_int_mode(struct aac_softc *sc)
 		if (sc->aac_max_msix > msi_count)
 			sc->aac_max_msix = msi_count;
 	}
+	/*
+	 * PBSD: floor the divisor.  The legacy-interrupt arm above sets
+	 * aac_max_msix to 1; the MSI-X arm only clamps it DOWN, against
+	 * msi_count, and never up -- so a controller whose firmware
+	 * reported zero vectors reaches this division with a zero divisor.
+	 */
+	if (sc->aac_max_msix == 0)
+		sc->aac_max_msix = 1;
 	sc->aac_vector_cap = sc->aac_max_fibs / sc->aac_max_msix;
 
 	fwprintf(sc, HBA_FLAGS_DBG_DEBUG_B, "msi_enabled %d vector_cap %d max_fibs %d max_msix %d",

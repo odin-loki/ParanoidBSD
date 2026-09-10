@@ -15263,3 +15263,54 @@ behind. Twenty-six of the `core.NullDereference` and
 `core.UndefinedBinaryOperatorResult` are two files, `mpr_config.c` and
 `mps_config.c`, in one repeated shape — that one is read and named in the
 next section.
+
+### The stale `reply`, forty-two times
+
+`mpr_config.c` and `mps_config.c` — the LSI/Broadcom SAS controllers'
+configuration-page readers — carried 26 of the dev shard's findings
+between them, all one shape. Each function does this twice, once for the
+page header and once for the page:
+
+```c
+	error = mpr_wait_command(sc, &cm, 60, CAN_SLEEP);
+	if (cm != NULL)
+		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
+	if (error || (reply == NULL)) {
+		...
+		goto out;
+	}
+```
+
+The guard on the assignment is there because `mpr_wait_command()` writes
+`*cmp = NULL` when it reclaims a timed-out command. But `reply` is a
+**function-scope local**, so on the second command it still holds the
+first command's reply — the `reply == NULL` test passes, and the function
+falls through to `bcopy(page, config_page, MIN(cm->cm_length, ...))`,
+dereferencing the very NULL it had just declined to take a reply from.
+
+And `reply` is declared without an initialiser, so on the *first* command
+the same test reads garbage — which is what the ten
+`core.UndefinedBinaryOperatorResult` in these two files were saying, at
+the `reply == NULL` line, while the seventeen `core.NullDereference` were
+saying the other half at `cm->cm_length`. Two checkers, two symptoms, one
+missing conjunct.
+
+The fix is `cm == NULL` in the test, at all 42 sites. Short-circuit
+order does the rest: `cm` is tested before `reply`, so the uninitialised
+read is gone too and no declaration had to change. Two of the 24 sites in
+`mpr_config.c` had no `cm != NULL` guard on the assignment at all; they
+now have the same one as the other 22.
+
+`aac_define_int_mode()` came along for the ride: its legacy-interrupt arm
+sets `aac_max_msix = 1` and its MSI-X arm only clamps the firmware's
+value *down*, against `msi_count`, never up — so a controller reporting
+zero vectors reaches `aac_max_fibs / aac_max_msix` with a zero divisor.
+The floor one arm already establishes now applies to both.
+
+```
+              before   after     (sys/dev/mpr, sys/dev/mps, sys/dev/aacraid)
+OK                22      22
+findings          30       3
+```
+
+Twenty-seven of thirty, from forty-four one-line changes.

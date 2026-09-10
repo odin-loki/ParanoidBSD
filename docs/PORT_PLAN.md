@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,381 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,419 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,051** | **114,204** |
+| | **total** | **41,143** | **21,299,089** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -58551,7 +58551,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.587 `sys/dev/aacraid`
 
-- [ ] **8.587.1** `aacraid.c` · 3,928L gen:2 · `TODO-PORT` · 67 fn
+- [ ] **8.587.1** `aacraid.c` · 3,936L gen:2 · `TODO-PORT` · 67 fn
   - [ ] 8.587.1.1 `aacraid_attach()` · `TODO-FN`
   - [ ] 8.587.1.2 `aac_daemon()` · `TODO-FN`
   - [ ] 8.587.1.3 `aacraid_add_event()` · `TODO-FN`
@@ -86388,7 +86388,7 @@ function; a file with two hundred of them is a project.
 ### 8.842 `sys/dev/mpr`
 
 - [ ] **8.842.1** `mpr.c` · 4,053L gen:2 · `TODO-PORT`
-- [ ] **8.842.2** `mpr_config.c` · 1,750L · `TODO-PORT` · 14 fn
+- [ ] **8.842.2** `mpr_config.c` · 1,766L · `TODO-PORT` · 14 fn
   - [ ] 8.842.2.1 `mpr_config_get_ioc_pg8()` · `TODO-FN`
   - [ ] 8.842.2.2 `mpr_config_get_iounit_pg8()` · `TODO-FN`
   - [ ] 8.842.2.3 `mpr_config_get_man_pg11()` · `TODO-FN`
@@ -86661,7 +86661,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.844.1.54 `mps_read_config_page()` · `TODO-FN`
   - [ ] 8.844.1.55 `mps_write_config_page()` · `TODO-FN`
   - [ ] 8.844.1.56 `mps_config_complete()` · `TODO-FN`
-- [ ] **8.844.2** `mps_config.c` · 1,516L · `TODO-PORT` · 12 fn
+- [ ] **8.844.2** `mps_config.c` · 1,530L · `TODO-PORT` · 12 fn
   - [ ] 8.844.2.1 `mps_config_get_ioc_pg8()` · `TODO-FN`
   - [ ] 8.844.2.2 `mps_config_get_man_pg10()` · `TODO-FN`
   - [ ] 8.844.2.3 `mps_base_static_config_pages()` · `TODO-FN`

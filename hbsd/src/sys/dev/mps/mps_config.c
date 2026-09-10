@@ -97,7 +97,21 @@ mps_config_get_ioc_pg8(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	/*
+	 * PBSD: `cm == NULL' in the test, at every one of these sites in
+	 * this file.
+	 *
+	 * mps_wait_command() writes *cmp = NULL when it reclaims a
+	 * command, which is why the assignment above is guarded -- but
+	 * `reply' is a function-scope local, so on the SECOND command of a
+	 * pair it still holds the first command's reply and the NULL test
+	 * below passes.  Every one of these functions then falls through
+	 * to `cm->cm_length' at the bcopy, dereferencing the NULL it just
+	 * declined to store a reply from.  And `reply' is uninitialised at
+	 * its declaration, so on the FIRST command the same test reads
+	 * garbage.  Testing cm first short-circuits both.
+	 */
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -156,7 +170,7 @@ mps_config_get_ioc_pg8(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -235,7 +249,7 @@ mps_config_get_man_pg10(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply)
 	error = mps_wait_command(sc, &cm, 60, 0);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/* If the poll returns error then we need to do diag reset */ 
 		printf("%s: poll for header completed with error %d\n",
@@ -292,7 +306,7 @@ mps_config_get_man_pg10(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply)
 	error = mps_wait_command(sc, &cm, 60, 0);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/* If the poll returns error then we need to do diag reset */ 
 		printf("%s: poll for page completed with error %d\n",
@@ -593,7 +607,7 @@ mps_config_get_dpm_pg0(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -654,7 +668,7 @@ mps_config_get_dpm_pg0(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -731,7 +745,7 @@ int mps_config_set_dpm_pg0(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -794,7 +808,7 @@ int mps_config_set_dpm_pg0(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -868,7 +882,7 @@ mps_config_get_sas_device_pg0(struct mps_softc *sc, Mpi2ConfigReply_t
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -929,7 +943,7 @@ mps_config_get_sas_device_pg0(struct mps_softc *sc, Mpi2ConfigReply_t
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -1002,7 +1016,7 @@ mps_config_get_bios_pg3(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -1061,7 +1075,7 @@ mps_config_get_bios_pg3(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -1139,7 +1153,7 @@ mps_config_get_raid_volume_pg0(struct mps_softc *sc, Mpi2ConfigReply_t
 	error = mps_wait_command(sc, &cm, 60, 0);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/* If the poll returns error then we need to do diag reset */ 
 		printf("%s: poll for header completed with error %d\n",
@@ -1197,7 +1211,7 @@ mps_config_get_raid_volume_pg0(struct mps_softc *sc, Mpi2ConfigReply_t
 	error = mps_wait_command(sc, &cm, 60, 0);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/* If the poll returns error then we need to do diag reset */ 
 		printf("%s: poll for page completed with error %d\n",
@@ -1265,7 +1279,7 @@ mps_config_get_raid_volume_pg1(struct mps_softc *sc, Mpi2ConfigReply_t
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -1325,7 +1339,7 @@ mps_config_get_raid_volume_pg1(struct mps_softc *sc, Mpi2ConfigReply_t
 	error = mps_wait_command(sc, &cm, 60, CAN_SLEEP);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -1429,7 +1443,7 @@ mps_config_get_raid_pd_pg0(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, 0);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/* If the poll returns error then we need to do diag reset */ 
 		printf("%s: poll for header completed with error %d\n",
@@ -1487,7 +1501,7 @@ mps_config_get_raid_pd_pg0(struct mps_softc *sc, Mpi2ConfigReply_t *mpi_reply,
 	error = mps_wait_command(sc, &cm, 60, 0);
 	if (cm != NULL)
 		reply = (MPI2_CONFIG_REPLY *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/* If the poll returns error then we need to do diag reset */ 
 		printf("%s: poll for page completed with error %d\n",
