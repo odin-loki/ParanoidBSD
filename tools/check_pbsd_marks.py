@@ -4092,6 +4092,83 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sys/dev/firewire/sbp.c": [
+        (
+            ("sbp_nameunit", 5),
+            "\"Invalid target (no wildcard)\\n\",\n"
+            "\t\t\t\tdevice_get_nameunit(sbp->fd.dev),",
+            "sbp_action() printed device_get_nameunit(sbp->fd.dev) at four "
+            "sites where sbp may be or IS NULL -- one of them inside a "
+            "branch conditioned on `sbp == NULL' -- all live at debug > 0, "
+            "which boot -v sets",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/mmc/mmc.c": [
+        (
+            ("struct mmc_ivars *ivar = NULL;", 2),
+            None,
+            "mmc_wait_for_request()'s retune search leaves ivar unset when "
+            "child_count is zero, and the loop is not entered",
+        ),
+        (
+            "if (ivar == NULL || ivar->rca != sc->last_rca)",
+            "\t\t\tif (ivar->rca != sc->last_rca)",
+            "the test after that loop then read ivar->rca through an "
+            "uninitialised stack pointer",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/mpi3mr/mpi3mr.c": [
+        (
+            "} else if (target != NULL && target->io_divert) {",
+            "\t\t\t} else if (target->io_divert) {",
+            "mpi3mr_process_op_reply_desc(): the arm above tests target for "
+            "NULL -- it is what gates tg and throttle_enabled_dev -- and "
+            "this else arm did not",
+        ),
+        (
+            "/* PBSD: scsi_reply is NULL on the status-descriptor path. */",
+            None,
+            "the same function's SCSI_*_TERMINATED arm traced "
+            "scsi_reply->IOCLogInfo, which a status descriptor does not "
+            "carry",
+        ),
+        (
+            "\t\tif (scsi_reply == NULL) {\n"
+            "\t\t\tmpi3mr_set_ccbstatus(ccb,",
+            "\tcase MPI3_IOCSTATUS_SUCCESS:\n"
+            "\t\tif ((scsi_reply->IOCStatus & MPI3_IOCSTATUS_STATUS_MASK) ==",
+            "and its DATA_UNDERRUN/RECOVERED_ERROR/SUCCESS arm read the "
+            "whole absent reply frame -- MPI3_IOCSTATUS_SUCCESS is also "
+            "ioc_status' initial value, so that is the arm a status "
+            "descriptor lands in",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/mpi3mr/mpi3mr_cam.c": (
+        "\"Device (dev_handle: %d) is already removed from driver's list\\n\",\n"
+        "\t\t\thandle);",
+        "is already removed from driver's list\\n\",\n"
+        "\t\t\ttarget->per_id, handle);",
+        "mpi3mr_remove_device_from_os() printed target->per_id inside "
+        "`if (!target)' -- the branch that tests for target being NULL",
+    ),
+
+    "hbsd/src/sys/dev/ntb/ntb_hw/ntb_hw_amd.c": (
+        "\tif (sb == NULL)\n\t\treturn (ENOMEM);",
+        "\t\treturn (sb->s_error);",
+        "amd_ntb_hw_info_handler() reported an sbuf allocation failure by "
+        "reading sb->s_error out of the NULL sbuf",
+    ),
+
+    "hbsd/src/sys/dev/ntb/test/ntb_tool.c": (
+        ("\t\trc = ENOMEM;", 2),
+        "\t\trc = sb->s_error;",
+        "the same sbuf-is-NULL-so-read-its-error line, twice, in "
+        "tool_mw_read_fn() and tool_mw_trans_read()",
+    ),
+
     "hbsd/src/sys/amd64/pci/pci_cfgreg.c": [
         (
             ("(1U << slot & pcie_badslots) != 0", 2),

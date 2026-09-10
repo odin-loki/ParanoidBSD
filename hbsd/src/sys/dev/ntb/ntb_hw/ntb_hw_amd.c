@@ -693,8 +693,14 @@ amd_ntb_hw_info_handler(SYSCTL_HANDLER_ARGS)
 	int rc = 0;
 
 	sb = sbuf_new_for_sysctl(NULL, NULL, 4096, req);
+	/*
+	 * PBSD: sbuf_new_for_sysctl() returns NULL when the allocation fails,
+	 * so reading sb->s_error to report that failure faults on the very
+	 * path it is meant to describe.  ENOMEM is what there is to say.
+	 * The same line appears twice more in sys/dev/ntb/test/ntb_tool.c.
+	 */
 	if (sb == NULL)
-		return (sb->s_error);
+		return (ENOMEM);
 
 	sbuf_printf(sb, "NTB AMD Hardware info:\n\n");
 	sbuf_printf(sb, "AMD NTB side: %s\n",

@@ -4828,7 +4828,14 @@ void mpi3mr_process_op_reply_desc(struct mpi3mr_softc *sc,
 				}
 			}
 			
-			} else if (target->io_divert) {
+			/*
+			 * PBSD: mpi3mr_find_target_by_per_id() can return
+			 * NULL and the arm above tests for it -- it is what
+			 * gates tg and throttle_enabled_dev.  This else arm
+			 * did not, so a completion for a target already gone
+			 * from the list dereferenced NULL.
+			 */
+			} else if (target != NULL && target->io_divert) {
 			ioc_pend_data_len = mpi3mr_atomic_read(&sc->pend_large_data_sz);
 			if (!tg) {
 				if (ratelimit % 1000) {
@@ -4926,15 +4933,18 @@ void mpi3mr_process_op_reply_desc(struct mpi3mr_softc *sc,
 	case MPI3_IOCSTATUS_SCSI_IOC_TERMINATED:
 	case MPI3_IOCSTATUS_SCSI_EXT_TERMINATED:
 		mpi3mr_set_ccbstatus(ccb, CAM_SCSI_BUSY);
-		mpi3mr_dprint(sc, MPI3MR_TRACE,
-		    "func: %s line:%d tgt %u Hosttag %u loginfo %x\n",
-		    __func__, __LINE__,
-		    target_id, cm->hosttag,
-		    le32toh(scsi_reply->IOCLogInfo));
-		mpi3mr_dprint(sc, MPI3MR_TRACE,
-		    "SCSIStatus %x SCSIState %x xfercount %u\n",
-		    scsi_reply->SCSIStatus, scsi_reply->SCSIState,
-		    le32toh(xfer_count));
+		/* PBSD: scsi_reply is NULL on the status-descriptor path. */
+		if (scsi_reply != NULL) {
+			mpi3mr_dprint(sc, MPI3MR_TRACE,
+			    "func: %s line:%d tgt %u Hosttag %u loginfo %x\n",
+			    __func__, __LINE__,
+			    target_id, cm->hosttag,
+			    le32toh(scsi_reply->IOCLogInfo));
+			mpi3mr_dprint(sc, MPI3MR_TRACE,
+			    "SCSIStatus %x SCSIState %x xfercount %u\n",
+			    scsi_reply->SCSIStatus, scsi_reply->SCSIState,
+			    le32toh(xfer_count));
+		}
 		break;
 	case MPI3_IOCSTATUS_SCSI_DATA_OVERRUN:
 		/* resid is ignored for this condition */
@@ -4945,6 +4955,22 @@ void mpi3mr_process_op_reply_desc(struct mpi3mr_softc *sc,
 		csio->resid = cm->length - le32toh(xfer_count);
 	case MPI3_IOCSTATUS_SCSI_RECOVERED_ERROR:
 	case MPI3_IOCSTATUS_SUCCESS:
+		/*
+		 * PBSD: a MPI3_REPLY_DESCRIPT_FLAGS_TYPE_STATUS descriptor
+		 * carries an IOCStatus but no reply frame, so scsi_reply is
+		 * NULL while ioc_status came from the controller.  Only the
+		 * success DESCRIPTOR is short-circuited above (success_desc);
+		 * a status descriptor falls through to here, and
+		 * MPI3_IOCSTATUS_SUCCESS is ioc_status' initial value as
+		 * well, so this is the arm it lands in.  Everything below
+		 * reads the frame that is not there.
+		 */
+		if (scsi_reply == NULL) {
+			mpi3mr_set_ccbstatus(ccb,
+			    ioc_status == MPI3_IOCSTATUS_SUCCESS ?
+			    CAM_REQ_CMP : CAM_REQ_CMP_ERR);
+			break;
+		}
 		if ((scsi_reply->IOCStatus & MPI3_IOCSTATUS_STATUS_MASK) ==
 		    MPI3_IOCSTATUS_SCSI_RECOVERED_ERROR)
 			mpi3mr_dprint(sc, MPI3MR_XINFO, "func: %s line: %d recovered error\n",  __func__, __LINE__);

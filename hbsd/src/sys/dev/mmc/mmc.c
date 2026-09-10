@@ -483,7 +483,7 @@ static int
 mmc_wait_for_request(device_t busdev, device_t dev, struct mmc_request *req)
 {
 	struct mmc_softc *sc;
-	struct mmc_ivars *ivar;
+	struct mmc_ivars *ivar = NULL;
 	int err, i;
 	enum mmc_retune_req retune_req;
 
@@ -514,7 +514,16 @@ mmc_wait_for_request(device_t busdev, device_t dev, struct mmc_request *req)
 				if (ivar->rca == sc->last_rca)
 					break;
 			}
-			if (ivar->rca != sc->last_rca)
+			/*
+			 * PBSD: child_count is zero while the bus has no
+			 * cards attached -- mmc_rescan_cards() deletes the
+			 * children before last_rca is cleared -- and the loop
+			 * is then never entered, so ivar was read through an
+			 * uninitialised stack pointer.  No child means no
+			 * child matching last_rca, which is the same answer
+			 * the search failing already gives.
+			 */
+			if (ivar == NULL || ivar->rca != sc->last_rca)
 				return (EINVAL);
 		}
 		sc->retune_ongoing = 1;

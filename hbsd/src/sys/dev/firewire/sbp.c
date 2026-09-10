@@ -2265,6 +2265,22 @@ sbp_timeout(void *arg)
 	}
 }
 
+/*
+ * PBSD: sbp_action() runs with sbp == NULL whenever the ccb is aimed at the
+ * SIM rather than at a target -- the function tests for it twice and the
+ * comment in XPT_PATH_INQ says so outright -- but four of its debug printfs
+ * passed sbp->fd.dev to device_get_nameunit() anyway.  One of them sits
+ * inside a branch conditioned on `sbp == NULL', so it is either dead code or
+ * a guaranteed fault; the others are reachable with a wildcard target id.
+ * All four are live at debug > 0, which `boot -v' sets (sbp.c:325).
+ */
+static const char *
+sbp_nameunit(struct sbp_softc *sbp)
+{
+
+	return (sbp != NULL ? device_get_nameunit(sbp->fd.dev) : "sbp?");
+}
+
 static void
 sbp_action(struct cam_sim *sim, union ccb *ccb)
 {
@@ -2306,7 +2322,7 @@ END_DEBUG
 SBP_DEBUG(1)
 			printf("%s:%d:%jx:func_code 0x%04x: "
 				"Invalid target (target needed)\n",
-				device_get_nameunit(sbp->fd.dev),
+				sbp_nameunit(sbp),
 				ccb->ccb_h.target_id,
 				(uintmax_t)ccb->ccb_h.target_lun,
 				ccb->ccb_h.func_code);
@@ -2328,7 +2344,7 @@ END_DEBUG
 SBP_DEBUG(0)
 			printf("%s:%d:%jx func_code 0x%04x: "
 				"Invalid target (no wildcard)\n",
-				device_get_nameunit(sbp->fd.dev),
+				sbp_nameunit(sbp),
 				ccb->ccb_h.target_id,
 				(uintmax_t)ccb->ccb_h.target_lun,
 				ccb->ccb_h.func_code);
@@ -2476,7 +2492,7 @@ END_DEBUG
 
 SBP_DEBUG(1)
 		printf("%s:%d:XPT_RESET_BUS: \n",
-			device_get_nameunit(sbp->fd.dev), cam_sim_path(sbp->sim));
+			sbp_nameunit(sbp), cam_sim_path(sim));
 END_DEBUG
 
 		ccb->ccb_h.status = CAM_REQ_INVALID;
@@ -2489,7 +2505,7 @@ END_DEBUG
 
 SBP_DEBUG(1)
 		printf("%s:%d:%jx XPT_PATH_INQ:.\n",
-			device_get_nameunit(sbp->fd.dev),
+			sbp_nameunit(sbp),
 			ccb->ccb_h.target_id, (uintmax_t)ccb->ccb_h.target_lun);
 END_DEBUG
 		cpi->version_num = 1; /* XXX??? */

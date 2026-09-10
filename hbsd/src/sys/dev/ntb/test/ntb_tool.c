@@ -529,7 +529,9 @@ tool_mw_read_fn(struct sysctl_req *req, struct tool_mw *inmw, char *read_addr,
 	size = loop + 256;
 	sb = sbuf_new_for_sysctl(NULL, NULL, size, req);
 	if (sb == NULL) {
-		rc = sb->s_error;
+		/* PBSD: sb is NULL here, so sb->s_error faults.  See
+		 * amd_ntb_hw_info_handler() in ntb_hw_amd.c. */
+		rc = ENOMEM;
 		return (rc);
 	}
 
@@ -896,7 +898,9 @@ tool_mw_trans_read(struct tool_mw *inmw, struct sysctl_req *req)
 
 	sb = sbuf_new_for_sysctl(NULL, NULL, buf_size, req);
 	if (sb == NULL) {
-		rc = sb->s_error;
+		/* PBSD: sb is NULL here, so sb->s_error faults.  See
+		 * amd_ntb_hw_info_handler() in ntb_hw_amd.c. */
+		rc = ENOMEM;
 		return (rc);
 	}
 

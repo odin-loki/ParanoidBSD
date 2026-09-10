@@ -1840,9 +1840,15 @@ int mpi3mr_remove_device_from_os(struct mpi3mr_softc *sc, U16 handle)
 	target = mpi3mr_find_target_by_dev_handle(sc->cam_sc, handle);
 	
 	if (!target) {
+		/*
+		 * PBSD: target is NULL in this branch -- that is what the
+		 * branch tests for -- so printing target->per_id faults on
+		 * the "already removed" path.  The handle is the only
+		 * identifier that still exists here.
+		 */
 		mpi3mr_dprint(sc, MPI3MR_INFO,
-			"Device (persistent_id: %d dev_handle: %d) is already removed from driver's list\n",
-			target->per_id, handle);
+			"Device (dev_handle: %d) is already removed from driver's list\n",
+			handle);
 		mpi3mr_rescan_target(sc, NULL);
 		retval = -1;
 		goto out;

@@ -16858,3 +16858,175 @@ from an earlier `if (cm->cm_reply != NULL)` test, then loses the
 relation across `xpt_freeze_simq()` and friends, so the second test
 tells it nothing. That is the "one predicate tested twice across an
 intervening call" class this document has met eight times now.
+
+## The dev shard's NullDereference tail, part one: the branch that proved it null
+
+The dev shard was re-swept whole after the UBO and uninitialised work
+landed (2633 translation units, 60 ERROR all on the record, 361
+findings). What is left is dominated by `core.NullDereference` — 169 of
+the 361, spread over 108 files, most of them singletons. Reading them
+one at a time turned up a shape that had not been named yet, and it is
+the least ambiguous kind of defect there is:
+
+**a pointer dereferenced inside the branch that tested it for NULL.**
+
+Not "may be null on some path". The branch condition *is* `p == NULL`,
+and the body reads `p->field`. Such a line is either dead code or a
+guaranteed fault; there is no third reading. Six of them, in four
+drivers:
+
+```c
+	/* sys/dev/ntb/ntb_hw/ntb_hw_amd.c:696 */
+	sb = sbuf_new_for_sysctl(NULL, NULL, 4096, req);
+	if (sb == NULL)
+		return (sb->s_error);
+```
+
+The intent is clear — report why the sbuf could not be made — but the
+only place that reason is stored is inside the sbuf that does not exist.
+`ENOMEM` is what there is to say. Grepping for the shape found it twice
+more, in `tool_mw_read_fn()` and `tool_mw_trans_read()` in
+`sys/dev/ntb/test/ntb_tool.c`, both reachable from a sysctl.
+
+```c
+	/* sys/dev/mpi3mr/mpi3mr_cam.c:1842 */
+	if (!target) {
+		mpi3mr_dprint(sc, MPI3MR_INFO,
+			"Device (persistent_id: %d dev_handle: %d) is already "
+			"removed from driver's list\n",
+			target->per_id, handle);
+```
+
+`handle` is the only identifier that still exists on that path, and it
+was already an argument.
+
+And four in one function, `sbp_action()` in `sys/dev/firewire/sbp.c`:
+
+```c
+		if (sbp == NULL &&
+			ccb->ccb_h.target_id != CAM_TARGET_WILDCARD) {
+SBP_DEBUG(0)
+			printf("%s:%d:%jx func_code 0x%04x: "
+				"Invalid target (no wildcard)\n",
+				device_get_nameunit(sbp->fd.dev),
+```
+
+`SBP_DEBUG(x)` is `if (debug > x) {`, and `debug = bootverbose`, so
+`boot -v` is enough. The function knows perfectly well that `sbp` can be
+NULL — it opens with `if (sbp != NULL) SBP_LOCK_ASSERT(sbp);`, the
+mapping block is wrapped in `if (sbp != NULL ...)`, and the comment
+above the very branch quoted says "sometimes aimed at the SIM (sc is
+invalid and target is CAM_TARGET_WILDCARD)". Three more of its printfs
+use `sbp->fd.dev` safely, because their func_codes are in the set the
+`sdev == NULL` guard returns for, and `sdev != NULL` implies
+`sbp != NULL`. Those three are left alone; the four that are not in that
+set go through a `sbp_nameunit()` helper that yields `"sbp?"` for a NULL
+softc.
+
+### mpi3mr: a reply frame that is not always there
+
+The same file's `mpi3mr_process_op_reply_desc()` has the more
+interesting version. It handles three reply-descriptor types:
+
+```c
+	U16 ioc_status = MPI3_IOCSTATUS_SUCCESS;
+	Mpi3SCSIIOReply_t *scsi_reply = NULL;
+	...
+	case MPI3_REPLY_DESCRIPT_FLAGS_TYPE_STATUS:
+		ioc_status = status_desc->IOCStatus;	/* no reply frame */
+		break;
+	case MPI3_REPLY_DESCRIPT_FLAGS_TYPE_ADDRESS_REPLY:
+		scsi_reply = mpi3mr_get_reply_virt_addr(sc, *reply_dma);
+		...
+	case MPI3_REPLY_DESCRIPT_FLAGS_TYPE_SUCCESS:
+```
+
+A *status* descriptor is the compact form: it carries an IOCStatus and
+no frame. Only the *success* descriptor is short-circuited before the
+big `switch (ioc_status)` (`if (success_desc) goto out_success;`). A
+status descriptor falls straight through, with `scsi_reply == NULL` and
+an `ioc_status` the controller chose — and every arm of that switch
+except BUSY, INSUFFICIENT_RESOURCES, DEVICE_NOT_THERE and DATA_OVERRUN
+reads the frame. Including `case MPI3_IOCSTATUS_SUCCESS`, which is also
+the initial value of `ioc_status`.
+
+The third one in the same function is the plain pair shape: the throttle
+block does
+
+```c
+		if (target) {
+			tg = target->throttle_group;
+			throttle_enabled_dev = target->io_throttle_enabled;
+		}
+		if ((data_len_blks >= sc->io_throttle_data_length) &&
+		     throttle_enabled_dev) {
+			...
+		} else if (target->io_divert) {
+```
+
+— the `if (target)` that gates `tg` and `throttle_enabled_dev` is the
+same `target`, from the same `mpi3mr_find_target_by_per_id()` that
+returns NULL for a device already gone from the list.
+
+### And one zero-trip loop that is not the usual false positive
+
+`mmc_wait_for_request()`:
+
+```c
+			for (i = 0; i < sc->child_count; i++) {
+				ivar = device_get_ivars(sc->child_list[i]);
+				if (ivar->rca == sc->last_rca)
+					break;
+			}
+			if (ivar->rca != sc->last_rca)
+				return (EINVAL);
+```
+
+`ivar` is declared uninitialised. The test after the loop is correct
+when the loop ran and found nothing — it is the "no card matched"
+answer. When `child_count` is zero the loop never runs and the test
+reads through an uninitialised stack pointer instead. `ivar = NULL` plus
+`ivar == NULL ||` gives the same EINVAL for the same reason, from a
+value that exists.
+
+```
+                firewire+mmc+mpi3mr+ntb
+                before  after
+OK                 35      35
+ERROR               0       0
+findings           22      10
+```
+
+All twelve targeted findings closed. (Three `mmc_calculate_clock`
+`CallAndMessage` findings appear at new line numbers on the after side —
+the same three findings, moved down nine lines by the comment added
+above them.)
+
+### The false positives read on the way, and why each is one
+
+Everything else in this part of the tail is one of the classes already
+catalogued, but three earned their reading:
+
+`evdev_mt_push_slot()` looks like the pair shape — it writes
+`mt != NULL && mt->type_a` in one test and bare `mt->type_a` in the
+next. It is not. `evdev->ev_mt` is set by `evdev_mt_init()`, which
+`evdev_register()` calls whenever `ABS_MT_SLOT` is supported **or**
+`EVDEV_FLAG_MT_TRACK` is set (`evdev.c:315`), and the second test is
+under `EVDEV_FLAG_MT_TRACK`. The first test is reached without either.
+
+`probe_adapters()` in `sys/dev/fb/vga.c` indexes `mp[1]` in two switch
+arms after `if (mp != NULL)` guards only the `bcopy`. The switch is on
+`comp_adpregs(adpstate.regs, mp)`, whose first statement is
+`if ((buf1 == NULL) || (buf2 == NULL)) return COMP_DIFFERENT;` — so
+`mp == NULL` reaches only the `default` arm. The analyser is
+interprocedural within a translation unit but budget-limited, and
+`comp_adpregs()` carries a 64-entry static table and a loop.
+
+`netmap_monitor_del()` guards `if (kring != NULL)` before
+`nm_kr_stop()`, then uses `kring->tx` unguarded in the copy-monitor
+branch. The guard exists for the *zmon* branch, where `kring` is
+reassigned from `nm_zmon_list_head()`; on the copy path it is still the
+caller's argument, and the one caller passes `NMR(pna, s)[i]` under
+`if (pna == NULL) continue;`. A guard placed for one branch reading as
+a warning about both is a legitimate complaint about the code, but it
+is not a defect.

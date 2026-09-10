@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,276 | 81,387 |
+| 8 | `sys` | 14,951 | 10,498,343 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,025** | **114,204** |
+| | **total** | **41,143** | **21,300,092** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -161,7 +161,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.651.23 | `sys/dev/bxe/ecore_sp.c` | 6,647 | 0 | `TODO-PORT` |
 | 8.797.1 | `sys/dev/iwm/if_iwm.c` | 6,639 | 0 | `TODO-PORT` |
 | 8.905.2 | `sys/dev/pms/freebsd/driver/ini/src/agtiapi.c` | 6,608 | 0 | `TODO-PORT` |
-| 8.840.1 | `sys/dev/mpi3mr/mpi3mr.c` | 6,558 | 0 | `TODO-PORT` |
+| 8.840.1 | `sys/dev/mpi3mr/mpi3mr.c` | 6,584 | 0 | `TODO-PORT` |
 | 8.1061.10 | `sys/dev/usb/wlan/if_run.c` | 6,483 | 0 | `TODO-PORT` |
 | 8.959.8 | `sys/dev/qlnx/qlnxe/ecore_dbg_fw_funcs.c` | 6,480 | 0 | `TODO-PORT` |
 | 8.1191.219 | `sys/kern/vfs_cache.c` | 6,475 | 0 | `TODO-PORT` |
@@ -637,7 +637,7 @@ Files with twenty or more macro invocations that look like generators. The
 | 8.1213.131 | `sys/netinet/tcp_subr.c` | 5,049 | 0 | 69 |
 | 1.124.10 | `lib/libc/tests/secure/fortify_uio_test.c` | 936 | 0 | 67 |
 | 8.2.30 | `sys/amd64/amd64/support.S` | 1,998 | 0 | 67 |
-| 8.715.22 | `sys/dev/firewire/sbp.c` | 2,850 | 58 | 67 |
+| 8.715.22 | `sys/dev/firewire/sbp.c` | 2,866 | 59 | 67 |
 | 8.173.2 | `sys/contrib/ck/include/gcc/ppc64/ck_pr.h` | 428 | 0 | 65 |
 | 8.1306.31 | `sys/vm/vm_meter.c` | 568 | 14 | 65 |
 | 8.661.23 | `sys/dev/clk/allwinner/ccu_a31.c` | 974 | 2 | 64 |
@@ -71935,7 +71935,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.715.20.15 `fwip_unicast_input_recycle()` · `TODO-FN`
   - [ ] 8.715.20.16 `fwip_unicast_input()` · `TODO-FN`
 - [ ] **8.715.21** `if_fwipvar.h` · 67L · `TODO-HDR`
-- [ ] **8.715.22** `sbp.c` · 2,850L gen:67 · `TODO-PORT` · 58 fn
+- [ ] **8.715.22** `sbp.c` · 2,866L gen:67 · `TODO-PORT` · 59 fn
   - [ ] 8.715.22.1 `sbp_identify()` · `TODO-FN`
   - [ ] 8.715.22.2 `sbp_probe()` · `TODO-FN`
   - [ ] 8.715.22.3 `sbp_show_sdev_info()` · `TODO-FN`
@@ -71984,16 +71984,17 @@ function; a file with two hundred of them is a project.
   - [ ] 8.715.22.46 `sbp_target_reset()` · `TODO-FN`
   - [ ] 8.715.22.47 `sbp_mgm_timeout()` · `TODO-FN`
   - [ ] 8.715.22.48 `sbp_timeout()` · `TODO-FN`
-  - [ ] 8.715.22.49 `sbp_action()` · `TODO-FN`
-  - [ ] 8.715.22.50 `sbp_execute_ocb()` · `TODO-FN`
-  - [ ] 8.715.22.51 `sbp_poll()` · `TODO-FN`
-  - [ ] 8.715.22.52 `sbp_dequeue_ocb()` · `TODO-FN`
-  - [ ] 8.715.22.53 `SBP_DEBUG()` · `TODO-FN`
-  - [ ] 8.715.22.54 `sbp_enqueue_ocb()` · `TODO-FN`
-  - [ ] 8.715.22.55 `sbp_get_ocb()` · `TODO-FN`
-  - [ ] 8.715.22.56 `sbp_free_ocb()` · `TODO-FN`
-  - [ ] 8.715.22.57 `sbp_abort_ocb()` · `TODO-FN`
-  - [ ] 8.715.22.58 `sbp_abort_all_ocbs()` · `TODO-FN`
+  - [ ] 8.715.22.49 `sbp_nameunit()` · `TODO-FN`
+  - [ ] 8.715.22.50 `sbp_action()` · `TODO-FN`
+  - [ ] 8.715.22.51 `sbp_execute_ocb()` · `TODO-FN`
+  - [ ] 8.715.22.52 `sbp_poll()` · `TODO-FN`
+  - [ ] 8.715.22.53 `sbp_dequeue_ocb()` · `TODO-FN`
+  - [ ] 8.715.22.54 `SBP_DEBUG()` · `TODO-FN`
+  - [ ] 8.715.22.55 `sbp_enqueue_ocb()` · `TODO-FN`
+  - [ ] 8.715.22.56 `sbp_get_ocb()` · `TODO-FN`
+  - [ ] 8.715.22.57 `sbp_free_ocb()` · `TODO-FN`
+  - [ ] 8.715.22.58 `sbp_abort_ocb()` · `TODO-FN`
+  - [ ] 8.715.22.59 `sbp_abort_all_ocbs()` · `TODO-FN`
 - [ ] **8.715.23** `sbp.h` · 205L · `TODO-HDR`
 - [ ] **8.715.24** `sbp_targ.c` · 2,052L gen:5 · `TODO-PORT` · 36 fn
   - [ ] 8.715.24.1 `sbp_targ_identify()` · `TODO-FN`
@@ -86033,7 +86034,7 @@ function; a file with two hundred of them is a project.
 ### 8.837 `sys/dev/mmc`
 
 - [ ] **8.837.1** `bridge.h` · 197L · `TODO-HDR`
-- [ ] **8.837.2** `mmc.c` · 2,588L gen:3 · `TODO-PORT` · 62 fn
+- [ ] **8.837.2** `mmc.c` · 2,597L gen:3 · `TODO-PORT` · 62 fn
   - [ ] 8.837.2.1 `mmc_ms_delay()` · `TODO-FN`
   - [ ] 8.837.2.2 `mmc_probe()` · `TODO-FN`
   - [ ] 8.837.2.3 `mmc_attach()` · `TODO-FN`
@@ -86273,7 +86274,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.840 `sys/dev/mpi3mr`
 
-- [ ] **8.840.1** `mpi3mr.c` · 6,558L · `TODO-PORT`
+- [ ] **8.840.1** `mpi3mr.c` · 6,584L · `TODO-PORT`
 - [ ] **8.840.2** `mpi3mr.h` · 1,012L gen:2 · `TODO-HDR`
 - [ ] **8.840.3** `mpi3mr_app.c` · 2,250L · `TODO-PORT` · 33 fn
   - [ ] 8.840.3.1 `mpi3mr_open()` · `TODO-FN`
@@ -86310,7 +86311,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.840.3.32 `mpi3mr_map_data_buffer_dma()` · `TODO-FN`
   - [ ] 8.840.3.33 `mpi3mr_total_num_ioctl_sges()` · `TODO-FN`
 - [ ] **8.840.4** `mpi3mr_app.h` · 292L · `TODO-HDR`
-- [ ] **8.840.5** `mpi3mr_cam.c` · 2,244L · `TODO-PORT` · 39 fn
+- [ ] **8.840.5** `mpi3mr_cam.c` · 2,250L · `TODO-PORT` · 39 fn
   - [ ] 8.840.5.1 `mpi3mr_map_request()` · `TODO-FN`
   - [ ] 8.840.5.2 `mpi3mr_unmap_request()` · `TODO-FN`
   - [ ] 8.840.5.3 `trigger_reset_from_watchdog()` · `TODO-FN`
@@ -88647,7 +88648,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.865 `sys/dev/ntb/ntb_hw`
 
-- [ ] **8.865.1** `ntb_hw_amd.c` · 1,314L gen:6 · `TODO-PORT` · 57 fn
+- [ ] **8.865.1** `ntb_hw_amd.c` · 1,320L gen:6 · `TODO-PORT` · 57 fn
   - [ ] 8.865.1.1 `bus_space_read_8()` · `TODO-FN`
   - [ ] 8.865.1.2 `bus_space_write_8()` · `TODO-FN`
   - [ ] 8.865.1.3 `amd_ntb_port_number()` · `TODO-FN`
@@ -88857,7 +88858,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.866 `sys/dev/ntb/test`
 
-- [ ] **8.866.1** `ntb_tool.c` · 1,492L gen:4 · `TODO-PORT` · 46 fn
+- [ ] **8.866.1** `ntb_tool.c` · 1,496L gen:4 · `TODO-PORT` · 46 fn
   - [ ] 8.866.1.1 `tool_link_event()` · `TODO-FN`
   - [ ] 8.866.1.2 `tool_db_event()` · `TODO-FN`
   - [ ] 8.866.1.3 `tool_link_event_handler()` · `TODO-FN`
