@@ -87,7 +87,13 @@ static char sbuf[KTR_PARMS][SBUFLEN];
 int
 main(int ac, char **av)
 {
-	u_long parms[KTR_PARMS];
+	/*
+	 * PBSD: the parse below fills parms[0..parm) from the conversions
+	 * the record's format string actually names, and the fprintf at
+	 * the bottom passes all KTR_PARMS of them.  A format with fewer
+	 * than six handed varargs whatever the array held.
+	 */
+	u_long parms[KTR_PARMS] = { 0 };
 	struct ktr_entry *buf;
 	uintmax_t tlast, tnow;
 	unsigned long bufptr;

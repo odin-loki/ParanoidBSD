@@ -19914,3 +19914,47 @@ value.  It is the analyser's per-translation-unit path budget being
 spent differently once five paths stop being explored, not a new defect
 — the kind of thing a raw before/after count hides and a
 `sweep_diff.py` keyed on `(file, checker, function, message)` shows.
+
+## ktrdump(1) and devmatch(8): three varargs that were never written
+
+`ktrdump` parses each record's format string to work out how many
+parameters it names, filling `parms[0..parm)` as it goes, and then
+prints with
+
+```c
+	fprintf(out, desc, parms[0], parms[1], parms[2], parms[3],
+	    parms[4], parms[5]);
+```
+
+`KTR_PARMS` is six.  A record whose format names fewer than six
+conversions leaves the tail of `parms` unwritten, and passes it as
+varargs anyway.  `fprintf` reads only as many as `desc` names, so
+nothing is printed from them — but they are still read to be passed.
+`parms` is declared once, outside the record loop, so the values are
+also whatever the previous record left there.  `= { 0 }` on the
+declaration.
+
+`devmatch -v` prints a line for every table entry it skips, and the
+integer branch's version of it is
+
+```c
+			if (cp[2] == '#') {
+				if (verbose_flag) {
+					printf("Ignoring %s (%c) table=%#x "
+					    "tomatch=%#x\n", cp + 2, *cp, v,
+					    ival);
+				}
+				break;
+			}
+			v = pnpval_as_int(cp + 2, pnpinfo);
+```
+
+`v` is fetched on the line *after* the message.  The string branch has
+a copy of the same message, and there `v` is the integer branch's
+variable, which that path never assigns at all.  Both messages now print
+what they actually have: the integer branch's `ival`, and the string
+branch's `val1`.
+
+Measured over `usr.bin/ktrdump` and `sbin/devmatch`: 6 → 2, two
+translation units OK and no ERROR either side.  All four that closed are
+the four fixed here.

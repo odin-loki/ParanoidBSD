@@ -5064,6 +5064,32 @@ FIXES = {
         "by value with .data never set",
     ),
 
+    "hbsd/src/usr.bin/ktrdump/ktrdump.c": (
+        "u_long parms[KTR_PARMS] = { 0 };",
+        "\tu_long parms[KTR_PARMS];",
+        "the parse fills parms[0..parm) from the conversions the "
+        "record's format string names, and the fprintf at the bottom "
+        "passes all KTR_PARMS of them -- a format with fewer than six "
+        "handed varargs whatever the array held",
+    ),
+
+    "hbsd/src/sbin/devmatch/devmatch.c": [
+        (
+            'printf("Ignoring %s (%c) tomatch=%#x\\n",',
+            None,
+            "search_hints(): the integer branch's `Ignoring' message "
+            "printed v as table=, and v is fetched on the line after "
+            "the message, not before it",
+        ),
+        (
+            'printf("Ignoring %s (%c) tomatch=\'%s\'\\n",',
+            None,
+            "and the string branch's copy of the same message printed "
+            "v, the integer branch's variable, which that path never "
+            "assigns at all",
+        ),
+    ],
+
 }
 
 

@@ -355,8 +355,14 @@ search_hints(const char *bus, const char *dev, const char *pnpinfo)
 							break;
 						if (cp[2] == '#') {
 							if (verbose_flag) {
-								printf("Ignoring %s (%c) table=%#x tomatch=%#x\n",
-								    cp + 2, *cp, v, ival);
+								/*
+								 * PBSD: v is fetched on the
+								 * next line, not before this
+								 * one -- the table value is
+								 * not known here.
+								 */
+								printf("Ignoring %s (%c) tomatch=%#x\n",
+								    cp + 2, *cp, ival);
 							}
 							break;
 						}
@@ -400,8 +406,14 @@ search_hints(const char *bus, const char *dev, const char *pnpinfo)
 							break;
 						if (cp[2] == '#') {
 							if (verbose_flag) {
-								printf("Ignoring %s (%c) table=%#x tomatch=%#x\n",
-								    cp + 2, *cp, v, ival);
+								/*
+								 * PBSD: a string field, and
+								 * v is the integer branch's
+								 * variable -- never assigned
+								 * on this path at all.
+								 */
+								printf("Ignoring %s (%c) tomatch='%s'\n",
+								    cp + 2, *cp, val1);
 							}
 							break;
 						}

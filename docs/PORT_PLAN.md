@@ -54,8 +54,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
-| 4 | `sbin` | 533 | 228,634 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,466 | 4,188 |
+| 4 | `sbin` | 533 | 228,646 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,472 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,650 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,852** | **114,207** |
+| | **total** | **41,143** | **21,300,870** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -16246,7 +16246,7 @@ function; a file with two hundred of them is a project.
 
 ### 4.14 `sbin/devmatch`
 
-- [ ] **4.14.1** `devmatch.c` · 658L · `TODO-PORT` · 13 fn
+- [ ] **4.14.1** `devmatch.c` · 670L · `TODO-PORT` · 13 fn
   - [ ] 4.14.1.1 `read_hints()` · `TODO-FN`
   - [ ] 4.14.1.2 `read_linker_hints()` · `TODO-FN`
   - [ ] 4.14.1.3 `getint()` · `TODO-FN`
@@ -22232,7 +22232,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.103 `usr.bin/ktrdump`
 
-- [ ] **5.103.1** `ktrdump.c` · 404L · `TODO-PORT` · 2 fn
+- [ ] **5.103.1** `ktrdump.c` · 410L · `TODO-PORT` · 2 fn
   - [ ] 5.103.1.1 `main()` · `TODO-FN`
   - [ ] 5.103.1.2 `usage()` · `TODO-FN`
 
