@@ -5153,6 +5153,20 @@ FIXES = {
     ],
 
 
+    "hbsd/src/usr.bin/systat/convtbl.c": (
+        "idx = scale >= SC_BYTE && scale < SC_AUTO ? scale : SC_AUTO;",
+        "idx = scale < SC_AUTO ? scale : SC_AUTO;",
+        "get_tbl_ptr()'s comment says \"if our index is out of range, "
+        "default to auto-scaling\" and the test was half of that: a "
+        "NEGATIVE scale passed it, and &convtbl[idx] is a wild pointer "
+        "both callers dereference at once. The one in-tree caller checks "
+        "get_scale()'s -1 first, so it is the comment being right and "
+        "the test being half of it -- but convert() and get_string() are "
+        "declared taking a plain int and this line is where that range "
+        "is meant to be enforced.",
+    ),
+
+
     "hbsd/src/lib/libcalendar/calendar.c": (
         "nd = (int)(((long long)nd - nmonday) % 7);",
         "nd = (nd - nmonday) % 7;",

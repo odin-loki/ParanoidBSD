@@ -148,6 +148,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
 
 
+SELF_KILL_RE = re.compile(r"\bkill\s*\(\s*getpid\s*\(\s*\)")
+
+
 def terminates_process(path: Path, fn: str) -> bool:
     """Does fn end the process rather than return?
 
@@ -172,16 +175,33 @@ def terminates_process(path: Path, fn: str) -> bool:
     text = noreturn_check.strip_noise(raw)
     lines = text.split("\n")
     ends_with = {}
+    self_kill = set()
     for name, _start, body, end in noreturn_check.definitions(lines):
         callee = noreturn_check.last_call(lines, body, end)
         if callee:
             ends_with[name] = callee
+            # A function that ends by killing ITS OWN process is the same
+            # answer as one that ends in exit(), and noreturn_check.py
+            # does not know it because it is not one in the C sense --
+            # raise() and kill() both return when the signal is blocked
+            # or ignored, so nothing declares them __dead2.
+            #
+            # bsdinstall's reproduce_signal_death() is the shape: it
+            # sets the handler back to SIG_DFL, turns off core dumps,
+            # and kill(getpid(), sig). It was reported CRASH on SIGILL,
+            # which is the function doing precisely what its name says.
+            if callee in ("raise", "abort"):
+                self_kill.add(name)
+            elif callee == "kill" and SELF_KILL_RE.search(
+                    "\n".join(lines[body:end])):
+                self_kill.add(name)
     if fn not in ends_with:
         # It may still be declared __dead2 without ending in a bare call
         # -- a `for (;;)' that never breaks, say.
         return bool(noreturn_check.declared_noreturn(
             text + "\n" + noreturn_check.headers_for(path), fn))
-    noreturn = set(noreturn_check.SEED) | noreturn_check.header_noreturn(path)
+    noreturn = (set(noreturn_check.SEED)
+                | noreturn_check.header_noreturn(path) | self_kill)
     changed = True
     while changed:
         changed = False

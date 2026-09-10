@@ -181,6 +181,20 @@ class TerminatesProcess(unittest.TestCase):
         p = self.write("void\nf(int s)\n{\n\tcleanup();\n\texit(s);\n}\n")
         self.assertTrue(fusebmc.terminates_process(p, "f"))
 
+    def test_a_function_that_kills_its_own_process(self):
+        # bsdinstall's reproduce_signal_death(): SIG_DFL, no core, then
+        # kill(getpid(), sig). Reported CRASH on SIGILL, which is the
+        # function doing precisely what its name says. Neither raise()
+        # nor kill() is __dead2 -- both return when the signal is
+        # blocked -- so noreturn_check.py cannot know this on its own.
+        p = self.write("void\nf(int sig)\n{\n\tsignal(sig, SIG_DFL);\n"
+                       "\tkill(getpid(), sig);\n}\n")
+        self.assertTrue(fusebmc.terminates_process(p, "f"))
+
+    def test_killing_another_process_is_not_the_same(self):
+        p = self.write("void\nf(int sig)\n{\n\tkill(child, sig);\n}\n")
+        self.assertFalse(fusebmc.terminates_process(p, "f"))
+
     def test_a_function_that_returns(self):
         p = self.write("int\nf(int s)\n{\n\tif (s)\n\t\texit(1);\n"
                        "\treturn (s);\n}\n")

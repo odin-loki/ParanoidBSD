@@ -78,8 +78,19 @@ get_tbl_ptr(const uintmax_t size, const int scale)
 	uintmax_t	 tmp;
 	int		 idx;
 
-	/* If our index is out of range, default to auto-scaling. */
-	idx = scale < SC_AUTO ? scale : SC_AUTO;
+	/*
+	 * If our index is out of range, default to auto-scaling.
+	 *
+	 * Both ends: `scale < SC_AUTO' alone lets a NEGATIVE scale
+	 * through, and &convtbl[idx] is then a wild pointer that both
+	 * callers immediately dereference.  The one in-tree caller
+	 * checks get_scale()'s -1 before it stores anything, so this is
+	 * the comment being right and the test being half of it rather
+	 * than a reachable bug -- but convert() and get_string() are
+	 * declared in convtbl.h taking a plain int, and the whole point
+	 * of this line is to be the place that range is enforced.
+	 */
+	idx = scale >= SC_BYTE && scale < SC_AUTO ? scale : SC_AUTO;
 
 	if (idx == SC_AUTO)
 		/*

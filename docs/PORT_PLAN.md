@@ -55,7 +55,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,482 | 4,188 |
+| 5 | `usr.bin` | 732 | 248,493 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,762 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,000** | **114,207** |
+| | **total** | **41,143** | **21,301,011** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -24784,7 +24784,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.200.1.3 `status()` · `TODO-FN`
   - [ ] 5.200.1.4 `prefix()` · `TODO-FN`
 - [ ] **5.200.2** `cmdtab.c` · 86L · `TODO-PORT`
-- [ ] **5.200.3** `convtbl.c` · 151L · `TODO-PORT` · 5 fn
+- [ ] **5.200.3** `convtbl.c` · 162L · `TODO-PORT` · 5 fn
   - [ ] 5.200.3.1 `get_tbl_ptr()` · `TODO-FN`
   - [ ] 5.200.3.2 `convert()` · `TODO-FN`
   - [ ] 5.200.3.3 `get_string()` · `TODO-FN`

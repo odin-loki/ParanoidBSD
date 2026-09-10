@@ -20622,3 +20622,96 @@ after    CLEAN 21  CRASH 2  SANFAIL 1  NOSEED 240  ERROR 4026  NOFUNC 89  NORETU
 Both CRASHes that remain are real and both are the same documented UB:
 negating the most negative value of the type.  Of the three that went,
 one was fixed in the tree and two were the instrument.
+
+## systat(1): the index check that guards one end of a range and says it guards both
+
+`get_tbl_ptr()` in `usr.bin/systat/convtbl.c` opens with a comment
+stating exactly the right invariant, and a test that implements half of
+it:
+
+```c
+	/* If our index is out of range, default to auto-scaling. */
+	idx = scale < SC_AUTO ? scale : SC_AUTO;
+	...
+	return (&convtbl[idx]);
+```
+
+`SC_AUTO` is the last member of `enum scale` and `convtbl[]` is indexed
+by that enum, so the upper bound is right.  There is no lower one.  A
+negative `scale` passes the test unchanged and `&convtbl[idx]` is then a
+wild pointer that both callers dereference at once — `convert()` reads
+`tp->mul` and `tp->scale`, `get_string()` reads `tp->str` and returns it.
+
+The one in-tree caller does check.  `ifcmds.c` has
+
+```c
+	if ((scale = get_scale(args)) != -1)
+```
+
+and `get_scale()`'s `-1` is the only negative that arises, so nothing
+reaches the table out of range today.  But `convert()` and
+`get_string()` are declared in `convtbl.h` taking a plain `int`, and
+this line is the place that range is meant to be enforced — the comment
+says so.  Bounded at both ends:
+
+```c
+	idx = scale >= SC_BYTE && scale < SC_AUTO ? scale : SC_AUTO;
+```
+
+Found by CBMC's counterexample, replayed: `convert(0, -32758)` and
+`get_string(0, INT_MIN + 9)`.  **The analyser has no finding here** —
+`usr.bin/systat` measures 5 → 5 across 26 translation units, no `ERROR`
+either side — and that is the point of running a third engine.  Both
+functions are `CLEAN` on the same budget after.
+
+## bsdinstall: a function whose job is to die by a signal
+
+`reproduce_signal_death()` sets the handler back to `SIG_DFL`, turns off
+core dumps, and calls `kill(getpid(), sig)`.  It was reported `CRASH` on
+`SIGILL`, which is the function doing precisely what its name says.
+
+`terminates_process()` already covered the `exit()` family through
+`noreturn_check.py`, and could not cover this one: neither `raise()` nor
+`kill()` is `__dead2`, because both return when the signal is blocked or
+ignored.  So nothing in the C declarations says what the function does,
+and the answer has to come from the last statement of the body — a call
+to `raise()` or `abort()`, or a `kill()` whose target is `getpid()`.
+`kill(child, sig)` is deliberately not the same answer.
+
+It is `NORETURN` now, which is a status this engine already had for
+exactly this reason.
+
+## The progs scopes, first pass
+
+17,838 (translation unit, function) pairs over `bin`, `sbin`, `usr.bin`
+and `usr.sbin`, `--jobs 4 --budget 20`:
+
+```
+CLEAN 14  CRASH 3  ERROR 16385  NOFUNC 132  NORETURN 623  NOSEED 681
+```
+
+Three CRASHes, all read: two are the `convtbl` bound above and the third
+is `reproduce_signal_death`.  Fourteen `CLEAN`, which is worth nothing
+and is never reported as if it were.
+
+The shape of the 16,385:
+
+| why ERROR | pairs |
+|---|---|
+| a pointer, array or varargs parameter | 13,394 |
+| harness compile: a header the host path lacks | 1,920 |
+| harness compile: other | 450 |
+| a type not in the scalar table | 448 |
+| harness link: needs the rest of the program | 160 |
+
+`623 NORETURN` is the number that says most about these scopes as
+opposed to `lib/libc`: a program is full of `usage()`, `errx()` and
+their local wrappers, and every one of them is a function a fuzzer
+cannot distinguish from a crash.  Eleven in `lib/libc` and `lib/msun`;
+623 here.
+
+The 160 link failures are the honest bound on this engine in a program
+directory.  A function in `sbin/ipfw/tables.c` is compiled and linked
+*with the rest of ipfw*; on its own it names symbols that live in the
+other twenty translation units, and the harness gets the linker's own
+words rather than a number that pretends otherwise.
