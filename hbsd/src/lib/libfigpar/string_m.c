@@ -215,7 +215,19 @@ void strexpand(char *source)
 			*pos = (c != 0 || d[0] == '0') ? c : *++chr;
 			break;
 		case '0': /* octal value (0 to 3 digits)(\0NNN) */
-			d[3] = '\0'; /* pre-terminate the string */
+			/*
+			 * PBSD: all four, not just d[3].  d[1] is written
+			 * only inside `if (d[0] != '\0')', and `if (d[1] !=
+			 * '\0')' below tests it either way -- so with no
+			 * octal digit after the backslash-zero the test read
+			 * an indeterminate byte, and when it happened to be
+			 * non-zero the line after it did `*++chr', eating a
+			 * character of the string that is not part of the
+			 * escape.  The hex case above has the same shape and
+			 * is safe by accident: it never TESTS d[1], and
+			 * strtoul() stops at d[0].
+			 */
+			d[0] = d[1] = d[2] = d[3] = '\0';
 
 			/* verify next three characters are octal */
 			d[0] = (isdigit(*(chr+1)) && *(chr+1) < '8') ?

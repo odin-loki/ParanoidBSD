@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,961 | 9,056 |
+| 1 | `lib` | 2,827 | 639,993 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,319** | **114,207** |
+| | **total** | **41,143** | **21,301,351** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -6589,7 +6589,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.139.1.14 `cam_device_dup()` · `TODO-FN`
   - [ ] 1.139.1.15 `cam_device_copy()` · `TODO-FN`
 - [ ] **1.139.2** `camlib.h` · 181L · `TODO-HDR`
-- [ ] **1.139.3** `scsi_cmdparse.c` · 860L · `TODO-PORT` · 12 fn
+- [ ] **1.139.3** `scsi_cmdparse.c` · 868L · `TODO-PORT` · 12 fn
   - [ ] 1.139.3.1 `do_buff_decode()` · `TODO-FN`
   - [ ] 1.139.3.2 `next_field()` · `TODO-FN`
   - [ ] 1.139.3.3 `do_encode()` · `TODO-FN`
@@ -7429,11 +7429,11 @@ function; a file with two hundred of them is a project.
 
 ### 1.178 `lib/libfigpar`
 
-- [ ] **1.178.1** `figpar.c` · 465L · `TODO-PORT` · 2 fn
+- [ ] **1.178.1** `figpar.c` · 477L · `TODO-PORT` · 2 fn
   - [ ] 1.178.1.1 `get_config_option()` · `TODO-FN`
   - [ ] 1.178.1.2 `parse_config()` · `TODO-FN`
 - [ ] **1.178.2** `figpar.h` · 98L · `TODO-HDR`
-- [ ] **1.178.3** `string_m.c` · 305L · `TODO-PORT` · 5 fn
+- [ ] **1.178.3** `string_m.c` · 317L · `TODO-PORT` · 5 fn
   - [ ] 1.178.3.1 `strcount()` · `TODO-FN`
   - [ ] 1.178.3.2 `replaceall()` · `TODO-FN`
   - [ ] 1.178.3.3 `strtolower()` · `TODO-FN`

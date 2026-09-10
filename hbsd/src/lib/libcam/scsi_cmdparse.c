@@ -370,6 +370,18 @@ next_field(const char **pp, char *fmt, int *width_p, int *value_p, char *name,
 		DONE,
 	} state;
 
+	/*
+	 * PBSD: value stays 0 until this function computes one.  Four
+	 * arms -- `v', `i', `t' and the `v' after a seek -- used to do
+	 * `value = *value_p' first, reading the caller's OUTPUT
+	 * parameter as if it were an input.  do_encode() declares it as
+	 * a bare `int value' and never writes it before the call, so
+	 * that was a read of an indeterminate object; and it was dead,
+	 * because every one of those four arms sets something = 2, the
+	 * function returns it, and `if (ret == 2)' in do_encode()
+	 * replaces value with the argument or with 0.  A round trip of
+	 * garbage back to its owner.
+	 */
 	int value = 0;
 	int field_size;		/* Default to byte field type... */
 	int field_width;	/* 1 byte wide */
@@ -425,14 +437,12 @@ next_field(const char **pp, char *fmt, int *width_p, int *value_p, char *name,
 			} else if (tolower(*p) == 'v') {
 				p++;
 				something = 2;
-				value = *value_p;
 				state = START_FIELD;
 			} else if (tolower(*p) == 'i') {
 				/*
 				 * Try to work without the "v".
 				 */
 				something = 2;
-				value = *value_p;
 				p++;
 
 				*fmt = 'i';
@@ -448,7 +458,6 @@ next_field(const char **pp, char *fmt, int *width_p, int *value_p, char *name,
 				 * bit field.
 				 */
 				something = 2;
-				value = *value_p;
 				p++;
 
 				*fmt = 'b';
@@ -463,8 +472,7 @@ next_field(const char **pp, char *fmt, int *width_p, int *value_p, char *name,
 				if (tolower(*p) == 'v') {
 					p++;
 					something = 2;
-					value = *value_p;
-				} else {
+					} else {
 					something = 1;
 					value = strtol(p, &intendp, 0);
 					p = intendp;

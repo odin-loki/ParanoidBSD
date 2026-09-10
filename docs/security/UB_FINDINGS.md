@@ -22798,3 +22798,98 @@ the same operator.  Zero is what *"the kernel reported no count"* means,
 and matches the `struct snl_errmsg_data e = {}` two lines above each of
 them.  `lib/libpfctl`: 5 findings → 3, and the two that remain are the
 `return (errno)` family via `_pfctl_get_limit()`.
+
+## Three parsers, and a round trip of garbage back to its owner
+
+### `next_field`: reading the caller's OUTPUT parameter as an input
+
+`lib/libcam/scsi_cmdparse.c` is `camcontrol(8)`'s SCSI command format
+string engine.  `next_field()` parses one field and hands the result
+back through `*value_p`.  Four of its arms — `v`, `i`, `t` and the `v`
+after a seek — began with
+
+```c
+	value = *value_p;
+```
+
+reading the caller's *output* parameter as if it were an input.
+`do_encode()` declares it as a bare `int value` and never writes it
+before the call, so that was a read of an indeterminate object.
+
+And a **dead** one: every one of those four arms sets `something = 2`,
+the function returns it, and `if (ret == 2)` in `do_encode()` replaces
+`value` with the `va_arg` or with zero.  A round trip of garbage back to
+its owner.  `next_field`'s own `int value = 0` already had the right
+answer.  `lib/libcam`: **4 findings → 0**.
+
+### `parse_config`: one character of input crashed it
+
+`lib/libfigpar` parses `rc.conf`-shaped configuration files.
+
+```c
+		/* Find the length of the directive */
+		for (n = 0; r != 0; n++) {
+			if (isspace(*p))
+				break;
+			if (bequals && *p == '=') {
+				have_equals = 1;
+				break;
+			}
+			...
+		}
+		if (n == 0 && r == 0) { ... return (0); }
+		...
+		if (n > dsize) {
+			if ((directive = realloc(directive, n + 1)) == NULL) {
+```
+
+The length loop breaks at `n == 0` when the first character is `=` — the
+`have_equals` arm stops it before its first `read(2)`.  `n == 0` with
+`r != 0` falls past the EOF test.  And with `dsize` also zero, `n >
+dsize` is false, so the buffer is **never allocated** — and four lines
+down,
+
+```c
+		directive[n] = '\0';
+```
+
+writes through NULL.  A configuration file whose first directive line
+begins with `=` crashed the parser.  The value buffer has the identical
+shape at `n > vsize`.
+
+### `strexpand`: an escape that eats a character it was not given
+
+Same library, the function that resolves `\n`, `\xNN` and `\0NNN` in a
+parsed value.
+
+```c
+		case '0': /* octal value (0 to 3 digits)(\0NNN) */
+			d[3] = '\0'; /* pre-terminate the string */
+
+			d[0] = (isdigit(*(chr+1)) && *(chr+1) < '8') ? *++chr : '\0';
+			if (d[0] != '\0')
+				d[1] = (isdigit(*(chr+1)) && *(chr+1) < '8') ? *++chr : '\0';
+			if (d[1] != '\0')
+				d[2] = (isdigit(*(chr+1)) && *(chr+1) < '8') ? *++chr : '\0';
+```
+
+`d[1]` is written only inside `if (d[0] != '\0')`, and the next test
+reads it either way.  With no octal digit after the backslash-zero,
+`if (d[1] != '\0')` reads an **indeterminate byte** — and when it
+happens to be non-zero, the line after it does `*++chr`, eating a
+character of the string that is not part of the escape.  The result of
+`strtoul()` is zero either way; what changes is how much input the
+expander consumed, non-deterministically.
+
+The hex case four lines above has the same shape and is safe by
+accident: it never *tests* `d[1]`, and `strtoul()` stops at `d[0]`.
+
+All four bytes are pre-terminated now, which is what the author's own
+*"pre-terminate the string"* comment was reaching for.  `lib/libfigpar`:
+**4 findings → 1**.
+
+The one that remains is not a spot fix and is recorded as what it is:
+`parse_config()` never frees `directive` or `value` on **any** of its
+twenty-odd `return` paths, and `return (-1)` at `:413` does not even
+`close(fd)`.  That is a single-exit refactor of a function in a
+component `MK_DIALOG` gates off by default, and it is its own change.

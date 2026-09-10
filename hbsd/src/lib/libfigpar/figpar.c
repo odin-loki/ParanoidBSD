@@ -191,8 +191,20 @@ parse_config(struct figpar_config options[], const char *path,
 			return (-1);
 		}
 
-		/* Allocate and read the directive into memory */
-		if (n > dsize) {
+		/*
+		 * Allocate and read the directive into memory.
+		 *
+		 * PBSD: `directive == NULL ||' as well.  The length loop
+		 * above breaks at n == 0 when the first character is `='
+		 * -- have_equals is set and the loop stops before its
+		 * first read(2) -- and n == 0 with r != 0 falls past the
+		 * EOF test.  With dsize also 0 the test `n > dsize' was
+		 * false, the buffer was never allocated, and
+		 * `directive[n] = 0' four lines down wrote through NULL.
+		 * A configuration file whose first directive line begins
+		 * with `=' crashed the parser.
+		 */
+		if (directive == NULL || n > dsize) {
 			if ((directive = realloc(directive, n + 1)) == NULL) {
 				close(fd);
 				return (-1);
@@ -365,7 +377,7 @@ parse_config(struct figpar_config options[], const char *path,
 		}
 
 		/* Allocate and read the value into memory */
-		if (n > vsize) {
+		if (value == NULL || n > vsize) {	/* see directive, above */
 			if ((value = realloc(value, n + 1)) == NULL) {
 				close(fd);
 				return (-1);

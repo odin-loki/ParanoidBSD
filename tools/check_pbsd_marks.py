@@ -2621,6 +2621,51 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libfigpar/figpar.c": (
+        "if (directive == NULL || n > dsize) {",
+        "\t\tif (n > dsize) {",
+        "parse_config() measures a directive with `for (n = 0; r != 0; "
+        "n++)' and breaks at n == 0 when the first character is `=' -- "
+        "have_equals is set and the loop stops before its first read(2). "
+        "n == 0 with r != 0 falls past the EOF test below it, and with "
+        "dsize also 0 the test `n > dsize' was false, so the buffer was "
+        "never allocated and `directive[n] = 0' four lines down wrote "
+        "through NULL. A configuration file whose first directive line "
+        "begins with `=' crashed the parser -- one character of input. "
+        "The value buffer had the identical shape at `n > vsize'. Two "
+        "clang core.NullDereference, figpar.c:213 and :378.",
+    ),
+    "hbsd/src/lib/libfigpar/string_m.c": (
+        "d[0] = d[1] = d[2] = d[3] = '\\0';",
+        "\t\t\td[3] = '\\0'; /* pre-terminate the string */",
+        "strexpand()'s octal escape wrote d[1] only inside `if (d[0] != "
+        "'\\0')' and then tested `if (d[1] != '\\0')' either way -- so "
+        "with no octal digit after the backslash-zero the test read an "
+        "INDETERMINATE byte, and when it happened to be non-zero the "
+        "line after it did `*++chr', eating a character of the string "
+        "that is not part of the escape. The hex case above has the same "
+        "shape and is safe by accident: it never TESTS d[1], and "
+        "strtoul() stops at d[0]. All four bytes are pre-terminated now, "
+        "which is what the author's own `pre-terminate the string' "
+        "comment was reaching for. clang "
+        "core.UndefinedBinaryOperatorResult, string_m.c:226.",
+    ),
+    "hbsd/src/lib/libcam/scsi_cmdparse.c": (
+        "\t * PBSD: value stays 0 until this function computes one.",
+        "\t\t\t\tvalue = *value_p;",
+        "next_field() parses one field of camcontrol(8)'s SCSI command "
+        "format string and hands the result back through *value_p. Four "
+        "of its arms -- `v', `i', `t' and the `v' after a seek -- began "
+        "with `value = *value_p', READING the caller's output parameter "
+        "as if it were an input. do_encode() declares it as a bare `int "
+        "value' and never writes it before the call, so that was a read "
+        "of an indeterminate object -- and a dead one, because every "
+        "one of those four arms sets something = 2, the function returns "
+        "it, and `if (ret == 2)' in do_encode() replaces value with the "
+        "va_arg or with 0. A round trip of garbage back to its owner. "
+        "next_field's own `int value = 0' already had the right answer. "
+        "Four clang core.uninitialized.Assign; lib/libcam 4 -> 0.",
+    ),
     "hbsd/src/lib/libugidfw/ugidfw.c": [
         (
             "\t\tif (**ap != '\\0') {\n\t\t\targc++;",
