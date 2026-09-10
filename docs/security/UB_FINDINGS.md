@@ -20945,3 +20945,98 @@ and the solver got further on the second, reaching the
 `_rs_initialize_fxrng` dereference described above.  A `TIMEOUT` that
 becomes a verdict is the instrument finishing, not the tree changing —
 and the same jitter is the whole of the `ERROR` and `TIMEOUT` ±1.
+
+## sqrt(0x1p-1043): a shift by the whole width of the operand
+
+`e_sqrt.c`'s subnormal normalisation:
+
+```c
+	while(ix0==0) {
+	    m -= 21;
+	    ix0 |= (ix1>>11); ix1 <<= 21;
+	}
+	for(i=0;(ix0&0x00100000)==0;i++) ix0<<=1;
+	m -= i-1;
+	ix0 |= (ix1>>(32-i));
+	ix1 <<= i;
+```
+
+`ix1` is `u_int32_t`, so `ix1>>32` is a shift by the operand's whole
+width — undefined, C11 6.5.7p3.  The reachability is not exotic.  The
+`while` loop exits as soon as `ix0` is nonzero and it fills `ix0` from
+`ix1>>11`; an `ix1` with bit 31 set therefore puts **bit 20** of `ix0`
+in place on the very first pass, the `for` loop's condition is already
+false, and `i` stays 0.
+
+`x = 0x0000000080000000` — the subnormal whose mantissa is exactly
+2<sup>31</sup> — does that:
+
+```
+after while: ix0=0x100000 ix1=0  i=0  -> shift distance 32
+```
+
+A 32-bit value shifted right by 32 means "everything out", so the
+guarded form is what the unguarded one was trying to say — `ix0 |= 0`
+and `ix1 <<= 0` are both no-ops:
+
+```c
+	if(i!=0) {
+	    ix0 |= (ix1>>(32-i));
+	    ix1 <<= i;
+	}
+```
+
+The whole routine was then run against the host's `sqrt` over every
+power-of-two bit pattern and the first 4,000 subnormals — 4,051 inputs,
+**0 mismatches**, bit for bit.
+
+On x86 the hardware masks the shift count to 5 bits, so `ix1 >> 32` has
+been quietly computing `ix1 >> 0` and, with `ix1` zero on that path,
+giving the right answer by accident.  That is what undefined behaviour
+looks like right up until a compiler or an architecture disagrees.
+
+## libcalendar: `y % 19` is negative for every year before 1
+
+```c
+	int     mc[] = {5, 25, 13, 2, 22, 10, 30, 18, 7, 27, 15, 4,
+		    24, 12, 1, 21, 9, 29, 17};
+	...
+	dt.d = mc[y % 19];
+```
+
+C's `%` keeps the sign of the dividend, so `easterodn(-5)` reads
+`mc[-5]`.  `easterog()` and `easteroj()` are public entry points taking
+a plain `int` year with no stated domain, and the rest of the library
+does handle years before 1.  The metonic cycle is periodic mod 19, so
+the Euclidean remainder is also the mathematically right index and
+nothing at or above zero changes:
+
+```c
+	dt.d = mc[((y % 19) + 19) % 19];
+```
+
+### A FAILED that stays FAILED can still have lost a property
+
+Neither verdict moves — both functions are still `FAILED` — and the
+per-property list is the measurement, not the verdict:
+
+```
+sqrt        before  line 116 division by zero in (x - x) / (x - x)
+                    line 127 shift distance too large in ix1 >> 32 - i
+            after   line 116 division by zero in (x - x) / (x - x)
+
+easterodn   before  line  89 array 'mc' lower bound in mc[y % 19]
+                    line 100 array 'ns' lower bound in ns[weekday]
+                    line 100 array 'ns' upper bound in ns[weekday]
+                    line 100 arithmetic overflow in dn + ns[weekday]
+            after   line 111 array 'ns' lower bound in ns[weekday]
+                    line 111 array 'ns' upper bound in ns[weekday]
+                    line 111 arithmetic overflow in dn + ns[weekday]
+```
+
+Exactly the two properties closed and nothing else moved.  The `ns[]`
+bounds that remain are the unseen-callee family again: `weekday()` lives
+in `calendar.c` and `easterodn()` in `easter.c`, so CBMC models the
+return as any `int` rather than the 0–6 it actually is.  Reporting the
+verdict alone would have said "no change" about a fix that closed a real
+out-of-bounds read.

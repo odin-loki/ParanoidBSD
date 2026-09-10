@@ -85,8 +85,19 @@ easterodn(int y)
 	date	dt;
 	int     dn;
 
-	/* Assign the easter limit of y to dt */
-	dt.d = mc[y % 19];
+	/*
+	 * Assign the easter limit of y to dt.
+	 *
+	 * The remainder is taken twice because C's % keeps the sign of
+	 * the dividend: y % 19 is NEGATIVE for every negative year, and
+	 * mc[] is then indexed out of bounds.  easterog() and easteroj()
+	 * are public entry points taking a plain int year with no stated
+	 * domain, and the rest of this library does handle years before
+	 * 1.  The metonic cycle is periodic mod 19, so the Euclidean
+	 * remainder is also the mathematically right index; nothing at
+	 * or above zero changes.
+	 */
+	dt.d = mc[((y % 19) + 19) % 19];
 
 	if (dt.d < 21)
 		dt.m = 4;

@@ -5217,6 +5217,34 @@ FIXES = {
     ),
 
 
+    "hbsd/src/lib/msun/src/e_sqrt.c": (
+        "if(i!=0) {",
+        "\t    ix0 |= (ix1>>(32-i));\n\t    ix1 <<= i;",
+        "sqrt()'s subnormal normalisation did ix1>>(32-i) with i "
+        "reachable at zero, which is a shift by the operand's whole "
+        "width: undefined. The while loop above exits as soon as ix0 is "
+        "nonzero and fills ix0 from ix1>>11, so an ix1 with bit 31 set "
+        "puts bit 20 of ix0 in place on the first pass and the for loop "
+        "never runs its body. x = 0x0000000080000000 -- the subnormal "
+        "whose mantissa is 2^31 -- does exactly that. Guarded; the "
+        "guarded form is what the unguarded one meant, and 4,051 "
+        "subnormal inputs give bit-identical results either way.",
+    ),
+
+    "hbsd/src/lib/libcalendar/easter.c": (
+        "dt.d = mc[((y % 19) + 19) % 19];",
+        "dt.d = mc[y % 19];",
+        "C's % keeps the sign of the dividend, so y % 19 is negative "
+        "for every negative year and mc[] was indexed out of bounds. "
+        "easterog() and easteroj() are public entry points taking a "
+        "plain int year with no stated domain, and the rest of this "
+        "library does handle years before 1. The metonic cycle is "
+        "periodic mod 19, so the Euclidean remainder is also the "
+        "mathematically right index and nothing at or above zero "
+        "changes.",
+    ),
+
+
     "hbsd/src/lib/libcalendar/calendar.c": (
         "nd = (int)(((long long)nd - nmonday) % 7);",
         "nd = (nd - nmonday) % 7;",

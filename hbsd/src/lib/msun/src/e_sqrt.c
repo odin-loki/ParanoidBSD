@@ -124,8 +124,21 @@ sqrt(double x)
 	    }
 	    for(i=0;(ix0&0x00100000)==0;i++) ix0<<=1;
 	    m -= i-1;
-	    ix0 |= (ix1>>(32-i));
-	    ix1 <<= i;
+	    /*
+	     * i == 0 is reachable and `ix1>>32' is undefined.  The while
+	     * loop above exits as soon as ix0 is nonzero, and it fills
+	     * ix0 from `ix1>>11' -- so an ix1 with bit 31 set puts bit 20
+	     * of ix0 in place on the first pass and the for loop above
+	     * never runs its body.  x = 0x0000000080000000, the subnormal whose
+	     * mantissa is 2^31, does exactly that.  A shift of a 32-bit
+	     * value by 32 means "everything out", so the guarded form is
+	     * what the unguarded one was trying to say: ix0 |= 0 and
+	     * ix1 <<= 0 are both no-ops.
+	     */
+	    if(i!=0) {
+		ix0 |= (ix1>>(32-i));
+		ix1 <<= i;
+	    }
 	}
 	m -= 1023;	/* unbias exponent */
 	ix0 = (ix0&0x000fffff)|0x00100000;
