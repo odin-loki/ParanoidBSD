@@ -251,6 +251,15 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 	const uint16_t *tp;
 
 	/*
+	 * PBSD: an empty list has no lower or upper index, and both reads
+	 * below (lp[0] and ep[-1]) would be out of bounds.
+	 */
+	if (listSize == 0) {
+		*vlo = *vhi = 0;
+		return;
+	}
+
+	/*
 	 * Check first and last elements for out-of-bounds conditions.
 	 */
 	if (target < lp[0]) {
@@ -263,7 +272,7 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 	}
 
 	/* look for value being near or between 2 values in list */
-	for (tp = lp; tp < ep; tp++) {
+	for (tp = lp; tp + 1 < ep; tp++) {
 		/*
 		 * If value is close to the current value of the list
 		 * then target is not between values, it is one of the values
@@ -282,6 +291,14 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 			return;
 		}
 	}
+	/*
+	 * PBSD: the loop above stops one short of the end because its
+	 * second test reads tp[1].  With the list sorted ascending, as
+	 * the comment above requires, target < ep[-1] holds here so the
+	 * loop always returns; answer with the last index if it does not,
+	 * rather than leaving both outputs unwritten.
+	 */
+	*vlo = *vhi = listSize - 1;
 }
 
 /*

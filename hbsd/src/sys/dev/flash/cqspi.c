@@ -334,9 +334,18 @@ static int
 cqspi_wait_ready(struct cqspi_softc *sc)
 {
 	uint8_t data;
+	int ret;
 
 	do {
-		cqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);
+		/*
+		 * PBSD: cqspi_cmd_read() returns before writing data when
+		 * the controller reports an error, and this ignored that
+		 * -- the loop then spun on, or fell out of, a garbage
+		 * status byte.
+		 */
+		ret = cqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);
+		if (ret != 0)
+			return (ret);
 	} while (data & STATUS_WIP);
 
 	return (0);

@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,688 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,974 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,358** | **114,204** |
+| | **total** | **41,143** | **21,299,644** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -104,7 +104,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.903.2 | `sys/dev/pms/RefTisa/tisa/sassata/sata/host/sat.c` | 23,309 | 0 | `TODO-PORT` |
 | 8.897.6 | `sys/dev/pms/RefTisa/sat/src/smsat.c` | 20,820 | 0 | `TODO-PORT` |
 | 8.651.7 | `sys/dev/bxe/bxe.c` | 19,454 | 0 | `TODO-PORT` |
-| 8.651.12 | `sys/dev/bxe/bxe_elink.c` | 15,119 | 0 | `TODO-PORT` |
+| 8.651.12 | `sys/dev/bxe/bxe_elink.c` | 15,128 | 0 | `TODO-PORT` |
 | 8.1304.7 | `sys/ufs/ffs/ffs_softdep.c` | 15,021 | 0 | `TODO-PORT` |
 | 8.1218.1 | `sys/netinet/tcp_stacks/bbr.c` | 14,870 | 0 | `TODO-PORT` |
 | 8.71.1 | `sys/cam/ctl/ctl.c` | 14,553 | 0 | `TODO-PORT` |
@@ -62042,7 +62042,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.620.9.11 `ar5211SetRxFilter()` · `TODO-FN`
   - [ ] 8.620.9.12 `ar5211SetupRxDesc()` · `TODO-FN`
   - [ ] 8.620.9.13 `ar5211ProcRxDesc()` · `TODO-FN`
-- [ ] **8.620.10** `ar5211_reset.c` · 2,121L · `TODO-PORT` · 36 fn
+- [ ] **8.620.10** `ar5211_reset.c` · 2,142L · `TODO-PORT` · 36 fn
   - [ ] 8.620.10.1 `ar5211Reset()` · `TODO-FN`
   - [ ] 8.620.10.2 `ar5211PhyDisable()` · `TODO-FN`
   - [ ] 8.620.10.3 `ar5211Disable()` · `TODO-FN`
@@ -62108,7 +62108,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.621 `sys/dev/ath/ath_hal/ar5212`
 
-- [ ] **8.621.1** `ar2316.c` · 764L gen:1 · `TODO-PORT` · 15 fn
+- [ ] **8.621.1** `ar2316.c` · 781L gen:1 · `TODO-PORT` · 15 fn
   - [ ] 8.621.1.1 `ar2316WriteRegs()` · `TODO-FN`
   - [ ] 8.621.1.2 `ar2316SetChannel()` · `TODO-FN`
   - [ ] 8.621.1.3 `ar2316SetRfRegs()` · `TODO-FN`
@@ -62124,7 +62124,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.621.1.13 `ar2316RfDetach()` · `TODO-FN`
   - [ ] 8.621.1.14 `ar2316RfAttach()` · `TODO-FN`
   - [ ] 8.621.1.15 `ar2316Probe()` · `TODO-FN`
-- [ ] **8.621.2** `ar2317.c` · 742L gen:1 · `TODO-PORT` · 15 fn
+- [ ] **8.621.2** `ar2317.c` · 759L gen:1 · `TODO-PORT` · 15 fn
   - [ ] 8.621.2.1 `ar2317WriteRegs()` · `TODO-FN`
   - [ ] 8.621.2.2 `ar2317SetChannel()` · `TODO-FN`
   - [ ] 8.621.2.3 `ar2317SetRfRegs()` · `TODO-FN`
@@ -62140,7 +62140,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.621.2.13 `ar2317RfDetach()` · `TODO-FN`
   - [ ] 8.621.2.14 `ar2317RfAttach()` · `TODO-FN`
   - [ ] 8.621.2.15 `ar2317Probe()` · `TODO-FN`
-- [ ] **8.621.3** `ar2413.c` · 757L gen:1 · `TODO-PORT` · 15 fn
+- [ ] **8.621.3** `ar2413.c` · 774L gen:1 · `TODO-PORT` · 15 fn
   - [ ] 8.621.3.1 `ar2413WriteRegs()` · `TODO-FN`
   - [ ] 8.621.3.2 `ar2413SetChannel()` · `TODO-FN`
   - [ ] 8.621.3.3 `ar2413SetRfRegs()` · `TODO-FN`
@@ -62156,7 +62156,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.621.3.13 `ar2413RfDetach()` · `TODO-FN`
   - [ ] 8.621.3.14 `ar2413RfAttach()` · `TODO-FN`
   - [ ] 8.621.3.15 `ar2413Probe()` · `TODO-FN`
-- [ ] **8.621.4** `ar2425.c` · 719L gen:1 · `TODO-PORT` · 15 fn
+- [ ] **8.621.4** `ar2425.c` · 736L gen:1 · `TODO-PORT` · 15 fn
   - [ ] 8.621.4.1 `ar2425WriteRegs()` · `TODO-FN`
   - [ ] 8.621.4.2 `ar2425SetChannel()` · `TODO-FN`
   - [ ] 8.621.4.3 `ar2425SetRfRegs()` · `TODO-FN`
@@ -62187,7 +62187,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.621.5.12 `ar5111RfDetach()` · `TODO-FN`
   - [ ] 8.621.5.13 `ar5111RfAttach()` · `TODO-FN`
   - [ ] 8.621.5.14 `ar5111Probe()` · `TODO-FN`
-- [ ] **8.621.6** `ar5112.c` · 890L gen:1 · `TODO-PORT` · 15 fn
+- [ ] **8.621.6** `ar5112.c` · 907L gen:1 · `TODO-PORT` · 15 fn
   - [ ] 8.621.6.1 `ar5112WriteRegs()` · `TODO-FN`
   - [ ] 8.621.6.2 `ar5112SetChannel()` · `TODO-FN`
   - [ ] 8.621.6.3 `ar5112GetRfBank()` · `TODO-FN`
@@ -62346,7 +62346,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.621.18.11 `ar5212SetRxFilter()` · `TODO-FN`
   - [ ] 8.621.18.12 `ar5212SetupRxDesc()` · `TODO-FN`
   - [ ] 8.621.18.13 `ar5212ProcRxDesc()` · `TODO-FN`
-- [ ] **8.621.19** `ar5212_reset.c` · 2,799L · `TODO-PORT` · 38 fn
+- [ ] **8.621.19** `ar5212_reset.c` · 2,817L · `TODO-PORT` · 38 fn
   - [ ] 8.621.19.1 `write_common()` · `TODO-FN`
   - [ ] 8.621.19.2 `ar5212Reset()` · `TODO-FN`
   - [ ] 8.621.19.3 `ar5212SetChannel()` · `TODO-FN`
@@ -62422,7 +62422,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.621.23** `ar5212phy.h` · 360L · `TODO-HDR`
 - [ ] **8.621.24** `ar5212reg.h` · 1,007L · `TODO-HDR`
 - [ ] **8.621.25** `ar5311reg.h` · 51L · `TODO-HDR`
-- [ ] **8.621.26** `ar5413.c` · 802L gen:1 · `TODO-PORT` · 15 fn
+- [ ] **8.621.26** `ar5413.c` · 819L gen:1 · `TODO-PORT` · 15 fn
   - [ ] 8.621.26.1 `ar5413WriteRegs()` · `TODO-FN`
   - [ ] 8.621.26.2 `ar5413SetChannel()` · `TODO-FN`
   - [ ] 8.621.26.3 `ar5413SetRfRegs()` · `TODO-FN`
@@ -64484,7 +64484,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.645.25.14 `bhnd_nvram_store_setvar()` · `TODO-FN`
   - [ ] 8.645.25.15 `bhnd_nvram_store_unsetvar()` · `TODO-FN`
 - [ ] **8.645.26** `bhnd_nvram_store.h` · 92L · `TODO-HDR`
-- [ ] **8.645.27** `bhnd_nvram_store_subr.c` · 1,179L · `TODO-PORT` · 24 fn
+- [ ] **8.645.27** `bhnd_nvram_store_subr.c` · 1,187L · `TODO-PORT` · 24 fn
   - [ ] 8.645.27.1 `bhnd_nvstore_path_new()` · `TODO-FN`
   - [ ] 8.645.27.2 `bhnd_nvstore_path_free()` · `TODO-FN`
   - [ ] 8.645.27.3 `bhnd_nvstore_index_new()` · `TODO-FN`
@@ -65584,7 +65584,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.651.10.13 `DB_COMMAND_FLAGS()` · `TODO-FN`
   - [ ] 8.651.10.14 `bxe_ddb_usage()` · `TODO-FN`
 - [ ] **8.651.11** `bxe_dump.h` · 2,230L · `TODO-HDR`
-- [ ] **8.651.12** `bxe_elink.c` · 15,119L · `TODO-PORT`
+- [ ] **8.651.12** `bxe_elink.c` · 15,128L · `TODO-PORT`
 - [ ] **8.651.13** `bxe_elink.h` · 699L · `TODO-HDR`
 - [ ] **8.651.14** `bxe_ioctl.h` · 172L · `TODO-HDR`
 - [ ] **8.651.15** `bxe_stats.c` · 1,849L · `TODO-PORT` · 32 fn
@@ -65869,7 +65869,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.657.2** `cfi_bus_nexus.c` · 82L gen:1 · `TODO-PORT` · 2 fn
   - [ ] 8.657.2.1 `cfi_nexus_probe()` · `TODO-FN`
   - [ ] 8.657.2.2 `cfi_nexus_attach()` · `TODO-FN`
-- [ ] **8.657.3** `cfi_core.c` · 1,010L · `TODO-PORT` · 21 fn
+- [ ] **8.657.3** `cfi_core.c` · 1,018L · `TODO-PORT` · 21 fn
   - [ ] 8.657.3.1 `cfi_read_raw()` · `TODO-FN`
   - [ ] 8.657.3.2 `cfi_read()` · `TODO-FN`
   - [ ] 8.657.3.3 `cfi_write()` · `TODO-FN`
@@ -71038,7 +71038,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.706 `sys/dev/etherswitch/rtl8366`
 
-- [ ] **8.706.1** `rtl8366rb.c` · 960L gen:12 · `TODO-PORT` · 29 fn
+- [ ] **8.706.1** `rtl8366rb.c` · 969L gen:12 · `TODO-PORT` · 29 fn
   - [ ] 8.706.1.1 `rtl8366rb_identify()` · `TODO-FN`
   - [ ] 8.706.1.2 `rtl8366rb_probe()` · `TODO-FN`
   - [ ] 8.706.1.3 `rtl8366rb_init()` · `TODO-FN`
@@ -72169,7 +72169,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.718.1.10 `at45d_getattr()` · `TODO-FN`
   - [ ] 8.718.1.11 `at45d_strategy()` · `TODO-FN`
   - [ ] 8.718.1.12 `at45d_task()` · `TODO-FN`
-- [ ] **8.718.2** `cqspi.c` · 764L gen:2 · `TODO-PORT` · 20 fn
+- [ ] **8.718.2** `cqspi.c` · 773L gen:2 · `TODO-PORT` · 20 fn
   - [ ] 8.718.2.1 `cqspi_intr()` · `TODO-FN`
   - [ ] 8.718.2.2 `cqspi_xdma_tx_intr()` · `TODO-FN`
   - [ ] 8.718.2.3 `cqspi_xdma_rx_intr()` · `TODO-FN`
@@ -72838,7 +72838,7 @@ function; a file with two hundred of them is a project.
 ### 8.729 `sys/dev/gve`
 
 - [ ] **8.729.1** `gve.h` · 781L gen:1 · `TODO-HDR`
-- [ ] **8.729.2** `gve_adminq.c` · 993L · `TODO-PORT` · 27 fn
+- [ ] **8.729.2** `gve_adminq.c` · 1,009L · `TODO-PORT` · 27 fn
   - [ ] 8.729.2.1 `gve_process_device_options()` · `TODO-FN`
   - [ ] 8.729.2.2 `gve_adminq_destroy_tx_queue()` · `TODO-FN`
   - [ ] 8.729.2.3 `gve_adminq_destroy_rx_queue()` · `TODO-FN`
@@ -72910,7 +72910,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.729.6.38 `gve_attach()` · `TODO-FN`
   - [ ] 8.729.6.39 `gve_detach()` · `TODO-FN`
 - [ ] **8.729.7** `gve_plat.h` · 98L · `TODO-HDR`
-- [ ] **8.729.8** `gve_qpl.c` · 260L · `TODO-PORT` · 5 fn
+- [ ] **8.729.8** `gve_qpl.c` · 271L · `TODO-PORT` · 5 fn
   - [ ] 8.729.8.1 `gve_free_qpl()` · `TODO-FN`
   - [ ] 8.729.8.2 `gve_alloc_qpl()` · `TODO-FN`
   - [ ] 8.729.8.3 `gve_register_qpls()` · `TODO-FN`
@@ -77016,7 +77016,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.775.8.6 `isl12xx_detach()` · `TODO-FN`
   - [ ] 8.775.8.7 `isl12xx_gettime()` · `TODO-FN`
   - [ ] 8.775.8.8 `isl12xx_settime()` · `TODO-FN`
-- [ ] **8.775.9** `nxprtc.c` · 1,017L gen:5 · `TODO-PORT` · 19 fn
+- [ ] **8.775.9** `nxprtc.c` · 1,023L gen:5 · `TODO-PORT` · 19 fn
   - [ ] 8.775.9.1 `nxprtc_readfrom()` · `TODO-FN`
   - [ ] 8.775.9.2 `read_reg()` · `TODO-FN`
   - [ ] 8.775.9.3 `write_reg()` · `TODO-FN`
@@ -86275,7 +86275,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **8.840.1** `mpi3mr.c` · 6,558L · `TODO-PORT`
 - [ ] **8.840.2** `mpi3mr.h` · 1,012L gen:2 · `TODO-HDR`
-- [ ] **8.840.3** `mpi3mr_app.c` · 2,244L · `TODO-PORT` · 33 fn
+- [ ] **8.840.3** `mpi3mr_app.c` · 2,250L · `TODO-PORT` · 33 fn
   - [ ] 8.840.3.1 `mpi3mr_open()` · `TODO-FN`
   - [ ] 8.840.3.2 `mpi3mr_close()` · `TODO-FN`
   - [ ] 8.840.3.3 `mpi3mr_app_attach()` · `TODO-FN`
@@ -92000,7 +92000,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.899.8.3 `tiCOMSystemInterruptsActive()` · `TODO-FN`
   - [ ] 8.899.8.4 `tiComCountActiveIORequests()` · `TODO-FN`
   - [ ] 8.899.8.5 `tiCOMInterruptEnable()` · `TODO-FN`
-- [ ] **8.899.9** `tdioctl.c` · 3,682L · `TODO-PORT` · 38 fn
+- [ ] **8.899.9** `tdioctl.c` · 3,693L · `TODO-PORT` · 38 fn
   - [ ] 8.899.9.1 `tiCOMMgntIOCTL()` · `TODO-FN`
   - [ ] 8.899.9.2 `tdsaGpioSetup()` · `TODO-FN`
   - [ ] 8.899.9.3 `tdsaSGpioIoctlSetup()` · `TODO-FN`
@@ -92567,7 +92567,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.910 `sys/dev/psci`
 
-- [ ] **8.910.1** `psci.c` · 621L gen:4 · `TODO-PORT` · 23 fn
+- [ ] **8.910.1** `psci.c` · 625L gen:4 · `TODO-PORT` · 23 fn
   - [ ] 8.910.1.1 `psci_init()` · `TODO-FN`
   - [ ] 8.910.1.2 `psci_def_callfn()` · `TODO-FN`
   - [ ] 8.910.1.3 `psci_fdt_get_callfn()` · `TODO-FN`
@@ -95631,7 +95631,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.959.51.51 `ecore_ll2_get_stats()` · `TODO-FN`
 - [ ] **8.959.52** `ecore_ll2.h` · 174L · `TODO-HDR`
 - [ ] **8.959.53** `ecore_ll2_api.h` · 344L · `TODO-HDR`
-- [ ] **8.959.54** `ecore_mcp.c` · 4,789L · `TODO-PORT`
+- [ ] **8.959.54** `ecore_mcp.c` · 4,799L · `TODO-PORT`
 - [ ] **8.959.55** `ecore_mcp.h` · 685L · `TODO-HDR`
 - [ ] **8.959.56** `ecore_mcp_api.h` · 1,403L · `TODO-HDR`
 - [ ] **8.959.57** `ecore_mng_tlv.c` · 1,396L · `TODO-PORT` · 8 fn
@@ -101419,7 +101419,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1015.5.65 `chn_syncdestroy()` · `TODO-FN`
   - [ ] 8.1015.5.66 `chn_getpeaks()` · `TODO-FN`
 - [ ] **8.1015.6** `channel.h` · 445L · `TODO-HDR`
-- [ ] **8.1015.7** `dsp.c` · 3,212L gen:4 · `TODO-PORT` · 38 fn
+- [ ] **8.1015.7** `dsp.c` · 3,216L gen:4 · `TODO-PORT` · 38 fn
   - [ ] 8.1015.7.1 `dsp_make_dev()` · `TODO-FN`
   - [ ] 8.1015.7.2 `dsp_destroy_dev()` · `TODO-FN`
   - [ ] 8.1015.7.3 `dsp_chn_alloc()` · `TODO-FN`
@@ -102193,7 +102193,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1028.12.15 `sc_vtb_move()` · `TODO-FN`
   - [ ] 8.1028.12.16 `sc_vtb_delete()` · `TODO-FN`
   - [ ] 8.1028.12.17 `sc_vtb_ins()` · `TODO-FN`
-- [ ] **8.1028.13** `syscons.c` · 4,376L gen:8 · `TODO-PORT`
+- [ ] **8.1028.13** `syscons.c` · 4,387L gen:8 · `TODO-PORT`
 - [ ] **8.1028.14** `syscons.h` · 681L · `TODO-HDR`
 - [ ] **8.1028.15** `sysmouse.c` · 339L gen:1 · `TODO-PORT` · 7 fn
   - [ ] 8.1028.15.1 `smdev_evdev_init()` · `TODO-FN`
@@ -105733,7 +105733,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1058 `sys/dev/usb/storage`
 
-- [ ] **8.1058.1** `cfumass.c` · 993L gen:11 · `TODO-PORT` · 19 fn
+- [ ] **8.1058.1** `cfumass.c` · 999L gen:11 · `TODO-PORT` · 19 fn
   - [ ] 8.1058.1.1 `cfumass_probe()` · `TODO-FN`
   - [ ] 8.1058.1.2 `cfumass_attach()` · `TODO-FN`
   - [ ] 8.1058.1.3 `cfumass_detach()` · `TODO-FN`
@@ -108067,7 +108067,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1088.3** `vt_consolectl.c` · 81L gen:1 · `TODO-PORT` · 2 fn
   - [ ] 8.1088.3.1 `consolectl_ioctl()` · `TODO-FN`
   - [ ] 8.1088.3.2 `consolectl_drvinit()` · `TODO-FN`
-- [ ] **8.1088.4** `vt_core.c` · 3,472L gen:9 · `TODO-PORT` · 82 fn
+- [ ] **8.1088.4** `vt_core.c` · 3,478L gen:9 · `TODO-PORT` · 82 fn
   - [ ] 8.1088.4.1 `vt_update_static()` · `TODO-FN`
   - [ ] 8.1088.4.2 `vt_schedule_flush()` · `TODO-FN`
   - [ ] 8.1088.4.3 `vt_resume_flush_timer()` · `TODO-FN`
@@ -109566,7 +109566,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1129 `sys/dev/xl`
 
-- [ ] **8.1129.1** `if_xl.c` · 3,277L gen:6 · `TODO-PORT` · 54 fn
+- [ ] **8.1129.1** `if_xl.c` · 3,288L gen:6 · `TODO-PORT` · 54 fn
   - [ ] 8.1129.1.1 `xl_dma_map_addr()` · `TODO-FN`
   - [ ] 8.1129.1.2 `xl_wait()` · `TODO-FN`
   - [ ] 8.1129.1.3 `xl_mii_bitbang_read()` · `TODO-FN`

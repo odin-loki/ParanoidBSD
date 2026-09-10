@@ -746,7 +746,13 @@ tr_setup:
 
 		sumlen = io->scsiio.ext_data_filled -
 		    io->scsiio.kern_rel_offset;
-		while (sumlen >= sglist->len && sg_count > 0) {
+		/*
+		 * PBSD: sg_count has to be tested first -- sglist is
+		 * advanced past the end of the list on the iteration that
+		 * takes sg_count to zero, so evaluating sglist->len before
+		 * the count reads one entry past the array.
+		 */
+		while (sg_count > 0 && sumlen >= sglist->len) {
 			sumlen -= sglist->len;
 			sglist++;
 			sg_count--;

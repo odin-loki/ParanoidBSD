@@ -3881,8 +3881,19 @@ next_code:
 			case ALK:
 				break;
 			case SLK:
-				(void)kbdd_ioctl(
-				    sc->kbd, KDGKBSTATE, (caddr_t)&f);
+				/*
+				 * PBSD: kbdd_ioctl() leaves f unwritten
+				 * when the keyboard driver has no
+				 * KDGKBSTATE, and scgetc() read it
+				 * anyway -- scroll lock then latched off
+				 * a stack value, and SLKED stops console
+				 * output.  save_kbd_state() and
+				 * update_kbd_state() below both check.
+				 * Fall back to the state we already hold.
+				 */
+				if (kbdd_ioctl(sc->kbd, KDGKBSTATE,
+				    (caddr_t)&f) != 0)
+					f = scp->status & SLKED;
 				if (f & SLKED) {
 					scp->status |= SLKED;
 				} else {

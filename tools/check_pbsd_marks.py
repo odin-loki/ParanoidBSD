@@ -3696,6 +3696,187 @@ FIXES = {
         "the NULL test msk_intr_hwerr()'s two arms and the two "
         "msk_txeof() calls twenty lines up all make",
     ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar2413.c": (
+        "for (tp = lp; tp + 1 < ep; tp++) {",
+        "for (tp = lp; tp < ep; tp++) {",
+        "GetLowerUpperIndex: the loop reads tp[1] one past the list on "
+        "its last iteration, and falls out leaving both outputs unwritten "
+        "if the list is not sorted ascending",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar2425.c": (
+        "for (tp = lp; tp + 1 < ep; tp++) {",
+        "for (tp = lp; tp < ep; tp++) {",
+        "GetLowerUpperIndex: same one-past read and unwritten outputs "
+        "as ar2413.c",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5413.c": (
+        "for (tp = lp; tp + 1 < ep; tp++) {",
+        "for (tp = lp; tp < ep; tp++) {",
+        "GetLowerUpperIndex: same one-past read and unwritten outputs "
+        "as ar2413.c",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar2316.c": (
+        "for (tp = lp; tp + 1 < ep; tp++) {",
+        "for (tp = lp; tp < ep; tp++) {",
+        "GetLowerUpperIndex: same one-past read and unwritten outputs "
+        "as ar2413.c",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar2317.c": (
+        "for (tp = lp; tp + 1 < ep; tp++) {",
+        "for (tp = lp; tp < ep; tp++) {",
+        "GetLowerUpperIndex: same one-past read and unwritten outputs "
+        "as ar2413.c",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5112.c": (
+        "for (tp = lp; tp + 1 < ep; tp++) {",
+        "for (tp = lp; tp < ep; tp++) {",
+        "ar5212GetLowerUpperIndex: same one-past read and unwritten "
+        "outputs as ar2413.c's GetLowerUpperIndex",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5212_reset.c": (
+        "for (; lp + 1 < ep; lp++) {",
+        "for (; lp < ep; lp++) {",
+        "ar5212GetLowerUpperValues: the loop reads lp[1] one past the "
+        "list, and HALASSERT(AH_FALSE) is a no-op in a production kernel, "
+        "so falling out left both outputs unwritten",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5211/ar5211_reset.c": (
+        "for (i = 0; i < listSize - 1; i++) {",
+        "for (i = 0; i < listSize; i++) {",
+        "ar5211GetLowerUpperValues: the index form of the same one-past "
+        "read, with no assert at all on the fall-through",
+    ),
+
+    "hbsd/src/sys/dev/gve/gve_qpl.c": (
+        ("if (err == 0)\n\t\t\t\terr = rc;", 2),
+        "\terr = gve_adminq_unregister_page_list(priv, com->qpl->id);",
+        "gve_unregister_qpls: err was read after both loops without "
+        "being written when the queue counts are zero, and each "
+        "iteration overwrote the previous failure",
+    ),
+
+    "hbsd/src/sys/dev/gve/gve_adminq.c": (
+        ("if (err == 0)\n\t\t\t\terr = rc;", 2),
+        "\terr = gve_adminq_destroy_rx_queue(priv, i);",
+        "gve_adminq_destroy_{rx,tx}_queues: the same unwritten err and "
+        "swallowed failure, twice",
+    ),
+
+    "hbsd/src/sys/dev/usb/storage/cfumass.c": (
+        "while (sg_count > 0 && sumlen >= sglist->len) {",
+        "while (sumlen >= sglist->len && sg_count > 0) {",
+        "cfumass_t_data_callback: sglist->len was evaluated before the "
+        "sg_count test, so the iteration that empties the list reads "
+        "one entry past its end",
+    ),
+
+    "hbsd/src/sys/dev/iicbus/rtc/nxprtc.c": (
+        "uint8_t sec = 0, tmr1 = 0, tmr2 = 0;",
+        "uint8_t sec, tmr1, tmr2;",
+        "read_timeregs: a read_reg() failure breaks out of the loop "
+        "with tmr1 unwritten, and the use_timer test after it does not "
+        "short-circuit that read",
+    ),
+
+    "hbsd/src/sys/dev/cfi/cfi_core.c": (
+        "if (sc->sc_width != 1 && sc->sc_width != 2 && sc->sc_width != 4) {",
+        "if (sc->sc_width > 4) {",
+        "cfi_attach: every switch on sc_width has cases 1, 2 and 4 and "
+        "no default, and a device hint could set 3",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/rtl8366/rtl8366rb.c": (
+        "err = smi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2,",
+        "\t\tsmi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2, &v, RTL_WAITOK);",
+        "rtl_getport: smi_read() returns EBUSY without writing v, and "
+        "the CPU-port arm ignored that before shifting it",
+    ),
+
+    "hbsd/src/sys/dev/flash/cqspi.c": (
+        "ret = cqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);",
+        "\t\tcqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);\n\t} while",
+        "cqspi_wait_ready: the status read's failure path leaves data "
+        "unwritten, and the loop spun on it",
+    ),
+
+    "hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_store_subr.c": (
+        "\tpath->path_str = NULL;\n\n\tpath->pending = bhnd_nvram_plist_new();",
+        "\tpath->num_vars = 0;\n\n\tpath->pending = bhnd_nvram_plist_new();",
+        "bhnd_nvstore_path_new: the first goto failed is above the only "
+        "assignment to path_str, and the label free()s it",
+    ),
+
+    "hbsd/src/sys/dev/psci/psci.c": (
+        "phandle_t node = 0;",
+        "\tphandle_t node;\n\n\t/* XXX: This is suboptimal",
+        "psci_fdt_callfn: node is read after a loop that does not run "
+        "on an empty compat_data",
+    ),
+
+    "hbsd/src/sys/dev/vt/vt_core.c": (
+        "int\t\t grabbed = 0, i, idx0, idx;",
+        "int\t\t grabbed, i, idx0, idx;",
+        "vt_allocate_keyboard: grabbed is assigned and read under two "
+        "separate tests of vd_curwindow, with kbd_allocate() between",
+    ),
+
+    "hbsd/src/sys/dev/sound/pcm/dsp.c": (
+        "struct snddev_info *d = NULL;\n\tuint32_t fmts;\n\tint i, minch, maxch, unit;",
+        "struct snddev_info *d;\n\tuint32_t fmts;\n\tint i, minch, maxch, unit;",
+        "dsp_oss_audioinfo: d is tested against NULL after a loop that "
+        "does not run when pcm_devclass has no units",
+    ),
+
+    "hbsd/src/sys/dev/xl/if_xl.c": (
+        "if (xl_read_eeprom(sc, (char *)&xcvr, XL_EE_ICFG_0, 2, 0)) {",
+        "\txl_read_eeprom(sc, (char *)&xcvr, XL_EE_ICFG_0, 2, 0);\n",
+        "xl_attach: the transceiver read ignored the EEPROM failure the "
+        "station-address read twenty lines up already checks",
+    ),
+
+    "hbsd/src/sys/dev/mpi3mr/mpi3mr_app.c": (
+        "if (data_out_sz != sizeof(pel_enable)) {",
+        "(pel_enable.pel_class > MPI3_PEL_CLASS_FAULT))) {",
+        "mpi3mr_pel_enable: the pre-copyin test read pel_enable.pel_class "
+        "off the stack, and repeats a check made correctly after it",
+    ),
+
+    "hbsd/src/sys/dev/syscons/syscons.c": (
+        "if (kbdd_ioctl(sc->kbd, KDGKBSTATE,\n\t\t\t\t    (caddr_t)&f) != 0)",
+        "(void)kbdd_ioctl(\n\t\t\t\t    sc->kbd, KDGKBSTATE, (caddr_t)&f);",
+        "scgetc: the scroll-lock arm read f whether or not KDGKBSTATE "
+        "wrote it, unlike save_kbd_state() and update_kbd_state()",
+    ),
+
+    "hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdioctl.c": (
+        "status = IOCTL_CALL_FAIL;\n#endif",
+        "resetType);\n#endif",
+        "tdsaSendTMFIoctl: the only assignment to status is inside a "
+        "#if that excludes FreeBSD, so the ioctl returned the stack",
+    ),
+
+    "hbsd/src/sys/dev/bxe/bxe_elink.c": (
+        "for (phy_index = ELINK_INT_PHY; phy_index < ELINK_MAX_PHYS;",
+        "for (phy_index = ELINK_INT_PHY; phy_index < params->num_phys;\n\t      phy_index++) {\n\t\tphy_vars[phy_index].flow_ctrl = 0;",
+        "elink_link_update: the link_up expression reads "
+        "phy_vars[ELINK_INT_PHY] even when num_phys is zero and the "
+        "init loop never wrote it",
+    ),
+
+    "hbsd/src/sys/dev/qlnx/qlnxe/ecore_mcp.c": (
+        "rc = ecore_mcp_get_transceiver_data(p_hwfn, p_ptt, &transceiver_data);",
+        "\tecore_mcp_get_transceiver_data(p_hwfn, p_ptt, &transceiver_data);\n",
+        "ecore_mcp_trans_speed_mask: two of the callee's four exits do "
+        "not write the transceiver word, and the call ignored the return",
+    ),
 }
 
 

@@ -2409,8 +2409,18 @@ enum _ecore_status_t ecore_mcp_trans_speed_mask(struct ecore_hwfn *p_hwfn,
 						u32 *p_speed_mask)
 {
 	u32 transceiver_data, transceiver_type, transceiver_state;
+	enum _ecore_status_t rc;
 
-	ecore_mcp_get_transceiver_data(p_hwfn, p_ptt, &transceiver_data);
+	/*
+	 * PBSD: two of ecore_mcp_get_transceiver_data()'s four exits --
+	 * the IS_VF one and the MFW-not-initialized one -- return without
+	 * writing p_tranceiver_type, and this call ignored the return.
+	 * The state and type fields below were then decoded out of the
+	 * stack.
+	 */
+	rc = ecore_mcp_get_transceiver_data(p_hwfn, p_ptt, &transceiver_data);
+	if (rc != ECORE_SUCCESS)
+		return rc;
 
 	transceiver_state = GET_MFW_FIELD(transceiver_data,
 			    ETH_TRANSCEIVER_STATE);

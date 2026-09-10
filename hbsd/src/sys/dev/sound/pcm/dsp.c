@@ -2120,7 +2120,11 @@ dsp_oss_audioinfo(struct cdev *i_dev, oss_audioinfo *ai, bool ex)
 {
 	struct pcmchan_caps *caps;
 	struct pcm_channel *ch;
-	struct snddev_info *d;
+	/*
+	 * PBSD: d is tested against NULL after the loop below, which
+	 * does not run at all when pcm_devclass is NULL or has no units.
+	 */
+	struct snddev_info *d = NULL;
 	uint32_t fmts;
 	int i, minch, maxch, unit;
 

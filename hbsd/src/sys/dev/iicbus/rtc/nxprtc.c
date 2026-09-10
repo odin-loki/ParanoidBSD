@@ -305,7 +305,13 @@ static int
 read_timeregs(struct nxprtc_softc *sc, struct time_regs *tregs, uint8_t *tmr)
 {
 	int err;
-	uint8_t sec, tmr1, tmr2;
+	/*
+	 * PBSD: a read_reg() failure below breaks out of the loop with
+	 * tmr1 and tmr2 unwritten, and the use_timer test after it does
+	 * not short-circuit that read.  Zero is what the comment below
+	 * calls for when the timer is not usable, so start there.
+	 */
+	uint8_t sec = 0, tmr1 = 0, tmr2 = 0;
 
 	/*
 	 * The datasheet says loop to read the same timer value twice because it

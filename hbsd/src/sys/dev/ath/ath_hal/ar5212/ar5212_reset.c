@@ -2628,6 +2628,13 @@ ar5212GetLowerUpperValues(uint16_t v, uint16_t *lp, uint16_t listSize,
 	uint32_t target = v * EEP_SCALE;
 	uint16_t *ep = lp+listSize;
 
+	/* PBSD: an empty list has no bracketing values; lp[0] and ep[-1]
+	 * below would both be out of bounds. */
+	if (listSize == 0) {
+		*vlo = *vhi = 0;
+		return;
+	}
+
 	/*
 	 * Check first and last elements for out-of-bounds conditions.
 	 */
@@ -2640,8 +2647,12 @@ ar5212GetLowerUpperValues(uint16_t v, uint16_t *lp, uint16_t listSize,
 		return;
 	}
 
+	/*
+	 * PBSD: stop one short of the end -- the second test below reads
+	 * lp[1], which is one past the list on the last iteration.
+	 */
 	/* look for value being near or between 2 values in list */
-	for (; lp < ep; lp++) {
+	for (; lp + 1 < ep; lp++) {
 		/*
 		 * If value is close to the current value of the list
 		 * then target is not between values, it is one of the values
@@ -2661,6 +2672,13 @@ ar5212GetLowerUpperValues(uint16_t v, uint16_t *lp, uint16_t listSize,
 		}
 	}
 	HALASSERT(AH_FALSE);		/* should not reach here */
+	/*
+	 * PBSD: with the list sorted ascending, as the comment above
+	 * requires, the loop always returns.  If it does not, answer with
+	 * the last element rather than leaving both outputs unwritten for
+	 * the caller to read back as garbage.
+	 */
+	*vlo = *vhi = ep[-1];
 }
 
 /*

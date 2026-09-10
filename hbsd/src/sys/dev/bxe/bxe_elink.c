@@ -7688,7 +7688,16 @@ elink_status_t elink_link_update(struct elink_params *params, struct elink_vars 
 	uint8_t active_external_phy = ELINK_INT_PHY;
 	vars->phy_flags &= ~PHY_HALF_OPEN_CONN_FLAG;
 	vars->link_status &= ~ELINK_LINK_UPDATE_MASK;
-	for (phy_index = ELINK_INT_PHY; phy_index < params->num_phys;
+	/*
+	 * PBSD: phy_vars is a stack array of ELINK_MAX_PHYS and the
+	 * link_up expression at the bottom of this function reads
+	 * phy_vars[active_external_phy].fault_detected unconditionally,
+	 * with active_external_phy still at its ELINK_INT_PHY default
+	 * when no external phy came up.  Bounding this loop by
+	 * params->num_phys left that entry unwritten on a board that
+	 * reports no phys at all.  Clear the whole array instead.
+	 */
+	for (phy_index = ELINK_INT_PHY; phy_index < ELINK_MAX_PHYS;
 	      phy_index++) {
 		phy_vars[phy_index].flow_ctrl = 0;
 		phy_vars[phy_index].link_status = 0;

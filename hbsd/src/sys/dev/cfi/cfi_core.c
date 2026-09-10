@@ -222,7 +222,15 @@ cfi_probe(device_t dev)
 		error = ENXIO;
 		goto out;
 	}
-	if (sc->sc_width > 4) {
+	/*
+	 * PBSD: every switch on sc_width in this driver has cases 1, 2
+	 * and 4 and no default, so any other width silently skips the
+	 * read, the write or the verify -- cfi_write_block()'s verify
+	 * loop then compares against an unwritten val.  A device hint
+	 * that sets width 3 reaches here through the else arm above,
+	 * where the old > 4 test let it pass.
+	 */
+	if (sc->sc_width != 1 && sc->sc_width != 2 && sc->sc_width != 4) {
 		error = ENXIO;
 		goto out;
 	}

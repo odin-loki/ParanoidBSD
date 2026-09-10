@@ -678,7 +678,16 @@ rtl_getport(device_t dev, etherswitch_port_t *p)
 	} else {
 		/* fill in fixed values for CPU port */
 		p->es_flags |= ETHERSWITCH_PORT_CPU;
-		smi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2, &v, RTL_WAITOK);
+		/*
+		 * PBSD: smi_read() returns EBUSY without writing v when it
+		 * cannot take the bus, and this call ignored that -- the
+		 * shift below then reported a garbage link state out
+		 * through the SIOCETHERSWITCHGETPORT ioctl.
+		 */
+		err = smi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2,
+		    &v, RTL_WAITOK);
+		if (err != 0)
+			return (err);
 		v = v >> (8 * ((RTL8366_NUM_PHYS) % 2));
 		rtl8366rb_update_ifmedia(v, &ifmr->ifm_status, &ifmr->ifm_active);
 		ifmr->ifm_current = ifmr->ifm_active;

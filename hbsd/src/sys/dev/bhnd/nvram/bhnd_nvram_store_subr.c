@@ -82,6 +82,14 @@ bhnd_nvstore_path_new(const char *path_str, size_t path_len)
 
 	path->index = NULL;
 	path->num_vars = 0;
+	/*
+	 * PBSD: bhnd_nv_malloc() does not zero, and the failed: label
+	 * below frees path_str when it is non-NULL.  The first goto
+	 * failed -- the one taken when bhnd_nvram_plist_new() fails --
+	 * is above the only assignment to path_str, so that free() ran
+	 * on whatever the allocator handed back.
+	 */
+	path->path_str = NULL;
 
 	path->pending = bhnd_nvram_plist_new();
 	if (path->pending == NULL)

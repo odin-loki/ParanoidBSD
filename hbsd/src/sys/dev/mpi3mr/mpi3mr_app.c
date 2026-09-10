@@ -1671,8 +1671,14 @@ mpi3mr_pel_enable(struct mpi3mr_softc *sc,
 		return EAGAIN;
 	}
 
-	if ((data_out_sz != sizeof(pel_enable) || 
-	    (pel_enable.pel_class > MPI3_PEL_CLASS_FAULT))) {
+	/*
+	 * PBSD: pel_enable is a stack struct that is not filled until
+	 * the copyin three lines below, so the pel_class term this test
+	 * also carried read uninitialised memory.  The same range check
+	 * is made -- correctly -- after the copyin, so dropping it here
+	 * loses nothing.
+	 */
+	if (data_out_sz != sizeof(pel_enable)) {
 		printf(IOCNAME "%s: Invalid user pel_enable buffer size %u\n",
 		       sc->name, __func__, data_out_sz);
 		goto out;

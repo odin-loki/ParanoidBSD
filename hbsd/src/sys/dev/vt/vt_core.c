@@ -1042,7 +1042,13 @@ vt_kbdevent(keyboard_t *kbd, int event, void *arg)
 static int
 vt_allocate_keyboard(struct vt_device *vd)
 {
-	int		 grabbed, i, idx0, idx;
+	/*
+	 * PBSD: grabbed is assigned only under the vd_curwindow test at
+	 * the top and read again under the same test at the bottom, with
+	 * kbd_allocate() and kbdd_ioctl() -- both handed vd -- in
+	 * between.  Nothing here holds vd_curwindow still across those.
+	 */
+	int		 grabbed = 0, i, idx0, idx;
 	keyboard_t	*k0, *k;
 	keyboard_info_t	 ki;
 

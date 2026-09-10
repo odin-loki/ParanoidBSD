@@ -1813,9 +1813,19 @@ ar5211GetLowerUpperValues(uint16_t value,
 	const uint16_t *pList, uint16_t listSize,
 	uint16_t *pLowerValue, uint16_t *pUpperValue)
 {
-	const uint16_t listEndValue = *(pList + listSize - 1);
+	uint16_t listEndValue;
 	uint32_t target = value * EEP_SCALE;
 	int i;
+
+	/*
+	 * PBSD: an empty list has no bracketing values, and every read
+	 * below would be out of bounds.
+	 */
+	if (listSize == 0) {
+		*pLowerValue = *pUpperValue = 0;
+		return;
+	}
+	listEndValue = *(pList + listSize - 1);
 
 	/*
 	 * See if value is lower than the first value in the list
@@ -1837,8 +1847,12 @@ ar5211GetLowerUpperValues(uint16_t value,
 		return;
 	}
 
+	/*
+	 * PBSD: stop one short of the end -- the second test below reads
+	 * pList[i + 1], which is one past the list on the last iteration.
+	 */
 	/* look for value being near or between 2 values in list */
-	for (i = 0; i < listSize; i++) {
+	for (i = 0; i < listSize - 1; i++) {
 		/*
 		 * If value is close to the current value of the list
 		 * then target is not between values, it is one of the values
@@ -1859,6 +1873,13 @@ ar5211GetLowerUpperValues(uint16_t value,
 			return;
 		}
 	}
+	/*
+	 * PBSD: with the list sorted ascending, as this function's callers
+	 * require, the loop always returns.  If it does not, answer with
+	 * the last element rather than leaving both outputs unwritten for
+	 * the caller to read back as garbage.
+	 */
+	*pLowerValue = *pUpperValue = listEndValue;
 }
 
 /*

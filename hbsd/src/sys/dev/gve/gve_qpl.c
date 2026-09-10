@@ -202,7 +202,14 @@ gve_register_qpls(struct gve_priv *priv)
 int
 gve_unregister_qpls(struct gve_priv *priv)
 {
-	int err;
+	/*
+	 * PBSD: err was read after the loops without ever being written
+	 * when both queue counts are zero, and each iteration overwrote
+	 * the previous one's failure, so the test below could not see it.
+	 * Keep the first error instead.
+	 */
+	int err = 0;
+	int rc;
 	int i;
 	struct gve_ring_com *com;
 	struct gve_tx_ring *tx;
@@ -214,22 +221,26 @@ gve_unregister_qpls(struct gve_priv *priv)
 	for (i = 0; i < priv->tx_cfg.num_queues; i++) {
 		tx = &priv->tx[i];
 		com = &tx->com;
-		err = gve_adminq_unregister_page_list(priv, com->qpl->id);
-		if (err != 0) {
+		rc = gve_adminq_unregister_page_list(priv, com->qpl->id);
+		if (rc != 0) {
 			device_printf(priv->dev,
 			    "Failed to unregister qpl %d, err: %d\n",
-			    com->qpl->id, err);
+			    com->qpl->id, rc);
+			if (err == 0)
+				err = rc;
 		}
 	}
 
 	for (i = 0; i < priv->rx_cfg.num_queues; i++) {
 		rx = &priv->rx[i];
 		com = &rx->com;
-		err = gve_adminq_unregister_page_list(priv, com->qpl->id);
-		if (err != 0) {
+		rc = gve_adminq_unregister_page_list(priv, com->qpl->id);
+		if (rc != 0) {
 			device_printf(priv->dev,
 			    "Failed to unregister qpl %d, err: %d\n",
-			    com->qpl->id, err);
+			    com->qpl->id, rc);
+			if (err == 0)
+				err = rc;
 		}
 	}
 

@@ -15676,3 +15676,306 @@ Per file: `ar5212_ani.c` 2 → 0, `ar5416_ani.c` 2 → 0, `if_msk.c`
 1 → 0, `fdc.c` 8 → 1 (the seven that went were the `fdc_sense_int()`
 fix from the previous batch plus this one; the survivor is a
 `device_get_ivars()` read).
+
+## The Atheros HAL's two list searches, in eight copies
+
+`GetLowerUpperIndex()` brackets a target value between two entries of a
+sorted list. Six files carry byte-identical or near-identical copies of
+it — `ar2413.c`, `ar2425.c`, `ar5413.c`, `ar2316.c`, `ar2317.c` and, under
+the name `ar5212GetLowerUpperIndex()`, `ar5112.c` — and all six end the
+same way:
+
+```c
+	for (tp = lp; tp < ep; tp++) {
+		if (*tp == target) { *vlo = *vhi = tp - lp; return; }
+		if (target < tp[1]) { *vlo = tp - lp; *vhi = *vlo + 1; return; }
+	}
+}
+```
+
+`tp[1]` on the last iteration is one element past the list. And when the
+loop falls out — which it does whenever the list is not sorted ascending,
+the thing the comment above it says the caller must guarantee — neither
+output is written at all, and the caller uses both as indices into
+`pwrList[]` and `VpdList[]`.
+
+The loop now stops one short, which is where it always returned anyway on
+a sorted list (at `tp == ep - 2` the second test is `target < ep[-1]`,
+which the bounds check above has already established), and the
+fall-through answers with the last index rather than leaving the caller's
+variables as it found them. An empty list is refused up front: `lp[0]`
+and `ep[-1]` in the bounds checks were both out of bounds for it.
+
+`ar5212GetLowerUpperValues()` in `ar5212_reset.c` and
+`ar5211GetLowerUpperValues()` in `ar5211_reset.c` are the same search
+over values rather than indices, with the same `lp[1]` /
+`pList[i + 1]` read one past the end. The ar5212 copy ends its loop with
+`HALASSERT(AH_FALSE); /* should not reach here */`, which is nothing at
+all in a production kernel; the ar5211 copy has no assert. Both now
+write the last element on the fall-through.
+
+The ANI values these tables produce become transmit power and PDADC
+settings, so the failure mode is a radio configured from whatever was on
+the stack.
+
+## Three unchecked returns that leave the out-parameter unwritten
+
+`xl_read_eeprom()` returns 1 without touching `dest` when the EEPROM does
+not come ready. `xl_attach()` checks that for the station address —
+
+```c
+	if (xl_read_eeprom(sc, (caddr_t)&eaddr, XL_EE_OEM_ADR0, 3, 1)) {
+		device_printf(dev, "failed to read station address\n");
+		error = ENXIO;
+		goto fail;
+	}
+```
+
+— and not for the transceiver configuration a hundred and sixty lines
+later, which the entire media setup hangs off:
+
+```c
+	xl_read_eeprom(sc, (char *)&xcvr, XL_EE_ICFG_0, 2, 0);
+	sc->xl_xcvr = xcvr[0] | xcvr[1] << 16;
+```
+
+`xcvr` is a two-element stack array. The `sinfo2` read between them
+already sets `sinfo2 = 0` first, and `sc->xl_caps` lands in the zeroed
+softc, so this was the one of the four that could pick a transceiver type
+out of the stack. It now takes the same branch as the station address.
+
+`cqspi_wait_ready()` spins on a status byte a failed read never wrote:
+
+```c
+	do {
+		cqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);
+	} while (data & STATUS_WIP);
+```
+
+`cqspi_cmd_read()` returns before its `data = READ4(...)` when the
+controller reports an error, so on that path the loop tests an
+uninitialised `uint8_t` — and if it happens to have STATUS_WIP set, does
+so forever. It now propagates the error.
+
+`rtl_getport()`'s CPU-port arm reads the link status the same way:
+
+```c
+	smi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2, &v, RTL_WAITOK);
+	v = v >> (8 * ((RTL8366_NUM_PHYS) % 2));
+```
+
+`smi_read()` returns EBUSY without writing `v` when it cannot take the
+bus. The value goes out through the SIOCETHERSWITCHGETPORT ioctl.
+
+`ecore_mcp_trans_speed_mask()` is the fourth of the shape and the
+starkest: two of `ecore_mcp_get_transceiver_data()`'s four exits — the
+`IS_VF()` one and the MFW-not-initialised one — return before writing
+`*p_tranceiver_type`, and the call ignored the return entirely, decoding
+the transceiver state and type out of the stack.
+
+## Two functions whose only assignment is compiled out on this platform
+
+`tdsaSendTMFIoctl()` in the PMC Sierra driver reads:
+
+```c
+	bit32		status;
+	tmf_pass_through_req_t  *tmf_req = ...;
+#if !(defined(__FreeBSD__))
+	status = ostiSendResetDeviceIoctl(...);
+#endif
+	TI_DBG3(("Status returned from ostiSendResetDeviceIoctl is %d\n",status));
+	if(status !=  IOCTL_CALL_SUCCESS)
+	{
+		agIOCTLPayload->Status = status;
+		return status;
+	}
+```
+
+On FreeBSD — the only platform this tree builds — the `#if` excludes the
+one assignment, so both the test and the value handed back to the caller
+of the ioctl are stack contents. The `#else` now says `IOCTL_CALL_FAIL`,
+which is what an unimplemented call did in effect anyway, only reliably.
+
+`mpi3mr_pel_enable()` tests a field of a struct it has not filled yet:
+
+```c
+	if ((data_out_sz != sizeof(pel_enable) ||
+	    (pel_enable.pel_class > MPI3_PEL_CLASS_FAULT))) {
+		...
+		goto out;
+	}
+	memset(&pel_enable, 0, sizeof(pel_enable));
+	if (copyin(data_out_buf, &pel_enable, sizeof(pel_enable))) {
+```
+
+The class range check is repeated — correctly — six lines below, after
+the copyin. Here it read the stack, so an ioctl could be rejected or
+accepted on the strength of it. Only the size test belongs before the
+copy.
+
+## Loops whose zero-trip case the code after them does not expect
+
+`gve_unregister_qpls()`, `gve_adminq_destroy_rx_queues()` and
+`gve_adminq_destroy_tx_queues()` share this:
+
+```c
+	int err;
+	int i;
+
+	for (i = 0; i < num_queues; i++) {
+		err = gve_adminq_destroy_rx_queue(priv, i);
+		if (err != 0)
+			device_printf(priv->dev, "Failed to destroy rxq ...");
+	}
+
+	if (err != 0)
+		return (err);
+```
+
+Two defects in six lines. `err` is never written when the queue count is
+zero, and the test after the loop reads it. And each iteration overwrites
+the previous one's failure, so the test cannot see anything but the last
+queue's result — which defeats its whole purpose. All three now keep the
+first error in an `err` that starts at zero, with the per-call result in
+its own `rc`. The `create` counterparts of these functions are not
+affected: they `goto abort` on the first failure, so their `err` is
+always written before it is used.
+
+`psci_fdt_callfn()` reads `node` after a loop over `compat_data` that
+does not run if the table is empty; `dsp_oss_audioinfo()` tests `d`
+against NULL after a loop that does not run when `pcm_devclass` has no
+units; `elink_link_update()` computes
+
+```c
+	vars->link_up = (vars->phy_link_up && ... &&
+			 (phy_vars[active_external_phy].fault_detected == 0));
+```
+
+with `active_external_phy` still at its `ELINK_INT_PHY` default when no
+external phy came up — and the loop that initialises `phy_vars` is
+bounded by `params->num_phys`, so on a board reporting no phys that entry
+was never written. It now clears the whole `ELINK_MAX_PHYS` array.
+
+`vt_allocate_keyboard()` is the odd one of the four: `grabbed` is assigned
+under `vd->vd_curwindow == &vt_conswindow` at the top and read under the
+same test at the bottom, with `kbd_allocate()` and `kbdd_ioctl()` — both
+handed `vd` — in between. Nothing in the code holds `vd_curwindow` still
+across those, so `grabbed = 0` is the honest declaration.
+
+## Four more, each its own shape
+
+`bhnd_nvstore_path_new()` frees a pointer it never set. `bhnd_nv_malloc()`
+does not zero; the first `goto failed` is taken when
+`bhnd_nvram_plist_new()` fails, which is above the only assignment to
+`path->path_str`; and the label does
+
+```c
+	if (path->path_str != NULL)
+		bhnd_nv_free(path->path_str);
+```
+
+on whatever the allocator handed back.
+
+`cfumass_t_data_callback()` walks off its scatter-gather list:
+
+```c
+	while (sumlen >= sglist->len && sg_count > 0) {
+		sumlen -= sglist->len;
+		sglist++;
+		sg_count--;
+	}
+```
+
+`sglist` is advanced past the end on the iteration that takes `sg_count`
+to zero, and `sglist->len` is evaluated before the count test on the next
+one. The two tests are now the other way round.
+
+`read_timeregs()` in the NXP RTC driver breaks out of its retry loop on a
+failed register read with `tmr1` unwritten, and the test after the loop —
+`if (!sc->use_timer || tmr1 > TMR_TICKS_SEC)` — does not short-circuit
+that read when the timer *is* in use. Zero is what the comment beneath it
+calls for when the timer is not usable, so the declaration starts there.
+
+`scgetc()`'s scroll-lock key does this:
+
+```c
+	case SLK:
+		(void)kbdd_ioctl(sc->kbd, KDGKBSTATE, (caddr_t)&f);
+		if (f & SLKED) {
+```
+
+`save_kbd_state()` and `update_kbd_state()`, two hundred lines down the
+same file, both check that return. Here a keyboard driver without
+KDGKBSTATE leaves `f` on the stack, and a stack bit that happens to be
+set latches SLKED — which stops console output. It now falls back to the
+state the console already holds.
+
+## An invariant the switches never had a default for
+
+Every switch on `sc->sc_width` in `cfi_core.c` has cases 1, 2 and 4 and no
+default — eight of them, covering the reads, the writes and the program
+verify. `cfi_write_block()`'s verify loop is the one the analyser catches:
+
+```c
+	switch (sc->sc_width) {
+	case 1: val = *(ptr.x8 + i); break;
+	case 2: val = *(ptr.x16 + i / 2); break;
+	case 4: val = *(ptr.x32 + i / 4); break;
+	}
+
+	if (cfi_read(sc, sc->sc_wrofs + i) == val)
+```
+
+Attach probed for the width by doubling from 1 and rejected anything
+`> 4`, which catches the probe's own overshoot to 8 but not a width of 3
+set by a device hint — that path takes the `else if` and only ever meets
+the `> 4` test. The check is now `!= 1 && != 2 && != 4`, which is the
+invariant all eight switches were written against. The finding itself
+stays in the sweep: it rests on a softc field the analyser has no reason
+to believe anything about, exactly like the allwinner clock divisors.
+
+### The measurement
+
+Twenty-five files, one tree, one scope, `--check-errors` passing on both
+sides:
+
+```
+              before   after
+OK               632     632
+ERROR             28      28
+findings         140     111
+```
+
+```
+  sys/dev/ath/ath_hal/ar5211/ar5211_reset.c        6 ->  2
+  sys/dev/ath/ath_hal/ar5212/ar2413.c              2 ->  0
+  sys/dev/ath/ath_hal/ar5212/ar2425.c              2 ->  0
+  sys/dev/ath/ath_hal/ar5212/ar5212_reset.c        2 ->  0
+  sys/dev/ath/ath_hal/ar5212/ar5413.c              2 ->  0
+  sys/dev/bhnd/nvram/bhnd_nvram_store_subr.c       1 ->  0
+  sys/dev/bxe/bxe_elink.c                          3 ->  2
+  sys/dev/etherswitch/rtl8366/rtl8366rb.c          1 ->  0
+  sys/dev/flash/cqspi.c                            1 ->  0
+  sys/dev/gve/gve_adminq.c                         2 ->  0
+  sys/dev/gve/gve_qpl.c                            1 ->  0
+  sys/dev/iicbus/rtc/nxprtc.c                      2 ->  1
+  sys/dev/mpi3mr/mpi3mr_app.c                      1 ->  0
+  sys/dev/pms/.../tdioctl.c                        4 ->  3
+  sys/dev/psci/psci.c                              1 ->  0
+  sys/dev/qlnx/qlnxe/ecore_mcp.c                   4 ->  3
+  sys/dev/sound/pcm/dsp.c                          1 ->  0
+  sys/dev/syscons/syscons.c                        6 ->  5
+  sys/dev/usb/storage/cfumass.c                    1 ->  0
+  sys/dev/vt/vt_core.c                             2 ->  1
+  sys/dev/xl/if_xl.c                               1 ->  0
+```
+
+Three of the twenty-five moved by more than the finding that led to them:
+`ar5211_reset.c` lost four, not one, because the empty-list guard closed
+the `lp[0]` and `ep[-1]` reads as well. Three moved not at all and are
+absent from the table: `ar2316.c`, `ar2317.c` and `ar5112.c` carry the
+same `GetLowerUpperIndex()` hole as the three ath copies that did move,
+but the analyser had never reported it in them — the fix went in because
+the shape did, not because a finding did. `cfi_core.c` is the fourth: its
+`val` finding rests on a softc field, and tightening the attach-time
+check does not tell the analyser anything, as expected.

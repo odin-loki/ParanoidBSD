@@ -242,14 +242,22 @@ gve_adminq_destroy_rx_queue(struct gve_priv *priv, uint32_t id)
 int
 gve_adminq_destroy_rx_queues(struct gve_priv *priv, uint32_t num_queues)
 {
-	int err;
+	/*
+	 * PBSD: err was read after the loop without ever being written
+	 * when num_queues is zero, and each iteration overwrote the
+	 * previous one's failure.  Keep the first error instead.
+	 */
+	int err = 0;
+	int rc;
 	int i;
 
 	for (i = 0; i < num_queues; i++) {
-		err = gve_adminq_destroy_rx_queue(priv, i);
-		if (err != 0) {
+		rc = gve_adminq_destroy_rx_queue(priv, i);
+		if (rc != 0) {
 			device_printf(priv->dev, "Failed to destroy rxq %d, err: %d\n",
-			    i, err);
+			    i, rc);
+			if (err == 0)
+				err = rc;
 		}
 	}
 
@@ -263,14 +271,22 @@ gve_adminq_destroy_rx_queues(struct gve_priv *priv, uint32_t num_queues)
 int
 gve_adminq_destroy_tx_queues(struct gve_priv *priv, uint32_t num_queues)
 {
-	int err;
+	/*
+	 * PBSD: err was read after the loop without ever being written
+	 * when num_queues is zero, and each iteration overwrote the
+	 * previous one's failure.  Keep the first error instead.
+	 */
+	int err = 0;
+	int rc;
 	int i;
 
 	for (i = 0; i < num_queues; i++) {
-		err = gve_adminq_destroy_tx_queue(priv, i);
-		if (err != 0) {
+		rc = gve_adminq_destroy_tx_queue(priv, i);
+		if (rc != 0) {
 			device_printf(priv->dev, "Failed to destroy txq %d, err: %d\n",
-			    i, err);
+			    i, rc);
+			if (err == 0)
+				err = rc;
 		}
 	}
 

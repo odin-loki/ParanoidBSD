@@ -382,7 +382,11 @@ psci_get_version(void)
 static int
 psci_fdt_callfn(psci_callfn_t *callfn)
 {
-	phandle_t node;
+	/*
+	 * PBSD: node is read after the loop, which does not run at all
+	 * if compat_data is empty.
+	 */
+	phandle_t node = 0;
 
 	/* XXX: This is suboptimal, we should walk the tree & check each
 	 * node against compat_data, but we only have a few entries so

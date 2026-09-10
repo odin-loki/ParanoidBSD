@@ -3390,6 +3390,17 @@ tdsaSendTMFIoctl( tiRoot_t	     	*tiRoot,
 	tmf_pass_through_req_t  *tmf_req = (tmf_pass_through_req_t*)agIOCTLPayload->FunctionSpecificArea;
 #if !(defined(__FreeBSD__))
 	status = ostiSendResetDeviceIoctl(tiRoot, agParam2, tmf_req->pathId, tmf_req->targetId, tmf_req->lun, resetType);
+#else
+	/*
+	 * PBSD: ostiSendResetDeviceIoctl() has no FreeBSD
+	 * implementation, so on this platform the only assignment to
+	 * status was compiled out -- the test below read the stack and
+	 * agIOCTLPayload->Status handed that back to the caller of the
+	 * ioctl.  Say the call failed, which is what it does.
+	 */
+	(void)tmf_req;
+	(void)resetType;
+	status = IOCTL_CALL_FAIL;
 #endif
 	TI_DBG3(("Status returned from ostiSendResetDeviceIoctl is %d\n",status));
 	if(status !=  IOCTL_CALL_SUCCESS)

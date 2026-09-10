@@ -1358,7 +1358,18 @@ xl_attach(device_t dev)
 	if (bootverbose)
 		device_printf(dev, "media options word: %x\n", sc->xl_media);
 
-	xl_read_eeprom(sc, (char *)&xcvr, XL_EE_ICFG_0, 2, 0);
+	/*
+	 * PBSD: xl_read_eeprom() returns 1 without writing dest when the
+	 * EEPROM does not come ready, and xcvr is a stack array.  The
+	 * station-address read above already takes that branch; the
+	 * transceiver type the whole media setup below hangs off did
+	 * not, and picked itself out of the stack instead.
+	 */
+	if (xl_read_eeprom(sc, (char *)&xcvr, XL_EE_ICFG_0, 2, 0)) {
+		device_printf(dev, "failed to read transceiver config\n");
+		error = ENXIO;
+		goto fail;
+	}
 	sc->xl_xcvr = xcvr[0] | xcvr[1] << 16;
 	sc->xl_xcvr &= XL_ICFG_CONNECTOR_MASK;
 	sc->xl_xcvr >>= XL_ICFG_CONNECTOR_BITS;
