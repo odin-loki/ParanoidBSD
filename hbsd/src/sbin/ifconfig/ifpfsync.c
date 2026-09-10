@@ -346,7 +346,16 @@ pfsync_status(if_ctx *ctx)
 	struct sockaddr_storage syncpeer;
 	int maxupdates = 0;
 	int flags = 0;
-	int version;
+	/*
+	 * PBSD: every one of these is filled only if the nvlist the ioctl
+	 * returned carries its key, and syncdev, maxupdates and flags are
+	 * given defaults for exactly that reason -- syncpeer and version
+	 * were not.  version is printed unconditionally at the bottom, and
+	 * syncpeer.ss_family decides whether getnameinfo() is called on
+	 * &syncpeer with syncpeer_sa->sa_len as the length, so a stack word
+	 * that happens to read AF_INET6 sends a garbage length into it.
+	 */
+	int version = 0;
 	int error;
 
 	nvl = nvlist_create(0);
@@ -357,6 +366,7 @@ pfsync_status(if_ctx *ctx)
 	}
 
 	memset((char *)&syncdev, 0, IFNAMSIZ);
+	memset(&syncpeer, 0, sizeof(syncpeer));
 	if (nvlist_exists_string(nvl, "syncdev"))
 		strlcpy(syncdev, nvlist_get_string(nvl, "syncdev"),
 		    IFNAMSIZ);

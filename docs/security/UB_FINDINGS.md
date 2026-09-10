@@ -17877,3 +17877,58 @@ path-sensitive analysis is going to carry that.
 `cctl_end_element` (6) and `cctl_nvlist_end_element` (3) are all this,
 with `ctlislist`, `ctlportlist`, `ctllunlist` and `ctlnvmflist` as their
 respective exempt element names.
+
+### `pfsync_status()`: two of five nvlist-optional locals with no default
+
+`sbin/ifconfig/ifpfsync.c` reads the pfsync configuration out of an
+nvlist the `SIOCGETPFSYNCNV` ioctl returns, and every field is optional
+— each is copied out only if `nvlist_exists_*()` says the key is there:
+
+```c
+	struct sockaddr_storage syncpeer;
+	int maxupdates = 0;
+	int flags = 0;
+	int version;
+	...
+	memset((char *)&syncdev, 0, IFNAMSIZ);
+	if (nvlist_exists_string(nvl, "syncdev"))
+		strlcpy(syncdev, nvlist_get_string(nvl, "syncdev"), IFNAMSIZ);
+	if (nvlist_exists_number(nvl, "maxupdates"))
+		maxupdates = nvlist_get_number(nvl, "maxupdates");
+```
+
+`syncdev` gets an explicit `memset`, `maxupdates` and `flags` get `= 0`
+— the function already knows the keys are optional and defaults for
+that reason.  `syncpeer` and `version` were the two that did not get
+one.
+
+Both are used unconditionally afterwards.  `version` is printed at the
+bottom of the function whatever the ioctl returned.  `syncpeer` is
+worse: the code switches on `syncpeer.ss_family` and, on `AF_INET6`,
+calls
+
+```c
+	getnameinfo(syncpeer_sa, syncpeer_sa->sa_len, ...)
+```
+
+so a stack word that happens to hold `AF_INET6` hands `getnameinfo()`
+a length taken from the same uninitialised storage.  A kernel that
+does not put a `syncpeer` key in the nvlist — an older kernel, or a
+pfsync interface with no peer configured — reaches this.
+
+Both now start at zero: `int version = 0;` and a
+`memset(&syncpeer, 0, sizeof(syncpeer))` next to the `syncdev` one.
+`ss_family == 0` is `AF_UNSPEC`, which the existing `switch` already
+falls through without printing a peer.
+
+```
+                sbin/ifconfig
+                before  after
+OK                 23      23
+ERROR               0       0
+findings           14      11
+```
+
+Read and not a defect in the same file set: `ifgif.c:64` reports `opts`
+as uninitialised where the kernel writes it through `ifr.ifr_data` in
+another translation unit — the out-parameter class.

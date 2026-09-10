@@ -4132,6 +4132,26 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sbin/ifconfig/ifpfsync.c": [
+        (
+            "memset(&syncpeer, 0, sizeof(syncpeer));",
+            "\tmemset((char *)&syncdev, 0, IFNAMSIZ);\n\tif (nvlist_exists_string",
+            "pfsync_status() reads syncpeer.ss_family unconditionally to "
+            "decide whether to call getnameinfo() on &syncpeer with "
+            "syncpeer_sa->sa_len as the length, but fills syncpeer only if "
+            "the ioctl's nvlist carries that key -- so a stack word that "
+            "happens to read AF_INET6 sends a garbage length into it",
+        ),
+        (
+            "\tint version = 0;",
+            "\tint version;\n\tint error;",
+            "and prints version unconditionally while setting it only if "
+            "the nvlist carries the key. syncdev, maxupdates and flags in "
+            "the same declaration block are all given defaults for exactly "
+            "this reason",
+        ),
+    ],
+
     "hbsd/src/usr.sbin/mlxcontrol/interface.c": (
         ("bzero(&cmd, sizeof(cmd));\n    cmd.mu_status = 0xffff;", 4),
         "    struct mlx_usercommand\tcmd;\n\n    /* build the command */\n"

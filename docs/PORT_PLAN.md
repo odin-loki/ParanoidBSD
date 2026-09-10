@@ -54,7 +54,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
-| 4 | `sbin` | 533 | 228,514 | 3,567 |
+| 4 | `sbin` | 533 | 228,524 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,438 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,310** | **114,205** |
+| | **total** | **41,143** | **21,300,320** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -17808,7 +17808,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.38.20.13 `print_media()` · `TODO-FN`
   - [ ] 4.38.20.14 `print_media_ifconfig()` · `TODO-FN`
   - [ ] 4.38.20.15 `ifmedia_ctor()` · `TODO-FN`
-- [ ] **4.38.21** `ifpfsync.c` · 426L · `TODO-PORT` · 12 fn
+- [ ] **4.38.21** `ifpfsync.c` · 436L · `TODO-PORT` · 12 fn
   - [ ] 4.38.21.1 `pfsync_do_ioctl()` · `TODO-FN`
   - [ ] 4.38.21.2 `pfsync_sockaddr_to_syncpeer_nvlist()` · `TODO-FN`
   - [ ] 4.38.21.3 `pfsync_syncpeer_nvlist_to_sockaddr()` · `TODO-FN`
