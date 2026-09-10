@@ -2315,15 +2315,38 @@ FIXES = {
         "UDP socket was displayed with the last TCP socket's queue "
         "counts -- UDP is the second pass, after `goto again'",
     ),
-    "hbsd/src/usr.sbin/bsdinstall/partedit/gpart_ops.c": (
-        "PBSD: per provider, as the `start = end = 0' above does",
-        "\tmaxsize = 0;\n\tfor (i = 0; i < nparts; i++) {",
-        "gpart_max_free: partstart and partend are written only when "
-        "the provider's config names them, so one that names neither "
-        "silently reused the previous partition's extent and the first "
-        "reused the frame -- this decides where the installer offers "
-        "to write.  maxstart had no initialiser either",
-    ),
+    "hbsd/src/usr.sbin/bsdinstall/partedit/gpart_ops.c": [
+        (
+            "PBSD: per provider, as the `start = end = 0' above does",
+            "\tmaxsize = 0;\n\tfor (i = 0; i < nparts; i++) {",
+            "gpart_max_free: partstart and partend are written only "
+            "when the provider's config names them, so one that names "
+            "neither silently reused the previous partition's extent "
+            "and the first reused the frame -- this decides where the "
+            "installer offers to write.  maxstart had no initialiser "
+            "either",
+        ),
+        (
+            ("const char *errstr, *scheme = NULL;", 2),
+            None,
+            "gpart_activate() and gpart_bootcode() search the geom's "
+            "config list for `scheme' and used the result whether or "
+            "not the search found one -- strcmp() and bootcode_path() "
+            "on an uninitialised pointer",
+        ),
+        (
+            "const char *scheme = NULL;\n\tconst char *indexstr = NULL;",
+            "const char *scheme;\n\tconst char *indexstr;",
+            "gpart_partcode(): the same, twice -- scheme into "
+            "partcode_path() and indexstr into the gpart command line",
+        ),
+        (
+            "const char *errstr, *oldtype = NULL, *scheme = NULL;",
+            "const char *errstr, *oldtype, *scheme;",
+            "gpart_edit(): scheme into scheme_supports_labels(), and "
+            "oldtype into three strcmp()s after the dialog",
+        ),
+    ],
     "hbsd/src/usr.sbin/gssd/gssd.c": [
         (
             "PBSD: clamp.  FreeBSD's getgrouplist() sets",
@@ -4994,6 +5017,18 @@ FIXES = {
             "and the shift at the end wrote oplist[0] through it",
         ),
     ],
+
+
+    "hbsd/src/usr.sbin/nscd/nscd.c": (
+        "if (qstate->use_alternate_io == 0 &&\n\t\t    qstate->process_func "
+        "!= NULL) {",
+        "\t\tif (qstate->use_alternate_io == 0) {\n\t\t\tdo {",
+        "process_socket_event(): the EVFILT_READ error arm sets both "
+        "use_alternate_io = 0 and process_func = NULL, which is exactly "
+        "the state the block below called process_func in -- the "
+        "do-while tests it only as a continuation condition, after the "
+        "first call has already gone through NULL",
+    ),
 
 }
 

@@ -340,7 +340,15 @@ process_socket_event(struct kevent *event_data, struct runtime_env *env,
 			}
 		}
 
-		if (qstate->use_alternate_io == 0) {
+		/*
+		 * PBSD: the EVFILT_READ error arm above sets both
+		 * use_alternate_io = 0 and process_func = NULL, which is
+		 * exactly the state this block calls process_func in.  The
+		 * do-while tests it only as a continuation condition, after
+		 * the first call has already gone through NULL.
+		 */
+		if (qstate->use_alternate_io == 0 &&
+		    qstate->process_func != NULL) {
 			do {
 				res = qstate->process_func(qstate);
 			} while ((qstate->kevent_watermark == 0) &&

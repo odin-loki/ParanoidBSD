@@ -344,7 +344,7 @@ gpart_activate(struct gprovider *pp)
 {
 	struct gconfig *gc;
 	struct gctl_req *r;
-	const char *errstr, *scheme;
+	const char *errstr, *scheme = NULL;
 	const char *attribute = NULL;
 	intmax_t idx;
 
@@ -359,6 +359,14 @@ gpart_activate(struct gprovider *pp)
 		}
 	}
 
+	/*
+	 * PBSD: the search above sets scheme only when it finds one, and
+	 * gpart_create() further down already writes the same search as
+	 * `scheme = NULL' followed by a check.  Four functions here did
+	 * not, and read an uninitialised pointer.
+	 */
+	if (scheme == NULL)
+		return;
 	if (strcmp(scheme, "MBR") == 0 || strcmp(scheme, "EBR") == 0)
 		attribute = "active";
 	else
@@ -411,7 +419,7 @@ gpart_bootcode(struct ggeom *gp)
 	const char *bootcode;
 	struct gconfig *gc;
 	struct gctl_req *r;
-	const char *errstr, *scheme;
+	const char *errstr, *scheme = NULL;
 	uint8_t *boot;
 	size_t bootsize, bytes;
 	int bootfd;
@@ -428,6 +436,8 @@ gpart_bootcode(struct ggeom *gp)
 		}
 	}
 
+	if (scheme == NULL)		/* PBSD: no scheme, no bootcode */
+		return;
 	bootcode = bootcode_path(scheme);
 	if (bootcode == NULL) 
 		return;
@@ -465,8 +475,8 @@ static void
 gpart_partcode(struct gprovider *pp, const char *fstype)
 {
 	struct gconfig *gc;
-	const char *scheme;
-	const char *indexstr;
+	const char *scheme = NULL;
+	const char *indexstr = NULL;
 	char message[255], command[255];
 	struct bsddialog_conf conf;
 
@@ -478,7 +488,7 @@ gpart_partcode(struct gprovider *pp, const char *fstype)
 	}
 
 	/* Make sure this partition scheme needs partcode on this platform */
-	if (partcode_path(scheme, fstype) == NULL)
+	if (scheme == NULL || partcode_path(scheme, fstype) == NULL)
 		return;
 
 	LIST_FOREACH(gc, &pp->lg_config, lg_config) {
@@ -487,6 +497,9 @@ gpart_partcode(struct gprovider *pp, const char *fstype)
 			break;
 		}
 	}
+
+	if (indexstr == NULL)		/* PBSD: as above, for the index */
+		return;
 
 	/* Shell out to gpart for partcode for now */
 	snprintf(command, sizeof(command), "gpart bootcode -p %s -i %s %s",
@@ -550,7 +563,7 @@ gpart_edit(struct gprovider *pp)
 	struct gconfig *gc;
 	struct gconsumer *cp;
 	struct ggeom *geom;
-	const char *errstr, *oldtype, *scheme;
+	const char *errstr, *oldtype = NULL, *scheme = NULL;
 	struct partition_metadata *md;
 	char sizestr[32];
 	char *newfs;
@@ -623,6 +636,9 @@ gpart_edit(struct gprovider *pp)
 		}
 	}
 
+	if (scheme == NULL)		/* PBSD: as in gpart_activate() */
+		return;
+
 	nitems = scheme_supports_labels(scheme) ? 4 : 3;
 
 	/* Edit editable parameters of a partition */
@@ -639,6 +655,10 @@ gpart_edit(struct gprovider *pp)
 		if (strcmp(gc->lg_name, "index") == 0)
 			idx = atoi(gc->lg_val);
 	}
+
+	/* PBSD: oldtype is read three times after the dialog below. */
+	if (oldtype == NULL)
+		return;
 
 	TAILQ_FOREACH(md, &part_metadata, metadata) {
 		if (md->name != NULL && strcmp(md->name, pp->lg_name) == 0) {

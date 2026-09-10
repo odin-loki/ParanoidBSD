@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,629 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,453 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,622 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,650 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,806** | **114,207** |
+| | **total** | **41,143** | **21,300,834** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -28796,7 +28796,7 @@ function; a file with two hundred of them is a project.
 - [ ] **6.42.1** `diskmenu.c` · 91L · `TODO-PORT` · 1 fn
   - [ ] 6.42.1.1 `diskmenu_show()` · `TODO-FN`
 - [ ] **6.42.2** `diskmenu.h` · 53L · `TODO-HDR`
-- [ ] **6.42.3** `gpart_ops.c` · 1,589L · `TODO-PORT` · 19 fn
+- [ ] **6.42.3** `gpart_ops.c` · 1,609L · `TODO-PORT` · 19 fn
   - [ ] 6.42.3.1 `gpart_show_error()` · `TODO-FN`
   - [ ] 6.42.3.2 `scheme_supports_labels()` · `TODO-FN`
   - [ ] 6.42.3.3 `newfs_command()` · `TODO-FN`
@@ -33017,7 +33017,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.161.16.12 `on_mp_write_session_close_notification()` · `TODO-FN`
   - [ ] 6.161.16.13 `register_new_mp_cache_entry()` · `TODO-FN`
 - [ ] **6.161.17** `mp_ws_query.h` · 34L · `TODO-HDR`
-- [ ] **6.161.18** `nscd.c` · 874L · `TODO-PORT` · 12 fn
+- [ ] **6.161.18** `nscd.c` · 882L · `TODO-PORT` · 12 fn
   - [ ] 6.161.18.1 `usage()` · `TODO-FN`
   - [ ] 6.161.18.2 `init_cache_()` · `TODO-FN`
   - [ ] 6.161.18.3 `destroy_cache_()` · `TODO-FN`

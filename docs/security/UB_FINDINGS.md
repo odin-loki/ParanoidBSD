@@ -19778,3 +19778,77 @@ through `g()`.  In all the cases that paid, the guard and the use were
 adjacent and the helper sat between them; here the helper is a `usage()`
 called from an argument-parsing arm that the finding's path never
 takes.  Reading the finding is not a step that can be skipped.
+
+## bsdinstall: five searches whose result is used whether or not they found it
+
+`gpart_ops.c` looks up a geom's partition scheme the same way six times:
+
+```c
+	LIST_FOREACH(gc, &pp->lg_geom->lg_config, lg_config) {
+		if (strcmp(gc->lg_name, "scheme") == 0) {
+			scheme = gc->lg_val;
+			break;
+		}
+	}
+```
+
+`gpart_create()` and one arm of `gpart_edit()` write it correctly —
+`scheme = NULL;` first, and then a check afterwards.  The other four
+declared `const char *errstr, *scheme;` and used the result directly:
+
+| function | what it feeds the uninitialised pointer to |
+|---|---|
+| `gpart_activate()` | `strcmp(scheme, "MBR")` |
+| `gpart_bootcode()` | `bootcode_path(scheme)` |
+| `gpart_partcode()` | `partcode_path(scheme, fstype)`, and `indexstr` into the `gpart bootcode` command line |
+| `gpart_edit()` | `scheme_supports_labels(scheme)`, and `oldtype` into three `strcmp()`s after the dialog |
+
+The loop finds nothing when the geom is not a `PART` geom, or is a
+zombie — the case `gpart_edit()`'s other arm explicitly calls out
+("Check for zombie geoms, treating them as blank").  Seven findings, one
+shape, and the file already contained the correct idiom twice.
+
+## nscd(8): a read error hands the same block a NULL function pointer
+
+`process_socket_event()` handles the split-buffer path and then runs the
+query state machine:
+
+```c
+		if (qstate->use_alternate_io != 0) {
+			switch (qstate->io_buffer_filter) {
+			case EVFILT_READ:
+				io_res = query_socket_read(qstate, ...);
+				if (io_res < 0) {
+					qstate->use_alternate_io = 0;
+					qstate->process_func = NULL;
+				} else {
+					...
+				}
+			break;
+			...
+			}
+		}
+
+		if (qstate->use_alternate_io == 0) {
+			do {
+				res = qstate->process_func(qstate);
+			} while ((qstate->kevent_watermark == 0) &&
+					(qstate->process_func != NULL) &&
+					(res == 0));
+```
+
+The error arm sets *both* `use_alternate_io = 0` and
+`process_func = NULL` — which is exactly the state the block below calls
+`process_func` in.  The `do`/`while` tests `process_func != NULL` only
+as a continuation condition, so the first call has already gone through
+NULL by the time it is checked.  `query_socket_read()` returns negative
+on a short read or a peer that went away, so a local client that closes
+its socket part-way through a large answer crashes the daemon.
+
+The guard belongs on the `if`, and the body already ends by setting
+`process_func = NULL` when `res != 0`, so skipping the block when it is
+already NULL is exactly the intent.
+
+Measured over `usr.sbin/bsdinstall` and `usr.sbin/nscd`: 25 → 17,
+thirty-one translation units OK and no ERROR either side.  All eight
+that closed are the eight fixed here.
