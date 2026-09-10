@@ -275,6 +275,8 @@ load_config(const char *cfname)
 		while ((p = TAILQ_FIRST(&wj->params)))
 			free_param(&wj->params, p);
 		TAILQ_REMOVE(&wild, wj, tq);
+		/* PBSD: the wildcard jail record itself was never freed. */
+		free(wj);
 	}
 }
 

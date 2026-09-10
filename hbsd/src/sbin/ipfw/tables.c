@@ -1756,7 +1756,13 @@ table_do_get_list(ipfw_xtable_info *i, ipfw_obj_header **poh)
 	size_t sz;
 	int c;
 
-	sz = 0;
+	/*
+	 * PBSD: i->size comes from the kernel.  Seeded at zero, an i->size
+	 * of zero left sz at zero, and table_fill_objheader() below wrote a
+	 * whole ipfw_obj_header through a zero-sized allocation.  Start from
+	 * the header that fill always writes.
+	 */
+	sz = sizeof(*oh);
 	oh = NULL;
 	for (c = 0; c < 8; c++) {
 		if (sz < i->size)

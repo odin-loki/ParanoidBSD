@@ -19306,3 +19306,107 @@ them are string literals and borrowed pointers, `firstreq` is set to
 `[firstreq, firstreq + requests)` — which is exactly what the free loop
 covers.  The analyser will not track which slots of an array hold
 literals across two loops it does not unroll.
+
+## `Use of memory allocated with size zero` — one real class, one false one
+
+Thirteen findings in the progs shard, and reading all thirteen splits
+them cleanly in two.
+
+**The false class — count, allocate, fill.** Nine of the thirteen are
+this shape:
+
+```c
+	n = 0;
+	TAILQ_FOREACH(x, &list, e)
+		n++;
+	arr = malloc(n * sizeof(*arr));
+	i = 0;
+	TAILQ_FOREACH(x, &list, e)
+		arr[i++] = x;
+```
+
+The analyser sees that `n` can be zero, so the allocation can be
+zero-sized, and that `arr[i++]` writes through it.  It will not carry
+the fact that the same emptiness that made `n` zero also makes the
+second loop body unreachable.  `bin/ps`'s `descendant_sort()` (three
+findings — the guard there is `if ((lvl = ki[src].ki_d.level) == 0)
+continue;`, and reaching `path[n / 8]` requires `lvl > 0`, which forces
+`maxlvl >= 1`), `sbin/dhclient`'s `dispatch()`, `sbin/restore`'s
+`printlist()`, `usr.sbin/efibootmgr`'s `make_next_boot_var_name()`,
+`usr.sbin/jls`'s `add_param()`, `usr.sbin/kbdmap`'s `menu_read()`,
+`usr.sbin/bsdinstall`'s `apply_changes()` and `usr.bin/mkimg`'s
+`qcow_write()` are all it.
+
+**The real class — a size the kernel decides, used without a floor.**
+The other four are `sbin/ipfw`, and there the size is not counted
+locally, it is read back out of a structure the kernel filled in:
+
+```c
+	sz = req.size;
+	if ((olh = calloc(1, sz)) == NULL)
+		return;
+	olh->size = sz;
+```
+
+`req` is an `ipfw_obj_lheader` that was `memset` to zero and handed to
+`getsockopt`.  Nothing between the `memset` and the `calloc` constrains
+what comes back.  If `req.size` is zero — or anything short of
+`sizeof(ipfw_obj_lheader)` — `calloc(1, sz)` returns a minimum-bucket
+allocation and `olh->size = sz` writes four bytes through it.  The
+present kernel never reports less (`dump_srvobjects()` sets
+`hdr->size = sizeof(ipfw_obj_lheader) + count * sizeof(ipfw_obj_ntlv)`
+before the `ENOMEM` return; `list_ifaces()` likewise), but userland is
+on the other side of a trust boundary from it, and the check is one
+line.  Both `ipfw_list_objects()` and `ipfw_get_tracked_ifaces()` now
+refuse a `req.size` below `sizeof(req)`.
+
+`sbin/ipfw`'s `table_do_get_list()` is the same defect written
+differently, and this one does not need a hostile kernel to reach:
+
+```c
+	sz = 0;
+	oh = NULL;
+	for (c = 0; c < 8; c++) {
+		if (sz < i->size)
+			sz = i->size + 44;
+		...
+		if ((oh = calloc(1, sz)) == NULL)
+			continue;
+		table_fill_objheader(oh, i);
+```
+
+`sz` starts at zero and is only *raised*.  `0 < i->size` is false when
+`i->size` is zero, so `sz` stays zero for all eight attempts, and
+`table_fill_objheader()` writes a whole `ipfw_obj_header` — index, TLV
+type, length, set and a `strlcpy`'d table name — through a zero-sized
+allocation.  `sz` is now seeded at `sizeof(*oh)`, which is the header
+that fill always writes.
+
+Measured over `bin/ps`, `sbin/fsck`, `sbin/ipfw`, `sbin/quotacheck`,
+`usr.sbin/bsdinstall` and `usr.sbin/jail`: 52 → 49, with the
+translation-unit counts unchanged at 39 OK and no ERROR on either side.
+The three that closed are exactly the three `ipfw` sites.  `usr.sbin/kbdmap`
+was measured separately: 3 → 3, no change, as expected — a NULL check
+does not tell the analyser the size is non-zero.
+
+### Four allocations used without a check, and two frees that were missing
+
+Read out of the same set and fixed because they are defects even where
+the analyser was wrong about why:
+
+* `bin/ps`'s `descendant_sort()` — the `calloc` for the sibling bitmap
+  was the only unchecked allocation in the function; the `malloc` two
+  lines below it is checked with `xo_errx`.
+* `usr.sbin/kbdmap`'s `menu_read()` — `km_sorted` is indexed in the
+  statement after the `malloc`.  (`<err.h>` was not included; adding the
+  check without it turned the file into an ERROR, which the
+  `--check-errors` gate caught before it could be mistaken for a clean
+  sweep.)
+* `usr.sbin/bsdinstall`'s `apply_changes()` — same shape, `tobesorted`.
+* `sbin/fsck`'s `preen.c` — `p_devname`, `p_mntpt` and `p_type` are all
+  `estrdup()`ed when a partition is added; only two of the three were
+  freed.  (`quotacheck`'s near-copy is *not* affected: its `p_mntpt` is
+  a `const char *` borrowed from `quota_fsname()`.)
+* `usr.sbin/jail`'s `load_config()` — each wildcard jail's name and
+  parameters are freed and the record is `TAILQ_REMOVE`d, and then the
+  record itself is dropped on the floor.

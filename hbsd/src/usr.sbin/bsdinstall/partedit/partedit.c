@@ -415,6 +415,9 @@ apply_changes(struct gmesh *mesh)
 		TAILQ_FOREACH(md, &part_metadata, metadata)
 			nparts++;
 		tobesorted = malloc(sizeof(struct partition_metadata *)*nparts);
+		/* PBSD: the array is filled in immediately below. */
+		if (tobesorted == NULL)
+			err(1, "malloc");
 		nparts = 0;
 		TAILQ_FOREACH_SAFE(md, &part_metadata, metadata, tmp) {
 			tobesorted[nparts++] = md;

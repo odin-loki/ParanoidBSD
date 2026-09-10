@@ -197,6 +197,8 @@ checkfstab(int flags, int (*docheck)(struct fstab *),
 			} else {
 				free(p->p_type);
 				free(p->p_devname);
+				/* PBSD: p_mntpt is estrdup()ed too. */
+				free(p->p_mntpt);
 				free(p);
 			}
 			d->d_pid = 0;

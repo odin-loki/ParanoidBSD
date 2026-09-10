@@ -34,6 +34,7 @@
 #include <bsddialog.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <err.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -739,6 +740,9 @@ menu_read(void)
 
 	km_sorted = (struct keymap **)
 	    malloc(num_keymaps*sizeof(struct keymap *));
+	/* PBSD: the array is indexed immediately below, checked or not. */
+	if (km_sorted == NULL)
+		err(1, "malloc");
 
 	/* Make array of pointers to items in hash */
 	items = 0;

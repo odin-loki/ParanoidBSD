@@ -4824,6 +4824,69 @@ FIXES = {
         "is three bits, so a device claiming five to seven dwords wrote "
         "past uint32_t dw[4] with PCI configuration space",
     ),
+
+    "hbsd/src/sbin/ipfw/ipfw2.c": [
+        (
+            "if (sz < sizeof(req))\n\t\treturn;",
+            None,
+            "ipfw_list_objects: req.size is filled in by the kernel and was "
+            "used as the calloc() size with no floor, so a zero or short "
+            "value gave a zero-sized allocation that olh->size wrote "
+            "through",
+        ),
+        (
+            "if (sz < sizeof(req))\n\t\treturn (EINVAL);",
+            None,
+            "ipfw_get_tracked_ifaces: the same unfloored kernel-supplied "
+            "size, four hundred lines further down the same file",
+        ),
+    ],
+
+    "hbsd/src/sbin/ipfw/tables.c": (
+        "sz = sizeof(*oh);",
+        "\tsz = 0;\n\toh = NULL;",
+        "table_do_get_list: sz was seeded at zero and only grown when it "
+        "was below i->size, so a kernel reporting size zero left it at "
+        "zero and table_fill_objheader() wrote an ipfw_obj_header through "
+        "a zero-sized allocation",
+    ),
+
+    "hbsd/src/bin/ps/ps.c": (
+        'if (path == NULL)\n\t\txo_errx(1, "calloc failed");',
+        None,
+        "descendant_sort: the calloc for the sibling bitmap was the one "
+        "unchecked allocation in the function -- the malloc two lines "
+        "below it is checked with xo_errx",
+    ),
+
+    "hbsd/src/usr.sbin/kbdmap/kbdmap.c": (
+        'if (km_sorted == NULL)\n\t\terr(1, "malloc");',
+        None,
+        "menu_read: km_sorted was malloc'd and then indexed in the very "
+        "next statement with no check",
+    ),
+
+    "hbsd/src/usr.sbin/bsdinstall/partedit/partedit.c": (
+        'if (tobesorted == NULL)\n\t\t\terr(1, "malloc");',
+        None,
+        "apply_changes: the fstab sort array was malloc'd and filled in "
+        "immediately, with no check",
+    ),
+
+    "hbsd/src/sbin/fsck/preen.c": (
+        "free(p->p_mntpt);",
+        None,
+        "p_devname, p_mntpt and p_type are all estrdup()ed when the "
+        "partition is added; only two of the three were freed",
+    ),
+
+    "hbsd/src/usr.sbin/jail/config.c": (
+        "free(wj);",
+        None,
+        "load_config: each wildcard jail record was removed from the "
+        "list and its name and parameters freed, but the record itself "
+        "was left behind",
+    ),
 }
 
 

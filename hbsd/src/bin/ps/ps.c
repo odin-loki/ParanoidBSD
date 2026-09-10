@@ -1167,7 +1167,10 @@ descendant_sort(KINFO *ki, int items)
 	 * Now populate ki_d.prefix (instead of ki_d.level) with the command
 	 * prefix used to show descendancies.
 	 */
+	/* PBSD: this allocation was the one unchecked one in the function. */
 	path = calloc((maxlvl + 7) / 8, sizeof(unsigned char));
+	if (path == NULL)
+		xo_errx(1, "calloc failed");
 	for (src = 0; src < items; src++) {
 		if ((lvl = ki[src].ki_d.level) == 0) {
 			ki[src].ki_d.prefix = NULL;
