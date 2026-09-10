@@ -244,7 +244,16 @@ StrToPortRange (const char* str, const char* proto, port_range *portRange)
 	}
 
 	/* Port range, get the values and sanity check. */
-	sscanf (str, "%hu-%hu", &loPort, &hiPort);
+	/*
+	 * PBSD: sscanf() assigns fewer than two values for anything that
+	 * is not two decimal numbers around a '-' -- "-5", "a-b", "5-" --
+	 * and this ignored the return, so loPort and hiPort were read
+	 * from the stack.  The numports == 0 test below catches only the
+	 * subset where the garbage happens to come out lo > hi; anything
+	 * else installed a NAT redirect over a range nobody asked for.
+	 */
+	if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)
+		errx (EX_DATAERR, "invalid port range %s", str);
 	SETLOPORT(*portRange, loPort);
 	SETNUMPORTS(*portRange, 0);	/* Error by default */
 	if (loPort <= hiPort)

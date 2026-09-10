@@ -1249,8 +1249,17 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 			hdrlen = MAX(hdrlen, ckinfo[0].ck_off + 2U);
 		if (ckinfo[1].ck_valid)
 			hdrlen = MAX(hdrlen, ckinfo[1].ck_off + 2U);
+		/*
+		 * PBSD: iov[] is filled only for descriptors with a
+		 * non-zero length, so a guest TX chain whose descriptors
+		 * are all zero-length leaves iovcnt at 0 and iov[0]
+		 * untouched -- and hdrlen is non-zero as soon as the guest
+		 * asks for a checksum offload.  The pktlen test below
+		 * happens to stop the copy loop from acting on it, but the
+		 * read itself is of bhyve's stack.
+		 */
 		/* Round up writable space to the first vector. */
-		if (hdrlen != 0 && iov[0].iov_len > hdrlen &&
+		if (hdrlen != 0 && iovcnt > 0 && iov[0].iov_len > hdrlen &&
 		    iov[0].iov_len < hdrlen + 100)
 			hdrlen = iov[0].iov_len;
 	} else {

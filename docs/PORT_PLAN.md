@@ -54,9 +54,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,750 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
-| 4 | `sbin` | 533 | 228,496 | 3,567 |
+| 4 | `sbin` | 533 | 228,514 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,355 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,218 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,906** | **114,204** |
+| | **total** | **41,143** | **21,299,940** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -18673,7 +18673,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.52.6.2 `ipfw_main()` · `TODO-FN`
   - [ ] 4.52.6.3 `ipfw_readfile()` · `TODO-FN`
   - [ ] 4.52.6.4 `main()` · `TODO-FN`
-- [ ] **4.52.7** `nat.c` · 1,200L · `TODO-PORT` · 21 fn
+- [ ] **4.52.7** `nat.c` · 1,209L · `TODO-PORT` · 21 fn
   - [ ] 4.52.7.1 `set_addr_dynamic()` · `TODO-FN`
   - [ ] 4.52.7.2 `StrToAddr()` · `TODO-FN`
   - [ ] 4.52.7.3 `StrToPortRange()` · `TODO-FN`
@@ -19018,7 +19018,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **4.71.1** `icmp.c` · 125L · `TODO-PORT` · 1 fn
   - [ ] 4.71.1.1 `SendNeedFragIcmp()` · `TODO-FN`
-- [ ] **4.71.2** `natd.c` · 2,049L · `TODO-PORT` · 30 fn
+- [ ] **4.71.2** `natd.c` · 2,058L · `TODO-PORT` · 30 fn
   - [ ] 4.71.2.1 `SetAliasAddressFromIfName()` · `TODO-FN`
   - [ ] 4.71.2.2 `SetupProtoRedirect()` · `TODO-FN`
   - [ ] 4.71.2.3 `StrToProto()` · `TODO-FN`
@@ -26851,7 +26851,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.11.45.55 `pci_ahci_pause()` · `TODO-FN`
   - [ ] 6.11.45.56 `pci_ahci_resume()` · `TODO-FN`
   - [ ] 6.11.45.57 `lba_to_msf()` · `TODO-FN`
-- [ ] **6.11.46** `pci_e82545.c` · 2,555L gen:1 · `TODO-PORT` · 42 fn
+- [ ] **6.11.46** `pci_e82545.c` · 2,564L gen:1 · `TODO-PORT` · 42 fn
   - [ ] 6.11.46.1 `e82545_size_stat_index()` · `TODO-FN`
   - [ ] 6.11.46.2 `e82545_init_eeprom()` · `TODO-FN`
   - [ ] 6.11.46.3 `e82545_write_mdi()` · `TODO-FN`
@@ -27183,7 +27183,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.11.60.10 `pci_vtblk_init()` · `TODO-FN`
   - [ ] 6.11.60.11 `pci_vtblk_cfgwrite()` · `TODO-FN`
   - [ ] 6.11.60.12 `pci_vtblk_cfgread()` · `TODO-FN`
-- [ ] **6.11.61** `pci_virtio_console.c` · 765L gen:1 · `TODO-PORT` · 20 fn
+- [ ] **6.11.61** `pci_virtio_console.c` · 772L gen:1 · `TODO-PORT` · 20 fn
   - [ ] 6.11.61.1 `pci_vtcon_reset()` · `TODO-FN`
   - [ ] 6.11.61.2 `pci_vtcon_neg_features()` · `TODO-FN`
   - [ ] 6.11.61.3 `pci_vtcon_cfgread()` · `TODO-FN`

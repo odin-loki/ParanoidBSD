@@ -3017,15 +3017,24 @@ FIXES = {
         "pacct_add() and usracct_add(), so the flag word entering the "
         "accounting databases came off the frame",
     ),
-    "hbsd/src/usr.sbin/bhyve/pci_e82545.c": (
-        "PBSD: zero all of ckinfo, not just ck_valid.",
-        "\tckinfo[0].ck_valid = ckinfo[1].ck_valid = 0;",
-        "e82545_transmit: ck_start, ck_off and ck_len are written only "
-        "in the arms that set ck_valid or under `|| tso', and the VLAN "
-        "insertion correction adds to all six with no ck_valid test -- "
-        "which cannot BE guarded on ck_valid, because a TSO packet "
-        "without IXSM has ck_valid 0 and still uses ck_start",
-    ),
+    "hbsd/src/usr.sbin/bhyve/pci_e82545.c": [
+        (
+            "PBSD: zero all of ckinfo, not just ck_valid.",
+            "\tckinfo[0].ck_valid = ckinfo[1].ck_valid = 0;",
+            "e82545_transmit: ck_start, ck_off and ck_len are written only "
+            "in the arms that set ck_valid or under `|| tso', and the VLAN "
+            "insertion correction adds to all six with no ck_valid test -- "
+            "which cannot BE guarded on ck_valid, because a TSO packet "
+            "without IXSM has ck_valid 0 and still uses ck_start",
+        ),
+        (
+            "if (hdrlen != 0 && iovcnt > 0 && iov[0].iov_len > hdrlen &&",
+            "if (hdrlen != 0 && iov[0].iov_len > hdrlen &&",
+            "e82545_transmit: a guest TX chain of all-zero-length "
+            "descriptors leaves iovcnt at 0 and iov[0] untouched, and the "
+            "guest sets hdrlen non-zero by asking for a checksum offload",
+        ),
+    ],
     "hbsd/src/usr.sbin/bhyve/tpm_intf_crb.c": [
         (
             "union tpm_crb_reg_loc_ctrl loc_ctrl = { 0 };",
@@ -4059,6 +4068,28 @@ FIXES = {
         "mlx_periodic_eventlog_poll: the free() was gated on mc->mc_data, "
         "which is set only after mlx_getslot() succeeds -- and read mc "
         "after mlx_releasecmd(), on a path where mc can be NULL",
+    ),
+
+    "hbsd/src/sbin/ipfw/nat.c": (
+        'if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)',
+        'sscanf (str, "%hu-%hu", &loPort, &hiPort);\n\tSETLOPORT',
+        "StrToPortRange: the sscanf() return was ignored, so a port "
+        "range the shell handed it that is not two numbers around a '-' "
+        "installed a NAT redirect over stack contents",
+    ),
+
+    "hbsd/src/sbin/natd/natd.c": (
+        'if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)',
+        'sscanf (str, "%hu-%hu", &loPort, &hiPort);\n\tSETLOPORT',
+        "StrToPortRange: natd's copy of the same ignored sscanf()",
+    ),
+
+    "hbsd/src/usr.sbin/bhyve/pci_virtio_console.c": (
+        "int i, ret = 1;",
+        "\tint i, ret;\n",
+        "pci_vtcon_sock_tx: the loop is the only writer of ret and the "
+        "test after it runs regardless, so a zero-descriptor console "
+        "buffer let the guest tear the connection down off a stack word",
     ),
 }
 

@@ -465,7 +465,14 @@ pci_vtcon_sock_tx(struct pci_vtcon_port *port __unused, void *arg __unused,
     struct iovec *iov, int niov)
 {
 	struct pci_vtcon_sock *sock;
-	int i, ret;
+	/*
+	 * PBSD: the loop below is the only writer of ret, and the test
+	 * after it runs whether or not the loop did.  A guest that puts
+	 * a zero-descriptor buffer on the console transmit queue made
+	 * bhyve decide from a stack word whether to tear the connection
+	 * down.  1 is "nothing went wrong", so an empty chain is a no-op.
+	 */
+	int i, ret = 1;
 
 	sock = (struct pci_vtcon_sock *)arg;
 

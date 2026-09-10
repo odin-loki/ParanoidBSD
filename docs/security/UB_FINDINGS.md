@@ -16538,3 +16538,113 @@ findings          26      23
 ```
 
 `zynqmp_clock.c` 2 → 0, `mlx.c` 1 → 0.
+
+## The progs shard, opened: two in bhyve's guest-facing emulation
+
+`bin`, `sbin`, `usr.bin` and `usr.sbin` carry 689 findings — the largest
+untriaged pool left, and the only shard where `unix.Malloc` (206) rivals
+`core.NullDereference` (220). Starting at the
+`core.UndefinedBinaryOperatorResult` set, which is where the real defects
+have been in every other shard.
+
+### pci_vtcon_sock_tx()
+
+```c
+	int i, ret;
+	...
+	for (i = 0; i < niov; i++) {
+		ret = stream_write(sock->vss_conn_fd, iov[i].iov_base,
+		    iov[i].iov_len);
+		if (ret <= 0)
+			break;
+	}
+
+	if (ret <= 0) {
+		mevent_delete_close(sock->vss_conn_evp);
+		sock->vss_conn_fd = -1;
+		sock->vss_open = false;
+	}
+```
+
+The loop is the only writer of `ret` and the test after it runs whether
+or not the loop did. `niov` is the descriptor count on a virtio-console
+transmit buffer, so a guest that queues a zero-descriptor buffer makes
+bhyve decide from a stack word whether to tear the console connection
+down. `ret = 1` at the declaration makes an empty chain a no-op, which
+is what it is.
+
+### e82545_transmit()
+
+```c
+		if (hdrlen != 0 && iov[0].iov_len > hdrlen &&
+		    iov[0].iov_len < hdrlen + 100)
+			hdrlen = iov[0].iov_len;
+```
+
+`iov[]` is filled by the transmit-descriptor walk, which skips any
+descriptor whose length is zero:
+
+```c
+		if (len > 0 && iovcnt < I82545_MAX_TXSEGS) {
+			iov[iovcnt].iov_base = paddr_guest2host(...);
+```
+
+so a guest TX chain whose descriptors are all zero-length leaves
+`iovcnt` at 0 and `iov[0]` untouched — and `hdrlen` is non-zero as soon
+as the guest asks for a checksum offload, because the arms above set it
+from `ckinfo[].ck_off`. The read is of bhyve's stack.
+
+It is not exploitable as it stands, and the reason is worth writing
+down: `hdrlen` only ever grows here, and forty lines later
+
+```c
+	if (pktlen < hdrlen + vlen) {
+		WPRINTF("packet too small for writable header");
+		goto done;
+	}
+```
+
+with `pktlen` also 0 stops the copy loop from acting on it. The guard is
+now `iovcnt > 0`, which is what the line means.
+
+### Two copies of an ignored sscanf(), and a finding that meant something else
+
+`StrToPortRange()` exists twice — `sbin/ipfw/nat.c` and
+`sbin/natd/natd.c`, byte for byte:
+
+```c
+	sscanf (str, "%hu-%hu", &loPort, &hiPort);
+	SETLOPORT(*portRange, loPort);
+	SETNUMPORTS(*portRange, 0);	/* Error by default */
+	if (loPort <= hiPort)
+		SETNUMPORTS(*portRange, hiPort - loPort + 1);
+
+	if (GETNUMPORTS(*portRange) == 0)
+		errx (EX_DATAERR, "invalid port range %s", str);
+```
+
+`sscanf()` assigns fewer than two values for anything that is not two
+decimal numbers around a `-` — `"-5"`, `"a-b"`, `"5-"` — and the return
+is ignored, so `loPort` and `hiPort` come off the stack. The
+`numports == 0` test catches only the subset where the garbage happens
+to come out `lo > hi`; anything else silently installs a NAT redirect
+over a port range nobody asked for. Both now check, using each file's
+own `errx` two lines below.
+
+The three findings in each copy did not move. They are on lines 227 and
+235 as well as the one I edited, and all three name `*portRange` — the
+caller's out-parameter struct that the `SETLOPORT` macro
+read-modify-writes, which is the unconstrained-parameter class. This is
+`__rec_put()` again: the sweep put a person in the function, and the
+defect there was not the one it named.
+
+```
+              before   after     (sbin/ipfw, sbin/natd, usr.sbin/bhyve)
+OK               103     103
+ERROR              2       2
+findings          47      45
+```
+
+`pci_e82545.c` 2 → 1 — the surviving one is the `iov->iov_len` read
+inside the header-copy loop, which is past the `pktlen` check —
+and `pci_virtio_console.c` 1 → 0.
