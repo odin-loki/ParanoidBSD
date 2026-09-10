@@ -5153,6 +5153,18 @@ FIXES = {
     ],
 
 
+    "hbsd/src/lib/libcalendar/calendar.c": (
+        "nd = (int)(((long long)nd - nmonday) % 7);",
+        "nd = (nd - nmonday) % 7;",
+        "weekday() subtracted a cached day number of 729652 from its "
+        "int parameter, which overflows -- undefined, not merely wrong "
+        "-- for every nd below INT_MIN + 729652. It is a public "
+        "libcalendar entry point with no stated domain, so that is its "
+        "whole int range. Found by the fuzzing engine, which replayed "
+        "the input and got a UBSan report naming the line.",
+    ),
+
+
     "hbsd/src/usr.sbin/crunch/crunchide/exec_elf32.c": (
         "if (xe16toh(ehdr.e_shentsize) != sizeof(Elf_Shdr)) {",
         "shdrsize = shnum * xe16toh(ehdr.e_shentsize);",

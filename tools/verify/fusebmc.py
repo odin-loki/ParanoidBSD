@@ -54,6 +54,12 @@ The status vocabulary is never merged:
               this one is not run rather than reported as a crash it
               cannot distinguish. _Exit() and quick_exit() were two of
               the first four CRASHes this ever produced at scale.
+  SANFAIL     the sanitizer aborted on its OWN internal invariant --
+              "AddressSanitizer: CHECK failed: asan_allocator.cpp:601"
+              -- which says nothing about the code under it. Kept
+              separate rather than dropped, because it is a real limit
+              on what this engine can see. memalign(1 << 63, 0) was the
+              first.
   RUNNABLE    --dry-run only. The harness WOULD build; nothing was run
               and nothing is claimed. It is the reach number, and it is
               a ceiling on the truth -- a function that classifies
@@ -135,6 +141,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import noreturn_check                                    # noqa: E402
+from includes import (arch_of, include_flags, lang_flags,   # noqa: E402
+                      libcxx_shim)
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
@@ -407,6 +415,111 @@ def build_harness(src: Path, fn: str, params, ret: str = "int") -> str:
     )
 
 
+def cpp_flags(flags: list[str], accept=("-I", "-D", "-U")) -> list[str]:
+    """The preprocessor half of a flag list, with its pairs kept whole.
+
+    `-include foo.h' is TWO argv elements, so a filter written as a list
+    comprehension over the first character keeps the `-include' and
+    drops the header -- which is worse than dropping both, because the
+    next flag silently becomes its argument.
+
+    `accept' narrows it further for cbmc, which is not a compiler
+    driver: it takes -I and -D and rejects everything else outright.
+    Passing it -U__linux__ makes it print its usage and exit, and the
+    engine read that as "no seed" -- six functions came back NOSEED with
+    a page of cbmc's own help text as the reason, which is the tool
+    reporting its own misuse as a property of the code.
+    """
+    keep, i = [], 0
+    pair = ("-include", "-I", "-D", "-U", "-isystem", "-imacros")
+    while i < len(flags):
+        f = flags[i]
+        if f in pair:                       # separated form: -I dir
+            if f in accept:
+                keep += flags[i:i + 2]
+            i += 2
+            continue
+        if f.startswith(accept):
+            keep.append(f)
+        i += 1
+    return keep
+
+
+SAN_INTERNAL = re.compile(
+    r"(AddressSanitizer|UndefinedBehaviorSanitizer|LeakSanitizer|"
+    r"ThreadSanitizer|MemorySanitizer|Sanitizer): CHECK failed:")
+
+
+def evidence(text: str) -> str:
+    """The part of a sanitizer report that says what happened.
+
+    _tail() is right for a compiler, which puts its verdict last, and
+    wrong for a sanitizer, which puts it FIRST and a stack trace after
+    it. A 600-character tail of an ASan report is the frame numbers.
+    """
+    m = SAN_INTERNAL.search(text or "")
+    return (text[m.start():m.start() + 400] if m else _tail(text, 600))
+
+
+def sanitizer_broke(text: str) -> bool:
+    """Did the SANITIZER abort on its own invariant rather than report?
+
+        AddressSanitizer: CHECK failed: asan_allocator.cpp:601
+        "((user_end)) <= ((alloc_end))" (0x8000000000000001, ...)
+
+    That is not a finding about the program. memalign(1 << 63, 0) came
+    back CRASH on it, and the C library's answer to an alignment it does
+    not support is NULL with EINVAL -- so the report was the
+    instrument's arithmetic overflowing, not the code's. A crash that is
+    the instrument is worse than no crash at all, because it is spent as
+    if it were the certainty this engine's whole value rests on.
+    """
+    return bool(SAN_INTERNAL.search(text or ""))
+
+
+def flags_for(src: Path) -> list[str]:
+    """The include path this translation unit is actually compiled with.
+
+    The first version of this engine passed NONE of it -- neither to
+    CBMC nor to the harness compiler -- and the cost was not a rounding
+    error. Over lib/libc and lib/msun, 854 of 4,390 pairs came back
+    NOSEED and the top four reasons were `namespace.h: No such file or
+    directory' (201), `sys/_types.h' (137), `fpmath.h' (112) and a
+    CONVERSION ERROR that is the same thing one layer down. All four
+    headers are IN THIS TREE; nothing was wrong with the code, the
+    instrument was reading it through a Linux host's include path.
+
+    classify.py has computed this per file since the beginning, for
+    goto-cc. It is the same answer for cbmc and for afl-clang-fast, so
+    it is asked for the same way rather than approximated a third time.
+    """
+    try:
+        rel = src.resolve().relative_to(SRC).as_posix()
+    except ValueError:
+        rel = str(src)
+    # as_c=True: a landed .cpp port is a pure rename at this stage, and
+    # the harness is C. classify.py makes the same choice for the same
+    # reason.
+    flags = (lang_flags(src, rel, as_c=True)
+             + include_flags(src, arch_of(rel), cc="clang"))
+    if src.suffix == ".cpp":
+        # ...and having said the file is C, do not then put libc++ in
+        # front of the C headers. include_flags() leads every .cpp with
+        # the libc++ shim, which is right for a C++ compile and fatal
+        # for a C one: <__config> #errors by name --
+        #
+        #   libc++ only supports C++03 with Clang-based compilers.
+        #   Please enable C++11
+        #
+        # -- through cbmc's GCC preprocessing, and imaxabs.cpp went from
+        # a counterexample (the real imaxabs(INTMAX_MIN)) to NOSEED the
+        # moment the include path was wired up. A widening that loses a
+        # finding is not a widening.
+        drop = set(libcxx_shim())
+        flags = [f for f in flags if f not in drop]
+    return flags
+
+
 def cbmc_seed(src: Path, fn: str, params, nbytes: int, timeout: int):
     """A seed from CBMC: its counterexample values if it has one, else None.
 
@@ -416,15 +529,36 @@ def cbmc_seed(src: Path, fn: str, params, nbytes: int, timeout: int):
     asked to look somewhere BMC has already closed -- which is exactly
     when its budget should go elsewhere.
     """
-    cmd = ["cbmc", str(src), "--function", fn, "--unwind", "4",
-           "--bounds-check", "--pointer-check", "--div-by-zero-check",
-           "--signed-overflow-check", "--trace"]
-    try:
-        p = subprocess.run(cmd, capture_output=True, text=True,
-                           timeout=timeout)
-    except (subprocess.TimeoutExpired, OSError):
-        return None, "cbmc did not run"
-    out = (p.stdout or "") + (p.stderr or "")
+    base = ["cbmc", str(src), "--function", fn, "--unwind", "4",
+            "--bounds-check", "--pointer-check", "--div-by-zero-check",
+            "--signed-overflow-check", "--trace"]
+    # -I and -D and nothing else: see cpp_flags(). cbmc does not need
+    # -nostdinc either -- it models the C library itself rather than
+    # reading a host's headers for it.
+    #
+    # TWO attempts, the flagged one first. The build's include path is
+    # a large net win (854 NOSEED to 246 over lib/libc and lib/msun,
+    # because namespace.h and fpmath.h are in this tree) but it is not
+    # a pure one: it also hands cbmc's C front end headers cbmc cannot
+    # parse, and imaxabs.cpp went from a real counterexample --
+    # imaxabs(INTMAX_MIN) -- to `parse error before __char16_t' the
+    # moment sys/_types.h became reachable. A widening that loses a
+    # finding is not a widening, so where the flagged run cannot even
+    # parse, the bare one it used to do is tried instead and whichever
+    # answers is kept.
+    attempts = [cpp_flags(flags_for(src), accept=("-I", "-D")), []]
+    out = ""
+    for i, extra in enumerate(attempts):
+        if i and extra == attempts[0]:      # identical: nothing to retry
+            break
+        try:
+            p = subprocess.run(base + extra, capture_output=True, text=True,
+                               timeout=timeout)
+        except (subprocess.TimeoutExpired, OSError):
+            return None, "cbmc did not run"
+        out = (p.stdout or "") + (p.stderr or "")
+        if "PARSING ERROR" not in out and "CONVERSION ERROR" not in out:
+            break
     if "VERIFICATION FAILED" in out:
         # CBMC prints `  j=-2147483648 (10000000 ...)' for each input.
         # Pack each named value at the width and offset the harness reads
@@ -499,6 +633,26 @@ def fuzz_one(src: Path, fn: str, budget: int, workdir: Path,
     # reported CLEAN on a function it had not executed. The same is true
     # of memcpy, strlen, memset and every other libc name clang knows.
     # A harness without -fno-builtin is testing the compiler.
+    #
+    # HOST headers here, deliberately, and NOT the tree's -- which is
+    # the opposite of what cbmc_seed() is given three lines up, so it is
+    # worth saying why.
+    #
+    # The two halves of this hybrid want different things. CBMC READS
+    # the code: giving it flags_for(src) is strictly better, because
+    # namespace.h and fpmath.h are in this tree and a header it cannot
+    # find is a function it cannot model. The fuzzer RUNS the code, on
+    # Linux, linked against glibc. Compiling the unit with the build's
+    # own flags was tried and it does not work: those flags carry
+    # --target=x86_64-unknown-freebsd15.0, the object comes out with a
+    # FreeBSD ABI, and linking it into a Linux binary produced three
+    # CRASHes that were all the harness -- valloc(0) and weekday(729652)
+    # both SEGV'd before executing a line of their own code. A crash
+    # that is the instrument is worse than no crash at all.
+    #
+    # So the reach of the fuzzing half stays bounded by what compiles
+    # and links against the host's C library, and that bound is reported
+    # as ERROR with the linker's own words rather than papered over.
     cp = subprocess.run(
         [cc, "-g", "-O1", "-fno-builtin", "-fsanitize=address,undefined",
          "-fno-sanitize-recover=all", str(work / "harness.c"), str(src),
@@ -518,8 +672,20 @@ def fuzz_one(src: Path, fn: str, budget: int, workdir: Path,
     # one valid input seed that does not crash!"), which the first
     # version of this read as CLEAN. A fuzzer that would not start and a
     # fuzzer that found nothing are not the same answer.
+    #
+    # allocator_may_return_null=1, because without it ASan ABORTS on a
+    # request its allocator considers absurd -- and "absurd" is exactly
+    # what a fuzzer feeds a function whose parameter is a size. valloc()
+    # and memalign() were both reported CRASH on the first real run over
+    # lib/libc, on 0x8700000000 and on an alignment of 2^63; the C
+    # library returns NULL with ENOMEM there, and reporting that as a
+    # crash is reporting the sanitizer's policy as the code's defect.
+    # With the option set the call returns NULL, and a function that
+    # then USES that NULL still crashes, which is the finding worth
+    # having.
     SAN = {"UBSAN_OPTIONS": "halt_on_error=1:abort_on_error=1:print_stacktrace=1",
-           "ASAN_OPTIONS": "abort_on_error=1:symbolize=0:detect_leaks=0"}
+           "ASAN_OPTIONS": "abort_on_error=1:symbolize=0:detect_leaks=0"
+                           ":allocator_may_return_null=1"}
     rp = subprocess.run([str(binp)], input=seed, capture_output=True,
                         timeout=30, env={**os.environ, **SAN})
     # A SIGNAL, not a status.  The harness always returns 0, so a
@@ -527,9 +693,11 @@ def fuzz_one(src: Path, fn: str, budget: int, workdir: Path,
     # is a function doing its job, not a crash.  Both sanitizers are
     # configured abort_on_error=1, so a real report arrives as SIGABRT.
     if rp.returncode < 0:
-        return {**rec, "status": "CRASH", "seed": why, "found_by": "bmc-seed",
-                "inputs": [seed.hex()],
-                "detail": _tail((rp.stderr or b"").decode("utf-8", "replace")),
+        said = (rp.stderr or b"").decode("utf-8", "replace")
+        return {**rec,
+                "status": "SANFAIL" if sanitizer_broke(said) else "CRASH",
+                "seed": why, "found_by": "bmc-seed",
+                "inputs": [seed.hex()], "detail": evidence(said),
                 "elapsed": time.time() - t_start}
 
     # A second, all-zero seed so the corpus survives one bad input.
@@ -563,9 +731,44 @@ def fuzz_one(src: Path, fn: str, budget: int, workdir: Path,
     crashes = sorted((out / "default" / "crashes").glob("id:*")) \
         if (out / "default" / "crashes").is_dir() else []
     if crashes:
-        return {**rec, "status": "CRASH", "seed": why,
+        # REPLAY the first one and keep what the sanitizer said.
+        #
+        # AFL saves the input and nothing else, so a fuzzer-found CRASH
+        # was recorded as a hex string with an empty `detail' -- which
+        # names an input without naming a defect, and every one of them
+        # then had to be re-run by hand to find out what it was. The
+        # seed-replay path a hundred lines up already keeps the
+        # sanitizer's report; this is the same thing for the other half,
+        # and it costs one execution.
+        detail, said, first = "", "", crashes[0].read_bytes()
+        try:
+            back = subprocess.run([str(binp)], input=first,
+                                  capture_output=True, timeout=30,
+                                  env={**os.environ, **SAN})
+            # `said' is the WHOLE report and `detail' its tail. The
+            # sanitizer prints its own CHECK failure on the FIRST line
+            # and the stack after it, so a tail of 600 characters is
+            # exactly the part that does not contain the answer --
+            # memalign came back CRASH again with the line that would
+            # have classified it three screens above the cut.
+            said = (back.stderr or b"").decode("utf-8", "replace")
+            detail = _tail(said, 600)
+            if sanitizer_broke(said):
+                detail = evidence(said)
+            elif back.returncode >= 0:
+                # It did not die this time. Say so rather than dressing
+                # a stale artefact up as a reproduction: AFL's own
+                # environment differs from a bare run, and an input that
+                # only crashes under it is a claim about the fuzzer.
+                detail = ("did not reproduce outside afl-fuzz (exit %d); "
+                          "%s" % (back.returncode, detail))
+        except (subprocess.TimeoutExpired, OSError) as e:
+            detail = "replay failed: %r" % (e,)
+        return {**rec,
+                "status": "SANFAIL" if sanitizer_broke(said) else "CRASH",
+                "seed": why, "found_by": "fuzzer",
                 "inputs": [c.read_bytes().hex() for c in crashes[:4]],
-                "elapsed": time.time() - t0}
+                "detail": detail, "elapsed": time.time() - t0}
     return {**rec, "status": "CLEAN", "seed": why,
             "elapsed": time.time() - t0,
             "note": "found nothing in this budget; not a proof"}

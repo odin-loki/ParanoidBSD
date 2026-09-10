@@ -279,8 +279,16 @@ weekday(int nd)
 	if (nmonday == 0)
 		nmonday = ndaysgi(&dmondaygi);
 
-	/* return (nd - nmonday) modulo 7 which is the weekday */
-	nd = (nd - nmonday) % 7;
+	/*
+	 * return (nd - nmonday) modulo 7 which is the weekday.
+	 *
+	 * In long long, because nd is this function's whole int domain and
+	 * nmonday is 729652: the subtraction overflows for every nd below
+	 * INT_MIN + 729652, which is undefined rather than merely wrong.
+	 * The wider type is exact for every int and the result still fits
+	 * one, so nothing in range changes.
+	 */
+	nd = (int)(((long long)nd - nmonday) % 7);
 	if (nd < 0)
 		return (nd + 7);
 	else

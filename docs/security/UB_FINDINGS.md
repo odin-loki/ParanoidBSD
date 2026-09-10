@@ -20451,3 +20451,174 @@ unchanged tree is a true finding that would have failed the eight runs
 before it for no reason anybody could act on.  The asymmetry is what
 makes it worth running anyway: `CLEAN` is worth nothing and is never
 reported as if it were, and `CRASH` is a concrete input and a signal.
+
+## libcalendar: `weekday()` overflows for the bottom 729,652 of its domain
+
+`weekday(int nd)` caches the day number of a known Monday — 729,652 —
+and reduces its argument against it:
+
+```c
+	nd = (nd - nmonday) % 7;
+```
+
+For every `nd` below `INT_MIN + 729652` that subtraction overflows,
+which is undefined and not merely wrong.  It is a public `libcalendar`
+entry point with no stated domain, so that is its whole `int` range; the
+only in-tree caller, `firstday()`, passes an `ndaysgi()` result and stays
+well inside it, which is why nothing had noticed.
+
+Widened, exactly:
+
+```c
+	nd = (int)(((long long)nd - nmonday) % 7);
+```
+
+`long long` holds every `int` difference and the result still fits an
+`int`, so nothing in range changes.
+
+Found by the fuzzing engine, not by the analyser or the model checker —
+AFL produced `nd = 0x8000550b`, the replay came back
+`UndefinedBehaviorSanitizer: undefined-behavior calendar.c:283:11`, and
+the same function is `CLEAN` on the same budget after the fix.
+
+## The first fusebmc run at scale: three of five crashes were the instrument
+
+4,390 (translation unit, function) pairs over `lib/libc` and `lib/msun`,
+`--jobs 4 --budget 20`.  The opening run reported five CRASHes.  Read one
+at a time, they were:
+
+| function | verdict |
+|---|---|
+| `abs` | real — `abs(INT_MIN)`, documented C UB |
+| `imaxabs` | real — the same at `intmax_t` |
+| `weekday` | real — fixed above |
+| `valloc` | the sanitizer's policy, not the code |
+| `memalign` | the sanitizer's own internal assertion |
+
+Two were the instrument, and neither is a rounding error: a tool whose
+entire claim is *a crash is a certainty* was running at a 40% false rate
+on the one status that carries the claim.
+
+**`valloc(0x8700000000)`.**  ASan's allocator *aborts* on a request it
+considers absurd, and "absurd" is exactly what a fuzzer feeds a function
+whose only parameter is a size.  The C library returns `NULL` with
+`ENOMEM` there.  `allocator_may_return_null=1` restores the library's
+own answer, and a function that then *uses* that `NULL` still crashes —
+which is the finding worth having.  `valloc` is `CLEAN` with it set.
+
+**`memalign(1 << 63, 0)`.**  Not a report at all:
+
+```
+AddressSanitizer: CHECK failed: asan_allocator.cpp:601
+"((user_end)) <= ((alloc_end))" (0x8000000000000001, 0x502000000020)
+```
+
+That is ASan's own arithmetic overflowing, and it says nothing about
+the code beneath it.  It gets its own status, `SANFAIL`, rather than
+being dropped: it is a real limit on what this engine can see, and a
+limit that is not counted is a limit nobody knows about.
+
+Classifying it needed one more correction.  `_tail()` is right for a
+compiler, which puts its verdict last, and exactly wrong for a
+sanitizer, which puts the verdict *first* and forty stack frames after
+it — so the first attempt kept 600 characters that contained only frame
+numbers, and `memalign` came back CRASH a second time with the line that
+classifies it three screens above the cut.  `evidence()` takes the head
+when there is a sanitizer verdict in it and falls back to the tail
+otherwise.
+
+A fuzzer-found CRASH also recorded only AFL's saved input and an empty
+`detail`, so every one of them had to be re-run by hand to find out what
+it was.  It is now replayed under the sanitizers and the report kept —
+one execution, and the difference between a finding you can read and a
+hex string.
+
+## The include path the two halves of the hybrid do not share
+
+`cbmc_seed()` was being run with no `-I` at all.  Over the same 4,390
+pairs, 854 came back `NOSEED` — CBMC could not be run, so the fuzzer got
+no smart seed and was never started — and the top reasons were
+`namespace.h: No such file or directory` (201), `sys/_types.h` (137) and
+`fpmath.h` (112).  **All three headers are in this tree.**  Nothing was
+wrong with the code; the instrument was reading it through a Linux
+host's include path.
+
+`classify.py` has computed the right answer per file since the
+beginning, for `goto-cc`.  It is the same answer for `cbmc`, so it is
+asked for the same way rather than approximated a third time.  Two
+details made it work:
+
+* **`cbmc` is not a compiler driver.**  It takes `-I` and `-D` and
+  rejects everything else outright — `Unknown option: -U__linux__`,
+  then a page of usage, then exit.  The engine read that page as the
+  reason for `NOSEED`, which is a tool reporting its own misuse as a
+  property of the code.
+* **`-include foo.h` is two argv elements.**  A filter written as a
+  comprehension over the first character keeps the `-include` and drops
+  the header, which is worse than dropping both: the next flag silently
+  becomes its argument.
+
+`NOSEED` fell from 854 to 240.
+
+### What that did NOT do
+
+`ERROR` rose from 3,412 to 4,026 by almost exactly the same amount, and
+`CLEAN` went from 19 to 21.  The 614 pairs CBMC can now read fail one
+stage later instead, at the harness compile, on the same headers.
+
+That is a better diagnosis, not more fuzzing, and it is worth being
+plain about which.  The harness compile deliberately keeps the **host**
+include path, and the reason is not oversight:
+
+* CBMC **reads** the code, so the tree's headers are strictly better for
+  it.
+* The fuzzer **runs** the code, on Linux, linked against glibc.
+
+Compiling the unit with the build's own flags was tried.  Those flags
+carry `--target=x86_64-unknown-freebsd15.0`; the object comes out with a
+FreeBSD ABI, and linking it into a Linux binary produced three CRASHes
+that were all harness — `valloc(0)` and `weekday(729652)` both SEGV'd
+before executing a line of their own code.  Adding only the tree's `-I`
+without the target is no better: those paths shadow the host's headers,
+so `abs` and `weekday`, which build and run today, stop linking.
+
+So the fuzzing half's reach stays bounded by what compiles and links
+against the host's C library, and that bound is reported as `ERROR` in
+the linker's own words rather than papered over:
+
+| why ERROR | pairs |
+|---|---|
+| a pointer, array or varargs parameter | 2,910 |
+| a type not in the scalar table | 484 |
+| harness compile: a tree header the host path lacks | 482 |
+| harness compile: other | 142 |
+| harness link: needs the rest of the library | 5 |
+
+### A widening that loses a finding is not a widening
+
+The include path is a large net win and not a pure one.  It also hands
+CBMC's C front end headers CBMC cannot parse, and `imaxabs.cpp` went
+from a real counterexample to `parse error before '__char16_t'` the
+moment `sys/_types.h` became reachable — a genuine defect lost to an
+improvement.  Two things fix it:
+
+* For a landed `.cpp` port read as C, the libc++ shim is dropped.
+  `include_flags()` leads every `.cpp` with it, which is right for a C++
+  compile and fatal for a C one: `<__config>` `#error`s by name.
+* Where the flagged run cannot even parse, the bare run it used to do is
+  tried instead, and whichever answers is kept.
+
+`imaxabs` is back to CRASH on the real `imaxabs(INTMAX_MIN)`.
+
+### The pair, side by side
+
+Same tree layout, same scope, same budget:
+
+```
+before   CLEAN 19  CRASH 5  SANFAIL 0  NOSEED 854  ERROR 3412  NOFUNC 89  NORETURN 11
+after    CLEAN 21  CRASH 2  SANFAIL 1  NOSEED 240  ERROR 4026  NOFUNC 89  NORETURN 11
+```
+
+Both CRASHes that remain are real and both are the same documented UB:
+negating the most negative value of the type.  Of the three that went,
+one was fixed in the tree and two were the instrument.

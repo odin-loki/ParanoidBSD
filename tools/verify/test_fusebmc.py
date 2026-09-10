@@ -129,6 +129,37 @@ class Harness(unittest.TestCase):
         self.assertIn("volatile int sink", h)
 
 
+class CppFlags(unittest.TestCase):
+    """cbmc is not a compiler driver, and neither is a list comprehension.
+
+    Both halves of this were real: passing cbmc a flag it does not take
+    made it print its usage and exit, which the engine recorded as
+    NOSEED with a page of help text as the reason -- the tool reporting
+    its own misuse as a property of the code.
+    """
+
+    def test_a_separated_pair_is_kept_whole(self):
+        self.assertEqual(fusebmc.cpp_flags(["-I", "/a", "-O2"]),
+                         ["-I", "/a"])
+
+    def test_a_dropped_pair_takes_its_argument_with_it(self):
+        # Keeping `-include' and dropping the header is worse than
+        # dropping both: the next flag silently becomes its argument.
+        got = fusebmc.cpp_flags(["-include", "x.h", "-I/b"])
+        self.assertEqual(got, ["-I/b"])
+
+    def test_the_cbmc_set_refuses_minus_u(self):
+        # cbmc 5.95.1: "Unknown option: -U__linux__", then usage, exit.
+        got = fusebmc.cpp_flags(["-I/a", "-U__linux__", "-DX=1"],
+                                accept=("-I", "-D"))
+        self.assertEqual(got, ["-I/a", "-DX=1"])
+
+    def test_nostdinc_is_not_a_preprocessor_flag_here(self):
+        # cbmc models the C library itself rather than reading a host's
+        # headers for it, so -nostdinc is neither needed nor accepted.
+        self.assertEqual(fusebmc.cpp_flags(["-nostdinc", "-I/a"]), ["-I/a"])
+
+
 class TerminatesProcess(unittest.TestCase):
     """A function that exits is not a function that crashed.
 
@@ -154,6 +185,41 @@ class TerminatesProcess(unittest.TestCase):
         p = self.write("int\nf(int s)\n{\n\tif (s)\n\t\texit(1);\n"
                        "\treturn (s);\n}\n")
         self.assertFalse(fusebmc.terminates_process(p, "f"))
+
+
+class SanitizerBroke(unittest.TestCase):
+    """The sanitizer aborting on ITSELF is not a finding about the code."""
+
+    ASAN = ('AddressSanitizer: CHECK failed: asan_allocator.cpp:601 '
+            '"((user_end)) <= ((alloc_end))" (0x8000000000000001, 0x50)\n'
+            + "".join("    #%d 0x5632 (/tmp/t+0x%x)\n" % (i, i)
+                      for i in range(40)))
+
+    def test_an_internal_check_is_recognised(self):
+        # memalign(1 << 63, 0): the C library answers NULL with EINVAL,
+        # ASan's own arithmetic overflows. Reported CRASH once.
+        self.assertTrue(fusebmc.sanitizer_broke(self.ASAN))
+
+    def test_a_real_report_is_not(self):
+        self.assertFalse(fusebmc.sanitizer_broke(
+            "SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior "
+            "abs.c:37:17 in"))
+
+    def test_empty_is_not(self):
+        self.assertFalse(fusebmc.sanitizer_broke(""))
+
+    def test_the_evidence_is_the_head_not_the_tail(self):
+        # A sanitizer puts its verdict FIRST and the stack after it, so
+        # a 600-character tail is exactly the part with no answer in it
+        # -- memalign came back CRASH a second time with the line that
+        # classifies it three screens above the cut.
+        self.assertIn("CHECK failed", fusebmc.evidence(self.ASAN))
+
+    def test_evidence_falls_back_to_the_tail(self):
+        # A compiler puts its verdict last, which is what _tail is for.
+        self.assertIn("2 errors generated.",
+                      fusebmc.evidence("noise\n" * 400 +
+                                       "2 errors generated."))
 
 
 class LoadTasks(unittest.TestCase):
