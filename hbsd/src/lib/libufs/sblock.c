@@ -265,7 +265,18 @@ sbput(int devfd, struct fs *fs, int numaltwrite)
 		     use_pwrite)) != 0) {
 			fflush(NULL); /* flush any messages */
 			fs->fs_sblockactualloc = savedactualloc;
-			fs->fs_csp = savedcsp;
+			/*
+			 * PBSD: guarded, as the success path below already
+			 * is.  savedcsp is set only inside `if (fs->fs_si !=
+			 * NULL)' above, so with no summary information this
+			 * error path wrote an uninitialised stack pointer
+			 * into the caller's struct fs -- fs_csp, the in-core
+			 * cylinder-group summary, which newfs(8), fsck_ffs(8)
+			 * and tunefs(8) go on to use.  One of the two restore
+			 * sites had the test and the other did not.
+			 */
+			if (fs->fs_si != NULL)
+				fs->fs_csp = savedcsp;
 			return (error);
 		}
 	}

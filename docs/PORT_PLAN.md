@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,926 | 9,056 |
+| 1 | `lib` | 2,827 | 639,961 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,284** | **114,207** |
+| | **total** | **41,143** | **21,301,319** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -658,7 +658,7 @@ function; a file with two hundred of them is a project.
 | 8.830.20 | `sys/dev/mlx5/mlx5_core/mlx5_fs_core.c` | 3,534 | 135 | `TODO-PORT` |
 | 8.1279.1 | `sys/security/mac_lomac/mac_lomac.c` | 3,070 | 131 | `TODO-PORT` |
 | 8.149.7 | `sys/compat/linuxkpi/common/src/linux_compat.c` | 3,062 | 120 | `TODO-PORT` |
-| 1.263.1 | `lib/libpfctl/libpfctl.c` | 3,634 | 117 | `TODO-PORT` |
+| 1.263.1 | `lib/libpfctl/libpfctl.c` | 3,642 | 117 | `TODO-PORT` |
 | 8.684.25 | `sys/dev/dpaa2/dpaa2_rc.c` | 3,554 | 116 | `TODO-PORT` |
 | 8.800.12 | `sys/dev/ixgbe/ixgbe_api.c` | 1,813 | 112 | `TODO-PORT` |
 | 8.878.28 | `sys/dev/ocs_fc/ocs_mgmt.c` | 2,765 | 111 | `TODO-PORT` |
@@ -9622,7 +9622,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.263 `lib/libpfctl`
 
-- [ ] **1.263.1** `libpfctl.c` · 3,634L gen:35 · `TODO-PORT` · 117 fn
+- [ ] **1.263.1** `libpfctl.c` · 3,642L gen:35 · `TODO-PORT` · 117 fn
   - [ ] 1.263.1.1 `pfctl_open()` · `TODO-FN`
   - [ ] 1.263.1.2 `pfctl_close()` · `TODO-FN`
   - [ ] 1.263.1.3 `pfctl_fd()` · `TODO-FN`
@@ -11758,7 +11758,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.319.3.1 `getinode()` · `TODO-FN`
   - [ ] 1.319.3.2 `putinode()` · `TODO-FN`
 - [ ] **1.319.4** `libufs.h` · 191L gen:1 · `TODO-HDR`
-- [ ] **1.319.5** `sblock.c` · 292L · `TODO-PORT` · 9 fn
+- [ ] **1.319.5** `sblock.c` · 303L · `TODO-PORT` · 9 fn
   - [ ] 1.319.5.1 `sbread()` · `TODO-FN`
   - [ ] 1.319.5.2 `sbfind()` · `TODO-FN`
   - [ ] 1.319.5.3 `handle_disk_read()` · `TODO-FN`
@@ -11776,7 +11776,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.320 `lib/libugidfw`
 
-- [ ] **1.320.1** `ugidfw.c` · 1,332L · `TODO-PORT` · 19 fn
+- [ ] **1.320.1** `ugidfw.c` · 1,348L · `TODO-PORT` · 19 fn
   - [ ] 1.320.1.1 `bsde_rule_to_string()` · `TODO-FN`
   - [ ] 1.320.1.2 `bsde_parse_uidrange()` · `TODO-FN`
   - [ ] 1.320.1.3 `bsde_parse_gidrange()` · `TODO-FN`

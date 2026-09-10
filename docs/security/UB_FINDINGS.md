@@ -22701,3 +22701,100 @@ against the shard it replaces — `lib/libc` + `lib/msun` + `libexec`,
 238 findings across 1,630 translation units with 30 ERROR.  **642 more
 translation units are compiled and analysed on every push**, and the
 200 findings in them are visible for the first time.
+
+## Three more from the tail, all counters and restores
+
+### `bsde_parse_rule_string`: `argc` counted tokens it never stored
+
+`lib/libugidfw` is what turns a `mac_bsdextended(4)` rule string into a
+`struct mac_bsdextended_rule`.  `ugidfw(8)` calls it, and so does
+anything applying rules out of `rc.conf`.
+
+```c
+	char *stringdup, *stringp, *argv[100], **ap;
+	...
+	argc = 0;
+	for (ap = argv; (*ap = strsep(&stringp, " \t")) != NULL;) {
+		argc++;
+		if (**ap != '\0')
+			if (++ap >= &argv[100])
+				break;
+	}
+
+	error = bsde_parse_rule(argc, argv, rule, buflen, errstr);
+```
+
+`ap` advances only for a **non-empty** token — that is deliberate, it is
+how a run of separators is skipped — but `argc` counts every `strsep()`
+result, empty ones included.  So two spaces anywhere in the rule make
+`argc` larger than the number of slots written, and `bsde_parse_rule()`
+walks `argv[0..argc-1]`: it reads past the last token into an
+uninitialised `char *argv[100]` and `strcmp()`s whatever is on the
+stack.  That is what the two `unix.cstring.NullArg` reports at
+`ugidfw.c:1023` and `:1034` were.
+
+`argc` now counts the tokens actually stored, which is the invariant
+`bsde_parse_rule()` needs.  Three findings → one.
+
+The `strdup()` feeding that loop was unchecked too —
+`stringp = stringdup = strdup(string);` followed immediately by
+`while (*stringp == ' ')`.
+
+### `sbput`: one of two restore sites had the test
+
+```c
+	if (fs->fs_si != NULL) {
+		savedcsp = fs->fs_csp;
+		fs->fs_csp = NULL;
+	}
+	for (i = 0; i < numaltwrite; i++) {
+		if ((error = ffs_sbput(...)) != 0) {
+			fs->fs_sblockactualloc = savedactualloc;
+			fs->fs_csp = savedcsp;        /* unguarded */
+			return (error);
+		}
+	}
+	fs->fs_sblockactualloc = savedactualloc;
+	if (fs->fs_si != NULL)                /* guarded */
+		fs->fs_csp = savedcsp;
+```
+
+`savedcsp` is set only inside the first `if`.  With no summary
+information, a failed alternate-superblock write wrote an
+**uninitialised stack pointer** into the caller's `struct fs` as
+`fs_csp` — the in-core cylinder-group summary that `newfs(8)`,
+`fsck_ffs(8)` and `tunefs(8)` go on to use.  The same fingerprint as
+`cap_net`: two sites, one right.
+
+The two reports that remain after guarding it are the unseen-callee
+family, and the callee is known: `ffs_sbput()`
+(`sys/ufs/ffs/ffs_subr.c`) saves `fs->fs_si`, clears it for the write
+and restores it before returning, so the two `fs_si != NULL` tests do
+agree — across a translation-unit boundary the analyser does not cross.
+
+### `libpfctl`: three counters `pfctl(8)` prints to the operator
+
+```c
+	uint32_t added;
+	...
+	while ((hdr = snl_read_reply_multi(&h->ss, seq_id, &e)) != NULL) {
+		if (! snl_parse_nlmsg(&h->ss, hdr, &table_add_addr_parser, &added))
+			continue;
+	}
+
+	if (nadd)
+		*nadd = added;
+```
+
+`table_add_addr_parser` has one attribute, `PF_TA_NBR_ADDED`, and
+`snl_parse_nlmsg()` succeeds whether or not the reply carries it — and a
+reply loop that runs zero times writes nothing at all.  `*nadd` then
+hands the caller a stack word, and `pfctl(8)` prints it as *"N/M
+addresses added"*.
+
+Three times: `_pfctl_table_add_addrs_h`, `_pfctl_table_del_addrs_h`, and
+`pfctl_clear_addrs` — pf's table add, delete and flush counts, all to
+the same operator.  Zero is what *"the kernel reported no count"* means,
+and matches the `struct snl_errmsg_data e = {}` two lines above each of
+them.  `lib/libpfctl`: 5 findings → 3, and the two that remain are the
+`return (errno)` family via `_pfctl_get_limit()`.

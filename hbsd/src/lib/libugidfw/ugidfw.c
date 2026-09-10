@@ -41,6 +41,7 @@
 
 #include <security/mac_bsdextended/mac_bsdextended.h>
 
+#include <errno.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -1082,15 +1083,30 @@ bsde_parse_rule_string(const char *string, struct mac_bsdextended_rule *rule,
 	int argc, error;
 
 	stringp = stringdup = strdup(string);
+	if (stringdup == NULL) {
+		snprintf(errstr, buflen, "%s", strerror(errno));
+		return (-1);
+	}
 	while (*stringp == ' ' || *stringp == '\t')
 		stringp++;
 
+	/*
+	 * PBSD: argc counts the tokens actually STORED.  It used to
+	 * count every strsep() result, including the empty ones a run
+	 * of separators produces -- while `ap' advances only for a
+	 * non-empty token.  Two spaces anywhere in the rule therefore
+	 * made argc larger than the number of argv slots written, and
+	 * bsde_parse_rule() walks argv[0..argc-1]: it read past the
+	 * last token into an uninitialised `char *argv[100]' and
+	 * strcmp()ed whatever was on the stack.
+	 */
 	argc = 0;
 	for (ap = argv; (*ap = strsep(&stringp, " \t")) != NULL;) {
-		argc++;
-		if (**ap != '\0')
+		if (**ap != '\0') {
+			argc++;
 			if (++ap >= &argv[100])
 				break;
+		}
 	}
 
 	error = bsde_parse_rule(argc, argv, rule, buflen, errstr);

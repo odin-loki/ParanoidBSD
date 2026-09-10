@@ -2465,7 +2465,15 @@ _pfctl_table_add_addrs_h(struct pfctl_handle *h, struct pfr_table *tbl, struct p
 	struct snl_errmsg_data e = {};
 	struct nlmsghdr *hdr;
 	uint32_t seq_id;
-	uint32_t added;
+	/*
+	 * PBSD: zero, because snl_parse_nlmsg() writes this only if
+	 * the reply CARRIES the PF_TA_NBR_ADDED attribute -- and it
+	 * returns success either way, as does a reply loop that runs
+	 * zero times. Uninitialised, the count handed back through
+	 * *nadd was a stack word, and pfctl(8) prints it to the
+	 * operator as "N/M addresses added".
+	 */
+	uint32_t added = 0;
 
 	snl_init_writer(&h->ss, &nw);
 	hdr = snl_create_genl_msg_request(&nw, h->family_id,
@@ -2534,7 +2542,7 @@ _pfctl_table_del_addrs_h(struct pfctl_handle *h, struct pfr_table *tbl, struct p
 	struct snl_errmsg_data e = {};
 	struct nlmsghdr *hdr;
 	uint32_t seq_id;
-	uint32_t deleted;
+	uint32_t deleted = 0;	/* see added, above */
 
 	snl_init_writer(&h->ss, &nw);
 	hdr = snl_create_genl_msg_request(&nw, h->family_id,
@@ -3595,7 +3603,7 @@ pfctl_clear_addrs(struct pfctl_handle *h, const struct pfr_table *filter,
 	struct snl_writer nw;
 	struct snl_errmsg_data e = {};
 	struct nlmsghdr *hdr;
-	uint64_t del;
+	uint64_t del = 0;	/* see added, above */
 	uint32_t seq_id;
 
 	snl_init_writer(&h->ss, &nw);

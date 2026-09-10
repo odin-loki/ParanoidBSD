@@ -2621,6 +2621,87 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libugidfw/ugidfw.c": [
+        (
+            "\t\tif (**ap != '\\0') {\n\t\t\targc++;",
+            "\t\targc++;\n\t\tif (**ap != '\\0')",
+            "bsde_parse_rule_string() splits a rule with strsep() into "
+            "`char *argv[100]' and hands the result to "
+            "bsde_parse_rule(argc, argv, ...), which walks "
+            "argv[0..argc-1]. The loop counted EVERY strsep() result, "
+            "including the empty strings a run of separators produces, "
+            "while `ap' advances only for a NON-empty token. Two spaces "
+            "anywhere in the rule therefore made argc larger than the "
+            "number of slots written, and bsde_parse_rule() read past "
+            "the last token into an uninitialised char *argv[100] and "
+            "strcmp()ed whatever was on the stack. mac_bsdextended(4) "
+            "rules come from ugidfw(8) and from rc.conf. argc now counts "
+            "the tokens actually stored, which is the invariant "
+            "bsde_parse_rule() needs. Two clang unix.cstring.NullArg "
+            "findings, ugidfw.c:1023 and :1034, gone.",
+        ),
+        (
+            "\tif (stringdup == NULL) {",
+            None,
+            "and the strdup() feeding that loop was unchecked -- "
+            "`stringp = stringdup = strdup(string)' followed immediately "
+            "by `while (*stringp == ' ')', which dereferences NULL on "
+            "allocation failure.",
+        ),
+    ],
+    "hbsd/src/lib/libufs/sblock.c": (
+        "\t\t\tif (fs->fs_si != NULL)\n\t\t\t\tfs->fs_csp = savedcsp;",
+        None,
+        "sbput() saves fs->fs_csp into savedcsp only inside `if "
+        "(fs->fs_si != NULL)', and restores it in two places -- the "
+        "alternate-superblock error path and the success path at the "
+        "bottom. The success path tests fs_si first; the error path did "
+        "not. With no summary information, a failed alternate write "
+        "therefore wrote an UNINITIALISED STACK POINTER into the "
+        "caller's struct fs as fs_csp, the in-core cylinder-group "
+        "summary that newfs(8), fsck_ffs(8) and tunefs(8) go on to use. "
+        "One of the two restore sites had the test and the other did "
+        "not -- the same fingerprint as cap_net. clang "
+        "core.uninitialized.Assign, sblock.c:268. The two reports that "
+        "remain are the unseen-callee family and the callee is known: "
+        "ffs_sbput() (sys/ufs/ffs/ffs_subr.c) saves fs->fs_si, clears "
+        "it for the write and restores it before returning, so the two "
+        "`fs_si != NULL' tests do agree -- across a translation unit "
+        "boundary the analyser does not cross.",
+    ),
+    "hbsd/src/lib/libpfctl/libpfctl.c": [
+        (
+            "uint32_t added = 0;",
+            "uint32_t added;",
+            "_pfctl_table_add_addrs_h() declares `uint32_t added' and "
+            "writes it only through snl_parse_nlmsg(..., "
+            "&table_add_addr_parser, &added) inside `while "
+            "((hdr = snl_read_reply_multi(...)) != NULL)'. That parser "
+            "has ONE attribute, PF_TA_NBR_ADDED, and succeeds whether or "
+            "not the reply carries it -- and a reply loop that runs zero "
+            "times writes nothing at all. `if (nadd) *nadd = added' then "
+            "hands the caller a stack word, and pfctl(8) prints it to "
+            "the operator as \"N/M addresses added\". Zero, which is what "
+            "\"the kernel reported no count\" means, and matches the "
+            "`struct snl_errmsg_data e = {}' two lines above it. clang "
+            "core.uninitialized.Assign, libpfctl.c:2496.",
+        ),
+        (
+            "uint32_t deleted = 0;",
+            "uint32_t deleted;",
+            "_pfctl_table_del_addrs_h() has the identical shape one "
+            "function down, through *ndel. libpfctl.c:2565.",
+        ),
+        (
+            "uint64_t del = 0;",
+            "uint64_t del;",
+            "and pfctl_clear_addrs() a third time. Its `*ndel = "
+            "(uint32_t)del' is inside the loop, so it needs a message to "
+            "have been parsed -- but a parse that succeeds without the "
+            "attribute still leaves del unwritten. libpfctl.c:3626. "
+            "pf's table flush count, to the same operator.",
+        ),
+    ],
     "hbsd/src/lib/libveriexec/exec_script.c": (
         "rc = veriexec_check_path(script);",
         "if (veriexec_check_path(script) == 0) {",
