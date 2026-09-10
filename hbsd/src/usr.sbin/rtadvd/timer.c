@@ -39,6 +39,7 @@
 #include <net/if_dl.h>
 #include <netinet/in.h>
 
+#include <stdint.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <stdlib.h>
@@ -59,9 +60,21 @@ static struct timespec tm_max;
 void
 rtadvd_timer_init(void)
 {
-	/* Generate maximum time in timespec. */
-	tm_limit.tv_sec = (-1) & ~((time_t)1 << ((sizeof(tm_max.tv_sec) * 8) - 1));
-	tm_limit.tv_nsec = (-1) & ~((long)1 << ((sizeof(tm_max.tv_nsec) * 8) - 1));
+	/*
+	 * Generate maximum time in timespec.
+	 *
+	 * The shifts are done in uintmax_t.  `(time_t)1 << 63' moves a
+	 * one INTO the sign bit of a signed 64-bit type, which C11
+	 * 6.5.7p4 leaves undefined -- the result has to be representable
+	 * in the result type and 2^63 is not.  This runs unconditionally
+	 * at start-up, so it is not an edge case; it is every rtadvd(8).
+	 * The value is unchanged: all ones with the top bit cleared,
+	 * narrowed back to the field's own type.
+	 */
+	tm_limit.tv_sec = (time_t)(~(uintmax_t)0 &
+	    ~((uintmax_t)1 << ((sizeof(tm_max.tv_sec) * 8) - 1)));
+	tm_limit.tv_nsec = (long)(~(uintmax_t)0 &
+	    ~((uintmax_t)1 << ((sizeof(tm_max.tv_nsec) * 8) - 1)));
 	tm_max = tm_limit;
 	TAILQ_INIT(&ra_timer);
 }

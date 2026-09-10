@@ -5231,6 +5231,52 @@ FIXES = {
         "subnormal inputs give bit-identical results either way.",
     ),
 
+    "hbsd/src/usr.sbin/rtadvd/timer.c": (
+        "tm_limit.tv_sec = (time_t)(~(uintmax_t)0 &",
+        "tm_limit.tv_sec = (-1) & ~((time_t)1 <<",
+        "rtadvd_timer_init() built its maximum timespec with "
+        "`(time_t)1 << 63', which moves a one INTO the sign bit of a "
+        "signed 64-bit type -- C11 6.5.7p4 requires the result to be "
+        "representable and 2^63 is not. It runs unconditionally at "
+        "start-up, so it is every rtadvd(8), not an edge case. Shifted "
+        "in uintmax_t and narrowed back; the value is unchanged. "
+        "CBMC: FAILED -> PROVED.",
+    ),
+
+    "hbsd/src/sbin/ifconfig/af_inet.c": (
+        "a.s_addr = htonl(plen > 0 ? ~((1U << (32 - plen)) - 1) : 0);",
+        "a.s_addr = htonl(plen ? ~((1 << (32 - plen)) - 1) : 0);",
+        "get_mask() shifted a signed 1 by 32 - plen. A /1 prefix shifts "
+        "by 31 and `1 << 31' does not fit an int, so the most ordinary "
+        "width this can be handed is the one that breaks it. plen is "
+        "ifa_prefixlen widened from a uint8_t out of a netlink message, "
+        "0 to 255 rather than 0 to 32, so a wider one gives a negative "
+        "distance as well -- clamped to 32, the widest mask there is. "
+        "CBMC: FAILED -> PROVED.",
+    ),
+
+    "hbsd/src/usr.sbin/apm/apm.c": [
+        (
+            "if (i < 0 || i >= 10000)",
+            "if (i >= 10000)\n\t\treturn -1;",
+            "int2bcd() guarded only the top. A negative i makes i % 10 "
+            "negative and shifting a negative value left is undefined; "
+            "worse, |i| can need more than eight digits, so base passes "
+            "31 and the distance exceeds the width too.",
+        ),
+        (
+            "if (bcd < 0 || bcd > 0x9999)",
+            "if (bcd > 0x9999)\n\t\treturn -1;",
+            "bcd2int() guarded only the top, and this one does not "
+            "merely misbehave: `bcd >>= 4' on a negative int is an "
+            "arithmetic shift, so -1 stays -1 and the loop never ends. "
+            "args.edi is a uint32_t straight out of the BIOS reply and "
+            "bcd2int() takes an int, so a reply with the top bit set "
+            "hangs apm(8). CBMC: FAILED -> PROVED for both.",
+        ),
+    ],
+
+
     "hbsd/src/lib/libc/string/strsignal.c": (
         "signum = (num < 0) ? -(unsigned int)num : (unsigned int)num;",
         "\t\tsignum = num;\n\t\tif (num < 0)",

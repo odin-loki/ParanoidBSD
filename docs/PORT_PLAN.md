@@ -54,9 +54,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,848 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
-| 4 | `sbin` | 533 | 228,646 | 3,567 |
+| 4 | `sbin` | 533 | 228,663 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,493 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,762 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,789 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,526 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,109** | **114,207** |
+| | **total** | **41,143** | **21,301,153** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -17513,7 +17513,7 @@ function; a file with two hundred of them is a project.
 
 ### 4.38 `sbin/ifconfig` · 1 module(s) under `pbsd/sbin/ifconfig`
 
-- [ ] **4.38.1** `af_inet.c` · 554L · `TODO-PORT` · 15 fn
+- [ ] **4.38.1** `af_inet.c` · 571L · `TODO-PORT` · 15 fn
   - [ ] 4.38.1.1 `print_addr()` · `TODO-FN`
   - [ ] 4.38.1.2 `in_status()` · `TODO-FN`
   - [ ] 4.38.1.3 `get_mask()` · `TODO-FN`
@@ -26217,7 +26217,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.6 `usr.sbin/apm`
 
-- [ ] **6.6.1** `apm.c` · 489L · `TODO-PORT` · 16 fn
+- [ ] **6.6.1** `apm.c` · 503L · `TODO-PORT` · 16 fn
   - [ ] 6.6.1.1 `usage()` · `TODO-FN`
   - [ ] 6.6.1.2 `is_true()` · `TODO-FN`
   - [ ] 6.6.1.3 `int2bcd()` · `TODO-FN`
@@ -35694,7 +35694,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.208.16.20 `ra_timeout()` · `TODO-FN`
   - [ ] 6.208.16.21 `ra_timer_update()` · `TODO-FN`
 - [ ] **6.208.17** `rtadvd.h` · 314L · `TODO-HDR`
-- [ ] **6.208.18** `timer.c` · 197L · `TODO-PORT` · 6 fn
+- [ ] **6.208.18** `timer.c` · 210L · `TODO-PORT` · 6 fn
   - [ ] 6.208.18.1 `rtadvd_timer_init()` · `TODO-FN`
   - [ ] 6.208.18.2 `rtadvd_update_timeout_handler()` · `TODO-FN`
   - [ ] 6.208.18.3 `rtadvd_add_timer()` · `TODO-FN`

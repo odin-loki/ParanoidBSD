@@ -82,7 +82,14 @@ int2bcd(int i)
 	int retval = 0;
 	int base = 0;
 
-	if (i >= 10000)
+	/*
+	 * Both ends.  A negative i makes `i % 10' negative and shifting
+	 * a negative value left is undefined; worse, |i| can need more
+	 * than eight digits, so base passes 31 and the shift distance
+	 * exceeds the width as well.  -1 is what this already answers
+	 * for a value it cannot represent.
+	 */
+	if (i < 0 || i >= 10000)
 		return -1;
     
 	while (i) {
@@ -99,7 +106,14 @@ bcd2int(int bcd)
 	int retval = 0;
 	int place = 1;
 
-	if (bcd > 0x9999)
+	/*
+	 * Both ends, and this one does not merely misbehave: `bcd >>= 4'
+	 * on a negative int is an arithmetic shift, so -1 stays -1 and
+	 * the loop never ends.  args.edi is a uint32_t straight out of
+	 * the BIOS reply and bcd2int() takes an int, so a reply with the
+	 * top bit set hangs apm(8).
+	 */
+	if (bcd < 0 || bcd > 0x9999)
 		return -1;
 
 	while (bcd) {

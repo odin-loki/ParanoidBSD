@@ -21242,3 +21242,99 @@ makes division by zero undefined for every type; Annex F, which
 FreeBSD's libm assumes on every line, defines exactly these.  CBMC's
 `--div-by-zero-check` does not know which of the two documents is in
 force, and there is no flag that tells it.
+
+## The programs, model-checked for the first time
+
+The CBMC half had only ever been pointed at `lib/libc`, `lib/msun` and
+`sys`.  `bin`, `sbin`, `usr.bin` and `usr.sbin` had never been
+model-checked at all — even though the analyser sweep and the fuzzer had
+both found real defects there.
+
+**1,017 of 1,830 translation units modelled, 813 TU-ERROR.**  That ratio
+is much worse than the libraries' 1,177 of 1,295, and for a reason worth
+stating: a program's translation unit expects the rest of its own
+program's headers, several of which the build generates.  Of the
+functions the ledger and the goto model agree on, 895 were checkable
+unguarded:
+
+```
+BOUNDED 70  ERROR 47  FAILED 187  PROVED 532  TIMEOUT 59
+```
+
+All 187 accounted for:
+
+| family | count |
+|---|---|
+| an unseen callee or an unconstrained global | 76 |
+| CBMC's entry-point leak check | 48 |
+| arithmetic on an unconstrained parameter or global | 24 |
+| an assertion on an unconstrained argument | 23 |
+| division by zero | 15 |
+| an array bound | 1 |
+| **other** | **0** |
+
+Four of the 24 were real.
+
+### rtadvd(8): `1 << 63` into the sign bit, at every start-up
+
+```c
+	tm_limit.tv_sec = (-1) & ~((time_t)1 << ((sizeof(tm_max.tv_sec) * 8) - 1));
+```
+
+`time_t` is a signed 64-bit type, so this shifts a one *into* its sign
+bit.  C11 6.5.7p4 requires the result to be representable in the result
+type and 2<sup>63</sup> is not.  `rtadvd_timer_init()` runs
+unconditionally at start-up: this is not an edge case, it is every
+`rtadvd(8)`.  Shifted in `uintmax_t` and narrowed back; the value is
+unchanged.
+
+### ifconfig(8): a /1 prefix
+
+```c
+	a.s_addr = htonl(plen ? ~((1 << (32 - plen)) - 1) : 0);
+```
+
+A `/1` prefix shifts by 31, and `1 << 31` does not fit an `int` — so the
+most ordinary width this function can be handed is the one that breaks
+it.  `1U` is defined for every distance 0 through 31 and gives the same
+bits.
+
+The other end needed a clamp.  `plen` is `ifa->ifa_prefixlen` widened
+from a `uint8_t` out of a netlink message — 0 to 255, not 0 to 32 — and
+at `plen` 200 the shift distance is −168, undefined again in the other
+direction.  The kernel should never send a wider one, and this function
+cannot know that it did not.  32 is the widest mask there is.
+
+### apm(8): a guard on one end, twice, and an infinite loop
+
+```c
+	int2bcd(int i) { if (i >= 10000) return -1; ... (i % 10) << base ... }
+	bcd2int(int bcd) { if (bcd > 0x9999) return -1; ... bcd >>= 4 ... }
+```
+
+Both guard only the top.  In `int2bcd`, a negative `i` makes `i % 10`
+negative and shifting a negative value left is undefined; a large `|i|`
+also drives `base` past 31, so the distance exceeds the width as well.
+
+`bcd2int` is worse than undefined — it does not terminate.  `bcd >>= 4`
+on a negative `int` is an arithmetic shift, so `-1` stays `-1` forever.
+And it is reachable: `args.edi` is a `uint32_t` straight out of the APM
+BIOS reply and `bcd2int()` takes an `int`, so a reply with the top bit
+set hangs `apm(8)`.
+
+That is the one-sided bound again — the fifth and sixth of the day, and
+the first two that are not array subscripts.
+
+All four: `FAILED` → `PROVED`.
+
+### Three that were checked and are not defects
+
+* **`ppp`'s `bits2mask4(int bits)`** loops `while (bits) { …; bits--; }`,
+  which for a negative `bits` runs to `INT_MIN` and then overflows.
+  `ncprange_aton()` rejects `bits < 0 || bits > 128` at parse time
+  before any of the three call sites.
+* **`ed`'s `sigflags &= ~(1 << (signo - 1))`** would be undefined at
+  `signo` 32.  `ed` installs handlers for SIGHUP, SIGINT and SIGWINCH.
+* **`quota`'s `prthumanval(int len, …)`** declares `char buf[len + 1]`,
+  a VLA sized from its parameter.  All three call sites pass the literal
+  7.

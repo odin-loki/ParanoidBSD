@@ -150,7 +150,24 @@ get_mask(int plen)
 {
 	struct in_addr a;
 
-	a.s_addr = htonl(plen ? ~((1 << (32 - plen)) - 1) : 0);
+	/*
+	 * 1U, not 1.  A /1 prefix shifts by 31, and `1 << 31' does not
+	 * fit an int, which C11 6.5.7p4 leaves undefined -- so the most
+	 * ordinary prefix width this can be handed is the one that
+	 * breaks it.  Unsigned is defined for every distance 0 through
+	 * 31 and gives the same bits.
+	 *
+	 * And the clamp, because plen is ifa_prefixlen widened from a
+	 * uint8_t out of a netlink message: 0 to 255, not 0 to 32.  The
+	 * kernel should never send a wider one and this cannot know it
+	 * did not -- at plen 200 the distance is -168, which is
+	 * undefined again in the other direction.  32 is the widest mask
+	 * there is, so clamping to it is the only answer that means
+	 * anything.
+	 */
+	if (plen > 32)
+		plen = 32;
+	a.s_addr = htonl(plen > 0 ? ~((1U << (32 - plen)) - 1) : 0);
 
 	return (a);
 }
