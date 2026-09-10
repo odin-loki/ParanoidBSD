@@ -17415,3 +17415,76 @@ admits it — but only if `r->prev != NULL`, and `r` is the head, whose
 `prev` is NULL in any well-formed queue. The second conjunct is
 redundant, and its redundancy is the whole finding. Not a defect; a test
 that says less than it means.
+
+## The gate that reported clean, and the six it could not see
+
+`nowait_check.py` runs in CI with `--gate` and reported **0 M_NOWAIT
+allocations used without a NULL check**. `sys/dev/wtap` had five, in
+four functions, and the sweep had reported them as
+`core.NullDereference` in the same shard this document has been working
+through.
+
+Three things sit between `=` and the allocator, and that directory had
+all three at once:
+
+```c
+	hal->hal_devs[id] = (struct wtap_softc *)malloc(       /* a CAST, and */
+	    sizeof(struct wtap_softc), M_WTAP, M_NOWAIT | M_ZERO);
+	hal->hal_devs[id]->sc_md = hal->hal_md;                /* a member PATH */
+
+	struct eventhandler *eh = (struct eventhandler *)
+	    malloc(sizeof(struct eventhandler), M_WTAP, M_NOWAIT | M_ZERO);
+	eh->tq = taskqueue_create(...);                        /* and a LINE BREAK */
+
+	plugin = (struct visibility_plugin *)malloc
+	    (sizeof(struct visibility_plugin), M_WTAP_PLUGIN,   /* the break even
+	    M_NOWAIT | M_ZERO);                                    between malloc
+	plugin->base.wp_hal  = hal;                                and its ( */
+```
+
+The pattern wanted `var = fn(` with `var` a bare identifier. A cast
+between the two, a member path on the left, and the allocator on the
+next line each broke it independently. All three are handled now — the
+line break by searching a two-line window when the current line ends
+mid-assignment or on an allocator name.
+
+Widening it turned up a sixth the analyser sweep had never reported at
+all:
+
+```c
+	/* ata_promise_queue_hpkt(), with hpktp->mtx held */
+	struct host_packet *hp = 
+	    malloc(sizeof(struct host_packet), M_TEMP, M_NOWAIT | M_ZERO);
+	hp->addr = hpkt;
+	TAILQ_INSERT_TAIL(&hpktp->queue, hp, chain);
+```
+
+### The fix depends on whether a lock is held
+
+Four of the six are in sleepable context — the `MOD_LOAD` handler
+(`event_handler`, twice), `init_hal()` and `init_medium()` reached from
+it, and `new_wtap()` from the `wtapctl` cdev ioctl. None holds a lock,
+so `M_WAITOK` is available, cannot fail, and removes the question rather
+than answering it.
+
+Two hold a mutex and cannot sleep: `medium_transmit()` under `md_mtx`
+and `ata_promise_queue_hpkt()` under `hpktp->mtx`. Those stay `M_NOWAIT`
+and get the check. `medium_transmit()` drops the frame, which is exactly
+what its own `md->open == 0` arm does four lines above; the ATA one
+drops one queued host packet, which loses a command where dereferencing
+NULL under a lock loses the machine.
+
+```
+                wtap+ata
+                before  after
+OK                 32      32
+ERROR               0       0
+findings            8       3
+```
+
+Five closed, none new. The sixth does not appear in that delta because
+it was never in the before set: no sweep has ever reported
+`ata-promise.c:1237`. That is the argument for having both instruments.
+The sweep found the shape in `wtap` and could not build or reach the ATA
+file; the lint could not see the shape at all until it was widened, and
+then found it in a second.

@@ -1234,10 +1234,17 @@ ata_promise_queue_hpkt(struct ata_pci_controller *ctlr, u_int32_t hpkt)
 
     mtx_lock(&hpktp->mtx);
     if (hpktp->busy) {
+	/*
+	 * PBSD: hpktp->mtx is held, so M_NOWAIT is required here and the
+	 * result has to be checked.  Dropping the queued host packet loses
+	 * one command; dereferencing NULL under the lock loses the machine.
+	 */
 	struct host_packet *hp = 
 	    malloc(sizeof(struct host_packet), M_TEMP, M_NOWAIT | M_ZERO);
-	hp->addr = hpkt;
-	TAILQ_INSERT_TAIL(&hpktp->queue, hp, chain);
+	if (hp != NULL) {
+	    hp->addr = hpkt;
+	    TAILQ_INSERT_TAIL(&hpktp->queue, hp, chain);
+	}
     }
     else {
 	hpktp->busy = 1;

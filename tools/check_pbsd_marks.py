@@ -4132,6 +4132,48 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sys/dev/wtap/if_medium.c": [
+        (
+            "M_WTAP, M_WAITOK | M_ZERO);",
+            "M_WTAP, M_NOWAIT | M_ZERO);",
+            "init_medium() dereferenced an M_NOWAIT allocation on the next "
+            "line; it runs from the MOD_LOAD handler with no lock held, so "
+            "M_WAITOK is available and cannot fail",
+        ),
+        (
+            "\tif (p == NULL) {\n\t\tDWTAP_PRINTF(\"[%d] no memory,",
+            "\t    M_WTAP_PACKET, M_ZERO | M_NOWAIT);\n\tp->id = id;",
+            "medium_transmit() holds md_mtx, so its allocation has to stay "
+            "M_NOWAIT and therefore has to be checked; dropping the frame "
+            "is what the md->open == 0 arm above already does",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/wtap/wtap_hal/hal.c": (
+        ("M_WTAP, M_WAITOK | M_ZERO);", 2),
+        "M_WTAP, M_NOWAIT | M_ZERO);",
+        "init_hal() and new_wtap() dereferenced M_NOWAIT allocations "
+        "immediately; both run without a lock -- MOD_LOAD and the wtapctl "
+        "cdev ioctl",
+    ),
+
+    "hbsd/src/sys/dev/wtap/if_wtap_module.c": (
+        ("M_WAITOK | M_ZERO);", 2),
+        "M_WTAP, M_NOWAIT | M_ZERO);",
+        "the MOD_LOAD handler handed one M_NOWAIT allocation straight to "
+        "init_hal(), which dereferences it, and dereferenced the other on "
+        "the next line",
+    ),
+
+    "hbsd/src/sys/dev/ata/chipsets/ata-promise.c": (
+        "\tif (hp != NULL) {\n\t    hp->addr = hpkt;",
+        "M_NOWAIT | M_ZERO);\n\thp->addr = hpkt;",
+        "ata_promise_queue_hpkt() holds hpktp->mtx, so M_NOWAIT is "
+        "required and the result was not checked. No sweep ever reported "
+        "this one: it was found by widening nowait_check.py to see a cast "
+        "between `=' and the allocator",
+    ),
+
     "hbsd/src/sys/dev/tws/tws_cam.c": (
         'printf("tws: null softc in interrupt handler\\n");',
         'device_printf(sc->tws_dev, "null softc!!!\\n");',

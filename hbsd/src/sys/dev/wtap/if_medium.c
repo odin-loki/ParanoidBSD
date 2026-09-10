@@ -40,8 +40,13 @@ init_medium(struct wtap_medium *md)
 	mtx_init(&md->md_mtx, "wtap_medium mtx", NULL, MTX_DEF | MTX_RECURSE);
 
 	/* Event handler for sending packets between wtaps */
+	/*
+	 * PBSD: this was M_NOWAIT and the next line dereferenced it.
+	 * init_medium() runs from init_hal() from the MOD_LOAD handler,
+	 * with no lock held, so M_WAITOK is available and cannot fail.
+	 */
 	struct eventhandler *eh = (struct eventhandler *)
-	    malloc(sizeof(struct eventhandler), M_WTAP, M_NOWAIT | M_ZERO);
+	    malloc(sizeof(struct eventhandler), M_WTAP, M_WAITOK | M_ZERO);
 	eh->tq = taskqueue_create("wtap_tx_taskq",  M_NOWAIT | M_ZERO,
 	    taskqueue_thread_enqueue, &eh->tq);
 	taskqueue_start_threads(&eh->tq, 1, PI_NET, "%s taskq", "wtap_medium");
@@ -72,8 +77,19 @@ medium_transmit(struct wtap_medium *md, int id, struct mbuf*m)
 	}
 
 	DWTAP_PRINTF("[%d] transmiting m=%p\n", id, m);
+	/*
+	 * PBSD: md_mtx is held, so this one has to stay M_NOWAIT -- and
+	 * therefore has to be checked.  A dropped frame is what the
+	 * md->open == 0 arm above already does.
+	 */
 	struct packet *p = (struct packet *)malloc(sizeof(struct packet),
 	    M_WTAP_PACKET, M_ZERO | M_NOWAIT);
+	if (p == NULL) {
+		DWTAP_PRINTF("[%d] no memory, dropping m=%p\n", id, m);
+		m_free(m);
+		mtx_unlock(&md->md_mtx);
+		return 0;
+	}
 	p->id = id;
 	p->m = m;
 

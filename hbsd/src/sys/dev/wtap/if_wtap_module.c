@@ -106,15 +106,18 @@ event_handler(module_t module, int event, void *arg)
 	case MOD_LOAD:
 		sdev = make_dev(&wtap_cdevsw,0,UID_ROOT,
 		    GID_WHEEL,0600,(const char *)"wtapctl");
+		/* PBSD: M_NOWAIT, then handed straight to init_hal(),
+		 * which dereferences it. MOD_LOAD is sleepable. */
 		hal = (struct wtap_hal *)malloc(sizeof(struct wtap_hal),
-		    M_WTAP, M_NOWAIT | M_ZERO);
+		    M_WTAP, M_WAITOK | M_ZERO);
 
 		init_hal(hal);
 
 		/* Setting up a simple plugin */
+		/* PBSD: M_NOWAIT, then dereferenced on the next line. */
 		plugin = (struct visibility_plugin *)malloc
 		    (sizeof(struct visibility_plugin), M_WTAP_PLUGIN,
-		    M_NOWAIT | M_ZERO);
+		    M_WAITOK | M_ZERO);
 		plugin->base.wp_hal  = hal;
 		plugin->base.init = visibility_init;
 		plugin->base.deinit = visibility_deinit;

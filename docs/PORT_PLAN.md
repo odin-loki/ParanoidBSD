@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,438 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,468 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,197** | **114,205** |
+| | **total** | **41,143** | **21,300,227** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -61262,7 +61262,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.614.16.5 `ata_nvidia_status()` · `TODO-FN`
   - [ ] 8.614.16.6 `ata_nvidia_reset()` · `TODO-FN`
   - [ ] 8.614.16.7 `ata_nvidia_setmode()` · `TODO-FN`
-- [ ] **8.614.17** `ata-promise.c` · 1,267L gen:1 · `TODO-PORT` · 28 fn
+- [ ] **8.614.17** `ata-promise.c` · 1,274L gen:1 · `TODO-PORT` · 28 fn
   - [ ] 8.614.17.1 `ata_promise_probe()` · `TODO-FN`
   - [ ] 8.614.17.2 `ata_promise_chipinit()` · `TODO-FN`
   - [ ] 8.614.17.3 `ata_promise_ch_attach()` · `TODO-FN`
@@ -108624,7 +108624,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1104 `sys/dev/wtap`
 
-- [ ] **8.1104.1** `if_medium.c` · 121L · `TODO-PORT` · 6 fn
+- [ ] **8.1104.1** `if_medium.c` · 137L · `TODO-PORT` · 6 fn
   - [ ] 8.1104.1.1 `init_medium()` · `TODO-FN`
   - [ ] 8.1104.1.2 `deinit_medium()` · `TODO-FN`
   - [ ] 8.1104.1.3 `medium_transmit()` · `TODO-FN`
@@ -108668,7 +108668,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1104.3.33 `wtap_suspend()` · `TODO-FN`
   - [ ] 8.1104.3.34 `wtap_shutdown()` · `TODO-FN`
   - [ ] 8.1104.3.35 `wtap_intr()` · `TODO-FN`
-- [ ] **8.1104.4** `if_wtap_module.c` · 150L gen:6 · `TODO-PORT` · 2 fn
+- [ ] **8.1104.4** `if_wtap_module.c` · 153L gen:6 · `TODO-PORT` · 2 fn
   - [ ] 8.1104.4.1 `wtap_ioctl()` · `TODO-FN`
   - [ ] 8.1104.4.2 `event_handler()` · `TODO-FN`
 - [ ] **8.1104.5** `if_wtapioctl.h` · 180L · `TODO-HDR`
@@ -108689,7 +108689,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1106 `sys/dev/wtap/wtap_hal`
 
-- [ ] **8.1106.1** `hal.c` · 247L · `TODO-PORT` · 10 fn
+- [ ] **8.1106.1** `hal.c` · 251L · `TODO-PORT` · 10 fn
   - [ ] 8.1106.1.1 `hal_tx_proc()` · `TODO-FN`
   - [ ] 8.1106.1.2 `init_hal()` · `TODO-FN`
   - [ ] 8.1106.1.3 `register_plugin()` · `TODO-FN`

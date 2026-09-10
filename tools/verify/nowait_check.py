@@ -55,8 +55,27 @@ SRC = ROOT / "hbsd" / "src"
 # this list of names was keeping them out. Two live NULL dereferences
 # in 802.11 mesh frame handlers were found by hand that this should
 # have reported.
+#
+# Three things sit between `=' and the allocator often enough to matter,
+# and sys/dev/wtap had all three at once while this reported the tree
+# clean:
+#
+#   hal->hal_devs[id] = (struct wtap_softc *)malloc(      a CAST, and a
+#           sizeof(struct wtap_softc), M_WTAP, M_NOWAIT | M_ZERO);
+#                                                        member PATH as
+#                                                        the variable
+#   struct eventhandler *eh = (struct eventhandler *)
+#       malloc(sizeof(struct eventhandler), M_WTAP, M_NOWAIT | M_ZERO);
+#                                                        and the allocator
+#                                                        on the NEXT LINE
+#
+# The cast and the path are handled here; the line break is handled by
+# searching a two-line window in sites() below. Five unchecked M_NOWAIT
+# allocations in one directory, none of them reported.
 ALLOC = re.compile(
-    r'(?P<var>[A-Za-z_]\w*)\s*=\s*'
+    r'(?P<var>[A-Za-z_]\w*(?:\s*(?:->|\.)\s*\w+|\s*\[[^\]]*\])*)\s*=\s*'
+    r'(?:\(\s*(?:const\s+|struct\s+|union\s+|enum\s+|unsigned\s+)*'
+    r'[A-Za-z_]\w*\s*\*+\s*\)\s*)?'
     r'(?P<fn>malloc|mallocarray|malloc_domainset|malloc_domainset_aligned'
     r'|uma_zalloc|uma_zalloc_arg|uma_zalloc_domain|contigmalloc'
     r'|m_get|m_getcl|m_gethdr|m_getjcl'
@@ -134,6 +153,19 @@ def sites(lines: list[str], ahead: int = 10):
     for i, line in enumerate(lines):
         implicit = IMPLICIT_NOWAIT.search(line)
         m = ALLOC.search(line) or MK.search(line) or implicit
+        if m is None and i + 1 < len(lines):
+            # `T *p = (T *)\n    malloc(...)' -- join one line and retry,
+            # but only when this line really does end mid-assignment.
+            # ... or `malloc' with its own `(' on the next line, which is
+            # how if_wtap_module.c writes it.
+            if re.search(r'=\s*(?:\([^()]*\*\s*\))?\s*$', line) or \
+                    re.search(r'\b(malloc|mallocarray|uma_zalloc|contigmalloc'
+                              r'|m_get|m_getcl|m_gethdr|m_getjcl'
+                              r'|IEEE80211_MALLOC)\s*$', line):
+                joined = line.rstrip() + " " + lines[i + 1].lstrip()
+                m = ALLOC.search(joined)
+                if m is not None:
+                    line = joined
         if not m:
             continue
         stmt = " ".join(x.strip() for x in lines[i:i + 4])

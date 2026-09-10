@@ -65,8 +65,10 @@ init_hal(struct wtap_hal *hal)
 	DWTAP_PRINTF("%s\n", __func__);
 	mtx_init(&hal->hal_mtx, "wtap_hal mtx", NULL, MTX_DEF | MTX_RECURSE);
 
+	/* PBSD: M_NOWAIT, then dereferenced five lines down. init_hal()
+	 * runs from the MOD_LOAD handler with no lock held. */
 	hal->hal_md = (struct wtap_medium *)malloc(sizeof(struct wtap_medium),
-	    M_WTAP, M_NOWAIT | M_ZERO);
+	    M_WTAP, M_WAITOK | M_ZERO);
 
 	init_medium(hal->hal_md);
 	/* register event handler for packets */
@@ -179,8 +181,10 @@ new_wtap(struct wtap_hal *hal, int32_t id)
 		return -1;
 	}
 
+	/* PBSD: M_NOWAIT, then dereferenced on the next line. new_wtap()
+	 * runs from the wtapctl cdev ioctl, with no lock held. */
 	hal->hal_devs[id] = (struct wtap_softc *)malloc(
-	    sizeof(struct wtap_softc), M_WTAP, M_NOWAIT | M_ZERO);
+	    sizeof(struct wtap_softc), M_WTAP, M_WAITOK | M_ZERO);
 	hal->hal_devs[id]->sc_md = hal->hal_md;
 	hal->hal_devs[id]->id = id;
 	hal->hal_devs[id]->hal = hal;
