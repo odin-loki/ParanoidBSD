@@ -16648,3 +16648,76 @@ findings          47      45
 `pci_e82545.c` 2 → 1 — the surviving one is the `iov->iov_len` read
 inside the header-copy loop, which is past the `pktlen` check —
 and `pci_virtio_console.c` 1 → 0.
+
+## The same PCI overflow, in the userland twin
+
+Task #63 fixed `pci_ea_fill_info()` in `sys/dev/pci/pci.c`: the PCI
+Enhanced Allocation entry-size field `PCIM_EA_ES` is three bits, so a
+device can claim up to seven dwords follow an entry header, while
+`dw[]` is four. `usr.sbin/pciconf/cap.c` carries the same code:
+
+```c
+	uint32_t dw[4];
+	...
+		ent_size = (val & PCIM_EA_ES);
+
+		for (b = 0; b < ent_size; b++) {
+			dw[b] = read_config(fd, &p->pc_sel, ptr, 4);
+			ptr += 4;
+		}
+```
+
+Up to three dwords past the end of a stack array, filled from PCI
+configuration space, in a program run as root. The fix is the kernel's,
+ported verbatim: read what the device claims so `ptr` still lands on the
+next entry, store only what fits, and refuse an entry that does not
+carry the two mandatory dwords `base` and `max_offset` are read from.
+
+```
+              before   after     (usr.sbin/pciconf)
+OK                 3       3
+ERROR              0       0
+findings           5       3
+```
+
+`cap.c` 2 → 0 — both the `dw[0]` and `dw[1]` reads the entry-size guard
+now covers.
+
+Found by grepping for the shape after the kernel fix, not by a new
+finding. It is the first case in this document where a defect fixed on
+one side of the kernel/userland boundary was still live on the other.
+
+### And four shapes in the progs shard that are not defects
+
+`makefs` carries nine `The right operand of '-' is a garbage value`
+findings across four files, all from one macro pair:
+
+```c
+#define	TIMER_START(x)				\
+	if (debug & DEBUG_TIME)			\
+		gettimeofday(&(x), NULL)
+
+#define	TIMER_RESULTS(x,d)			\
+	if (debug & DEBUG_TIME) {		\
+		...				\
+		timersub(&end, &(x), &td);	\
+```
+
+— the same predicate on both sides, which is the class this document
+has now met in `vt_allocate_keyboard()`, `mdstart_malloc()`,
+`cfginitmsi()` and `nfsrv_writedsrpc()`.
+
+`usr.sbin/pkg/ecc.c`'s division is on a dead statement: `keysz = MIN(...)`
+is immediately overwritten by `keysz = sizeof(keybuf)` on the next line,
+so the `cbdata->keylen / 2` it divides is never used.
+
+`chat(8)`'s `StackAddressEscape` follows `arg` — a pointer into
+`do_file()`'s local `buf` — into `chat_send()`, and loses that
+everything stored past the call goes through `clean()`, which ends in
+`dup_mem()` → `malloc`.
+
+`ahci_handle_next_trim()` reads `elba` and `elen` after a loop that can
+be skipped, but only when `done > len` on entry, and `len` is
+`(guest count) * 512` capped at 512 — always a multiple of the 8 that
+`done` advances by, so `done` lands exactly on `len` and the
+`done == len` test catches it.

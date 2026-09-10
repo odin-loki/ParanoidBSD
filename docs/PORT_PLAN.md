@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,514 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,355 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,218 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,940** | **114,204** |
+| | **total** | **41,143** | **21,299,967** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -33211,7 +33211,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.168 `usr.sbin/pciconf`
 
-- [ ] **6.168.1** `cap.c` · 1,349L · `TODO-PORT` · 38 fn
+- [ ] **6.168.1** `cap.c` · 1,376L · `TODO-PORT` · 38 fn
   - [ ] 6.168.1.1 `cap_power()` · `TODO-FN`
   - [ ] 6.168.1.2 `cap_agp()` · `TODO-FN`
   - [ ] 6.168.1.3 `cap_vpd()` · `TODO-FN`

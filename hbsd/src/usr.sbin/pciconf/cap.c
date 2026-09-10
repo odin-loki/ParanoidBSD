@@ -30,6 +30,8 @@
  * SUCH DAMAGE.
  */
 
+/* PBSD: <sys/param.h> for nitems(), used in the EA entry-size guard. */
+#include <sys/param.h>
 #include <sys/types.h>
 
 #include <err.h>
@@ -798,7 +800,7 @@ cap_ea(int fd, struct pci_conf *p, uint8_t ptr)
 	uint32_t bei;
 	uint32_t val;
 	int ent_size;
-	uint32_t dw[4];
+	uint32_t dw[4], dwv;
 	uint32_t flags, flags_pp, flags_sp;
 	uint64_t base, max_offset;
 	uint8_t fixed_sub_bus_nr, fixed_sec_bus_nr;
@@ -830,9 +832,34 @@ cap_ea(int fd, struct pci_conf *p, uint8_t ptr)
 		ptr += 4;
 		ent_size = (val & PCIM_EA_ES);
 
+		/*
+		 * PBSD: PCIM_EA_ES is three bits wide, so a device can
+		 * claim up to seven dwords follow the entry header, while
+		 * the largest entry the spec defines has four: base low,
+		 * max_offset low, and a high half for each.  dw is four
+		 * dwords, so this loop wrote up to three past the end of a
+		 * stack array with data from PCI configuration space.
+		 * Read what the device claims so that ptr still lands on
+		 * the next entry, but store only what fits.  This is the
+		 * same defect, and the same fix, as pci_ea_fill_info() in
+		 * sys/dev/pci/pci.c.
+		 */
 		for (b = 0; b < ent_size; b++) {
-			dw[b] = read_config(fd, &p->pc_sel, ptr, 4);
+			dwv = read_config(fd, &p->pc_sel, ptr, 4);
+			if (b < (int)nitems(dw))
+				dw[b] = dwv;
 			ptr += 4;
+		}
+
+		/*
+		 * PBSD: the two mandatory dwords are what base and
+		 * max_offset are read from below; without them there is
+		 * nothing to describe, and above nitems(dw) the entry is
+		 * not one this code knows how to read.
+		 */
+		if (ent_size < 2 || ent_size > (int)nitems(dw)) {
+			printf("\n\t\t bad entry size %d, ignored", ent_size);
+			continue;
 		}
 
 		flags = val;

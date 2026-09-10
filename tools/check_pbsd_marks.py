@@ -4091,6 +4091,14 @@ FIXES = {
         "test after it runs regardless, so a zero-descriptor console "
         "buffer let the guest tear the connection down off a stack word",
     ),
+
+    "hbsd/src/usr.sbin/pciconf/cap.c": (
+        "if (b < (int)nitems(dw))\n\t\t\t\tdw[b] = dwv;",
+        "\t\t\tdw[b] = read_config(fd, &p->pc_sel, ptr, 4);",
+        "cap_ea: the userland twin of pci_ea_fill_info() -- PCIM_EA_ES "
+        "is three bits, so a device claiming five to seven dwords wrote "
+        "past uint32_t dw[4] with PCI configuration space",
+    ),
 }
 
 
