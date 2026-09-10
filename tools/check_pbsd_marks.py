@@ -4141,6 +4141,25 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.bin/diff/diffdir.c": (
+        "if (ignore_file_case && dp2 != NULL &&\n"
+        "\t    strcasecmp(dp->d_name, dp2->d_name) == 0)",
+        "if (ignore_file_case && strcasecmp(dp2->d_name, dp2->d_name) == 0)",
+        "diffit() compared dp2's name with itself, so under -i the test "
+        "was always true: `diff -i -N' over directories that are not "
+        "identical dereferenced the NULL diffdir() passes for the missing "
+        "side, and when both entries existed with different names path2 "
+        "was built from the wrong one",
+    ),
+
+    "hbsd/src/usr.bin/tftp/main.c": (
+        "if (line == NULL || (size_t)len >= sz) {",
+        "if ((size_t)len >= sz)\n\t\t\t\tline = realloc(line, sz = len + 1);",
+        "command() assigned realloc()'s result back over the only pointer "
+        "to the old buffer and copied into it unchecked, updating sz "
+        "inside the call so it described a buffer that did not exist",
+    ),
+
     "hbsd/src/usr.sbin/route6d/route6d.c": [
         (
             "static void rtdexit(void) __attribute__((__noreturn__));",

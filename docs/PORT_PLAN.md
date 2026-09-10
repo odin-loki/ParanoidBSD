@@ -55,7 +55,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,544 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,376 | 4,188 |
+| 5 | `usr.bin` | 732 | 248,410 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,557 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,576** | **114,207** |
+| | **total** | **41,143** | **21,300,610** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -21036,7 +21036,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.49.1.10 `do_color()` · `TODO-FN`
   - [ ] 5.49.1.11 `splice()` · `TODO-FN`
 - [ ] **5.49.2** `diff.h` · 130L · `TODO-HDR`
-- [ ] **5.49.3** `diffdir.c` · 394L gen:2 · `TODO-PORT` · 7 fn
+- [ ] **5.49.3** `diffdir.c` · 408L gen:2 · `TODO-PORT` · 7 fn
   - [ ] 5.49.3.1 `inodecmp()` · `TODO-FN`
   - [ ] 5.49.3.2 `vscandir()` · `TODO-FN`
   - [ ] 5.49.3.3 `leavedir()` · `TODO-FN`
@@ -25125,7 +25125,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.206 `usr.bin/tftp`
 
-- [ ] **5.206.1** `main.c` · 1,071L · `TODO-PORT` · 31 fn
+- [ ] **5.206.1** `main.c` · 1,091L · `TODO-PORT` · 31 fn
   - [ ] 5.206.1.1 `main()` · `TODO-FN`
   - [ ] 5.206.1.2 `urihandling()` · `TODO-FN`
   - [ ] 5.206.1.3 `setpeer0()` · `TODO-FN`

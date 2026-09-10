@@ -18634,3 +18634,113 @@ same tree, and which is cheap.
 So the lint reports and does not rank, and it runs in `run_all.sh` as a
 report rather than a gate.  673 items is not a list to apply wholesale;
 it is a list to read against a measurement.
+
+## `diff -i -N`: a name compared with itself
+
+`usr.bin/diff/diffdir.c`, in `diffit()`:
+
+```c
+	/*
+	 * If we are ignoring file case, use dent2s name here if both names are
+	 * the same apart from case.
+	 */
+	if (ignore_file_case && strcasecmp(dp2->d_name, dp2->d_name) == 0)
+		strlcpy(path2 + plen2, dp2->d_name, PATH_MAX - plen2);
+	else
+		strlcpy(path2 + plen2, dp->d_name, PATH_MAX - plen2);
+```
+
+`dp2->d_name` against `dp2->d_name`.  The comment says what was meant;
+the code compares one name with itself and is therefore always 0, so
+under `-i` the first branch is always taken.
+
+Two things follow, and the caller is what makes them reachable.
+`diffdir()` walks the two sorted directory listings together:
+
+```c
+	dent1 = dp1 != edp1 ? *dp1 : NULL;
+	dent2 = dp2 != edp2 ? *dp2 : NULL;
+
+	pos = dent1 == NULL ? 1 : dent2 == NULL ? -1 :
+	    ignore_file_case ? strcasecmp(dent1->d_name, dent2->d_name) :
+	    strcmp(dent1->d_name, dent2->d_name) ;
+```
+
+so it passes **NULL** for the side an entry is missing from, and relies
+on `-N` or `-P` to diff the present file against nothing:
+
+```c
+	} else if (pos < 0) {
+		if (Nflag)
+			diffit(dent1, path1, dirlen1, dent2, path2, dirlen2, flags);
+	...
+	} else {
+		if (Nflag || Pflag)
+			diffit(dent2, path1, dirlen1, dent1, path2, dirlen2, flags);
+```
+
+`diff -i -N` over two directories that are not identical therefore
+dereferences NULL.  And when both entries do exist but the names
+genuinely differ — the `-N` case where `dent1` sorts first — `path2` was
+built from `dent2`'s name, so diff compared `dir1/a` against `dir2/b`
+instead of reporting `a` as absent from `dir2`.
+
+Comparing the two names, which is what the comment says, does both jobs,
+and the `else` arm already builds the right path when `dp2` is NULL.
+
+A model of the block driven with the four `(dp, dp2)` pairs `diffdir()`'s
+loop produces — `tools/verify/probes/diffit_path2.c`, a model of the code
+and not the program — separates them:
+
+```
+case                                    old         new         wanted
+both present, names differ by case      readme      readme      readme
+both present, different names (-N)      zulu        README      README
+only in dir1 (-N)                       SIGSEGV     README      README
+only in dir2 (-N or -P)                 SIGSEGV     zulu        zulu
+
+old block wrong or crashed in 3 of 4 cases
+```
+
+The one case the comment was written about is the one case the old block
+got right.
+
+## `tftp`: realloc into the only pointer to the buffer
+
+`command()` in `usr.bin/tftp/main.c`:
+
+```c
+	static char *line;
+	static size_t sz;
+	...
+	if ((size_t)len >= sz)
+		line = realloc(line, sz = len + 1);
+	strlcpy(line, bp, sz);
+```
+
+Three mistakes in one statement.  The result goes back over `line`,
+which is the only pointer to the old buffer, so a failure leaks it.  The
+result is not checked, so a failure hands `strlcpy()` a NULL
+destination.  And `sz` is updated *inside* the call, so after a failure
+it describes a buffer that does not exist.
+
+The `line == NULL` half of the new test is the other path: the
+non-interactive branch below uses `getline(&line, &sz, stdin)`, which
+leaves the pair unspecified when it fails, so `sz` can outlive the
+buffer `line` pointed at.
+
+```
+                usr.bin/diff + usr.bin/tftp
+                before  after
+OK                   8       8
+ERROR                0       0
+findings             5       3
+```
+
+The three that remain: `diffdir.c:60` is the `RB_INSERT_COLOR` macro
+expansion already on the record; `diffdir.c:255` reports `dp` where all
+three call sites pass a non-NULL first argument — `pos` is 1 exactly
+when `dent1` is NULL and -1 exactly when `dent2` is, so the argument in
+first position is never the NULL one, which is a ternary chain the
+analyser will not carry; `tftp/main.c:323` is `res->ai_addr` after
+`getaddrinfo`, the out-parameter class.

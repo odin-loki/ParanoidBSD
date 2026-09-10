@@ -729,8 +729,28 @@ command(bool interactive, EditLine *el, History *hist, HistEvent *hep)
 		if (interactive) {
 			if ((bp = el_gets(el, &len)) == NULL || len == 0)
 				exit(0);
-			if ((size_t)len >= sz)
-				line = realloc(line, sz = len + 1);
+			if (line == NULL || (size_t)len >= sz) {
+				/*
+				 * PBSD: this assigned realloc()'s result
+				 * back over the only pointer to the old
+				 * buffer and then copied into it without
+				 * looking -- so a failure both leaked the
+				 * line and handed strlcpy() a NULL
+				 * destination.  sz was updated inside the
+				 * call, so it described a buffer that did
+				 * not exist either.  The `line == NULL'
+				 * test is the other half: getline() on the
+				 * branch below leaves the pair unspecified
+				 * when it fails, so sz can outlive the
+				 * buffer line used to point at.
+				 */
+				char *nl = realloc(line, len + 1);
+
+				if (nl == NULL)
+					err(1, "realloc");
+				line = nl;
+				sz = len + 1;
+			}
 			strlcpy(line, bp, sz);
 			history(hist, hep, H_ENTER, line);
 		} else {

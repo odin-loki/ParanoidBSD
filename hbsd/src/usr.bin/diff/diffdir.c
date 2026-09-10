@@ -257,8 +257,22 @@ diffit(struct dirent *dp, char *path1, size_t plen1, struct dirent *dp2,
 	/*
 	 * If we are ignoring file case, use dent2s name here if both names are
 	 * the same apart from case.
+	 *
+	 * PBSD: this compared dp2's name with itself, so under -i the test
+	 * was always true and the branch always taken.  Two things follow.
+	 * dp2 is NULL whenever the entry exists in only one of the two
+	 * directories -- diffdir() passes NULL for the missing side and
+	 * relies on -N or -P to diff against nothing -- so `diff -i -N'
+	 * over a pair of directories that are not identical dereferenced
+	 * NULL here.  And when dp2 is not NULL but the names genuinely
+	 * differ, which is the -N case where dp sorts first, path2 was
+	 * built from dp2's name: diff compared dir1/a against dir2/b
+	 * rather than reporting a as absent from dir2.  Comparing the two
+	 * names, which is what the comment above says, does both jobs --
+	 * and the else arm already builds the right path when dp2 is NULL.
 	 */
-	if (ignore_file_case && strcasecmp(dp2->d_name, dp2->d_name) == 0)
+	if (ignore_file_case && dp2 != NULL &&
+	    strcasecmp(dp->d_name, dp2->d_name) == 0)
 		strlcpy(path2 + plen2, dp2->d_name, PATH_MAX - plen2);
 	else
 		strlcpy(path2 + plen2, dp->d_name, PATH_MAX - plen2);
