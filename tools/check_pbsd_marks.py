@@ -205,13 +205,26 @@ FIXES = {
         "so every path after a fatal() anywhere in patch(1) was "
         "analysed as though the program continued",
     ),
-    "hbsd/src/usr.bin/gencat/gencat.c": (
-        "while ((msg = set->msghead.lh_first) != NULL) {",
-        "while (msg) {\n\t\t\tfree(msg->str);",
-        "MCDelSet()'s loop never advanced msg -- LIST_REMOVE unlinks it "
-        "and does not change it -- so $delset for an existing set hung "
-        "gencat and freed msg->str again on the second pass",
-    ),
+    "hbsd/src/usr.bin/gencat/gencat.c": [
+        (
+            "while ((msg = set->msghead.lh_first) != NULL) {",
+            "while (msg) {\n\t\t\tfree(msg->str);",
+            "MCDelSet()'s loop never advanced msg -- LIST_REMOVE unlinks "
+            "it and does not change it -- so $delset for an existing set "
+            "hung gencat and freed msg->str again on the second pass",
+        ),
+        (
+            "static\tvoid\terror(const char *) __dead2;",
+            None,
+            "error() ends in exit(1); xmalloc(), xrealloc() and xstrdup() "
+            "all return the pointer they only reach when it is not NULL",
+        ),
+        (
+            "void\tusage(void) __dead2;",
+            None,
+            "usage() ends in exit(1)",
+        ),
+    ],
     "hbsd/src/usr.sbin/rtadvd/if.c": (
         ("free(ifi);\n", 3),
         "if (ifi_new)\n\t\t\t\t\tfree(ifi);\n\t\t\t\tcontinue;",
@@ -4887,6 +4900,23 @@ FIXES = {
         "list and its name and parameters freed, but the record itself "
         "was left behind",
     ),
+
+    "hbsd/src/usr.sbin/nfsuserd/nfsuserd.c": [
+        (
+            ('syslog(LOG_ERR, "Can\'t add user %s\\n", nid.nid_name);', 2),
+            'syslog(LOG_ERR, "Can\'t add user %s\\n", pwd->pw_name);',
+            "nfsuserdsrv: an unknown uid or user name falls back to "
+            "defaultuser with pwd left NULL, and the nfssvc() error arm "
+            "then logged pwd->pw_name -- a remote NFSv4 client naming an "
+            "id the server does not know could crash the daemon",
+        ),
+        (
+            ('syslog(LOG_ERR, "Can\'t add group %s\\n",\n\t\t\t    nid.nid_name);', 2),
+            'Can\'t add group %s\\n",\n\t\t\t    grp->gr_name);',
+            "the same on the gid and group-name arms",
+        ),
+    ],
+
 }
 
 

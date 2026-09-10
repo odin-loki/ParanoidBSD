@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,599 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,429 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,605 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,435 | 4,188 |
+| 6 | `usr.sbin` | 1,142 | 657,617 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,735** | **114,207** |
+| | **total** | **41,143** | **21,300,753** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -21629,7 +21629,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.77 `usr.bin/gencat`
 
-- [ ] **5.77.1** `gencat.c` · 701L · `TODO-PORT` · 17 fn
+- [ ] **5.77.1** `gencat.c` · 707L · `TODO-PORT` · 17 fn
   - [ ] 5.77.1.1 `usage()` · `TODO-FN`
   - [ ] 5.77.1.2 `main()` · `TODO-FN`
   - [ ] 5.77.1.3 `warning()` · `TODO-FN`
@@ -32805,7 +32805,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.157 `usr.sbin/nfsuserd`
 
-- [ ] **6.157.1** `nfsuserd.c` · 919L · `TODO-PORT` · 8 fn
+- [ ] **6.157.1** `nfsuserd.c` · 931L · `TODO-PORT` · 8 fn
   - [ ] 6.157.1.1 `main()` · `TODO-FN`
   - [ ] 6.157.1.2 `nfsuserdsrv()` · `TODO-FN`
   - [ ] 6.157.1.3 `xdr_getid()` · `TODO-FN`

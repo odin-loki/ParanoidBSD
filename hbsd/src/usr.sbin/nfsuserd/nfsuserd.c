@@ -650,7 +650,12 @@ nfsuserdsrv(struct svc_req *rqstp, SVCXPRT *transp)
 		error = nfssvc(NFSSVC_IDNAME | NFSSVC_NEWSTRUCT, &nid);
 		if (error) {
 			info.retval = error;
-			syslog(LOG_ERR, "Can't add user %s\n", pwd->pw_name);
+			/*
+			 * PBSD: nid_name, not pwd->pw_name -- pwd is NULL
+			 * on the arm that fell back to defaultuser, and an
+			 * nfssvc() failure there dereferenced it.
+			 */
+			syslog(LOG_ERR, "Can't add user %s\n", nid.nid_name);
 		} else if (verbose) {
 			syslog(LOG_ERR,"Added uid=%d name=%s\n",
 			    nid.nid_uid, nid.nid_name);
@@ -683,8 +688,9 @@ nfsuserdsrv(struct svc_req *rqstp, SVCXPRT *transp)
 		error = nfssvc(NFSSVC_IDNAME | NFSSVC_NEWSTRUCT, &nid);
 		if (error) {
 			info.retval = error;
+			/* PBSD: grp is NULL on the defaultgroup arm. */
 			syslog(LOG_ERR, "Can't add group %s\n",
-			    grp->gr_name);
+			    nid.nid_name);
 		} else if (verbose) {
 			syslog(LOG_ERR,"Added gid=%d name=%s\n",
 			    nid.nid_gid, nid.nid_name);
@@ -717,7 +723,12 @@ nfsuserdsrv(struct svc_req *rqstp, SVCXPRT *transp)
 		error = nfssvc(NFSSVC_IDNAME | NFSSVC_NEWSTRUCT, &nid);
 		if (error) {
 			info.retval = error;
-			syslog(LOG_ERR, "Can't add user %s\n", pwd->pw_name);
+			/*
+			 * PBSD: nid_name, not pwd->pw_name -- pwd is NULL
+			 * on the arm that fell back to defaultuser, and an
+			 * nfssvc() failure there dereferenced it.
+			 */
+			syslog(LOG_ERR, "Can't add user %s\n", nid.nid_name);
 		} else if (verbose) {
 			syslog(LOG_ERR,"Added uid=%d name=%s\n",
 			    nid.nid_uid, nid.nid_name);
@@ -750,8 +761,9 @@ nfsuserdsrv(struct svc_req *rqstp, SVCXPRT *transp)
 		error = nfssvc(NFSSVC_IDNAME | NFSSVC_NEWSTRUCT, &nid);
 		if (error) {
 			info.retval = error;
+			/* PBSD: grp is NULL on the defaultgroup arm. */
 			syslog(LOG_ERR, "Can't add group %s\n",
-			    grp->gr_name);
+			    nid.nid_name);
 		} else if (verbose) {
 			syslog(LOG_ERR,"Added gid=%d name=%s\n",
 			    nid.nid_gid, nid.nid_name);

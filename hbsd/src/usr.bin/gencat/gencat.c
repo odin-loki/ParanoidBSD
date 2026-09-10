@@ -103,7 +103,13 @@ static char *curline = NULL;
 static long lineno = 0;
 
 static	char   *cskip(char *);
-static	void	error(const char *);
+/*
+ * PBSD: error() ends in exit(1) and usage() in exit(1); every caller --
+ * xmalloc(), xrealloc(), xstrdup() and the parser -- is written as though
+ * neither returns.  Say so, or the analyser walks out of the NOMEM() arm
+ * and back into the caller with a NULL it never gets.
+ */
+static	void	error(const char *) __dead2;
 static	char   *get_line(int);
 static	char   *getmsg(int, char *, char);
 static	void	warning(const char *, const char *);
@@ -119,7 +125,7 @@ void	MCDelMsg(int);
 void	MCAddMsg(int, const char *);
 void	MCAddSet(int);
 void	MCDelSet(int);
-void	usage(void);
+void	usage(void) __dead2;
 int	main(int, char **);
 
 void

@@ -19410,3 +19410,90 @@ the analyser was wrong about why:
 * `usr.sbin/jail`'s `load_config()` — each wildcard jail's name and
   parameters are freed and the record is `TAILQ_REMOVE`d, and then the
   record itself is dropped on the floor.
+
+## nfsuserd: an unknown NFSv4 id crashes the daemon, if the kernel then says no
+
+`nfsuserdsrv()` answers four RPCs — uid to name, gid to name, name to
+uid, name to gid — and all four are written the same way:
+
+```c
+	pwd = getpwuid((uid_t)info.id);
+	info.retval = 0;
+	if (pwd != NULL) {
+		nid.nid_usertimeout = defusertimeout;
+		nid.nid_uid = pwd->pw_uid;
+		nid.nid_name = pwd->pw_name;
+		...
+	} else {
+		nid.nid_usertimeout = 5;
+		nid.nid_uid = (uid_t)info.id;
+		nid.nid_name = defaultuser;
+		...
+	}
+	nid.nid_namelen = strlen(nid.nid_name);
+	nid.nid_flag = NFSID_ADDUID;
+	error = nfssvc(NFSSVC_IDNAME | NFSSVC_NEWSTRUCT, &nid);
+	if (error) {
+		info.retval = error;
+		syslog(LOG_ERR, "Can't add user %s\n", pwd->pw_name);
+	}
+```
+
+The `else` arm is the ordinary case for an id the server does not know:
+it maps to `defaultuser` with a short timeout and answers the client.
+`pwd` is NULL on it.  The error arm below then reads `pwd->pw_name`.
+
+So the crash needs two things at once: a client naming an id or name
+the server cannot resolve, and an `nfssvc(2)` that fails for that entry.
+The first is entirely under a remote client's control.  The second is
+not remote, but it is reachable — the id map is a fixed-size kernel
+table, and `nfsrv_setupidhash()`/`nfssvc_idname()` return `ENOMEM` and
+`EPERM` rather than succeeding unconditionally.  A daemon that dies
+takes NFSv4 name mapping down for the whole machine until it is
+restarted.
+
+The fix is the value the function already computed: `nid.nid_name` is
+set on both arms, holds exactly what the log line wants to say, and is
+never NULL.  All four sites now use it.
+
+Measured over `usr.bin/gencat` and `usr.sbin/nfsuserd`: 14 → 10, two
+translation units OK and no ERROR either side.  The four that closed are
+the four `nfsuserd` sites.
+
+### gencat: `error()` ends in `exit()`, and the ten findings do not rest on it
+
+`usr.bin/gencat` has ten `core.NullDereference` findings, all in
+`getmsg()`, all on `*tptr++`.  `tptr` comes from `msg`, and `msg` comes
+from `xmalloc()`/`xrealloc()`, which return the pointer they only reach
+when it is not NULL:
+
+```c
+	static void *xrealloc(void *ptr, size_t size) {
+		if ((ptr = realloc(ptr, size)) == NULL)
+			NOMEM();		/* error("out of memory") */
+		return (ptr);
+	}
+```
+
+`error()` ends in `exit(1)` and was declared `static void
+error(const char *);` — the shape that has accounted for most of this
+sweep's real NULL findings.  It is now `__dead2`, and so is `usage()`.
+
+It moved nothing: 10 before, 10 after.  The findings are not downstream
+of `error()` at all.  They rest on `getmsg()`'s two file-static locals:
+
+```c
+	static char *msg = NULL;
+	static long msglen = 0;
+	...
+	clen = strlen(cptr) + 1;
+	if (clen > msglen) { ... msg = xrealloc(msg, clen); msglen = clen; }
+	tptr = msg;
+```
+
+Analysed as its own entry point, `getmsg()` may be a second call, so
+`msglen` is unknown; `clen > msglen` can be false; and `msg` is then
+whatever it was — which, for the analyser, includes NULL.  The invariant
+is real (`msglen` is only ever raised in the same statement that
+assigns `msg`) and it is one the analyser cannot carry across calls.
+The declarations stay because they are true, not because they paid.
