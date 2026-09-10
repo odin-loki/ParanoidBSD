@@ -5231,6 +5231,19 @@ FIXES = {
         "subnormal inputs give bit-identical results either way.",
     ),
 
+    "hbsd/src/lib/libc/locale/xlocale.c": (
+        "if (type < 0 || type >= XLC_LAST)",
+        "if (type >= XLC_LAST)\n\t\treturn (NULL);",
+        "querylocale() computed its index as ffs(mask & "
+        "~LC_VERSION_MASK) - 1 and checked only the upper bound. ffs() "
+        "answers 0 when no bit is set, so a mask naming no component -- "
+        "querylocale(0, loc), or LC_VERSION_MASK on its own -- made "
+        "type -1, read components[-1] out of bounds and returned a "
+        "pointer taken from whatever was there. NULL is the answer it "
+        "already gives for a mask naming a component it does not know.",
+    ),
+
+
     "hbsd/src/lib/libcalendar/easter.c": (
         "dt.d = mc[((y % 19) + 19) % 19];",
         "dt.d = mc[y % 19];",

@@ -21040,3 +21040,58 @@ in `calendar.c` and `easterodn()` in `easter.c`, so CBMC models the
 return as any `int` rather than the 0–6 it actually is.  Reporting the
 verdict alone would have said "no change" about a fix that closed a real
 out-of-bounds read.
+
+## querylocale(0, loc): the index check that guards one end, again
+
+```c
+	int type = ffs(mask & ~LC_VERSION_MASK) - 1;
+	FIX_LOCALE(loc);
+	if (type >= XLC_LAST)
+		return (NULL);
+	...
+		if (loc->components[type])
+			return (loc->components[type]->locale);
+```
+
+`ffs()` answers 0 when no bit is set.  A mask naming no component —
+`querylocale(0, loc)`, or `LC_VERSION_MASK` on its own — makes `type`
+**-1**, passes the `>= XLC_LAST` test unchanged, reads
+`components[-1]` out of bounds, and returns a `const char *` taken from
+whatever was there.  `querylocale()` is a public entry point taking a
+plain `int` mask.
+
+The upper bound was checked and the lower was not.  That is the third
+time today: `systat`'s `get_tbl_ptr()`, `easterodn()`'s `mc[y % 19]`,
+and this.  A bound written as one comparison when the index has two
+sides is a shape worth naming.
+
+```c
+	if (type < 0 || type >= XLC_LAST)
+		return (NULL);
+```
+
+`NULL` is the answer the function already gives for a mask naming a
+component it does not know.
+
+### The finding that fired was not the defect
+
+This one is worth being precise about, because the honest account is
+less flattering than the fix.  CBMC reported exactly one property on
+`querylocale`:
+
+```
+line 353 arithmetic overflow on signed - in return_value_ffs - 1
+```
+
+That is a **false positive**: `ffs()` lives in another translation unit,
+so CBMC models its return as any `int`, and `INT_MIN - 1` overflows.
+The real `ffs()` returns 0–32 and the subtraction is fine.
+
+The verdict does not move — `querylocale` is still `FAILED` on that same
+property, before and after — because the fix has nothing to do with it.
+What the finding did was put a line number in front of a person, and the
+defect was one line further down.
+
+That is a use for a checker that no count of true positives measures,
+and it is the reason "read every finding" is the rule rather than "fix
+every finding".

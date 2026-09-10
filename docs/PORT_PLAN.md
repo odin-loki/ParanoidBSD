@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,823 | 9,056 |
+| 1 | `lib` | 2,827 | 639,832 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,084** | **114,207** |
+| | **total** | **41,143** | **21,301,093** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -3249,7 +3249,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.77.77** `wcwidth.c` · 61L · `TODO-PORT` · 2 fn
   - [ ] 1.77.77.1 `wcwidth()` · `TODO-FN`
   - [ ] 1.77.77.2 `wcwidth_l()` · `TODO-FN`
-- [ ] **1.77.78** `xlocale.c` · 381L · `TODO-PORT` · 12 fn
+- [ ] **1.77.78** `xlocale.c` · 390L · `TODO-PORT` · 12 fn
   - [ ] 1.77.78.1 `init_key()` · `TODO-FN`
   - [ ] 1.77.78.2 `get_thread_locale()` · `TODO-FN`
   - [ ] 1.77.78.3 `set_thread_locale()` · `TODO-FN`

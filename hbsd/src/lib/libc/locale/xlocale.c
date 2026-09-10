@@ -352,7 +352,16 @@ querylocale(int mask, locale_t loc)
 {
 	int type = ffs(mask & ~LC_VERSION_MASK) - 1;
 	FIX_LOCALE(loc);
-	if (type >= XLC_LAST)
+	/*
+	 * Both ends.  ffs() answers 0 when no bit is set, so a mask that
+	 * names no component -- querylocale(0, loc), or LC_VERSION_MASK
+	 * on its own -- made type -1 and read components[-1], out of
+	 * bounds, and returned a pointer taken from whatever was there.
+	 * The upper bound was checked and the lower was not.  NULL is
+	 * the answer this already gives for a mask naming a component it
+	 * does not know.
+	 */
+	if (type < 0 || type >= XLC_LAST)
 		return (NULL);
 	if (mask & LC_VERSION_MASK) {
 		if (loc->components[type])
