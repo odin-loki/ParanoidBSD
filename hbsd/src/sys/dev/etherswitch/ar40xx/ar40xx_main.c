@@ -671,7 +671,15 @@ ar40xx_getvgroup(device_t dev, etherswitch_vlangroup_t *vg)
 	struct ar40xx_softc *sc = device_get_softc(dev);
 	int vid, ret;
 
-	if (vg->es_vlangroup > sc->sc_info.es_nvlangroups)
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  Valid groups are 0 ..
+	 * es_nvlangroups - 1, and the old > test admitted both
+	 * es_nvlangroups itself and every negative value.
+	 */
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->sc_info.es_nvlangroups)
 		return (EINVAL);
 
 	vg->es_untagged_ports = 0;
@@ -719,6 +727,17 @@ ar40xx_setvgroup(device_t dev, etherswitch_vlangroup_t *vg)
 {
 	struct ar40xx_softc *sc = device_get_softc(dev);
 	int err, vid;
+
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  vlan_id[], vlan_ports[] and
+	 * vlan_untagged[] below are all written through it, and this
+	 * side had no test at all.
+	 */
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->sc_info.es_nvlangroups)
+		return (EINVAL);
 
 	/* For now we only support 802.1q mode */
 	if (sc->sc_vlan.vlan == 0)

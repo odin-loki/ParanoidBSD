@@ -753,6 +753,15 @@ rtl_getvgroup(device_t dev, etherswitch_vlangroup_t *vg)
 	int i;
 	int member, untagged;
 	
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  It indexes sc->vid[RTL8366_NUM_VLANS] and
+	 * the VMCR register bank below.
+	 */
+	if (vg->es_vlangroup < 0 || vg->es_vlangroup >= RTL8366_NUM_VLANS)
+		return (EINVAL);
+
 	sc = device_get_softc(dev);
 
 	for (i=0; i<RTL8366_VMCR_MULT; i++)
@@ -778,6 +787,14 @@ rtl_setvgroup(device_t dev, etherswitch_vlangroup_t *vg)
 	struct rtl8366rb_softc *sc;
 	int g;
 	int member, untagged;
+
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  sc->vid[g] below is a write.
+	 */
+	if (vg->es_vlangroup < 0 || vg->es_vlangroup >= RTL8366_NUM_VLANS)
+		return (EINVAL);
 
 	sc = device_get_softc(dev);
 

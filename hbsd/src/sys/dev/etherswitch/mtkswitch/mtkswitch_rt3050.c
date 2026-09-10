@@ -350,8 +350,16 @@ mtkswitch_vlan_getvgroup(struct mtkswitch_softc *sc, etherswitch_vlangroup_t *v)
 
 	MTKSWITCH_LOCK_ASSERT(sc, MA_NOTOWNED);
 
+	/*
+	 * PBSD: es_vlangroup is a signed int off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl and reaches the VTIM and
+	 * VLANI register indices below.  Valid groups are
+	 * 0 .. es_nvlangroups - 1; the old > test admitted es_nvlangroups
+	 * itself and every negative value.
+	 */
 	if ((sc->vlan_mode != ETHERSWITCH_VLAN_DOT1Q) ||
-	    (v->es_vlangroup > sc->info.es_nvlangroups))
+	    (v->es_vlangroup < 0) ||
+	    (v->es_vlangroup >= sc->info.es_nvlangroups))
 		return (EINVAL);
 
 	/* Reset the member ports. */
@@ -396,7 +404,8 @@ mtkswitch_vlan_setvgroup(struct mtkswitch_softc *sc, etherswitch_vlangroup_t *v)
 	uint32_t val, tmp;
 
 	if ((sc->vlan_mode != ETHERSWITCH_VLAN_DOT1Q) ||
-	    (v->es_vlangroup > sc->info.es_nvlangroups))
+	    (v->es_vlangroup < 0) ||
+	    (v->es_vlangroup >= sc->info.es_nvlangroups))
 		return (EINVAL);
 
 	MTKSWITCH_LOCK_ASSERT(sc, MA_NOTOWNED);

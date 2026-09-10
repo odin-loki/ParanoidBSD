@@ -267,7 +267,15 @@ ar8xxx_getvgroup(struct arswitch_softc *sc, etherswitch_vlangroup_t *vg)
 
 	ARSWITCH_LOCK_ASSERT(sc, MA_NOTOWNED);
 
-	if (vg->es_vlangroup > sc->info.es_nvlangroups)
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  Valid groups are 0 ..
+	 * es_nvlangroups - 1, and the old > test admitted both
+	 * es_nvlangroups itself and every negative value.
+	 */
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->info.es_nvlangroups)
 		return (EINVAL);
 
 	/* Reset the members ports. */
@@ -311,6 +319,16 @@ int
 ar8xxx_setvgroup(struct arswitch_softc *sc, etherswitch_vlangroup_t *vg)
 {
 	int err, vid;
+
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  sc->vid[vg->es_vlangroup] below is a
+	 * write, and this side had no test at all.
+	 */
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->info.es_nvlangroups)
+		return (EINVAL);
 
 	ARSWITCH_LOCK_ASSERT(sc, MA_NOTOWNED);
 

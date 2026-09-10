@@ -3793,13 +3793,6 @@ FIXES = {
         "no default, and a device hint could set 3",
     ),
 
-    "hbsd/src/sys/dev/etherswitch/rtl8366/rtl8366rb.c": (
-        "err = smi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2,",
-        "\t\tsmi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2, &v, RTL_WAITOK);",
-        "rtl_getport: smi_read() returns EBUSY without writing v, and "
-        "the CPU-port arm ignored that before shifting it",
-    ),
-
     "hbsd/src/sys/dev/flash/cqspi.c": (
         "ret = cqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);",
         "\t\tcqspi_cmd_read(sc, CMD_READ_STATUS, &data, 1);\n\t} while",
@@ -3876,6 +3869,73 @@ FIXES = {
         "\tecore_mcp_get_transceiver_data(p_hwfn, p_ptt, &transceiver_data);\n",
         "ecore_mcp_trans_speed_mask: two of the callee's four exits do "
         "not write the transceiver word, and the call ignored the return",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/rtl8366/rtl8366rb.c": [
+        (
+            ("vg->es_vlangroup >= RTL8366_NUM_VLANS)", 2),
+            None,
+            "rtl_{get,set}vgroup: es_vlangroup came off the ioctl and "
+            "indexed sc->vid[RTL8366_NUM_VLANS] -- and the VMCR bank -- "
+            "with no bound check on either side",
+        ),
+        (
+            "err = smi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2,",
+            "\t\tsmi_read(dev, RTL8366_PLSR_BASE + (RTL8366_NUM_PHYS)/2, &v, RTL_WAITOK);",
+            "rtl_getport: smi_read() returns EBUSY without writing v, and "
+            "the CPU-port arm ignored that before shifting it",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/etherswitch/ip17x/ip17x_vlans.c": (
+        ("vg->es_vlangroup >= IP17X_MAX_VLANS)", 2),
+        None,
+        "ip17x_{get,set}vgroup: es_vlangroup indexed "
+        "sc->vlan[IP17X_MAX_VLANS] with no bound check on either side",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/felix/felix.c": (
+        ("vg->es_vlangroup >= sc->info.es_nvlangroups)", 2),
+        None,
+        "felix_{get,set}_dot1q_vlan: es_vlangroup indexed "
+        "sc->vlans[FELIX_NUM_VLANS] with no bound check on either side",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/arswitch/arswitch_vlans.c": (
+        ("vg->es_vlangroup >= sc->info.es_nvlangroups)", 2),
+        "if (vg->es_vlangroup > sc->info.es_nvlangroups)",
+        "ar8xxx_getvgroup's > test admitted es_nvlangroups itself and "
+        "every negative index; ar8xxx_setvgroup, which writes "
+        "sc->vid[], had no test at all",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/ar40xx/ar40xx_main.c": (
+        ("vg->es_vlangroup >= sc->sc_info.es_nvlangroups)", 2),
+        "if (vg->es_vlangroup > sc->sc_info.es_nvlangroups)",
+        "ar40xx_getvgroup's > test was off by one and missed negatives; "
+        "ar40xx_setvgroup, which writes vlan_id[], vlan_ports[] and "
+        "vlan_untagged[], had no test at all",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/e6000sw/e6000sw.c": (
+        ("if (port >= sc->num_ports)", 2),
+        "if (port > sc->num_ports)",
+        "e6000sw_{get,set}_port_vlan: the > test admitted num_ports "
+        "itself",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/mtkswitch/mtkswitch_mt7620.c": (
+        ("(v->es_vlangroup >= sc->info.es_nvlangroups))", 2),
+        "(v->es_vlangroup > sc->info.es_nvlangroups))",
+        "mtkswitch_vlan_{get,set}vgroup: the > test admitted "
+        "es_nvlangroups itself and every negative register index",
+    ),
+
+    "hbsd/src/sys/dev/etherswitch/mtkswitch/mtkswitch_rt3050.c": (
+        ("(v->es_vlangroup >= sc->info.es_nvlangroups))", 2),
+        "(v->es_vlangroup > sc->info.es_nvlangroups))",
+        "mtkswitch_vlan_{get,set}vgroup: the same off-by-one as "
+        "mtkswitch_mt7620.c",
     ),
 }
 

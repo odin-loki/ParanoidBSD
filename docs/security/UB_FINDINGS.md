@@ -15979,3 +15979,78 @@ but the analyser had never reported it in them — the fix went in because
 the shape did, not because a finding did. `cfi_core.c` is the fourth: its
 `val` finding rests on a softc field, and tightening the attach-time
 check does not tell the analyser anything, as expected.
+
+## An ioctl argument indexing a fixed array, in eight drivers
+
+This one did not come from a finding. `rtl_getport()`'s unchecked
+`smi_read()` (above) is in `rtl8366rb.c`, and reading the rest of the
+file to write that fix turned up `rtl_setvgroup()`:
+
+```c
+	sc = device_get_softc(dev);
+
+	g = vg->es_vlangroup;
+
+	sc->vid[g] = vg->es_vid;
+```
+
+`sc->vid[]` is `int vid[RTL8366_NUM_VLANS]` — sixteen entries.
+`es_vlangroup` is a signed `int` in `etherswitch_vlangroup_t`, which
+`IOETHERSWITCHSETVLANGROUP` copies in from userland and
+`etherswitch.c`'s `ioctl()` hands to the driver's SETVGROUP method
+without looking at:
+
+```c
+	case IOETHERSWITCHSETVLANGROUP:
+		error = ETHERSWITCH_SETVGROUP(etherswitch,
+		    (etherswitch_vlangroup_t *)data);
+		break;
+```
+
+The bound is each driver's to enforce, and the survey of all of them
+found three states:
+
+| driver | GETVGROUP | SETVGROUP | indexed |
+|---|---|---|---|
+| `rtl8366rb` | none | none | `sc->vid[16]` |
+| `ip17x` | none | none | `sc->vlan[16]` |
+| `felix` | none | none | `sc->vlans[4096]` |
+| `arswitch` | `> es_nvlangroups` | none | `sc->vid[16]` |
+| `ar40xx` | `> es_nvlangroups` | none | `vlan_id[64]`, `vlan_ports[]`, `vlan_untagged[]` |
+| `e6000sw` | `> num_ports` | `> num_ports` | `sc->vlans[]` |
+| `mtkswitch` ×2 | `> es_nvlangroups` | `> es_nvlangroups` | VTIM/VLANI register index |
+
+Three drivers never checked at all, on either side. Two checked the read
+and not the write. And every `>` test is wrong twice over: valid groups
+are `0 .. es_nvlangroups - 1`, so `>` admits `es_nvlangroups` itself, and
+against a signed index it admits every negative value — `es_vlangroup =
+-1` reaches `sc->vid[-1]`.
+
+All eight now open both methods with
+
+```c
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->info.es_nvlangroups)
+		return (EINVAL);
+```
+
+(`es_nvlangroups` rather than the array constant on purpose: the
+arswitch 8216 and 8226 back-ends set it to 0 because those parts have no
+VLAN support, and the same test then refuses every group on them, which
+is right. `ip17x`, `felix` and `rtl8366rb` use their array constants
+where `es_nvlangroups` is not set before the call.) `e6000sw` already
+casts through a `uint32_t`, which turns a negative into a large positive
+its test rejects, so only its off-by-one needed correcting.
+
+```
+              before   after     (sys/dev/etherswitch)
+OK                25      25
+ERROR             10      10
+findings           1       1
+```
+
+The measurement does not move, and cannot: none of the enabled checkers
+models an array bound, and the index is unconstrained data from an ioctl
+the analyser cannot see the source of. The sweep's contribution here was
+to put a person in the file. The number that matters is that the ERROR
+set is unchanged — all eight still compile.

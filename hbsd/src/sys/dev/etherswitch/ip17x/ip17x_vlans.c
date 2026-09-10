@@ -113,6 +113,14 @@ ip17x_getvgroup(device_t dev, etherswitch_vlangroup_t *vg)
 	uint32_t port;
 	int i;
 
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  It indexes sc->vlan[IP17X_MAX_VLANS].
+	 */
+	if (vg->es_vlangroup < 0 || vg->es_vlangroup >= IP17X_MAX_VLANS)
+		return (EINVAL);
+
 	sc = device_get_softc(dev);
 
 	/* Vlan ID. */
@@ -142,6 +150,15 @@ ip17x_setvgroup(device_t dev, etherswitch_vlangroup_t *vg)
 	struct ip17x_softc *sc;
 	uint32_t phy;
 	int i;
+
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  Every sc->vlan[vg->es_vlangroup]
+	 * below is a write.
+	 */
+	if (vg->es_vlangroup < 0 || vg->es_vlangroup >= IP17X_MAX_VLANS)
+		return (EINVAL);
 
 	sc = device_get_softc(dev);
 

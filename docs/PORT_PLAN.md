@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,974 | 81,387 |
+| 8 | `sys` | 14,951 | 10,498,094 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,644** | **114,204** |
+| | **total** | **41,143** | **21,299,764** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -70535,7 +70535,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.698.16.3 `ar40xx_hw_vtu_flush()` · `TODO-FN`
   - [ ] 8.698.16.4 `ar40xx_hw_vtu_get_vlan()` · `TODO-FN`
 - [ ] **8.698.17** `ar40xx_hw_vtu.h` · 40L · `TODO-HDR`
-- [ ] **8.698.18** `ar40xx_main.c` · 969L gen:10 · `TODO-PORT` · 26 fn
+- [ ] **8.698.18** `ar40xx_main.c` · 988L gen:10 · `TODO-PORT` · 26 fn
   - [ ] 8.698.18.1 `ar40xx_probe()` · `TODO-FN`
   - [ ] 8.698.18.2 `ar40xx_tick()` · `TODO-FN`
   - [ ] 8.698.18.3 `ar40xx_statchg()` · `TODO-FN`
@@ -70692,7 +70692,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.699.12.14 `arswitch_modifyreg()` · `TODO-FN`
   - [ ] 8.699.12.15 `arswitch_waitreg()` · `TODO-FN`
 - [ ] **8.699.13** `arswitch_reg.h` · 48L · `TODO-HDR`
-- [ ] **8.699.14** `arswitch_vlans.c` · 385L · `TODO-PORT` · 12 fn
+- [ ] **8.699.14** `arswitch_vlans.c` · 403L · `TODO-PORT` · 12 fn
   - [ ] 8.699.14.1 `ar8xxx_vlan_op()` · `TODO-FN`
   - [ ] 8.699.14.2 `ar8xxx_flush_dot1q_vlan()` · `TODO-FN`
   - [ ] 8.699.14.3 `ar8xxx_purge_dot1q_vlan()` · `TODO-FN`
@@ -70711,7 +70711,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.700 `sys/dev/etherswitch/e6000sw`
 
-- [ ] **8.700.1** `e6000sw.c` · 1,835L gen:8 · `TODO-PORT` · 60 fn
+- [ ] **8.700.1** `e6000sw.c` · 1,847L gen:8 · `TODO-PORT` · 60 fn
   - [ ] 8.700.1.1 `e6000sw_identify()` · `TODO-FN`
   - [ ] 8.700.1.2 `e6000sw_probe()` · `TODO-FN`
   - [ ] 8.700.1.3 `e6000sw_parse_fixed_link()` · `TODO-FN`
@@ -70808,7 +70808,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.701 `sys/dev/etherswitch/felix`
 
-- [ ] **8.701.1** `felix.c` · 1,006L gen:8 · `TODO-PORT` · 31 fn
+- [ ] **8.701.1** `felix.c` · 1,025L gen:8 · `TODO-PORT` · 31 fn
   - [ ] 8.701.1.1 `felix_probe()` · `TODO-FN`
   - [ ] 8.701.1.2 `felix_parse_port_fdt()` · `TODO-FN`
   - [ ] 8.701.1.3 `felix_init_interface()` · `TODO-FN`
@@ -70919,7 +70919,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.703.7** `ip17x_phy.h` · 39L · `TODO-HDR`
 - [ ] **8.703.8** `ip17x_reg.h` · 45L · `TODO-HDR`
 - [ ] **8.703.9** `ip17x_var.h` · 96L · `TODO-HDR`
-- [ ] **8.703.10** `ip17x_vlans.c` · 188L · `TODO-PORT` · 3 fn
+- [ ] **8.703.10** `ip17x_vlans.c` · 205L · `TODO-PORT` · 3 fn
   - [ ] 8.703.10.1 `ip17x_reset_vlans()` · `TODO-FN`
   - [ ] 8.703.10.2 `ip17x_getvgroup()` · `TODO-FN`
   - [ ] 8.703.10.3 `ip17x_setvgroup()` · `TODO-FN`
@@ -70987,7 +70987,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.705.1.27 `mtkswitch_writephy()` · `TODO-FN`
   - [ ] 8.705.1.28 `mtkswitch_readreg()` · `TODO-FN`
   - [ ] 8.705.1.29 `mtkswitch_writereg()` · `TODO-FN`
-- [ ] **8.705.2** `mtkswitch_mt7620.c` · 563L · `TODO-PORT` · 25 fn
+- [ ] **8.705.2** `mtkswitch_mt7620.c` · 572L · `TODO-PORT` · 25 fn
   - [ ] 8.705.2.1 `mtkswitch_phy_read_locked()` · `TODO-FN`
   - [ ] 8.705.2.2 `mtkswitch_phy_read()` · `TODO-FN`
   - [ ] 8.705.2.3 `mtkswitch_phy_write_locked()` · `TODO-FN`
@@ -71014,7 +71014,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.705.2.24 `mtkswitch_vlan_set_pvid()` · `TODO-FN`
   - [ ] 8.705.2.25 `mtk_attach_switch_mt7620()` · `TODO-FN`
 - [ ] **8.705.3** `mtkswitch_mt7620.h` · 129L · `TODO-HDR`
-- [ ] **8.705.4** `mtkswitch_rt3050.c` · 524L · `TODO-PORT` · 18 fn
+- [ ] **8.705.4** `mtkswitch_rt3050.c` · 533L · `TODO-PORT` · 18 fn
   - [ ] 8.705.4.1 `mtkswitch_reg_read()` · `TODO-FN`
   - [ ] 8.705.4.2 `mtkswitch_reg_write()` · `TODO-FN`
   - [ ] 8.705.4.3 `mtkswitch_phy_read()` · `TODO-FN`
@@ -71038,7 +71038,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.706 `sys/dev/etherswitch/rtl8366`
 
-- [ ] **8.706.1** `rtl8366rb.c` · 969L gen:12 · `TODO-PORT` · 29 fn
+- [ ] **8.706.1** `rtl8366rb.c` · 986L gen:12 · `TODO-PORT` · 29 fn
   - [ ] 8.706.1.1 `rtl8366rb_identify()` · `TODO-FN`
   - [ ] 8.706.1.2 `rtl8366rb_probe()` · `TODO-FN`
   - [ ] 8.706.1.3 `rtl8366rb_init()` · `TODO-FN`

@@ -811,6 +811,16 @@ felix_set_dot1q_vlan(felix_softc_t sc, etherswitch_vlangroup_t *vg)
 	uint32_t reg;
 	int i, vid;
 
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  It indexes sc->vlans[FELIX_NUM_VLANS],
+	 * and every use of it below is a write.
+	 */
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->info.es_nvlangroups)
+		return (EINVAL);
+
 	vid = vg->es_vid & ETHERSWITCH_VID_MASK;
 
 	/* Tagged mode is not supported. */
@@ -886,6 +896,15 @@ felix_get_dot1q_vlan(felix_softc_t sc, etherswitch_vlangroup_t *vg)
 {
 	uint32_t reg;
 	int vid;
+
+	/*
+	 * PBSD: es_vlangroup is a signed int straight off the
+	 * IOETHERSWITCH{GET,SET}VLANGROUP ioctl, and etherswitch.c passes
+	 * it through without bounding it.  It indexes sc->vlans[FELIX_NUM_VLANS].
+	 */
+	if (vg->es_vlangroup < 0 ||
+	    vg->es_vlangroup >= sc->info.es_nvlangroups)
+		return (EINVAL);
 
 	vid = sc->vlans[vg->es_vlangroup];
 

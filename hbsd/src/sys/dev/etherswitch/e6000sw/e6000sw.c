@@ -1250,8 +1250,14 @@ e6000sw_set_port_vlan(e6000sw_softc_t *sc, etherswitch_vlangroup_t *vg)
 {
 	uint32_t port;
 
+	/*
+	 * PBSD: valid ports are 0 .. num_ports - 1; the old > test
+	 * admitted num_ports itself.  (es_vlangroup is signed, but the
+	 * uint32_t port already turns a negative into a large positive
+	 * this test rejects.)
+	 */
 	port = vg->es_vlangroup;
-	if (port > sc->num_ports)
+	if (port >= sc->num_ports)
 		return (EINVAL);
 
 	if (vg->es_member_ports != vg->es_untagged_ports) {
@@ -1314,8 +1320,14 @@ e6000sw_get_port_vlan(e6000sw_softc_t *sc, etherswitch_vlangroup_t *vg)
 {
 	uint32_t port, reg;
 
+	/*
+	 * PBSD: valid ports are 0 .. num_ports - 1; the old > test
+	 * admitted num_ports itself.  (es_vlangroup is signed, but the
+	 * uint32_t port already turns a negative into a large positive
+	 * this test rejects.)
+	 */
 	port = vg->es_vlangroup;
-	if (port > sc->num_ports)
+	if (port >= sc->num_ports)
 		return (EINVAL);
 
 	if (!e6000sw_is_portenabled(sc, port)) {
