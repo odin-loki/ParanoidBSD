@@ -395,6 +395,22 @@ jobs:
       - name: The clock gate still fails on the six trees it should
         run: python3 tools/verify/test_aw_clk_zero_based.py
 
+      # Fifty-three core.NullDereference in lib/libdevstat are one
+      # function and one invariant. devstat_compute_statistics() takes
+      # the type to pull off its va_list from devstat_arg_list[metric]
+      # and the pointer to write through from a `switch (metric)', and
+      # the two agree only while row i belongs to metric i. The enum is
+      # in devstat.h and the table in devstat.c; devstat.c now carries a
+      # _Static_assert for the LENGTH, which is what a compiler can see,
+      # and this reads the ORDER, which it cannot -- a table with the
+      # right number of rows in the wrong order compiles, and then
+      # va_arg() takes a long double * where the caller passed a
+      # u_int64_t *.
+      - name: devstat_arg_list is in devstat_metric order
+        run: python3 tools/verify/devstat_metric_table.py --gate
+      - name: ...and the check still fails on a table that has drifted
+        run: python3 tools/verify/test_devstat_metric_table.py
+
       # A landed port that does not COMPILE as C++ raised no [-W...] tag,
       # so the differential above matched its C original's empty set and
       # said nothing. Five lib/msun files were in that state for three

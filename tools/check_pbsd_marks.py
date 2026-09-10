@@ -2630,6 +2630,26 @@ FIXES = {
             "metric to write through - writable and externally linked, the "
             "analyser had to assume it changed between the two switches",
         ),
+        (
+            "_Static_assert(nitems(devstat_arg_list) == DSM_MAX,",
+            None,
+            "and the const alone was not the whole invariant. "
+            "devstat_compute_statistics() takes the type to pull off its "
+            "va_list from devstat_arg_list[metric].argtype and the "
+            "pointer to write through from a `switch (metric)' one "
+            "screen further down; the two agree only while row i of the "
+            "table belongs to metric i. The enum is in devstat.h and the "
+            "table in devstat.c, with nothing connecting them. Add a "
+            "metric to the middle of the enum without adding its row and "
+            "every metric after it reads the WRONG argtype: va_arg() "
+            "takes a `long double *' where the caller passed a "
+            "`u_int64_t *', and a 16-byte write lands in 8 bytes of the "
+            "caller's storage. This is the length half, which a compiler "
+            "can check; tools/verify/devstat_metric_table.py reads the "
+            "order, which it cannot. Fifty-three clang "
+            "core.NullDereference findings in this one function rest on "
+            "the invariant, and it was nowhere written down.",
+        ),
     ],
     "hbsd/src/lib/libc/gen/getpwent.c": [
         (

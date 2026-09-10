@@ -28,6 +28,7 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/errno.h>
@@ -140,6 +141,23 @@ struct devstat_args {
 	{ DSM_TOTAL_DURATION_OTHER, DEVSTAT_ARG_LD },
 	{ DSM_TOTAL_BUSY_TIME, DEVSTAT_ARG_LD },
 };
+
+/*
+ * devstat_compute_statistics() indexes this table BY THE METRIC:
+ * devstat_arg_list[metric].argtype decides which type it pulls off the
+ * va_list, and a `switch (metric)' below decides which pointer it
+ * writes through.  Those two agree only while row i belongs to metric
+ * i -- and nothing but this assertion says so.  Add a metric to the
+ * enum in devstat.h without adding its row here and every metric after
+ * it reads the WRONG argtype: va_arg() takes a long double * where the
+ * caller passed a u_int64_t *, and the write goes through it.
+ *
+ * The length is what a compiler can check; the ordering is checked by
+ * tools/verify/devstat_metric_table.py, which reads both files.
+ */
+_Static_assert(nitems(devstat_arg_list) == DSM_MAX,
+    "devstat_arg_list is indexed by devstat_metric and must have a row "
+    "for every metric, in order");
 
 static const char *namelist[] = {
 #define X_NUMDEVS	0
