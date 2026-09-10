@@ -154,7 +154,7 @@ yppush_show_status(ypxfrstat status, unsigned long tid)
 }
 
 /* Exit routine. */
-static void
+static void __dead2
 yppush_exit(int now)
 {
 	struct jobs *jptr;

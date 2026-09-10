@@ -49,18 +49,33 @@ path the finding walks:
 A usage() called from getopt and never followed by anything costs
 nothing, however undeclared it is.
 
-Two ways of predicting which is which were tried and both were dropped,
-because both over-predicted against the one batch whose answer was
-known.  Ranking by findings within 40 lines after a call site scored
-that batch 18; the true answer was 0.  Ranking by the guard shape above
--- the call alone in an `if' body, a name from the condition used after
-the block -- scored it 34 sites across 11 functions; the true answer was
-still 0, because `if (argc < 2) usage();' is that shape and an int
+Two ways of predicting which is which were tried and dropped before a
+third worked.  Ranking by findings within 40 lines of a call site scored
+a known-zero batch 18.  Ranking by the guard shape alone -- the call
+alone in an `if' body, a name from the condition used after the block --
+scored it 34, because `if (argc < 2) usage();' is that shape and an int
 argc produces no finding.
 
-So this reports and does not rank.  The oracle for whether marking a
-function pays is a before/after sweep at the same scope on the same
-tree, which is cheap, and no heuristic here beat it.
+--guards is the third, and the missing word was POINTER.  Every case
+that paid tests a pointer for NULL and dereferences it after the block:
+
+    route6d  if ((iffp = malloc(...)) == NULL) fatal(...);   memcpy(iffp, ...)
+    ppp      if ((iov[n].iov_base = malloc(sz)) == NULL) ... AbortProgram();
+                                                             memcpy(iov[n].iov_base, ...)
+    lpc      if ((bp = el_gets(...)) == NULL || num == 0) quit(0, NULL);
+                                                             memcpy(cmdline, bp, len)
+    dump     if (tmpbuf == NULL && (tmpbuf = malloc(...)) == NULL) quit(...);
+                                                             memcpy(buf, &tmpbuf[base], ...)
+    pfctl    if (command == NULL) usage();                    strcmp(command, "-F")
+
+and every case that did not pay tests something that is not a pointer,
+or does not use it afterwards.  So --guards requires a NULL test and a
+dereference of the same name, and scores 0 on all fifteen directories
+whose measured answer was 0.
+
+It is still a prior, not the answer.  The oracle is a before/after sweep
+at the same scope on the same tree, which is cheap; --guards only says
+where to spend one.
 """
 
 import argparse
@@ -286,6 +301,123 @@ def header_noreturn(path):
     return _HDR_NORETURN.get(d, set())
 
 
+# A guard whose condition tests a pointer against NULL.  `!p' is
+# deliberately not here: `if (!interactive) usage();' is that shape and
+# an int is not a pointer, which is the mistake the second heuristic
+# made.
+_LV = r"[A-Za-z_]\w*(?:\s*(?:->|\.)\s*\w+|\s*\[[^\]]*\])*"
+NULLTEST_RE = re.compile(
+    # p == NULL, p->x == NULL, p[i] == NULL
+    r"(" + _LV + r")\s*==\s*NULL"
+    # NULL == p
+    r"|NULL\s*==\s*(" + _LV + r")"
+    # (p = malloc(n)) == NULL -- the idiom ppp, lpc and dump all use,
+    # where the name being tested is the assignment's target and sits
+    # arbitrarily far left of the ==.
+    r"|\(\s*(" + _LV + r")\s*=(?!=)[^;]*?\)\s*==\s*NULL")
+
+GUARD_RE = re.compile(r"^\s*(?:\}\s*else\s+)?if\s*\((.*)\)\s*\{?\s*$")
+
+# Using it as a pointer afterwards: a dereference, an index, or an
+# argument to something that will read through it.
+def _use_re(name):
+    n = re.escape(name)
+    return re.compile(
+        n + r"\s*(?:->|\[)"                       # p->x, p[i]
+        r"|\*\s*" + n + r"\b"                     # *p
+        r"|\b(?:str|mem|b)\w*\s*\([^;]*\b" + n + r"\b"   # strcmp(p, ..), memcpy(.., p, ..)
+        r"|\b" + n + r"\s*\+\s*\w")             # p + i
+
+
+_SRC_CACHE = {}
+
+
+def sources_for(path):
+    """Every .c in the file's own directory, stripped, as line lists.
+
+    The guard is usually not in the file that defines the helper:
+    ppp declares AbortProgram() in main.h, defines it in main.c and
+    guards with it in physical.c, udp.c and four more; lpc defines
+    quit() in cmds.c and guards with it in lpc.c; pfctl defines usage()
+    in pfctl.c and guards with it in pfctl_table.c.  Only route6d and
+    dump keep both in one file, which is why a same-file search found
+    exactly those two and none of the other three.
+    """
+    d = os.path.dirname(path)
+    if d not in _SRC_CACHE:
+        out = []
+        try:
+            names = sorted(os.listdir(d))
+        except OSError:
+            names = []
+        for fn in names:
+            if not fn.endswith(".c"):
+                continue
+            try:
+                with open(os.path.join(d, fn), encoding="utf-8",
+                          errors="surrogateescape") as fh:
+                    out.append(strip_noise(fh.read()).split("\n"))
+            except OSError:
+                pass
+        _SRC_CACHE[d] = out
+    return _SRC_CACHE[d]
+
+
+def guarded_sites(path, name, window=25):
+    """Call sites of `name' that are a NULL guard the code walks past.
+
+    The call must be the whole body of an `if' whose condition tests
+    some pointer against NULL, and that pointer must be used as a
+    pointer within `window' lines after the block closes.  Searched
+    across the whole directory, not just the defining file.
+    """
+    total = 0
+    for lines in sources_for(path):
+        total += _guards_in(lines, name, window)
+    return total
+
+
+def _guards_in(lines, name, window):
+    call = re.compile(r"^\s*(?:\(\s*void\s*\)\s*)?" + re.escape(name)
+                      + r"\s*\(")
+    hits = 0
+    for i, line in enumerate(lines):
+        m = GUARD_RE.match(line)
+        if not m:
+            continue
+        names = {a or b or c for a, b, c in NULLTEST_RE.findall(m.group(1))}
+        names = {re.sub(r"\s+", "", n) for n in names if n}
+        if not names:
+            continue
+        braced = line.rstrip().endswith("{")
+        j, body = i + 1, []
+        if braced:
+            depth = 1
+            while j < len(lines) and depth:
+                depth += lines[j].count("{") - lines[j].count("}")
+                if depth:
+                    body.append(lines[j])
+                j += 1
+        else:
+            while j < len(lines) and not lines[j].strip().endswith(";"):
+                body.append(lines[j])
+                j += 1
+            if j < len(lines):
+                body.append(lines[j])
+                j += 1
+        # The call may sit alone, or after a log line -- what matters is
+        # that nothing in the body returns or breaks out.
+        joined = " ".join(b.strip() for b in body).strip()
+        if not any(call.match(b.strip()) for b in body):
+            continue
+        if re.search(r"\b(?:return|goto|break|continue)\b", joined):
+            continue
+        after = "\n".join(lines[j:j + window])
+        if any(_use_re(v).search(after) for v in names):
+            hits += 1
+    return hits
+
+
 def scan(path):
     try:
         with open(path, encoding="utf-8", errors="surrogateescape") as fh:
@@ -341,6 +473,10 @@ def main():
                     help="directory prefix under the vendor tree; repeatable")
     ap.add_argument("--root", default=None,
                     help="vendor tree root (default: hbsd/src beside this repo)")
+    ap.add_argument("--guards", action="store_true",
+                    help="report only functions called from a NULL guard "
+                         "whose pointer is used after the block, with the "
+                         "count of such sites; a prior, not the answer")
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 if anything is reported. Not wired into CI: "
                          "see the module docstring for why")
@@ -364,13 +500,25 @@ def main():
                 files += 1
                 for line, name, callee in scan(p):
                     rel = os.path.relpath(p, root)
-                    rows.append((rel, line, name, callee))
+                    if args.guards:
+                        n = guarded_sites(p, name)
+                        if not n:
+                            continue
+                        rows.append((rel, line, name, callee, n))
+                    else:
+                        rows.append((rel, line, name, callee))
 
     total = len(rows)
     rows.sort()
-    for rel, line, name, callee in rows:
-        print(f"{rel}:{line}: {name}() ends in {callee}(), "
-              f"not declared noreturn")
+    for row in rows:
+        if args.guards:
+            rel, line, name, callee, n = row
+            print(f"{n:>3}  {rel}:{line}: {name}() ends in {callee}(), "
+                  f"not declared noreturn")
+        else:
+            rel, line, name, callee = row
+            print(f"{rel}:{line}: {name}() ends in {callee}(), "
+                  f"not declared noreturn")
     print(f"\n{total} function(s) across {files} file(s)", file=sys.stderr)
     return 1 if (args.gate and total) else 0
 

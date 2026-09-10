@@ -18865,3 +18865,72 @@ ten were `core.NullDereference` in `query()`, `allocfsent()`,
 `dump_getfstab()`, `rollforward()`, `mapfiles()` twice, `searchdir()`
 and `getino()` twice, all of them past a `quit()` the analyser thought
 returned.
+
+## What separates the noreturn markings that pay, and how far that gets you
+
+Five programs' declarations closed forty findings.  Two batches chosen
+by plausible heuristics closed none.  The difference is narrow enough to
+write down, and `--guards` in `noreturn_check.py` is that predicate:
+
+> the helper is called as the whole body of an `if` that tests a
+> **pointer** against NULL, and that pointer is used as a pointer after
+> the block closes.
+
+Every payer fits:
+
+```
+route6d  if ((iffp = malloc(...)) == NULL) fatal(...);      memcpy(iffp, ...)
+ppp      if ((iov[n].iov_base = malloc(sz)) == NULL) ... AbortProgram();
+                                                         memcpy(iov[n].iov_base, ...)
+lpc      if ((bp = el_gets(...)) == NULL || num == 0) quit(0, NULL);
+                                                         memcpy(cmdline, bp, len)
+dump     if (tmpbuf == NULL && (tmpbuf = malloc(...)) == NULL) quit(...);
+                                                         memcpy(buf, &tmpbuf[base], ...)
+pfctl    if (command == NULL) usage();                     strcmp(command, "-F")
+```
+
+Two earlier attempts at the same idea failed for reasons worth keeping:
+
+- The word **pointer** was missing.  `if (argc < 2) usage();` is the
+  same shape with an `int`, and produces no finding — which is why the
+  shape-only version scored a known-zero batch 34.
+- The search looked only in the file that **defines** the helper.  `ppp`
+  defines `AbortProgram()` in `main.c` and guards with it in
+  `physical.c`, `udp.c` and four more; `lpc` defines `quit()` in
+  `cmds.c` and guards in `lpc.c`; `pfctl` defines `usage()` in
+  `pfctl.c` and guards in `pfctl_table.c`.  Only `route6d` and `dump`
+  keep both in one file — which is exactly the two a same-file search
+  found, and the tell that the search was wrong.
+
+With both fixed it separates the two known sets cleanly: all five
+payers, and nothing at all in the fifteen directories whose measured
+answer was zero.  Across `bin`, `sbin`, `usr.bin` and `usr.sbin` it cuts
+477 candidates to **26**.
+
+### And then the honest number
+
+Those 26 were run through the same measure-and-keep loop, one directory
+at a time, each kept only on a real drop with `--check-errors` matching
+on both sides.  **One of twenty-five paid**: `usr.sbin/yppush`, 2 → 0,
+where `yp_push()` writes
+
+```c
+	if ((job = (struct jobs *)malloc(sizeof (struct jobs))) == NULL) {
+		yp_error("malloc failed");
+		yppush_exit (1);
+	}
+	...
+	job->stat = 0;
+```
+
+The other twenty-four are the same shape and closed nothing, because the
+analyser stops at the first defect on each path: a guard can be exactly
+this and still have no finding reported at it, either because nothing
+downstream is checked or because an earlier finding on the same path
+shadowed it.
+
+So the predicate is a good filter and a poor oracle.  477 → 26 is worth
+having; 26 → 1 is the reminder that the sweep is still the only thing
+that answers the question.  All five of the cases that mattered were
+found by reading a finding and walking back to its cause, not by
+scanning a list — and that remains the method.

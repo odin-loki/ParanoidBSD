@@ -4141,6 +4141,15 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/yppush/yppush_main.c": (
+        "static void __dead2\nyppush_exit(int now)",
+        "static void\nyppush_exit(int now)",
+        "yp_push() writes `if ((job = malloc(...)) == NULL) { "
+        "yp_error(\"malloc failed\"); yppush_exit(1); }' and then "
+        "job->stat = 0 -- yppush_exit() ends in exit() and the definition "
+        "did not say so",
+    ),
+
     "hbsd/src/sbin/dump/dump.h": (
         "void\tquit(const char *fmt, ...) __printflike(1, 2) __dead2;",
         "void\tquit(const char *fmt, ...) __printflike(1, 2);",
