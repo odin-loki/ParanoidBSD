@@ -346,6 +346,21 @@ jobs:
       - name: No masked switch leaves a variable uninitialised
         run: python3 tools/verify/masked_switch_check.py --gate
 
+      # A pointer read inside the branch that tested it for NULL. The
+      # branch condition IS `p == NULL' and the body reads p->field, so
+      # the line is either dead code or a guaranteed fault - there is no
+      # third reading, and no premise about reachability is needed. The
+      # clang sweep found the shape (amd_ntb_hw_info_handler() reporting
+      # a failed sbuf allocation by reading sb->s_error out of the NULL
+      # sbuf), but only in files it can build; ntb_tool.c's second copy
+      # came from a grep. This looks everywhere, in a second.
+      - name: No pointer dereferenced inside the branch that proved it null
+        run: |
+          python3 tools/verify/null_branch.py --gate \
+            --scope sys --scope lib --scope bin --scope sbin \
+            --scope usr.bin --scope usr.sbin --scope libexec \
+            --scope stand --scope share
+
       # Boot image run 38 died linking libc.so.7:
       #   ld.lld: version script assignment of 'FBSD_1.0' to symbol
       #           '__isnan' failed: symbol not defined

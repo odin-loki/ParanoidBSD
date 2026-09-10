@@ -17030,3 +17030,47 @@ caller's argument, and the one caller passes `NMR(pna, s)[i]` under
 `if (pna == NULL) continue;`. A guard placed for one branch reading as
 a warning about both is a legitimate complaint about the code, but it
 is not a defect.
+
+## An instrument for the shape: tools/verify/null_branch.py
+
+The dereference-inside-the-null-branch shape is worth a pass of its own,
+for the reason that makes it unambiguous in the first place: it needs no
+premise about reachability. `if (p == NULL) { ... p->x ... }` is wrong
+on inspection. That makes it findable by a grep with a brace matcher,
+over the whole tree, in a second — including the files the clang sweep
+cannot build, which is most of what a sweep's ERROR column is.
+
+The sweep did find the shape; it is where it was noticed. But the second
+copy in `ntb_tool.c` came from a grep, not a finding, and the
+`sbp_action()` site the analyser reported was one of four.
+
+Writing it took four rounds of running it against the tree and reading
+what came back, and each round was a real false-positive class rather
+than a tuning knob:
+
+| round | tree-wide | what the round taught |
+|---|---|---|
+| 1 | 81 | comments quoting the bug are not the bug; `p = malloc()` at line start is a reassignment |
+| 2 | 48 | `if ((p = malloc(n)) == NULL)` assigns `p` from inside a condition, and `sizeof(p[0])` names a type |
+| 3 | 3 | C macros assign through bare arguments — `TAILQ_FOREACH(p, ...)`, `ELM_MALLOC(p, ...)`, `sctp_alloc_a_chunk(stcb, p)` — and that assignment is not in the file's text at all |
+| 4 | 0 | `&p` passed to anything is the out-parameter idiom; `#if 0` bodies are not shipped; and a *re-test* of `p` inside the block re-establishes the guard (`if (p == NULL \|\| p->x > y)` is safe by short circuit) |
+
+Round 4's last case was the only survivor of round 3 that was not a
+mechanism the lint could not see: `spa_raidz_expand_get_stats()` in
+vdev_raidz.c re-tests `vre == NULL ||` inside the block before reading
+`vre->vre_end_time`. Round 3 also found one in `#if 0` — an
+`ip_fw_dynamic.c` log line that would fault the moment anyone re-enabled
+the block it sits in. It is disabled, so it is not a defect, and it is
+recorded here rather than fixed.
+
+Calibrated both ways: five sites on the tree before the fixes in this
+document, zero after, across `sys`, `lib`, `bin`, `sbin`, `usr.bin`,
+`usr.sbin`, `libexec`, `stand` and `share` — 20,324 files. Zero is what
+lets it be a gate rather than a report, so it runs in `pbsd-ci.yml` with
+`--gate` beside `nowait_check.py` and `masked_switch_check.py`.
+
+It deliberately claims only the narrow half. The other three
+`sbp_action()` sites are not of this shape: there `sbp` is merely
+*reachable* as NULL rather than proven NULL by the branch, and
+establishing that took reading the function and its callers. No grep
+was going to do that, and the lint does not pretend otherwise.
