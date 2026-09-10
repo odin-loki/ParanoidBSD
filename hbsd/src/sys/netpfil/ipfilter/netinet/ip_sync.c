@@ -916,6 +916,17 @@ ipf_sync_nat(ipf_main_softc_t *softc, synchdr_t *sp, void *data)
 		      sizeof(*n) - offsetof(nat_t, nat_age));
 		ipf_sync_natorder(0, n);
 		n->nat_sync = sl;
+		/*
+		 * PBSD: sl comes from KMALLOC(), which does not zero, and
+		 * this arm never fills sl_hdr the way the state arm above
+		 * does with bcopy(sp, &sl->sl_hdr, sizeof(struct synchdr)).
+		 * sl_rev IS sl_hdr.sm_rev, so this line -- and the
+		 * SMC_UPDATE arm below, which reads it again -- took a NAT
+		 * entry's direction from the allocator's leftovers.  Take
+		 * it from the message, as the state arm does through
+		 * ipf_state_insert(softc, is, sp->sm_rev).
+		 */
+		sl->sl_rev = sp->sm_rev;
 		n->nat_rev = sl->sl_rev;
 
 		sl->sl_idx = -1;

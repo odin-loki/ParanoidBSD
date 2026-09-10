@@ -16167,3 +16167,177 @@ above it allows only when `hist_rsz` is non-zero, which requires
 their own thread never writes — the SES worker fills it before
 `cam_periph_sleep()` returns — and `elm_idx` is bounded by
 `scsi_enc.c`'s ioctl layer at all four entry points.
+
+## The rest shard, first read
+
+The `rest` shard — everything under `sys/` that is not `kern`, `dev` or
+`fs`: nine architectures, `compat`, `netpfil`, `netgraph`, `crypto` and
+two dozen more — had never been triaged at the uninitialised level. A
+fresh sweep first, because the stale numbers were three weeks and a
+dozen fixes old:
+
+```
+              w18      w38      (sys/arm64 .. sys/xdr, 39 scopes)
+OK            1554     1554
+ERROR           70       70
+findings       354      333
+```
+
+Twenty-one of the twenty-one findings that went belong to fixes already
+committed — `linux_prlimit64`, `linux_signal`, `key.c`, the allwinner
+and TI clock leaks, `imx6_ssi`, `vf_sai`.
+
+### The AMD microcode loader returns a stack pointer
+
+`ucode_amd_find()` declares
+
+```c
+	const amd_10h_fw_header_t *selected_fw;
+	...
+	size_t selected_size;
+```
+
+and never initialises either. The container walk then does
+
+```c
+		if (section_header->type == AMD_10H_MAGIC) {
+			if (selected_fw != NULL)
+				goto found;
+			else
+				goto nextfile;
+		}
+```
+
+on the *first* container, before any assignment, and
+
+```c
+found:
+	*selected_sizep = selected_size;
+	return (selected_fw);
+```
+
+returns both whether or not the loop ever assigned them. A truncated or
+malformed microcode container — the file comes from the loader — hands
+the caller a stack word as the address of the microcode to apply and
+another as its length. Both now start NULL and 0, which is the "no
+update found" answer the caller already handles.
+
+### Three more of shapes already on the record
+
+`freebsd32_ptrace()`'s `PT_COREDUMP` arm:
+
+```c
+	case PT_COREDUMP:
+		if (uap->data != sizeof(r32.pc))
+			error = EINVAL;
+		else
+			error = copyin(uap->addr, &r32.pc, uap->data);
+		CP(r32.pc, r.pc, pc_fd);
+		CP(r32.pc, r.pc, pc_flags);
+		r.pc.pc_limit = PAIR32TO64(off_t, r32.pc.pc_limit);
+```
+
+`PT_VM_ENTRY` twenty lines above and `PT_SC_REMOTE` ten lines below both
+`break` on a failed copyin; this one ran the `CP` macros over the stack
+union either way. Nothing downstream sees the result — the switch is
+followed by `if (error) return (error);` — so it is undefined behaviour
+on a syscall path rather than an exploitable one, but it is the same
+guard-on-one-of-a-pair as everything else in this document.
+
+`rk3399_parse_bias()` switches on a device-tree `bank` with cases 0 to 4
+and no default, then returns one of two locals the switch was the only
+writer of. RK3399 has five GPIO banks, so a sixth is a bad DTB — and the
+caller writes what comes back into a pull-up/pull-down register. The
+`default:` now returns `-1`, which is already this function's answer for
+"no bias" and which the caller tests for.
+
+`ipf_sync_nat()`'s `SMC_CREATE` arm is the subtlest. The state arm above
+it does
+
+```c
+		bcopy(sp, &sl->sl_hdr, sizeof(struct synchdr));
+```
+
+after its `KMALLOC(sl, synclist_t *)`. The NAT arm does not — it sets
+`sl_idx`, `sl_ipn` and `sl_num` by hand and leaves the rest of `sl_hdr`
+as the allocator found it. `sl_rev` *is* `sl_hdr.sm_rev`, so
+
+```c
+		n->nat_rev = sl->sl_rev;
+```
+
+takes a NAT entry's direction from unzeroed heap, and the `SMC_UPDATE`
+arm below reads the same field again later. It now takes it from the
+message, which is what the state arm does through
+`ipf_state_insert(softc, is, sp->sm_rev)`.
+
+### And one that is not a bug
+
+`pf_get_transaddr()` picks the pf state-key index with
+
+```c
+	switch (nat_action) {
+	case PF_NAT:   idx = pd->sidx; break;
+	case PF_BINAT: idx = 1;        break;
+	case PF_RDR:   idx = pd->didx; break;
+	}
+	naddr = &ctx->nk->addr[idx];
+```
+
+— no default, and `addr[]` and `port[]` are two elements each. Chasing
+it: `pf.c` passes `PF_NAT` or `PF_RDR`; `pf_get_translation()` passes
+`r->action` after excluding `PF_NONAT`, `PF_NOBINAT` and `PF_NORDR`; and
+a rule can only have entered a translation ruleset at all if
+`pf_get_ruleset_number()` — which is total — mapped its action to one of
+those six. So `idx` is always assigned. The `default: return
+(PFRES_MAX);` that is now there is defence in depth for a hardened
+kernel, and says so: nothing inside the function establishes the
+invariant, and it indexes a two-element array in the packet path.
+
+```
+              before   after     (sys/x86, compat/freebsd32,
+OK               170     170      arm64/rockchip, netpfil)
+ERROR             14      14
+findings          79      72
+```
+
+```
+  sys/arm64/rockchip/rk_pinctrl.c            3 -> 1
+  sys/compat/freebsd32/freebsd32_misc.c      1 -> 0
+  sys/netpfil/ipfilter/netinet/ip_sync.c     3 -> 2
+  sys/netpfil/pf/pf_lb.c                     5 -> 4
+  sys/x86/x86/ucode_subr.c                   2 -> 0
+```
+
+`rk_pinctrl.c` moved by two, not one: the `default:` closed both
+`UndefReturn`s the switch produced.
+
+### What the rest of the shard is
+
+The remaining 138 uninitialised-class findings are classes already
+characterised. `ofw_real.c` alone carries eighteen: every OpenFirmware
+client call fills a stack `args` struct, maps it, calls the firmware,
+and reads the result back with
+
+```c
+	memcpy(buf, of_bounce_virt + (physaddr - of_bounce_phys), len);
+```
+
+inside `ofw_real_unmap()` — an out-parameter written through a `void *`,
+which the analyser cannot follow. `linux_socket.c` carries fifteen of
+task #90's `lxs_args_cnt[]` class. `mmu_oea64`'s three `sp_*` walkers
+return a `prev` the loop's third clause is the only writer of, and the
+loop cannot run zero times for the non-NULL `sp` its callers pass.
+`ng_pptpgre_xmit()` reads `gre->hasSeq` as an array index — but
+`be32enc(gre, PPTP_INIT_VALUE)` four lines up writes the byte that
+bitfield lives in, which the analyser loses through the punned pointer.
+
+The four Atheros-lineage ethernet drivers — `age`, `ale`, `alc`, `mxge`
+— set `ip` and `tcp` under `csum_flags & (CSUM_FEATURES | CSUM_TSO)` and
+read them under `csum_flags & CSUM_TSO`, a subset, with a
+`bus_dmamap_load_mbuf_sg()` and possibly an `m_collapse()` in between.
+Worth chasing to the bottom, because a stale pointer there would be a
+use-after-free rather than the NULL dereference reported: `m_collapse()`
+collapses *towards the front*, keeping `m0` and freeing only the mbufs
+after it, and the headers those pointers address were pulled up into
+`m0`. Not a bug.

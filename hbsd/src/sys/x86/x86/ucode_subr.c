@@ -98,11 +98,18 @@ ucode_amd_find(const char *path, uint32_t signature, uint32_t *revision,
     const uint8_t *fw_data, size_t fw_size, size_t *selected_sizep)
 {
 	const amd_10h_fw_header_t *fw_header;
-	const amd_10h_fw_header_t *selected_fw;
+	/*
+	 * PBSD: the loop below tests selected_fw before ever assigning it
+	 * ("if (selected_fw != NULL) goto found;" on the first container),
+	 * and the found: label returns both of these whether or not the
+	 * loop assigned them.  A truncated or malformed container then
+	 * handed the caller a stack pointer as the microcode to apply.
+	 */
+	const amd_10h_fw_header_t *selected_fw = NULL;
 	const equiv_cpu_entry_t *equiv_cpu_table;
 	const section_header_t *section_header;
 	const container_header_t *container_header;
-	size_t selected_size;
+	size_t selected_size = 0;
 	uint16_t equiv_id;
 	int i;
 

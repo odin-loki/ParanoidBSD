@@ -1118,6 +1118,15 @@ freebsd32_ptrace(struct thread *td, struct freebsd32_ptrace_args *uap)
 			error = EINVAL;
 		else
 			error = copyin(uap->addr, &r32.pc, uap->data);
+		/*
+		 * PBSD: r32.pc is a stack union that only the copyin fills.
+		 * PT_VM_ENTRY above and PT_SC_REMOTE below both break here;
+		 * this arm ran the CP macros over it either way.  The switch
+		 * is followed by "if (error) return (error);", so nothing
+		 * downstream needs the data assignment below.
+		 */
+		if (error != 0)
+			break;
 		CP(r32.pc, r.pc, pc_fd);
 		CP(r32.pc, r.pc, pc_flags);
 		r.pc.pc_limit = PAIR32TO64(off_t, r32.pc.pc_limit);

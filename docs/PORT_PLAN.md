@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,121 | 81,387 |
+| 8 | `sys` | 14,951 | 10,498,170 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,791** | **114,204** |
+| | **total** | **41,143** | **21,299,840** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -47489,7 +47489,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.65.14.3 `rk_pcie_phy_up()` · `TODO-FN`
   - [ ] 8.65.14.4 `rk_pcie_phy_down()` · `TODO-FN`
   - [ ] 8.65.14.5 `rk_pcie_phy_enable()` · `TODO-FN`
-- [ ] **8.65.15** `rk_pinctrl.c` · 1,572L gen:3 · `TODO-MD` · 30 fn
+- [ ] **8.65.15** `rk_pinctrl.c` · 1,582L gen:3 · `TODO-MD` · 30 fn
   - [ ] 8.65.15.1 `rk3288_get_pd_offset()` · `TODO-FN`
   - [ ] 8.65.15.2 `rk3288_get_syscon()` · `TODO-FN`
   - [ ] 8.65.15.3 `rk3288_parse_bias()` · `TODO-FN`
@@ -49305,7 +49305,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.119.4.4 `freebsd32_ioctl()` · `TODO-FN`
 - [ ] **8.119.5** `freebsd32_ioctl.h` · 62L · `TODO-HDR`
 - [ ] **8.119.6** `freebsd32_ipc.h` · 198L · `TODO-HDR`
-- [ ] **8.119.7** `freebsd32_misc.c` · 4,237L gen:22 · `TODO-PORT`
+- [ ] **8.119.7** `freebsd32_misc.c` · 4,246L gen:22 · `TODO-PORT`
 - [ ] **8.119.8** `freebsd32_misc.h` · 47L · `TODO-HDR`
 - [ ] **8.119.9** `freebsd32_proto.h` · 1,337L · `TODO-GEN`
 - [ ] **8.119.10** `freebsd32_signal.h` · 67L · `TODO-HDR`
@@ -128763,7 +128763,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1223.35** `ip_scan.h` · 99L · `TODO-HDR`
 - [ ] **8.1223.36** `ip_state.c` · 5,258L · `TODO-PORT`
 - [ ] **8.1223.37** `ip_state.h` · 330L · `TODO-HDR`
-- [ ] **8.1223.38** `ip_sync.c` · 1,433L · `TODO-PORT` · 23 fn
+- [ ] **8.1223.38** `ip_sync.c` · 1,444L · `TODO-PORT` · 23 fn
   - [ ] 8.1223.38.1 `ipf_sync_soft_create()` · `TODO-FN`
   - [ ] 8.1223.38.2 `ipf_sync_soft_init()` · `TODO-FN`
   - [ ] 8.1223.38.3 `ipf_sync_soft_fini()` · `TODO-FN`
@@ -129909,7 +129909,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1229.8.38 `pfi_detach_group_event()` · `TODO-FN`
   - [ ] 8.1229.8.39 `pfi_ifaddr_event()` · `TODO-FN`
 - [ ] **8.1229.9** `pf_ioctl.c` · 7,267L gen:44 · `TODO-PORT`
-- [ ] **8.1229.10** `pf_lb.c` · 1,362L gen:1 · `TODO-PORT` · 12 fn
+- [ ] **8.1229.10** `pf_lb.c` · 1,374L gen:1 · `TODO-PORT` · 12 fn
   - [ ] 8.1229.10.1 `pf_hash()` · `TODO-FN`
   - [ ] 8.1229.10.2 `pf_match_translation_rule()` · `TODO-FN`
   - [ ] 8.1229.10.3 `pf_step_into_translation_anchor()` · `TODO-FN`
@@ -140207,7 +140207,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1316.25.11 `ucode_load_bsp()` · `TODO-FN`
   - [ ] 8.1316.25.12 `ucode_reload()` · `TODO-FN`
   - [ ] 8.1316.25.13 `ucode_update()` · `TODO-FN`
-- [ ] **8.1316.26** `ucode_subr.c` · 240L · `TODO-MD` · 1 fn
+- [ ] **8.1316.26** `ucode_subr.c` · 247L · `TODO-MD` · 1 fn
   - [ ] 8.1316.26.1 `ucode_amd_find()` · `TODO-FN`
 - [ ] **8.1316.27** `vmware_guestrpc.c` · 338L gen:1 · `TODO-MD` · 10 fn
   - [ ] 8.1316.27.1 `vmware_guestrpc()` · `TODO-FN`

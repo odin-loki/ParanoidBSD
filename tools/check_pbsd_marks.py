@@ -3968,6 +3968,45 @@ FIXES = {
         "tarfs_io_init: the read-failure path returned without freeing "
         "the iosize-sized block the bad: label frees on every other exit",
     ),
+
+    "hbsd/src/sys/x86/x86/ucode_subr.c": (
+        "const amd_10h_fw_header_t *selected_fw = NULL;",
+        "\tconst amd_10h_fw_header_t *selected_fw;\n",
+        "ucode_amd_find: selected_fw is tested before its first "
+        "assignment and returned unset, so a malformed AMD microcode "
+        "container handed the caller a stack pointer to apply",
+    ),
+
+    "hbsd/src/sys/compat/freebsd32/freebsd32_misc.c": (
+        "\t\tif (error != 0)\n\t\t\tbreak;\n\t\tCP(r32.pc, r.pc, pc_fd);",
+        "\t\t\terror = copyin(uap->addr, &r32.pc, uap->data);\n\t\tCP(r32.pc, r.pc, pc_fd);",
+        "freebsd32_ptrace PT_COREDUMP: the CP macros ran over r32.pc "
+        "whether or not the copyin filled it, unlike PT_VM_ENTRY above "
+        "and PT_SC_REMOTE below",
+    ),
+
+    "hbsd/src/sys/arm64/rockchip/rk_pinctrl.c": (
+        "\t\tpulldown = 2;\n\t\tbreak;\n\tdefault:",
+        "\t\tpulldown = 2;\n\t\tbreak;\n\t}\n",
+        "rk3399_parse_bias: a device-tree bank the switch has no case "
+        "for left both locals unwritten and returned one of them",
+    ),
+
+    "hbsd/src/sys/netpfil/ipfilter/netinet/ip_sync.c": (
+        "sl->sl_rev = sp->sm_rev;",
+        "n->nat_sync = sl;\n\t\tn->nat_rev = sl->sl_rev;",
+        "ipf_sync_nat SMC_CREATE: sl comes from KMALLOC() and this arm "
+        "never fills sl_hdr, so sl_rev -- which IS sl_hdr.sm_rev -- was "
+        "the allocator's leftovers",
+    ),
+
+    "hbsd/src/sys/netpfil/pf/pf_lb.c": (
+        "\t\tidx = pd->didx;\n\t\tbreak;\n\tdefault:",
+        "\t\tidx = pd->didx;\n\t\tbreak;\n\t}\n\tnaddr =",
+        "pf_get_transaddr: the switch that picks the state-key index is "
+        "now total -- defence in depth; the three-file chain that makes "
+        "the default unreachable is in the comment",
+    ),
 }
 
 

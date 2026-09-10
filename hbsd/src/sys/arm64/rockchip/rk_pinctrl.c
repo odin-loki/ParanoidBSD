@@ -686,6 +686,16 @@ rk3399_parse_bias(phandle_t node, int bank)
 		pullup = 1;
 		pulldown = 2;
 		break;
+	default:
+		/*
+		 * PBSD: bank comes from the device tree.  RK3399 has five
+		 * GPIO banks, so a sixth is a bad DTB -- but without this
+		 * arm both locals stayed unwritten and the caller wrote a
+		 * stack value into a pull-up/pull-down register.  -1 is
+		 * what this function already returns for "no bias", and
+		 * the caller's "if (bias >= 0)" handles it.
+		 */
+		return (-1);
 	}
 
 	if (OF_hasprop(node, "bias-pull-up"))

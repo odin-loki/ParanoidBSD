@@ -1022,6 +1022,18 @@ pf_get_transaddr(struct pf_test_ctx *ctx, struct pf_krule *r,
 	case PF_RDR:
 		idx = pd->didx;
 		break;
+	default:
+		/*
+		 * PBSD: defence in depth, not a reachable path.  idx
+		 * indexes addr[2] and port[2] below, and nat_action is
+		 * PF_NAT, PF_BINAT or PF_RDR on both call sites -- pf.c
+		 * passes the first or the third, and pf_get_translation()
+		 * passes r->action after excluding the three NO* forms,
+		 * where pf_get_ruleset_number() has already guaranteed the
+		 * rule could only enter a translation ruleset with one of
+		 * the six.  Nothing in this function says so.
+		 */
+		return (PFRES_MAX);
 	}
 	naddr = &ctx->nk->addr[idx];
 	nportp = &ctx->nk->port[idx];
