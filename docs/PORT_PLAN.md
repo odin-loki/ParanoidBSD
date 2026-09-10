@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,069 | 9,056 |
+| 1 | `lib` | 2,827 | 640,078 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,427** | **114,207** |
+| | **total** | **41,143** | **21,301,436** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -7214,7 +7214,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.173.3.57 `efidp_size()` · `TODO-FN`
   - [ ] 1.173.3.58 `efidp_extract_file_path()` · `TODO-FN`
 - [ ] **1.173.4** `efivar-dp-parse.c` · 4,066L · `TODO-PORT`
-- [ ] **1.173.5** `efivar-dp-xlate.c` · 779L · `TODO-PORT` · 13 fn
+- [ ] **1.173.5** `efivar-dp-xlate.c` · 788L · `TODO-PORT` · 13 fn
   - [ ] 1.173.5.1 `geom_pp_attr()` · `TODO-FN`
   - [ ] 1.173.5.2 `find_provider_by_efimedia()` · `TODO-FN`
   - [ ] 1.173.5.3 `find_provider_by_name()` · `TODO-FN`

@@ -2621,6 +2621,20 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libefivar/efivar-dp-xlate.c": (
+        "return (find_geom_efimedia(mesh, pp->lg_geom->lg_name));",
+        "\t\tefimedia = find_geom_efimedia(mesh, pp->lg_geom->lg_name);",
+        "find_geom_efimedia() returns a strdup()ed string, so its own "
+        "recursive call for the glabel case hands back an OWNED one -- "
+        "and the tail assigned that to `const char *efimedia' and "
+        "strdup()ed it a SECOND time, dropping the first. The same "
+        "variable held a borrowed pointer on one path (geom_pp_attr() "
+        "points into the geom mesh) and an owned one on the other. "
+        "Returned directly now, which is already this function's "
+        "contract. clang unix.Malloc, efivar-dp-xlate.c:568; "
+        "lib/libefivar 5 -> 4, the four that remain being EDK2 code the "
+        "file's own header calls \"taken from EDK2 and rototilled\".",
+    ),
     "hbsd/src/lib/libmt/mtlib.c": (
         "\t\t\t\treturn;\n\t\t\t}\n\t\t\tbzero(nv, sizeof(*nv));",
         None,

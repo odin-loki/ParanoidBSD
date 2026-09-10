@@ -562,7 +562,16 @@ find_geom_efimedia(struct gmesh *mesh, const char *dev)
 	 */
 	if (efimedia == NULL &&
 	    strcmp(pp->lg_geom->lg_class->lg_name, G_LABEL) == 0)
-		efimedia = find_geom_efimedia(mesh, pp->lg_geom->lg_name);
+		/*
+		 * PBSD: return it, do not copy it again.  This function
+		 * returns a strdup()ed string, so the recursive call
+		 * already hands back an OWNED one -- and the tail below
+		 * strdup()ed it a second time and dropped the first.
+		 * The same variable held a borrowed pointer on one path
+		 * (geom_pp_attr() points into the mesh) and an owned one
+		 * on the other.
+		 */
+		return (find_geom_efimedia(mesh, pp->lg_geom->lg_name));
 	if (efimedia == NULL)
 		return (NULL);
 	return strdup(efimedia);

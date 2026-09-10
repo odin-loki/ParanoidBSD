@@ -23077,3 +23077,77 @@ a check that agrees with itself because it cannot see — and it is worth
 recording that it happened in the harness rather than the subject.  The
 fix is to capture the status into a variable on the line after the
 command and read the variable.
+
+## `find_geom_efimedia`: the same variable, borrowed on one path and owned on the other
+
+```c
+static char *
+find_geom_efimedia(struct gmesh *mesh, const char *dev)
+{
+	const char *efimedia;
+	...
+	efimedia = geom_pp_attr(mesh, pp, "efimedia");   /* borrowed */
+	if (efimedia == NULL &&
+	    strcmp(pp->lg_geom->lg_class->lg_name, G_LABEL) == 0)
+		efimedia = find_geom_efimedia(mesh, pp->lg_geom->lg_name);
+	if (efimedia == NULL)
+		return (NULL);
+	return strdup(efimedia);
+}
+```
+
+The function returns a `strdup()`ed string — so its own recursive call
+hands back an **owned** one, and the tail then `strdup()`s it a second
+time and drops the first.  `geom_pp_attr()` on the other path returns a
+pointer into the geom mesh, which is borrowed and must be copied.  One
+variable, two ownerships.
+
+Returned directly now, which is already the contract.  `lib/libefivar`:
+5 → 4, and the four that remain are in the functions named
+`UefiDevicePathLibConvert…`, in a file whose own header says *"Much of
+this file is taken from EDK2 and rototilled."*
+
+## `nvmf_tcp_receive_pdu`: `__unreachable()` on a value off the network, and why it holds
+
+```c
+	error = nvmf_tcp_read_pdu(qp, &pdu);
+	if (error != 0)
+		return (error);
+
+	switch (pdu.hdr->pdu_type) {
+	default:
+		__unreachable();
+		break;
+	case NVME_TCP_PDU_TYPE_H2C_TERM_REQ:
+	...
+```
+
+`pdu_type` is a byte from a remote NVMe-over-Fabrics target, and the
+reported leak is on the `default` arm, which falls out of the switch
+without freeing `pdu.hdr`.  A `__unreachable()` reached by network data
+would be considerably worse than a leak.
+
+It holds, and the guarantee is exact and quotable.
+`nvmf_tcp_read_pdu()` → `nvmf_tcp_validate_pdu()` →
+`nvmf_tcp_validate_pdu_header()`, which lives in
+`sys/dev/nvmf/nvmf_tcp.h` and is the **same** code the kernel driver
+uses.  Its switch admits exactly the set the caller handles and rejects
+everything else with `EBADMSG` — including the initialisation PDUs,
+explicitly:
+
+```c
+	case NVME_TCP_PDU_TYPE_IC_REQ:
+	case NVME_TCP_PDU_TYPE_IC_RESP:
+		/* Shouldn't get these for an established connection. */
+		...
+		return (EBADMSG);
+	...
+	default:
+		printf("NVMe/TCP: Invalid PDU type %u\n", ch->pdu_type);
+		*fes = NVME_TCP_TERM_REQ_FES_INVALID_HEADER_FIELD;
+```
+
+and that error is what `if (error != 0) return (error);` catches two
+lines above the switch.  The unseen-callee family, with the callee named
+and its rejection list quoted — which is the difference between "the
+analyser cannot see it" and "nobody checked".
