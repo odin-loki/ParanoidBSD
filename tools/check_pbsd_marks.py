@@ -5153,6 +5153,17 @@ FIXES = {
     ],
 
 
+    "hbsd/src/usr.sbin/bluetooth/iwmbtfw/main.c": (
+        'iwmbt_err("Unsupported hardware variant (%d)", hw_variant);',
+        None,
+        "iwmbt_init_firmware(): the two arms that set header_len are "
+        "`hw_variant <= 0x14' and `hw_variant >= 0x17', so 0x15 and "
+        "0x16 fell through both -- header_len unwritten, and ret left "
+        "at its initial -1, which the sbe_type block below overwrites "
+        "on success.  A device reporting either made iwmbt_load_fwfile() "
+        "skip a garbage number of bytes of the firmware image",
+    ),
+
     "hbsd/src/usr.sbin/mptutil/mpt_cam.c": (
         ("if (ccb.cdm.matches == NULL || ccb.cdm.patterns == NULL) {", 3),
         None,

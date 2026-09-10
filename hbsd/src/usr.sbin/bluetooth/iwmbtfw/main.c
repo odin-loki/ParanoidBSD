@@ -360,6 +360,18 @@ iwmbt_init_firmware(libusb_device_handle *hdl, const char *firmware_path,
 			ret = -1;
 			goto exit;
 		}
+	} else {
+		/*
+		 * PBSD: the two arms above are `<= 0x14' and `>= 0x17', so
+		 * 0x15 and 0x16 fell through both and left header_len
+		 * unwritten -- and ret at its initial -1, which the
+		 * sbe_type block below overwrites on success.  A device
+		 * reporting either of those made iwmbt_load_fwfile() skip a
+		 * garbage number of bytes of the image.
+		 */
+		iwmbt_err("Unsupported hardware variant (%d)", hw_variant);
+		ret = -1;
+		goto exit;
 	}
 
 	/* Load in the CSS header */

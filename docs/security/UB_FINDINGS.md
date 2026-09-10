@@ -20206,3 +20206,46 @@ what this sweep is for.  Characterised, not changed.
 `mptutil`'s `mpt_cam.c` findings are the same class one level up:
 `path_id` is written by `fetch_path_id()` on its success path, and all
 three callers test `error` correctly.
+
+## iwmbtfw(8): two hardware variants fall through both arms
+
+`iwmbt_init_firmware()` works out how much of the `.sfi` file is header
+before handing the rest to the adapter:
+
+```c
+	int header_len, ret = -1;
+	...
+	if (hw_variant <= 0x14) {
+		header_len = RSA_HEADER_LEN;
+		...
+	} else if (hw_variant >= 0x17) {
+		header_len = ECDSA_OFFSET + ECDSA_HEADER_LEN;
+		...
+	}
+
+	/* Load in the CSS header */
+	if (sbe_type == 0x00)
+		ret = iwmbt_load_rsa_header(hdl, &fw);
+	else if (sbe_type == 0x01)
+		ret = iwmbt_load_ecdsa_header(hdl, &fw);
+	if (ret < 0)
+		goto exit;
+
+	/* Load in the Command Buffer */
+	ret = iwmbt_load_fwfile(hdl, &fw, boot_param, header_len);
+```
+
+`<= 0x14` and `>= 0x17` leave **0x15 and 0x16** falling through both
+arms.  `header_len` is then never written.  `ret`'s initial `-1` does
+not save it either: the `sbe_type` block below overwrites `ret` on
+success, so a device reporting one of those two variants with a valid
+`sbe_type` reaches `iwmbt_load_fwfile()` with a garbage header length —
+which is how many bytes of the firmware image that function skips before
+sending the rest to the adapter.
+
+The `hw_variant` comes from the device's own version reply.  The caller
+does validate `sbe_type` (`if (vt.sbe_type > 0x01)`); it does not
+validate `hw_variant`.  There is an explicit `else` now, and it refuses.
+
+Measured over `usr.sbin/bluetooth`: 10 → 9, seventy-three translation
+units OK and no ERROR either side.

@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,482 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,735 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,747 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,965** | **114,207** |
+| | **total** | **41,143** | **21,300,977** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -28457,7 +28457,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.29.4.15 `iwmbt_load_ddc()` · `TODO-FN`
   - [ ] 6.29.4.16 `iwmbt_set_event_mask()` · `TODO-FN`
 - [ ] **6.29.5** `iwmbt_hw.h` · 123L · `TODO-HDR`
-- [ ] **6.29.6** `main.c` · 843L · `TODO-PORT` · 14 fn
+- [ ] **6.29.6** `main.c` · 855L · `TODO-PORT` · 14 fn
   - [ ] 6.29.6.1 `iwmbt_is_supported()` · `TODO-FN`
   - [ ] 6.29.6.2 `iwmbt_find_device()` · `TODO-FN`
   - [ ] 6.29.6.3 `iwmbt_dump_version()` · `TODO-FN`
