@@ -22328,3 +22328,163 @@ the enum, and the same rows in the wrong order, which is the case the
 That is the third invariant this project has written down because a
 cluster of findings rested on it, after the allwinner zero-based clock
 factor and the linuxulator's `lxs_args_cnt[]`.
+
+## `net_getaddrinfo`: a sandboxed caller's errno was uninitialised stack
+
+Casper's `cap_net` service. `net_getaddrinfo()` declares
+
+```c
+	int error, serrno, family, n;
+```
+
+and assigns `serrno` in exactly one place — `serrno = errno;` after
+`getaddrinfo(3)`.  Three early exits jump over it.  The first sets it
+itself:
+
+```c
+	if (!net_allowed_mode(limits, CAPNET_NAME2ADDR)) {
+		serrno = ENOTCAPABLE;
+		error = EAI_SYSTEM;
+		goto out;
+	}
+```
+
+The other two — the family limit and the host limit — do not:
+
+```c
+	if (!net_allowed_family(funclimit, family)) {
+		errno = ENOTCAPABLE;        /* the GLOBAL, one letter away */
+		error = EAI_SYSTEM;
+		goto out;
+	}
+	if (!net_allowed_hosts(funclimit, hostname, servname)) {
+		errno = ENOTCAPABLE;
+		error = EAI_SYSTEM;
+		goto out;
+	}
+```
+
+and `out:` is
+
+```c
+	if (error == EAI_SYSTEM)
+		nvlist_add_number(nvlout, "errno", serrno);
+```
+
+`serrno` is never written on either path.  **That number crosses the
+sandbox boundary**: the client half of this service, `cap_net.c:316`,
+does
+
+```c
+	errno = (error == EAI_SYSTEM) ? serrno : 0;
+```
+
+so a Capsicum-sandboxed process denied by a Casper limit received an
+uninitialised stack word *from the service process* as its `errno` —
+a wrong error for every such denial, and a word of another process's
+stack with it.
+
+What was meant is not in doubt, because the twin function in the same
+file does it correctly at all three of its early exits:
+`net_getnameinfo()` sets `serrno = ENOTCAPABLE` at `:870`, `:906` and
+`:923`.  `net_getaddrinfo()` got it right once out of three.
+
+`lib/libcasper/services/cap_net`: **2 translation units, 0 findings**
+after.
+
+### A note on the marker, because it nearly did not bite
+
+The first marker written for this fix was `("serrno = ENOTCAPABLE;", 4)`
+— and the *unfixed* file already has four, three in `net_getnameinfo`
+and one in `net_getaddrinfo`.  Reverting the fix left the marker
+satisfied, and `check_pbsd_marks.py` exited 0 when it should have
+exited 1.  The revert-verification is the only thing that says so;
+a count that matches before the fix is a marker that guards nothing.
+Six.
+
+## Three families, one of them new and measured
+
+### The cleared flag, which the analyser cannot follow through a mask
+
+`setusercontext()` in `lib/libutil/login_class.c` says exactly the right
+thing and does exactly the right thing:
+
+```c
+	/* we need a passwd entry to set these */
+	if (pwd == NULL)
+		flags &= ~(LOGIN_SETGROUP | LOGIN_SETLOGIN);
+	...
+	if (flags & LOGIN_SETGROUP) {
+		if (setgid(pwd->pw_gid) != 0) {          /* reported */
+	...
+	if ((flags & LOGIN_SETLOGIN) && setlogin(pwd->pw_name) != 0) {
+```
+
+and `setclasscontext()`, the caller on the reported path, is belt *and*
+braces: it masks `flags` down to `RESOURCES|PRIORITY|UMASK|PATH` before
+passing `pwd = NULL`.
+
+clang reports both dereferences anyway, and the path says why:
+*"Assuming the condition is true"* on `flags & LOGIN_SETGROUP`, after
+the line that cleared that very bit.  Its constraint manager tracks
+ranges, not bits, and cannot carry `flags &= ~F` into `flags & F`.
+
+Nine lines settle it rather than an argument:
+
+```c
+struct s { int x; };
+int
+f(const struct s *p, unsigned int flags)
+{
+	if (p == 0)
+		flags &= ~(1u | 2u);
+	if (flags & 1u)
+		return (p->x);
+	return (0);
+}
+```
+
+```
+maskprobe.c:8:10: warning: Access to field 'x' results in a dereference
+                  of a null pointer [core.NullDereference]
+maskprobe.c:5:6: note: Assuming 'p' is equal to null
+maskprobe.c:7:6: note: Assuming the condition is true
+```
+
+**The cleared flag** joins the characterised families.  It is worth
+naming because it is the shape of a correct guard, not a missing one:
+every finding in it is a place where somebody already did the right
+thing.
+
+### Two traversals of the same array
+
+`gr_util.c`'s `grcopy()` indexes `newgr->gr_mem[i]`, which is `NULL`
+when its `ndx` argument is zero.  `ndx` comes from `grmemlen()`, which
+counted `gr->gr_mem` two statements earlier in `gr_add()`, so `ndx == 0`
+means the loop `for (; gr->gr_mem[i] != NULL; i++)` runs zero times and
+the index never happens.  The agreement is between two separate walks of
+the same array — and the function's own comment at `:545` shows the
+author reasoning about exactly this for the `name` case one line down,
+and not for the loop.
+
+### `return (errno)`, which is zero as far as the analyser knows
+
+`pidfile_signal()` in `lib/libutil` reads `pid` after
+`errno = pidfile_read(...); if (errno != 0) return (errno);`.  The path
+clang takes runs through `pidfile_read_impl`'s
+`fd = openat(...); if (fd == -1) return (errno);` — a failed `openat(2)`
+whose `errno` it cannot bound away from zero, so the caller's `!= 0`
+test is "assumed false" and `pid` is read unwritten.  The same shape
+that survives in `pam_ksu` after the real defect there was fixed.
+
+### And what is left
+
+Of the 209, 45 are the SWIG file, 53 the devstat table, 2 the cleared
+flag, 1 the gr_util pair, 1 the `errno` return, and 1 was the cap_net
+defect.  The remaining ~106 are a read backlog, honestly labelled: 20 in
+`lib/libpmc/pmu-events/jevents.c` (a build-time generator imported from
+Linux perf, leaking on its own error paths), 9 in
+`lib/libcasper/services/cap_fileargs/tests` (one shape across nine ATF
+test bodies), 7 in `lib/libutil/mntopts.c`, and a long tail across
+twenty-four libraries that had never been compiled by anything until
+this pass.

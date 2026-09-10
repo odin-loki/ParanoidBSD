@@ -2621,6 +2621,25 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libcasper/services/cap_net/cap_net.c": (
+        ("serrno = ENOTCAPABLE;", 6),
+        None,
+        "net_getaddrinfo() declares `int error, serrno, ...' and assigns "
+        "serrno in exactly one place, `serrno = errno' after "
+        "getaddrinfo(3). Three early exits jump over it. The first sets "
+        "`serrno = ENOTCAPABLE' itself and is right; the other two -- "
+        "the family limit and the host limit -- set `errno = "
+        "ENOTCAPABLE', the GLOBAL, one letter away, and never touch "
+        "serrno. `out:' then does nvlist_add_number(nvlout, \"errno\", "
+        "serrno) with serrno never written, and the CLIENT side of this "
+        "service does `errno = (error == EAI_SYSTEM) ? serrno : 0' "
+        "(cap_net.c:316) -- so a sandboxed process denied by a Casper "
+        "limit received an uninitialised stack word from the service "
+        "process AS ITS ERRNO, across the sandbox boundary. Its own twin "
+        "settles what was meant: net_getnameinfo() sets `serrno = "
+        "ENOTCAPABLE' at all three of its early exits (:870, :906, "
+        ":923). clang core.CallAndMessage, cap_net.c:1044.",
+    ),
     "hbsd/src/lib/libdevstat/devstat.c": [
         (
             "} const devstat_arg_list[] = {",
