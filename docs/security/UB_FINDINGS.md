@@ -21582,3 +21582,55 @@ The ratio of `FAILED` to defect is about 54 to 1, and every one of the
 account for almost all of them: an unseen callee or unconstrained
 global, CBMC's entry-point leak check, arithmetic on a parameter the
 callers bound, and libm's deliberate IEEE idioms.
+
+## Sixteen edits, re-swept: nothing moved that should not have
+
+Sixteen vendor-tree fixes landed in one day, across `lib/libc`,
+`lib/msun`, `lib/libcalendar`, `usr.bin/systat`, `sbin/ifconfig`,
+`usr.sbin/rtadvd`, `usr.sbin/apm`, `sys/geom`, `sys/dev/speaker` and the
+x86 `ieeefp.h` headers.  Every one was measured by the engine that found
+it — but a fix measured only by its own engine is a fix nobody checked
+against the others, so the analyser was run over every scope they
+touched.
+
+```
+bin sbin usr.bin usr.sbin   557 finding(s)  OK 1822  ERROR 40   --check-errors ok
+lib/libc lib/msun libexec   238 finding(s)  OK 1600  ERROR 30
+lib/libcalendar sys/geom sys/dev/speaker
+                             32 finding(s)  OK   81  ERROR  0
+```
+
+**557, OK 1822, ERROR 40** for the program scopes is the number to the
+digit that the progs shard closed on before any of today's work.  The
+four edits in `systat`, `ifconfig`, `rtadvd` and `apm` introduced no
+finding and no translation-unit error.
+
+### The one thing that did fail was the inventory, not the tree
+
+`--check-errors` failed on the libs scope, and it took reading the
+message to see it was not a regression:
+
+```
+FAIL  libexec/atf/atf-pytest-wrapper/atf_pytest_wrapper.cpp compiles now;
+      its EXPECTED entry is stale (#include <format>, which needs a
+      C++20 standard library)
+```
+
+A **stale exemption** — the gate firing in the direction it is less
+often thanked for.  The file still `#include <format>` and still
+compiles at `-std=gnu++17`, because the in-tree libc++ that went on the
+sweep's include path guards nearly all of `<format>` behind
+`_LIBCPP_STD_VER >= 20`; at C++17 the header resolves to almost nothing,
+and the file never calls `std::format`.  So the reason the exemption
+gave stopped being true the day the C++ standard headers were put on the
+path, and nothing said so until something asked.
+
+The entry is gone.  `libexec` now reports four ERROR translation units,
+all four on the record.
+
+The first sweep of this pass also failed, on `--scope lib` rather than
+the shard's `lib/libc --scope lib/msun --scope libexec` — 37 files under
+`libsecureboot`, `libnv`, `libfetch` and their neighbours that no shard
+has ever analysed and `expected_errors.py` was never reconciled against.
+That is a scope this project has not opened, not a hole in one it has:
+worth its own pass, and not this one.

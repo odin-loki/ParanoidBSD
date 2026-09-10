@@ -411,8 +411,6 @@ EXPECTED = {
     # blocks tests get -fblocks and are NAMED at all, i387/fenv.c is
     # read as i386, and detect_tz_changes_test gets contrib/tzcode.
     # These two are what is left, and neither is about a flag.
-    "libexec/atf/atf-pytest-wrapper/atf_pytest_wrapper.cpp":
-        "#include <format>, which needs a C++20 standard library",
     "sys/crypto/sha2/sha256c_arm64.c":
         "built by lib/libmd/Makefile through a .PATH into sys/, with "
         "CFLAGS.sha256c_arm64.c+= -march=armv8-a+crypto",
