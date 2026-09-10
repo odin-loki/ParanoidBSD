@@ -36,6 +36,7 @@ all against glibc.
 
 from __future__ import annotations
 
+import atexit
 import collections
 import functools
 import os
@@ -43,6 +44,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 import userland_names
@@ -2195,6 +2197,69 @@ def _component_dir(rel: str) -> Path | None:
     return d if (d / "Makefile").is_file() else None
 
 
+# The shim below is a directory of symlinks that has to outlive the call
+# that builds it -- it goes on -I, and the analyser reads it -- so it
+# cannot be a `with tempfile.TemporaryDirectory()'.  It was therefore not
+# removed at all, and one directory per sweep process accumulated under
+# /tmp: 1,756 of them, 16GB, which is how this container ran out of disk
+# four times in one session.  A file that will not compile reports zero
+# findings, and a sweep that dies on ENOSPC reports nothing at all.
+#
+# Own them here and drop them when the process ends.  _cleanup_tempdirs()
+# is separate from the atexit registration so a test can call it.
+_TEMPDIRS: list[Path] = []
+
+
+def _own_tempdir(d: Path) -> Path:
+    """Remove d when this process exits."""
+    _TEMPDIRS.append(d)
+    return d
+
+
+def _cleanup_tempdirs() -> None:
+    while _TEMPDIRS:
+        shutil.rmtree(_TEMPDIRS.pop(), ignore_errors=True)
+
+
+atexit.register(_cleanup_tempdirs)
+
+# atexit alone is not enough: a multiprocessing worker leaves through
+# util._exit_function, which runs Finalize objects rather than atexit
+# handlers, so a parallel sweep left one directory per worker behind.
+try:
+    import multiprocessing.util as _mp_util
+
+    _mp_util.Finalize(None, _cleanup_tempdirs, exitpriority=0)
+except Exception:	# a build of python without multiprocessing
+    pass
+
+# atexit does not run in every worker a parallel sweep starts, and it
+# does not run at all for a process that is killed -- which is what
+# happens to a sweep interrupted or timed out.  So the ones that escape
+# are reaped on the next run.  A day is far longer than any sweep, so a
+# directory older than that belongs to no live process.
+_SHIM_MAX_AGE = 24 * 60 * 60
+
+
+def _reap_stale_shims(prefix: str = "pbsd_incs_") -> int:
+    """Remove leftover shim directories from runs that did not clean up."""
+    n = 0
+    now = time.time()
+    try:
+        entries = list(Path(tempfile.gettempdir()).glob(prefix + "*"))
+    except OSError:
+        return 0
+    for d in entries:
+        try:
+            if not d.is_dir() or now - d.stat().st_mtime < _SHIM_MAX_AGE:
+                continue
+        except OSError:
+            continue
+        shutil.rmtree(d, ignore_errors=True)
+        n += 1
+    return n
+
+
 @functools.lru_cache(maxsize=None)
 def incs_shim(arch: str = "amd64") -> str:
     """/usr/include, as the tree's own Makefiles say to build it.
@@ -2225,7 +2290,20 @@ def incs_shim(arch: str = "amd64") -> str:
     a header no Makefile installs is not on it, which is the same
     answer the build gives.
     """
+    # A parallel sweep forks workers, and each one that built its own
+    # shim left a directory behind.  The parent's is identical -- the
+    # shim is a function of the tree, not of the process -- so hand it
+    # down through the environment, which fork copies.  Only a process
+    # that inherited it can see it, so this cannot pick up a stale one
+    # from a previous run.
+    inherited = os.environ.get("PBSD_INCS_SHIM_" + arch)
+    if inherited and Path(inherited).is_dir():
+        return inherited
+
+    _reap_stale_shims()
     d = Path(tempfile.mkdtemp(prefix="pbsd_incs_"))
+    _own_tempdir(d)
+    os.environ["PBSD_INCS_SHIM_" + arch] = d.as_posix()
     try:
         headers = userland_names.installed_headers(arch)
     except Exception:

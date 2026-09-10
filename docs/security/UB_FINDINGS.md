@@ -20009,3 +20009,72 @@ it from the analyser too.
 
 Measured over `usr.sbin/mptutil`: 9 → 6, eight translation units OK and
 no ERROR either side.
+
+## The leak class, surveyed rather than closed
+
+176 of the shard's `unix.Malloc` findings are leaks.  They are spread
+across 60-odd directories with no dense cluster, and the shape that
+dominates them is **ownership leaving the function** by a route the
+analyser does not follow.  Three read in full, one from each route:
+
+* `rtadvd`'s `nd6_options()` — `nol` is `malloc`ed and immediately
+  `TAILQ_INSERT_TAIL`ed into `ndopts->opt_list`.  The `bad:` label calls
+  `free_ndopts()`, and both callers `goto done` to a `free_ndopts()` of
+  their own on every exit.  Nothing leaks.
+* `dhclient`'s `parse_option_buffer()` — `t` is `calloc`ed and stored as
+  `packet->options[code].data`, replacing what was there.  The packet is
+  the caller's.
+* `ppp`'s `bundle_ReceiveDatalink()` — and this one **is** a leak, which
+  is why it is fixed here:
+
+```c
+  for (f = expect = 0; f < niov; f++) {
+    if ((iov[f].iov_base = malloc(iov[f].iov_len)) == NULL) {
+      log_Printf(LogERROR, "Cannot allocate space to receive link\n");
+      return;
+    }
+```
+
+  The segments already allocated, `iov[0..f)`, are dropped.  This runs on
+  every link handover, and the one case that reaches it is the one where
+  holding onto them hurts most.  `usr.sbin/ppp`: 45 → 44.
+
+A fourth is worth recording as *not* a defect for a reason particular to
+its program.  `autofs`'s `parse_map_yyin()` drops `key` and `options` at
+two points without freeing them — but `node_delete()` frees only the
+node, never `n_key` or `n_options`, so `automountd` does not free those
+strings anywhere.  The two drops are consistent with the file's design;
+fixing them alone would not be.
+
+A textual classifier was written to sort the 176 by which route the
+pointer leaves through, and it is not reported here: its function-body
+extraction is too crude for the numbers to be worth anything.  What the
+reading supports is the shape, not a count.
+
+## The sweep tooling filled the disk
+
+`includes.py`'s `incs_shim()` builds `/usr/include` as a tree of
+symlinks and returns the path, which goes on `-I`.  It has to outlive
+the call, so it cannot be a `with tempfile.TemporaryDirectory()` — and
+it was not removed at all.  One directory per sweep process
+accumulated: **1,756 of them, 16GB**, which is how this container ran
+out of disk four times in one session.  A sweep that dies on `ENOSPC`
+reports nothing, which is the same failure mode `--check-errors` exists
+to catch one file at a time.
+
+Three changes, in order of how much they do:
+
+1. `analyze.py` builds the shim in the **parent**, once per
+   architecture the job list needs, and `incs_shim()` hands the path
+   down through the environment.  Workers inherit it instead of each
+   building — and leaving behind — its own.  It is strictly less work
+   than before: the same set, built once.
+2. `atexit` (and a `multiprocessing.util.Finalize`, for workers that
+   leave through `util._exit_function` rather than `atexit`) removes
+   what this process owns.
+3. Anything that still escapes — a killed process runs neither — is
+   reaped on the next run, at 24 hours old, which is far longer than
+   any sweep.
+
+Measured: a `usr.sbin/ppp` sweep left four directories before and zero
+after, with the finding, OK and ERROR counts unchanged.

@@ -1402,6 +1402,13 @@ bundle_ReceiveDatalink(struct bundle *bundle, int s)
   for (f = expect = 0; f < niov; f++) {
     if ((iov[f].iov_base = malloc(iov[f].iov_len)) == NULL) {
       log_Printf(LogERROR, "Cannot allocate space to receive link\n");
+      /*
+       * PBSD: give back the segments already allocated.  This runs on
+       * every link handover, and the one case that reaches it is the
+       * one where holding onto them hurts most.
+       */
+      while (f > 0)
+        free(iov[--f].iov_base);
       return;
     }
     if (f)

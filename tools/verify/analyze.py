@@ -43,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from includes import (include_flags, is_kernel_tu, lang_flags,  # noqa: E402
                       files_option_alternatives, files_cpu_alternatives,
                       SRC)
-from includes import arch_of, files_opt_arch_index  # noqa: E402
+from includes import arch_of, files_opt_arch_index, incs_shim  # noqa: E402
 from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
@@ -333,6 +333,14 @@ def main() -> int:
     if args.limit:
         jobs = jobs[:args.limit]
     print(f"{len(jobs)} translation units to analyse", flush=True)
+
+    # Build the include shim in the PARENT, once per architecture the
+    # job list needs.  incs_shim() hands its directory down through the
+    # environment, so the workers inherit this one instead of each
+    # building -- and leaving behind -- its own.  It is strictly less
+    # work than the workers doing it: the same set, built once.
+    for _a in sorted({j.get("arch") or arch_of(j["rel"]) for j in jobs}):
+        incs_shim(_a)
 
     counts, nfind, t0 = {}, 0, time.time()
     with open(args.out, "w") as fh, ProcessPoolExecutor(args.jobs) as ex:

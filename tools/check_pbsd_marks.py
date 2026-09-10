@@ -5128,6 +5128,16 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/ppp/bundle.c": (
+        "while (f > 0)\n        free(iov[--f].iov_base);",
+        None,
+        "bundle_ReceiveDatalink() allocates the scatter/gather array a "
+        "segment at a time and returned on the first failure, dropping "
+        "iov[0..f) -- this runs on every link handover, and the one "
+        "case that reaches it is the one where holding onto them hurts "
+        "most",
+    ),
+
 }
 
 

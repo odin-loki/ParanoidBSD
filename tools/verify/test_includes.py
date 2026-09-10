@@ -27,7 +27,7 @@ They are load-bearing now, so they are checked. A reader that silently
 stops reading gives back the same zero it gave before it was written.
 """
 from __future__ import annotations
-import os, sys, tempfile
+import os, sys, tempfile, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -920,8 +920,47 @@ check_that("...and lib/libgssapi does not",
            _mitflag not in includes.include_flags(
                Path("lib/libgssapi/gss_wrap.c"), "amd64"), "")
 
+# incs_shim() builds a directory of symlinks that has to outlive the call
+# -- it goes on -I and the analyser reads it -- so it cannot be a `with
+# tempfile.TemporaryDirectory()'.  It was therefore not removed at all,
+# and one directory per sweep process accumulated under /tmp: 1,756 of
+# them and 16GB, which ran this container out of disk four times in one
+# session.  A sweep that dies on ENOSPC reports nothing, and a file that
+# does not compile reports zero findings -- the same failure mode the
+# --check-errors gate exists for.
+# The include_flags() calls above have already been through incs_shim(),
+# so its directory must be owned by now -- that is the registration this
+# is really checking, since atexit's own list is not introspectable.
+check_that("incs_shim's directory is owned for cleanup",
+           any(str(d).startswith("/tmp/pbsd_incs_")
+               for d in includes._TEMPDIRS),
+           repr(includes._TEMPDIRS))
+
+_td = Path(tempfile.mkdtemp(prefix="pbsd_incs_test_"))
+includes._own_tempdir(_td)
+check_that("an owned tempdir exists before cleanup", _td.is_dir(), "")
+includes._cleanup_tempdirs()
+check_that("...and is gone after it", not _td.exists(), str(_td))
+includes._cleanup_tempdirs()	# idempotent: nothing left to pop
+check_that("...and the owned list is empty", not includes._TEMPDIRS,
+           repr(includes._TEMPDIRS))
+
+# atexit does not run in every worker a parallel sweep starts, and not at
+# all for a process that is killed, so what escapes is reaped on the next
+# run.  A day is far longer than any sweep; only older ones go.
+_stale = Path(tempfile.gettempdir()) / "pbsd_incs_test_stale"
+_stale.mkdir(exist_ok=True)
+os.utime(_stale, (time.time() - 2 * includes._SHIM_MAX_AGE,) * 2)
+_fresh = Path(tempfile.gettempdir()) / "pbsd_incs_test_fresh"
+_fresh.mkdir(exist_ok=True)
+includes._reap_stale_shims("pbsd_incs_test_")
+check_that("a stale shim is reaped", not _stale.exists(), str(_stale))
+check_that("...and a fresh one is not", _fresh.is_dir(), str(_fresh))
+_fresh.rmdir()
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")
     sys.exit(1)
 print("all checks passed")
+

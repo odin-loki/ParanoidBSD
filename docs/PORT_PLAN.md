@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,472 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,668 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,675 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,888** | **114,207** |
+| | **total** | **41,143** | **21,300,895** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -33710,7 +33710,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.7.12 `auth_ReadHeader()` · `TODO-FN`
   - [ ] 6.179.7.13 `auth_ReadName()` · `TODO-FN`
 - [ ] **6.179.8** `auth.h` · 69L · `TODO-HDR`
-- [ ] **6.179.9** `bundle.c` · 2,017L · `TODO-PORT` · 58 fn
+- [ ] **6.179.9** `bundle.c` · 2,024L · `TODO-PORT` · 58 fn
   - [ ] 6.179.9.1 `bundle_PhaseName()` · `TODO-FN`
   - [ ] 6.179.9.2 `bundle_NewPhase()` · `TODO-FN`
   - [ ] 6.179.9.3 `bundle_LayerStart()` · `TODO-FN`
