@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,602 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,614 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,272** | **114,204** |
+| | **total** | **41,143** | **21,299,284** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -110,7 +110,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.71.1 | `sys/cam/ctl/ctl.c` | 14,553 | 0 | `TODO-PORT` |
 | 8.671.15 | `sys/dev/cxgbe/t4_main.c` | 14,284 | 0 | `TODO-PORT` |
 | 8.1213.87 | `sys/netinet/sctp_output.c` | 13,929 | 0 | `TODO-PORT` |
-| 8.897.7 | `sys/dev/pms/RefTisa/sat/src/smsatcb.c` | 13,769 | 0 | `TODO-PORT` |
+| 8.897.7 | `sys/dev/pms/RefTisa/sat/src/smsatcb.c` | 13,781 | 0 | `TODO-PORT` |
 | 8.878.19 | `sys/dev/ocs_fc/ocs_hw.c` | 12,703 | 0 | `TODO-PORT` |
 | 8.755.34 | `sys/dev/ice/ice_lib.c` | 12,113 | 0 | `TODO-PORT` |
 | 8.903.1 | `sys/dev/pms/RefTisa/tisa/sassata/sata/host/ossasat.c` | 11,881 | 0 | `TODO-PORT` |
@@ -91923,7 +91923,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.897.4.3 `smhexdump()` · `TODO-FN`
 - [ ] **8.897.5** `smproto.h` · 1,792L · `TODO-HDR`
 - [ ] **8.897.6** `smsat.c` · 20,820L · `TODO-PORT`
-- [ ] **8.897.7** `smsatcb.c` · 13,769L · `TODO-PORT`
+- [ ] **8.897.7** `smsatcb.c` · 13,781L · `TODO-PORT`
 - [ ] **8.897.8** `smsathw.c` · 530L · `TODO-PORT` · 2 fn
   - [ ] 8.897.8.1 `smsataLLIOStart()` · `TODO-FN`
   - [ ] 8.897.8.2 `smsatIOPrepareSGL()` · `TODO-FN`

@@ -3653,6 +3653,16 @@ FIXES = {
         "SK_ISR_EXTERNAL_REG block and the two if_sendq_empty() calls "
         "at the end also make",
     ),
+
+    "hbsd/src/sys/dev/pms/RefTisa/sat/src/smsatcb.c": (
+        ("    smIORequest  = smOrgIORequest;", 5),
+        "    smIORequest  = smOrgIORequestBody->smIORequest;",
+        "five SetFeatures/IDStart callbacks read smOrgIORequestBody "
+        "outside the else arm that assigns it -- it is declared "
+        "`= agNULL', so on the satIntIo == agNULL arm the line was "
+        "agNULL->smIORequest, and it also overwrote the smIORequest "
+        "that arm had just computed correctly",
+    ),
 }
 
 

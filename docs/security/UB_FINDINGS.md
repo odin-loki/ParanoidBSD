@@ -15541,3 +15541,45 @@ findings          12       1
 
 The one left in `if_sk.c` is `sk_txcksum()`'s `thirtytwo` array access,
 an unconstrained parameter of a static function.
+
+### A line outside the branch that assigns its operand, five times
+
+`smsatcb.c` — the SAT (SCSI-to-ATA translation) callbacks in the PMC
+Sierra driver — has this shape in five functions:
+
+```c
+	if (satIntIo == agNULL) {
+		satOrgIOContext = satIOContext;
+		smOrgIORequest  = smIORequestBody->smIORequest;
+		smIORequest     = smOrgIORequest;
+	} else {
+		satOrgIOContext    = satIOContext->satOrgIOContext;
+		smOrgIORequestBody = satOrgIOContext->smRequestBody;
+		smOrgIORequest     = smOrgIORequestBody->smIORequest;
+	}
+	smIORequest  = smOrgIORequestBody->smIORequest;
+```
+
+The last line is outside the `if`. `smOrgIORequestBody` is declared
+`= agNULL` and assigned only in the `else` arm, so on the other one that
+line is `agNULL->smIORequest` — a hard NULL dereference, not a maybe.
+And it is the wrong source either way: that arm has already computed
+`smOrgIORequest` from `smIORequestBody`, and two of the five had already
+assigned `smIORequest` from it — this line then overwrote the right
+value with a dereference of NULL. The other three never assigned
+`smIORequest` at all on that arm, so it was their only source for it.
+
+`smIORequest = smOrgIORequest;` is correct on both arms and byte-for-byte
+what the line already did on the `else` one, where `smOrgIORequest` is
+`smOrgIORequestBody->smIORequest` assigned two lines up.
+
+```
+              before   after     (sys/dev/pms)
+OK                48      48
+ERROR             10      10
+findings          36      31
+```
+
+The three that remain in `smsatcb.c` are `agFirstDword->D2H` reads — an
+out-parameter the firmware fills, in another translation unit — and the
+rest of `sys/dev/pms` is unread.

@@ -602,7 +602,19 @@ smsatSetFeaturesPIOCB(
       smOrgIORequest         = (smIORequest_t *)smOrgIORequestBody->smIORequest;
       scsiCmnd      = satOrgIOContext->pScsiCmnd;
     }
-    smIORequest  = smOrgIORequestBody->smIORequest;
+    /*
+     * PBSD: `smOrgIORequest', at all five of these sites in this file.
+     *
+     * smOrgIORequestBody is declared `= agNULL' and assigned only in the
+     * else arm above; on the `satIntIo == agNULL' arm this line was
+     * agNULL->smIORequest.  It is also the wrong source: that arm has
+     * already computed smOrgIORequest from smIORequestBody, and two of
+     * the five had already assigned smIORequest from it -- this line
+     * then overwrote the right value with a dereference of NULL.  On
+     * the else arm smOrgIORequest is smOrgIORequestBody->smIORequest,
+     * assigned two lines up, so that path is unchanged.
+     */
+    smIORequest  = smOrgIORequest;
     smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);
     smIORequestBody->ioCompleted = agTRUE;
     smIORequestBody->ioStarted   = agFALSE;
@@ -12293,7 +12305,7 @@ smsatSetFeaturesAACB(
       smOrgIORequestBody  = (smIORequestBody_t *)satOrgIOContext->smRequestBody;
       smOrgIORequest      = (smIORequest_t *)smOrgIORequestBody->smIORequest;
     }
-    smIORequest  = smOrgIORequestBody->smIORequest;
+    smIORequest  = smOrgIORequest;
     smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);
     smIORequestBody->ioCompleted = agTRUE;
     smIORequestBody->ioStarted   = agFALSE;
@@ -12405,7 +12417,7 @@ smsatSetFeaturesDMACB(
       smOrgIORequest         = (smIORequest_t *)smOrgIORequestBody->smIORequest;
       scsiCmnd      = satOrgIOContext->pScsiCmnd;
     }
-    smIORequest  = smOrgIORequestBody->smIORequest;
+    smIORequest  = smOrgIORequest;
     smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);
     smIORequestBody->ioCompleted = agTRUE;
     smIORequestBody->ioStarted   = agFALSE;
@@ -12640,7 +12652,7 @@ smsatSetFeaturesReadLookAheadCB(
       smOrgIORequest         = (smIORequest_t *)smOrgIORequestBody->smIORequest;
       scsiCmnd      = satOrgIOContext->pScsiCmnd;
     }
-    smIORequest  = smOrgIORequestBody->smIORequest;
+    smIORequest  = smOrgIORequest;
     smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);
 
     smIORequestBody->ioCompleted = agTRUE;
@@ -12834,7 +12846,7 @@ smsatSetFeaturesVolatileWriteCacheCB(
       smOrgIORequestBody  = (smIORequestBody_t *)satOrgIOContext->smRequestBody;
       smOrgIORequest      = (smIORequest_t *)smOrgIORequestBody->smIORequest;
     }
-    smIORequest  = smOrgIORequestBody->smIORequest;
+    smIORequest  = smOrgIORequest;
     smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);
 
     smIORequestBody->ioCompleted = agTRUE;
