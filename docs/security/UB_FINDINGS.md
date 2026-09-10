@@ -19036,3 +19036,82 @@ with different translation-unit counts are not the same measurement.
   with a non-`NULLUNIT` `*two` and vice versa, while a `NULLUNIT` on
   either side advances that side instead.  Both are non-NULL by the time
   the `strcmp` runs.
+
+## `jail(8)`: a ternary whose condition is a constant
+
+`rdtun_params()` checks whether a read-only-after-creation jail
+parameter has changed:
+
+```c
+	if (rtjp->jp_valuelen != jp_valuelen ||
+	    (CTLTYPE_STRING ? strncmp(rtjp->jp_value, jp_value, jp_valuelen)
+			    : memcmp(rtjp->jp_value, jp_value, jp_valuelen))) {
+		if (dofail) {
+			jail_warnx(j, "%s cannot be changed after creation", ...);
+```
+
+`CTLTYPE_STRING` is `3`.  It is the constant, not a test — so the
+condition is always true, `memcmp` is unreachable, and **every**
+parameter is compared with `strncmp`, which stops at the first NUL.
+
+`ip4.addr` is an array of `struct in_addr`.  10.0.0.1 is `0a 00 00 01`
+and 10.0.5.9 is `0a 00 05 09`: `strncmp` compares `0a` against `0a`,
+reaches a NUL in both at byte two and returns 0.  Two different
+addresses compare equal, so a change to a tunable that cannot be changed
+after creation is not reported and `jail -m` accepts it silently.
+
+The test the line wanted is the one twelve lines above it, which the
+string default already uses:
+
+```c
+		} else if ((jp->jp_ctltype & CTLTYPE) == CTLTYPE_STRING)
+			jp_value = "";
+```
+
+The sweep is indifferent to this fix and that is worth stating: the
+`unix.cstring.NullArg` reported at that line is about `jp_value` being
+NULL, not about which comparison runs, and it survives.  A wrong
+comparison against the right pointers is not a checker's business.  This
+one came out of reading the line the finding pointed at.
+
+## `chat(1)`, and two more gaps in the lint
+
+`dup_mem()`:
+
+```c
+	void *ans = malloc (c);
+	if (!ans)
+	    fatal(2, "memory error!");
+
+	memcpy (ans, b, c);
+```
+
+`fatal()` ends in `terminate()`, `terminate()` ends in `exit(status)`,
+and neither declaration said so — while `usage()` three lines above them
+in the same header block already carries `__dead2`.
+
+`noreturn_check.py` reported nothing here, for two reasons both now
+fixed and both now fixtures:
+
+- The definition pattern required the **name at column 0**, which is KNF
+  but not universal: `chat.c` writes `void terminate(int status)` on one
+  line, and every helper in the file was invisible.  The pattern now
+  allows the return type on the same line, with the repetition greedy so
+  the capture lands on the last identifier before the parenthesis.
+- `terminate()` ends `#endif` and then `exit(status);`.  Folding the
+  preprocessor line into the statement accumulator made the last
+  statement read as `"#endif exit(status);"`, which matches no call — so
+  `terminate()` looked like it returned, and `fatal()`, which ends in
+  `terminate()`, was never reached by the propagation either.
+
+With both fixed the file reports five, three of them the chain above.
+
+```
+                usr.bin/chat + usr.sbin/jail
+                before  after
+OK                   5       5
+ERROR                0       0
+findings            10       9
+```
+
+One closed — `dup_mem`'s `memcpy` — and none new.

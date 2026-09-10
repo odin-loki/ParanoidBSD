@@ -98,10 +98,14 @@ SEED = {
 # match inside a declaration is safe.
 ATTR = re.compile(r"__dead2|__dead\b|_Noreturn|noreturn")
 
-# A definition's opening: a name at column 0 followed by a parameter list.
-# KNF puts the return type on the line above, so the name really is at
-# column 0 and that is what makes this findable without a parser.
-DEF_RE = re.compile(r"^([A-Za-z_]\w*)\s*\(")
+# A definition's opening at column 0.  KNF puts the return type on the
+# line above, so the name is at column 0 -- but plenty of the tree does
+# not: chat(1) writes `void terminate(int status)' on one line and every
+# one of its helpers was invisible until this matched the return type
+# too.  The repetition is greedy so the capture lands on the LAST
+# identifier before the parenthesis, which is the name.
+DEF_RE = re.compile(
+    r"^(?:[A-Za-z_]\w*[ \t]+|[ \t]*\*[ \t]*)*([A-Za-z_]\w*)\s*\(")
 
 CALL_RE = re.compile(r"^\s*(?:\(\s*void\s*\)\s*)?([A-Za-z_]\w*)\s*\(")
 
@@ -199,6 +203,14 @@ def last_call(lines, body_start, end):
     last = None
     for k in range(body_start + 1, end):
         s = lines[k]
+        # A preprocessor line is not part of any statement.  chat(1)'s
+        # terminate() ends `#endif' then `exit(status);', and folding the
+        # directive into the accumulator made the last statement read as
+        # "#endif exit(status);", which matches no call -- so terminate()
+        # looked like it returned and fatal(), which ends in terminate(),
+        # was never reached by the propagation either.
+        if s.lstrip().startswith("#"):
+            continue
         if not s.strip() and not cur:
             continue
         cur.append(s)

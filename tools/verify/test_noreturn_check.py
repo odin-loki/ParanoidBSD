@@ -44,6 +44,15 @@ class NoreturnCheck(unittest.TestCase):
     def test_quiet_when_the_last_statement_is_a_block(self):
         self.assertNotIn("quiet_ends_in_block", self.names)
 
+    def test_reports_a_one_line_definition(self):
+        self.assertIn("oneline_report", self.names)
+
+    def test_quiet_on_a_declared_one_line_definition(self):
+        self.assertNotIn("oneline_quiet", self.names)
+
+    def test_reports_past_a_preprocessor_line(self):
+        self.assertIn("report_after_endif", self.names)
+
 
 if __name__ == "__main__":
     unittest.main()

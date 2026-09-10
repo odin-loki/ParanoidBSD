@@ -4152,6 +4152,31 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/jail/jail.c": (
+        "((jp->jp_ctltype & CTLTYPE) ==\n\t\t\t\t    CTLTYPE_STRING\n"
+        "\t\t\t\t    ? strncmp(rtjp->jp_value, jp_value,",
+        "(CTLTYPE_STRING ? strncmp(rtjp->jp_value,",
+        "rdtun_params() used the bare constant CTLTYPE_STRING as a "
+        "ternary condition -- it is 3, so memcmp() was dead and every "
+        "read-only jail parameter was compared with strncmp(), which "
+        "stops at the first NUL: 10.0.0.1 and 10.0.5.9 are 0a 00 00 01 "
+        "and 0a 00 05 09 and compare equal",
+    ),
+
+    "hbsd/src/usr.bin/chat/chat.c": [
+        (
+            "void fatal(int code, const char *fmt, ...) __dead2;",
+            "void fatal(int code, const char *fmt, ...);",
+            "dup_mem() calls fatal() on a failed malloc and then memcpy()s "
+            "through the pointer; fatal() ends in terminate()",
+        ),
+        (
+            "void terminate(int status) __dead2;",
+            "void terminate(int status);",
+            "and terminate() ends in exit()",
+        ),
+    ],
+
     "hbsd/src/sbin/fsck/fsck.c": (
         "\tvfstype = estrdup(pvfstype);",
         '\tvfstype = strdup(pvfstype);\n\tif (vfstype == NULL)\n'

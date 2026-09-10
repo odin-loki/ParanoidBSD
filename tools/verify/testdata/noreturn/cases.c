@@ -75,3 +75,31 @@ quiet_ends_in_block(int n)
 		exit(1);
 	}
 }
+
+/* REPORT: return type and name on one line -- chat(1)'s style, which a
+ * column-0-name-only pattern misses entirely. */
+void oneline_report(int status)
+{
+	cleanup();
+	exit(status);
+}
+
+/* QUIET: the same style, already declared. */
+void oneline_quiet(int status) __dead2;
+void oneline_quiet(int status)
+{
+	exit(status);
+}
+
+/* REPORT: a preprocessor line between the last statement and the brace,
+ * which is how chat(1)'s terminate() is written. */
+void report_after_endif(int status)
+{
+	do_cleanup();
+#ifdef SOMETHING
+	if (thing)
+		other();
+#endif
+
+	exit(status);
+}

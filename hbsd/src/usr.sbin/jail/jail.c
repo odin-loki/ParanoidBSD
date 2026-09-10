@@ -835,9 +835,26 @@ rdtun_params(struct cfjail *j, int dofail)
 					else
 						jp_valuelen = 0;
 				}
+				/*
+				 * PBSD: the condition here was the bare
+				 * constant CTLTYPE_STRING, which is 3 --
+				 * always true, so memcmp() was dead and
+				 * every read-only parameter was compared
+				 * with strncmp(), which stops at the first
+				 * NUL.  ip4.addr is a struct in_addr array:
+				 * 10.0.0.1 is 0a 00 00 01 and 10.0.5.9 is
+				 * 0a 00 05 09, and strncmp() stops at byte
+				 * two and calls them equal -- so a change
+				 * to a tunable that cannot be changed after
+				 * creation went unreported.  The test the
+				 * line wanted is the one twelve lines above
+				 * it, which the string default already uses.
+				 */
 				if (rtjp->jp_valuelen != jp_valuelen ||
-				    (CTLTYPE_STRING ? strncmp(rtjp->jp_value,
-				    jp_value, jp_valuelen)
+				    ((jp->jp_ctltype & CTLTYPE) ==
+				    CTLTYPE_STRING
+				    ? strncmp(rtjp->jp_value, jp_value,
+				    jp_valuelen)
 				    : memcmp(rtjp->jp_value, jp_value,
 				    jp_valuelen))) {
 					if (dofail) {
