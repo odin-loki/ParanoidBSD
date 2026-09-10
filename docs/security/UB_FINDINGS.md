@@ -22603,3 +22603,101 @@ independent symbols, so on the next turn of the loop `TAILQ_FIRST` still
 yields the element that was unlinked and freed.  A use-after-free in a
 drain loop is exactly what this checker is for; it cannot see the
 unlink that makes this one safe.
+
+## Two more read to a verdict, and the shape of what is left
+
+### `cgialloc`: a division the superblock validator makes safe
+
+```
+lib/libufs/cgroup.c:164  [core.DivideZero]  Division by zero
+```
+
+The path is unambiguous about which divisor:
+
+```
+cgroup.c:160  Assuming 'i' is >= field 'fs_inopb'
+cgroup.c:160  Loop body executed 0 times
+cgroup.c:164  Division by zero
+```
+
+`i` starts at zero, so `fs_inopb == 0` — and `ino_to_fsba()` divides by
+`INOPB(fs)`.  `fs_inopb` is a **superblock field read from disk**, which
+is to say from a filesystem image, which is to say from anywhere; and
+`libufs` is what `fsck_ffs(8)`, `newfs(8)`, `tunefs(8)` and `dumpfs(8)`
+read superblocks with.  Worth chasing.
+
+It is safe, and the guarantee is exact.  `disk->d_fs` is filled only by
+`sbread()`/`sbget()`, which is `ffs_sbget()` in
+`sys/ufs/ffs/ffs_subr.c` — the *same* code the kernel uses — and
+`validate_sblock()` there rejects any superblock where
+
+```c
+	FCHK(fs->fs_inopb, !=, fs->fs_bsize / sizeof(struct ufs2_dinode), %jd);
+```
+
+(and the UFS1 equivalent at `:629`), with `fs_bsize` itself bounded
+below by `MINBSIZE`.  So `fs_inopb` is never zero in a superblock
+`libufs` accepted.  The unseen-callee family, with the callee named: a
+validator in another translation unit that the analyser does not open.
+
+### `jailparam_get`: a contract the library does not enforce
+
+Three `unix.cstring.NullArg` in `lib/libjail/jail.c` are one shape:
+
+```c
+	if (jp[j].jp_value == NULL &&
+	    !(jp[j].jp_flags & JP_RAWVALUE)) {
+		jp[j].jp_value = malloc(jp[j].jp_valuelen);
+		...
+	}
+	jiov[i].iov_base = jp[j].jp_value;
+	jiov[i].iov_len = jp[j].jp_valuelen;
+	memset(jiov[i].iov_base, 0, jiov[i].iov_len);
+```
+
+The guard contemplates `jp_value == NULL` and then memsets it anyway
+when `JP_RAWVALUE` is set — the flag that means *the caller supplied the
+buffer*.  A caller that sets `JP_RAWVALUE` with a null value is in
+breach of the interface, and hardening the `memset` alone would only
+move the failure one line: `iov_base` still goes to `jail_get(2)` as
+NULL with a non-zero `iov_len`.  Left as it is, on the record as an API
+contract rather than a defect.
+
+### The shape of the rest
+
+Of the 209, after this pass:
+
+| | |
+|---|---|
+| the SWIG-generated `LLDBWrapLua.cpp` | 45 |
+| the devstat metric table | 53 |
+| fixed defects (`cap_net`, `build_iovec`, `execv_script`) | 8 |
+| the intrusive queue(3) macros | 6 |
+| `jevents.c`, a build-time generator imported from Linux perf | 20 |
+| `cap_fileargs/tests`, one shape across nine ATF bodies | 9 |
+| the cleared flag | 2 |
+| named singly above (`gr_util`, `pidfile`, `cgialloc`, `jailparam_get` ×3, `mntopts`) | 8 |
+| **read and accounted for** | **151** |
+| a tail across twenty libraries, unread | 58 |
+
+The 58 are not hidden and not excused — they are in a scope that is now
+analysed on every push, which is the difference this pass made.  Before
+it, all 209 were invisible.
+
+### The shard as CI now runs it
+
+`--scope lib --scope libexec --check-errors`, on the tree with this
+pass's six fixes in it:
+
+```
+438 finding(s) across 2272 translation units
+  ERROR    59
+  OK       2213
+
+ok    all 59 ERROR translation unit(s) are on the record
+```
+
+against the shard it replaces — `lib/libc` + `lib/msun` + `libexec`,
+238 findings across 1,630 translation units with 30 ERROR.  **642 more
+translation units are compiled and analysed on every push**, and the
+200 findings in them are visible for the first time.
