@@ -343,9 +343,11 @@ drive_set_state(char *drive, U8 Action, U8 State, const char *name)
 		return (errno);
 	}
 
-	if (mpt_lookup_drive(list, drive, &PhysDiskNum) < 0) {
-		error = errno;
-		warn("Failed to find drive %s", drive);
+	/* PBSD: mpt_lookup_drive() returns 0 or a positive errno. */
+	error = mpt_lookup_drive(list, drive, &PhysDiskNum);
+	if (error != 0) {
+		warnc(error, "Failed to find drive %s", drive);
+		mpt_free_pd_list(list);	/* PBSD: as the success path does */
 		close(fd);
 		return (error);
 	}

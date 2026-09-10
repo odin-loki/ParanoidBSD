@@ -3180,6 +3180,28 @@ FIXES = {
             "0, so a failed volume page read reported success with "
             "*pool never written",
         ),
+        (
+            ("if (mpt_lock_volume(vol->VolumeBus, vol->VolumeID) != 0) {", 1),
+            "if (mpt_lock_volume(vol->VolumeBus, vol->VolumeID) < 0) {",
+            "mpt_lock_volume(), mpt_lock_physdisk(), "
+            "mpt_create_physdisk(), mpt_delete_physdisk() and "
+            "mpt_lookup_drive() all return 0 or a POSITIVE errno, as "
+            "mpt_raid_action() under them does -- so all eleven `< 0' "
+            "error tests in this file were dead, and the arms behind "
+            "them then read an errno nobody had set",
+        ),
+        (
+            ("error = mpt_create_physdisk(", 3),
+            "if (mpt_create_physdisk(fd, &sdisks[i], &PhysDiskNum) < 0) {",
+            "the three mpt_create_physdisk() call sites, whose dead "
+            "arms left PhysDiskNum unwritten and then passed it to "
+            "mpt_pd_info()",
+        ),
+        (
+            ("error = mpt_delete_physdisk(", 2),
+            "if (mpt_delete_physdisk(fd, PhysDiskNum) < 0) {",
+            "and the delete side",
+        ),
     ],
     "hbsd/src/usr.bin/kdump/kdump.c": [
         (
@@ -5087,6 +5109,22 @@ FIXES = {
             "and the string branch's copy of the same message printed "
             "v, the integer branch's variable, which that path never "
             "assigns at all",
+        ),
+    ],
+
+
+    "hbsd/src/usr.sbin/mptutil/mpt_drive.c": [
+        (
+            "error = mpt_lookup_drive(list, drive, &PhysDiskNum);",
+            "if (mpt_lookup_drive(list, drive, &PhysDiskNum) < 0) {",
+            "drive_set_state(): the same dead `< 0' test, which left "
+            "PhysDiskNum unwritten for mpt_pd_info()",
+        ),
+        (
+            "mpt_free_pd_list(list);\t/* PBSD: as the success path does */",
+            None,
+            "and the error arm the fix made reachable leaks the pd list "
+            "the success path three lines down frees",
         ),
     ],
 

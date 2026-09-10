@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,472 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,650 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,668 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,870** | **114,207** |
+| | **total** | **41,143** | **21,300,888** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -32575,7 +32575,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.149.2.11 `mpt_open()` · `TODO-FN`
   - [ ] 6.149.2.12 `mpt_table_handler()` · `TODO-FN`
   - [ ] 6.149.2.13 `hexdump()` · `TODO-FN`
-- [ ] **6.149.3** `mpt_config.c` · 1,277L gen:9 · `TODO-PORT` · 20 fn
+- [ ] **6.149.3** `mpt_config.c` · 1,293L gen:9 · `TODO-PORT` · 20 fn
   - [ ] 6.149.3.1 `dehumanize()` · `TODO-FN`
   - [ ] 6.149.3.2 `mpt_lock_volume()` · `TODO-FN`
   - [ ] 6.149.3.3 `mpt_lock_physdisk()` · `TODO-FN`
@@ -32596,7 +32596,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.149.3.18 `pd_delete()` · `TODO-FN`
   - [ ] 6.149.3.19 `dump_config()` · `TODO-FN`
   - [ ] 6.149.3.20 `debug_config()` · `TODO-FN`
-- [ ] **6.149.4** `mpt_drive.c` · 430L gen:3 · `TODO-PORT` · 10 fn
+- [ ] **6.149.4** `mpt_drive.c` · 432L gen:3 · `TODO-PORT` · 10 fn
   - [ ] 6.149.4.1 `mpt_pdstate()` · `TODO-FN`
   - [ ] 6.149.4.2 `mpt_pd_insert()` · `TODO-FN`
   - [ ] 6.149.4.3 `mpt_pd_list()` · `TODO-FN`

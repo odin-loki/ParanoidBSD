@@ -260,7 +260,15 @@ clear_config(int ac, char **av)
 	/* Lock all the volumes first. */
 	vol = ioc2->RaidVolume;
 	for (i = 0; i < ioc2->NumActiveVolumes; vol++, i++) {
-		if (mpt_lock_volume(vol->VolumeBus, vol->VolumeID) < 0) {
+		/*
+		 * PBSD: mpt_lock_volume(), mpt_lock_physdisk(),
+		 * mpt_create_physdisk(), mpt_delete_physdisk() and
+		 * mpt_lookup_drive() all return 0 or a positive errno --
+		 * mpt_raid_action() below is the same -- so every `< 0'
+		 * error test in this file was dead, and the arms that then
+		 * read errno were reading a value nobody set.
+		 */
+		if (mpt_lock_volume(vol->VolumeBus, vol->VolumeID) != 0) {
 			warnx("Volume %s is busy and cannot be deleted",
 			    mpt_volume_name(vol->VolumeBus, vol->VolumeID));
 			free(ioc2);
@@ -301,8 +309,10 @@ clear_config(int ac, char **av)
 	else {
 		spare = ioc5->HotSpare;
 		for (i = 0; i < ioc5->NumHotSpares; spare++, i++)
-			if (mpt_delete_physdisk(fd, spare->PhysDiskNum) < 0)
-				warn("Failed to delete physical disk %d",
+			if ((error = mpt_delete_physdisk(fd,
+			    spare->PhysDiskNum)) != 0)
+				warnc(error,
+				    "Failed to delete physical disk %d",
 				    spare->PhysDiskNum);
 		free(ioc5);
 	}
@@ -314,8 +324,10 @@ clear_config(int ac, char **av)
 	else {
 		disk = ioc3->PhysDisk;
 		for (i = 0; i < ioc3->NumPhysDisks; disk++, i++)
-			if (mpt_delete_physdisk(fd, disk->PhysDiskNum) < 0)
-				warn("Failed to delete physical disk %d",
+			if ((error = mpt_delete_physdisk(fd,
+			    disk->PhysDiskNum)) != 0)
+				warnc(error,
+				    "Failed to delete physical disk %d",
 				    disk->PhysDiskNum);
 		free(ioc3);
 	}
@@ -435,8 +447,9 @@ parse_volume(int fd, int raid_type, struct config_id_state *state,
 		dinfo->sdisk = &state->sdisks[i];
 
 		/* Lock the disk, we will create phys disk pages later. */
-		if (mpt_lock_physdisk(dinfo->sdisk) < 0)
-			return (errno);
+		error = mpt_lock_physdisk(dinfo->sdisk);
+		if (error != 0)
+			return (error);
 	}
 
 	return (0);
@@ -456,10 +469,10 @@ add_drives(int fd, struct volume_info *info, int verbose)
 	for (i = 0, dinfo = info->drives; i < info->drive_count;
 	     i++, dinfo++) {
 		if (dinfo->info == NULL) {
-			if (mpt_create_physdisk(fd, dinfo->sdisk,
-			    &PhysDiskNum) < 0) {
-				error = errno;
-				warn(
+			error = mpt_create_physdisk(fd, dinfo->sdisk,
+			    &PhysDiskNum);
+			if (error != 0) {
+				warnc(error,
 			    "Failed to create physical disk page for %s",
 				    dinfo->sdisk->devname);
 				return (error);
@@ -818,9 +831,10 @@ delete_volume(int ac, char **av)
 		return (error);
 	}
 
-	if (mpt_lock_volume(VolumeBus, VolumeID) < 0) {
+	error = mpt_lock_volume(VolumeBus, VolumeID);
+	if (error != 0) {
 		close(fd);
-		return (errno);
+		return (error);
 	}
 
 	error = mpt_raid_action(fd, MPI_RAID_ACTION_DELETE_VOLUME, VolumeBus,
@@ -988,15 +1002,16 @@ add_spare(int ac, char **av)
 			return (error);
 		}
 
-		if (mpt_lock_physdisk(&sdisks[i]) < 0) {
+		error = mpt_lock_physdisk(&sdisks[i]);
+		if (error != 0) {
 			mpt_free_pd_list(list);
 			close(fd);
-			return (errno);
+			return (error);
 		}
 
-		if (mpt_create_physdisk(fd, &sdisks[i], &PhysDiskNum) < 0) {
-			error = errno;
-			warn("Failed to create physical disk page");
+		error = mpt_create_physdisk(fd, &sdisks[i], &PhysDiskNum);
+		if (error != 0) {
+			warnc(error, "Failed to create physical disk page");
 			mpt_free_pd_list(list);
 			close(fd);
 			return (error);
@@ -1080,9 +1095,9 @@ remove_spare(int ac, char **av)
 		return (EINVAL);
 	}
 
-	if (mpt_delete_physdisk(fd, PhysDiskNum) < 0) {
-		error = errno;
-		warn("Failed to delete physical disk page");
+	error = mpt_delete_physdisk(fd, PhysDiskNum);
+	if (error != 0) {
+		warnc(error, "Failed to delete physical disk page");
 		free(info);
 		close(fd);
 		return (error);
@@ -1132,12 +1147,13 @@ pd_create(int ac, char **av)
 		return (error);
 	}
 
-	if (mpt_lock_physdisk(&disks[i]) < 0)
-		return (errno);
+	error = mpt_lock_physdisk(&disks[i]);
+	if (error != 0)
+		return (error);
 
-	if (mpt_create_physdisk(fd, &disks[i], &PhysDiskNum) < 0) {
-		error = errno;
-		warn("Failed to create physical disk page");
+	error = mpt_create_physdisk(fd, &disks[i], &PhysDiskNum);
+	if (error != 0) {
+		warnc(error, "Failed to create physical disk page");
 		return (error);
 	}
 	free(disks);
@@ -1174,9 +1190,9 @@ pd_delete(int ac, char **av)
 	if (list == NULL)
 		return (errno);
 
-	if (mpt_lookup_drive(list, av[1], &PhysDiskNum) < 0) {
-		error = errno;
-		warn("Failed to find drive %s", av[1]);
+	error = mpt_lookup_drive(list, av[1], &PhysDiskNum);
+	if (error != 0) {
+		warnc(error, "Failed to find drive %s", av[1]);
 		return (error);
 	}
 	mpt_free_pd_list(list);
@@ -1188,9 +1204,9 @@ pd_delete(int ac, char **av)
 		return (error);
 	}
 
-	if (mpt_delete_physdisk(fd, PhysDiskNum) < 0) {
-		error = errno;
-		warn("Failed to delete physical disk page");
+	error = mpt_delete_physdisk(fd, PhysDiskNum);
+	if (error != 0) {
+		warnc(error, "Failed to delete physical disk page");
 		return (error);
 	}
 

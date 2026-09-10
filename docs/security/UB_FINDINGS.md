@@ -19958,3 +19958,54 @@ branch's `val1`.
 Measured over `usr.bin/ktrdump` and `sbin/devmatch`: 6 → 2, two
 translation units OK and no ERROR either side.  All four that closed are
 the four fixed here.
+
+## mptutil(8): eleven more error tests that can never fire
+
+The `mpt_lookup_standalone_disk()` half of this was found and fixed
+earlier in the sweep; the same convention runs through the rest of the
+program and the same mistake is made everywhere it does.
+
+`mpt_raid_action()` returns `0` or a **positive** `errno`:
+
+```c
+	if (ioctl(fd, MPTIO_RAID_ACTION, &raid_act) < 0)
+		return (errno);
+	...
+		return (EIO);
+```
+
+and `mpt_lock_volume()`, `mpt_lock_physdisk()`, `mpt_create_physdisk()`,
+`mpt_delete_physdisk()` and `mpt_lookup_drive()` all pass that
+convention on.  Every call site tested `< 0`:
+
+```c
+	if (mpt_create_physdisk(fd, dinfo->sdisk, &PhysDiskNum) < 0) {
+		error = errno;
+		warn("Failed to create physical disk page for %s", ...);
+		return (error);
+	}
+	...
+	dinfo->info = mpt_pd_info(fd, PhysDiskNum, NULL);
+```
+
+Nothing in the file can return a negative value, so none of those arms
+is reachable.  A physdisk page that the controller refused to create is
+reported as created, `PhysDiskNum` is never written, and the
+uninitialised value goes straight to `mpt_pd_info()` — which is what
+the three `core.CallAndMessage` findings are.  The arms themselves are
+wrong twice over: had they fired they would have read `errno`, which
+nothing on that path sets, and thrown away the value the callee
+returned.
+
+Eleven sites in `mpt_config.c` and one in `mpt_drive.c` now capture the
+return and test `!= 0`, and report with `warnc(error, ...)` — which
+`mpt_lock_volume()` in the same file already uses.
+
+Making `drive_set_state()`'s arm reachable immediately exposed a leak in
+it: the error path returns without `mpt_free_pd_list(list)`, which the
+success path three lines below does.  Fixed with it, and it is worth
+noticing how it surfaced — a dead branch hides everything downstream of
+it from the analyser too.
+
+Measured over `usr.sbin/mptutil`: 9 → 6, eight translation units OK and
+no ERROR either side.
