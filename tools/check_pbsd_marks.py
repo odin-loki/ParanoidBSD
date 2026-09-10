@@ -3569,14 +3569,24 @@ FIXES = {
         "the stack",
     ),
 
-    "hbsd/src/sys/dev/fdc/fdc.c": (
+    "hbsd/src/sys/dev/fdc/fdc.c": [
+        (
         ("if (fdc_sense_int(fdc, &st0, &cyl) != 0)", 4),
         "if (fdc_sense_int(fdc, &st0, &cyl) == FD_NOT_VALID)",
         "fdc_sense_int() has three failure returns and only one is "
         "FD_NOT_VALID; it writes *st0p after the first command and "
         "*cylp only after the second, and the `st0 & 0xc0 || cyl != ...' "
         "at all four sites read them either way",
-    ),
+        ),
+        (
+            "\tif (fd != NULL && bp != NULL && (fd->flags & FD_ISADMA)) {",
+            "\tif (fd != NULL && (fd->flags & FD_ISADMA)) {",
+            "fdc_worker: the ISADMA block read bp->bio_cmd for the DMA "
+            "direction while testing only fd, and the retry check twelve "
+            "lines above it tests bp because fdc->bp is NULL whenever no "
+            "bio is queued",
+        ),
+    ],
     "hbsd/src/sys/dev/e1000/if_em.c": (
         "\t\tbytes = bytes_per_packet = packets = 0;",
         "\t\tbytes = bytes_per_packet = 0;",
@@ -3662,6 +3672,29 @@ FIXES = {
         "`= agNULL', so on the satIntIo == agNULL arm the line was "
         "agNULL->smIORequest, and it also overwrote the smIORequest "
         "that arm had just computed correctly",
+    ),
+
+    "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5212_ani.c": (
+        "\tif (aniState == AH_NULL) {\n\t\tswitch (cmd) {",
+        "\tOS_MARK(ah, AH_MARK_ANI_CONTROL, cmd);\n\n\tswitch (cmd) {",
+        "ar5212AniControl: the comment says the function may be called "
+        "before there is a current channel, which is when ah_curani and "
+        "so params are AH_NULL -- and five of its commands dereference "
+        "one or the other",
+    ),
+    "hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_ani.c": (
+        "\tif (aniState == AH_NULL) {\n\t\tswitch (cmd) {",
+        "\tOS_MARK(ah, AH_MARK_ANI_CONTROL, cmd);\n\n\t/* These commands can't be disabled */",
+        "ar5416AniControl: the same five commands and the same AH_NULL "
+        "ANI state as ar5212_ani.c",
+    ),
+
+    "hbsd/src/sys/dev/msk/if_msk.c": (
+        ("&& sc->msk_if[MSK_PORT_A] != NULL)", 1),
+        "\tif (rxput[MSK_PORT_A] > 0)\n\t\tmsk_rxput(sc->msk_if[MSK_PORT_A]);",
+        "msk_intr_task: the two msk_rxput() calls took msk_if[] without "
+        "the NULL test msk_intr_hwerr()'s two arms and the two "
+        "msk_txeof() calls twenty lines up all make",
     ),
 }
 

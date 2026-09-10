@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,614 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,688 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,284** | **114,204** |
+| | **total** | **41,143** | **21,299,358** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -62204,7 +62204,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.621.6.14 `ar5112RfAttach()` · `TODO-FN`
   - [ ] 8.621.6.15 `ar5112Probe()` · `TODO-FN`
 - [ ] **8.621.7** `ar5212.h` · 662L · `TODO-HDR`
-- [ ] **8.621.8** `ar5212_ani.c` · 1,045L · `TODO-PORT` · 20 fn
+- [ ] **8.621.8** `ar5212_ani.c` · 1,074L · `TODO-PORT` · 20 fn
   - [ ] 8.621.8.1 `enableAniMIBCounters()` · `TODO-FN`
   - [ ] 8.621.8.2 `disableAniMIBCounters()` · `TODO-FN`
   - [ ] 8.621.8.3 `ar5212AniGetCurrentState()` · `TODO-FN`
@@ -62503,7 +62503,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.623.1.12 `ar2133RfAttach()` · `TODO-FN`
   - [ ] 8.623.1.13 `ar2133Probe()` · `TODO-FN`
 - [ ] **8.623.2** `ar5416.h` · 422L · `TODO-HDR`
-- [ ] **8.623.3** `ar5416_ani.c` · 994L · `TODO-PORT` · 16 fn
+- [ ] **8.623.3** `ar5416_ani.c` · 1,023L · `TODO-PORT` · 16 fn
   - [ ] 8.623.3.1 `enableAniMIBCounters()` · `TODO-FN`
   - [ ] 8.623.3.2 `disableAniMIBCounters()` · `TODO-FN`
   - [ ] 8.623.3.3 `setPhyErrBase()` · `TODO-FN`
@@ -71482,7 +71482,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.711 `sys/dev/fdc`
 
-- [ ] **8.711.1** `fdc.c` · 2,118L gen:7 · `TODO-PORT` · 54 fn
+- [ ] **8.711.1** `fdc.c` · 2,127L gen:7 · `TODO-PORT` · 54 fn
   - [ ] 8.711.1.1 `fdprinttype()` · `TODO-FN`
   - [ ] 8.711.1.2 `fdsettype()` · `TODO-FN`
   - [ ] 8.711.1.3 `fdregwr()` · `TODO-FN`
@@ -87175,7 +87175,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.849 `sys/dev/msk`
 
-- [ ] **8.849.1** `if_msk.c` · 4,574L gen:9 · `TODO-GEN`
+- [ ] **8.849.1** `if_msk.c` · 4,581L gen:9 · `TODO-GEN`
 - [ ] **8.849.2** `if_mskreg.h` · 2,592L · `TODO-GEN`
 
 ### 8.850 `sys/dev/mthca`

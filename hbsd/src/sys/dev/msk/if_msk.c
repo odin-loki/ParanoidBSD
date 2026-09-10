@@ -3640,9 +3640,16 @@ msk_handle_events(struct msk_softc *sc)
 	bus_dmamap_sync(sc->msk_stat_tag, sc->msk_stat_map,
 	    BUS_DMASYNC_PREREAD | BUS_DMASYNC_PREWRITE);
 
-	if (rxput[MSK_PORT_A] > 0)
+	/*
+	 * PBSD: the `!= NULL' this file makes everywhere else it reaches
+	 * into msk_if[] -- msk_intr_hwerr()'s two arms and the two
+	 * msk_txeof() calls twenty lines up all make it.  msk_rxput()'s
+	 * first statement is `sc = sc_if->msk_softc', so a status entry
+	 * naming a port that is not attached dereferences NULL.
+	 */
+	if (rxput[MSK_PORT_A] > 0 && sc->msk_if[MSK_PORT_A] != NULL)
 		msk_rxput(sc->msk_if[MSK_PORT_A]);
-	if (rxput[MSK_PORT_B] > 0)
+	if (rxput[MSK_PORT_B] > 0 && sc->msk_if[MSK_PORT_B] != NULL)
 		msk_rxput(sc->msk_if[MSK_PORT_B]);
 
 	return (sc->msk_stat_cons != CSR_READ_2(sc, STAT_PUT_IDX));

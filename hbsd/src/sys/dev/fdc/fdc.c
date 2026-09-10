@@ -784,8 +784,17 @@ fdc_worker(struct fdc_data *fdc)
 		return (fdc_biodone(fdc, EIO));
 	}
 
+	/*
+	 * PBSD: `bp != NULL' here too.  The retry check twelve lines up
+	 * tests it, because fdc->bp is NULL whenever no bio is queued --
+	 * fdc_biodone() clears it -- and this block read bp->bio_cmd for
+	 * the DMA direction while testing only fd.  A stale FD_ISADMA with
+	 * no bio is a state the driver should not reach; if it does, the
+	 * channel is now left armed rather than the kernel faulting, and
+	 * the flag below stays set to say so.
+	 */
 	/* Disable ISADMA if we bailed while it was active */
-	if (fd != NULL && (fd->flags & FD_ISADMA)) {
+	if (fd != NULL && bp != NULL && (fd->flags & FD_ISADMA)) {
 		isa_dmadone(
 		    bp->bio_cmd == BIO_READ ? ISADMA_READ : ISADMA_WRITE,
 		    fd->fd_ioptr, fd->fd_iosize, fdc->dmachan);

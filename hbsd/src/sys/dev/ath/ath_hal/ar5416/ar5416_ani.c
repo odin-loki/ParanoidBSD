@@ -186,6 +186,35 @@ ar5416AniControl(struct ath_hal *ah, HAL_ANI_CMD cmd, int param)
 
 	OS_MARK(ah, AH_MARK_ANI_CONTROL, cmd);
 
+	/*
+	 * PBSD: refuse the five commands that need ANI state when there
+	 * is none.
+	 *
+	 * The comment above says this function may be called before there
+	 * is a current channel, which is exactly when ah_curani -- and so
+	 * `params' -- is AH_NULL.  The five commands below all dereference
+	 * one or the other: the three level commands bound-check against
+	 * params->max*Level and index params' tables with the result, and
+	 * the two weak-signal commands finish by writing through aniState.
+	 * The commands that are meant to work in that state -- PRESENT,
+	 * MODE, PHYERR_RESET -- touch neither.
+	 */
+	if (aniState == AH_NULL) {
+		switch (cmd) {
+		case HAL_ANI_NOISE_IMMUNITY_LEVEL:
+		case HAL_ANI_OFDM_WEAK_SIGNAL_DETECTION:
+		case HAL_ANI_CCK_WEAK_SIGNAL_THR:
+		case HAL_ANI_FIRSTEP_LEVEL:
+		case HAL_ANI_SPUR_IMMUNITY_LEVEL:
+			HALDEBUG(ah, HAL_DEBUG_ANY,
+			    "%s: no ANI state, cmd %u ignored\n",
+			    __func__, cmd);
+			return AH_FALSE;
+		default:
+			break;
+		}
+	}
+
 	/* These commands can't be disabled */
 	if (cmd == HAL_ANI_PRESENT)
 		return AH_TRUE;

@@ -15583,3 +15583,96 @@ findings          36      31
 The three that remain in `smsatcb.c` are `agFirstDword->D2H` reads — an
 out-parameter the firmware fills, in another translation unit — and the
 rest of `sys/dev/pms` is unread.
+
+## A guard the comment already told us was needed
+
+`ar5212AniControl()` opens with
+
+```c
+	const struct ar5212AniParams *params = AH_NULL;
+	...
+	if (aniState != AH_NULL)
+		params = aniState->params;
+```
+
+and the function's own comment a few lines above says *"This function
+may be called before there's a current channel (eg to disable ANI.)"* —
+which is precisely the case where `ah_curani`, and therefore `params`,
+is `AH_NULL`. Five of the commands in the switch that follows then use
+one or the other unconditionally: `HAL_ANI_NOISE_IMMUNITY_LEVEL`,
+`HAL_ANI_FIRSTEP_LEVEL` and `HAL_ANI_SPUR_IMMUNITY_LEVEL` bound-check
+the caller's level against `params->maxNoiseImmunityLevel` and friends
+and then index a table off `params`; the two weak-signal commands write
+`aniState->ofdmWeakSigDetectOff` and `aniState->cckWeakSigThreshold`.
+`ar5416AniControl()` in the AR5416 HAL is the same function with the
+same hole.
+
+Both now refuse those five commands up front when there is no ANI
+state:
+
+```c
+	if (aniState == AH_NULL) {
+		switch (cmd) {
+		case HAL_ANI_NOISE_IMMUNITY_LEVEL:
+		case HAL_ANI_OFDM_WEAK_SIGNAL_DETECTION:
+		case HAL_ANI_CCK_WEAK_SIGNAL_THR:
+		case HAL_ANI_FIRSTEP_LEVEL:
+		case HAL_ANI_SPUR_IMMUNITY_LEVEL:
+			HALDEBUG(ah, HAL_DEBUG_ANY,
+			    "%s: no ANI state, cmd %u ignored\n",
+			    __func__, cmd);
+			return AH_FALSE;
+		default:
+			break;
+		}
+	}
+```
+
+`HAL_ANI_PRESENT`, `HAL_ANI_MODE` and `HAL_ANI_PHYERR_RESET` touch
+neither `params` nor `aniState`, so the disable-ANI call the comment
+describes still works — which is the point of scoping the guard to the
+five rather than returning early for everything.
+
+## Two more guard-on-one-of-a-pair
+
+`msk_intr()` in the Marvell Yukon II driver ends its handler with
+
+```c
+	if (rxput[MSK_PORT_A] > 0)
+		msk_rxput(sc->msk_if[MSK_PORT_A]);
+	if (rxput[MSK_PORT_B] > 0)
+		msk_rxput(sc->msk_if[MSK_PORT_B]);
+```
+
+`msk_rxput()`'s first statement is `sc = sc_if->msk_softc`. Twenty
+lines up, the same function's two `msk_txeof()` calls and both arms of
+`msk_intr_hwerr()` test `sc->msk_if[port] != NULL` first — a
+single-port card leaves the other slot NULL. Both `msk_rxput()` calls
+now make the same test.
+
+`fdc.c`'s bailout path had the mirror of it:
+
+```c
+	/* Disable ISADMA if we bailed while it was active */
+	if (fd != NULL && (fd->flags & FD_ISADMA)) {
+		...
+		isa_dmadone(bp->bio_cmd == BIO_READ ? ISADMA_READ : ISADMA_WRITE, ...
+```
+
+It reads `bp->bio_cmd` for the DMA direction while testing only `fd`.
+Twelve lines above, the retry check tests `bp` — because `fdc_biodone()`
+sets `fdc->bp = NULL`, so reaching this block with `fd` live and `bp`
+already NULL is the ordinary shape of a completed-then-bailed transfer.
+The test is now `fd != NULL && bp != NULL && (fd->flags & FD_ISADMA)`.
+
+```
+              before   after     (sys/dev/ath + msk + fdc)
+OK               125     125
+ERROR              5       5
+findings          33      21
+```
+
+Per file: `ar5212_ani.c` 2 → 0, `ar5416_ani.c` 2 → 0, `if_msk.c`
+1 → 0, `fdc.c` 8 → 1 (the seven that went were the `fdc_sense_int()`
+fix from the previous batch plus this one; the survivor is a
+`device_get_ivars()` read).
