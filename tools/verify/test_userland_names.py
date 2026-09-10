@@ -205,6 +205,43 @@ def main() -> int:
           "CFLAGS.<file> is spelled without the suffix too "
           "(detect_tz_changes_test)")
 
+    # OBJS, and the two directories it must NOT read.
+    #
+    # lib/csu names every object it builds in OBJS and writes no SRCS
+    # line at all, so crtbegin.c and crtend.c -- which every C program
+    # on the system starts in -- were named by nothing and analysed by
+    # nothing. They live in lib/csu/common and are compiled from the
+    # ARCH directory, whose -I${.CURDIR} is where that architecture's
+    # crt.h is, so the builder directory matters as much as the name.
+    csu = u.SRC / "lib/csu/amd64"
+    s, pth = u.ask(csu, "amd64")
+    got = u.resolve(s, pth, csu)
+    check("lib/csu/common/crtbegin.c" in got,
+          "OBJS names crtbegin.c through .PATH (lib/csu/amd64)")
+    check("lib/csu/common/crtend.c" in got,
+          "...and crtend.c with it")
+    check(not any(g.endswith("crtbeginS.c") or g.endswith("Scrt1.c")
+                  for g in got),
+          "...and an .o with no source of its own falls away "
+          "(crtbeginS.o, Scrt1.o)")
+
+    # The other side. These two are 4.4BSD-era standalone Makefiles that
+    # `.include' nothing, name paths through an undefined ${PORTDIR} and
+    # are run by hand -- but they DO set PROG and OBJS, so reading OBJS
+    # without asking whether the directory is part of this build called
+    # their five sources built and broke two NOT_NAMED prefixes that are
+    # true. bmake's own .MAKE.MAKEFILES is the test: a directory the
+    # build enters reaches bsd.lib.mk or bsd.prog.mk, these reach only
+    # sys.mk's unconditional fragments.
+    for d in ("lib/libc/db/test", "lib/libc/regex/grot"):
+        s, pth = u.ask(u.SRC / d, "amd64")
+        check(not u.resolve(s, pth, u.SRC / d),
+              f"{d} is not part of this build, so its OBJS is not read")
+    check(u.BUILD_MK.search("/x/share/mk/bsd.lib.mk") is not None and
+          u.BUILD_MK.search("/x/share/mk/bsd.mkopt.mk") is None,
+          "the build-membership test names bsd.lib.mk and not the "
+          "fragments sys.mk gives every directory")
+
     # How MANY bmake runs the answer costs, not just what it is. The
     # program lists used to be a run of their own, per directory: 626 of
     # them over bin sbin usr.bin usr.sbin, for an answer that is empty in

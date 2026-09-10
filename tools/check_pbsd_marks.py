@@ -5187,6 +5187,37 @@ FIXES = {
     ),
 
 
+    "hbsd/src/lib/libpam/modules/pam_ksu/pam_ksu.c": (
+        "return (KRB5_PARSE_MALFORMED);",
+        None,
+        "get_su_principal() documents itself as \"Returns 0 for success, "
+        "or a com_err error code on failure\" -- and one arm returned 0 "
+        "for failure. The `root' path does p = strrchr(principal_name, "
+        "'@') and, when there is no realm, logs \"malformed principal "
+        "name\", frees the name and does `return (rv)'. rv there is "
+        "krb5_unparse_name()'s return, which the four lines above "
+        "checked non-zero and passed -- so rv is provably 0. The "
+        "function returns SUCCESS having written neither "
+        "*su_principal_name nor a principal, and pam_sm_authenticate() "
+        "then prints that uninitialised stack pointer and passes it to "
+        "free(). A free() of an indeterminate pointer on the su-to-root "
+        "path of pam_ksu(8). KRB5_PARSE_MALFORMED is what the error "
+        "table calls it. clang core.CallAndMessage, pam_ksu.c:120.",
+    ),
+    "hbsd/src/lib/libfetch/http.c": (
+        ("if ((nbuf = realloc(", 2),
+        "if ((hbuf->buf = realloc(",
+        "http_next_header() had `hbuf->buf = realloc(hbuf->buf, n)' "
+        "twice -- the copy of the first header line and the "
+        "concatenation of each continuation line. realloc() returning "
+        "NULL leaves the old block allocated, and assigning that NULL "
+        "over the only pointer to it loses it; hbuf->bufsize goes on "
+        "describing a buffer that no longer exists, and "
+        "clean_http_headerbuf() then frees NULL. Every header line of "
+        "every HTTP fetch goes through the first of the two. Through a "
+        "temporary, which keeps both the block and the invariant. clang "
+        "unix.cstring.NullArg, http.c:547.",
+    ),
     "hbsd/src/lib/libthr/thread/thr_sig.c": (
         "bzero(&oldact, sizeof(oldact));",
         None,

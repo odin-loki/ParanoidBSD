@@ -144,6 +144,11 @@ SCOPES = ("lib", "libexec", "bin", "sbin", "usr.bin", "usr.sbin",
 
 SUFFIXES = (".c", ".cc", ".cpp", ".cxx", ".S", ".s", ".m", ".y", ".l")
 
+# The share/mk fragments a directory reads only because it asked to
+# build a library or a program. sys.mk pulls bsd.mkopt.mk and
+# bsd.suffixes.mk into EVERY directory, so those two say nothing.
+BUILD_MK = re.compile(r"/share/mk/bsd\.(lib|prog|progs|test)\.mk$")
+
 
 def makefile_dirs(src: Path = SRC) -> list[Path]:
     """Every directory under the userland scopes with a Makefile."""
@@ -208,18 +213,69 @@ def ask(d: Path, arch: str, src: Path = SRC, timeout: int = 40
     question is what the build names, and a Makefile bmake cannot read
     names nothing that can be checked.  `build()' counts those, so a
     large number is visible rather than silently shrinking the answer.
+
+    OBJS is asked alongside SRCS for the reason ask_module() already
+    gives on the kernel side: a directory can name what it builds
+    entirely in OBJS and never write a SRCS line.  lib/csu is that
+    directory.  lib/csu/Makefile.inc is
+
+        OBJS+=  Scrt1.o crt1.o gcrt1.o
+        OBJS+=  crtbegin.o crtbeginS.o crtbeginT.o
+        OBJS+=  crtend.o crtendS.o
+        OBJS+=  crti.o crtn.o
+
+    and lib/csu/amd64/Makefile is `.PATH: ${.CURDIR:H}/common' plus
+    `CFLAGS+= -I${.CURDIR}'.  So crtbegin.c and crtend.c live in
+    common/ and are compiled once per architecture FROM the arch
+    directory, where that architecture's own crt.h is -- and asking
+    only SRCS meant nothing named them, no builder directory was
+    recorded for them, and both came back "'crt.h' file not found".
+    Every C program on the system starts in that code.
+
+    Each .o is mapped back through every suffix a source can wear, and
+    resolve() drops the ones that hit no file, which is what makes it
+    safe: Scrt1.o, gcrt1.o and crtbeginS.o name no source of their own
+    and simply fall away.
     """
-    got = _bmake(d, arch, ["SRCS", ".PATH", "PROGS", "PROGS_CXX"],
-                 src, timeout)
+    got = _bmake(d, arch,
+                 ["SRCS", "OBJS", ".PATH", "PROGS", "PROGS_CXX",
+                  ".MAKE.MAKEFILES"], src, timeout)
     if got is None:
         return [], []
-    srcs, path, progs, progs_cxx = (g.split() for g in got)
+    srcs, objs, path, progs, progs_cxx, mkfiles = (g.split() for g in got)
+    # OBJS is only the build's answer in a directory that is PART of
+    # this build system, and the OBJS reader found two that are not.
+    # lib/libc/db/test/Makefile is `PROG= dbtest' plus `OBJS= dbtest.o
+    # strerror.o' and lib/libc/regex/grot/Makefile is Spencer's own
+    # regex harness -- both 4.4BSD-era standalone Makefiles that
+    # `.include' NOTHING, name paths through an undefined ${PORTDIR},
+    # and are run by hand. SRCS and PROGS never saw them, so the OBJS
+    # widening alone would have called their five sources built and
+    # broken two NOT_NAMED prefixes that are true.
+    #
+    # bmake says which it is, and .MAKE.MAKEFILES is the list it read:
+    # a directory the build enters reaches bsd.lib.mk or bsd.prog.mk
+    # through its own `.include', while these two reach only sys.mk's
+    # unconditional bsd.mkopt.mk and bsd.suffixes.mk.
+    if not any(BUILD_MK.search(m) for m in mkfiles):
+        objs = []
     if progs:
         cxx = set(progs_cxx)
         per = _bmake(d, arch, [f"SRCS.{p}" for p in progs], src, timeout)
         for i, prog in enumerate(progs):
             own = per[i].split() if per and i < len(per) else []
             srcs += own or [prog + (".cc" if prog in cxx else ".c")]
+    # By STEM, not by name. bsd.lib.mk appends every SRCS-derived object
+    # to OBJS as well, so nearly every .o here already has its source in
+    # SRCS under one suffix or another; comparing whole names would put
+    # eight dead candidates on the list for each of them and pay for a
+    # stat on every one, in every directory in the tree.
+    have = {s.rsplit(".", 1)[0] for s in srcs}
+    for o in objs:
+        stem = o[:-2]
+        if o.endswith(".o") and "$" not in o and stem not in have:
+            srcs += [stem + s for s in SUFFIXES]
+            have.add(stem)
     return srcs, path
 
 

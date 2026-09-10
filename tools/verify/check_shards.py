@@ -56,7 +56,6 @@ UNANALYSED = {
     "krb5":       "third-party source PBSD does not maintain",
     "secure":     "third-party source PBSD does not maintain",
     "sys":        "checked directory-by-directory above, not as a whole",
-    "lib":        "lib/libc and lib/msun are sharded; the rest is not yet",
     "stand":      "not yet - the loader is its own header universe",
     "tests":      "not yet - exercises the tree rather than being it",
     "tools":      "build tooling, not shipped code",
@@ -79,6 +78,12 @@ UNANALYSED = {
 # the stale-exemption shape this script was written to catch, in the
 # script itself. The `in both' check below is new because of it.
 UNCHECKED = {
+    # The ANALYSE shard covers all of lib as of the pass that reconciled
+    # its 55 ERROR translation units; the MODEL-CHECK shard still names
+    # lib/libc and lib/msun only, and CBMC over 539 more translation
+    # units is a different order of cost from clang over them.
+    "lib":        "analysed as a whole; model-checked as lib/libc + "
+                  "lib/msun only",
     "bin":        "analysed since sweep 18; not model-checked yet",
     "sbin":       "analysed since sweep 18; not model-checked yet",
     "usr.bin":    "analysed since sweep 18; not model-checked yet",

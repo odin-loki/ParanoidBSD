@@ -27,7 +27,7 @@ They are load-bearing now, so they are checked. A reader that silently
 stops reading gives back the same zero it gave before it was written.
 """
 from __future__ import annotations
-import os, sys, tempfile, time
+import os, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -622,6 +622,80 @@ if _shim:
                "the .tpl.h prepends the sfp_ prefix to each enum's name; "
                "an empty or partial render would still be a file")
 
+# The three generators added when lib/ was opened as a whole scope.
+# Each is checked on CONTENT, not on the file existing: mktables wrote
+# every table EMPTY the first time it ran, and that file compiles --
+# a clean check of a libsysdecode that decodes nothing is worse than
+# the ERROR it replaces.
+_fetch = includes.generated_shim("lib/libfetch")
+check_that("lib/libfetch gets ftperr.h and httperr.h",
+           _fetch is not None and
+           sorted(os.listdir(_fetch)) == ["ftperr.h", "httperr.h"],
+           f"got {sorted(os.listdir(_fetch)) if _fetch else None}")
+if _fetch:
+    _ft = Path(_fetch, "ftperr.h").read_text()
+    check_that("...and ftperr.h is the table the Makefile's loop writes",
+               _ft.startswith("static struct fetcherr ftp_errlist[] = {")
+               and "FETCH_UNKNOWN" in _ft and _ft.count("FETCH_") > 40,
+               f"{_ft.count('FETCH_')} entries")
+
+_sysd = includes.generated_shim("lib/libsysdecode")
+check_that("lib/libsysdecode gets tables.h and tables_linux.h",
+           _sysd is not None and
+           sorted(os.listdir(_sysd)) == ["tables.h", "tables_linux.h"],
+           f"got {sorted(os.listdir(_sysd)) if _sysd else None}")
+if _sysd:
+    _tb = Path(_sysd, "tables.h").read_text()
+    check_that("...and the tables are not EMPTY",
+               _tb.count("TABLE_ENTRY(") > 500,
+               f"{_tb.count('TABLE_ENTRY(')} entries -- mktables greps an "
+               "INSTALLED /usr/include by installed path, and given "
+               "anything else it writes TABLE_START/TABLE_END and nothing "
+               "between, which compiles")
+    check_that("...and the flag names the library decodes are in them",
+               "TABLE_ENTRY(O_APPEND)" in _tb and
+               "TABLE_ENTRY(MAP_SHARED)" in _tb,
+               "O_RDONLY is deliberately NOT one of them -- mktables's "
+               "openflags grep wants a non-zero value and O_RDONLY is 0; "
+               "the accessmode table is where it lives")
+
+# krb5's two generated headers. profile.h and krb5.h are made into an
+# ${OBJTOP} path, and krb5.h is six compile_et error tables plus
+# krb5.hin. Checked on content: a partial krb5.h compiles.
+_krb = includes.generated_shim("lib/libpam/modules/pam_ksu")
+check_that("lib/libpam/modules/pam_ksu gets profile.h",
+           _krb is not None and Path(_krb, "profile.h").is_file(),
+           f"got {sorted(os.listdir(_krb)) if _krb else None}")
+check_that("...and krb5.h, where the forwarder looks for it",
+           _krb is not None and Path(_krb, "krb5", "krb5.h").is_file(),
+           "crypto/krb5/src/include/krb5.h is `#include <krb5/krb5.h>', "
+           "so the top level is the wrong place")
+if _krb and Path(_krb, "krb5", "krb5.h").is_file():
+    _k = Path(_krb, "krb5", "krb5.h").read_text()
+    check_that("...and it carries krb5.hin AND all six error tables",
+               "krb5_init_context" in _k and "KV5M_DATA" in _k and
+               "KRB5_PARSE_MALFORMED" in _k and "ASN1_BAD_TIMEFORMAT" in _k
+               and "KRB524_BADKEY" in _k and "KRB5_KDB_RCSID" in _k,
+               f"{len(_k)} bytes")
+
+# RPCSRC is not the only spelling. lib/libypclnt has three, and
+# RPCSRC_PRIV is the only place in the tree that names
+# yppasswd_private.x -- so ypclnt_passwd.c, which the library builds,
+# came back "file not found" while the two reached through the plain
+# name were generated fine.
+_yp = includes.generated_shim("lib/libypclnt")
+check_that("an RPCSRC_<suffix> is read too (yppasswd_private.h)",
+           _yp is not None and "yppasswd_private.h" in os.listdir(_yp),
+           f"got {sorted(os.listdir(_yp)) if _yp else None}")
+check_that("...and the plain RPCSRC ones with it",
+           _yp is not None and
+           {"yp.h", "yppasswd.h"} <= set(os.listdir(_yp)))
+check_that("...and a value is still matched to its own header by name",
+           includes._rpcsrc_of("RPCSRC_PRIV= ${SRCTOP}/a/b/yppasswd_"
+                               "private.x\n", "yp") == (),
+           "the basename test is what keeps a Makefile with several "
+           "from being matched to the wrong one")
+
 _flags = includes._rpcgen_flags(
     (SRC / "usr.sbin/rpc.tlsclntd/Makefile").read_text())
 check_that("a directory's own RPCGEN flags are read", "-M" in _flags,
@@ -944,6 +1018,56 @@ check_that("...and is gone after it", not _td.exists(), str(_td))
 includes._cleanup_tempdirs()	# idempotent: nothing left to pop
 check_that("...and the owned list is empty", not includes._TEMPDIRS,
            repr(includes._TEMPDIRS))
+
+print()
+print("== .PATH puts a source's private header on -I, and sys/sys is not one")
+# makefile_flags() puts every .PATH directory on the include path
+# because a source's private header sits beside it there. sys/sys is
+# the kernel's header NAMESPACE, installed as <sys/name.h> and never as
+# <name.h>, and it holds a unistd.h, a signal.h, a time.h and a stat.h
+# that shadow the userland headers of those names.
+# lib/libnv/Makefile:12 is the tree's only userland `.PATH: ...
+# ${SRCTOP}/sys/sys' and it cost eight translation units: msgio.c
+# includes <unistd.h> at line 43 and got the kernel's, which declares
+# no functions at all, so close(3) was undeclared.
+_libnv = includes.include_flags(SRC / "lib/libnv/msgio.c", "amd64")
+check_that("sys/sys is not on libnv's include path",
+           f"-I{SRC}/sys/sys" not in _libnv,
+           " ".join(x for x in _libnv if x.startswith("-I"))[:200])
+check_that("...and the .PATH reader still gives libnv sys/contrib/libnv",
+           f"-I{SRC}/sys/contrib/libnv" in _libnv)
+# ...and the rule it exists for still holds, one directory over.
+_stdtime = includes.include_flags(SRC / "lib/libc/stdtime/localtime.c",
+                                  "amd64")
+check_that("a .PATH on contrib/tzcode is still an -I",
+           any("contrib/tzcode" in x for x in _stdtime))
+# The whole point, measured: <unistd.h> declares close().
+_probe = Path(tempfile.mkdtemp(prefix="pbsd_unistd_")) / "p.c"
+_probe.write_text("#include <unistd.h>\nint f(int d){return close(d);}\n")
+_r = subprocess.run(
+    ["clang", "-fsyntax-only",
+     *includes.lang_flags(SRC / "lib/libnv/msgio.c", "lib/libnv/msgio.c"),
+     *_libnv, str(_probe)], capture_output=True, text=True)
+check_that("<unistd.h> declares close() with libnv's own flags",
+           _r.returncode == 0, _r.stderr[:200])
+shutil.rmtree(_probe.parent, ignore_errors=True)
+
+print()
+print("== which of several builder directories, when they differ by arch")
+# lib/csu/common/crtbegin.c is named by all seven lib/csu/<arch>
+# directories, each `.PATH: ${.CURDIR:H}/common' plus `-I${.CURDIR}',
+# each compiling it against its OWN crt.h. Taking the first in sorted
+# order gave it aarch64's, which is one comment line, while amd64's
+# defines HAVE_CTORS and INIT_CALL_SEQ -- and it COMPILES either way,
+# which is a clean check of a program no architecture builds.
+_cb = includes._component_dir("lib/csu/common/crtbegin.c")
+check_that("crtbegin.c is compiled from its own architecture's directory",
+           _cb is not None and _cb.name == "amd64", str(_cb))
+# ...and the tip case, where no builder names an architecture at all,
+# still resolves to the one directory that names the file.
+check_that("a single builder directory is still taken",
+           str(includes._component_dir("usr.bin/tip/libacu/biz22.c") or ""
+               ).endswith("usr.bin/tip/tip"))
 
 # atexit does not run in every worker a parallel sweep starts, and not at
 # all for a process that is killed, so what escapes is reaped on the next

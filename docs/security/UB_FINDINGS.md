@@ -21857,3 +21857,373 @@ was made and succeeded the kernel overwrites it, and on the paths where
 it failed `ret != 0` and `*oact` is not written either way.  The same
 decision on every path, now for a stated reason rather than by accident
 of what was on the stack.
+
+## The libraries no shard had analysed, part two: five build-system readers
+
+Twenty of the forty-six `lib` translation units that would not compile
+were components a default build never enters, and went on the record as
+that.  Of the twenty-six left, twenty-three turned out to be five
+distinct things the readers in `tools/verify/` were not doing, and each
+one is now done rather than excused.
+
+### `.PATH` is where make finds SOURCES, and `sys/sys` is not a source directory
+
+`makefile_flags()` puts every `.PATH` directory on the include path, for
+a good reason it states: a source's private header sits beside it there,
+which is how `lib/libc/stdtime` reaches `contrib/tzcode`'s `private.h`.
+
+`sys/sys` is not that directory.  It is the **kernel's** header
+namespace, whose every file is installed as `<sys/name.h>` and never as
+`<name.h>` — and it holds a `unistd.h`, a `signal.h`, a `time.h`, a
+`stat.h`, an `errno.h` and a `fcntl.h`, each of which shadows the
+userland header of that name the moment the directory precedes
+`include/` on the path.
+
+`lib/libnv/Makefile:12` is the tree's **only** userland
+`.PATH: … ${SRCTOP}/sys/sys`, and it cost eight translation units:
+
+```
+lib/libnv/msgio.c:384: call to undeclared function 'close'
+```
+
+`msgio.c` includes `<unistd.h>` at line 43.  It got
+`sys/sys/unistd.h`, which defines the `_SC_*` constants and declares not
+one function — so `close(3)` was undeclared, and seven `lib/libnv/tests`
+programs inherited the same `-I` through the ancestor walk and lost
+`STDERR_FILENO` and `PATH_MAX` with it.  The real build never had the
+problem: `.PATH` is a *source* path, and libnv's five sources all come
+from `sys/contrib/libnv`.
+
+`lib/libnv` now: **8 translation units, 8 analysed, 0 findings.**
+
+### A directory can name everything it builds in `OBJS`
+
+`ask_module()` learned this on the kernel side when `sys/modules/blake2`
+reached its ten SIMD implementations through `OBJS+= ${SRCS_IN:S/.c/.o/g}`
+and no `SRCS` line.  The userland reader asked only `SRCS`, `PROGS` and
+`SRCS.<prog>`.
+
+`lib/csu` is the directory that shows it.  `lib/csu/Makefile.inc`:
+
+```
+OBJS+=  Scrt1.o crt1.o gcrt1.o
+OBJS+=  crtbegin.o crtbeginS.o crtbeginT.o
+OBJS+=  crtend.o crtendS.o
+OBJS+=  crti.o crtn.o
+```
+
+and `lib/csu/amd64/Makefile` is `.PATH: ${.CURDIR:H}/common` plus
+`CFLAGS+= -I${.CURDIR}`.  So `crtbegin.c` and `crtend.c` live in
+`common/` and are compiled once per architecture **from** the
+architecture directory, where that architecture's own `crt.h` is.
+Asking only `SRCS` meant nothing named them, no builder directory was
+recorded, and both came back `'crt.h' file not found`.
+
+**Every C program on the system starts in that code**, and no static
+analysis had ever seen it.
+
+Each `.o` is now mapped back through every suffix a source can wear, by
+stem rather than by name so the eighty-odd dead candidates a big
+directory would otherwise generate never cost a stat, and `resolve()`
+drops the ones that hit no file — `Scrt1.o`, `gcrt1.o` and `crtbeginS.o`
+name no source of their own and simply fall away.
+
+**And then the gate caught the widening.**  On the next run of
+`test_expected_errors.py`:
+
+```
+FAIL lib/libc/db/test/ is named by nothing
+     the build names ['lib/libc/db/test/dbtest.c'], so this prefix is
+     absorbing ERRORs from code that IS compiled
+FAIL lib/libc/regex/grot/ is named by nothing
+     the build names 3 files, ...
+```
+
+Both of those prefixes are *true*.  `lib/libc/db/test/Makefile` is
+`PROG= dbtest` plus `OBJS= dbtest.o strerror.o`, and
+`lib/libc/regex/grot/Makefile` is Spencer's own regex harness — 4.4BSD-era
+standalone Makefiles that `.include` **nothing**, name paths through an
+undefined `${PORTDIR}`, and are run by hand.  `SRCS` and `PROGS` never
+saw them because they use neither; reading `OBJS` without asking whether
+the directory is part of this build called their five sources built.
+
+bmake says which it is, and it says so about itself: `.MAKE.MAKEFILES`
+is the list it read.  A directory the build enters reaches `bsd.lib.mk`
+or `bsd.prog.mk` through its own `.include`; these two reach only
+`sys.mk`'s unconditional `bsd.mkopt.mk` and `bsd.suffixes.mk`.  `OBJS`
+is read only when the first is true — one more thing asked of the build
+rather than decided about it.
+
+### ...and then WHICH of the seven directories that name it
+
+`lib/csu/common/crtbegin.c` is named by all seven of
+`lib/csu/{aarch64,amd64,arm,i386,powerpc,powerpc64,riscv}`, each with
+`-I${.CURDIR}`, each compiling it against its **own** `crt.h`.  Taking
+the first in sorted order gave it aarch64's, which is one comment line
+(*"Empty so we can include this unconditionally"*), while amd64's
+defines `HAVE_CTORS` and `INIT_CALL_SEQ`.
+
+And it **compiles** either way.  That is the dangerous half: not an
+ERROR that says something is wrong, but a clean check of a program no
+architecture builds.  `_component_dir()` now prefers the builder
+directory whose name is this file's own architecture.
+
+### `RPCSRC` is not the only spelling
+
+`lib/libypclnt/Makefile` has three:
+
+```
+RPCSRC=      ${SRCTOP}/include/rpcsvc/yp.x
+RPCSRC_PW=   ${SRCTOP}/include/rpcsvc/yppasswd.x
+RPCSRC_PRIV= ${SRCTOP}/usr.sbin/rpc.yppasswdd/yppasswd_private.x
+```
+
+The pattern insisted on `RPCSRC` exactly, so the third — the only place
+in the tree that names `yppasswd_private.x` — was invisible, and
+`ypclnt_passwd.c` came back `'yppasswd_private.h' file not found` while
+the two headers reached through the plain name were generated fine.  Any
+`RPCSRC<suffix>` counts now; the basename test that follows is what
+keeps a Makefile with several from being matched to the wrong one, and
+it was already doing that job.
+
+### Two more generators, and one that would have been worse than the error
+
+`lib/libfetch`'s `ftperr.h` and `httperr.h` are a shell loop over
+`ftp.errors` and `http.errors` in its own Makefile, run rather than
+reimplemented.  Two of libfetch's eight translation units, and the two
+that carry every protocol error string the library reports.
+
+`lib/libsysdecode`'s `tables.h` and `tables_linux.h` are its own
+`mktables` and `mklinuxtables` scripts — and this one took two tries
+worth recording.  `mktables` takes an **installed** `/usr/include`: it
+greps `<incdir>/sys/mman.h`, `<incdir>/netinet/in.h` and thirty more by
+their installed paths.  `incs_shim()` is close but is not that: the
+compile path reaches `<sys/*.h>` through `-I${SRC}/sys` rather than by
+staging, so the shim's own `sys/` holds three headers.  mktables found
+none of the thirty it greps and wrote **every table empty**:
+
+```
+TABLE_START(accessmode)
+TABLE_END
+```
+
+That file compiles.  It would have turned an ERROR into a clean check of
+a libsysdecode that decodes nothing — and this file's own generator
+table says in as many words that a stub is worse than the error it
+replaces.  An empty table *is* the stub.  Given the installed layout the
+build gives it, `tables.h` comes out with 961 entries.
+
+A guard was added rather than only the fix: a table set with no
+`TABLE_ENTRY(` in it is deleted instead of shipped, so the next time
+this breaks it breaks visibly.
+
+### What the five readers bought
+
+`lib/libfetch`, `lib/libsysdecode` and `lib/libypclnt`: **19 translation
+units, 18 analysed, 10 findings** in code no sweep had ever compiled.
+
+## `http_next_header`: `p = realloc(p, n)`, twice
+
+The one defect in those ten.
+
+```c
+	if (hbuf->bufsize < conn->buflen + 1) {
+		if ((hbuf->buf = realloc(hbuf->buf, conn->buflen + 1)) == NULL)
+			return (hdr_syserror);
+		hbuf->bufsize = conn->buflen + 1;
+	}
+	strcpy(hbuf->buf, conn->buf);
+```
+
+`realloc()` returning NULL leaves the old block allocated, and assigning
+that NULL over the only pointer to it loses it.  Two things then go
+wrong at once: the block is unreachable, and `clean_http_headerbuf()`
+frees NULL — so it leaks for the life of the process; and `hbuf->bufsize`
+goes on describing a buffer that no longer exists, so a later call with a
+shorter line takes the `bufsize` branch, skips the allocation entirely,
+and `strcpy`s into NULL.  That second half is what clang reported:
+
+```
+lib/libfetch/http.c:547  [unix.cstring.NullArg]
+    Null pointer passed as 1st argument to string copy function
+```
+
+The same line appears twice in the function — once for the first header
+line and once for each continuation line — and **every header line of
+every HTTP fetch goes through the first of the two**.  Both now go
+through a temporary, which keeps the block and the invariant together.
+
+### And three that are not defects
+
+* `fetch_read()` and `fetch_writev()` in `common.c` read a `struct
+  timeval timeout` that is filled only under `if (fetchTimeout > 0)`
+  and read only under the same test — but `fetchTimeout` is a global
+  `int` the library exports, and `poll(2)` and `fetch_socket_read()`
+  sit between the two tests.  The unconstrained-global family.
+* `ftp_cwd()`'s `pwd[i]` after
+
+  ```c
+  for (i = 0; i <= len && i <= end - file; ++i)
+      if (pwd[i] != file[i])
+          break;
+  if (pwd[i] == '\0' && (file[i - 1] == '/' || file[i] == '/'))
+  ```
+
+  can only be one past the NUL if the loop ran to `i == len` without
+  breaking, which needs `pwd[len] == file[len]`, i.e. `file[len] ==
+  '\0'` — while `len <= end - file` and `end = strrchr(file, '/')` put
+  a `/` at or after index `len`.  The two cannot both hold.  A
+  postcondition of `strrchr` the analyser cannot see.
+
+### Three sources that have never been built
+
+* `lib/csu/i386/reloc.c` and `lib/csu/powerpc64/reloc.c` — the old
+  copies of libc's start-up relocation handler, left behind when it
+  moved.  `lib/libc/csu/libc_start1.c:51` is `#include "reloc.c"` and
+  `lib/libc/csu/Makefile.inc:9` is
+  `CFLAGS+= -I${LIBC_SRCTOP}/csu/${LIBC_ARCH}`, so that include resolves
+  to `lib/libc/csu/<arch>/reloc.c` — never these.  The two differ: the
+  live copy defines `ifunc_init()`, this one still defines
+  `crt1_handle_rel()`.  Only i386 and powerpc64 were left behind; amd64,
+  aarch64, arm and riscv have no `lib/csu/<arch>/reloc.c` at all, which
+  is what a half-finished move looks like.
+* `lib/libypclnt/ypclnt_get.c` — not in `SRCS`, though `ypclnt.h`
+  declares `ypclnt_get()`.  It could not compile if it were asked to:
+  its only `#include` is `"ypclnt.h"`, which pulls in no `<stddef.h>`,
+  so `NULL` and `strlen` are both undeclared in a 22-line file.
+* `lib/libmd/mdXhl.c` — a template.  `lib/libmd/Makefile:163` turns it
+  into `md4hl.c`, `md5hl.c`, `sha0hl.c` and the rest with a `sed` that
+  rewrites `mdX` to each algorithm's name, so `#include "mdX.h"` becomes
+  `#include "md5.h"` in the file that is actually compiled.  `mdX.h`
+  does not exist and is not meant to.
+
+### And krb5, whose headers the build makes in an object directory
+
+`lib/libpam/modules/pam_ksu/Makefile`, under `.if ${MK_MITKRB5} != "no"`
+— and `MITKRB5` is in `__DEFAULT_YES_OPTIONS`, so this is the ordinary
+case:
+
+```
+CFLAGS+= -I${SRCTOP}/krb5/include
+CFLAGS+= -I${OBJTOP}/krb5/util/profile
+CFLAGS+= -include ${SRCTOP}/crypto/krb5/src/include/k5-int.h
+```
+
+`krb5/include` has a Makefile and no `krb5.h`; `krb5/util/profile` has a
+Makefile and no `profile.h`.  Both are generated, into an `${OBJTOP}`
+path this analyser has no answer for:
+
+```
+profile.h: profile.hin prof_err.h          (util/profile/Makefile:63)
+        cat ${.ALLSRC} > ${.TARGET}
+
+krb5.h: krb5.hin ${GENI_ET}                (include/krb5/Makefile:40)
+        echo the include guard, cat ${.ALLSRC}, close it
+```
+
+`GENI_ET` is six error tables — `krb5_err`, `k5e1_err`, `kdb5_err`,
+`kv5m_err`, `krb524_err`, `asn1_err` — each produced by `compile_et`,
+which is MIT krb5's own shell script with `@AWK@` and `@DIR@`
+substituted at configure time.  That is the whole of its configuration,
+so it is run rather than reimplemented, like everything else in that
+table.  `krb5.h` comes out at 350KB.
+
+One detail cost a round: written as `krb5.h` at the top of the shim it
+was on the include path and still not found, because
+`crypto/krb5/src/include/krb5.h` is eight lines saying *"as of the 1.5
+release … they're all moving to a `krb5/` subdirectory"* and then
+`#include <krb5/krb5.h>`.  It goes where it is installed.
+
+## `get_su_principal`: returns 0 for failure, and the caller frees the stack
+
+The finding that came back once `pam_ksu.c` compiled:
+
+```
+lib/libpam/modules/pam_ksu/pam_ksu.c:120  [core.CallAndMessage]
+    4th function call argument is an uninitialized value
+```
+
+The function says what it does, directly above itself:
+
+> Returns 0 for success, or a com_err error code on failure.
+
+And one arm returns 0 for failure.  The su-to-`root` path:
+
+```c
+	rv = krb5_unparse_name(context, default_principal, &principal_name);
+	krb5_free_principal(context, default_principal);
+	if (rv != 0) {
+		...
+		return (rv);
+	}
+	PAM_LOG("Default principal name: %s", principal_name);
+	if (strcmp(target_user, superuser) == 0) {
+		p = strrchr(principal_name, '@');
+		if (p == NULL) {
+			PAM_LOG("malformed principal name `%s'", principal_name);
+			free(principal_name);
+			return (rv);            /* <-- rv is provably 0 */
+		}
+```
+
+`rv` there is `krb5_unparse_name()`'s return, which the four lines above
+tested non-zero and passed.  So the function reports **success** having
+written neither `*su_principal_name` nor a principal, and the caller
+does:
+
+```c
+	rv = get_su_principal(context, user, ruser, &su_principal_name, &su_principal);
+	if (rv != 0)
+		return (PAM_AUTH_ERR);
+	PAM_LOG("kuserok: %s -> %s", su_principal_name, user);
+	...
+	free(su_principal_name);
+```
+
+— prints an uninitialised stack pointer and hands it to `free()`, on the
+su-to-root path of `pam_ksu(8)`.  `KRB5_PARSE_MALFORMED` is what
+`krb5_err.et:181` calls a principal name with no realm, and is what the
+arm returns now.
+
+The report does not go away, and that is worth stating rather than
+hiding: the path clang takes after the fix is
+
+```
+pam_ksu.c:238  Assuming 'rv' is not equal to 0
+pam_ksu.c:239  Returning without writing to '*'
+```
+
+which is `rv = seteuid(ruid); if (rv != 0) return (errno);` — one of
+three sites in the function that return `errno`.  A zero `errno` there
+would be success again, and the analyser cannot know a failed
+`seteuid(2)` sets it.  That is the unconstrained-global family, not this
+defect; the defect was the arm that could not fail to return zero.
+
+## The libs shard now covers all of lib
+
+Every one of the fifty-five `ERROR` translation units under `lib` is on
+the record, so the analyse shard is widened from
+
+    --scope lib/libc --scope lib/msun --scope libexec
+
+to
+
+    --scope lib --scope libexec
+
+and `lib` comes off `check_shards.py`'s `UNANALYSED` list, where its note
+had read *"lib/libc and lib/msun are sharded; the rest is not yet"* for
+as long as that list has existed.  It moves to `UNCHECKED`, which is the
+model-check job's list and where the same sentence is still true: CBMC
+over 539 more translation units is a different order of cost from clang
+over them.
+
+| | TUs | OK | ERROR | findings |
+|---|---|---|---|---|
+| the old shard, `lib/libc` + `lib/msun` + `libexec` | 1,630 | 1,600 | 30 | 238 |
+| all of `lib` | 2,169 | 2,114 | 55 | 441 |
+| ...plus `libexec` | 103 | 99 | 4 | — |
+
+`ok all 55 ERROR translation unit(s) are on the record`, and the
+libraries that had never been analysed at all — libdevstat, lib/clang,
+libpmc, libutil, libcasper, libfetch, libsysdecode, libnv, libthr,
+libypclnt, libpam and the rest — are analysed on every push from here.

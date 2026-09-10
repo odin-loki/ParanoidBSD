@@ -230,7 +230,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: libs,   scopes: '--scope lib/libc --scope lib/msun --scope libexec', check: '--check-errors' }
+          - { name: libs,   scopes: '--scope lib --scope libexec', check: '--check-errors' }
           # bin, sbin, usr.bin and usr.sbin. This shard ran WITHOUT
           # --check-errors while its hole was being filled: 133 of its
           # 1,862 translation units did not compile, in seven named

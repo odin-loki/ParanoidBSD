@@ -280,7 +280,18 @@ get_su_principal(krb5_context context, const char *target_user, const char *curr
 		if (p == NULL) {
 			PAM_LOG("malformed principal name `%s'", principal_name);
 			free(principal_name);
-			return (rv);
+			/*
+			 * rv is krb5_unparse_name()'s return, and it was
+			 * checked non-zero just above -- so `return (rv)'
+			 * here returned SUCCESS while leaving
+			 * *su_principal_name unwritten.  The caller then
+			 * printed that uninitialised pointer and passed it
+			 * to free().  This function's contract, stated
+			 * above it, is "0 for success, or a com_err error
+			 * code on failure", and a principal name with no
+			 * realm is exactly KRB5_PARSE_MALFORMED.
+			 */
+			return (KRB5_PARSE_MALFORMED);
 		}
 		*p++ = '\0';
 		*su_principal_name = NULL;

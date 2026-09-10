@@ -557,9 +557,32 @@ def makefile_flags(d: str, arch: str, base: str) -> tuple[tuple[str, ...],
                 # file where it lies rather than where make would put
                 # it, so those directories have to be on the include
                 # path or the header beside the source is unreachable.
+                #
+                # ...but sys/sys is not that directory, and putting it
+                # on -I is not a smaller version of the same thing.
+                # It is the KERNEL's header namespace, whose every file
+                # is installed as <sys/name.h> and never as <name.h> --
+                # and it holds a unistd.h, a signal.h, a time.h, a
+                # stat.h, an errno.h and a fcntl.h, each of which
+                # SHADOWS the userland header of that name the moment
+                # the directory precedes include/ on the path.
+                #
+                # lib/libnv/Makefile:12 is the tree's only userland
+                # `.PATH: ... ${SRCTOP}/sys/sys' and it cost eight
+                # translation units: msgio.c got sys/sys/unistd.h for
+                # `#include <unistd.h>', which declares _SC_* constants
+                # and not one function, so close(3) was undeclared --
+                # and seven libnv tests inherited the same -I through
+                # the ancestor walk and lost STDERR_FILENO and
+                # PATH_MAX with it. The real build never had the
+                # problem: .PATH is where make finds SOURCES, and
+                # libnv's five all come from sys/contrib/libnv.
                 for d2 in _expand(st[len(".PATH:"):], vars).split():
-                    if "${" not in d2 and Path(d2).is_dir():
-                        includes.append(f"-I{d2}")
+                    if "${" in d2 or not Path(d2).is_dir():
+                        continue
+                    if Path(d2).resolve() == (SRC / "sys" / "sys").resolve():
+                        continue
+                    includes.append(f"-I{d2}")
                 continue
             m = CFLAGS_LINE.match(line)
             if m:
@@ -2205,7 +2228,21 @@ def _component_dir(rel: str) -> Path | None:
         if d == root or root not in d.parents:
             break
         d = d.parent
-    for cand in named_by:
+    # Several directories can name the same source, and which one is
+    # picked decides the flags. lib/csu/common/crtbegin.c is named by
+    # all seven of lib/csu/{aarch64,amd64,arm,i386,powerpc,powerpc64,
+    # riscv} -- each `.PATH: ${.CURDIR:H}/common' plus `-I${.CURDIR}',
+    # so each compiles it against its OWN crt.h. Taking the first in
+    # sorted order gave it aarch64's, whose crt.h is one comment line
+    # ("Empty so we can include this unconditionally") while amd64's
+    # defines HAVE_CTORS and INIT_CALL_SEQ -- and the file COMPILES
+    # either way, which is the dangerous half: a clean check of a
+    # program no architecture builds. The one whose directory names
+    # this file's own architecture is the one the build would use.
+    want = arch_of(rel)
+    for cand in sorted(named_by, key=lambda c: (
+            ARCH_DIR.get(Path(c).name) or SYS_ARCH.get(Path(c).name)
+            ) != want):
         c = SRC / cand
         if (c / "Makefile").is_file():
             return c
@@ -3407,7 +3444,212 @@ def _gen_config_ytab(out: Path, _dir: str = "") -> None:
     (out / "y.tab.c").unlink(missing_ok=True)
 
 
+def _gen_libfetch(out: Path, _dir: str = "") -> None:
+    """lib/libfetch's ftperr.h and httperr.h, by its Makefile's recipe.
+
+    ftp.c:78 and http.c:95 include them, and both came back "file not
+    found" -- two of the eight translation units libfetch has, and the
+    two that carry every protocol error string the library reports.
+
+    lib/libfetch/Makefile:29 and :40 are the same shell loop twice:
+
+        @echo "static struct fetcherr ftp_errlist[] = {" > ${.TARGET}
+        @cat ${.CURDIR}/ftp.errors | grep -v ^# | sort \
+          | while read NUM CAT STRING; do \
+            echo "    { $${NUM}, FETCH_$${CAT}, \"$${STRING}\" },"; \
+          done >> ${.TARGET}
+        @echo "    { -1, FETCH_UNKNOWN, \"Unknown FTP error\" }" >> ...
+        @echo "};" >> ${.TARGET}
+
+    Run rather than reimplemented, for the reason every other entry in
+    this table gives: a hand-written stub is a different program, and a
+    check of a program the build does not produce is not a check.
+    """
+    d = SRC / "lib" / "libfetch"
+    for proto, unknown in (("ftp", "Unknown FTP error"),
+                           ("http", "Unknown HTTP error")):
+        errs = d / f"{proto}.errors"
+        if not errs.is_file():
+            continue
+        script = f"""
+            echo "static struct fetcherr {proto}_errlist[] = {{"
+            grep -v '^#' "{errs}" | sort | while read NUM CAT STRING; do
+                echo "    {{ ${{NUM}}, FETCH_${{CAT}}, \\"${{STRING}}\\" }},"
+            done
+            echo '    {{ -1, FETCH_UNKNOWN, "{unknown}" }}'
+            echo "}};"
+        """
+        r = subprocess.run(["sh", "-c", script], capture_output=True,
+                           text=True, check=True)
+        (out / f"{proto}err.h").write_text(r.stdout)
+
+
+def _gen_libsysdecode(out: Path, _dir: str = "") -> None:
+    """lib/libsysdecode's tables.h and tables_linux.h, by its own scripts.
+
+    flags.c:82 and linux.c:58 include them; both came back "file not
+    found", and between them they are every flag name truss(1) and
+    kdump(1) can print. lib/libsysdecode/Makefile:135-138:
+
+        tables.h: mktables
+                sh ${.CURDIR}/mktables ${MKTABLES_INCLUDEDIR} ${.TARGET}
+        tables_linux.h: mklinuxtables
+                sh ${.CURDIR}/mklinuxtables ${SRCTOP}/sys ${.TARGET}
+
+    MKTABLES_INCLUDEDIR is an INSTALLED /usr/include -- mktables greps
+    <incdir>/sys/mman.h, <incdir>/netinet/in.h and thirty more by their
+    installed paths, which is not the layout the source tree has. This
+    sweep already builds that layout for every compile it runs:
+    incs_shim() is a directory of symlinks arranged the way the install
+    step arranges them, which is the reason it exists. amd64's is used
+    because these tables are constants of the system call interface and
+    not of any one machine, and mklinuxtables is handed the tree's own
+    sys/ exactly as the Makefile hands it ${SRCTOP}/sys.
+    """
+    d = SRC / "lib" / "libsysdecode"
+    inc = out / "_installed"
+    inc.mkdir()
+    # The INSTALLED layout, which is not one this tree has anywhere.
+    # incs_shim() is close but not it: the compile path reaches
+    # <sys/*.h> through `-I${SRC}/sys' rather than by staging, so the
+    # shim's own sys/ holds three headers and mktables found none of the
+    # thirty it greps -- and wrote every table EMPTY. That file compiles.
+    # It would have turned the ERROR into a clean check of a libsysdecode
+    # that decodes nothing, which is worse than the ERROR: this file's
+    # own table comment says a stub is worse than the error it replaces,
+    # and an empty table IS the stub.
+    for e in Path(incs_shim("amd64")).iterdir():
+        if e.name != "sys":
+            (inc / e.name).symlink_to(e.resolve())
+    (inc / "sys").mkdir()
+    for e in list((Path(incs_shim("amd64")) / "sys").iterdir()) + \
+            list((SRC / "sys" / "sys").glob("*.h")):
+        tgt = inc / "sys" / e.name
+        if not tgt.exists():
+            tgt.symlink_to(e.resolve())
+    for sub in ("netinet", "netinet6", "netgraph", "nfs", "ufs", "vm",
+                "x86", "net", "fs", "dev", "security", "geom", "cam",
+                "opencrypto", "netipsec"):
+        tgt, s = inc / sub, SRC / "sys" / sub
+        if s.is_dir() and not tgt.exists():
+            tgt.symlink_to(s)
+    m = inc / "machine"
+    if not m.exists():
+        m.symlink_to(SRC / "sys" / "amd64" / "include")
+    for script, target, arg in (("mktables", "tables.h", inc),
+                                ("mklinuxtables", "tables_linux.h",
+                                 SRC / "sys")):
+        s = d / script
+        if not s.is_file():
+            continue
+        # In `out', with a BARE target name. mktables:205 writes its
+        # dependency file as ".depend.${output_file}", so an absolute
+        # output path makes that a path through a directory that does
+        # not exist, `mv' fails, `set -e' stops the script, and nothing
+        # is written -- silently, because the caller only sees an empty
+        # shim. The build runs it in .OBJDIR with `${.TARGET}', which is
+        # the bare name; so does this.
+        subprocess.run(["sh", str(s), str(arg), target], cwd=out,
+                       capture_output=True, check=False)
+        for junk in out.glob(".depend.*"):
+            junk.unlink()
+    shutil.rmtree(inc, ignore_errors=True)
+    # An empty table set is the failure above, not a result. Say nothing
+    # rather than say nothing truthfully.
+    for name in ("tables.h", "tables_linux.h"):
+        f = out / name
+        if f.is_file() and "TABLE_ENTRY(" not in f.read_text():
+            f.unlink()
+
+
+def _compile_et(out: Path, et: Path, src: Path) -> Path | None:
+    """compile_et over one .et, returning the .h it writes.
+
+    MIT krb5's compile_et is util/et/compile_et.sh with @AWK@ and @DIR@
+    substituted at configure time -- the whole of its configuration --
+    so it is run rather than reimplemented, the rule the rest of this
+    table follows. It writes <name>.c and <name>.h beside its input.
+    """
+    etdir = src / "crypto" / "krb5" / "src" / "util" / "et"
+    tmpl = etdir / "compile_et.sh"
+    if not (tmpl.is_file() and et.is_file()):
+        return None
+    ce = out / "compile_et.sh"
+    ce.write_text(tmpl.read_text(errors="replace")
+                  .replace("@AWK@", "awk").replace("@DIR@", str(etdir)))
+    ce.chmod(0o755)
+    shutil.copy2(et, out / et.name)
+    r = subprocess.run(["sh", str(ce), "-d", str(etdir),
+                        "--textdomain", "mit-krb5", et.name],
+                       cwd=out, capture_output=True)
+    ce.unlink()
+    (out / et.name).unlink(missing_ok=True)
+    hdr = out / (et.stem + ".h")
+    return hdr if r.returncode == 0 and hdr.is_file() else None
+
+
+def _gen_krb5(out: Path, _dir: str = "") -> None:
+    """krb5's profile.h and krb5.h, which the build makes in an OBJDIR.
+
+    lib/libpam/modules/pam_ksu/Makefile, under `.if ${MK_MITKRB5} !=
+    "no"' -- and MITKRB5 is in __DEFAULT_YES_OPTIONS, so this is the
+    ordinary case -- is
+
+        CFLAGS+= -I${SRCTOP}/krb5/include
+        CFLAGS+= -I${OBJTOP}/krb5/util/profile
+        CFLAGS+= -include ${SRCTOP}/crypto/krb5/src/include/k5-int.h
+
+    and both of those headers are generated into an OBJECT directory
+    this analyser has no path for.  krb5/include has a Makefile and no
+    krb5.h; krb5/util/profile has a Makefile and no profile.h.
+
+        profile.h: profile.hin prof_err.h      (util/profile/Makefile:63)
+                cat ${.ALLSRC} > ${.TARGET}
+
+        krb5.h: krb5.hin ${GENI_ET}            (include/krb5/Makefile:40)
+                echo the include guard, cat ${.ALLSRC}, close it
+
+    GENI_ET is six error tables appended in this order by
+    lib/krb5/error_tables/Makefile.inc: krb5_err, k5e1_err, kdb5_err,
+    kv5m_err, krb524_err, asn1_err.  Concatenation order is the file's
+    content, so it is kept.
+    """
+    prof = SRC / "crypto" / "krb5" / "src" / "util" / "profile"
+    err = _compile_et(out, prof / "prof_err.et", SRC)
+    hin = prof / "profile.hin"
+    if err is not None and hin.is_file():
+        (out / "profile.h").write_text(hin.read_text(errors="replace")
+                                       + err.read_text(errors="replace"))
+
+    inc = SRC / "crypto" / "krb5" / "src" / "include"
+    ets = SRC / "crypto" / "krb5" / "src" / "lib" / "krb5" / "error_tables"
+    khin = inc / "krb5" / "krb5.hin"
+    if not khin.is_file():
+        return
+    parts = [khin.read_text(errors="replace")]
+    for name in ("krb5_err", "k5e1_err", "kdb5_err", "kv5m_err",
+                 "krb524_err", "asn1_err"):
+        h = _compile_et(out, ets / f"{name}.et", SRC)
+        if h is None:
+            return          # a partial krb5.h compiles and means nothing
+        parts.append(h.read_text(errors="replace"))
+    # As <krb5/krb5.h>, which is where it is installed and where the
+    # forwarder looks: crypto/krb5/src/include/krb5.h is eight lines
+    # saying "as of the 1.5 release ... they're all moving to a krb5/
+    # subdirectory" and then `#include <krb5/krb5.h>'. Written at the
+    # top level it was on the include path and still not found.
+    (out / "krb5").mkdir(exist_ok=True)
+    (out / "krb5" / "krb5.h").write_text(
+        "/* This file is generated, please don't edit it directly.  */\n"
+        "#ifndef KRB5_KRB5_H_INCLUDED\n#define KRB5_KRB5_H_INCLUDED\n"
+        + "".join(parts)
+        + "#endif /* KRB5_KRB5_H_INCLUDED */\n")
+
+
 _GENERATED = {
+    "lib/libpam/modules/pam_ksu": _gen_krb5,
+    "lib/libfetch": _gen_libfetch,
+    "lib/libsysdecode": _gen_libsysdecode,
     "bin/sh": _gen_bin_sh,
     "usr.sbin/bsdinstall/partedit": _gen_opt_osname,
     "usr.sbin/bsdinstall/distextract": _gen_opt_osname,
@@ -3497,9 +3739,24 @@ def _rpcsrc_of(text: str, name: str) -> tuple[Path, ...]:
     include/rpcsvc in it. Only a value whose basename matches the header
     being generated is returned, so a Makefile with several is not
     matched to the wrong one.
+
+    RPCSRC is not the only spelling, and the pattern used to insist on
+    it exactly. lib/libypclnt/Makefile has three:
+
+        RPCSRC=      ${SRCTOP}/include/rpcsvc/yp.x
+        RPCSRC_PW=   ${SRCTOP}/include/rpcsvc/yppasswd.x
+        RPCSRC_PRIV= ${SRCTOP}/usr.sbin/rpc.yppasswdd/yppasswd_private.x
+
+    and the third is the only place in the tree that names
+    yppasswd_private.x -- so ypclnt_passwd.c, which the library really
+    does build, came back "'yppasswd_private.h' file not found" while
+    the two headers reached through the plain name were generated
+    fine. Any RPCSRC<suffix> counts now; the basename test below is
+    what keeps a Makefile with several from being matched to the wrong
+    one, and it was already doing that job.
     """
     found = []
-    for m in re.finditer(r"^RPCSRC\s*\??=\s*(\S+)", text, re.M):
+    for m in re.finditer(r"^RPCSRC\w*\s*\??=\s*(\S+)", text, re.M):
         v = m.group(1)
         v = re.sub(r"\$\{SYSROOT:U\$\{DESTDIR\}\}/usr/include/", "include/", v)
         v = v.replace("${SRCTOP}/", "").replace("${.CURDIR}/", "")

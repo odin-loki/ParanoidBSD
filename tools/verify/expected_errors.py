@@ -105,6 +105,56 @@ EXPECTED = {
     # in this inventory: EXPECTED is the list of translation units that
     # FAIL, and the --check-errors gate calls an entry that compiles
     # stale.
+    "lib/libpam/modules/pam_krb5/pam_krb5.c":
+        "the HEIMDAL half of a Makefile with two. "
+        "lib/libpam/modules/pam_krb5/Makefile:28 is `.if ${MK_MITKRB5} != "
+        "\"no\"', and MITKRB5 is in __DEFAULT_YES_OPTIONS "
+        "(share/mk/src.opts.mk:150), so the branch taken is the one whose "
+        "SRCS is twenty files from contrib/pam-krb5 -- account.c, "
+        "alt-auth.c, args.c and the rest. pam_krb5.c is named only in the "
+        "`.else', and it calls krb5_xfree(), which is Heimdal's and which "
+        "MIT krb5 does not declare. NOT_NAMED",
+    "lib/libgssapi/gss_krb5.c":
+        "not in SRCS, and it could not compile if it were: gss_krb5.c:81 "
+        "reads m->gm_krb5_compat_des3_mic, and that member exists nowhere "
+        "in the tree -- mech_switch.h's struct _gss_mech_switch does not "
+        "declare it and no other file mentions the name. Code left behind "
+        "by the removal of the member it uses. NOT_NAMED",
+    "lib/virtual_oss/sndio/sndio.c":  "NEEDS_LOCALBASE",
+    "lib/libypclnt/ypclnt_get.c":
+        "not in SRCS. lib/libypclnt/Makefile:4-11 lists ypclnt_connect.c, "
+        "ypclnt_error.c, ypclnt_free.c, ypclnt_new.c, ypclnt_passwd.c and "
+        "${GENSRCS}, and names ypclnt_get.c nowhere -- though ypclnt.h "
+        "declares ypclnt_get(). It could not compile if it were asked to: "
+        "its only #include is \"ypclnt.h\", which pulls in no <stddef.h>, "
+        "so NULL and strlen are both undeclared in a 22-line file. A "
+        "source that has never been built. NOT_NAMED",
+    "lib/libmd/mdXhl.c":
+        "a template, not a translation unit. lib/libmd/Makefile turns it "
+        "into md4hl.c, md5hl.c, sha0hl.c, sha1hl.c, ... with a sed that "
+        "rewrites mdX to each algorithm's name, and #include \"mdX.h\" at "
+        "line 21 becomes #include \"md5.h\" in the file that is actually "
+        "compiled. mdX.h does not exist and is not meant to. NOT_NAMED",
+    "lib/csu/i386/reloc.c":
+        "the OLD copy of libc's start-up relocation handler, left behind "
+        "when it moved. lib/libc/csu/libc_start1.c:51 and :65 are "
+        "`#include \"reloc.c\"' and lib/libc/csu/Makefile.inc:9 is "
+        "`CFLAGS+= -I${LIBC_SRCTOP}/csu/${LIBC_ARCH}', so the file that "
+        "include resolves to is lib/libc/csu/i386/reloc.c -- never this "
+        "one. The two differ: the live copy defines ifunc_init() and "
+        "keeps cpu_feature at file scope, this one still defines "
+        "crt1_handle_rel() with them as locals. Only i386 and powerpc64 "
+        "were left behind; amd64, aarch64, arm and riscv have no "
+        "lib/csu/<arch>/reloc.c at all, which is what a half-finished "
+        "move looks like. Nothing in lib/csu includes it either -- every "
+        "lib/csu/<arch>/Makefile is `.PATH: ${.CURDIR:H}/common'. "
+        "NOT_NAMED",
+    "lib/csu/powerpc64/reloc.c":
+        "the other half of that move. Same evidence: the live copy is "
+        "lib/libc/csu/powerpc64/reloc.c, which defines ifunc_init(const "
+        "Elf_Auxinfo *); this one still defines init_cpu_features(char "
+        "**env) and walks the stack for the auxiliary vector itself. "
+        "NOT_NAMED",
     "lib/libthr/thread/thr_autoinit.c":
         "dead source, folded into thr_init.c and never removed. "
         "thr_init.c:285-291 carries the same comment and the same "

@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,858 | 9,056 |
+| 1 | `lib` | 2,827 | 639,885 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,216** | **114,207** |
+| | **total** | **41,143** | **21,301,243** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -7380,7 +7380,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.177.6.24 `fetchPutFTP()` · `TODO-FN`
   - [ ] 1.177.6.25 `fetchStatFTP()` · `TODO-FN`
   - [ ] 1.177.6.26 `fetchListFTP()` · `TODO-FN`
-- [ ] **1.177.7** `http.c` · 2,149L · `TODO-PORT` · 45 fn
+- [ ] **1.177.7** `http.c` · 2,165L · `TODO-PORT` · 45 fn
   - [ ] 1.177.7.1 `http_new_chunk()` · `TODO-FN`
   - [ ] 1.177.7.2 `http_growbuf()` · `TODO-FN`
   - [ ] 1.177.7.3 `http_fillbuf()` · `TODO-FN`
@@ -9487,7 +9487,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.246 `lib/libpam/modules/pam_ksu`
 
-- [ ] **1.246.1** `pam_ksu.c` · 308L gen:1 · `TODO-PORT` · 5 fn
+- [ ] **1.246.1** `pam_ksu.c` · 319L gen:1 · `TODO-PORT` · 5 fn
   - [ ] 1.246.1.1 `krb5_make_principal()` · `TODO-FN`
   - [ ] 1.246.1.2 `pam_sm_authenticate()` · `TODO-FN`
   - [ ] 1.246.1.3 `pam_sm_setcred()` · `TODO-FN`

@@ -540,8 +540,20 @@ http_next_header(conn_t *conn, http_headerbuf_t *hbuf, const char **p)
 
 	/* Copy the line to the headerbuf */
 	if (hbuf->bufsize < conn->buflen + 1) {
-		if ((hbuf->buf = realloc(hbuf->buf, conn->buflen + 1)) == NULL)
+		char *nbuf;
+
+		/*
+		 * Through a temporary: realloc() returning NULL leaves
+		 * the old block allocated, and assigning that NULL to
+		 * hbuf->buf is the only pointer to it gone -- while
+		 * hbuf->bufsize goes on describing a buffer that is no
+		 * longer reachable.  clean_http_headerbuf() then frees
+		 * NULL and the block is leaked for the life of the
+		 * process.
+		 */
+		if ((nbuf = realloc(hbuf->buf, conn->buflen + 1)) == NULL)
 			return (hdr_syserror);
+		hbuf->buf = nbuf;
 		hbuf->bufsize = conn->buflen + 1;
 	}
 	strcpy(hbuf->buf, conn->buf);
@@ -568,9 +580,13 @@ http_next_header(conn_t *conn, http_headerbuf_t *hbuf, const char **p)
 		/* Got a continuation line. Concatenate to previous */
 		len = hbuf->buflen + conn->buflen;
 		if (hbuf->bufsize < len + 1) {
+			char *nbuf;
+
 			len *= 2;
-			if ((hbuf->buf = realloc(hbuf->buf, len + 1)) == NULL)
+			/* Same reason as above. */
+			if ((nbuf = realloc(hbuf->buf, len + 1)) == NULL)
 				return (hdr_syserror);
+			hbuf->buf = nbuf;
 			hbuf->bufsize = len + 1;
 		}
 		strcpy(hbuf->buf + hbuf->buflen, conn->buf);
