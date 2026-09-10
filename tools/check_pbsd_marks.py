@@ -5231,6 +5231,60 @@ FIXES = {
         "subnormal inputs give bit-identical results either way.",
     ),
 
+    "hbsd/src/sys/dev/speaker/spkr.c": [
+        (
+            "if (pitch < 0 || pitch > (int)nitems(pitchtab))",
+            None,
+            "playstring()'s `N' case was the one GETNUM of six with no "
+            "range check after it. playtone() subtracts one and indexes "
+            "pitchtab[] with the result, so a play string of `N500' read "
+            "past the end of the table and handed what it found to "
+            "tone() as a frequency. Five of the six cases already do "
+            "exactly this check against their own bound; this is the "
+            "sixth.",
+        ),
+        (
+            "#define GETNUM_MAX\t1000000",
+            "{v = v * 10 + (*++cp - '0'); slen--;}",
+            "The GETNUM accumulator saturates. A play string carries as "
+            "many digits as it likes and `v = v * 10 + digit' overflows "
+            "an int at ten of them, undefined before any of the six "
+            "range checks gets to look at the result. GETNUM_MAX is "
+            "past every bound any caller applies, so every string that "
+            "parsed to something meaningful still parses to the same "
+            "thing.",
+        ),
+        (
+            "if (sustain > MAX_SUSTAIN)",
+            None,
+            "playtone()'s dot count came straight from the play string. "
+            "At twenty dots snum overflows and at thirty-one sdenom "
+            "wraps to zero -- and the `sdenom == 0' test three lines "
+            "below is that wrap already noticed and answered at the "
+            "symptom rather than the cause. CBMC: the `sustain - 1' "
+            "property is gone.",
+        ),
+    ],
+
+
+    "hbsd/src/sys/geom/geom_flashmap.c": (
+        "if (type >= nitems(g_flashmap_slicers))",
+        # No `unwanted': the fix is an INSERTION, so every line the
+        # unfixed version had is still there. The first draft used
+        # "g_topology_lock(); if (g_flashmap_slicers[type].slicer" and
+        # it matched the FIXED file too -- an over-broad unwanted
+        # marker reports the bug as back on a tree that has the fix.
+        None,
+        "flash_register_slicer()'s type indexes g_flashmap_slicers[] "
+        "and nothing checked it. It is an exported interface -- "
+        "slicer.h declares it for any driver, in tree or out -- and "
+        "what it writes at the index is a FUNCTION POINTER the taste "
+        "path later calls. Every in-tree caller passes a "
+        "FLASH_SLICES_TYPE_* constant, so the bound changes nothing "
+        "that works today. CBMC: FAILED -> PROVED.",
+    ),
+
+
     "hbsd/src/usr.sbin/rtadvd/timer.c": (
         "tm_limit.tv_sec = (time_t)(~(uintmax_t)0 &",
         "tm_limit.tv_sec = (-1) & ~((time_t)1 <<",

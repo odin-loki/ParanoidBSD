@@ -21405,3 +21405,108 @@ warning`'s `warned * 60`, where `warned` counts one per sixty seconds
 and needs sixty-eight years to overflow, and `blist_create(daddr_t
 blocks)`'s `blocks - 1` at `LONG_MIN`, where `blocks` is a swap device's
 size.
+
+## The fs and dev shards, and the note number nobody bounded
+
+`sys/fs`, `sys/ufs`, `sys/geom`, `sys/cam`, `sys/security`, `sys/cddl`:
+
+```
+161 of 311 translation units modelled, 150 TU-ERROR
+BOUNDED 8  ERROR 1  FAILED 25  PROVED 87  TIMEOUT 1
+```
+
+`sys/dev`:
+
+```
+1,247 of 2,509 translation units modelled, 1,262 TU-ERROR
+BOUNDED 12  ERROR 57  FAILED 220  PROVED 194  TIMEOUT 122
+```
+
+Accounted for:
+
+| family | fs | dev |
+|---|---|---|
+| an unseen callee or an unconstrained global | 5 | 166 |
+| arithmetic on an unconstrained parameter or global | 1 | 42 |
+| CBMC's entry-point leak check | 17 | 8 |
+| an array bound | 2 | 3 |
+| division by zero | — | 1 |
+| **other** | **0** | **0** |
+
+### geom_flashmap: an exported interface with no bound at all
+
+```c
+void flash_register_slicer(flash_slicer_t slicer, u_int type, bool force)
+{
+	g_topology_lock();
+	if (g_flashmap_slicers[type].slicer == NULL || force == TRUE)
+		g_flashmap_slicers[type].slicer = slicer;
+```
+
+Nothing checked `type`.  `slicer.h` declares this function for any
+driver, in tree or out, and what it writes at the index is a **function
+pointer** the taste path later calls.  Every in-tree caller passes a
+`FLASH_SLICES_TYPE_*` constant — so the bound changes nothing that works
+today, and it is the bound the declaration implies and the definition
+did not have.  `FAILED` → `PROVED`.
+
+### spkr(4): five GETNUMs range-check their result and the sixth does not
+
+`playstring()` parses a play string with
+
+```c
+#define GETNUM(cp, v)	for(v=0; isdigit(cp[1]) && slen > 0; ) \
+				{v = v * 10 + (*++cp - '0'); slen--;}
+```
+
+and uses it six times.  Five are followed immediately by a range check
+in the author's own idiom:
+
+```c
+	GETNUM(cp, timeval);  if (timeval <= 0 || timeval > MIN_VALUE) …
+	GETNUM(cp, octave);   if (octave >= nitems(pitchtab) / OCTAVE_NOTES) …
+	GETNUM(cp, value);    if (value <= 0 || value > MIN_VALUE) …
+	GETNUM(cp, tempo);    if (tempo < MIN_TEMPO || tempo > MAX_TEMPO) …
+```
+
+The sixth is `N`:
+
+```c
+	case 'N':
+		GETNUM(cp, pitch);
+		…
+		playtone(pitch - 1, value, sustain);
+```
+
+and `playtone()` does `tone(pitchtab[pitch], sound)`.  **`N500` reads
+past the end of `pitchtab[]` and hands what it finds to `tone()` as a
+frequency.**  The check the other five have is added.
+
+Two more in the same file, both the same shape — a value the play string
+supplies without limit:
+
+* **The accumulator itself.**  `v = v * 10 + digit` overflows an `int`
+  at ten digits, which is undefined *before* any of the six range checks
+  gets to look at the result.  It saturates at `GETNUM_MAX`, which is
+  past every bound any of the six applies, so every string that parsed
+  to something meaningful still parses to the same thing — verified over
+  the range, `N99999999999999999999` included, with UBSan clean.
+* **The dot count.**  `playtone()` multiplies `snum` by 3 and `sdenom`
+  by 2 once per `.`; at twenty dots `snum` overflows and at thirty-one
+  `sdenom` wraps to zero.  The function already contains
+
+  ```c
+	if (value == 0 || sdenom == 0)
+		return;
+  ```
+
+  which is that wrap noticed and answered at the symptom rather than at
+  the cause.  Clamped at the last count for which the multipliers stay
+  exact.
+
+CBMC's verdict on `playtone` does not move, and that is worth stating:
+the `sustain - 1` property is gone, but the rest are on `value` and
+`pitch` as unconstrained parameters, and the fix for the note number
+lives in `playstring()` — a `char *` function, `POINTER` class, which
+the unguarded tier never checks.  The finding put a line number in front
+of a person; the defect was one call up.

@@ -147,6 +147,12 @@ static bool octprefix;	/* override current octave-tracking state? */
 #define MAX_TEMPO	255	/* max tempo */
 #define NUM_MULT	3	/* numerator of dot multiplier */
 #define DENOM_MULT	2	/* denominator of dot multiplier */
+/*
+ * The last dot count for which the multipliers below stay exact:
+ * NUM_MULT^19 is 1,162,261,467 and NUM_MULT^20 does not fit an int.
+ * A play string carries as many dots as it likes.
+ */
+#define MAX_SUSTAIN	19
 
 /* letter to half-tone:  A   B  C  D  E  F  G */
 static int notetab[8] = {9, 11, 0, 2, 4, 5, 7};
@@ -188,8 +194,19 @@ playtone(int pitch, int value, int sustain)
 {
 	int sound, silence, snum = 1, sdenom = 1;
 
-	/* this weirdness avoids floating-point arithmetic */
-	for (; sustain; sustain--) {
+	/*
+	 * this weirdness avoids floating-point arithmetic -- and the dot
+	 * count is whatever the play string wrote, so it needs a bound.
+	 * At twenty dots snum overflows and at thirty-one sdenom wraps to
+	 * zero; the `sdenom == 0' test three lines below is the wrap
+	 * already noticed and answered at the symptom rather than the
+	 * cause.  Past MAX_SUSTAIN the ratio has stopped meaning
+	 * anything, so clamping there changes no note that was ever
+	 * played correctly.
+	 */
+	if (sustain > MAX_SUSTAIN)
+		sustain = MAX_SUSTAIN;
+	for (; sustain > 0; sustain--) {
 		/* See the BUGS section in the man page for discussion */
 		snum *= NUM_MULT;
 		sdenom *= DENOM_MULT;
@@ -224,8 +241,21 @@ playstring(char *cp, size_t slen)
 {
 	int pitch, oldfill, lastpitch = OCTAVE_NOTES * DFLT_OCTAVE;
 
+/*
+ * The accumulator saturates.  A play string carries as many digits as
+ * it likes and `v = v * 10 + digit' overflows an int at ten of them,
+ * which is undefined before any of the range checks below get to look
+ * at the result.  GETNUM_MAX is past every bound any caller applies
+ * -- MIN_VALUE, MAX_TEMPO, nitems(pitchtab) -- so every string that
+ * parsed to something meaningful still parses to the same thing.
+ */
+#define GETNUM_MAX	1000000
 #define GETNUM(cp, v)	for(v=0; isdigit(cp[1]) && slen > 0; ) \
-				{v = v * 10 + (*++cp - '0'); slen--;}
+				{if (v <= GETNUM_MAX) \
+					v = v * 10 + (*++cp - '0'); \
+				 else \
+					++cp; \
+				 slen--;}
 	for (; slen--; cp++) {
 		int sustain, timeval, tempo;
 		char c = toupper(*cp);
@@ -329,6 +359,17 @@ playstring(char *cp, size_t slen)
 			break;
 		case 'N':
 			GETNUM(cp, pitch);
+			/*
+			 * The range check every other GETNUM in this
+			 * switch has and this one did not.  playtone()
+			 * subtracts one and indexes pitchtab[] with the
+			 * result, so `N500' read past the end of the
+			 * table and handed what it found to tone() as a
+			 * frequency.  pitch 0 is the rest playtone()
+			 * already understands as -1.
+			 */
+			if (pitch < 0 || pitch > (int)nitems(pitchtab))
+				break;
 			for (sustain = 0; cp[1] == '.'; cp++) {
 				slen--;
 				sustain++;

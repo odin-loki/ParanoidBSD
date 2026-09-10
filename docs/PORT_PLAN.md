@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,493 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,789 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,526 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,579 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,153** | **114,207** |
+| | **total** | **41,143** | **21,301,206** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -101678,7 +101678,7 @@ function; a file with two hundred of them is a project.
 ### 8.1017 `sys/dev/speaker`
 
 - [ ] **8.1017.1** `speaker.h` · 28L · `TODO-HDR`
-- [ ] **8.1017.2** `spkr.c` · 522L gen:1 · `TODO-GEN` · 10 fn
+- [ ] **8.1017.2** `spkr.c` · 563L gen:1 · `TODO-GEN` · 10 fn
   - [ ] 8.1017.2.1 `tone()` · `TODO-FN`
   - [ ] 8.1017.2.2 `rest()` · `TODO-FN`
   - [ ] 8.1017.2.3 `playinit()` · `TODO-FN`
@@ -111856,7 +111856,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1158.11.16 `g_do_wither()` · `TODO-FN`
   - [ ] 8.1158.11.17 `g_waitfor_event()` · `TODO-FN`
   - [ ] 8.1158.11.18 `g_event_init()` · `TODO-FN`
-- [ ] **8.1158.12** `geom_flashmap.c` · 226L gen:5 · `TODO-PORT` · 5 fn
+- [ ] **8.1158.12** `geom_flashmap.c` · 238L gen:5 · `TODO-PORT` · 5 fn
   - [ ] 8.1158.12.1 `g_flashmap_print()` · `TODO-FN`
   - [ ] 8.1158.12.2 `g_flashmap_modify()` · `TODO-FN`
   - [ ] 8.1158.12.3 `g_flashmap_taste()` · `TODO-FN`

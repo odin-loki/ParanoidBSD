@@ -209,6 +209,18 @@ g_flashmap_load(device_t dev, struct g_provider *pp, flash_slicer_t slicer,
 void flash_register_slicer(flash_slicer_t slicer, u_int type, bool force)
 {
 
+	/*
+	 * type indexes g_flashmap_slicers[] and nothing checked it.  This
+	 * is an exported interface -- slicer.h declares it for any
+	 * driver, in tree or out -- and what it writes at the index is a
+	 * FUNCTION POINTER the taste path later calls.  Every in-tree
+	 * caller passes a FLASH_SLICES_TYPE_* constant, so this changes
+	 * nothing that works today; it is the bound the declaration
+	 * implies and the definition did not have.
+	 */
+	if (type >= nitems(g_flashmap_slicers))
+		return;
+
 	g_topology_lock();
 	if (g_flashmap_slicers[type].slicer == NULL || force == TRUE)
 		g_flashmap_slicers[type].slicer = slicer;
