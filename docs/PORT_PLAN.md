@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,578 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,602 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,248** | **114,204** |
+| | **total** | **41,143** | **21,299,272** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -99253,7 +99253,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.998.62.12 `siena_nvram_partn_rw_start()` · `TODO-FN`
   - [ ] 8.998.62.13 `siena_nvram_partn_rw_finish()` · `TODO-FN`
   - [ ] 8.998.62.14 `siena_nvram_partn_set_version()` · `TODO-FN`
-- [ ] **8.998.63** `siena_phy.c` · 805L · `TODO-PORT` · 14 fn
+- [ ] **8.998.63** `siena_phy.c` · 815L · `TODO-PORT` · 14 fn
   - [ ] 8.998.63.1 `siena_phy_decode_cap()` · `TODO-FN`
   - [ ] 8.998.63.2 `siena_phy_decode_link_mode()` · `TODO-FN`
   - [ ] 8.998.63.3 `siena_phy_link_ev()` · `TODO-FN`
@@ -99443,7 +99443,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1002 `sys/dev/sk`
 
-- [ ] **8.1002.1** `if_sk.c` · 3,717L gen:7 · `TODO-PORT` · 72 fn
+- [ ] **8.1002.1** `if_sk.c` · 3,731L gen:7 · `TODO-PORT` · 72 fn
   - [ ] 8.1002.1.1 `sk_win_read_4()` · `TODO-FN`
   - [ ] 8.1002.1.2 `sk_win_read_2()` · `TODO-FN`
   - [ ] 8.1002.1.3 `sk_win_read_1()` · `TODO-FN`

@@ -15489,3 +15489,55 @@ One more, read and left alone: `scgetc()` in `syscons.c` does
 `f` was written. It is a keyboard LED state and the fix is a behaviour
 decision — what a scroll-lock key should do when the keyboard driver
 will not say — so it is on the record rather than changed.
+
+### Two macros and one interrupt handler, twelve findings
+
+The dev shard's `core.NullDereference` is 189 findings across 111 files
+once `mpr_config.c`/`mps_config.c` are out of it — a long tail with a few
+clusters. Two of the clusters are one defect each.
+
+`SIENA_SIMPLE_STAT_SET` in `siena_phy.c` guards its memory read with
+
+```c
+	if ((_stat) != NULL && !EFSYS_MEM_IS_NULL(_esmp)) {
+```
+
+and `EFSYS_MEM_IS_NULL(_esmp)` is `((_esmp)->esm_base == NULL)` — it
+dereferences the pointer it is asked about. Twenty lines below the macro,
+in the same function, the hand-written version of the same check reads
+`stat != NULL && esmp != NULL && !EFSYS_MEM_IS_NULL(esmp)`. The macro now
+does too. Six findings, one token.
+
+`sk_intr()` opens by testing whether each of the card's two ports is
+present:
+
+```c
+	sc_if0 = sc->sk_if[SK_PORT_A];
+	sc_if1 = sc->sk_if[SK_PORT_B];
+
+	if (sc_if0 != NULL)
+		ifp0 = sc_if0->sk_ifp;
+	if (sc_if1 != NULL)
+		ifp1 = sc_if1->sk_ifp;
+```
+
+— and then six of its per-port arms use those pointers without the test.
+`SK_ISR_RX1_EOF` calls `if_getmtu(ifp0)`; `SK_ISR_TX1_S_EOF` calls
+`sk_txeof(sc_if0)`, whose first statement is `ifp = sc_if->sk_ifp`;
+`SK_ISR_MAC1` calls `if_getdrvflags(ifp0)` and then `sk_intr_xmac(sc_if0)`,
+whose first statement is `sc = sc_if->sk_softc`. The `SK_ISR_EXTERNAL_REG`
+block eight lines further down, and the two `if_sendq_empty()` calls at
+the end of the same function, do make the test. A one-port card — or one
+whose second port failed to attach — takes an interrupt whose status word
+has a bit for the absent port, and the handler dereferences NULL. Six
+findings, six added conjuncts, written the way the three that were
+already right are written.
+
+```
+              before   after     (sys/dev/sfxge, sys/dev/sk)
+OK                52      52
+findings          12       1
+```
+
+The one left in `if_sk.c` is `sk_txcksum()`'s `thirtytwo` array access,
+an unconstrained parameter of a static function.

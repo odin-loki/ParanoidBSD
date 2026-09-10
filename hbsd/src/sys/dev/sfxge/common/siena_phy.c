@@ -444,7 +444,17 @@ siena_phy_oui_get(
 			    _mc_record, _efx_record)			\
 	if ((_vmask) & (1ULL << (_mc_record))) {			\
 		(_smask) |= (1ULL << (_efx_record));			\
-		if ((_stat) != NULL && !EFSYS_MEM_IS_NULL(_esmp)) {	\
+		/*							\
+		 * PBSD: `(_esmp) != NULL' as well.			\
+		 * EFSYS_MEM_IS_NULL() is ((_esmp)->esm_base == NULL),	\
+		 * so it dereferences the pointer it is asked about --	\
+		 * and the hand-written check twenty lines below this	\
+		 * macro, in the same function, tests all three:		\
+		 * `stat != NULL && esmp != NULL &&			\
+		 * !EFSYS_MEM_IS_NULL(esmp)'.				\
+		 */							\
+		if ((_stat) != NULL && (_esmp) != NULL &&		\
+		    !EFSYS_MEM_IS_NULL(_esmp)) {			\
 			efx_dword_t dword;				\
 			EFSYS_MEM_READD(_esmp, (_mc_record) * 4, &dword);\
 			(_stat)[_efx_record] =				\

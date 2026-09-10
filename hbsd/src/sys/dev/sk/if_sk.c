@@ -2989,9 +2989,23 @@ sk_intr(void *xsc)
 	if (sc_if1 != NULL)
 		ifp1 = sc_if1->sk_ifp;
 
+	/*
+	 * PBSD: `ifp0 != NULL' / `ifp1 != NULL' on the six per-port arms
+	 * below.
+	 *
+	 * A port is absent -- one-port card, or the second attach failed --
+	 * whenever sc->sk_if[] holds NULL, which is exactly what the two
+	 * tests above this loop are for.  The SK_ISR_EXTERNAL_REG block and
+	 * the two if_sendq_empty() calls at the end of this function make
+	 * the same test; these six did not, and each of them either calls
+	 * if_get*(NULL) or hands the NULL sk_if_softc to a helper whose
+	 * first statement is `sc = sc_if->sk_softc'.  The status word comes
+	 * from the chip, so a stray bit for a port that is not there is all
+	 * it takes.
+	 */
 	for (; (status &= sc->sk_intrmask) != 0;) {
 		/* Handle receive interrupts first. */
-		if (status & SK_ISR_RX1_EOF) {
+		if (status & SK_ISR_RX1_EOF && ifp0 != NULL) {
 			if (if_getmtu(ifp0) > SK_MAX_FRAMELEN)
 				sk_jumbo_rxeof(sc_if0);
 			else
@@ -2999,7 +3013,7 @@ sk_intr(void *xsc)
 			CSR_WRITE_4(sc, SK_BMU_RX_CSR0,
 			    SK_RXBMU_CLR_IRQ_EOF|SK_RXBMU_RX_START);
 		}
-		if (status & SK_ISR_RX2_EOF) {
+		if (status & SK_ISR_RX2_EOF && ifp1 != NULL) {
 			if (if_getflags(ifp1) > SK_MAX_FRAMELEN)
 				sk_jumbo_rxeof(sc_if1);
 			else
@@ -3009,17 +3023,17 @@ sk_intr(void *xsc)
 		}
 
 		/* Then transmit interrupts. */
-		if (status & SK_ISR_TX1_S_EOF) {
+		if (status & SK_ISR_TX1_S_EOF && ifp0 != NULL) {
 			sk_txeof(sc_if0);
 			CSR_WRITE_4(sc, SK_BMU_TXS_CSR0, SK_TXBMU_CLR_IRQ_EOF);
 		}
-		if (status & SK_ISR_TX2_S_EOF) {
+		if (status & SK_ISR_TX2_S_EOF && ifp1 != NULL) {
 			sk_txeof(sc_if1);
 			CSR_WRITE_4(sc, SK_BMU_TXS_CSR1, SK_TXBMU_CLR_IRQ_EOF);
 		}
 
 		/* Then MAC interrupts. */
-		if (status & SK_ISR_MAC1 &&
+		if (status & SK_ISR_MAC1 && ifp0 != NULL &&
 		    if_getdrvflags(ifp0) & IFF_DRV_RUNNING) {
 			if (sc->sk_type == SK_GENESIS)
 				sk_intr_xmac(sc_if0);
@@ -3027,7 +3041,7 @@ sk_intr(void *xsc)
 				sk_intr_yukon(sc_if0);
 		}
 
-		if (status & SK_ISR_MAC2 &&
+		if (status & SK_ISR_MAC2 && ifp1 != NULL &&
 		    if_getdrvflags(ifp1) & IFF_DRV_RUNNING) {
 			if (sc->sk_type == SK_GENESIS)
 				sk_intr_xmac(sc_if1);

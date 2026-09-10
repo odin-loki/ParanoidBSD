@@ -3636,6 +3636,23 @@ FIXES = {
             "and that was the divisor",
         ),
     ],
+
+    "hbsd/src/sys/dev/sfxge/common/siena_phy.c": (
+        "\t\tif ((_stat) != NULL && (_esmp) != NULL &&\t\t\\",
+        "\t\tif ((_stat) != NULL && !EFSYS_MEM_IS_NULL(_esmp)) {\t\\",
+        "SIENA_SIMPLE_STAT_SET: EFSYS_MEM_IS_NULL() is "
+        "((_esmp)->esm_base == NULL), so it dereferences the pointer it "
+        "is asked about -- and the hand-written check in the same "
+        "function tests esmp != NULL as well",
+    ),
+    "hbsd/src/sys/dev/sk/if_sk.c": (
+        ("&& ifp0 != NULL", 3),
+        "\t\tif (status & SK_ISR_RX1_EOF) {",
+        "sk_intr: six per-port arms took sk_if[] without the NULL test "
+        "the top of the same function makes, and that the "
+        "SK_ISR_EXTERNAL_REG block and the two if_sendq_empty() calls "
+        "at the end also make",
+    ),
 }
 
 
