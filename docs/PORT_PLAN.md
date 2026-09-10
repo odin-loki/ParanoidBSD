@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,544 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,376 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,544 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,557 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,563** | **114,207** |
+| | **total** | **41,143** | **21,300,576** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -34358,7 +34358,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.62.12 `CheckLabel()` · `TODO-FN`
   - [ ] 6.179.62.13 `main()` · `TODO-FN`
   - [ ] 6.179.62.14 `DoLoop()` · `TODO-FN`
-- [ ] **6.179.63** `main.h` · 33L · `TODO-HDR`
+- [ ] **6.179.63** `main.h` · 39L · `TODO-HDR`
 - [ ] **6.179.64** `mbuf.c` · 441L · `TODO-PORT` · 16 fn
   - [ ] 6.179.64.1 `m_length()` · `TODO-FN`
   - [ ] 6.179.64.2 `mbuftype()` · `TODO-FN`
@@ -35098,7 +35098,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.194 `usr.sbin/route6d` · 1 module(s) under `pbsd/usr.sbin/route6d`
 
-- [ ] **6.194.1** `route6d.c` · 3,581L · `TODO-PORT` · 52 fn
+- [ ] **6.194.1** `route6d.c` · 3,588L · `TODO-PORT` · 52 fn
   - [ ] 6.194.1.1 `main()` · `TODO-FN`
   - [ ] 6.194.1.2 `sighandler()` · `TODO-FN`
   - [ ] 6.194.1.3 `rtdexit()` · `TODO-FN`

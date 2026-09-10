@@ -225,7 +225,14 @@ static void ifdump0(FILE *, const struct ifc *);
 static void ifremove(int);
 static void rtdump(int);
 static void rt_entry(struct rt_msghdr *, int);
-static void rtdexit(void);
+/*
+ * PBSD: rtdexit() ends in exit(1) and fatal() ends in rtdexit(), so
+ * every NOTREACHED comment after a fatal() call in this file is telling
+ * the truth -- but neither declaration said so, and the analyser
+ * therefore read on past all seven of them into the malloc, realloc,
+ * sysctl and localtime results they were reporting.
+ */
+static void rtdexit(void) __attribute__((__noreturn__));
 static void riprequest(struct ifc *, struct netinfo6 *, int,
 	struct sockaddr_in6 *);
 static void ripflush(struct ifc *, struct sockaddr_in6 *, int, struct netinfo6 *np);
@@ -251,7 +258,7 @@ static int ripinterval(int);
 static time_t ripsuptrig(void);
 #endif
 static void fatal(const char *, ...)
-	__attribute__((__format__(__printf__, 1, 2)));
+	__attribute__((__format__(__printf__, 1, 2), __noreturn__));
 static void trace(int, const char *, ...)
 	__attribute__((__format__(__printf__, 2, 3)));
 static void tracet(int, const char *, ...)

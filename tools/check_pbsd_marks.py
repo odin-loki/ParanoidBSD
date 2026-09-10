@@ -4141,6 +4141,32 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/route6d/route6d.c": [
+        (
+            "static void rtdexit(void) __attribute__((__noreturn__));",
+            "static void rtdexit(void);",
+            "rtdexit() ends in exit(1) and fatal() ends in rtdexit(), so "
+            "every NOTREACHED after a fatal() call in this file is true -- "
+            "but neither declaration said so, and the analyser read on "
+            "past all seven into the malloc, realloc, sysctl and localtime "
+            "results they were reporting",
+        ),
+        (
+            "__attribute__((__format__(__printf__, 1, 2), __noreturn__));",
+            "\t__attribute__((__format__(__printf__, 1, 2)));\nstatic void trace",
+            "fatal()'s own declaration, the other half of the same",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/ppp/main.h": (
+        "extern void AbortProgram(int) __attribute__((__noreturn__));",
+        "extern void AbortProgram(int);",
+        "AbortProgram() ends in exit() and every caller treats it that "
+        "way -- the allocation failures in physical2iov(), "
+        "udp_iov2device() and their kin call it and then use the pointer "
+        "that was NULL",
+    ),
+
     "hbsd/src/usr.sbin/bhyve/pci_ahci.c": (
         "\tif (done >= len) {",
         "/* All remaining ranges were empty. */\n\tif (done == len) {",

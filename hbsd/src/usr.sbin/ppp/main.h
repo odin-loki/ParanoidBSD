@@ -29,4 +29,10 @@
  */
 
 extern void Cleanup(void);
-extern void AbortProgram(int);
+/*
+ * PBSD: AbortProgram() ends in exit(), and every caller treats it that
+ * way -- the allocation failures in physical2iov(), udp_iov2device()
+ * and their kin call it and then use the pointer that was NULL.  Saying
+ * so lets the compiler and the analyser agree with the callers.
+ */
+extern void AbortProgram(int) __attribute__((__noreturn__));

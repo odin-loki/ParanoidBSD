@@ -18503,3 +18503,63 @@ translation unit, an unconstrained parameter of a function analysed as
 its own entry point, one predicate tested twice across an intervening
 call, a loop the analyser will not unroll, and a macro that assigns
 through its argument.
+
+## Two declarations, twenty-one findings
+
+`route6d` and `ppp` each have a helper that ends in `exit()` and a
+declaration that does not say so.
+
+`route6d`'s is `fatal()`, which ends in `rtdexit()`, which ends in
+`exit(1)`.  Its seven findings are all the same sentence:
+
+```c
+	iffp = malloc(sizeof(*iffp));
+	if (iffp == NULL) {
+		fatal("malloc of iff");
+		/*NOTREACHED*/
+	}
+	memcpy(iffp, &iff, sizeof(*iffp));
+```
+
+The comment is correct and the analyser could not know it, so it read on
+into the `memcpy` — and into the `realloc` in `setindex2ifc()`, the
+`malloc` in `allocopy()`, the `sysctl` buffer in `getifmtu()`, and the
+`localtime()` return in `hms()`.
+
+`ppp`'s is `AbortProgram()`, declared `extern void AbortProgram(int);` in
+`main.h` and ending in `exit(excode)`.  Its callers are written on the
+assumption:
+
+```c
+	if ((iov[*niov].iov_base = malloc(sz)) == NULL) {
+		log_Printf(LogALERT, "physical2iov: Out of memory (%d bytes)\n", sz);
+		AbortProgram(EX_OSERR);
+	}
+	if (h)
+		memcpy(iov[*niov].iov_base, h, sizeof *h);
+```
+
+Fourteen findings across `exec.c`, `ether.c`, `netgraph.c`, `tty.c`,
+`physical.c` and `udp.c` are that shape, in six copies of the same
+device-serialisation pair.
+
+```
+                usr.sbin/route6d + usr.sbin/ppp
+                before  after
+OK                  59      59
+ERROR                1       1
+findings            66      45
+```
+
+Twenty-one gone, none new.  The one ERROR (`route6d/misc/cksum.c`, a
+K&R-era declaration) is on the record and unchanged.
+
+This is worth stating plainly, because it cuts both ways.  None of the
+twenty-one was a defect: every one was the analyser correctly refusing
+to believe a comment.  But an undeclared-noreturn helper is not free
+either — the compiler cannot warn about code that really is unreachable
+after it, it does warn about variables it thinks may be used
+uninitialised past it, and every static analysis run over the program
+pays for it in noise that has to be read by a person.  `patch(1)`'s
+`fatal()` and `pfatal()` were the same finding earlier in this work.
+Three programs is a shape, not a coincidence.
