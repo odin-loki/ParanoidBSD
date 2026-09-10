@@ -17625,3 +17625,60 @@ list even if `mtemp` were set: the very next expression divides by
 findings            2       1
 ```
 
+
+## Closing the dev shard
+
+The shard was swept whole at the start of this work and again at the
+end, on the same scope with `--check-errors` passing both times.
+
+```
+                sys/dev, whole shard
+                        before   after
+OK                        2573    2573
+ERROR                       60      60
+findings                   361     320
+
+  core.NullDereference       169     129   -40
+  core.CallAndMessage         65      65
+  core.DivideZero             31      31
+  core.UndefinedBinaryOperatorResult
+                              31      30    -1
+  core.uninitialized.Assign   24      24
+  unix.cstring.NullArg        14      14
+  unix.Malloc                 14      14
+  core.uninitialized.Branch    7       7
+  core.uninitialized.UndefReturn
+                               3       3
+  core.uninitialized.ArraySubscript
+                               2       2
+  core.VLASize                 1       1
+```
+
+The ERROR set is unchanged, which is the measurement that says the
+edited files still compile. The 60 are on the record in
+`expected_errors.py` and every one is accounted for by the sweep's own
+NOT_BUILT report.
+
+All 167 `core.NullDereference` findings were read. Forty closed; the
+`UndefinedBinaryOperatorResult` that went with them is the `mps`
+`memset`. What is left is 129 across 86 files, and the concentrations
+are the classes this document has been naming:
+
+```
+   16  pms      the RefTisa assertion sites the macro fix did not
+                cover, plus itdcb.c's unconstrained struct field
+   11  usb      the chain-building loops the analyser does not unroll
+    9  mlx4     `pd' as an unexported function's parameter
+    6  cxgbe    the same, `vi'
+    6  irdma    out-parameters written by a callee in another TU
+    6  sound    zero-trip loops over static tables with a sentinel
+    5  syscons  a switch over two mask bits with all four arms, which
+                the constraint solver cannot see is exhaustive
+    4  xen      RB_INSERT_COLOR macro expansions
+```
+
+None of these is a defect on the reading each was given, and each
+reading is in this document rather than in a suppression list. That
+distinction is the whole point: a finding that has been read and
+explained is closed; a finding that has been silenced is a finding
+nobody will ever look at again.
