@@ -16115,3 +16115,55 @@ findings           5       2
 `fuse_internal.c` 2 → 0 and `tarfs_io.c` 1 → 0. The two that remain are
 in `fuse_vnops.c` and are the RB-tree and dispatch-table classes already
 on the record.
+
+### What the rest of the fs shard is
+
+The shard's other 149 findings were read and are classes already on the
+record, not defects. The four largest:
+
+**`vpp` and `dd_ino` are independent parameters** (19 findings).
+`ufs_lookup_ino()`, `msdosfs_lookup_ino()` and `ext2_lookup_ino()` are
+each called once with `vpp == NULL` and a non-NULL `dd_ino`, and each
+guards every `*vpp` store with an `if (dd_ino != NULL) return (0);`
+above it — three or four such guards per function. The analyser follows
+the NULL call in and reports each store, because nothing in the
+signature ties the two parameters together; the exclusivity is a caller
+contract. Correct as written.
+
+**The allocation condition and the loop bound are the same predicate**
+(5 findings). `nfsrv_writedsrpc()` and its four siblings in
+`nfs_nfsdport.c` do
+
+```c
+	if (mirrorcnt > 1)
+		tdrpc = drpc = malloc(sizeof(*drpc) * (mirrorcnt - 1), ...);
+	...
+	for (i = 0; i < mirrorcnt - 1; i++, tdrpc++)
+```
+
+so the loop that would dereference a NULL `tdrpc` cannot run when the
+allocation did not happen.
+
+**A `g_*_read_metadata()` out-parameter** (11 findings). Every geom
+class's `taste` and `add_disk` fills a stack `struct g_*_metadata` from
+`g_read_data()` in another translation unit and then reads its fields.
+
+**Dispatch tables that are not `const`** (task #88's class), which is
+what `nfsrvd_dorpc()`'s `nfs_retfh[]` and `nfsrvd_compound()`'s
+`nfsv4_opflag[]` findings are.
+
+Two were chased to the bottom and are not bugs. `nfsd_excred()`
+dereferences `credanon` where the caller two lines below tests it
+against NULL — but `vfs_stdcheckexp()` only returns 0 with a NULL
+`credanon` if `netc_anon` is NULL, and both `vfs_hang_addrlist()` paths
+`crget()` it before setting `MNT_DEFEXPORTED`, with the clear and the
+`crfree()` both under `mnt_explock`, which `vfs_stdcheckexp()` holds
+shared. And `sctty_ioctl()`'s `scp->history->vtb_buffer` is reachable
+only when `ptr->y + ptr->ysize > scp->ysize`, which the bounds check
+above it allows only when `hist_rsz` is non-zero, which requires
+`scp->history != NULL`.
+
+`ses_set_enc_status()` and `ses_set_elm_status()` return a `req.result`
+their own thread never writes — the SES worker fills it before
+`cam_periph_sleep()` returns — and `elm_idx` is bounded by
+`scsi_enc.c`'s ioctl layer at all four entry points.
