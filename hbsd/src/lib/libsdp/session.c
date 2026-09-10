@@ -187,7 +187,17 @@ sdp_get_lcaddr(void *xss, bdaddr_t *l)
 	struct sockaddr_l2cap	sa;
 	socklen_t		size;
 
-	if (l == NULL || ss == NULL || ss->flags & SDP_SESSION_LOCAL) {
+	/*
+	 * PBSD: ss == NULL was one disjunct of this test and the body wrote
+	 * ss->error -- and so does the fail: label it jumps to, and so does
+	 * the return.  A NULL session had no way out of this function that
+	 * did not fault.  service.c and search.c already open with the
+	 * standalone `if (ss == NULL) return (-1);' used here; sdp_error()
+	 * eight lines up says the same thing as a ternary.
+	 */
+	if (ss == NULL)
+		return (-1);
+	if (l == NULL || ss->flags & SDP_SESSION_LOCAL) {
 		ss->error = EINVAL;
 		goto fail;
 	}

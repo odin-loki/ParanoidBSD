@@ -55,7 +55,20 @@ NULLTEST = [
 
 
 def split_cond(cond):
-    """Top-level && conjuncts of cond, or None if any top-level || is seen."""
+    """Top-level && / || operands of cond.
+
+    Both connectives are accepted, for the same reason.  With `&&' the body
+    is reached only when every operand held, so `p == NULL' there proves p
+    is NULL.  With `||' the body is reached when ANY operand held, so there
+    is a path into it on which `p == NULL' held -- and a dereference of p
+    in the body faults on that path.  `if (!rdma_cxt || !out_params)
+    { DP_ERR(p_hwfn->p_dev, ...); }' is wrong exactly as surely as the
+    conjunctive form; three of the four ecore sites are written this way.
+
+    A test in the CONDITION rather than the body is a different matter --
+    `if (p == NULL || p->x > y)' is safe by short circuit -- and is not
+    reached here, because only the body is scanned.
+    """
     parts, depth, cur, i = [], 0, [], 0
     while i < len(cond):
         c = cond[i]
@@ -63,9 +76,8 @@ def split_cond(cond):
             depth += 1
         elif c == ')':
             depth -= 1
-        if depth == 0 and cond.startswith('||', i):
-            return None
-        if depth == 0 and cond.startswith('&&', i):
+        if depth == 0 and (cond.startswith('&&', i) or
+                           cond.startswith('||', i)):
             parts.append(''.join(cur))
             cur = []
             i += 2
@@ -214,8 +226,55 @@ def strip_noise(text):
     return ''.join(out)
 
 
+ALIAS_RE = re.compile(
+    r'^\s*(?:const\s+)?(?:struct|union|enum)?\s*[A-Za-z_]\w*\s*\*+\s*'
+    r'([A-Za-z_]\w*)\s*=\s*(?:\(\s*(?:const\s+)?(?:struct|union|enum)?'
+    r'\s*[A-Za-z_]\w*\s*\*+\s*\)\s*)?([A-Za-z_]\w*)\s*;\s*$')
+
+
+def alias_map(lines):
+    """alias -> base, for `T *alias = (T *)base;' and `T *alias = base;'.
+
+    ecore_roce_create_ud_qp() opens with
+
+        struct ecore_hwfn *p_hwfn = (struct ecore_hwfn *)rdma_cxt;
+        ...
+        if (!rdma_cxt || !out_params) {
+                DP_ERR(p_hwfn->p_dev, ...);
+
+    -- the same shape, one name removed.  Without this the pass reads the
+    test and the dereference as being about different pointers, which is
+    how four of these went unreported until they were read by hand.
+
+    Reset at every column-0 `}' so an alias does not escape its function.
+    """
+    out = {}
+    per_line = []
+    for line in lines:
+        if line.startswith('}'):
+            out = {}
+        # an alias holds only until either name is assigned again:
+        # ecore_ooo_add_buffer_to_isle() declares p_prev_isle from p_isle
+        # and then reassigns p_isle from the free list
+        if out:
+            for m in re.finditer(r'(^|[^\w.>=!<+\-*/%&|^])([A-Za-z_]\w*)'
+                                 r'\s*=(?!=)', line):
+                nm = m.group(2)
+                if nm in out or nm in out.values():
+                    out = {a: b for a, b in out.items()
+                           if a != nm and b != nm}
+        m = ALIAS_RE.match(line)
+        # `T *p = NULL;' is an initialiser, not an alias
+        if m and m.group(1) != m.group(2) and m.group(2) != 'NULL':
+            out = dict(out)
+            out[m.group(1)] = m.group(2)
+        per_line.append(out)
+    return per_line
+
+
 def scan(path, text, raw_lines):
     lines = text.split('\n')
+    aliases = alias_map(lines)
     hits = []
     for n, line in enumerate(lines):
         if not IF_RE.match(line):
@@ -235,6 +294,13 @@ def scan(path, text, raw_lines):
                     names.add(m.group(1))
         if not names:
             continue
+        # a pointer aliased to a tested name is the same pointer
+        amap = aliases[n]
+        for alias, base in amap.items():
+            if base in names:
+                names.add(alias)
+            if alias in names:
+                names.add(base)
         block = block_after(lines, endline, endcol)
         if len(block) < 1:
             continue
@@ -242,7 +308,7 @@ def scan(path, text, raw_lines):
             # any assignment to the name, including the very common
             # `if ((p = malloc(n)) == NULL)' nested inside a condition
             reassign = re.compile(r'(^|[^\w.>=!<+\-*/%&|^])' +
-                                  re.escape(name) + r'\s*=[^=]')
+                                  re.escape(name) + r'\s*=(?!=)')
             # C macros assign through a bare argument as a matter of course
             # -- TAILQ_FOREACH(p, ...), ELM_MALLOC(p, ...),
             # sctp_alloc_a_chunk(stcb, p) -- and the assignment is not in
@@ -257,9 +323,24 @@ def scan(path, text, raw_lines):
             # a re-test of p inside the block re-establishes the guard --
             # `if (p == NULL || p->x > y)' is safe by short circuit, and an
             # author who re-tests knows what they are doing
-            retest = re.compile(r'(?<![\w.>])' + re.escape(name) +
-                                r'\s*(==|!=)\s*NULL|!\s*' +
-                                re.escape(name) + r'\s*(\||\))')
+            # any re-test of p in the block re-establishes the guard:
+            # an explicit == / != NULL, a `!p |', a short-circuit `p &&',
+            # or the ternary `p ? p->x : NULL' that sys/dev/ocs_fc writes
+            # at two dozen sites
+            # ... and it may be written on any name in the alias group:
+            # sli_res_sli_config() tests `buf ?' to guard a read of
+            # sli_config, which is buf.
+            group = {name}
+            for a, b in amap.items():
+                if a == name or b == name:
+                    group.add(a)
+                    group.add(b)
+            retest = re.compile('|'.join(
+                r'(?<![\w.>])' + re.escape(g) + r'\s*(==|!=)\s*NULL'
+                r'|!\s*' + re.escape(g) + r'\s*(\||\))'
+                r'|(?<![\w.>])' + re.escape(g) + r'\s*\?'
+                r'|(?<![\w.>])' + re.escape(g) + r'\s*&&'
+                for g in sorted(group)))
             # not preceded by -> or . : `fc->it[i]' is not a use of `it'
             deref = re.compile(r'(?<![\w.>])(?<!->)\b' + re.escape(name) +
                                r'\s*(->|\[)')

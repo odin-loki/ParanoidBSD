@@ -1495,7 +1495,16 @@ enum _ecore_status_t ecore_rdma_destroy_qp(void *rdma_cxt,
 	struct ecore_hwfn *p_hwfn = (struct ecore_hwfn *)rdma_cxt;
 	enum _ecore_status_t rc = ECORE_SUCCESS;
 
-	if (!rdma_cxt || !qp) {
+	/*
+	 * PBSD: p_hwfn IS rdma_cxt -- the cast two lines up -- so reporting
+	 * a NULL rdma_cxt through DP_ERR(), which expands to
+	 * (p_dev)->dp_ctx and (p_dev)->name, dereferenced the very pointer
+	 * the test had just found NULL.  There is no device to log through
+	 * on that arm; there is on the other.
+	 */
+	if (!rdma_cxt)
+		return ECORE_INVAL;
+	if (!qp) {
 		DP_ERR(p_hwfn,
 		       "ecore rdma destroy qp failed: invalid NULL input. rdma_cxt=%p, qp=%p\n",
 		       rdma_cxt, qp);
@@ -1524,7 +1533,11 @@ struct ecore_rdma_qp *ecore_rdma_create_qp(void			*rdma_cxt,
 	u8 max_stats_queues;
 	enum _ecore_status_t rc = 0;
 
-	if (!rdma_cxt || !in_params || !out_params || !p_hwfn->p_rdma_info) {
+	/* PBSD: as above -- p_hwfn is rdma_cxt, so DP_ERR() cannot be the
+	 * way this arm reports rdma_cxt being NULL. */
+	if (!rdma_cxt)
+		return OSAL_NULL;
+	if (!in_params || !out_params || !p_hwfn->p_rdma_info) {
 		DP_ERR(p_hwfn->p_dev,
 		       "ecore roce create qp failed due to NULL entry (rdma_cxt=%p, in=%p, out=%p, roce_info=?\n",
 		       rdma_cxt,

@@ -2242,7 +2242,20 @@ sk_txcksum(if_t ifp, struct mbuf *m, struct sk_tx_desc *f)
 	struct ip		*ip;
 	u_int16_t		offset;
 	u_int8_t 		*p;
+	u_int32_t		pkt_csum_data;
 
+	/*
+	 * PBSD: m is walked forward below and sendit: reads
+	 * m->m_pkthdr.csum_data.  Two of the three `goto sendit' sites
+	 * establish that m is NULL -- one of them tests for exactly that
+	 * and nothing else -- so the label faulted on a transmit whose
+	 * chain begins with zero-length mbufs.  And m_pkthdr lives on the
+	 * head of the chain, which after the walk m is no longer, so even
+	 * the surviving path read a header that is not there.  Take it
+	 * from the head, once, before the walk; the caller always passes
+	 * *m_head and has just read m->m_pkthdr.csum_flags from it.
+	 */
+	pkt_csum_data = m->m_pkthdr.csum_data;
 	offset = sizeof(struct ip) + ETHER_HDR_LEN;
 	for(; m && m->m_len == 0; m = m->m_next)
 		;
@@ -2275,7 +2288,7 @@ sk_txcksum(if_t ifp, struct mbuf *m, struct sk_tx_desc *f)
 
 sendit:
 	f->sk_csum_startval = 0;
-	f->sk_csum_start = htole32(((offset + m->m_pkthdr.csum_data) & 0xffff) |
+	f->sk_csum_start = htole32(((offset + pkt_csum_data) & 0xffff) |
 	    (offset << 16));
 }
 

@@ -17214,3 +17214,128 @@ are left alone deliberately. The correct fix is a `return`, and a
 list; picking the right unwind in a vendor driver on a path its author
 documents as impossible is guessing, and guessing is worse than
 recording.
+
+## The lint learns to read aliases, and finds seven more
+
+`null_branch.py` shipped reporting zero across the tree. Reading the
+`sys/dev` findings by hand then turned up `sk_txcksum()` and four
+`ecore_*` sites of exactly the shape it exists for — and it had found
+none of them. Each miss was a rule that was too narrow, and each is now
+closed:
+
+**A pointer aliased to the tested one is the same pointer.**
+
+```c
+	struct ecore_hwfn *p_hwfn = (struct ecore_hwfn *)rdma_cxt;
+	...
+	if (!rdma_cxt) {
+		DP_ERR(p_hwfn->p_dev, "destroy ud qp failed due to NULL rdma_cxt\n");
+```
+
+`DP_ERR(p_dev, ...)` expands to `(p_dev)->dp_ctx` and `(p_dev)->name`,
+so this reports a NULL `rdma_cxt` by dereferencing it — twice. The pass
+was reading the test and the dereference as being about different
+pointers. It now tracks `T *alias = (T *)base;` and `T *alias = base;`,
+resets the map at every column-0 `}`, drops a pair the moment either
+name is assigned again, and does not treat `T *p = NULL;` as an alias.
+All three of those refinements were false positives the tree handed
+back on the next run.
+
+**A disjunction proves it too.** The pass accepted only `&&` chains, on
+the reasoning that `if (A && p == NULL)` proves `p` NULL in the body.
+But `if (A || p == NULL)` means the body is reached when *any* operand
+held — so there is a path into it on which `p` was NULL, and a
+dereference there faults on that path. Exactly as certain; three of the
+four ecore sites are written that way. (A test in the *condition* is a
+different matter — `if (p == NULL || p->x > y)` is safe by short
+circuit — and never reached this rule, because only the body is
+scanned.)
+
+**And three narrower ones**, each from a real hit: an assignment whose
+value is on the next line (`AcpiGbl_CommentAddrListHead =\n    AcpiOs...`)
+is still an assignment; a re-test may be written on any name in the
+alias group (`sli_res_sli_config()` tests `buf ?` to guard a read of
+`sli_config`, which is `buf`); and the ternary `p ? p->x : NULL` that
+`sys/dev/ocs_fc` writes at two dozen sites is a re-test like any other.
+
+Tree-wide, across the same 20,324 files: 81 → 48 → 3 → 0 in the first
+pass, then 30 → 11 → 9 → **2** as the alias and disjunction rules went
+in. The two survivors were both real.
+
+### The seven
+
+`sk_txcksum()` — a `goto` into a label that dereferences it:
+
+```c
+	if (m == NULL) {
+		offset = sizeof(struct ip) + ETHER_HDR_LEN;
+		goto sendit;
+	}
+	...
+sendit:
+	f->sk_csum_start = htole32(((offset + m->m_pkthdr.csum_data) & 0xffff) | ...);
+```
+
+Two of the three `goto sendit` sites reach the label with `m` NULL, and
+one of them tests for exactly that and nothing else. It is also wrong on
+the path that does *not* fault: `m` has been walked forward off the head
+of the chain by then, and `m_pkthdr` only exists on the head. Both are
+fixed by taking `csum_data` from the head once, before the walk.
+
+(The local could not be called `csum_data`: that is itself a macro for
+`PH_per.thirtytwo[1]`, so the declaration expanded into nonsense. The
+sweep's `--check-errors` gate caught it as an ERROR on the after side —
+which is the whole reason that gate exists, since a file that does not
+compile reports zero findings and reads as clean.)
+
+The four `ecore_*` sites above. `hvsock_canread_check()`:
+
+```c
+	if (pcb == NULL || pcb->chan == NULL) {
+		pcb->so->so_error = EIO;
+```
+
+And `sdp_get_lcaddr()` in libsdp, which is the worst of them because
+there was no way out:
+
+```c
+	if (l == NULL || ss == NULL || ss->flags & SDP_SESSION_LOCAL) {
+		ss->error = EINVAL;
+		goto fail;
+	}
+	...
+fail:
+	return ((ss->error == 0) ? 0 : -1);
+```
+
+A NULL session faults in the body, and would fault again at the label,
+and again in the return. `sdp_error()` eight lines above gets it right
+as a ternary, and `service.c` and `search.c` open with the standalone
+`if (ss == NULL) return (-1);` this now uses.
+
+```
+                sk+qlnx+hyperv+libsdp
+                before  after
+OK                 62      62
+ERROR               0       0
+findings           17      11
+```
+
+Seven closed. The one addition is `hvsock_open_channel()`'s existing
+finding at a line number eight further down, moved by the comment added
+above it.
+
+### What it still does not claim
+
+`ecore_rdma_destroy_qp()` writes `DP_ERR(p_hwfn, ...)` — the pointer
+passed bare, with the dereference inside the macro. The pass suppresses
+a block that passes the name bare to anything, because that is how
+`TAILQ_FOREACH(p, ...)` and `ELM_MALLOC(p, ...)` assign it, and the
+assignment is not in the file's text. Keeping that rule costs this one
+site. It was found by reading, and the trade is the right way round.
+
+`sk_txcksum()` is missed for a different reason: the dereference is at a
+`goto` label, not in the branch. Following gotos is a control-flow
+graph, not a brace matcher, and the moment this pass needs one it stops
+being the thing it is — a grep that runs over the whole tree in a second
+and is right every time it speaks.

@@ -3664,14 +3664,24 @@ FIXES = {
         "is asked about -- and the hand-written check in the same "
         "function tests esmp != NULL as well",
     ),
-    "hbsd/src/sys/dev/sk/if_sk.c": (
-        ("&& ifp0 != NULL", 3),
-        "\t\tif (status & SK_ISR_RX1_EOF) {",
-        "sk_intr: six per-port arms took sk_if[] without the NULL test "
-        "the top of the same function makes, and that the "
-        "SK_ISR_EXTERNAL_REG block and the two if_sendq_empty() calls "
-        "at the end also make",
-    ),
+    "hbsd/src/sys/dev/sk/if_sk.c": [
+        (
+            ("&& ifp0 != NULL", 3),
+            "\t\tif (status & SK_ISR_RX1_EOF) {",
+            "sk_intr: six per-port arms took sk_if[] without the NULL test "
+            "the top of the same function makes, and that the "
+            "SK_ISR_EXTERNAL_REG block and the two if_sendq_empty() calls "
+            "at the end also make",
+        ),
+        (
+            "pkt_csum_data = m->m_pkthdr.csum_data;",
+            "((offset + m->m_pkthdr.csum_data) & 0xffff)",
+            "sk_txcksum() walks m forward and its sendit: label then read "
+            "m->m_pkthdr.csum_data -- two of the three `goto sendit' sites "
+            "establish m is NULL, and m_pkthdr lives on the head of the chain "
+            "that m after the walk no longer is",
+        ),
+    ],
 
     "hbsd/src/sys/dev/pms/RefTisa/sat/src/smsatcb.c": [
         (
@@ -4120,6 +4130,47 @@ FIXES = {
         "pci_vtcon_sock_tx: the loop is the only writer of ret and the "
         "test after it runs regardless, so a zero-descriptor console "
         "buffer let the guest tear the connection down off a stack word",
+    ),
+
+    "hbsd/src/sys/dev/qlnx/qlnxe/ecore_rdma.c": [
+        (
+            "\tif (!rdma_cxt)\n\t\treturn ECORE_INVAL;\n\tif (!qp) {",
+            "\tif (!rdma_cxt || !qp) {",
+            "ecore_rdma_destroy_qp() reported a NULL rdma_cxt through "
+            "DP_ERR(p_hwfn, ...), and p_hwfn IS rdma_cxt -- DP_ERR expands "
+            "to (p_dev)->dp_ctx and (p_dev)->name",
+        ),
+        (
+            "\tif (!rdma_cxt)\n\t\treturn OSAL_NULL;",
+            "\tif (!rdma_cxt || !in_params || !out_params ||",
+            "ecore_rdma_create_qp(): the same, through p_hwfn->p_dev",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/qlnx/qlnxe/ecore_roce.c": (
+        ("\tif (!rdma_cxt)\n\t\treturn ECORE_INVAL;", 2),
+        "\tif (!rdma_cxt || !out_params) {",
+        "ecore_roce_destroy_ud_qp() and ecore_roce_create_ud_qp() report a "
+        "NULL rdma_cxt through DP_ERR(p_hwfn->p_dev, ...), and p_hwfn is "
+        "the cast of rdma_cxt three lines up",
+    ),
+
+    "hbsd/src/sys/dev/hyperv/hvsock/hv_sock.c": (
+        "\tif (pcb == NULL)\n\t\treturn (0);\n\tif (pcb->chan == NULL) {",
+        "\tif (pcb == NULL || pcb->chan == NULL) {\n"
+        "\t\tpcb->so->so_error = EIO;",
+        "hvsock_canread_check() wrote pcb->so->so_error inside a test "
+        "whose first disjunct is pcb == NULL",
+    ),
+
+    "hbsd/src/lib/libsdp/session.c": (
+        "\tif (ss == NULL)\n\t\treturn (-1);\n"
+        "\tif (l == NULL || ss->flags & SDP_SESSION_LOCAL) {",
+        "\tif (l == NULL || ss == NULL || ss->flags & SDP_SESSION_LOCAL) {",
+        "sdp_get_lcaddr() had ss == NULL as one disjunct and then wrote "
+        "ss->error -- as does the fail: label it jumps to, and the return "
+        "after it, so a NULL session had no way out that did not fault. "
+        "service.c and search.c already open with the standalone test",
     ),
 
     "hbsd/src/sys/dev/pms/freebsd/driver/common/osdebug.h": (

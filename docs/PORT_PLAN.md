@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,750 | 9,056 |
+| 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,514 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,387 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,424 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,136** | **114,205** |
+| | **total** | **41,143** | **21,300,183** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -10433,7 +10433,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.278.4.2 `sdp_unregister_service()` · `TODO-FN`
   - [ ] 1.278.4.3 `sdp_change_service()` · `TODO-FN`
   - [ ] 1.278.4.4 `sdp_receive_error_pdu()` · `TODO-FN`
-- [ ] **1.278.5** `session.c` · 204L · `TODO-PORT` · 5 fn
+- [ ] **1.278.5** `session.c` · 214L · `TODO-PORT` · 5 fn
   - [ ] 1.278.5.1 `sdp_open()` · `TODO-FN`
   - [ ] 1.278.5.2 `sdp_open_local()` · `TODO-FN`
   - [ ] 1.278.5.3 `sdp_close()` · `TODO-FN`
@@ -74464,7 +74464,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.741 `sys/dev/hyperv/hvsock`
 
-- [ ] **8.741.1** `hv_sock.c` · 1,742L gen:8 · `TODO-PORT` · 45 fn
+- [ ] **8.741.1** `hv_sock.c` · 1,750L gen:8 · `TODO-PORT` · 45 fn
   - [ ] 8.741.1.1 `hvsock_print_guid()` · `TODO-FN`
   - [ ] 8.741.1.2 `is_valid_srv_id()` · `TODO-FN`
   - [ ] 8.741.1.3 `get_port_by_srv_id()` · `TODO-FN`
@@ -95664,7 +95664,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.959.58.17 `ecore_ooo_dump_rx_event()` · `TODO-FN`
 - [ ] **8.959.59** `ecore_ooo.h` · 149L · `TODO-HDR`
 - [ ] **8.959.60** `ecore_proto_if.h` · 172L · `TODO-HDR`
-- [ ] **8.959.61** `ecore_rdma.c` · 2,688L · `TODO-PORT` · 64 fn
+- [ ] **8.959.61** `ecore_rdma.c` · 2,701L · `TODO-PORT` · 64 fn
   - [ ] 8.959.61.1 `ecore_rdma_start_fw()` · `TODO-FN`
   - [ ] 8.959.61.2 `ecore_rdma_toggle_bit_create_resize_cq()` · `TODO-FN`
   - [ ] 8.959.61.3 `ecore_rdma_modify_srq()` · `TODO-FN`
@@ -95731,7 +95731,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.959.61.64 `ecore_rdma_remove_user()` · `TODO-FN`
 - [ ] **8.959.62** `ecore_rdma.h` · 277L · `TODO-HDR`
 - [ ] **8.959.63** `ecore_rdma_api.h` · 969L · `TODO-HDR`
-- [ ] **8.959.64** `ecore_roce.c` · 1,571L · `TODO-PORT` · 30 fn
+- [ ] **8.959.64** `ecore_roce.c` · 1,574L · `TODO-PORT` · 30 fn
   - [ ] 8.959.64.1 `ecore_roce_async_event()` · `TODO-FN`
   - [ ] 8.959.64.2 `ecore_roce_modify_qp()` · `TODO-FN`
   - [ ] 8.959.64.3 `ecore_roce_start_rl()` · `TODO-FN`
@@ -99444,7 +99444,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1002 `sys/dev/sk`
 
-- [ ] **8.1002.1** `if_sk.c` · 3,731L gen:7 · `TODO-PORT` · 72 fn
+- [ ] **8.1002.1** `if_sk.c` · 3,744L gen:7 · `TODO-PORT` · 72 fn
   - [ ] 8.1002.1.1 `sk_win_read_4()` · `TODO-FN`
   - [ ] 8.1002.1.2 `sk_win_read_2()` · `TODO-FN`
   - [ ] 8.1002.1.3 `sk_win_read_1()` · `TODO-FN`

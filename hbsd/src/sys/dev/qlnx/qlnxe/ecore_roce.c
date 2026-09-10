@@ -1295,11 +1295,10 @@ enum _ecore_status_t ecore_roce_destroy_ud_qp(void *rdma_cxt, u16 cid)
 	struct ecore_spq_entry *p_ent;
 	enum _ecore_status_t rc;
 
-	if (!rdma_cxt) {
-		DP_ERR(p_hwfn->p_dev,
-		       "destroy ud qp failed due to NULL rdma_cxt\n");
+	/* PBSD: p_hwfn is rdma_cxt, so p_hwfn->p_dev faults on exactly the
+	 * condition this branch exists to report. */
+	if (!rdma_cxt)
 		return ECORE_INVAL;
-	}
 
 	/* Get SPQ entry */
 	OSAL_MEMSET(&init_data, 0, sizeof(init_data));
@@ -1336,7 +1335,11 @@ enum _ecore_status_t ecore_roce_create_ud_qp(void		*rdma_cxt,
 	enum _ecore_status_t rc;
 	u16 icid, qp_idx;
 
-	if (!rdma_cxt || !out_params) {
+	/* PBSD: as in ecore_roce_destroy_ud_qp() -- no device to log
+	 * through when rdma_cxt is the thing that is NULL. */
+	if (!rdma_cxt)
+		return ECORE_INVAL;
+	if (!out_params) {
 		DP_ERR(p_hwfn->p_dev,
 		       "ecore roce create ud qp failed due to NULL entry (rdma_cxt=%p, out=%p)\n",
 		       rdma_cxt, out_params);

@@ -1248,7 +1248,15 @@ hvsock_canread_check(struct hvs_pcb *pcb)
 	uint32_t bytes_canread = 0;
 	int error;
 
-	if (pcb == NULL || pcb->chan == NULL) {
+	/*
+	 * PBSD: pcb == NULL was one disjunct and the body wrote
+	 * pcb->so->so_error, so the NULL case reported itself by faulting.
+	 * With no pcb there is no socket to record the error on; the
+	 * caller's answer either way is that nothing can be read.
+	 */
+	if (pcb == NULL)
+		return (0);
+	if (pcb->chan == NULL) {
 		pcb->so->so_error = EIO;
 		return (0);
 	}
