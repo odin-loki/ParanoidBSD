@@ -82,6 +82,16 @@ fetch_path_id(path_id_t *path_id)
 	ccb.cdm.pattern_buf_len = bufsize;
 	ccb.cdm.patterns = calloc(1, bufsize);
 
+	/*
+	 * PBSD: patterns[0] is written on the next line and matches[] is
+	 * read after the ioctl, and neither allocation was checked.
+	 */
+	if (ccb.cdm.matches == NULL || ccb.cdm.patterns == NULL) {
+		free(ccb.cdm.matches);
+		free(ccb.cdm.patterns);
+		return (ENOMEM);
+	}
+
 	/* Match mptX bus 0. */
 	ccb.cdm.patterns[0].type = DEV_MATCH_BUS;
 	b = &ccb.cdm.patterns[0].pattern.bus_pattern;
@@ -155,6 +165,16 @@ mpt_query_disk(U8 VolumeBus, U8 VolumeID, struct mpt_query_disk *qd)
 	ccb.cdm.num_patterns = 1;
 	ccb.cdm.pattern_buf_len = bufsize;
 	ccb.cdm.patterns = calloc(1, bufsize);
+
+	/*
+	 * PBSD: patterns[0] is written on the next line and matches[] is
+	 * read after the ioctl, and neither allocation was checked.
+	 */
+	if (ccb.cdm.matches == NULL || ccb.cdm.patterns == NULL) {
+		free(ccb.cdm.matches);
+		free(ccb.cdm.patterns);
+		return (ENOMEM);
+	}
 
 	/* Look for a "da" device at the specified target and lun. */
 	ccb.cdm.patterns[0].type = DEV_MATCH_PERIPH;
@@ -420,6 +440,13 @@ mpt_fetch_disks(int fd, int *ndisks, struct mpt_standalone_disk **disksp)
 		ccb.cdm.num_patterns = 1;
 		ccb.cdm.pattern_buf_len = bufsize;
 		ccb.cdm.patterns = calloc(1, bufsize);
+
+		/* PBSD: as in fetch_path_id() above. */
+		if (ccb.cdm.matches == NULL || ccb.cdm.patterns == NULL) {
+			free(ccb.cdm.matches);
+			free(ccb.cdm.patterns);
+			return (ENOMEM);
+		}
 
 		/* Match any "da" peripherals. */
 		ccb.cdm.patterns[0].type = DEV_MATCH_PERIPH;

@@ -5153,6 +5153,15 @@ FIXES = {
     ],
 
 
+    "hbsd/src/usr.sbin/mptutil/mpt_cam.c": (
+        ("if (ccb.cdm.matches == NULL || ccb.cdm.patterns == NULL) {", 3),
+        None,
+        "fetch_path_id(), mpt_query_disk() and mpt_fetch_disks() each "
+        "calloc() a match buffer and a pattern buffer and then write "
+        "patterns[0] on the next line; none of the six allocations was "
+        "checked",
+    ),
+
     "hbsd/src/usr.sbin/mptutil/mpt_drive.c": [
         (
             "error = mpt_lookup_drive(list, drive, &PhysDiskNum);",

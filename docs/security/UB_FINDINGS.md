@@ -20155,3 +20155,54 @@ OK and the same one known ERROR on both sides.  The seven that remain —
 the same invariant seen from the data path, and guarding those would put
 a branch per sample on the audio path to state something the
 configuration boundary already guarantees.  They stay, characterised.
+
+### mptutil's CAM helpers: six allocations written through unchecked
+
+`fetch_path_id()`, `mpt_query_disk()` and `mpt_fetch_disks()` each set up
+an `XPT_DEV_MATCH` the same way:
+
+```c
+	ccb.cdm.matches = calloc(1, bufsize);
+	...
+	ccb.cdm.patterns = calloc(1, bufsize);
+
+	ccb.cdm.patterns[0].type = DEV_MATCH_BUS;
+```
+
+`patterns[0]` is written on the next line and `matches[]` is read after
+the ioctl.  None of the six was checked.  Not the count-allocate-fill
+shape, where a zero count also skips the writes: these are fixed sizes
+and the writes are unconditional.
+
+It moved nothing — `usr.sbin/mptutil` measured 6 → 6, eight translation
+units OK and no ERROR either side, and it was not expected to: the
+findings in that file are `path_id`, an out-parameter the analyser will
+not follow into `fetch_path_id()`.  Recorded here for the same reason
+the `ps`, `kbdmap` and `bsdinstall` checks earlier in the sweep were: an
+allocation dereferenced in the next statement is a defect whether or not
+a checker says so.
+
+## The four uninitialised-ioctl-buffer findings that are not defects
+
+`ifconfig`'s `ifgif.c` and `ifgre.c` account for four
+`core.uninitialized.Assign` findings between them, all of this shape:
+
+```c
+	int opts;
+	struct ifreq ifr = { .ifr_data = (caddr_t)&opts };
+
+	if (ioctl_ctx_ifr(ctx, GIFGOPTS, &ifr) == -1)
+		return;
+	if (opts == 0)
+		return;
+```
+
+The kernel fills `opts` **through a pointer stored in a structure
+member**, which is one indirection further than the out-parameter cases
+the analyser already loses.  Initialising `opts` would silence it and
+would also hide a genuinely unfilled ioctl, which is the opposite of
+what this sweep is for.  Characterised, not changed.
+
+`mptutil`'s `mpt_cam.c` findings are the same class one level up:
+`path_id` is written by `fetch_path_id()` on its success path, and all
+three callers test `error` correctly.

@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,482 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,708 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,735 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,938** | **114,207** |
+| | **total** | **41,143** | **21,300,965** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -32551,7 +32551,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.149 `usr.sbin/mptutil`
 
-- [ ] **6.149.1** `mpt_cam.c` · 566L · `TODO-PORT` · 9 fn
+- [ ] **6.149.1** `mpt_cam.c` · 593L · `TODO-PORT` · 9 fn
   - [ ] 6.149.1.1 `xpt_open()` · `TODO-FN`
   - [ ] 6.149.1.2 `fetch_path_id()` · `TODO-FN`
   - [ ] 6.149.1.3 `mpt_query_disk()` · `TODO-FN`
