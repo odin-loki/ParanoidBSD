@@ -21193,3 +21193,52 @@ now cases in `test_onesided_index.py`, along with the three originals in
 the form they had before they were fixed.  A lint that cannot find the
 bugs it was written for is worth nothing, and the only way to know is to
 keep them.
+
+## The libs model-check shard, accounted for in full
+
+All 205 `FAILED` verdicts over `lib/libc` and `lib/msun`, every one in a
+family that was read rather than assumed:
+
+| family | count |
+|---|---|
+| libm's deliberate IEEE idiom (`vzero / vzero`, `(x - x) / (x - x)`) | 92 |
+| an unseen callee or an unconstrained global | 52 |
+| arithmetic on an unconstrained parameter | 28 |
+| CBMC's entry-point leak check on a function that allocates and returns | 21 |
+| division by zero that is the caller's contract (`div`, `ldiv`, `lldiv`, `gcd`) | 4 |
+| an assertion on an unconstrained argument | 3 |
+| an array bound | 3 |
+| a CBMC limitation, stated in its own words | 2 |
+| **other** | **0** |
+
+Nine of the 28 in the arithmetic row were real and are fixed above.  The
+three array bounds were read one at a time and none is a defect:
+`__libc_interposing_slot(int s)` is called with an enum constant from
+two places, `readpassphrase`'s `handler(int s)` is a signal handler and
+the kernel supplies the number, and `srandomdev`'s is a pointer bound on
+a file-scope `struct __random_state` whose fields CBMC models
+unconstrained.
+
+Two verifications that could have gone the other way and did not:
+
+* **`gcd(a, b)` in `getopt_long.c`** does `a % b` and would be undefined
+  at `b == 0`.  `permute_args()` computes `nopts = opt_end -
+  panonopt_end`, and `nonopt_end` is assigned at an `optind` *before*
+  the option there is consumed, so by the time any of the three call
+  sites is reached `optind` has advanced past at least one option and
+  `nopts >= 1`.  `nnonopts` is likewise at least one, so `gcd` returns
+  at least one and the `/ ncycle` below it is safe too.
+* **`significand(x)`** is `scalb(x, (double) -ilogb(x))`, and `ilogb(0)`
+  looks like it should be `INT_MIN`.  It is not: FreeBSD defines
+  `FP_ILOGB0` as `-__INT_MAX` and `FP_ILOGBNAN` as `__INT_MAX`,
+  precisely so the negation is defined.  CBMC flags it because `ilogb`
+  is in another translation unit.
+
+The 92 libm idioms deserve their own sentence, because they are the
+largest single family and the least like a defect.  `(x - x) / (x - x)`
+is how `acosf` returns a signalling NaN for an out-of-domain argument;
+`(double)-1 / zero` is how `logl` returns −∞ for zero.  C11 6.5.5p5
+makes division by zero undefined for every type; Annex F, which
+FreeBSD's libm assumes on every line, defines exactly these.  CBMC's
+`--div-by-zero-check` does not know which of the two documents is in
+force, and there is no flag that tells it.
