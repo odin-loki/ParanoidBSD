@@ -77,7 +77,14 @@ int
 main(int argc, char **argv)
 {
 	int error, i, quit;
-	int curx, cury, maxx, maxy, line_len, loop, max_flen, head_printed;
+	int curx, cury, maxx, maxy, line_len, loop, max_flen;
+	/*
+	 * PBSD: head_printed was written only by the `-C' arm of getopt,
+	 * and read only under `flag_C && !head_printed' -- which is the
+	 * same condition, so nothing goes wrong today.  The relation is
+	 * not stated anywhere and costs one initialiser to remove.
+	 */
+	int head_printed = 0;
 	struct devstat *gsp, *gsq;
 	void *sp, *sq;
 	double dt;

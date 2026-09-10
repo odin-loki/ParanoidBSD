@@ -4270,7 +4270,26 @@ FIXES = {
             "void terminate(int status);",
             "and terminate() ends in exit()",
         ),
+        (
+            "static char buf [STR_LEN];",
+            "\n    char buf [STR_LEN];",
+            "do_file(): chat_expect() and chat_send() tokenise through "
+            "expect_strtok(), which keeps a `static char *str' cursor "
+            "into whatever string it was last handed -- and what it is "
+            "handed here is a pointer into this buffer, so on the stack "
+            "that cursor dangles into a dead frame the moment do_file() "
+            "returns",
+        ),
     ],
+
+    "hbsd/src/usr.sbin/gstat/gstat.c": (
+        "int head_printed = 0;",
+        "max_flen, head_printed;",
+        "head_printed was written only by the `-C' arm of getopt and "
+        "read only under `flag_C && !head_printed' -- the same "
+        "condition, so nothing goes wrong today, but the relation is "
+        "stated nowhere and costs one initialiser to remove",
+    ),
 
     "hbsd/src/sbin/fsck/fsck.c": (
         "\tvfstype = estrdup(pvfstype);",

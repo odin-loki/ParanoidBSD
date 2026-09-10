@@ -20078,3 +20078,38 @@ Three changes, in order of how much they do:
 
 Measured: a `usr.sbin/ppp` sweep left four directories before and zero
 after, with the finding, OK and ERROR counts unchanged.
+
+## chat(8): a static cursor into a stack buffer that is about to go away
+
+`do_file()` reads the chat script a line at a time into `char buf[STR_LEN]`
+and hands pointers into it to `chat_expect()` and `chat_send()`.  Both
+tokenise through
+
+```c
+	char *
+	expect_strtok (char *s, const char *term)
+	{
+	    static  char *str   = blank;
+	    ...
+	    if (s)
+		str = s;
+```
+
+— a `strtok`-alike with a **static** cursor into whatever string it was
+last handed.  When `do_file()` returns, `str` points into a dead frame.
+
+Nothing resumes it today: every `expect_strtok(NULL, ...)` continuation
+happens inside the call that started the sequence, and `main()` runs
+either `do_file()` or the command-line script, never both.  The storage
+is what makes that not matter, so `buf` is `static` now — one word,
+`do_file()` is neither recursive nor threaded, and the cursor cannot
+dangle.
+
+`gstat(8)` is a smaller version of the same shape.  `int ... max_flen,
+head_printed;` is uninitialised, and written only by the `-C` arm of
+`getopt`; it is read only under `flag_C && !head_printed`, which is the
+same condition, so nothing goes wrong.  The relation is stated nowhere
+and costs one initialiser to remove.
+
+Measured over `usr.bin/chat` and `usr.sbin/gstat`: 4 → 2, two
+translation units OK and no ERROR either side.  Both singletons closed.

@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,472 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,675 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,482 | 4,188 |
+| 6 | `usr.sbin` | 1,142 | 657,682 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,895** | **114,207** |
+| | **total** | **41,143** | **21,300,912** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -20719,7 +20719,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.23 `usr.bin/chat`
 
-- [ ] **5.23.1** `chat.c` · 1,527L · `TODO-PORT` · 28 fn
+- [ ] **5.23.1** `chat.c` · 1,537L · `TODO-PORT` · 28 fn
   - [ ] 5.23.1.1 `dup_mem()` · `TODO-FN`
   - [ ] 5.23.1.2 `copy_of()` · `TODO-FN`
   - [ ] 5.23.1.3 `main()` · `TODO-FN`
@@ -30930,7 +30930,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.101 `usr.sbin/gstat`
 
-- [ ] **6.101.1** `gstat.c` · 622L · `TODO-PORT` · 3 fn
+- [ ] **6.101.1** `gstat.c` · 629L · `TODO-PORT` · 3 fn
   - [ ] 6.101.1.1 `el_prompt()` · `TODO-FN`
   - [ ] 6.101.1.2 `main()` · `TODO-FN`
   - [ ] 6.101.1.3 `usage()` · `TODO-FN`

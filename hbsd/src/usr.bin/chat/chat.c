@@ -317,7 +317,17 @@ do_file(char *chatfile)
 {
     int linect, sendflg;
     char *sp, *arg, quote;
-    char buf [STR_LEN];
+    /*
+     * PBSD: static.  chat_expect() and chat_send() tokenise through
+     * expect_strtok(), which keeps a `static char *str' cursor into
+     * whatever string it was last handed -- and what it is handed here
+     * is a pointer into this buffer.  On the stack, that cursor dangles
+     * into a dead frame the moment do_file() returns.  Nothing resumes
+     * it today, because every expect_strtok(NULL, ...) continuation
+     * happens inside the call that started it; the storage is what makes
+     * that not matter.
+     */
+    static char buf [STR_LEN];
     FILE *cfp;
 
     cfp = fopen (chatfile, "r");
