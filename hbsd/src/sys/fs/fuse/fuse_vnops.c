@@ -830,9 +830,15 @@ fuse_vnop_close(struct vop_close_args *ap)
 		if (dataflags & FSESS_DEFAULT_PERMISSIONS) {
 			struct vattr va;
 
-			fuse_internal_getattr(vp, &va, cred, td);
-			access_e = vaccess(vp->v_type, va.va_mode, va.va_uid,
-			    va.va_gid, VWRITE, cred);
+			/*
+			 * PBSD: a failed getattr leaves va unwritten, and
+			 * vaccess() then decided this atime update from the
+			 * stack.
+			 */
+			access_e = fuse_internal_getattr(vp, &va, cred, td);
+			if (access_e == 0)
+				access_e = vaccess(vp->v_type, va.va_mode,
+				    va.va_uid, va.va_gid, VWRITE, cred);
 		}
 		if (access_e == 0) {
 			VATTR_NULL(&vap);

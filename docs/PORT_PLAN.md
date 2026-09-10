@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,094 | 81,387 |
+| 8 | `sys` | 14,951 | 10,498,121 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,764** | **114,204** |
+| | **total** | **41,143** | **21,299,791** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -110349,7 +110349,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1142.3.9 `fuse_file_init()` · `TODO-FN`
   - [ ] 8.1142.3.10 `fuse_file_destroy()` · `TODO-FN`
 - [ ] **8.1142.4** `fuse_file.h` · 224L · `TODO-HDR`
-- [ ] **8.1142.5** `fuse_internal.c` · 1,327L gen:8 · `TODO-PORT` · 27 fn
+- [ ] **8.1142.5** `fuse_internal.c` · 1,346L gen:8 · `TODO-PORT` · 27 fn
   - [ ] 8.1142.5.1 `fuse_internal_get_cached_vnode()` · `TODO-FN`
   - [ ] 8.1142.5.2 `fuse_internal_access()` · `TODO-FN`
   - [ ] 8.1142.5.3 `fuse_internal_cache_attrs()` · `TODO-FN`
@@ -110455,7 +110455,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1142.15.6 `fuse_vfsop_vget()` · `TODO-FN`
   - [ ] 8.1142.15.7 `fuse_vfsop_root()` · `TODO-FN`
   - [ ] 8.1142.15.8 `fuse_vfsop_statfs()` · `TODO-FN`
-- [ ] **8.1142.16** `fuse_vnops.c` · 3,365L gen:7 · `TODO-PORT` · 48 fn
+- [ ] **8.1142.16** `fuse_vnops.c` · 3,371L gen:7 · `TODO-PORT` · 48 fn
   - [ ] 8.1142.16.1 `fuse_extattr_check_cred()` · `TODO-FN`
   - [ ] 8.1142.16.2 `fuse_flush()` · `TODO-FN`
   - [ ] 8.1142.16.3 `fuse_fifo_close()` · `TODO-FN`
@@ -111290,7 +111290,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **8.1153.1** `tarfs.h` · 252L gen:6 · `TODO-HDR`
 - [ ] **8.1153.2** `tarfs_dbg.h` · 67L · `TODO-HDR`
-- [ ] **8.1153.3** `tarfs_io.c` · 742L gen:11 · `TODO-PORT` · 16 fn
+- [ ] **8.1153.3** `tarfs_io.c` · 744L gen:11 · `TODO-PORT` · 16 fn
   - [ ] 8.1153.3.1 `tarfs_sysctl_handle_zio_reset()` · `TODO-FN`
   - [ ] 8.1153.3.2 `tarfs_io_read()` · `TODO-FN`
   - [ ] 8.1153.3.3 `tarfs_io_read_buf()` · `TODO-FN`

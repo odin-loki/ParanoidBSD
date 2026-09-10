@@ -657,7 +657,9 @@ tarfs_io_init(struct tarfs_mount *tmp)
 	block = malloc(tmp->iosize, M_TEMP, M_ZERO | M_WAITOK);
 	res = tarfs_io_read_buf(tmp, true, block, 0, tmp->iosize);
 	if (res < 0) {
-		return (-res);
+		/* PBSD: this path returned without freeing block. */
+		error = -res;
+		goto bad;
 	}
 	if (memcmp(block, XZ_MAGIC, sizeof(XZ_MAGIC)) == 0) {
 		printf("xz compression not supported\n");

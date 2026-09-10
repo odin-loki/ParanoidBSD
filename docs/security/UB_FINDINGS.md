@@ -16054,3 +16054,64 @@ models an array bound, and the index is unconstrained data from an ioctl
 the analyser cannot see the source of. The sweep's contribution here was
 to put a person in the file. The number that matters is that the ERROR
 set is unchanged — all eight still compile.
+
+## The fs shard: a permission decision made on stack contents
+
+`fuse_internal_getattr()` returns from `fuse_internal_do_getattr()`,
+whose only failure path is
+
+```c
+	if ((err = fdisp_wait_answ(&fdi))) {
+		if (err == ENOENT)
+			fuse_internal_vnode_disappear(vp);
+		goto out;
+	}
+```
+
+— straight to `out:`, without touching `*vap`. Nine call sites in the
+tree; six check the return. The three that did not:
+
+**`fuse_internal_access()`.** Under `FSESS_DEFAULT_PERMISSIONS` — the
+mount option that tells the kernel to do its own permission checking
+rather than asking the daemon — this *is* the permission decision:
+
+```c
+	if (dataflags & FSESS_DEFAULT_PERMISSIONS) {
+		struct vattr va;
+
+		fuse_internal_getattr(vp, &va, cred, td);
+		return vaccess(vp->v_type, va.va_mode, va.va_uid,
+		    va.va_gid, mode, cred);
+	}
+```
+
+A failed getattr — an aborted connection, a daemon that returns an
+error, a `FUSE_GETATTR` reply the transport drops — leaves `va` as the
+stack found it, and `vaccess()` grants or denies on that. A stack
+`va_uid` that happens to match the caller's uid grants everything the
+owner can do. It now propagates the error, which denies.
+
+**`fuse_internal_clear_suid_on_write()`.** Whether a setuid bit survives
+a write by a caller without `PRIV_VFS_RETAINSUGID` was decided by
+`va.va_mode & (S_ISUID | S_ISGID)` on the same unwritten struct. It now
+acts only on an answer it actually got.
+
+**`fuse_close()`'s atime update**, which ran its `VWRITE` check the same
+way. Less consequential — the worst case is an atime write — but the
+same shape, and now the same fix.
+
+`tarfs_io_init()` is the fourth in this batch and the plainest: every
+exit but one goes through a `bad:` label that frees the `iosize`-sized
+block it allocated up front, and the one that does not is the failed
+first read.
+
+```
+              before   after     (sys/fs/fuse, sys/fs/tarfs)
+OK                13      13
+ERROR              0       0
+findings           5       2
+```
+
+`fuse_internal.c` 2 → 0 and `tarfs_io.c` 1 → 0. The two that remain are
+in `fuse_vnops.c` and are the RB-tree and dispatch-table classes already
+on the record.

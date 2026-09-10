@@ -201,7 +201,19 @@ fuse_internal_access(struct vnode *vp,
 	if (dataflags & FSESS_DEFAULT_PERMISSIONS) {
 		struct vattr va;
 
-		fuse_internal_getattr(vp, &va, cred, td);
+		/*
+		 * PBSD: fuse_internal_getattr() returns without writing va
+		 * when the daemon's reply fails -- fuse_internal_do_getattr()
+		 * goes straight to its out: label on an fdisp_wait_answ()
+		 * error.  This call ignored that and handed the stack to
+		 * vaccess(), which is the whole permission decision under
+		 * FSESS_DEFAULT_PERMISSIONS: a stack va_uid that happened to
+		 * match the caller granted everything.  Six of the nine
+		 * callers of this function in the tree already check.
+		 */
+		err = fuse_internal_getattr(vp, &va, cred, td);
+		if (err != 0)
+			return err;
 		return vaccess(vp->v_type, va.va_mode, va.va_uid,
 		    va.va_gid, mode, cred);
 	}
@@ -1276,8 +1288,15 @@ fuse_internal_clear_suid_on_write(struct vnode *vp, struct ucred *cred,
 
 	if (dataflags & FSESS_DEFAULT_PERMISSIONS) {
 		if (priv_check_cred(cred, PRIV_VFS_RETAINSUGID)) {
-			fuse_internal_getattr(vp, &va, cred, td);
-			if (va.va_mode & (S_ISUID | S_ISGID)) {
+			/*
+			 * PBSD: a failed getattr leaves va unwritten, and
+			 * whether a setuid bit survives this write was then
+			 * decided by a stack byte.  Act only on an answer we
+			 * actually got.
+			 */
+			int gaerr = fuse_internal_getattr(vp, &va, cred, td);
+
+			if (gaerr == 0 && (va.va_mode & (S_ISUID | S_ISGID))) {
 				mode_t mode = va.va_mode & ~(S_ISUID | S_ISGID);
 				/* Clear all vattr fields except mode */
 				vattr_null(&va);

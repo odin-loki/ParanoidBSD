@@ -3937,6 +3937,37 @@ FIXES = {
         "mtkswitch_vlan_{get,set}vgroup: the same off-by-one as "
         "mtkswitch_mt7620.c",
     ),
+
+    "hbsd/src/sys/fs/fuse/fuse_internal.c": [
+        (
+            "err = fuse_internal_getattr(vp, &va, cred, td);\n\t\tif (err != 0)",
+            "\t\tfuse_internal_getattr(vp, &va, cred, td);\n\t\treturn vaccess(",
+            "fuse_internal_access: under FSESS_DEFAULT_PERMISSIONS the "
+            "whole permission decision was made from a struct vattr a "
+            "failed getattr never wrote",
+        ),
+        (
+            "int gaerr = fuse_internal_getattr(vp, &va, cred, td);",
+            "\t\t\tfuse_internal_getattr(vp, &va, cred, td);\n\t\t\tif (va.va_mode &",
+            "fuse_internal_clear_suid_on_write: whether a setuid bit "
+            "survives the write was decided by a stack byte on a failed "
+            "getattr",
+        ),
+    ],
+
+    "hbsd/src/sys/fs/fuse/fuse_vnops.c": (
+        "access_e = fuse_internal_getattr(vp, &va, cred, td);",
+        "\t\t\tfuse_internal_getattr(vp, &va, cred, td);\n\t\t\taccess_e = vaccess(",
+        "fuse_close: the close-path atime update's VWRITE check ran "
+        "against a struct vattr a failed getattr never wrote",
+    ),
+
+    "hbsd/src/sys/fs/tarfs/tarfs_io.c": (
+        "error = -res;\n\t\tgoto bad;",
+        "return (-res);",
+        "tarfs_io_init: the read-failure path returned without freeing "
+        "the iosize-sized block the bad: label frees on every other exit",
+    ),
 }
 
 
