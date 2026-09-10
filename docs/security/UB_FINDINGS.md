@@ -20249,3 +20249,87 @@ validate `hw_variant`.  There is an explicit `else` now, and it refuses.
 
 Measured over `usr.sbin/bluetooth`: 10 → 9, seventy-three translation
 units OK and no ERROR either side.
+
+## crunchide(1): a section header size the file gets to choose
+
+```c
+	shnum = xe16toh(ehdr.e_shnum);
+
+	shdrsize = shnum * xe16toh(ehdr.e_shentsize);
+	if ((shdrp = xmalloc(shdrsize, fn, "section header table")) == NULL)
+		goto bad;
+	if (xreadatoff(fd, shdrp, xewtoh(ehdr.e_shoff), shdrsize, fn) !=
+	    shdrsize)
+		goto bad;
+	...
+	for (i = 0; i < shnum; i++) {
+		switch (xe32toh(shdrp[i].sh_type)) {
+```
+
+The allocation is `shnum * e_shentsize` **bytes**; the indexing is
+`shdrp[i]` as an `Elf_Shdr[]`, which needs `shnum * sizeof(Elf_Shdr)`.
+Both numbers come out of the object file, and nothing requires them to
+agree.  A file declaring an `e_shentsize` smaller than the header for
+its class makes every `shdrp[i]` past the first read past the
+allocation — and `crunchide` then writes the file back based on what it
+read.
+
+The product is also computed in `int`: `e_shnum` and `e_shentsize` are
+both `Elf_Half`, and at their maximum the product is 4,294,836,225,
+which overflows a signed 32-bit `int`.  A negative `shdrsize` then goes
+to `xmalloc()`.
+
+The ELF specification fixes `e_shentsize` at the size of the section
+header for the file's class, and `crunchide` is compiled once per
+class, so requiring equality is exactly right.  The multiplication is
+done in `ssize_t` against `sizeof(Elf_Shdr)`.
+
+It moved nothing: `usr.sbin/crunch` measured 7 → 7, four translation
+units OK and the same one known ERROR.  The analyser's finding on
+`shdrp[i]` is the generic "buffer filled by a call I cannot follow"
+shape, not this path — the defect is visible by reading, not by the
+checker, which is the second time in this sweep that has been true of
+something worth fixing.
+
+## The progs shard, closed
+
+Opening and closing sweeps over `bin`, `sbin`, `usr.bin` and `usr.sbin`,
+same tree layout, same scope, `--check-errors` on both sides:
+
+```
+before   595 finding(s)  OK 1822  ERROR 40
+after    557 finding(s)  OK 1822  ERROR 40
+```
+
+Thirty-nine closed, one appeared — `pfctl_parser.c`'s `host_if()`, read
+and characterised above as the per-translation-unit path budget being
+spent differently.  The translation-unit counts are identical on both
+sides, and all forty ERRORs are the ones already on the record, so the
+two numbers are the same measurement.
+
+By class:
+
+| checker | before | after |
+|---|---|---|
+| `unix.Malloc` | 199 | 199 |
+| `core.NullDereference` | 191 | 182 |
+| `core.CallAndMessage` | 72 | 49 |
+| `core.UndefinedBinaryOperatorResult` | 40 | 40 |
+| `unix.cstring.NullArg` | 33 | 33 |
+| `core.uninitialized.Assign` | 22 | 22 |
+| `core.DivideZero` | 21 | 17 |
+| `unix.MallocSizeof` | 12 | 12 |
+| `core.uninitialized.Branch` | 2 | 1 |
+| `core.StackAddressEscape` | 1 | 0 |
+
+`unix.Malloc` is flat because the one leak fixed in it (`ppp`) is offset
+by the one that appeared, and because the earlier `gprof`, `ipsend` and
+`ipfw` fixes landed before this pair of sweeps.
+
+What the whole shard came to, over its full reading: the classes that
+paid were **a helper that exits and a declaration that does not say so**,
+**a variable written in some arms of a chain and read after it**, **an
+error test that cannot fire**, and **a check that runs after the
+arithmetic it protects**.  The classes that did not were every attempt
+to find those shapes by a predicate over the source instead of by
+reading a finding — twice, measured, and reverted both times.

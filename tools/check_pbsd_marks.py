@@ -5153,6 +5153,16 @@ FIXES = {
     ],
 
 
+    "hbsd/src/usr.sbin/crunch/crunchide/exec_elf32.c": (
+        "if (xe16toh(ehdr.e_shentsize) != sizeof(Elf_Shdr)) {",
+        "shdrsize = shnum * xe16toh(ehdr.e_shentsize);",
+        "ELFNAMEEND(hide)() allocated shnum * e_shentsize bytes and then "
+        "indexed the result as an Elf_Shdr[], so an object file "
+        "declaring a smaller e_shentsize made every shdrp[i] past the "
+        "first read past the allocation -- and the product is computed "
+        "in int, which two Elf_Half at their maximum overflow",
+    ),
+
     "hbsd/src/usr.sbin/bluetooth/iwmbtfw/main.c": (
         'iwmbt_err("Unsupported hardware variant (%d)", hw_variant);',
         None,

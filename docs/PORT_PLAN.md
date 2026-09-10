@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,482 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,747 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,762 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,977** | **114,207** |
+| | **total** | **41,143** | **21,300,992** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -30060,7 +30060,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.68.1.4 `in_keep_list()` · `TODO-FN`
   - [ ] 6.68.1.5 `add_file_to_keep_list()` · `TODO-FN`
   - [ ] 6.68.1.6 `hide_syms()` · `TODO-FN`
-- [ ] **6.68.2** `exec_elf32.c` · 497L gen:3 · `TODO-PORT` · 5 fn
+- [ ] **6.68.2** `exec_elf32.c` · 512L gen:3 · `TODO-PORT` · 5 fn
   - [ ] 6.68.2.1 `xreadatoff()` · `TODO-FN`
   - [ ] 6.68.2.2 `xwriteatoff()` · `TODO-FN`
   - [ ] 6.68.2.3 `xmalloc()` · `TODO-FN`

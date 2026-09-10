@@ -245,7 +245,22 @@ ELFNAMEEND(hide)(int fd, const char *fn)
 	data = ehdr.e_ident[EI_DATA];
 	shnum = xe16toh(ehdr.e_shnum);
 
-	shdrsize = shnum * xe16toh(ehdr.e_shentsize);
+	/*
+	 * PBSD: shdrp is allocated as shnum * e_shentsize bytes and then
+	 * indexed as an Elf_Shdr[], so a file declaring a smaller
+	 * e_shentsize made every shdrp[i] past the first read past the
+	 * allocation -- and the product is computed in int, which two
+	 * Elf_Half at their maximum overflow, so a negative shdrsize could
+	 * reach xmalloc().  The ELF spec fixes e_shentsize at the size of
+	 * the header for this class, so require it.
+	 */
+	if (xe16toh(ehdr.e_shentsize) != sizeof(Elf_Shdr)) {
+		fprintf(stderr, "%s: weird executable (unexpected section "
+		    "header size)\n", fn);
+		goto bad;
+	}
+
+	shdrsize = (ssize_t)shnum * sizeof(Elf_Shdr);
 	if ((shdrp = xmalloc(shdrsize, fn, "section header table")) == NULL)
 		goto bad;
 	if (xreadatoff(fd, shdrp, xewtoh(ehdr.e_shoff), shdrsize, fn) !=
