@@ -600,6 +600,16 @@ __thr_sigaction(int sig, const struct sigaction *act, struct sigaction *oact)
 
 	ret = 0;
 	err = 0;
+	/*
+	 * oldact is filled by __sys_sigaction() below, which is not
+	 * called at all when act and oact are both NULL -- and
+	 * sigaction(sig, NULL, NULL) is a legal call that returns 0.
+	 * The fixup below reads oldact.sa_handler unconditionally, so
+	 * on that path it read an indeterminate value.  Zero is
+	 * SIG_DFL, which is what "nothing was retrieved" means here,
+	 * so the fixup declines exactly as it should.
+	 */
+	bzero(&oldact, sizeof(oldact));
 	usa = __libc_sigaction_slot(sig);
 
 	__sys_sigprocmask(SIG_SETMASK, &_thr_maskset, &oldset);

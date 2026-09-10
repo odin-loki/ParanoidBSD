@@ -284,11 +284,23 @@ check("the __DEFAULT_NO_OPTIONS reader finds something", len(_no) > 20)
 check("...and it is not just returning everything", "KERBEROS" not in _no,
       "KERBEROS is __DEFAULT_YES; a reader that says no to everything "
       "makes every DEFAULT_OFF claim pass")
-_off = [(f, why.split(":", 1)[1].strip())
-        for f, why in EXPECTED.items() if why.startswith("DEFAULT_OFF:")]
+# Both shapes make this claim. A FILE entry names the file and the
+# directory is its parent; a NOT_BUILT PREFIX names the directory
+# itself, because the option gates the whole component -- lib/Makefile
+# does list libsecureboot, but only under SUBDIR.${MK_BEARSSL}, so
+# NOT_SUBDIR is the wrong claim for it and DEFAULT_OFF is the right
+# one. The two halves checked below are the same either way, so the
+# check is one loop over (label, directory, option).
+_off = [(f, Path(f).parent, why.rsplit("DEFAULT_OFF:", 1)[1].strip())
+        for f, why in EXPECTED.items() if "DEFAULT_OFF:" in why]
+_off += [(pre, Path(pre.rstrip("/")),
+          why.rsplit("DEFAULT_OFF:", 1)[1].strip())
+         for pre, why in NOT_BUILT.items() if "DEFAULT_OFF:" in why]
 check("some file makes the DEFAULT_OFF claim", bool(_off))
-for _f, _opt in _off:
-    d = Path(_f).parent
+check("...and some prefix does too",
+      any(_l.endswith("/") for _l, _d, _o in _off),
+      "the prefix half of this check is testing nothing")
+for _f, d, _opt in _off:
     check(f"{_f}: MK_{_opt} is off by default", _opt in _no,
           f"{_opt} is not in __DEFAULT_NO_OPTIONS, so this entry is "
           f"hiding a directory the build does descend into")

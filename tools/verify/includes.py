@@ -168,7 +168,7 @@ def resource_dir(cc: str = "clang") -> str:
 
 @functools.lru_cache(maxsize=None)
 def _lhdrs() -> tuple[str, ...]:
-    """include/Makefile's LHDRS: top-level names that live in sys/sys.
+    """include/Makefile's LHDRS and PHDRS: top-level names from sys/sys.
 
     FreeBSD does not keep <errno.h> in include/. include/Makefile:46 has
 
@@ -179,6 +179,20 @@ def _lhdrs() -> tuple[str, ...]:
     units failed on errno.h alone before this was read, and the answer was
     never a missing file - it was a build step this shim was not doing.
 
+    PHDRS is the SAME RULE under a second name, and reading one and not
+    the other is the same omission one list over. include/Makefile:344
+    and :350 are
+
+        .for i in ${LHDRS}          .for i in ${PHDRS}
+        INCSLINKS+= sys/$i ...      INCSLINKS+= sys/$i ...
+        .endfor                     .endfor
+
+    identical but for the variable. PHDRS is `_semaphore.h stdarg.h',
+    and lib/libthr/thread/thr_sem.c:41 is `#include <_semaphore.h>' --
+    which came back "file not found, did you mean 'semaphore.h'?", a
+    translation unit reporting nothing and looking exactly like a clean
+    one.
+
     Parsed rather than copied, so it tracks the Makefile.
     """
     mk = SRC / "include" / "Makefile"
@@ -186,11 +200,12 @@ def _lhdrs() -> tuple[str, ...]:
         text = re.sub(r"\\\n", " ", mk.read_text(errors="replace"))
     except OSError:
         return ()
+    out: list[str] = []
     for line in text.splitlines():
-        if line.startswith("LHDRS"):
-            return tuple(t for t in line.split("=", 1)[1].split()
-                         if t.endswith(".h"))
-    return ()
+        if line.startswith(("LHDRS", "PHDRS")):
+            out += [t for t in line.split("=", 1)[1].split()
+                    if t.endswith(".h")]
+    return tuple(dict.fromkeys(out))
 
 
 @functools.lru_cache(maxsize=None)

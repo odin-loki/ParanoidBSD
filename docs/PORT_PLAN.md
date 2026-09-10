@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,848 | 9,056 |
+| 1 | `lib` | 2,827 | 639,858 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,206** | **114,207** |
+| | **total** | **41,143** | **21,301,216** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -11420,7 +11420,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.311.44.1 `_pthread_setprio()` · `TODO-FN`
 - [ ] **1.311.45** `thr_setschedparam.c` · 78L · `TODO-PORT` · 1 fn
   - [ ] 1.311.45.1 `_pthread_setschedparam()` · `TODO-FN`
-- [ ] **1.311.46** `thr_sig.c` · 826L · `TODO-PORT` · 39 fn
+- [ ] **1.311.46** `thr_sig.c` · 836L · `TODO-PORT` · 39 fn
   - [ ] 1.311.46.1 `__libc_sigaction_slot()` · `TODO-FN`
   - [ ] 1.311.46.2 `thr_signal_block_slow()` · `TODO-FN`
   - [ ] 1.311.46.3 `thr_signal_unblock_slow()` · `TODO-FN`

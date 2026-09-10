@@ -21696,8 +21696,21 @@ __DEFAULT_NO_OPTIONS = \
   `SUBDIR.${MK_DIALOG}+= libdpv libfigpar`, and `<dialog.h>` is
   `contrib/dialog`'s, installed only when that option is on.
 
-Both are on the record as `NOT_SUBDIR` now — the honest verdict is *not
-built*, not *cannot compile*.
+Both are on the record now — the honest verdict is *not built*, not
+*cannot compile*.
+
+They went down as `NOT_SUBDIR` first, and that was the wrong claim:
+`lib/Makefile` **does** name both directories, `SUBDIR.${MK_BEARSSL}+=`
+and `SUBDIR.${MK_DIALOG}+=` being SUBDIR assignments like any other.
+`test_expected_errors.py` said so on the next run — *"lib/Makefile lists
+libsecureboot in SUBDIR, so the build DOES descend into it"* — which is
+the check doing exactly what it is for.  The right claim is
+`DEFAULT_OFF:<OPTION>`, the shape `usr.bin/dpv/dpv.c` already used, and
+it is stronger: it names the option, so both halves get checked — that
+the option really is in `__DEFAULT_NO_OPTIONS`, and that the parent
+Makefile really gates *that* directory on *that* option.  That claim had
+only ever been made by file entries; `NOT_BUILT` prefixes can make it
+now too, and the test's loop runs over both.
 
 ### And one negative result, measured
 
@@ -21719,3 +21732,128 @@ headers (`ftperr.h`, `httperr.h`, `tables.h`, `tables_linux.h`,
 that is not a translation unit, `lib/libmd/mdXhl.c` which is compiled
 once per algorithm with `-DmdX`, and a handful where the include path
 still has an answer to give.
+
+## `PHDRS` is the same rule as `LHDRS`, one list over
+
+`_lhdrs()` in `tools/verify/includes.py` exists because FreeBSD does not
+keep `<errno.h>` in `include/`.  `include/Makefile` names a set of
+top-level headers that actually live in `sys/sys`, and the install step
+symlinks them into place:
+
+```
+.for i in ${LHDRS}
+INCSLINKS+= sys/$i ${INCLUDEDIR}/$i
+.endfor
+```
+
+The shim parses that list rather than copying it, so it tracks the
+Makefile.  What it did not do was read the list **beside** it.
+`include/Makefile:344` and `:350` are byte-for-byte the same rule under
+two names:
+
+```
+.for i in ${LHDRS}          .for i in ${PHDRS}
+INCSLINKS+= sys/$i ...      INCSLINKS+= sys/$i ...
+.endfor                     .endfor
+```
+
+`PHDRS` is `_semaphore.h stdarg.h`.  `lib/libthr/thread/thr_sem.c:41` is
+`#include <_semaphore.h>`, and the sweep answered
+
+```
+'_semaphore.h' file not found, did you mean 'semaphore.h'?
+```
+
+which is the failure mode this whole file is about: **a translation unit
+that does not compile reports zero findings and is indistinguishable
+from a clean one.**  `thr_sem.c` is 300 lines of `sem_t` handling that
+nothing had ever looked at.
+
+Measured over `lib/libthr`, before and after, same scope, same tree:
+
+| | TUs | OK | ERROR | findings |
+|---|---|---|---|---|
+| before | 64 | 62 | 2 | 1 |
+| after  | 64 | 63 | 1 | 1 |
+
+`thr_sem.c` compiles and is clean.  The remaining `ERROR` is not one,
+and the remaining finding is fixed below — `lib/libthr` closes at **64
+translation units, 63 analysed, 0 findings, 1 not built and on the
+record.**
+
+### `thr_autoinit.c` is dead source, and now says so
+
+`lib/libthr/thread/thr_autoinit.c:51` calls `_thread_init()`, a name
+libthr does not declare — `thr_private.h:800` declares
+`_libpthread_init(struct pthread *)`.  `_thread_init` is *libc's* stub
+name (`lib/libc/gen/_thread_init.c:33` weak-references
+`_thread_init_stub` to it), which libthr overrides rather than calls.
+
+The file cannot compile, and nothing asks it to.
+`lib/libthr/thread/Makefile.inc:26` lists `thr_init.c` and names
+`thr_autoinit.c` nowhere, and `thr_init.c:285-291` carries the same
+comment and the same `extern int _thread_autoinit_dummy_decl` the file
+was written to hold.  The two were folded together and the original was
+never deleted; they have since diverged, `thr_init.c:294` defining
+`_thread_init_hack()` as `_libpthread_init(NULL)`.
+
+`NOT_NAMED` in `tools/verify/expected_errors.py` — checked, not asserted: `sweep_report.names_it()` reads the build's own
+answer, and it says `thr_init.c` yes, `thr_sem.c` yes,
+`thr_autoinit.c` no.  `lib/libthr` is now
+fully accounted for: 64 translation units, 63 analysed, one not built.
+
+## `__thr_sigaction`: `sigaction(sig, NULL, NULL)` reads the stack
+
+The one finding `lib/libthr` has, newly visible now that the scope is
+open at all:
+
+```
+lib/libthr/thread/thr_sig.c:638  [core.UndefinedBinaryOperatorResult]
+    The left operand of '!=' is a garbage value
+```
+
+`__thr_sigaction()` declares
+
+```c
+	struct sigaction newact, oldact, oldact2;
+```
+
+and fills `oldact` only by handing `&oldact` to `__sys_sigaction()`,
+which it calls in two places:
+
+```c
+	if (act != NULL) {
+		...
+		ret = __sys_sigaction(sig, &newact, &oldact);
+	} else if (oact != NULL) {
+		ret = __sys_sigaction(sig, NULL, &oldact);
+	}
+
+	if (oldact.sa_handler != SIG_DFL && oldact.sa_handler != SIG_IGN) {
+```
+
+`sigaction(sig, NULL, NULL)` takes **neither** branch.  It is a legal
+call — POSIX says if `act` is null the disposition is not changed, and
+if `oact` is null nothing is reported — and it returns 0.  On that path
+`oldact` is never written by anyone, and the line below reads
+`oldact.sa_handler` regardless.
+
+Nothing escapes: the read only decides an assignment whose result is
+copied out solely when `oact != NULL` *and* `ret == 0`.  But it is a
+read of an object that was never written, on a call any program is
+entitled to make, and it is the kind of thing that stops being harmless
+the moment someone adds a use below it.
+
+Zeroing it first is both the fix and the statement of intent:
+
+```c
+	bzero(&oldact, sizeof(oldact));
+```
+
+`SIG_DFL` is `(void *)0`, so a zeroed `sa_handler` *is* `SIG_DFL` — the
+fixup declines, which is exactly what "nothing was retrieved" should
+mean.  Every other path is unchanged: on the two paths where the call
+was made and succeeded the kernel overwrites it, and on the paths where
+it failed `ret != 0` and `*oact` is not written either way.  The same
+decision on every path, now for a stated reason rather than by accident
+of what was on the stack.

@@ -105,6 +105,16 @@ EXPECTED = {
     # in this inventory: EXPECTED is the list of translation units that
     # FAIL, and the --check-errors gate calls an entry that compiles
     # stale.
+    "lib/libthr/thread/thr_autoinit.c":
+        "dead source, folded into thr_init.c and never removed. "
+        "thr_init.c:285-291 carries the same comment and the same "
+        "`extern int _thread_autoinit_dummy_decl'; the two have since "
+        "diverged, thr_init.c:294 defining _thread_init_hack() as "
+        "`_libpthread_init(NULL)' while thr_autoinit.c:51 still calls "
+        "`_thread_init()', which libthr does not declare -- "
+        "thr_private.h:800 declares _libpthread_init(). _thread_init is "
+        "libc's stub name (lib/libc/gen/_thread_init.c:33), which libthr "
+        "overrides rather than calls. NOT_NAMED",
     "usr.bin/lex/initscan.c":  "a bootstrap copy, not in SRCS. NOT_NAMED",
 
     # Test programs no build walks.
@@ -993,13 +1003,13 @@ NOT_BUILT = {
         "libsecureboot', so a default build never enters the directory. "
         "bmake refuses it for the same reason from the other side: "
         "local.trust.mk:90 stops with `Need TRUST_ANCHORS see "
-        "README.rst'. NOT_SUBDIR",
+        "README.rst'. DEFAULT_OFF:BEARSSL",
     "lib/libdpv/":
         "MK_DIALOG is in the same __DEFAULT_NO_OPTIONS list "
         "(share/mk/src.opts.mk:211) and lib/Makefile:179 is "
         "`SUBDIR.${MK_DIALOG}+= libdpv libfigpar'. The three files want "
         "<dialog.h>, which is contrib/dialog's, installed only when that "
-        "option is on. NOT_SUBDIR",
+        "option is on. DEFAULT_OFF:DIALOG",
 
     "sbin/ipf/ipftest/":
         "commented out of SUBDIR at sbin/ipf/Makefile:9. NOT_SUBDIR",

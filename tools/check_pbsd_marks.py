@@ -5187,6 +5187,24 @@ FIXES = {
     ),
 
 
+    "hbsd/src/lib/libthr/thread/thr_sig.c": (
+        "bzero(&oldact, sizeof(oldact));",
+        None,
+        "__thr_sigaction() declares `struct sigaction newact, oldact, "
+        "oldact2' and fills oldact only by passing &oldact to "
+        "__sys_sigaction(), which it calls under `if (act != NULL)' and "
+        "under `else if (oact != NULL)'. sigaction(sig, NULL, NULL) is a "
+        "legal call that takes neither branch and returns 0 -- and the "
+        "fixup block below reads oldact.sa_handler unconditionally. So "
+        "that call read an indeterminate value off the stack every time. "
+        "Nothing escaped (the read only decides an assignment whose "
+        "result is copied out solely when oact != NULL and ret == 0), "
+        "but it is a read of an object never written. Zeroing it first "
+        "makes sa_handler SIG_DFL, which is what \"nothing was "
+        "retrieved\" means, so the fixup declines -- the same decision "
+        "on every path, now for a stated reason. clang "
+        "core.UndefinedBinaryOperatorResult, thr_sig.c:638.",
+    ),
     "hbsd/src/lib/libc/compat-43/killpg.c": (
         "if (pgid == 1 || pgid == INT32_MIN) {",
         "if (pgid == 1) {\n\t\terrno = ESRCH;",
