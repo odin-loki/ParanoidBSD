@@ -18744,3 +18744,73 @@ when `dent1` is NULL and -1 exactly when `dent2` is, so the argument in
 first position is never the NULL one, which is a ternary chain the
 analyser will not carry; `tftp/main.c:323` is `res->ai_addr` after
 `getaddrinfo`, the out-parameter class.
+
+## `lpr`: seven more that end in exit(), and this time it paid
+
+The lint's list is not to be applied wholesale — but `lpc`'s `quit()` is
+called in exactly the shape that costs findings, and it turned up while
+reading the `unix.cstring.NullArg` set rather than by picking off the
+list:
+
+```c
+	if ((bp = el_gets(el, &num)) == NULL || num == 0)
+		quit(0, NULL);
+
+	len = MIN(MAX_CMDLINE - 1, num);
+	memcpy(cmdline, bp, len);
+```
+
+`quit()` is declared `void quit(int, char *[]);` in `lpc/extern.h` and
+ends in `exit()` in `cmds.c`.  So the analyser walks out of the guard
+with `bp` still NULL and into the `memcpy`.
+
+`lpr` has fourteen such functions across its six programs.  Seven were
+marked — `quit`, `fatal`, `mcleanup`, `fhosterr`, `frecverr`, `abortpr`,
+`intr` and `cleanup` — and the four `usage()`s were left, on the
+evidence of the batch that measured nothing.
+
+```
+                usr.sbin/lpr
+                before  after
+OK                  28      28
+ERROR                0       0
+findings             6       3
+```
+
+Three closed, none new: `lpc.c:174` (the `memcpy` above),
+`common_source/rmjob.c:331` in `rmremote()`, and `lprm/lprm.c:100` in
+`main()`.
+
+Half the remaining set of six, gone, from declarations in a header —
+which is the case for reading the lint's list *against* the findings
+rather than down it.
+
+### `lpc.c:312`, read and not a defect
+
+The one `NullArg` left in `lpr` is `help()`:
+
+```c
+		for (j = 0; j < columns; j++) {
+			c = cmdtab + j * lines + i;
+			if (c->c_name)
+				printf("%s", c->c_name);
+			if (c + lines >= &cmdtab[NCMDS]) {
+				printf("\n");
+				break;
+			}
+			w = strlen(c->c_name);
+```
+
+`c->c_name` is tested two lines above and not here, which reads like the
+bug — and `NCMDS` is `sizeof(cmdtab)/sizeof(cmdtab[0])`, so
+`cmdtab[NCMDS-1]` really is the `{0, 0, 0, 0, 0}` sentinel and
+`c->c_name` really can be NULL at the `printf`.
+
+It cannot be NULL at the `strlen`.  The test at the end of each
+iteration is on `c + lines`, which is the *next* iteration's `c`, so `c`
+at the top of the loop is always below `&cmdtab[NCMDS]` — the loop never
+indexes past the array either.  And when `c` is the sentinel,
+`c + lines >= &cmdtab[NCMDS]` holds for any `lines >= 1`, which the
+`columns == 0` guard above ensures, so the `break` always fires before
+the `strlen`.  The relation between `c` and `c + lines` across
+iterations is what the analyser will not carry.

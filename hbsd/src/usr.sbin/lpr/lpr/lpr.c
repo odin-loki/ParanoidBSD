@@ -101,7 +101,7 @@ static struct stat statb;
 static void	 card(int _c, const char *_p2);
 static int	 checkwriteperm(const char *_file, const char *_directory);
 static void	 chkprinter(const char *_ptrname, struct printer *_pp);
-static void	 cleanup(int _signo);
+static void	 cleanup(int _signo) __dead2;
 static void	 copy(const struct printer *_pp, int _f, const char _n[]);
 static char	*itoa(int _i);
 static const char  *linked(const char *_file);

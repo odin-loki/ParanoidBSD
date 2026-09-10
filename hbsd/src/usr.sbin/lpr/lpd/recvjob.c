@@ -71,7 +71,7 @@ static char	 tfname[NAME_MAX];	/* tmp copy of cf before linking */
 static void	 ack(struct printer *_pp);
 static void	 nak(struct printer *_pp);
 static int	 chksize(size_t _size);
-static void	 frecverr(const char *_msg, ...) __printf0like(1, 2);
+static void	 frecverr(const char *_msg, ...) __printf0like(1, 2) __dead2;
 static int	 noresponse(void);
 static void	 rcleanup(int _signo);
 static void	 read_minfree(void);

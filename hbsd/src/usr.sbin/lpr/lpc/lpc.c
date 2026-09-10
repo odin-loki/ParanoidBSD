@@ -70,7 +70,7 @@ uid_t		uid, euid;
 int			 main(int _argc, char *_argv[]);
 static void		 cmdscanner(void);
 static struct cmd	*getcmd(const char *_name);
-static void		 intr(int _signo);
+static void		 intr(int _signo) __dead2;
 static void		 makeargv(void);
 static int		 ingroup(const char *_grname);
 

@@ -119,7 +119,7 @@ static char	width[10] = "-w";	/* page width in static characters */
 #define TFILENAME "fltXXXXXX"
 static char	tfile[] = TFILENAME;	/* file name for filter output */
 
-static void	 abortpr(int _signo);
+static void	 abortpr(int _signo) __dead2;
 static void	 alarmhandler(int _signo);
 static void	 banner(struct printer *_pp, char *_name1, char *_name2);
 static int	 dofork(const struct printer *_pp, int _action);

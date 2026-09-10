@@ -95,12 +95,12 @@ int	from_remote;			/* from remote socket */
 
 int		 main(int argc, char **_argv);
 static void	 reapchild(int _signo);
-static void	 mcleanup(int _signo);
+static void	 mcleanup(int _signo) __dead2;
 static void	 doit(void);
 static void	 startup(void);
 static void	 chkhost(struct sockaddr *_f, int _ch_opts);
 static int	 ckqueue(struct printer *_pp);
-static void	 fhosterr(int _ch_opts, char *_sysmsg, char *_usermsg);
+static void	 fhosterr(int _ch_opts, char *_sysmsg, char *_usermsg) __dead2;
 static int	*socksetup(int _af, const char *portstr, int _debuglvl);
 static void	 usage(void);
 

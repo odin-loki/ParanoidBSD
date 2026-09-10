@@ -53,7 +53,7 @@ void	 generic(void (*_specificrtn)(struct printer *_pp), int _cmdopts,
 	    void (*_initcmd)(int _argc, char *_argv[]),
 	    int _argc, char *_argv[]);
 void	 help(int _argc, char *_argv[]);
-void	 quit(int _argc, char *_argv[]);
+void	 quit(int _argc, char *_argv[]) __dead2;
 void	 restart_q(struct printer *_pp);
 void	 setstatus_gi(int _argc, char *_argv[]);
 void	 setstatus_q(struct printer *_pp);

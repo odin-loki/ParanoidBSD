@@ -4141,6 +4141,52 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/lpr/lpc/extern.h": (
+        "void\t quit(int _argc, char *_argv[]) __dead2;",
+        "void\t quit(int _argc, char *_argv[]);",
+        "cmdscanner() writes `if ((bp = el_gets(el, &num)) == NULL || "
+        "num == 0) quit(0, NULL);' and then memcpy()s from bp -- quit() "
+        "ends in exit() and the declaration did not say so",
+    ),
+
+    "hbsd/src/usr.sbin/lpr/common_source/lp.h": (
+        "__printflike(2, 3) __dead2;",
+        "__printflike(2, 3);\nint\t firstprinter",
+        "lpr's fatal() ends in exit() too, and rmremote() calls it on the "
+        "failure path and then uses what it was checking",
+    ),
+
+    "hbsd/src/usr.sbin/lpr/lpd/lpd.c": (
+        ("__dead2;", 2),
+        "static void\t mcleanup(int _signo);",
+        "mcleanup() and fhosterr(), both ending in exit()",
+    ),
+
+    "hbsd/src/usr.sbin/lpr/lpd/recvjob.c": (
+        "static void\t frecverr(const char *_msg, ...) __printf0like(1, 2) __dead2;",
+        "static void\t frecverr(const char *_msg, ...) __printf0like(1, 2);",
+        "frecverr() ends in exit()",
+    ),
+
+    "hbsd/src/usr.sbin/lpr/lpd/printjob.c": (
+        "static void\t abortpr(int _signo) __dead2;",
+        "static void\t abortpr(int _signo);",
+        "abortpr() ends in exit()",
+    ),
+
+    "hbsd/src/usr.sbin/lpr/lpc/lpc.c": (
+        "static void\t\t intr(int _signo) __dead2;",
+        "static void\t\t intr(int _signo);",
+        "intr() ends in exit()",
+    ),
+
+    "hbsd/src/usr.sbin/lpr/lpr/lpr.c": (
+        "static void\t cleanup(int _signo) __dead2;",
+        "static void\t cleanup(int _signo);",
+        "cleanup() ends in exit(), and lprm's main() reached a NULL "
+        "dereference past a call to its sibling",
+    ),
+
     "hbsd/src/usr.bin/diff/diffdir.c": (
         "if (ignore_file_case && dp2 != NULL &&\n"
         "\t    strcasecmp(dp->d_name, dp2->d_name) == 0)",
