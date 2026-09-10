@@ -21338,3 +21338,70 @@ All four: `FAILED` → `PROVED`.
 * **`quota`'s `prthumanval(int len, …)`** declares `char buf[len + 1]`,
   a VLA sized from its parameter.  All three call sites pass the literal
   7.
+
+## The kern shard, model-checked: nothing, and the number that says why
+
+`sys/kern`, `sys/vm`, `sys/net`, `sys/netinet` and `sys/netinet6`:
+
+```
+197 of 662 translation units modelled, 465 TU-ERROR
+158 (file, function) pairs checkable unguarded
+
+BOUNDED 5  FAILED 18  PROVED 91  TIMEOUT 44
+```
+
+**Nothing in the 18 was a defect**, and the honest headline is the first
+line rather than the last.  158 of the shard's 905 classified `SCALAR`
+and `VOID` functions reach the checker at all — the rest have no goto
+model because their translation unit does not compile standalone on a
+Linux host, which is the same 465 TU-ERROR seen from the other side.
+That ratio is why the kernel's findings in this project have come from
+the analyser and not from here.
+
+All 18:
+
+| family | count |
+|---|---|
+| an unseen callee or an unconstrained global | 10 |
+| CBMC's entry-point leak check | 5 |
+| arithmetic on an unconstrained parameter or global | 2 |
+| a `static inline` analysed as its own entry point | 1 |
+
+The last one is worth a paragraph because it is the family at its most
+convincing, and because the author had already answered it.
+`subr_blist.c`'s
+
+```c
+static inline u_daddr_t
+bitrange(int n, int count)
+{
+	return (((u_daddr_t)-1 << n) &
+	    ((u_daddr_t)-1 >> (BLIST_RADIX - (n + count))));
+}
+```
+
+is reported for a negative shift distance, a distance past the width,
+and `n + count` overflowing — and at `count == 0` the right shift really
+would be by `BLIST_RADIX`, which is undefined.  Every one of the ten
+call sites was read.  Three of them could have passed zero and all three
+are guarded, explicitly, right at the call:
+
+```c
+	if (maxcount % BLIST_RADIX != 0)
+		scan->bm_bitmap &= ~bitrange(0, maxcount % BLIST_RADIX);
+	else
+		scan->bm_bitmap = 0;
+...
+	if ((blk & BLIST_MASK) != 0) {
+		if ((~mask & bitrange(0, blk & BLIST_MASK)) != 0) {
+```
+
+The other seven pass a literal `1`, or a `*count` the surrounding
+arithmetic pins between one and `BLIST_RADIX - lo`.  A guard written
+three times at three call sites is somebody who knew.
+
+The two arithmetic reports are `run_interrupt_driven_config_hooks_
+warning`'s `warned * 60`, where `warned` counts one per sixty seconds
+and needs sixty-eight years to overflow, and `blist_create(daddr_t
+blocks)`'s `blocks - 1` at `LONG_MIN`, where `blocks` is a swap device's
+size.
