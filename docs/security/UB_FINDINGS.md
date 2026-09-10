@@ -15385,3 +15385,40 @@ directories is nine `core.CallAndMessage` on out-parameters written in
 another translation unit — `bus_space_read_region_4()`,
 `HYPERVISOR_event_channel_op()`, `usbd_*` — and one `unix.Malloc` pair
 in `ufshci_sim.c`, unread.
+
+### Three where the same file already had the right idiom
+
+`core.UndefinedBinaryOperatorResult` in the dev shard is 55 findings
+after the batches above. Three of them are the shape this document keeps
+returning to: a file that tests something correctly in one place and not
+in another.
+
+`fdc_sense_int()` has **three** failure returns — `fdc_cmd()` failing,
+`FD_NOT_VALID`, and `fdc_err()` after the cylinder read — and writes
+`*st0p` only after the first command succeeds and `*cylp` only after the
+second. Four call sites test `== FD_NOT_VALID` and then read `st0` and
+`cyl`; a fifth, at `:1962` in the same file, tests `== 0`. The four now
+test `!= 0`, which for the FD_NOT_VALID case is exactly what they did
+before.
+
+`em_newitr()` writes `bytes = bytes_per_packet = 0;` on one line and
+leaves `packets` out of it. `packets` is set only inside the two
+`if (txpackets != 0)` / `if (rxpackets != 0)` blocks, and the early
+return above covers only both **byte** counters being zero — a ring's
+byte and packet counters are loaded by separate `atomic_load_long()`
+calls, so a packet counter can still read zero while its byte counter
+does not. The AIM latency state machine then branches on an
+uninitialised local four times.
+
+`doopen()` in `psm.c` calls `get_mouse_status(sc->kbdc, stat, 0, 3)`
+twice. The second checks `< 3`; the first drops the count and tests
+`stat[1]` and `stat[2]` regardless.
+
+```
+              before   after     (sys/dev/fdc, e1000, atkbdc)
+OK                30      30
+findings          18       7
+```
+
+`if_em.c` and `psm.c` are clean; `fdc.c` keeps two, both
+`bus_space_read_*` out-parameters.

@@ -1682,7 +1682,16 @@ em_newitr(struct e1000_softc *sc, struct em_rx_queue *que,
 			goto em_set_next_itr;
 		}
 
-		bytes = bytes_per_packet = 0;
+		/*
+		 * PBSD: packets too.  It is written only inside the two
+		 * `if (txpackets != 0)' / `if (rxpackets != 0)' blocks
+		 * below, and the early return above only covers both BYTE
+		 * counters being zero -- the two counters of a ring are
+		 * loaded separately, so a packet counter can still read
+		 * zero while its byte counter does not.  The latency state
+		 * machine then branches on an uninitialised local.
+		 */
+		bytes = bytes_per_packet = packets = 0;
 		/* Get largest values from the associated tx and rx ring */
 		txpackets = atomic_load_long(&txr->tx_packets);
 		if (txpackets != 0) {

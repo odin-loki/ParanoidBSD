@@ -916,8 +916,19 @@ fdc_worker(struct fdc_data *fdc)
 		if (fdc_cmd(fdc, 2, NE7CMD_RECAL, fd->fdsu, 0))
 			return (1);
 		tsleep(fdc, PRIBIO, "fdrecal", hz);
+		/*
+		 * PBSD: `!= 0', at all four of these sites.
+		 *
+		 * fdc_sense_int() has three failure returns and only one of
+		 * them is FD_NOT_VALID.  It writes *st0p after the first
+		 * command succeeds and *cylp only after the second, so a
+		 * failed NE7CMD_SENSEI leaves both untouched and a failed
+		 * cylinder read leaves cyl untouched -- and the `st0 & 0xc0
+		 * || cyl != ...' below reads them either way.  The site at
+		 * :1962 in this same file already tests `== 0'.
+		 */
 		retry_line = __LINE__;
-		if (fdc_sense_int(fdc, &st0, &cyl) == FD_NOT_VALID)
+		if (fdc_sense_int(fdc, &st0, &cyl) != 0)
 			return (1); /* XXX */
 		retry_line = __LINE__;
 		if ((st0 & 0xc0) || cyl != 0)
@@ -938,7 +949,7 @@ fdc_worker(struct fdc_data *fdc)
 			return (1);
 		tsleep(fdc, PRIBIO, "fdseek", hz);
 		retry_line = __LINE__;
-		if (fdc_sense_int(fdc, &st0, &cyl) == FD_NOT_VALID)
+		if (fdc_sense_int(fdc, &st0, &cyl) != 0)
 			return (1); /* XXX */
 		retry_line = __LINE__;
 		if ((st0 & 0xc0) || cyl != descyl) {
@@ -1224,7 +1235,7 @@ fd_probe_disk(struct fd_data *fd, int *recal)
 	if (fdc_cmd(fdc, 2, NE7CMD_RECAL, fd->fdsu, 0))
 		goto done;
 	tsleep(fdc, PRIBIO, "fdrecal", hz);
-	if (fdc_sense_int(fdc, &st0, &cyl) == FD_NOT_VALID)
+	if (fdc_sense_int(fdc, &st0, &cyl) != 0)
 		goto done;	/* XXX */
 	if ((st0 & 0xc0) || cyl != 0)
 		goto done;
@@ -1233,7 +1244,7 @@ fd_probe_disk(struct fd_data *fd, int *recal)
 	if (fdc_cmd(fdc, 3, NE7CMD_SEEK, fd->fdsu, 1, 0))
 		goto done;
 	tsleep(fdc, PRIBIO, "fdseek", hz);
-	if (fdc_sense_int(fdc, &st0, &cyl) == FD_NOT_VALID)
+	if (fdc_sense_int(fdc, &st0, &cyl) != 0)
 		goto done;	/* XXX */
 	*recal |= (1 << fd->fdsu);
 	if (fdin_rd(fdc) & FDI_DCHG) {

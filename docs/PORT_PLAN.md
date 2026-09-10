@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,485 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,512 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,155** | **114,204** |
+| | **total** | **41,143** | **21,299,182** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -137,7 +137,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.597.14 | `sys/dev/aic7xxx/aic7xxx.c` | 7,847 | 0 | `TODO-PORT` |
 | 8.650.1 | `sys/dev/bwn/if_bwn.c` | 7,746 | 0 | `TODO-PORT` |
 | 8.801.5 | `sys/dev/ixl/i40e_common.c` | 7,740 | 0 | `TODO-PORT` |
-| 8.630.9 | `sys/dev/atkbdc/psm.c` | 7,702 | 0 | `TODO-PORT` |
+| 8.630.9 | `sys/dev/atkbdc/psm.c` | 7,709 | 0 | `TODO-PORT` |
 | 8.1213.103 | `sys/netinet/sctputil.c` | 7,700 | 0 | `TODO-PORT` |
 | 8.744.5 | `sys/dev/hyperv/netvsc/if_hn.c` | 7,690 | 0 | `TODO-PORT` |
 | 8.1147.5 | `sys/fs/nfsserver/nfs_nfsdport.c` | 7,674 | 0 | `TODO-PORT` |
@@ -182,7 +182,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.800.15 | `sys/dev/ixgbe/ixgbe_common.c` | 5,879 | 0 | `TODO-PORT` |
 | 8.738.18 | `sys/dev/hwpmc/hwpmc_mod.c` | 5,876 | 0 | `TODO-PORT` |
 | 8.1213.79 | `sys/netinet/sctp_input.c` | 5,859 | 0 | `TODO-PORT` |
-| 8.690.39 | `sys/dev/e1000/if_em.c` | 5,776 | 0 | `TODO-PORT` |
+| 8.690.39 | `sys/dev/e1000/if_em.c` | 5,785 | 0 | `TODO-PORT` |
 | 8.1213.77 | `sys/netinet/sctp_indata.c` | 5,732 | 0 | `TODO-PORT` |
 | 8.1191.23 | `sys/kern/kern_descrip.c` | 5,695 | 0 | `TODO-PORT` |
 | 8.1191.218 | `sys/kern/vfs_bio.c` | 5,694 | 0 | `TODO-PORT` |
@@ -63043,7 +63043,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.630.6** `atkbdc_subr.h` · 53L gen:1 · `TODO-HDR`
 - [ ] **8.630.7** `atkbdcreg.h` · 284L · `TODO-HDR`
 - [ ] **8.630.8** `atkbdreg.h` · 48L · `TODO-HDR`
-- [ ] **8.630.9** `psm.c` · 7,702L gen:19 · `TODO-PORT`
+- [ ] **8.630.9** `psm.c` · 7,709L gen:19 · `TODO-PORT`
 - [ ] **8.630.10** `psm.h` · 32L · `TODO-HDR`
 
 ### 8.631 `sys/dev/atopcase`
@@ -69940,7 +69940,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.690.38.13 `em_isc_rxd_pkt_get()` · `TODO-FN`
   - [ ] 8.690.38.14 `em_receive_checksum()` · `TODO-FN`
   - [ ] 8.690.38.15 `em_determine_rsstype()` · `TODO-FN`
-- [ ] **8.690.39** `if_em.c` · 5,776L gen:21 · `TODO-PORT`
+- [ ] **8.690.39** `if_em.c` · 5,785L gen:21 · `TODO-PORT`
 - [ ] **8.690.40** `if_em.h` · 593L · `TODO-HDR`
 - [ ] **8.690.41** `igb_txrx.c` · 581L · `TODO-PORT` · 11 fn
   - [ ] 8.690.41.1 `igb_tso_setup()` · `TODO-FN`
@@ -71482,7 +71482,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.711 `sys/dev/fdc`
 
-- [ ] **8.711.1** `fdc.c` · 2,107L gen:7 · `TODO-PORT` · 54 fn
+- [ ] **8.711.1** `fdc.c` · 2,118L gen:7 · `TODO-PORT` · 54 fn
   - [ ] 8.711.1.1 `fdprinttype()` · `TODO-FN`
   - [ ] 8.711.1.2 `fdsettype()` · `TODO-FN`
   - [ ] 8.711.1.3 `fdregwr()` · `TODO-FN`

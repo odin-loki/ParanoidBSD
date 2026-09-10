@@ -1159,8 +1159,15 @@ doopen(struct psm_softc *sc, int command_byte)
 				    "active multiplexing mode.\n");
 		}
 		mouse_ext_command(sc->kbdc, SYNAPTICS_READ_MODES);
-		get_mouse_status(sc->kbdc, stat, 0, 3);
-		if ((SYNAPTICS_VERSION_GE(sc->synhw, 7, 5) ||
+		/*
+		 * PBSD: check the byte count, the way the other call in
+		 * this function does at the `< 3' below.  get_mouse_status()
+		 * returns how many bytes it actually read; a device that
+		 * answers with fewer than three left stat[1] and stat[2]
+		 * uninitialised for the test that follows.
+		 */
+		if (get_mouse_status(sc->kbdc, stat, 0, 3) == 3 &&
+		    (SYNAPTICS_VERSION_GE(sc->synhw, 7, 5) ||
 		     stat[1] == 0x47) &&
 		     stat[2] == 0x40) {
 			synaptics_set_mode(sc, synaptics_preferred_mode(sc));

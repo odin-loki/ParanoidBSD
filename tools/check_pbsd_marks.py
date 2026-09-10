@@ -3568,6 +3568,30 @@ FIXES = {
         "undefined, so the device chose a netisr protocol index out of "
         "the stack",
     ),
+
+    "hbsd/src/sys/dev/fdc/fdc.c": (
+        ("if (fdc_sense_int(fdc, &st0, &cyl) != 0)", 4),
+        "if (fdc_sense_int(fdc, &st0, &cyl) == FD_NOT_VALID)",
+        "fdc_sense_int() has three failure returns and only one is "
+        "FD_NOT_VALID; it writes *st0p after the first command and "
+        "*cylp only after the second, and the `st0 & 0xc0 || cyl != ...' "
+        "at all four sites read them either way",
+    ),
+    "hbsd/src/sys/dev/e1000/if_em.c": (
+        "\t\tbytes = bytes_per_packet = packets = 0;",
+        "\t\tbytes = bytes_per_packet = 0;",
+        "em_newitr: packets was written only inside the two `if "
+        "(txpackets != 0)' / `if (rxpackets != 0)' blocks, and the early "
+        "return only covers both BYTE counters being zero",
+    ),
+    "hbsd/src/sys/dev/atkbdc/psm.c": (
+        "\t\tif (get_mouse_status(sc->kbdc, stat, 0, 3) == 3 &&",
+        "\t\tget_mouse_status(sc->kbdc, stat, 0, 3);\n\t\tif ((SYNAPTICS_VERSION_GE",
+        "doopen: the byte count was dropped at this call and checked at "
+        "the other one in the same function, so a device answering with "
+        "fewer than three bytes left stat[1] and stat[2] uninitialised "
+        "for the test",
+    ),
 }
 
 
