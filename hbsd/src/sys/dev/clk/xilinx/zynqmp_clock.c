@@ -199,20 +199,48 @@ zynqmp_clk_register(struct clkdom *clkdom, device_t fw, struct zynqmp_clk *clkde
 			free(parent_name, M_DEVBUF);
 			free(zynqclk->parent_names, M_DEVBUF);
 		}
-		if (clkname != NULL)
+		if (clkname != NULL) {
+			/*
+			 * PBSD: this assignment overwrote the previous
+			 * iteration's strdup(), so every topology node past
+			 * the first leaked one clock name.
+			 */
+			free(prev_clock_name, M_DEVBUF);
 			prev_clock_name = strdup(clkname, M_DEVBUF);
+		}
 		free(clkname, M_DEVBUF);
 		free(zynqclk, M_DEVBUF);
 	}
+
+	/*
+	 * PBSD: prev_clock_name is NULL if the loop above registered no
+	 * node -- an empty topology, or one whose first entry has a type
+	 * this switch does not know -- and strdup(NULL) faults.  There is
+	 * no parent to name in that case, so there is nothing to register.
+	 */
+	if (prev_clock_name == NULL)
+		return (1);
 
 	/* Register main clock */
 	clkdef->clkdef.name = clkdef->clkdef.name;
 	clkdef->clkdef.parent_cnt = 1;
 	clkdef->clkdef.parent_names = malloc(sizeof(char *) * clkdef->clkdef.parent_cnt, M_DEVBUF, M_ZERO | M_WAITOK);
 	clkdef->clkdef.parent_names[0] = strdup(prev_clock_name, M_DEVBUF);
+	/* PBSD: the loop's last strdup() had no owner after this copy. */
+	free(prev_clock_name, M_DEVBUF);
 	clknode = clknode_create(clkdom, &zynqmp_clk_clknode_class, &clkdef->clkdef);
-	if (clknode == NULL)
+	if (clknode == NULL) {
+		/*
+		 * PBSD: this return left the parent-name array and the
+		 * string in it behind -- the same clknode_create() failure
+		 * leak three other clock drivers carried.
+		 */
+		free(__DECONST(char *, clkdef->clkdef.parent_names[0]),
+		    M_DEVBUF);
+		free(clkdef->clkdef.parent_names, M_DEVBUF);
+		clkdef->clkdef.parent_names = NULL;
 		return (1);
+	}
 	sc = clknode_get_softc(clknode);
 	sc->id = clkdef->clkdef.id - 1;
 	sc->firmware = fw;
@@ -359,7 +387,18 @@ zynqmp_fw_clk_get_all(struct zynqmp_clock_softc *sc)
 	for (i = 0; i < num_clock; i++) {
 		clk = malloc(sizeof(*clk), M_DEVBUF, M_WAITOK | M_ZERO);
 		clk->clkdef.id = ZYNQMP_ID_TO_CLK(i);
-		zynqmp_fw_clk_get_name(sc, clk, i);
+		/*
+		 * PBSD: zynqmp_fw_clk_get_name() returns without setting
+		 * clkdef.name when the firmware refuses the query or hands
+		 * back an empty string, and clk is M_ZERO -- so the name
+		 * stayed NULL and the strcmp() against "dummy" in the
+		 * registration loop dereferenced it.  The two firmware
+		 * queries below already take this branch.
+		 */
+		if (zynqmp_fw_clk_get_name(sc, clk, i) != 0) {
+			free(clk, M_DEVBUF);
+			continue;
+		}
 		zynqmp_fw_clk_get_attributes(sc, clk, i);
 		if ((clk->attributes & ZYNQMP_CLK_IS_VALID) == 0) {
 			free(clk, M_DEVBUF);

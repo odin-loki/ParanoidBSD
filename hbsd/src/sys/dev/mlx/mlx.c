@@ -1307,7 +1307,16 @@ mlx_periodic_eventlog_poll(struct mlx_softc *sc)
     if (error != 0) {
 	if (mc != NULL)
 	    mlx_releasecmd(mc);
-	if ((result != NULL) && (mc->mc_data != NULL))
+	/*
+	 * PBSD: the test was on mc->mc_data, which this function sets
+	 * only after mlx_getslot() succeeds -- so the mlx_getslot()
+	 * failure path leaked the 1024-byte response buffer whenever the
+	 * command came off the free list with mc_data already NULL.  It
+	 * also read mc after mlx_releasecmd() returned it, and mc is
+	 * NULL on the mlx_alloccmd() failure path the line above tests
+	 * for.  result is the thing being freed; test that.
+	 */
+	if (result != NULL)
 	    free(result, M_DEVBUF);
     }
 }

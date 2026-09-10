@@ -16441,3 +16441,100 @@ findings          48      47
 
 One of the two fixes moves the number. The other fixes a leak the
 analyser never saw, at a line where it was reporting something else.
+
+## The dev shard's malloc set: one clock driver and one RAID poll
+
+Thirty-four `unix.Malloc` and `unix.cstring.NullArg` findings in
+`sys/dev`, read. Most are the ownership-transfer class this document has
+now catalogued four times: `fw_phy_config()`'s xfer goes to
+`fw_asyreq()`, whose handler is `fw_asy_callback_free`;
+`put_file_offset()`'s and `gntdev_map_grant_ref()`'s allocations go into
+RB trees; `bhnd_nvram_val_copy()` returns its `result`;
+`kbdmux_init()`'s three keymaps go to `kbd_set_maps()`; `alloc_segs()`
+stores into `hashp->dir[]`. `mdstart_malloc()`'s five `NullArg` findings
+are the one-predicate-tested-twice class — `dst` is NULL exactly on the
+`notmapped` and `vlist` arms, and non-NULL exactly on the `else` that
+uses it, but the two tests are in different `switch` statements.
+
+Two files were not that.
+
+### zynqmp_clock.c: three leaks, a fault, and an ignored return
+
+`zynqmp_clk_register()` walks a clock's topology, registering one node
+per entry and remembering each node's name to be the next one's parent:
+
+```c
+		if (clkname != NULL)
+			prev_clock_name = strdup(clkname, M_DEVBUF);
+		free(clkname, M_DEVBUF);
+```
+
+Nothing frees the previous iteration's `strdup()`. Every topology node
+past the first leaks one clock name. After the loop:
+
+```c
+	clkdef->clkdef.parent_names[0] = strdup(prev_clock_name, M_DEVBUF);
+	clknode = clknode_create(clkdom, &zynqmp_clk_clknode_class, &clkdef->clkdef);
+	if (clknode == NULL)
+		return (1);
+```
+
+— the last `prev_clock_name` is copied and then abandoned, and the
+`clknode_create()` failure return leaves both the parent-name array and
+the string inside it behind. That last one is the same leak three other
+clock drivers carried.
+
+And `strdup(prev_clock_name, ...)` faults outright when the loop
+registered nothing: the loop `break`s immediately on a
+`CLK_NODE_TYPE_NULL` first entry, and its `default:` arm sets `clkname =
+NULL` for a type this driver does not know, so `prev_clock_name` can
+still be NULL here. There is no parent to name in that case and nothing
+to register, so it now returns.
+
+The `NullArg` in the same file is a fifth, separate defect.
+`zynqmp_fw_clk_get_name()` returns non-zero without setting
+`clk->clkdef.name` — the firmware refused the query, or handed back an
+empty string — and `zynqmp_fw_clk_get_all()` ignored the return:
+
+```c
+		zynqmp_fw_clk_get_name(sc, clk, i);
+		zynqmp_fw_clk_get_attributes(sc, clk, i);
+```
+
+`clk` is `M_ZERO`, so the name stays NULL rather than becoming garbage,
+and the clock goes on the list. The registration loop then does
+`strcmp(clk->clkdef.name, "dummy")`. The two firmware queries
+immediately below this call already `free(clk)` and `continue` on
+failure; this one now does too.
+
+### mlx_periodic_eventlog_poll() frees on the wrong condition
+
+```c
+ out:
+    if (error != 0) {
+	if (mc != NULL)
+	    mlx_releasecmd(mc);
+	if ((result != NULL) && (mc->mc_data != NULL))
+	    free(result, M_DEVBUF);
+    }
+```
+
+Three things wrong in two lines. `mc->mc_data` is assigned only after
+`mlx_getslot()` succeeds, so on the `mlx_getslot()` failure path — with
+a command that came off the free list with `mc_data` already NULL — the
+1024-byte response buffer is not freed. This poll runs periodically.
+`mc` is read after `mlx_releasecmd()` has returned it to the free list.
+And the line above establishes that `mc` can be NULL here, which the
+dereference does not allow for; only C's left-to-right short-circuit on
+`result != NULL` — which is also NULL on that path — keeps it from
+faulting. `result` is the thing being freed, so `result` is the thing to
+test.
+
+```
+              before   after     (sys/dev/clk, sys/dev/mlx)
+OK                56      56
+ERROR              0       0
+findings          26      23
+```
+
+`zynqmp_clock.c` 2 → 0, `mlx.c` 1 → 0.

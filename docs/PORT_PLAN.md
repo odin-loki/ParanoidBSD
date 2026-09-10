@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,170 | 81,387 |
+| 8 | `sys` | 14,951 | 10,498,218 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,858** | **114,204** |
+| | **total** | **41,143** | **21,299,906** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -66318,7 +66318,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.664.9.3 `zynqmp_clk_pll_set_freq()` · `TODO-FN`
   - [ ] 8.664.9.4 `zynqmp_clk_pll_register()` · `TODO-FN`
 - [ ] **8.664.10** `zynqmp_clk_pll.h` · 34L · `TODO-HDR`
-- [ ] **8.664.11** `zynqmp_clock.c` · 563L gen:2 · `TODO-PORT` · 10 fn
+- [ ] **8.664.11** `zynqmp_clock.c` · 602L gen:2 · `TODO-PORT` · 10 fn
   - [ ] 8.664.11.1 `zynqmp_clk_init()` · `TODO-FN`
   - [ ] 8.664.11.2 `zynqmp_clk_register()` · `TODO-FN`
   - [ ] 8.664.11.3 `zynqmp_fw_clk_get_name()` · `TODO-FN`
@@ -83025,7 +83025,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.823 `sys/dev/mlx`
 
-- [ ] **8.823.1** `mlx.c` · 3,066L · `TODO-PORT` · 61 fn
+- [ ] **8.823.1** `mlx.c` · 3,075L · `TODO-PORT` · 61 fn
   - [ ] 8.823.1.1 `mlx_free()` · `TODO-FN`
   - [ ] 8.823.1.2 `mlx_dma_map_sg()` · `TODO-FN`
   - [ ] 8.823.1.3 `mlx_sglist_map()` · `TODO-FN`

@@ -4023,6 +4023,43 @@ FIXES = {
         "returned without freeing the bt_reclen pad record the success "
         "path frees",
     ),
+
+    "hbsd/src/sys/dev/clk/xilinx/zynqmp_clock.c": [
+        (
+            "free(prev_clock_name, M_DEVBUF);\n\t\t\tprev_clock_name = strdup(clkname, M_DEVBUF);",
+            "if (clkname != NULL)\n\t\t\tprev_clock_name = strdup(clkname, M_DEVBUF);",
+            "zynqmp_clk_register: the loop overwrote the previous "
+            "iteration's strdup()ed clock name without freeing it",
+        ),
+        (
+            "if (prev_clock_name == NULL)\n\t\treturn (1);",
+            None,
+            "zynqmp_clk_register: strdup(prev_clock_name) faulted when "
+            "the topology loop registered no node",
+        ),
+        (
+            "free(__DECONST(char *, clkdef->clkdef.parent_names[0]),",
+            "if (clknode == NULL)\n\t\treturn (1);",
+            "zynqmp_clk_register: the clknode_create() failure return "
+            "left the parent-name array and its string behind, and the "
+            "loop's last clock name had no owner after the copy",
+        ),
+        (
+            "if (zynqmp_fw_clk_get_name(sc, clk, i) != 0) {",
+            "\t\tzynqmp_fw_clk_get_name(sc, clk, i);\n\t\tzynqmp_fw_clk_get_attributes",
+            "zynqmp_fw_clk_get_all: an ignored get_name() failure left "
+            "clkdef.name NULL for the strcmp() in the registration loop "
+            "to dereference",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/mlx/mlx.c": (
+        "if (result != NULL)\n\t    free(result, M_DEVBUF);",
+        "if ((result != NULL) && (mc->mc_data != NULL))",
+        "mlx_periodic_eventlog_poll: the free() was gated on mc->mc_data, "
+        "which is set only after mlx_getslot() succeeds -- and read mc "
+        "after mlx_releasecmd(), on a path where mc can be NULL",
+    ),
 }
 
 
