@@ -17488,3 +17488,103 @@ it was never in the before set: no sweep has ever reported
 The sweep found the shape in `wtap` and could not build or reach the ATA
 file; the lint could not see the shape at all until it was widened, and
 then found it in a second.
+
+## A third instrument: FuSeBMC's method, on CBMC and AFL++
+
+FuSeBMC (Alshmrany et al., SV-COMP) is a hybrid — a bounded model
+checker produces counterexample inputs, a fuzzer takes them as "smart
+seeds", and coverage the fuzzer finds comes back as new goals. The two
+halves cover each other: BMC reasons about every path to a shallow
+depth, fuzzing reaches deep paths it can stumble into and proves
+nothing.
+
+The published FuSeBMC is ESBMC + Map2Check + AFL, distributed from
+GitHub. This container's network policy scopes GitHub to one owner and
+ESBMC is in no distribution's package set, so neither is reachable here.
+What is here is CBMC 5.95.1 with `goto-cc` — the model checker this tree
+already uses — and AFL++ 4.09c from the archive. That is the same
+architecture with a different BMC engine, so `tools/verify/fusebmc.py`
+is the method, not the program, and is named for the method.
+
+**It proves nothing.** CBMC with `--unwind K` and
+`--unwinding-assertions` can prove a bounded property, and
+`cbmc_driver.py` says PROVED when it has. A fuzzer that finds nothing
+has told you that it found nothing. The status vocabulary keeps them
+apart: CRASH, CLEAN ("found nothing in this budget; not a proof"),
+NOSEED, ERROR, NOFUNC, TIMEOUT.
+
+Its reach is a strict subset of CBMC's, and CBMC's is 749 of 4737
+translation units. CBMC needs to *parse* a unit; this needs to compile,
+link and **run** it. That ratio is the result.
+
+### Three ways this reported CLEAN on code it had not tested
+
+Every one was found by planting a bug and watching the engine miss it,
+and every one would have made the tool a liar.
+
+**1. The seed that crashes stops the fuzzer.** The calibration target
+was an out-of-bounds array read. CBMC found it and handed over a
+counterexample — and AFL++ refuses to start when every seed crashes
+("We need at least one valid input seed that does not crash!"). The
+first version read that abort as CLEAN. A fuzzer that would not start
+and a fuzzer that found nothing are not the same answer. The engine now
+*replays the BMC seed first*: if it dies, that is the finding, recorded
+as `found_by: bmc-seed`, and no fuzzing is needed. That is not a
+workaround — it is the point of the hybrid, and it turned a 20-second
+budget into 0.27 seconds.
+
+**2. `-fno-builtin`, or you are testing the compiler.** `abs()` is a
+compiler builtin. Without `-fno-builtin`, clang recognised the call in
+the generated harness, lowered it to `llvm.abs` with
+`is_int_min_poison=false`, and **never called the definition in
+`abs.c`**. The engine ran a full budget against clang's implementation
+and reported CLEAN on a function it had not executed. The same holds for
+`memcpy`, `strlen`, `memset` and every other libc name clang knows —
+which is most of what a userland harness would ever point at.
+
+**3. A discarded result lets the optimiser delete the call.** The
+harness and the source are compiled as one translation unit, so LLVM can
+see the function is pure; with the result thrown away, the call goes.
+The result now lands in a `static volatile` sink of the function's own
+return type, which meant parsing the return type as well as the
+parameters.
+
+And one that made the seed worthless rather than absent: CBMC prints
+`j=-2147483648 (10000000 ...)`, and the first packer truncated every
+counterexample value to one byte — discarding exactly the extreme values
+a counterexample is made of. Seeds are now packed at each parameter's
+real width, at the same offset the harness reads it from, from a
+`layout()` the two share.
+
+### What it found
+
+```
+                lib/libc scalar functions
+CLEAN      5     ffs, ffsl, fls, flsl, flsll   (20s budget each, real runs)
+CRASH      1     abs
+```
+
+`abs(INT_MIN)` is `-j` on `INT_MIN` — signed overflow, undefined
+behaviour, and UBSan says so at `abs.c:37`. CBMC found the input, the
+replay confirmed it in a quarter of a second.
+
+It is **not a defect in `abs.c`**. C17 7.22.6.1p2 says outright that if
+the result cannot be represented the behaviour is undefined; the value
+is the caller's to keep in range, and every libc on earth is written
+this way. Recording it as a finding would be the same mistake the
+`--conversion-check` tier exists to avoid.
+
+So the honest summary of this engine's first run is: it reproduced a
+known-by-construction property of the C standard, and it did so through
+four layers that each had to be right. That is what a calibrated
+instrument looks like before it is pointed at anything.
+
+### The harness's limit, stated rather than papered over
+
+A parameter that is a pointer is not synthesised. `cbmc_driver.py` runs
+those under an explicit stated precondition (`--min-null-tree-depth`)
+and records the assumption in the result. There is no honest equivalent
+for a fuzzer: passing NULL reports the absence of a caller's contract as
+a crash, and passing a buffer of an invented size reports the invention.
+Those functions come back ERROR with that sentence as the reason, which
+is true and is the number that matters.
