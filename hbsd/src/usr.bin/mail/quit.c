@@ -63,7 +63,7 @@ void
 quit(void)
 {
 	int mcount, p, modify, autohold, anystat, holdbit, nohold;
-	FILE *ibuf, *obuf, *fbuf, *rbuf, *readstat, *abuf;
+	FILE *ibuf = NULL, *obuf, *fbuf, *rbuf, *readstat, *abuf;
 	struct message *mp;
 	int c, fd;
 	struct stat minfo;
@@ -243,7 +243,14 @@ quit(void)
 		if (mp->m_flag & MBOX)
 			if (sendmessage(mp, obuf, saveignore, NULL) < 0) {
 				warnx("%s", mbox);
-				(void)Fclose(ibuf);
+				/*
+				 * PBSD: ibuf is opened only on the
+				 * `value("append") == NULL' path; the two
+				 * other uses below are guarded by that same
+				 * test and this one was not.
+				 */
+				if (ibuf != NULL)
+					(void)Fclose(ibuf);
 				(void)Fclose(obuf);
 				(void)Fclose(fbuf);
 				return;
@@ -255,7 +262,13 @@ quit(void)
 	 * If we are appending, this is unnecessary.
 	 */
 
-	if (value("append") == NULL) {
+	/*
+	 * PBSD: ibuf, not value("append") again.  ibuf is non-NULL exactly
+	 * when the append test above was false and both opens succeeded,
+	 * and asking the pointer says so without depending on value()
+	 * answering the same way twice.
+	 */
+	if (ibuf != NULL) {
 		rewind(ibuf);
 		c = getc(ibuf);
 		while (c != EOF) {

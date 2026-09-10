@@ -1437,7 +1437,8 @@ ifa_add_groups_to_map(char *ifa_name)
 	for (; ifg && len >= sizeof(struct ifg_req); ifg++) {
 		len -= sizeof(struct ifg_req);
 		if (strcmp(ifg->ifgrq_group, "all")) {
-			ENTRY	 		 item;
+			/* PBSD: hsearch_r() copies item.data too. */
+			ENTRY	 		 item = { NULL, NULL };
 			ENTRY			*ret_item;
 			int			*answer;
 
@@ -1580,7 +1581,7 @@ get_query_socket(void)
 static int
 is_a_group(char *name)
 {
-	ENTRY	 		 item;
+	ENTRY	 		 item = { NULL, NULL };	/* PBSD: as above */
 	ENTRY			*ret_item;
 
 	item.key = name;

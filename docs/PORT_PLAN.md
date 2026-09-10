@@ -54,8 +54,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
-| 4 | `sbin` | 533 | 228,629 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,453 | 4,188 |
+| 4 | `sbin` | 533 | 228,634 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,466 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,650 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,834** | **114,207** |
+| | **total** | **41,143** | **21,300,852** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -19436,7 +19436,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.81.3.89 `main()` · `TODO-FN`
   - [ ] 4.81.3.90 `pf_strerror()` · `TODO-FN`
 - [ ] **4.81.4** `pfctl.h` · 164L gen:1 · `TODO-HDR`
-- [ ] **4.81.5** `pfctl_altq.c` · 1,438L · `TODO-PORT` · 37 fn
+- [ ] **4.81.5** `pfctl_altq.c` · 1,442L · `TODO-PORT` · 37 fn
   - [ ] 4.81.5.1 `pfctl_altq_init()` · `TODO-FN`
   - [ ] 4.81.5.2 `pfaltq_store()` · `TODO-FN`
   - [ ] 4.81.5.3 `pfaltq_lookup()` · `TODO-FN`
@@ -19527,7 +19527,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.81.8.16 `get_tcpopts()` · `TODO-FN`
   - [ ] 4.81.8.17 `get_field()` · `TODO-FN`
   - [ ] 4.81.8.18 `print_ioctl()` · `TODO-FN`
-- [ ] **4.81.9** `pfctl_parser.c` · 2,072L · `TODO-PORT` · 44 fn
+- [ ] **4.81.9** `pfctl_parser.c` · 2,073L · `TODO-PORT` · 44 fn
   - [ ] 4.81.9.1 `pfctl_parser_init()` · `TODO-FN`
   - [ ] 4.81.9.2 `copy_satopfaddr()` · `TODO-FN`
   - [ ] 4.81.9.3 `geticmptypebynumber()` · `TODO-FN`
@@ -22979,7 +22979,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.129.18.17 `sigchild()` · `TODO-FN`
   - [ ] 5.129.18.18 `wait_child()` · `TODO-FN`
   - [ ] 5.129.18.19 `free_child()` · `TODO-FN`
-- [ ] **5.129.19** `quit.c` · 490L · `TODO-PORT` · 4 fn
+- [ ] **5.129.19** `quit.c` · 503L · `TODO-PORT` · 4 fn
   - [ ] 5.129.19.1 `quitcmd()` · `TODO-FN`
   - [ ] 5.129.19.2 `quit()` · `TODO-FN`
   - [ ] 5.129.19.3 `writeback()` · `TODO-FN`

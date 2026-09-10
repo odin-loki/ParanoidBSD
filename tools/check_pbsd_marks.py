@@ -5030,6 +5030,40 @@ FIXES = {
         "first call has already gone through NULL",
     ),
 
+    "hbsd/src/usr.bin/mail/quit.c": [
+        (
+            "FILE *ibuf = NULL, *obuf, *fbuf, *rbuf, *readstat, *abuf;",
+            "FILE *ibuf, *obuf, *fbuf, *rbuf, *readstat, *abuf;",
+            "quit(): ibuf is opened only on the `value(\"append\") == NULL' "
+            "path, and the sendmessage() error arm closed it "
+            "unconditionally -- an indeterminate FILE * to fclose() "
+            "whenever `set append' is in effect and the write to the "
+            "mbox fails",
+        ),
+        (
+            "if (ibuf != NULL) {\n\t\trewind(ibuf);",
+            'if (value("append") == NULL) {\n\t\trewind(ibuf);',
+            "and the copy-back below asked value() the same question a "
+            "second time rather than asking the pointer it had already "
+            "opened",
+        ),
+    ],
+
+    "hbsd/src/sbin/pfctl/pfctl_altq.c": (
+        ("ENTRY\t item = { NULL, NULL };", 3),
+        "\tENTRY\t item;\n\tENTRY\t*ret_item;",
+        "pfaltq_lookup(), qname_to_pfaltq() and qname_to_qid() all pass "
+        "an ENTRY to hsearch_r() by value with only .key set -- a FIND "
+        "copies .data too, and nothing ever writes it",
+    ),
+
+    "hbsd/src/sbin/pfctl/pfctl_parser.c": (
+        ("ENTRY\t \t\t item = { NULL, NULL }", 1),
+        "\tENTRY\t \t\t item;\n\tENTRY\t\t\t*ret_item;\n\n\titem.key = name;",
+        "is_a_group() and ifa_add_groups_to_map(): the same ENTRY passed "
+        "by value with .data never set",
+    ),
+
 }
 
 

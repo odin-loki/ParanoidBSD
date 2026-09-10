@@ -19852,3 +19852,65 @@ already NULL is exactly the intent.
 Measured over `usr.sbin/bsdinstall` and `usr.sbin/nscd`: 25 → 17,
 thirty-one translation units OK and no ERROR either side.  All eight
 that closed are the eight fixed here.
+
+## mail(1): `set append` and a failed write close a `FILE *` that was never opened
+
+`quit()` writes the saved messages back to the mailbox one of two ways:
+
+```c
+	if (value("append") == NULL) {
+		... obuf = Fdopen(fd, "w") ...
+		... ibuf = Fopen(tempname, "r") ...
+		... obuf = Fopen(mbox, "r+") ...
+	}
+	if (value("append") != NULL) {
+		if ((obuf = Fopen(mbox, "a")) == NULL) { ... }
+	}
+	for (mp = &message[0]; mp < &message[msgCount]; mp++)
+		if (mp->m_flag & MBOX)
+			if (sendmessage(mp, obuf, saveignore, NULL) < 0) {
+				warnx("%s", mbox);
+				(void)Fclose(ibuf);
+```
+
+`ibuf` is the temporary holding the old mailbox contents, and it is
+opened only on the first path.  The two later uses of it are correctly
+wrapped in `if (value("append") == NULL)`.  This one is not: with
+`set append` in `~/.mailrc` and a `sendmessage()` that fails — a full
+disk, a quota, an I/O error — `Fclose()` is handed an indeterminate
+`FILE *`.
+
+`ibuf` starts at NULL now and the close asks the pointer.  The copy-back
+below asked `value()` the same question a second time; it asks `ibuf`
+instead, which is what it actually depends on and does not rest on an
+opaque call answering the same way twice.
+
+## pfctl(8): five `ENTRY`s passed to `hsearch_r()` with half of them unwritten
+
+`hsearch_r()` takes its `ENTRY` **by value**, so a `FIND` copies both
+`key` and `data`.  Five lookups fill in only `key`:
+
+```c
+	ENTRY	 item;
+	ENTRY	*ret_item;
+
+	item.key = ifname;
+	if (hsearch_r(item, FIND, &ret_item, &if_map) == 0)
+		return (NULL);
+```
+
+`pfaltq_lookup()`, `qname_to_pfaltq()`, `qname_to_qid()`,
+`ifa_add_groups_to_map()` and `is_a_group()`.  The implementation does
+not look at `data` for a `FIND`, so nothing observable goes wrong — but
+copying an indeterminate member is a read of an indeterminate object,
+and the fix is `= { NULL, NULL }` in five declarations.
+
+Measured over `usr.bin/mail` and `sbin/pfctl`: 27 → 21, thirty-five
+translation units OK and no ERROR either side.  Seven closed; one
+appeared — `host_if(): Potential memory leak` in `pfctl_parser.c`, in a
+function this change does not touch.  Reading it: `ps` is `strdup`ed and
+freed on every path through the `error:` label, and `h` is the return
+value.  It is the analyser's per-translation-unit path budget being
+spent differently once five paths stop being explored, not a new defect
+— the kind of thing a raw before/after count hides and a
+`sweep_diff.py` keyed on `(file, checker, function, message)` shows.

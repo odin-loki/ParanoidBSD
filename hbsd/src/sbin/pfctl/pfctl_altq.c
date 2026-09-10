@@ -160,7 +160,11 @@ pfaltq_store(struct pf_altq *a)
 static struct pfctl_altq *
 pfaltq_lookup(char *ifname)
 {
-	ENTRY	 item;
+	/*
+	 * PBSD: hsearch_r() takes the ENTRY by value, so a FIND copies
+	 * item.data as well -- and nothing here ever sets it.
+	 */
+	ENTRY	 item = { NULL, NULL };
 	ENTRY	*ret_item;
 
 	item.key = ifname;
@@ -173,7 +177,7 @@ pfaltq_lookup(char *ifname)
 static struct pfctl_altq *
 qname_to_pfaltq(const char *qname, const char *ifname)
 {
-	ENTRY	 item;
+	ENTRY	 item = { NULL, NULL };	/* PBSD: see pfaltq_lookup() */
 	ENTRY	*ret_item;
 	char	 key[IFNAMSIZ + PF_QNAME_SIZE];
 
@@ -188,7 +192,7 @@ qname_to_pfaltq(const char *qname, const char *ifname)
 static u_int32_t
 qname_to_qid(char *qname)
 {
-	ENTRY	 item;
+	ENTRY	 item = { NULL, NULL };	/* PBSD: see pfaltq_lookup() */
 	ENTRY	*ret_item;
 	uint32_t qid;
 	
