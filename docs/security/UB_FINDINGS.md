@@ -21634,3 +21634,88 @@ the shard's `lib/libc --scope lib/msun --scope libexec` — 37 files under
 has ever analysed and `expected_errors.py` was never reconciled against.
 That is a scope this project has not opened, not a hole in one it has:
 worth its own pass, and not this one.
+
+## The libraries no shard has ever analysed
+
+The re-sweep above failed once more before it was pointed at the right
+scopes, and that failure is worth its own section, because it is the
+biggest remaining hole in this project's coverage.
+
+`--scope lib` — all of `lib/`, rather than the shard's `lib/libc`,
+`lib/msun` and `libexec` — reports:
+
+```
+436 finding(s) across 2169 translation units   ERROR 72
+```
+
+against the shard's
+
+```
+238 finding(s) across 1630 translation units   ERROR 30
+```
+
+**203 findings and 46 ERROR translation units** in libraries that no
+analyse shard has ever covered.  `check_shards.py` has said so all along
+— `lib` is on its excused list with the note *"lib/libc and lib/msun are
+sharded; the rest is not yet"* — which is the bookkeeping being honest
+about a hole rather than the hole being hidden.  What was missing was
+the number.
+
+Where the 203 are:
+
+| library | findings |
+|---|---|
+| `lib/libdevstat` | 54 |
+| `lib/clang` | 45 |
+| `lib/libpmc` | 21 |
+| `lib/libutil` | 11 |
+| `lib/libcasper` | 10 |
+| `lib/libpfctl` | 6 |
+| `lib/libefivar` | 5 |
+| the rest | 51 |
+
+### Two of the 46 are not a hole at all
+
+Read from the build rather than guessed at, twenty of the forty-six are
+components a default build **never enters**, and `src.opts.mk` says so
+in one list:
+
+```
+__DEFAULT_NO_OPTIONS = \
+    ASAN \
+    BEARSSL \
+    ...
+    DIALOG \
+```
+
+* `lib/libsecureboot/` — 17 files.  `lib/Makefile:164` is
+  `SUBDIR.${MK_BEARSSL}+= libbearssl libsecureboot`.  `bmake` refuses
+  the directory from the other side for the same reason:
+  `local.trust.mk:90` stops with *"Need TRUST_ANCHORS see README.rst"*.
+* `lib/libdpv/` — 3 files.  `lib/Makefile:179` is
+  `SUBDIR.${MK_DIALOG}+= libdpv libfigpar`, and `<dialog.h>` is
+  `contrib/dialog`'s, installed only when that option is on.
+
+Both are on the record as `NOT_SUBDIR` now — the honest verdict is *not
+built*, not *cannot compile*.
+
+### And one negative result, measured
+
+`lib/libsecureboot/Makefile.inc` sets `libsecureboot_src:= ${.PARSEDIR}`
+and then `CFLAGS+= -I${libsecureboot_src}/h`, which `makefile_flags()`
+drops because it has no `.PARSEDIR` in its variable table.  Adding one
+looked obviously right and was written.
+
+It moves nothing.  Exactly **one** Makefile in `lib`, `libexec`, `bin`,
+`sbin`, `usr.bin` and `usr.sbin` uses `.PARSEDIR` in a `CFLAGS`
+assignment — that one — and it sits inside a `.if !target(…)` block the
+textual walk skips by design, in a component the build does not build.
+Reverted, and written down here so the next reader does not spend the
+same twenty minutes.
+
+The remaining 26 are a real backlog and not this pass's: generated
+headers (`ftperr.h`, `httperr.h`, `tables.h`, `tables_linux.h`,
+`yppasswd_private.h`), krb5 and sndio dependencies, a `.tpl.c` template
+that is not a translation unit, `lib/libmd/mdXhl.c` which is compiled
+once per algorithm with `-DmdX`, and a handful where the include path
+still has an answer to give.

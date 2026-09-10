@@ -973,6 +973,34 @@ NOT_BUILT = {
     # so three directories are commented out of the build and ipfsync,
     # ipscan and iplang were never in it. Together with common/lexer.c
     # above, that is every ERROR sbin/ipf has.
+    # Two whole libraries that a default build does not build at all,
+    # and share/mk/src.opts.mk says so in one list:
+    #
+    #   __DEFAULT_NO_OPTIONS = \
+    #       ASAN \
+    #       BEARSSL \
+    #       ...
+    #       DIALOG \
+    #
+    # Neither was ever in any analyse shard -- the libs shard is
+    # lib/libc, lib/msun and libexec -- so their twenty translation
+    # units have never been read by anything, and a scope nobody
+    # analyses reports zero findings and looks exactly like a clean one.
+    # They are on the record now as what they are: not built.
+    "lib/libsecureboot/":
+        "MK_BEARSSL is in __DEFAULT_NO_OPTIONS (share/mk/src.opts.mk:207) "
+        "and lib/Makefile:164 is `SUBDIR.${MK_BEARSSL}+= libbearssl "
+        "libsecureboot', so a default build never enters the directory. "
+        "bmake refuses it for the same reason from the other side: "
+        "local.trust.mk:90 stops with `Need TRUST_ANCHORS see "
+        "README.rst'. NOT_SUBDIR",
+    "lib/libdpv/":
+        "MK_DIALOG is in the same __DEFAULT_NO_OPTIONS list "
+        "(share/mk/src.opts.mk:211) and lib/Makefile:179 is "
+        "`SUBDIR.${MK_DIALOG}+= libdpv libfigpar'. The three files want "
+        "<dialog.h>, which is contrib/dialog's, installed only when that "
+        "option is on. NOT_SUBDIR",
+
     "sbin/ipf/ipftest/":
         "commented out of SUBDIR at sbin/ipf/Makefile:9. NOT_SUBDIR",
     "sbin/ipf/ipsend/":
