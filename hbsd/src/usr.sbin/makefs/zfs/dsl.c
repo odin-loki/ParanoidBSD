@@ -448,6 +448,19 @@ dsl_dir_alloc(zfs_opt_t *zfs, const char *name)
 		}
 	}
 
+	/*
+	 * PBSD: the loop above breaks the first time strsep() finds no further
+	 * separator, so a name with no `/' in it leaves parent at the NULL it
+	 * was initialised to and never runs the errx() inside the loop.  Both
+	 * callers do guarantee a separator -- dsl_metadir_alloc() builds
+	 * "<pool>/<name>", and the dataset loop rejects a name that is not a
+	 * child of the pool -- but nothing in this function says so, and the
+	 * three uses below all dereference parent.
+	 */
+	if (parent == NULL) {
+		errx(1, "filesystem `%s' names no parent dataset", name);
+	}
+
 	dir->fullname = estrdup(name);
 	dir->name = estrdup(dirname);
 	free(origname);

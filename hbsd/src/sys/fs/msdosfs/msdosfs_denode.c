@@ -364,7 +364,20 @@ detrunc(struct denode *dep, u_long length, int flags, struct ucred *cred)
 	int error;
 	int allerror;
 	u_long eofentry;
-	u_long chaintofree;
+	/*
+	 * PBSD: chaintofree is written here only on the length == 0 path;
+	 * on the other one it is written by fatentry(), which runs only if
+	 * pcbmap() left eofentry something other than ~0ul.  It is read
+	 * unconditionally at the bottom and, if non-zero, handed to
+	 * freeclusterchain(), which walks and frees the FAT chain starting
+	 * there.  Every pcbmap() success path does set *cnp, and to a value
+	 * masked with pm_fatmask, so ~0ul cannot come back today -- but the
+	 * correlation is between two variables three screens apart and
+	 * nothing states it, and the consequence of getting it wrong is
+	 * freeing an arbitrary cluster chain.  Zero means "no chain to
+	 * free", which is what the guard below already tests for.
+	 */
+	u_long chaintofree = 0;
 	daddr_t bn;
 	int boff;
 	int isadir = dep->de_Attributes & ATTR_DIRECTORY;

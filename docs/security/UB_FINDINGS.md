@@ -17932,3 +17932,181 @@ findings           14      11
 Read and not a defect in the same file set: `ifgif.c:64` reports `opts`
 as uninitialised where the kernel writes it through `ifr.ifr_data` in
 another translation unit — the out-parameter class.
+
+## makefs: a timing macro that reads what it may not have written
+
+`usr.sbin/makefs` reported eight `core.UndefinedBinaryOperatorResult`
+findings, all "The right operand of '-' is a garbage value", spread
+across `makefs.c` (4), `ffs.c` (2), `msdos.c` (2) and `walk.c` (1).
+Every one of them is the same pair of macros in `makefs.h`:
+
+```c
+#define	TIMER_START(x)				\
+	if (debug & DEBUG_TIME)			\
+		gettimeofday(&(x), NULL)
+
+#define	TIMER_RESULTS(x,d)				\
+	if (debug & DEBUG_TIME) {			\
+		struct timeval end, td;			\
+		gettimeofday(&end, NULL);		\
+		timersub(&end, &(x), &td);		\
+		...
+```
+
+`timersub` is the `-`.  Every caller declares a bare
+`struct timeval start;` and writes
+
+```c
+	TIMER_START(start);
+	root = walk_dir(subtree, ".", NULL, NULL);
+	TIMER_RESULTS(start, "walk_dir");
+```
+
+so `start` is written under one test of the global `debug` and read
+under a second test of it, with the work being timed in between.  The
+pair is sound only as long as nothing in that gap changes `debug`.
+
+Nothing does — `debug` is written twice, both times while parsing the
+command line, before any timer starts.  But the macro should not depend
+on that, and it is worth noticing *where* the analyser put the eight
+findings: exactly at the `TIMER_RESULTS` whose preceding call it cannot
+see into.  `ffs.c:274` follows `ffs_validate()`, static in the same
+file, and is not reported; `ffs.c:283` follows `ffs_create_image()`,
+which reaches `open`/`mmap`, and is.  The finding tracks the opacity of
+the gap, which is the correct reading of the premise.
+
+`TIMER_START` now clears `x` first, so it is defined on every path:
+
+```c
+#define	TIMER_START(x)					\
+	do {						\
+		timerclear(&(x));			\
+		if (debug & DEBUG_TIME)			\
+			gettimeofday(&(x), NULL);	\
+	} while (/* CONSTCOND */ 0)
+```
+
+The `do`/`while` is needed for the two statements and incidentally stops
+the bare `if` from swallowing a following `else`.
+
+### `dsl_dir_alloc()`: the loop that finds the parent can find none
+
+`usr.sbin/makefs/zfs/dsl.c` walks a dataset name to its parent:
+
+```c
+	parent = NULL;
+	for (lp = &l;; lp = &parent->children) {
+		dirname = strsep(&nextdir, "/");
+		if (nextdir == NULL)
+			break;
+		STAILQ_FOREACH(parent, lp, next) { ... }
+		if (parent == NULL)
+			errx(1, "no parent at `%s' for filesystem `%s'", ...);
+	}
+	...
+	zap_add_uint64(parent->childzap, dir->name, dir->dirid);
+	dir->parent = parent;
+	dir->phys->dd_parent_obj = parent->dirid;
+```
+
+The `break` is taken on the *first* iteration when the name holds no
+`/` at all, before the `STAILQ_FOREACH` has ever run — so `parent` is
+still the `NULL` it was initialised to, and the `errx` inside the loop,
+which exists for exactly this failure, is never reached.  The three
+lines below then dereference it.
+
+Both callers do guarantee a separator: `dsl_metadir_alloc()` builds
+`"<pool>/<name>"` with `easprintf`, and the dataset loop rejects a name
+that is not a child of the pool (`strchr(dsname, '/') == NULL` is one of
+its three tests).  The root DSL directory takes the `name == NULL`
+branch much earlier.  So the NULL path is unreachable today; it is the
+function's precondition that is unstated.  A second `parent == NULL`
+test after the loop, wording the same failure the one inside it words,
+turns a crash into a diagnostic.
+
+### `detrunc()`: `chaintofree` is written on one path and read on both
+
+`msdos/msdosfs_denode.c` — and, identically, the kernel's
+`sys/fs/msdosfs/msdosfs_denode.c` — declares
+
+```c
+	u_long eofentry;
+	u_long chaintofree;
+```
+
+and then:
+
+```c
+	if (length == 0) {
+		chaintofree = dep->de_StartCluster;
+		dep->de_StartCluster = 0;
+		eofentry = ~0ul;
+	} else {
+		error = pcbmap(dep, de_clcount(pmp, length) - 1, 0, &eofentry, 0);
+		...
+	}
+	...
+	if (eofentry != ~0ul) {
+		error = fatentry(FAT_GET_AND_SET, pmp, eofentry,
+				 &chaintofree, CLUST_EOFE);
+		...
+	}
+	...
+	if (chaintofree != 0 && !MSDOSFSEOF(pmp, chaintofree))
+		freeclusterchain(pmp, chaintofree);
+```
+
+On the `length == 0` path `chaintofree` is written directly and
+`eofentry` is set to the sentinel, so `fatentry()` is skipped.  On the
+other path `chaintofree` is written *only* by `fatentry()`, which runs
+only if `pcbmap()` left `eofentry` something other than `~0ul`.  The
+read at the bottom is unconditional.
+
+Reading every `return (0)` in `pcbmap()` settles it: all of them set
+`*cnp`, and to either `MSDOSFSROOT` or a `cn` already masked with
+`pm_fatmask`, so `~0ul` cannot come back on success and `fatentry()`
+always runs on that path.  The correlation holds — but it is between
+two variables three screens apart, nothing in the function states it,
+and in the kernel copy the consequence of it not holding is
+`freeclusterchain()` walking and freeing a FAT chain from a stack word.
+`chaintofree = 0` at the declaration; zero is "nothing to free", which
+is what the guard already tests for.
+
+```
+                usr.sbin/makefs         sys/fs/msdosfs
+                before  after           before  after
+OK                  31      31               7       7
+ERROR                0       0               0       0
+findings            23      12              13      12
+```
+
+The eleven that went are exactly the eight timer sites, `dsl.c:455`,
+the makefs `detrunc`, and — the eighth timer site — `walk.c:329`;
+nothing new appeared.
+
+### The other twelve, read and not defects
+
+- `msdosfs_fat.c` ×5 (`pcbmap`, `freeclusterchain`): `bp->b_data` after
+  `bread(..., &bp)`.  makefs's own `bread()` in `ffs/buf.c` always
+  writes `*bpp` (from `getblk`, which `err()`s rather than returning
+  NULL) and either `err()`s or returns 0 — it has no failing return at
+  all, so the `if (error) { brelse(bp); return (error); }` in every
+  caller is dead.  The out-parameter-in-another-TU class.
+- `ffs.c:1145` (`ffs_make_dirbuf`), `ffs.c:1219` (`ffs_write_inode`,
+  a divide by `fs->fs_ipg`), `cd9660_debug.c` via `iso.h:347`
+  (`isonum_731` on an unconstrained `buf`): the unconstrained-parameter
+  class — each is a `static` function analysed as its own entry point,
+  with a `dirbuf_t`/`fsinfo_t`/`unsigned char *` the caller has always
+  initialised.
+- `makefs.c:523` (`usage`): `fsoptions->fs_options` NULL.  All four
+  `*_prep_opts` set it with `copy_opts()`, and `fstypes[]` is built by a
+  macro that gives every entry a `prepare_options`, so the `if
+  (fstype->prepare_options)` guard at line 123 is itself dead — but it
+  is what tells the analyser the pointer can be NULL.
+- `cd9660.c:1517`, `walk.c:376`: queue-macro use-after-free.
+  `cd9660_generate_path_table()` `TAILQ_REMOVE`s before its `free`;
+  `apply_specdir()` saves `next` before `free_fsnodes(curfsnode)`, and
+  `free_fsnodes` unlinks its argument (`node->next = NULL`) before
+  walking, so it frees only that node and its children.  That unlink is
+  itself conditional on finding the node in its sibling list, which the
+  analyser cannot prove.

@@ -248,9 +248,23 @@ extern	struct stat stampst;
 #define	DEBUG_MSDOSFS			0x20000000
 
 
-#define	TIMER_START(x)				\
-	if (debug & DEBUG_TIME)			\
-		gettimeofday(&(x), NULL)
+/*
+ * PBSD: TIMER_START only writes x when debug & DEBUG_TIME, and
+ * TIMER_RESULTS reads it under a second test of the same global, with the
+ * work being timed in between.  Every caller declares x as a bare
+ * `struct timeval start;', so the pair is only sound as long as nothing
+ * between the two tests changes debug.  Nothing does today -- debug is
+ * written only while parsing the command line -- but the macro should not
+ * depend on that, and the analyser cannot see across the opaque calls that
+ * sit in the gap.  Clear x unconditionally so it is defined on every path.
+ * The do/while also stops the bare `if' from swallowing a following else.
+ */
+#define	TIMER_START(x)					\
+	do {						\
+		timerclear(&(x));			\
+		if (debug & DEBUG_TIME)			\
+			gettimeofday(&(x), NULL);	\
+	} while (/* CONSTCOND */ 0)
 
 #define	TIMER_RESULTS(x,d)				\
 	if (debug & DEBUG_TIME) {			\

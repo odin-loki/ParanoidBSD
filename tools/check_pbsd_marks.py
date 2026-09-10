@@ -4152,6 +4152,43 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/makefs/makefs.h": (
+        "timerclear(&(x));",
+        "#define\tTIMER_START(x)\t\t\t\t\\\n\tif (debug & DEBUG_TIME)",
+        "TIMER_START writes x only when debug & DEBUG_TIME and "
+        "TIMER_RESULTS reads it under a second test of the same global, "
+        "with the work being timed in between, so every caller's bare "
+        "`struct timeval start;' is only defined as long as nothing in the "
+        "gap changes debug -- eight findings across makefs.c, ffs.c, "
+        "msdos.c and walk.c",
+    ),
+
+    "hbsd/src/usr.sbin/makefs/zfs/dsl.c": (
+        "errx(1, \"filesystem `%s' names no parent dataset\", name);",
+        "dirname, name);\n\t\t}\n\t}\n\n\tdir->fullname = estrdup(name);",
+        "dsl_dir_alloc() breaks out of its walk the first time strsep() "
+        "finds no further separator, so a name with no `/' leaves parent at "
+        "NULL and never reaches the errx() inside the loop -- and the three "
+        "uses below all dereference it",
+    ),
+
+    "hbsd/src/usr.sbin/makefs/msdos/msdosfs_denode.c": (
+        "\tu_long chaintofree = 0;",
+        "\tu_long eofentry;\n\tu_long chaintofree;",
+        "detrunc() writes chaintofree on the length == 0 path only; on the "
+        "other it is written by fatentry(), which runs only if pcbmap() "
+        "left eofentry something other than ~0ul -- and it is read "
+        "unconditionally at the bottom and handed to freeclusterchain()",
+    ),
+
+    "hbsd/src/sys/fs/msdosfs/msdosfs_denode.c": (
+        "\tu_long chaintofree = 0;",
+        "\tu_long eofentry;\n\tu_long chaintofree;",
+        "the same detrunc() shape in the kernel copy, where the "
+        "consequence of reading a stack word there is freeclusterchain() "
+        "walking and freeing an arbitrary FAT cluster chain",
+    ),
+
     "hbsd/src/usr.sbin/mlxcontrol/interface.c": (
         ("bzero(&cmd, sizeof(cmd));\n    cmd.mu_status = 0xffff;", 4),
         "    struct mlx_usercommand\tcmd;\n\n    /* build the command */\n"

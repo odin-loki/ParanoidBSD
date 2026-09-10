@@ -56,9 +56,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,524 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,438 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,477 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,495 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,320** | **114,205** |
+| | **total** | **41,143** | **21,300,372** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -31711,7 +31711,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.132.5.6 `copy_opts()` · `TODO-FN`
   - [ ] 6.132.5.7 `get_tstamp()` · `TODO-FN`
   - [ ] 6.132.5.8 `usage()` · `TODO-FN`
-- [ ] **6.132.6** `makefs.h` · 326L gen:4 · `TODO-HDR`
+- [ ] **6.132.6** `makefs.h` · 340L gen:4 · `TODO-HDR`
 - [ ] **6.132.7** `msdos.c` · 269L · `TODO-PORT` · 5 fn
   - [ ] 6.132.7.1 `msdos_prep_opts()` · `TODO-FN`
   - [ ] 6.132.7.2 `msdos_cleanup_opts()` · `TODO-FN`
@@ -31932,7 +31932,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.135.3.6 `char8ucs2str()` · `TODO-FN`
   - [ ] 6.135.3.7 `ucs2pad()` · `TODO-FN`
   - [ ] 6.135.3.8 `char8match()` · `TODO-FN`
-- [ ] **6.135.4** `msdosfs_denode.c` · 371L · `TODO-PORT` · 3 fn
+- [ ] **6.135.4** `msdosfs_denode.c` · 383L · `TODO-PORT` · 3 fn
   - [ ] 6.135.4.1 `deget()` · `TODO-FN`
   - [ ] 6.135.4.2 `detrunc()` · `TODO-FN`
   - [ ] 6.135.4.3 `deextend()` · `TODO-FN`
@@ -31978,7 +31978,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.137 `usr.sbin/makefs/zfs`
 
-- [ ] **6.137.1** `dsl.c` · 663L · `TODO-PORT` · 23 fn
+- [ ] **6.137.1** `dsl.c` · 676L · `TODO-PORT` · 23 fn
   - [ ] 6.137.1.1 `nvlist_find_string()` · `TODO-FN`
   - [ ] 6.137.1.2 `nvlist_find_uint64()` · `TODO-FN`
   - [ ] 6.137.1.3 `dsl_dir_get_mountpoint()` · `TODO-FN`
@@ -110537,7 +110537,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1144.6.14 `mbnambuf_init()` · `TODO-FN`
   - [ ] 8.1144.6.15 `mbnambuf_write()` · `TODO-FN`
   - [ ] 8.1144.6.16 `mbnambuf_flush()` · `TODO-FN`
-- [ ] **8.1144.7** `msdosfs_denode.c` · 684L · `TODO-PORT` · 8 fn
+- [ ] **8.1144.7** `msdosfs_denode.c` · 697L · `TODO-PORT` · 8 fn
   - [ ] 8.1144.7.1 `de_vncmpf()` · `TODO-FN`
   - [ ] 8.1144.7.2 `deget()` · `TODO-FN`
   - [ ] 8.1144.7.3 `deupdat()` · `TODO-FN`
