@@ -22989,3 +22989,91 @@ reach — once per ZFS file reported.
   returns `void *`.  `unix.MallocSizeof` is a heuristic for exactly that
   spelling; the same shape accounts for the single findings in
   `libdevstat`, `libefivar` and `libhbsdcontrol`.
+
+## Three that report an error and then keep going
+
+### `mt_start_element`: the report, then `bzero` through NULL
+
+```c
+			nv = malloc(sizeof(*nv));
+			if (nv == NULL) {
+				mtinfo->error = 1;
+				snprintf(mtinfo->error_str, ...,
+				    "%s: error allocating %zd bytes",
+				    __func__, sizeof(*nv));
+			}
+			bzero(nv, sizeof(*nv));
+```
+
+No `return`, no `goto`.  The entry allocation at the top of the *same
+function* reports and returns (`mtlib.c:91`), which is the idiom.
+`lib/libmt`: 1 → 0.
+
+### `gss_acquire_cred`: a guard on the first line, unguarded on the last
+
+```c
+	*minor_status = 0;
+	if (output_cred_handle)
+		*output_cred_handle = GSS_C_NO_CREDENTIAL;
+	...
+	*output_cred_handle = (gss_cred_id_t) cred;   /* :169, unguarded */
+```
+
+A null `output_cred_handle` survived the whole acquisition — every
+mechanism consulted, the credential built — and crashed on the last
+line, with that credential now unreachable.
+
+RFC 2743 makes the parameter a **required** output, and GSS-API defines
+`GSS_S_CALL_INACCESSIBLE_WRITE` for a required output that cannot be
+written.  The sibling `gss_add_cred()` takes the other coherent
+position: it writes through it unguarded from the start
+(`gss_add_cred.c:103`).  Either is defensible.  A guard that promises
+what the rest of the function does not keep is not.
+
+### `gss_accept_sec_context`: two `GSS_S_BAD_MECH`, one of them freeing
+
+```c
+		m = ctx->gc_mech = _gss_find_mech_switch(&mech_oid);
+		if (!m) {
+			free(ctx);                 /* :205 */
+			return (GSS_S_BAD_MECH);
+		}
+	} else
+		m = ctx->gc_mech;
+
+	if (cred) {
+		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link)
+			if (mc->gmc_mech == m)
+				break;
+		if (!mc)
+			return (GSS_S_BAD_MECH);   /* :216, no free */
+```
+
+Twelve lines apart.  A **first** call — `*context_handle ==
+GSS_C_NO_CONTEXT`, the branch that allocates — whose credential carries
+no element for the chosen mechanism leaked a `struct _gss_context`.  On
+the `else` branch `ctx` is the caller's and must not be freed, and
+`*context_handle` is untouched between `:186` and here, so it still says
+which case this is.
+
+`lib/libgssapi`: **2 findings → 0**, across 54 translation units.
+
+### And a note on the verification, because it lied
+
+The revert-check for these three first came back *passing* on a reverted
+tree — every marker apparently satisfied by code that did not contain
+the fix.  The markers were fine; the loop checking them was
+
+```sh
+python3 tools/check_pbsd_marks.py >/dev/null 2>&1
+echo "$(basename $f) reverted exit=$?"
+```
+
+and `$(basename $f)` **runs a command**, so `$?` was `basename`'s status,
+not the checker's.  Zero, every time.
+
+That is the same failure this project keeps finding in the tree —
+a check that agrees with itself because it cannot see — and it is worth
+recording that it happened in the harness rather than the subject.  The
+fix is to capture the status into a variable on the line after the
+command and read the variable.

@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,033 | 9,056 |
+| 1 | `lib` | 2,827 | 640,069 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,391** | **114,207** |
+| | **total** | **41,143** | **21,301,427** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -7533,11 +7533,11 @@ function; a file with two hundred of them is a project.
 
 - [ ] **1.181.1** `context.h` · 34L · `TODO-HDR`
 - [ ] **1.181.2** `cred.h` · 43L gen:1 · `TODO-HDR`
-- [ ] **1.181.3** `gss_accept_sec_context.c` · 293L · `TODO-PORT` · 3 fn
+- [ ] **1.181.3** `gss_accept_sec_context.c` · 307L · `TODO-PORT` · 3 fn
   - [ ] 1.181.3.1 `parse_header()` · `TODO-FN`
   - [ ] 1.181.3.2 `choose_mech()` · `TODO-FN`
   - [ ] 1.181.3.3 `gss_accept_sec_context()` · `TODO-FN`
-- [ ] **1.181.4** `gss_acquire_cred.c` · 173L · `TODO-PORT` · 1 fn
+- [ ] **1.181.4** `gss_acquire_cred.c` · 186L · `TODO-PORT` · 1 fn
   - [ ] 1.181.4.1 `gss_acquire_cred()` · `TODO-FN`
 - [ ] **1.181.5** `gss_add_cred.c` · 194L · `TODO-PORT` · 2 fn
   - [ ] 1.181.5.1 `_gss_copy_cred()` · `TODO-FN`
@@ -9013,7 +9013,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.225 `lib/libmt`
 
-- [ ] **1.225.1** `mtlib.c` · 783L · `TODO-PORT` · 21 fn
+- [ ] **1.225.1** `mtlib.c` · 792L · `TODO-PORT` · 21 fn
   - [ ] 1.225.1.1 `mt_start_element()` · `TODO-FN`
   - [ ] 1.225.1.2 `mt_end_element()` · `TODO-FN`
   - [ ] 1.225.1.3 `mt_char_handler()` · `TODO-FN`

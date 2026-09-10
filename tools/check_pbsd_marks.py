@@ -2621,6 +2621,45 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libmt/mtlib.c": (
+        "\t\t\t\treturn;\n\t\t\t}\n\t\t\tbzero(nv, sizeof(*nv));",
+        None,
+        "mt_start_element() reported a failed malloc into "
+        "mtinfo->error_str and then fell straight through to `bzero(nv, "
+        "sizeof(*nv))' on the null pointer -- no return, no goto. The "
+        "entry allocation at the top of the SAME function reports and "
+        "returns (mtlib.c:91), which is the idiom. clang "
+        "unix.cstring.NullArg, mtlib.c:142; lib/libmt 1 -> 0.",
+    ),
+    "hbsd/src/lib/libgssapi/gss_acquire_cred.c": (
+        "if (output_cred_handle == NULL)\n\t\treturn (GSS_S_CALL_INACCESSIBLE_WRITE);",
+        "\tif (output_cred_handle)\n\t\t*output_cred_handle = GSS_C_NO_CREDENTIAL;",
+        "gss_acquire_cred() guarded output_cred_handle against NULL on "
+        "its first line and then wrote through it UNGUARDED on its "
+        "last: `*output_cred_handle = (gss_cred_id_t) cred'. So a null "
+        "one survived the whole acquisition -- every mechanism "
+        "consulted, the credential built -- and crashed at the end, "
+        "with that credential now unreachable. RFC 2743 makes the "
+        "parameter a required output and GSS-API defines a status for "
+        "one that cannot be written; the sibling gss_add_cred() simply "
+        "writes through it unguarded (gss_add_cred.c:103). Either is "
+        "coherent. A guard that promises what the rest of the function "
+        "does not keep is not. clang core.NullDereference, "
+        "gss_acquire_cred.c:169.",
+    ),
+    "hbsd/src/lib/libgssapi/gss_accept_sec_context.c": (
+        "if (*context_handle == GSS_C_NO_CONTEXT)\n\t\t\t\tfree(ctx);",
+        "\t\tif (!mc)\n\t\t\treturn (GSS_S_BAD_MECH);",
+        "Two GSS_S_BAD_MECH returns twelve lines apart. The first frees "
+        "the struct _gss_context this call just allocated (:205); the "
+        "second did not -- so a FIRST call (context_handle == "
+        "GSS_C_NO_CONTEXT) whose credential carries no element for the "
+        "chosen mechanism leaked one. On the else branch ctx is the "
+        "CALLER's and must not be freed, and *context_handle is "
+        "untouched between :186 and here, so it still says which case "
+        "this is. clang unix.Malloc, gss_accept_sec_context.c:216; "
+        "lib/libgssapi 2 findings -> 0.",
+    ),
     "hbsd/src/lib/libkvm/kvm_arm.c": (
         "if (_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE) < sizeof(pte)) {",
         "\t_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE);",

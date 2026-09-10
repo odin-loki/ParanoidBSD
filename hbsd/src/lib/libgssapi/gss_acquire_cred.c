@@ -56,8 +56,21 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	size_t i;
 
 	*minor_status = 0;
-	if (output_cred_handle)
-		*output_cred_handle = GSS_C_NO_CREDENTIAL;
+	/*
+	 * PBSD: honour the test rather than half-honouring it.  This
+	 * function guarded output_cred_handle here and then wrote
+	 * through it unguarded at the bottom -- so a null one survived
+	 * the whole acquisition and crashed on the last line, with the
+	 * credential already built and now unreachable.  RFC 2743 makes
+	 * output_cred_handle a REQUIRED output, and GSS-API has a
+	 * status for a required output that cannot be written; the
+	 * sibling gss_add_cred() simply writes through it unguarded
+	 * (gss_add_cred.c:103).  Either is coherent; a guard that
+	 * promises what the rest of the function does not keep is not.
+	 */
+	if (output_cred_handle == NULL)
+		return (GSS_S_CALL_INACCESSIBLE_WRITE);
+	*output_cred_handle = GSS_C_NO_CREDENTIAL;
 	if (actual_mechs)
 		*actual_mechs = GSS_C_NO_OID_SET;
 	if (time_rec)

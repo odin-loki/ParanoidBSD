@@ -212,8 +212,22 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link)
 			if (mc->gmc_mech == m)
 				break;
-		if (!mc)
+		if (!mc) {
+			/*
+			 * PBSD: free ctx if THIS call allocated it.  The
+			 * other GSS_S_BAD_MECH return, twelve lines up,
+			 * does (:205); this one did not, so a first call
+			 * whose credential carries no element for the
+			 * chosen mechanism leaked a struct _gss_context.
+			 * On the else branch ctx is the CALLER's and must
+			 * not be freed -- *context_handle is untouched
+			 * between here and the test at :186, so it still
+			 * says which case this is.
+			 */
+			if (*context_handle == GSS_C_NO_CONTEXT)
+				free(ctx);
 			return (GSS_S_BAD_MECH);
+		}
 		acceptor_mc = mc->gmc_cred;
 	} else {
 		acceptor_mc = GSS_C_NO_CREDENTIAL;

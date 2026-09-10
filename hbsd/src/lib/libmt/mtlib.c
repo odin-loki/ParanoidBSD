@@ -138,6 +138,15 @@ mt_start_element(void *user_data, const char *name, const char **attr)
 				    sizeof(mtinfo->error_str),
 				    "%s: error allocating %zd bytes",
 				    __func__, sizeof(*nv));
+				/*
+				 * PBSD: and stop.  The report was written
+				 * and then execution fell straight into
+				 * bzero(nv, ...) on the null pointer.  The
+				 * entry allocation at the top of this same
+				 * function reports and returns, which is
+				 * the idiom (mtlib.c:91).
+				 */
+				return;
 			}
 			bzero(nv, sizeof(*nv));
 			nv->name = strdup(attr[i]);
