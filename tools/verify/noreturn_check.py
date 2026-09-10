@@ -238,6 +238,17 @@ def declared_noreturn(text, name):
 
 
 _HDR_CACHE = {}
+_HDR_NORETURN = {}
+
+# A declaration in a header that already carries the attribute, e.g.
+# `void dumpabort(int signo) __dead2;'.  Without this the propagation
+# stops at the file boundary: dump's quit() ends in dumpabort(), which
+# is declared __dead2 in dump.h and defined in another file, so quit()
+# looked like a function that returns and its own missing attribute went
+# unreported.
+DECL_NORETURN_RE = re.compile(
+    r"\b([A-Za-z_]\w*)\s*\([^;{]*\)[^;{]*(?:__dead2|__dead\b|_Noreturn|noreturn)"
+    r"[^;{]*;")
 
 
 def headers_for(path):
@@ -263,7 +274,16 @@ def headers_for(path):
             except OSError:
                 pass
         _HDR_CACHE[d] = "\n".join(parts)
+        _HDR_NORETURN[d] = set(DECL_NORETURN_RE.findall(_HDR_CACHE[d]))
     return _HDR_CACHE[d]
+
+
+def header_noreturn(path):
+    """Names the directory's headers already declare noreturn."""
+    d = os.path.dirname(path)
+    if d not in _HDR_NORETURN:
+        headers_for(path)
+    return _HDR_NORETURN.get(d, set())
 
 
 def scan(path):
@@ -281,7 +301,7 @@ def scan(path):
         return []
     decls = text + "\n" + headers_for(path)
 
-    noreturn = set(SEED)
+    noreturn = set(SEED) | header_noreturn(path)
     ends_with = {}
     for name, start, body, end in defs:
         callee = last_call(lines, body, end)

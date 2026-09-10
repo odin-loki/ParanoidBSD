@@ -54,7 +54,7 @@
 #include "pfctl_parser.h"
 #include "pfctl.h"
 
-extern void	usage(void);
+extern void	usage(void) __dead2;
 static void	print_table(const struct pfr_table *, int, int);
 static int	print_tstats(const struct pfr_tstats *, int);
 static int	load_addr(struct pfr_buffer *, int, char *[], char *, int, int);

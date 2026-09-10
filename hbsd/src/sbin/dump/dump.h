@@ -93,7 +93,7 @@ void	lastdump(int arg);	/* int should be char */
 void	msg(const char *fmt, ...) __printflike(1, 2);
 void	msgtail(const char *fmt, ...) __printflike(1, 2);
 int	query(const char *question);
-void	quit(const char *fmt, ...) __printflike(1, 2);
+void	quit(const char *fmt, ...) __printflike(1, 2) __dead2;
 void	timeest(void);
 time_t	unctime(char *str);
 

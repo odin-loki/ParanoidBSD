@@ -4141,6 +4141,28 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/sbin/dump/dump.h": (
+        "void\tquit(const char *fmt, ...) __printflike(1, 2) __dead2;",
+        "void\tquit(const char *fmt, ...) __printflike(1, 2);",
+        "blkread() calls quit() when its scratch buffer cannot be "
+        "allocated and then memcpy()s through it -- quit() ends in "
+        "dumpabort(), which dump.h already declares __dead2, so the "
+        "attribute was missing from exactly one link of the chain",
+    ),
+
+    "hbsd/src/sbin/pfctl/pfctl_table.c": (
+        "extern void\tusage(void) __dead2;",
+        "extern void\tusage(void);",
+        "pfctl_table() opens with `if (command == NULL) usage();' and "
+        "then strcmp()s command a dozen times",
+    ),
+
+    "hbsd/src/sbin/pfctl/pfctl.c": (
+        "void\t usage(void) __dead2;",
+        "void\t usage(void);",
+        "the same declaration in pfctl's own translation unit",
+    ),
+
     "hbsd/src/usr.sbin/lpr/lpc/extern.h": (
         "void\t quit(int _argc, char *_argv[]) __dead2;",
         "void\t quit(int _argc, char *_argv[]);",

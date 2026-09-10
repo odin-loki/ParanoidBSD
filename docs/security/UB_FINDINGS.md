@@ -18814,3 +18814,54 @@ indexes past the array either.  And when `c` is the sentinel,
 `columns == 0` guard above ensures, so the `break` always fires before
 the `strlen`.  The relation between `c` and `c + lines` across
 iterations is what the analyser will not carry.
+
+## Twelve more, and a gap in the lint that hid them
+
+`dump`'s `blkread()`:
+
+```c
+	if (tmpbuf == NULL && (tmpbuf = malloc(secsize)) == NULL)
+		quit("buffer malloc failed\n");
+	...
+	memcpy(buf, &tmpbuf[base], xfer);
+```
+
+and `pfctl`'s `pfctl_table()`:
+
+```c
+	if (command == NULL)
+		usage();
+	...
+	if (!strcmp(command, "-F")) {
+```
+
+Both are the paying shape.  Neither was in the lint's 673, and the
+reason `dump` was missed is worth recording: `quit()` does not end in
+`exit()`, it ends in `dumpabort()` — which `dump.h` **already** declares
+`__dead2`, in another file.  The lint's propagation ran within a single
+translation unit and seeded only the C library's own names, so the chain
+broke at exactly the link that was already correct.
+
+It now also seeds from the noreturn declarations in the directory's own
+headers, and immediately reports `quit()` and `tape.c`'s `tperror()`,
+which ends in `Exit()`.
+
+`pfctl` was missed for a duller reason: `usage()` is declared
+`extern void usage(void);` inside `pfctl_table.c` itself, and defined in
+`pfctl.c`, so the definition and the declaration the caller sees are in
+different files.  Marking both.
+
+```
+                sbin/dump + sbin/pfctl
+                before  after
+OK                  19      19
+ERROR                0       0
+findings            34      22
+```
+
+Twelve from three declarations, none new — and only two of the twelve
+were the `unix.cstring.NullArg` findings that started this.  The other
+ten were `core.NullDereference` in `query()`, `allocfsent()`,
+`dump_getfstab()`, `rollforward()`, `mapfiles()` twice, `searchdir()`
+and `getino()` twice, all of them past a `quit()` the analyser thought
+returned.
