@@ -17339,3 +17339,79 @@ site. It was found by reading, and the trade is the right way round.
 graph, not a brace matcher, and the moment this pass needs one it stops
 being the thing it is — a grep that runs over the whole tree in a second
 and is right every time it speaks.
+
+## Two more of the shape, and the parenthesis that hid one
+
+Finishing the dev shard's `core.NullDereference` tail by hand turned up
+two more, and one of them the lint had been standing right next to.
+
+`tws_intr()`:
+
+```c
+	struct tws_softc *sc = (struct tws_softc *)arg;
+	...
+	if (!(sc)) {
+		device_printf(sc->tws_dev, "null softc!!!\n");
+		return;
+	}
+```
+
+The pass tests for `!p`, and this is `!(p)`. One parenthesis. That is
+the honest character of a lint like this: it is exactly as good as the
+forms it happens to have been shown, and the tree is where you find out
+which those are. `!(p)` and `(p) == NULL` are both accepted now. With no
+softc there is no device to name the message with, so it goes out on
+plain `printf`.
+
+`wdatwd_action()` is the one worth reading twice:
+
+```c
+static int
+wdatwd_action(const struct wdatwd_softc *sc, const u_int action,
+    const uint64_t val, uint64_t *ret)
+{
+	STAILQ_FOREACH(wdat, &sc->action[action], next) {
+		switch (wdat->entry.Instruction & ~ACPI_WDAT_PRESERVE_REGISTER) {
+		    case ACPI_WDAT_READ_VALUE:
+			...
+			*ret = (x == wdat->entry.Value) ? 1 : 0;
+```
+
+Six of its nine callers pass `ret = NULL` —
+`ACPI_WDAT_RESET`, `SET_COUNTDOWN`, `SET_RUNNING_STATE`,
+`SET_STOPPED_STATE`, `SET_STATUS`, `SET_REBOOT`. Which instructions an
+action runs is not the driver's decision: it is read from the firmware's
+WDAT table, and the table is a flat list of (action, instruction)
+entries whose sequences the specification leaves to the vendor. A
+firmware that lists a `READ_VALUE` under `SET_RUNNING_STATE` — legal,
+and nothing in this driver rejects it — makes the kernel write to NULL
+from a watchdog action. `if (ret != NULL)` is all it takes; the caller
+that did not ask for a value does not get one.
+
+```
+                tws+wdatwd
+                before  after
+OK                  6       6
+ERROR               0       0
+findings            5       2
+```
+
+Three closed. The addition at `wdatwd.c:373` is the existing
+`wdatwd_event()` `CallAndMessage` finding, ten lines lower.
+
+The survivor, `tws_q_remove_head()`, is on the record as read:
+
+```c
+	if (r->next == NULL && r->prev == NULL) {
+		/* last element  */
+		sc->q_head[q_type] = sc->q_tail[q_type] = NULL;
+	} else {
+		sc->q_head[q_type] = r->next;
+		r->next->prev = NULL;
+```
+
+Taking the `else` with `r->next == NULL` faults, and the condition
+admits it — but only if `r->prev != NULL`, and `r` is the head, whose
+`prev` is NULL in any well-formed queue. The second conjunct is
+redundant, and its redundancy is the whole finding. Not a defect; a test
+that says less than it means.

@@ -150,7 +150,15 @@ wdatwd_action(const struct wdatwd_softc *sc, const u_int action, const uint64_t 
 			}
 			x >>= gas->BitOffset;
 			x &= wdat->entry.Mask;
-			*ret = (x == wdat->entry.Value) ? 1 : 0;
+			/*
+			 * PBSD: six of this function's nine callers pass
+			 * ret = NULL, and which instructions an action runs
+			 * comes from the firmware's WDAT table -- an
+			 * arbitrary sequence, so a READ under a SET action
+			 * is a table away.  Nothing else here checks it.
+			 */
+			if (ret != NULL)
+				*ret = (x == wdat->entry.Value) ? 1 : 0;
 			break;
 		    case ACPI_WDAT_READ_COUNTDOWN:
 			status = AcpiRead(&x, gas);
@@ -160,7 +168,9 @@ wdatwd_action(const struct wdatwd_softc *sc, const u_int action, const uint64_t 
 			}
 			x >>= gas->BitOffset;
 			x &= wdat->entry.Mask;
-			*ret = x;
+			/* PBSD: as above -- ret is NULL for every SET_* caller. */
+			if (ret != NULL)
+				*ret = x;
 			break;
 		    case ACPI_WDAT_WRITE_VALUE:
 			x = wdat->entry.Value & wdat->entry.Mask;

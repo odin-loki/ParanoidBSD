@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,424 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,438 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,183** | **114,205** |
+| | **total** | **41,143** | **21,300,197** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -102560,7 +102560,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1046.1.21 `tws_get_request()` · `TODO-FN`
   - [ ] 8.1046.1.22 `tws_release_request()` · `TODO-FN`
 - [ ] **8.1046.2** `tws.h` · 268L gen:1 · `TODO-HDR`
-- [ ] **8.1046.3** `tws_cam.c` · 1,277L gen:1 · `TODO-PORT` · 32 fn
+- [ ] **8.1046.3** `tws_cam.c` · 1,281L gen:1 · `TODO-PORT` · 32 fn
   - [ ] 8.1046.3.1 `tws_cam_attach()` · `TODO-FN`
   - [ ] 8.1046.3.2 `tws_cam_detach()` · `TODO-FN`
   - [ ] 8.1046.3.3 `tws_bus_scan()` · `TODO-FN`
@@ -108377,7 +108377,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1101 `sys/dev/wdatwd`
 
-- [ ] **8.1101.1** `wdatwd.c` · 852L gen:2 · `TODO-PORT` · 21 fn
+- [ ] **8.1101.1** `wdatwd.c` · 862L gen:2 · `TODO-PORT` · 21 fn
   - [ ] 8.1101.1.1 `wdatwd_action()` · `TODO-FN`
   - [ ] 8.1101.1.2 `wdatwd_reset_countdown()` · `TODO-FN`
   - [ ] 8.1101.1.3 `wdatwd_set_countdown()` · `TODO-FN`

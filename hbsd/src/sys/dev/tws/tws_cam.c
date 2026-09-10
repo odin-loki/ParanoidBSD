@@ -1030,8 +1030,12 @@ tws_intr(void *arg)
     struct tws_softc *sc = (struct tws_softc *)arg;
     u_int32_t histat=0, db=0;
 
+    /*
+     * PBSD: this printed "null softc" by reading sc->tws_dev out of the
+     * null softc.  With no softc there is no device to name it with.
+     */
     if (!(sc)) {
-        device_printf(sc->tws_dev, "null softc!!!\n");
+        printf("tws: null softc in interrupt handler\n");
         return;
     }
 

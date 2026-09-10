@@ -51,6 +51,9 @@ NULLTEST = [
     re.compile(r'^\s*([A-Za-z_]\w*)\s*==\s*NULL\s*$'),
     re.compile(r'^\s*NULL\s*==\s*([A-Za-z_]\w*)\s*$'),
     re.compile(r'^\s*!\s*([A-Za-z_]\w*)\s*$'),
+    # tws_intr() writes `if (!(sc))'
+    re.compile(r'^\s*!\s*\(\s*([A-Za-z_]\w*)\s*\)\s*$'),
+    re.compile(r'^\s*\(\s*([A-Za-z_]\w*)\s*\)\s*==\s*NULL\s*$'),
 ]
 
 

@@ -4132,6 +4132,23 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sys/dev/tws/tws_cam.c": (
+        'printf("tws: null softc in interrupt handler\\n");',
+        'device_printf(sc->tws_dev, "null softc!!!\\n");',
+        "tws_intr() printed \"null softc\" by reading sc->tws_dev out of "
+        "the null softc, inside `if (!(sc))'",
+    ),
+
+    "hbsd/src/sys/dev/wdatwd/wdatwd.c": (
+        ("if (ret != NULL)", 2),
+        "wdat->entry.Mask;\n\t\t\t*ret = (x == wdat->entry.Value)",
+        "wdatwd_action() writes *ret for the two READ instructions, and "
+        "six of its nine callers pass ret = NULL -- which instructions an "
+        "action runs comes from the firmware's WDAT table, an arbitrary "
+        "sequence, so a READ under a SET_* action is one table away from a "
+        "kernel write to NULL",
+    ),
+
     "hbsd/src/sys/dev/qlnx/qlnxe/ecore_rdma.c": [
         (
             "\tif (!rdma_cxt)\n\t\treturn ECORE_INVAL;\n\tif (!qp) {",
