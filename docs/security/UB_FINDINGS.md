@@ -21510,3 +21510,75 @@ the `sustain - 1` property is gone, but the rest are on `value` and
 lives in `playstring()` — a `char *` function, `POINTER` class, which
 the unguarded tier never checks.  The finding put a line number in front
 of a person; the defect was one call up.
+
+## The rest shard, and the matrix closed
+
+`sys/arm64`, `sys/amd64`, `sys/arm`, `sys/i386`, `sys/riscv`,
+`sys/powerpc`, `sys/x86`, `sys/compat`, `sys/crypto`, `sys/netpfil`,
+`sys/net80211`, `sys/netgraph`, `sys/netlink` and the rest:
+
+```
+807 of 1,486 translation units modelled, 679 TU-ERROR
+BOUNDED 24  ERROR 13  FAILED 151  PROVED 304  TIMEOUT 82
+```
+
+| family | count |
+|---|---|
+| an unseen callee or an unconstrained global | 101 |
+| arithmetic on an unconstrained parameter or global | 37 |
+| an array bound | 7 |
+| CBMC's entry-point leak check | 4 |
+| division by zero | 2 |
+| **other** | **0** |
+
+Nothing was fixed here, and one of the seven array bounds is worth
+writing down anyway because of *why* it is safe:
+
+```c
+int
+bsd_to_linux_errno(int error)
+{
+	KASSERT(error >= 0 && error <= ELAST,
+	    ("%s: bad error %d", __func__, error));
+
+	return (linux_errtbl[error]);
+}
+```
+
+A `KASSERT` compiles to nothing without `INVARIANTS`, and `GENERIC` does
+not have it — so on the kernel anyone actually runs, this indexes
+`linux_errtbl[]` with no check.  What makes it safe is not the assertion
+but the four call sites: every one passes a value the kernel itself set
+as an errno.  The `SO_ERROR` path is the closest to a user: it returns
+whatever `kern_getsockopt()` read out of `so_error`, and every in-kernel
+assignment to that field is an errno.
+
+That is the honest reading, and it is a different sentence from "the
+assertion checks it".
+
+### The whole matrix
+
+Five shards, every `FAILED` verdict in a family that was read:
+
+| shard | TUs modelled | checkable | PROVED | FAILED | real |
+|---|---|---|---|---|---|
+| `lib/libc` + `lib/msun` | 1,177 / 1,295 | 770 | 425 | 209 | **9** |
+| `bin` `sbin` `usr.bin` `usr.sbin` | 1,017 / 1,830 | 895 | 532 | 187 | **4** |
+| `sys/kern` `vm` `net` `netinet` `netinet6` | 197 / 662 | 158 | 91 | 18 | 0 |
+| `sys/fs` `ufs` `geom` `cam` `security` `cddl` | 161 / 311 | 121 | 87 | 25 | **1** |
+| `sys/dev` | 1,247 / 2,509 | 605 | 194 | 220 | **1** (+2 read out of it) |
+| `sys/*` rest | 807 / 1,486 | 574 | 304 | 151 | 0 |
+
+**4,606 of 8,093 translation units modelled** — the other 3,487 do not
+compile standalone on a Linux host, and that number is the single
+largest fact about what this engine can and cannot say about this tree.
+Of the 3,123 (file, function) pairs it could check, 1,633 came back
+`PROVED` — a real proof over all inputs for the checked properties,
+within the unwinding bound — and 810 `FAILED`, of which **15 were
+defects**.
+
+The ratio of `FAILED` to defect is about 54 to 1, and every one of the
+795 was put in a named family rather than waved at.  Four families
+account for almost all of them: an unseen callee or unconstrained
+global, CBMC's entry-point leak check, arithmetic on a parameter the
+callers bound, and libm's deliberate IEEE idioms.
