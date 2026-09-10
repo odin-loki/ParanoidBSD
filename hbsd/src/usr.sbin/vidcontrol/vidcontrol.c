@@ -1321,9 +1321,19 @@ dump_screen(int mode, int opt)
 
 			/* Trim trailing spaces */
 
+			/*
+			 * PBSD: x is shot.xsize here, and the walk back
+			 * tested line[x] before it tested x, so a zero
+			 * xsize -- the console column count, out of a
+			 * CONS_GETINFO ioctl -- read line[-1] and, if that
+			 * byte happened to be a blank, wrote a NUL there
+			 * and kept walking backwards.  Bounding x first
+			 * leaves every xsize >= 1 behaving exactly as
+			 * before, the trailing blank at line[0] included.
+			 */
 			do {
 				line[x--] = '\0';
-			} while (line[x] == ' ' && x != 0);
+			} while (x > 0 && line[x] == ' ');
 
 			puts(line);
 		}

@@ -57,8 +57,16 @@ group_marshal_func(struct group *grp, char *buffer, size_t *buffer_size)
 	if (grp->gr_passwd != NULL)
 		desired_size += strlen(grp->gr_passwd) + 1;
 
+	/*
+	 * PBSD: mem_size is set under `grp->gr_mem != NULL' and read under
+	 * `new_grp.gr_mem != NULL', which is the same predicate only
+	 * because new_grp is a memcpy of *grp.  Start it at zero so the
+	 * read is defined however that copy is reasoned about; zero makes
+	 * the memcpy below copy nothing, which is the right answer for a
+	 * group with no members.
+	 */
+	mem_size = 0;
 	if (grp->gr_mem != NULL) {
-		mem_size = 0;
 		for (mem = grp->gr_mem; *mem; ++mem) {
 			desired_size += strlen(*mem) + 1;
 			++mem_size;

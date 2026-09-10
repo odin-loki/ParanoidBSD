@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,544 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,366 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,477 | 9,020 |
+| 5 | `usr.bin` | 732 | 248,376 | 4,188 |
+| 6 | `usr.sbin` | 1,142 | 657,532 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,486** | **114,207** |
+| | **total** | **41,143** | **21,300,551** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -25017,7 +25017,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.201 `usr.bin/tabs`
 
-- [ ] **5.201.1** `tabs.c` · 237L · `TODO-PORT` · 4 fn
+- [ ] **5.201.1** `tabs.c` · 247L · `TODO-PORT` · 4 fn
   - [ ] 5.201.1.1 `main()` · `TODO-FN`
   - [ ] 5.201.1.2 `usage()` · `TODO-FN`
   - [ ] 5.201.1.3 `gettabs()` · `TODO-FN`
@@ -33135,7 +33135,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.162 `usr.sbin/nscd/agents`
 
-- [ ] **6.162.1** `group.c` · 258L · `TODO-PORT` · 7 fn
+- [ ] **6.162.1** `group.c` · 266L · `TODO-PORT` · 7 fn
   - [ ] 6.162.1.1 `group_marshal_func()` · `TODO-FN`
   - [ ] 6.162.1.2 `group_lookup_func()` · `TODO-FN`
   - [ ] 6.162.1.3 `group_mp_init_func()` · `TODO-FN`
@@ -33320,7 +33320,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.169.3.3 `compute_weight()` · `TODO-FN`
   - [ ] 6.169.3.4 `dns_getsrvinfo()` · `TODO-FN`
 - [ ] **6.169.4** `dns_utils.h` · 47L · `TODO-HDR`
-- [ ] **6.169.5** `ecc.c` · 607L · `TODO-PORT` · 10 fn
+- [ ] **6.169.5** `ecc.c` · 630L · `TODO-PORT` · 10 fn
   - [ ] 6.169.5.1 `ecc_pkgkey_params()` · `TODO-FN`
   - [ ] 6.169.5.2 `ecc_read_pkgkey()` · `TODO-FN`
   - [ ] 6.169.5.3 `ecc_extract_signature()` · `TODO-FN`
@@ -35460,7 +35460,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.204.5.4 `rpcbproc_getaddrlist_4_local()` · `TODO-FN`
   - [ ] 6.204.5.5 `free_rpcb_entry_list()` · `TODO-FN`
   - [ ] 6.204.5.6 `rpcbproc_dump_4_local()` · `TODO-FN`
-- [ ] **6.204.6** `rpcb_svc_com.c` · 1,490L · `TODO-PORT` · 35 fn
+- [ ] **6.204.6** `rpcb_svc_com.c` · 1,504L · `TODO-PORT` · 35 fn
   - [ ] 6.204.6.1 `rpcbproc_set_com()` · `TODO-FN`
   - [ ] 6.204.6.2 `map_set()` · `TODO-FN`
   - [ ] 6.204.6.3 `rpcbproc_unset_com()` · `TODO-FN`
@@ -36377,7 +36377,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.240.1.1 `decode()` · `TODO-FN`
 - [ ] **6.240.2** `decode.h` · 3L · `TODO-HDR`
 - [ ] **6.240.3** `path.h` · 8L · `TODO-HDR`
-- [ ] **6.240.4** `vidcontrol.c` · 1,568L · `TODO-PORT` · 39 fn
+- [ ] **6.240.4** `vidcontrol.c` · 1,578L · `TODO-PORT` · 39 fn
   - [ ] 6.240.4.1 `init()` · `TODO-FN`
   - [ ] 6.240.4.2 `revert()` · `TODO-FN`
   - [ ] 6.240.4.3 `usage()` · `TODO-FN`

@@ -1244,6 +1244,20 @@ handle_reply(int fd, SVCXPRT *xprt)
 	char *uaddr;
 #endif
 
+	/*
+	 * PBSD: the done: label at the bottom reads reply_msg.rm_xid and,
+	 * when it is non-zero, hands it to free_slot_by_xid(), which tears
+	 * down the forwarding slot at that index -- netbuffree() on the
+	 * caller address, free() on the uaddr, svc_maxfd--, and the slot
+	 * marked inactive.  Three paths reach done: before anything writes
+	 * rm_xid: the malloc failing, recvfrom() failing, and -- the one
+	 * that a remote host controls -- xdr_replymsg() rejecting the
+	 * datagram.  A malformed reply would tear down an unrelated
+	 * in-flight rmtcall chosen by a stack word.  Zero is what the
+	 * "NULL xid on exit" arm below exists for.
+	 */
+	reply_msg.rm_xid = 0;
+
 	buffer = malloc(RPC_BUF_MAX);
 	if (buffer == NULL)
 		goto done;

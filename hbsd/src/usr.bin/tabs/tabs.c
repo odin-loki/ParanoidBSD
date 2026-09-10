@@ -217,6 +217,16 @@ gettabs(char *arg, long stops[], long *nstops)
 			errx(1, "cannot go backwards");
 		last = stops[(*nstops)++] = stop;
 	}
+	/*
+	 * PBSD: `tabs ""' and `tabs ,' both give strtok() nothing to
+	 * return, so the loop never runs and *nstops stays 0 -- while the
+	 * caller's test is `nstops >= 0', -1 being "no list was given".
+	 * It then prints stops[0] - 1 as a `%*s' field width, out of a
+	 * stack word.  An empty list is malformed like every other case
+	 * this function rejects.
+	 */
+	if (*nstops == 0)
+		errx(1, "no tab stops specified");
 }
 
 static int

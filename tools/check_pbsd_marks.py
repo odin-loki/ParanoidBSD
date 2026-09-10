@@ -4141,6 +4141,70 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.sbin/rpcbind/rpcb_svc_com.c": (
+        "\treply_msg.rm_xid = 0;",
+        "\tchar *uaddr;\n#endif\n\n\tbuffer = malloc(RPC_BUF_MAX);",
+        "handle_reply()'s done: label reads reply_msg.rm_xid and hands a "
+        "non-zero one to free_slot_by_xid(), which tears the forwarding "
+        "slot at that index down -- and three paths reach done: before "
+        "anything writes rm_xid, one of them xdr_replymsg() rejecting a "
+        "datagram a remote host sent",
+    ),
+
+    "hbsd/src/usr.bin/tabs/tabs.c": (
+        'errx(1, "no tab stops specified");',
+        "\t\tlast = stops[(*nstops)++] = stop;\n\t}\n}",
+        "`tabs \"\"' and `tabs ,' give strtok() nothing to return, so "
+        "gettabs() leaves *nstops at 0 while main tests `nstops >= 0' -- "
+        "-1 being \"no list given\" -- and prints stops[0] - 1 as a "
+        "%*s field width out of a stack word",
+    ),
+
+    "hbsd/src/usr.sbin/vidcontrol/vidcontrol.c": (
+        "} while (x > 0 && line[x] == ' ');",
+        "} while (line[x] == ' ' && x != 0);",
+        "dump_screen()'s trailing-space trim tested line[x] before it "
+        "tested x, so a zero shot.xsize -- the console column count out "
+        "of a CONS_GETINFO ioctl -- read line[-1] and, if that byte was a "
+        "blank, wrote a NUL there and kept walking back",
+    ),
+
+    "hbsd/src/usr.sbin/pkg/ecc.c": [
+        (
+            "\t\tcbdata.key = NULL;\n\t\tcbdata.keylen = 0;",
+            'warn("fopen: %s", sigfile);\n\t\t\treturn (false);\n'
+            "\t\t}\n\t} else {",
+            "ecc_verify_data()'s sigfile arm left key and keylen unwritten "
+            "and ecc_verify_internal() passes both to "
+            "ecc_extract_pubkey(), which opens with "
+            "assert((keyfp != NULL) ^ (key != NULL)) -- so it read the "
+            "uninitialised key and aborted whenever the stack word under "
+            "it was non-NULL",
+        ),
+        (
+            "memcmp(oidp, oid_ecpubkey, oidsz) != 0)\n\t\tgoto out;",
+            "memcmp(oidp, oid_ecpubkey, oidsz) != 0)\n\t\treturn (1);",
+            "the one failure arm in ecc_extract_pubkey() that returned "
+            "rather than unwinding, leaking root and the libder context "
+            "on a key whose algorithm OID is not id-ecPublicKey",
+        ),
+        (
+            "\tkeysz = sizeof(keybuf);\n\tif (ecc_extract_pubkey(",
+            "keysz = MIN(sizeof(keybuf), cbdata->keylen / 2);",
+            "a dead store that computed MIN(sizeof(keybuf), keylen / 2) "
+            "and discarded it on the next line -- and would have "
+            "under-reported keybuf's capacity had it survived",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/nscd/agents/group.c": (
+        "\tmem_size = 0;\n\tif (grp->gr_mem != NULL) {",
+        "\tif (grp->gr_mem != NULL) {\n\t\tmem_size = 0;",
+        "group_marshal_func() sets mem_size under `grp->gr_mem != NULL' "
+        "and reads it under `new_grp.gr_mem != NULL', which is the same "
+        "predicate only because new_grp is a memcpy of *grp",
+    ),
+
     "hbsd/src/usr.bin/ul/ul.c": [
         (
             "static wchar_t	*lnbuf;",

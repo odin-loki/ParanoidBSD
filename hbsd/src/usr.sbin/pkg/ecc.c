@@ -430,9 +430,14 @@ ecc_extract_pubkey(FILE *keyfp, const uint8_t *key, size_t keylen,
 		goto out;
 
 	oidp = libder_obj_data(oid, &oidsz);
+	/*
+	 * PBSD: this arm returned rather than unwinding, leaking root and
+	 * the libder context on a key whose algorithm OID is not
+	 * id-ecPublicKey.  Every other failure here goes to out:.
+	 */
 	if (oidsz != sizeof(oid_ecpubkey) ||
 	    memcmp(oidp, oid_ecpubkey, oidsz) != 0)
-		return (1);
+		goto out;
 
 	/* Curve */
 	oid = libder_obj_child(params, 1);
@@ -477,8 +482,13 @@ ecc_verify_internal(struct ecc_verify_cbdata *cbdata, const uint8_t *hash,
 	int ret;
 	uint8_t ecsiglen;
 
-	keysz = MIN(sizeof(keybuf), cbdata->keylen / 2);
-
+	/*
+	 * PBSD: this used to compute MIN(sizeof(keybuf), keylen / 2) first
+	 * and then discard it on the next line.  keysz is the capacity of
+	 * keybuf that ecc_extract_pubkey() writes into and updates, so
+	 * sizeof(keybuf) is the right value and the other one would have
+	 * under-reported the buffer had it survived.
+	 */
 	keysz = sizeof(keybuf);
 	if (ecc_extract_pubkey(cbdata->keyfp, cbdata->key, cbdata->keylen,
 	    keybuf, &keysz, &derparams) != 0) {
@@ -534,6 +544,19 @@ ecc_verify_data(const struct pkgsign_ctx *sctx,
 			warn("fopen: %s", sigfile);
 			return (false);
 		}
+		/*
+		 * PBSD: this arm left key and keylen unwritten, and
+		 * ecc_verify_internal() passes both to ecc_extract_pubkey()
+		 * whichever arm ran.  That function opens with
+		 *
+		 *	assert((keyfp != NULL) ^ (key != NULL));
+		 *
+		 * so it reads the uninitialised key, and aborts whenever
+		 * the stack word under it happens to be non-NULL.  The
+		 * assertion states the contract; this is it being met.
+		 */
+		cbdata.key = NULL;
+		cbdata.keylen = 0;
 	} else {
 		cbdata.keyfp = NULL;
 		cbdata.key = key;

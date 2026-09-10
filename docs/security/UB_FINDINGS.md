@@ -18252,3 +18252,177 @@ Read and not defects in the same scope: `nat_show_data()` at
 `nat_get_cmd()` sets `*ooh` on its only `return (0)` — but does it
 inside a `for (;;)` with a `continue`, which the analyser will not
 unroll.
+
+## `rpcbind`: a malformed reply frees somebody else's forwarding slot
+
+`handle_reply()` in `usr.sbin/rpcbind/rpcb_svc_com.c` reads a reply
+datagram off the forwarding socket and, at the bottom, does:
+
+```c
+done:
+	free(buffer);
+
+	if (reply_msg.rm_xid == 0) {
+		/* "NULL xid on exit!" under SVC_RUN_DEBUG */
+	} else
+		(void)free_slot_by_xid(reply_msg.rm_xid);
+```
+
+`struct rpc_msg reply_msg;` is a bare local.  Three fields of it are
+assigned after the `recvfrom`, and `rm_xid` is written by
+`xdr_replymsg()` — but three paths reach `done:` before any of that:
+
+```c
+	buffer = malloc(RPC_BUF_MAX);
+	if (buffer == NULL)
+		goto done;
+	...
+	if (inlen < 0) { ... goto done; }
+	...
+	if (!xdr_replymsg(&reply_xdrs, &reply_msg)) { ... goto done; }
+```
+
+The third is the one that matters: it is reached by sending rpcbind a
+datagram its XDR decoder rejects.  `free_slot_by_xid()` is
+
+```c
+	entry = xid % (u_int32_t)NFORWARD;
+	return (free_slot_by_index(entry));
+```
+
+so the index stays in range, but `free_slot_by_index()` on an active
+slot calls `netbuffree(fi->caller_addr)`, `free(fi->uaddr)`, decrements
+`svc_maxfd` and `rpcb_rmtcalls`, and clears `FINFO_ACTIVE`.  A malformed
+reply therefore tears down an unrelated in-flight forwarded rmtcall
+chosen by a stack word: the legitimate reply for that call arrives later
+and `forward_find()` no longer knows it, and `svc_maxfd` — the bound the
+`select()` loop uses — is decremented against the wrong slot.
+
+`reply_msg.rm_xid = 0;` before the first `goto`.  Zero is exactly what
+the arm below it exists for.
+
+## `pkg`: the signature path never sets the key it asserts about
+
+`ecc_verify_data()` in `usr.sbin/pkg/ecc.c` fills a `cbdata` two ways:
+
+```c
+	if (sigfile != NULL) {
+		cbdata.keyfp = fopen(sigfile, "r");
+		if (cbdata.keyfp == NULL) { ... return (false); }
+	} else {
+		cbdata.keyfp = NULL;
+		cbdata.key = key;
+		cbdata.keylen = keylen;
+	}
+```
+
+The `sigfile` arm sets only `keyfp`.  `ecc_verify_internal()` then calls
+
+```c
+	ecc_extract_pubkey(cbdata->keyfp, cbdata->key, cbdata->keylen, ...)
+```
+
+on both arms, and that function opens with
+
+```c
+	assert((keyfp != NULL) ^ (key != NULL));
+```
+
+— which reads the uninitialised `key`.  Whenever the stack word under it
+happens to be non-NULL, `1 ^ 1` is 0 and `pkg` aborts on the assertion
+in its signature-verification path.  When it reads as NULL the assertion
+passes and nothing downstream uses `key` on that arm, so the failure is
+intermittent in exactly the way an uninitialised read is.  The assertion
+states the contract; `cbdata.key = NULL; cbdata.keylen = 0;` is that
+contract being met.
+
+This one was not in the before set.  It became visible only when a dead
+store two lines up was removed:
+
+```c
+	keysz = MIN(sizeof(keybuf), cbdata->keylen / 2);
+
+	keysz = sizeof(keybuf);
+```
+
+The first line computes a value the second discards — and it would have
+under-reported `keybuf`'s capacity to `ecc_extract_pubkey()`, which
+takes `&keysz` as the buffer size to write into, had it survived.  While
+it was there the analyser reported the garbage read at the dead `/` and
+stopped; with it gone the report moved to the live call, where the
+uninitialised field actually is.  A dead store hiding the finding on the
+statement after it is worth remembering as a shape.
+
+The same function has one failure arm that returns instead of unwinding:
+
+```c
+	if (oidsz != sizeof(oid_ecpubkey) ||
+	    memcmp(oidp, oid_ecpubkey, oidsz) != 0)
+		return (1);
+```
+
+leaking `root` and the libder context on a key whose algorithm OID is
+not `id-ecPublicKey`.  Every other failure in `ecc_extract_pubkey()`
+goes to `out:`; this one now does too.
+
+## `vidcontrol -p`: a trim with no lower bound
+
+`dump_screen()` builds each text line and then:
+
+```c
+	do {
+		line[x--] = '\0';
+	} while (line[x] == ' ' && x != 0);
+```
+
+`x` is `shot.xsize` on entry.  The test reads `line[x]` before it checks
+`x`, so an `xsize` of zero reads `line[-1]` and, if that byte happens to
+be a blank, writes a NUL there and keeps walking backwards.  `xsize` is
+`info.mv_csz` straight out of a `CONS_GETINFO` ioctl.  Swapping the two
+tests — `while (x > 0 && line[x] == ' ')` — leaves every `xsize >= 1`
+behaving exactly as before, the retained blank at `line[0]` included; a
+differential test over twelve line shapes reports no difference and the
+byte before the buffer untouched at `xsize == 0`.
+
+Noted and not changed: both buffers here come from `alloca`, and the
+`if (... == NULL)` after each is dead, since `alloca` does not return
+NULL — it returns a pointer into a stack that may already be exhausted.
+Converting them to `malloc` means unwinding on the two `err()` paths as
+well, which is a larger change than this pass is making.
+
+## `tabs ""`
+
+`gettabs()` sets `*nstops = 0` and then walks `strtok(arg, ",")`.  For
+`""` — and for `,` — `strtok` returns NULL immediately, so the loop
+never runs and `*nstops` stays 0.  `main` tests `if (nstops >= 0)`,
+where -1 means "no list was given", and prints
+
+```c
+	printf("%*s", (int)stops[0] - 1, "");
+```
+
+with `stops[0]` never written: a field width out of a stack word.  An
+empty list is malformed like every other case `gettabs()` rejects, so it
+now says so.
+
+`tabs.c:167` is still reported afterwards, and that report is now about
+the predefined-format path (`for (j = nstops = 0; ... formats[i].stops[j]
+!= 0; j++)`), where every entry of a `const` table begins with 1 — the
+analyser will not fold a const array of structs indexed by a loop
+variable.
+
+## `nscd`: one predicate, two spellings, a struct copy between them
+
+`group_marshal_func()` counts `mem_size` under `grp->gr_mem != NULL` and
+uses it under `new_grp.gr_mem != NULL`, where `new_grp` is a `memcpy` of
+`*grp`.  Same predicate, but not one the analyser can carry across the
+copy.  `mem_size = 0` at the declaration; zero makes the `memcpy` below
+copy nothing, which is the right answer for a group with no members.
+
+```
+                rpcbind + tabs + vidcontrol + pkg + nscd
+                before  after
+OK                  37      37
+ERROR                0       0
+findings            13       9
+```
