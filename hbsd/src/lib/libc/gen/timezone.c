@@ -104,6 +104,7 @@ static char *
 _tztab(int zone, int dst)
 {
 	struct zone	*zp;
+	long	azone;
 	char	sign;
 
 	for (zp = zonetab; zp->offset != -1;++zp)	/* static tables */
@@ -114,13 +115,20 @@ _tztab(int zone, int dst)
 				return(zp->stdzone);
 		}
 
-	if (zone < 0) {					/* create one */
-		zone = -zone;
+	/*
+	 * In long, because -zone is undefined for the most negative int
+	 * and zone is whatever the caller passed -- timezone(3) names no
+	 * domain for it.  Every int has an exact negation in long, so no
+	 * value that worked before changes.
+	 */
+	azone = zone;
+	if (azone < 0) {				/* create one */
+		azone = -azone;
 		sign = '+';
 	}
 	else
 		sign = '-';
 	(void)snprintf(czone, sizeof(czone),
-	    "GMT%c%d:%02d",sign,zone / 60,zone % 60);
+	    "GMT%c%ld:%02ld",sign,azone / 60,azone % 60);
 	return(czone);
 }

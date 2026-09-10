@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
+#include <stdint.h>
 
 /*
  * Backwards-compatible killpg().
@@ -39,7 +40,14 @@
 int
 killpg(pid_t pgid, int sig)
 {
-	if (pgid == 1) {
+	/*
+	 * pgid == INT32_MIN for the same reason as pgid == 1: there is no
+	 * answer to give kill(2).  pid_t is __int32_t on every
+	 * architecture, so -pgid is +2147483648 there -- undefined to
+	 * compute and not a pid_t value even if it were, and no process
+	 * group has that id.
+	 */
+	if (pgid == 1 || pgid == INT32_MIN) {
 		errno = ESRCH;
 		return (-1);
 	}

@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <errno.h>
+#include <limits.h>
 #include <unistd.h>
 
 /*
@@ -42,13 +43,27 @@ int
 nice(int incr)
 {
 	int saverrno, prio;
+	long newprio;
 
 	saverrno = errno;
 	errno = 0;
 	prio = getpriority(PRIO_PROCESS, 0);
 	if (prio == -1 && errno != 0)
 		return (-1);
-	if (setpriority(PRIO_PROCESS, 0, prio + incr) == -1) {
+	/*
+	 * prio + incr overflows: prio is in [PRIO_MIN, PRIO_MAX] but incr
+	 * is whatever the caller passed, and nice(INT_MAX) is undefined
+	 * rather than merely out of range.  In long it is exact, and
+	 * setpriority(2) clamps to [PRIO_MIN, PRIO_MAX] anyway -- so
+	 * saturating to the int range here changes no result that did
+	 * not already overflow.
+	 */
+	newprio = (long)prio + incr;
+	if (newprio > INT_MAX)
+		newprio = INT_MAX;
+	else if (newprio < INT_MIN)
+		newprio = INT_MIN;
+	if (setpriority(PRIO_PROCESS, 0, (int)newprio) == -1) {
 		if (errno == EACCES)
 			errno = EPERM;
 		return (-1);

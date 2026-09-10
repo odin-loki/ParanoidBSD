@@ -111,7 +111,16 @@ fpsetmask(fp_except_t _m)
 	__fnstcw(&_cw);
 	_p = (~_cw & FP_MSKS_FLD) >> FP_MSKS_OFF;
 	_newcw = _cw & ~FP_MSKS_FLD;
-	_newcw |= (~_m << FP_MSKS_OFF) & FP_MSKS_FLD;
+	/*
+	 * The complement in UNSIGNED. fp_except_t is `int' on x86 (a
+	 * #define in x86_ieeefp.h), so ~_m is negative for every mask
+	 * with the top bit clear -- which is every mask anyone passes,
+	 * fpsetmask(0) included -- and a left shift of a negative value
+	 * is undefined by C11 6.5.7p4 whatever the distance. The `&'
+	 * below discards everything the change could affect, so the
+	 * result is identical for all inputs.
+	 */
+	_newcw |= ((unsigned)~_m << FP_MSKS_OFF) & FP_MSKS_FLD;
 	__fnldcw(_cw, _newcw);
 	return (_p);
 }

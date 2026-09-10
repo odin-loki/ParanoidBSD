@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,768 | 9,056 |
+| 1 | `lib` | 2,827 | 639,799 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,646 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,493 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,762 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,526 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,011** | **114,207** |
+| | **total** | **41,143** | **21,301,060** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -1359,7 +1359,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.52.1.1 `gethostid()` · `TODO-FN`
 - [ ] **1.52.2** `getwd.c` · 48L · `TODO-PORT` · 1 fn
   - [ ] 1.52.2.1 `getwd()` · `TODO-FN`
-- [ ] **1.52.3** `killpg.c` · 48L · `TODO-PORT` · 1 fn
+- [ ] **1.52.3** `killpg.c` · 56L · `TODO-PORT` · 1 fn
   - [ ] 1.52.3.1 `killpg()` · `TODO-FN`
 - [ ] **1.52.4** `sethostid.c` · 46L · `TODO-PORT` · 1 fn
   - [ ] 1.52.4.1 `sethostid()` · `TODO-FN`
@@ -2216,7 +2216,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.107.1 `freebsd11_nftw()` · `TODO-FN`
 - [ ] **1.68.108** `nftw.c` · 107L · `TODO-PORT` · 1 fn
   - [ ] 1.68.108.1 `nftw()` · `TODO-FN`
-- [ ] **1.68.109** `nice.c` · 59L · `TODO-PORT` · 1 fn
+- [ ] **1.68.109** `nice.c` · 74L · `TODO-PORT` · 1 fn
   - [ ] 1.68.109.1 `nice()` · `TODO-FN`
 - [ ] **1.68.110** `nlist.c` · 307L · `TODO-PORT` · 6 fn
   - [ ] 1.68.110.1 `nlist()` · `TODO-FN`
@@ -2476,7 +2476,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.164.1 `timespec_get()` · `TODO-FN`
 - [ ] **1.68.165** `timespec_getres.c` · 25L · `TODO-PORT` · 1 fn
   - [ ] 1.68.165.1 `timespec_getres()` · `TODO-FN`
-- [ ] **1.68.166** `timezone.c` · 127L · `TODO-PORT` · 2 fn
+- [ ] **1.68.166** `timezone.c` · 135L · `TODO-PORT` · 2 fn
   - [ ] 1.68.166.1 `__timezone_compat()` · `TODO-FN`
   - [ ] 1.68.166.2 `_tztab()` · `TODO-FN`
 - [ ] **1.68.167** `tls.c` · 451L · `TODO-PORT` · 8 fn
@@ -40577,7 +40577,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.4.31** `fpu.h` · 94L · `TODO-MD`
 - [ ] **8.4.32** `frame.h` · 53L · `TODO-MD`
 - [ ] **8.4.33** `gdb_machdep.h` · 76L · `TODO-MD`
-- [ ] **8.4.34** `ieeefp.h` · 209L · `TODO-MD`
+- [ ] **8.4.34** `ieeefp.h` · 218L · `TODO-MD`
 - [ ] **8.4.35** `ifunc.h` · 6L · `TODO-MD`
 - [ ] **8.4.36** `in_cksum.h` · 50L · `TODO-MD`
 - [ ] **8.4.37** `intr_machdep.h` · 48L · `TODO-MD`
@@ -114095,7 +114095,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1185.31** `fpu.h` · 5L · `TODO-MD`
 - [ ] **8.1185.32** `frame.h` · 47L · `TODO-MD`
 - [ ] **8.1185.33** `gdb_machdep.h` · 67L · `TODO-MD`
-- [ ] **8.1185.34** `ieeefp.h` · 155L · `TODO-MD`
+- [ ] **8.1185.34** `ieeefp.h` · 164L · `TODO-MD`
 - [ ] **8.1185.35** `ifunc.h` · 6L · `TODO-MD`
 - [ ] **8.1185.36** `in_cksum.h` · 116L asm · `TODO-MD`
 - [ ] **8.1185.37** `intr_machdep.h` · 6L · `TODO-MD`

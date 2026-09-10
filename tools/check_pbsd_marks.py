@@ -5167,6 +5167,56 @@ FIXES = {
     ),
 
 
+    "hbsd/src/sys/amd64/include/ieeefp.h": (
+        ("((unsigned)~_m << ", 2),
+        "(~_m << FP_MSKS_OFF) & FP_MSKS_FLD;",
+        "__fpsetmask() left-shifted ~_m, and fp_except_t is `int' on "
+        "x86 -- a #define in x86_ieeefp.h -- so ~_m is negative for "
+        "every mask with the top bit clear, which is every mask anyone "
+        "passes, fpsetmask(0) included. A left shift of a negative "
+        "value is undefined by C11 6.5.7p4 whatever the distance. Done "
+        "unsigned; the & discards everything the change could affect. "
+        "CBMC: FAILED -> PROVED.",
+    ),
+
+    "hbsd/src/sys/i386/include/ieeefp.h": (
+        "((unsigned)~_m << FP_MSKS_OFF) & FP_MSKS_FLD;",
+        "(~_m << FP_MSKS_OFF) & FP_MSKS_FLD;",
+        "The i386 copy of the same undefined left shift of a negative "
+        "value in fpsetmask().",
+    ),
+
+
+    "hbsd/src/lib/libc/compat-43/killpg.c": (
+        "if (pgid == 1 || pgid == INT32_MIN) {",
+        "if (pgid == 1) {\n\t\terrno = ESRCH;",
+        "killpg() returned kill(-pgid, sig), and -pgid is undefined for "
+        "the most negative pid_t -- __int32_t on every architecture, so "
+        "the answer would be +2147483648, which is not a pid_t value "
+        "either. No process group has that id, so it is ESRCH for the "
+        "same reason pgid == 1 is. CBMC: FAILED -> PROVED.",
+    ),
+
+    "hbsd/src/lib/libc/gen/nice.c": (
+        "newprio = (long)prio + incr;",
+        "setpriority(PRIO_PROCESS, 0, prio + incr)",
+        "prio is in [PRIO_MIN, PRIO_MAX] but incr is whatever the caller "
+        "passed, so nice(INT_MAX) overflowed -- undefined rather than "
+        "merely out of range. Computed in long and saturated to the int "
+        "range; setpriority(2) clamps anyway, so no result that did not "
+        "already overflow changes. CBMC: FAILED -> PROVED.",
+    ),
+
+    "hbsd/src/lib/libc/gen/timezone.c": (
+        'sign,azone / 60,azone % 60);',
+        "zone = -zone;",
+        "_tztab() negated its int zone argument in place, which is "
+        "undefined for the most negative int, and timezone(3) names no "
+        "domain for it. Done in long, where every int has an exact "
+        "negation. CBMC: FAILED -> PROVED/BOUNDED.",
+    ),
+
+
     "hbsd/src/lib/libcalendar/calendar.c": (
         "nd = (int)(((long long)nd - nmonday) % 7);",
         "nd = (nd - nmonday) % 7;",

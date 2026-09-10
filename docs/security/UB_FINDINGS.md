@@ -20829,3 +20829,119 @@ cannot be represented in type 'int'
 `imaxabs`'s was still four stack frames on that run, because the fix had
 been applied to one of the two call sites.  `evidence()` is used on both
 now.
+
+## The model checker, re-read: five closed out of 209
+
+The CBMC half had not been re-read in a long time.  Rebuilt over
+`lib/libc` and `lib/msun`: **1,177 of 1,295 translation units modelled**,
+118 TU-ERROR, and of the functions the ledger and the goto model agree
+on, 770 checkable unguarded (`SCALAR` and `VOID`, no stated
+precondition):
+
+```
+BOUNDED 14  ERROR 60  FAILED 209  PROVED 425  TIMEOUT 62
+```
+
+209 `FAILED`.  Read as a taxonomy first, because most of it is one of
+four shapes:
+
+| shape | count | verdict |
+|---|---|---|
+| division by zero | 96 | 30 are libm's deliberate IEEE idioms |
+| dereference failure | 54 | a global or a callee's out-parameter CBMC cannot see |
+| arithmetic overflow / shift | 33 | mixed — this is where the defects were |
+| `__CPROVER__start.memory-leak` | 16 | a function that allocates and returns the pointer |
+
+**The libm division-by-zero family is not a defect and not a
+near-miss.**  `vzero / vzero`, `(double)-1 / zero`, `(x - x) / (x - x)`
+are idioms libm writes *on purpose* to raise the IEEE invalid or
+divide-by-zero exception and produce the NaN or infinity the function is
+required to return.  C11 6.5.5p5 makes division by zero undefined for
+every type, and Annex F — which FreeBSD's libm assumes throughout —
+defines exactly these.  CBMC's `--div-by-zero-check` does not know which
+of the two documents is in force.
+
+**The dereference family is the model, not the code.**
+`__getCurrentRuneLocale()` returning NULL, `l->components` on a locale,
+`__libc_interposing[]` entries, `_elf_aux_info()`'s out-parameter in
+`arc4random`'s `_rs_initialize_fxrng`: each is established by
+initialisation or by a callee in another translation unit, and CBMC
+models an unseen callee's writes as unconstrained.  This is the
+characterised out-parameter family, one engine over.
+
+That left the arithmetic, and five of it were real.
+
+### killpg(INT32_MIN, sig)
+
+```c
+	return (kill(-pgid, sig));
+```
+
+`pid_t` is `__int32_t` on every architecture, so `-pgid` at the most
+negative value is undefined — and there is no answer to give `kill(2)`
+either, since `+2147483648` is not a `pid_t`.  No process group has that
+id, so it is `ESRCH` for the same reason `pgid == 1` already is, three
+lines above.
+
+### nice(INT_MAX)
+
+```c
+	if (setpriority(PRIO_PROCESS, 0, prio + incr) == -1) {
+```
+
+`prio` is in `[PRIO_MIN, PRIO_MAX]`; `incr` is whatever the caller
+passed.  Computed in `long` and saturated to the `int` range —
+`setpriority(2)` clamps to the priority range anyway, so no result that
+did not already overflow changes.
+
+### timezone(INT_MIN, dst)
+
+```c
+	if (zone < 0) {
+		zone = -zone;
+```
+
+`timezone(3)` names no domain for `zone`.  Done in `long`, where every
+`int` has an exact negation.
+
+### fpsetmask: a left shift of a negative value, on every call
+
+```c
+	_newcw |= (~_m << FP_MSKS_OFF) & FP_MSKS_FLD;
+	_mxcsr |= (~_m << SSE_MSKS_OFF) & SSE_MSKS_FLD;
+```
+
+`fp_except_t` is `int` on x86 — a `#define` in `x86_ieeefp.h` — so `~_m`
+is negative for every mask with the top bit clear, which is every mask
+anyone passes, `fpsetmask(0)` included.  C11 6.5.7p4 makes a left shift
+of a negative value undefined *whatever the distance*, so this is not an
+edge case: it is the ordinary path.  The complement is done in
+`unsigned` now; the `&` immediately below discards everything the change
+could affect, so the result is identical for every input.  The i386 copy
+of the same line went with it.
+
+### The measurement
+
+Same tree layout, same scope, same 770 pairs:
+
+```
+before   BOUNDED 14  ERROR 60  FAILED 209  PROVED 425  TIMEOUT 62
+after    BOUNDED 15  ERROR 61  FAILED 205  PROVED 429  TIMEOUT 60
+```
+
+Pair by pair, six verdicts moved and every one is accounted for:
+
+| function | before | after |
+|---|---|---|
+| `fpsetmask` | FAILED | PROVED |
+| `killpg` | FAILED | PROVED |
+| `nice` | FAILED | PROVED |
+| `_tztab` | FAILED | PROVED |
+| `__timezone_compat` | FAILED | BOUNDED |
+| `arc4random` | TIMEOUT | FAILED |
+
+The last is not a regression: `arc4random` timed out on the first run
+and the solver got further on the second, reaching the
+`_rs_initialize_fxrng` dereference described above.  A `TIMEOUT` that
+becomes a verdict is the instrument finishing, not the tree changing —
+and the same jitter is the whole of the `ERROR` and `TIMEOUT` ±1.
