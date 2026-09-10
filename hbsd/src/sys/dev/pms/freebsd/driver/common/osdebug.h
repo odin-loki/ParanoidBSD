@@ -52,12 +52,30 @@ do {                                                              \
           }                                                       \
 } while (0)
 #else
+/*
+ * PBSD: this macro prints and returns.  Every SA_ASSERT/SM_ASSERT/DM_ASSERT
+ * of the form
+ *
+ *	SA_ASSERT(NULL != circularQ, "circularQ argument cannot be null");
+ *	SA_ASSERT(0 != circularQ->numElements, "...");
+ *
+ * -- and this driver has dozens -- therefore prints its message and then
+ * dereferences the pointer it just said was NULL, on the next line.  The
+ * assertion detects the internal error and does not stop it.
+ *
+ * KASSERT is added so a kernel built with INVARIANTS panics at the
+ * assertion rather than faulting one line later with no context.  A kernel
+ * without INVARIANTS behaves exactly as before, print and all: making this
+ * stop a production kernel would turn every benign assertion in a
+ * third-party driver into a panic, which is not this change's to make.
+ */
 #define OS_ASSERT(expr, message)                                  \
 do {                                                              \
           if (!(expr))                                            \
           {                                                       \
             printf("ASSERT: %s", message);                        \
             printf(" - file %s, line %d\n", __FILE__, __LINE__);  \
+            KASSERT(0, ("%s: %s", __func__, message));            \
           }                                                       \
 } while (0)
 #endif

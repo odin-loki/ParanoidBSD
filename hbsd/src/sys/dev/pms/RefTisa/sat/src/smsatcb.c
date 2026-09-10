@@ -8788,6 +8788,16 @@ smsatIDStartCB(
     if (satOrgIOContext == agNULL)
     {
       SM_DBG5(("smsatIDStartCB: satOrgIOContext is NULL\n"));
+      /*
+       * PBSD: this arm printed and fell through, leaving
+       * smOrgIORequestBody at its agNULL initialiser for the
+       * `smIORequest = smOrgIORequestBody->smIORequest' below.  The
+       * nested smOrgIORequestBody == agNULL arm three lines down already
+       * unwinds the same way; there is nothing else this path can do.
+       */
+      smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);
+      smsatFreeIntIoResource(smRoot, oneDeviceData, satIntIo);
+      return;
     }
     else
     {
@@ -12317,7 +12327,15 @@ smsatSetFeaturesAACB(
     {
       SM_DBG1(("smsatSetFeaturesAACB: fail, case 2 status %d!!!\n", agIOStatus));
     }
-    if (agIOInfoLen != 0 && agIOStatus == OSSA_IO_SUCCESS)
+    /*
+     * PBSD: the warning above contemplates agFirstDword being agNULL, but
+     * only pairs it with agIOStatus != OSSA_IO_SUCCESS -- which is not the
+     * case this guard admits.  smsatPassthroughCB()'s "processing the
+     * success case" in this same file tests agFirstDword itself, and that
+     * is the test that belongs here.
+     */
+    if (agIOInfoLen != 0 && agIOStatus == OSSA_IO_SUCCESS &&
+        agFirstDword != agNULL)
     {
       statDevToHostFisHeader = (agsaFisRegD2HHeader_t *)&(agFirstDword->D2H);
       ataStatus   = statDevToHostFisHeader->status;   /* ATA Status register */
@@ -12859,7 +12877,15 @@ smsatSetFeaturesVolatileWriteCacheCB(
     {
       SM_DBG1(("smsatSetFeaturesVolatileWriteCacheCB: fail, case 2 status %d!!!\n", agIOStatus));
     }
-    if (agIOInfoLen != 0 && agIOStatus == OSSA_IO_SUCCESS)
+    /*
+     * PBSD: the warning above contemplates agFirstDword being agNULL, but
+     * only pairs it with agIOStatus != OSSA_IO_SUCCESS -- which is not the
+     * case this guard admits.  smsatPassthroughCB()'s "processing the
+     * success case" in this same file tests agFirstDword itself, and that
+     * is the test that belongs here.
+     */
+    if (agIOInfoLen != 0 && agIOStatus == OSSA_IO_SUCCESS &&
+        agFirstDword != agNULL)
     {
       statDevToHostFisHeader = (agsaFisRegD2HHeader_t *)&(agFirstDword->D2H);
       ataStatus     = statDevToHostFisHeader->status;   /* ATA Status register */

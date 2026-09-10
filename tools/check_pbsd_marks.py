@@ -3673,15 +3673,45 @@ FIXES = {
         "at the end also make",
     ),
 
-    "hbsd/src/sys/dev/pms/RefTisa/sat/src/smsatcb.c": (
-        ("    smIORequest  = smOrgIORequest;", 5),
-        "    smIORequest  = smOrgIORequestBody->smIORequest;",
-        "five SetFeatures/IDStart callbacks read smOrgIORequestBody "
-        "outside the else arm that assigns it -- it is declared "
-        "`= agNULL', so on the satIntIo == agNULL arm the line was "
-        "agNULL->smIORequest, and it also overwrote the smIORequest "
-        "that arm had just computed correctly",
-    ),
+    "hbsd/src/sys/dev/pms/RefTisa/sat/src/smsatcb.c": [
+        (
+            ("    smIORequest  = smOrgIORequest;", 5),
+            "    smIORequest  = smOrgIORequestBody->smIORequest;",
+            "five SetFeatures/IDStart callbacks read smOrgIORequestBody "
+            "outside the else arm that assigns it -- it is declared "
+            "`= agNULL', so on the satIntIo == agNULL arm the line was "
+            "agNULL->smIORequest, and it also overwrote the smIORequest "
+            "that arm had just computed correctly",
+        ),
+        (
+            ("agFirstDword != agNULL)", 2),
+            "if (agIOInfoLen != 0 && agIOStatus == OSSA_IO_SUCCESS)\n"
+            "    {\n"
+            "      statDevToHostFisHeader =",
+            "smsatSetFeaturesAACB() and "
+            "smsatSetFeaturesVolatileWriteCacheCB() warn that agFirstDword "
+            "may be agNULL, but pair that only with agIOStatus != "
+            "OSSA_IO_SUCCESS -- and then read the frame under a guard that "
+            "requires SUCCESS. smsatPassthroughCB() in the same file tests "
+            "agFirstDword itself on its success path",
+        ),
+        (
+            "smsatDecrementPendingIO(smRoot, smAllShared, satIOContext);\n"
+            "      smsatFreeIntIoResource(smRoot, oneDeviceData, satIntIo);\n"
+            "      return;\n"
+            "    }\n"
+            "    else\n"
+            "    {\n"
+            "      SM_DBG5((\"smsatIDStartCB: satOrgIOContext is NOT NULL",
+            "SM_DBG5((\"smsatIDStartCB: satOrgIOContext is NULL\\n\"));\n"
+            "    }\n",
+            "smsatIDStartCB()'s satOrgIOContext == agNULL arm printed and "
+            "fell through, leaving smOrgIORequestBody at its agNULL "
+            "initialiser for the dereference below; the nested "
+            "smOrgIORequestBody == agNULL arm three lines on already "
+            "unwinds exactly this way",
+        ),
+    ],
 
     "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5212_ani.c": (
         "\tif (aniState == AH_NULL) {\n\t\tswitch (cmd) {",
@@ -4090,6 +4120,17 @@ FIXES = {
         "pci_vtcon_sock_tx: the loop is the only writer of ret and the "
         "test after it runs regardless, so a zero-descriptor console "
         "buffer let the guest tear the connection down off a stack word",
+    ),
+
+    "hbsd/src/sys/dev/pms/freebsd/driver/common/osdebug.h": (
+        "KASSERT(0, (\"%s: %s\", __func__, message));",
+        None,
+        "OS_ASSERT prints and returns, so every "
+        "SA_ASSERT(NULL != p, ...) followed by SA_ASSERT(0 != p->field, "
+        "...) -- the RefTisa house style -- printed its message and then "
+        "dereferenced the pointer it had just called NULL, one line "
+        "later. KASSERT makes an INVARIANTS kernel stop at the assertion; "
+        "a kernel without INVARIANTS is unchanged, print and all",
     ),
 
     "hbsd/src/sys/dev/firewire/sbp.c": [

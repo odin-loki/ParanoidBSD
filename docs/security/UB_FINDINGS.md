@@ -17074,3 +17074,143 @@ It deliberately claims only the narrow half. The other three
 *reachable* as NULL rather than proven NULL by the branch, and
 establishing that took reading the function and its callers. No grep
 was going to do that, and the lint does not pretend otherwise.
+
+## sys/dev/pms: an assertion macro that asserts nothing
+
+The PMC-Sierra RefTisa driver writes its preconditions like this, and
+does it dozens of times:
+
+```c
+	SA_ASSERT(NULL != circularQ, "circularQ argument cannot be null");
+	SA_ASSERT(NULL != messagePtr, "messagePtr argument cannot be null");
+	SA_ASSERT(0 != circularQ->numElements, "The number of elements ...");
+```
+
+`SA_ASSERT`, `SM_ASSERT` and `DM_ASSERT` are all `OS_ASSERT`, and
+`OS_ASSERT` in the shipping build is:
+
+```c
+#define OS_ASSERT(expr, message)                                  \
+do {                                                              \
+          if (!(expr))                                            \
+          {                                                       \
+            printf("ASSERT: %s", message);                        \
+            printf(" - file %s, line %d\n", __FILE__, __LINE__);  \
+          }                                                       \
+} while (0)
+```
+
+It prints and returns. So the third line above dereferences the pointer
+the first line just announced was NULL — one line later, after saying so
+out loud. The assertion detects the internal error and does not stop it.
+(The `AGTIAPI_KDB_ENABLE` arm calls `BUG_ON` and `KDB_ENTER`, but that
+arm is Linux-only: it `#include <linux/kdb.h>`.)
+
+This is the whole reason eleven of the shard's `core.NullDereference`
+findings exist, in seven files across all four of the driver's layers —
+`dminit.c`, `sminit.c`, `sainit.c`, `mpi.c` (three), `sampirsp.c` (two),
+`saport.c` (two), `itdio.c`. The analyser is right about the code and
+would be right about a NULL pointer; whether any of these pointers is
+ever actually NULL is a separate question the assertions were supposed
+to answer and cannot.
+
+The fix is at the macro:
+
+```c
+            printf(" - file %s, line %d\n", __FILE__, __LINE__);   \
+            KASSERT(0, ("%s: %s", __func__, message));             \
+```
+
+A kernel with INVARIANTS now stops at the assertion, with the driver's
+own message, instead of faulting one line later with no context. A
+kernel without INVARIANTS is byte-for-byte what it was, print included.
+Making this halt a production kernel would turn every benign assertion
+in a third-party driver into a panic, and that is not this change's to
+make — so it does not, and the fall-through in a non-INVARIANTS build is
+still there. What has changed is that it is now findable.
+
+### Three in the same driver that are not the macro
+
+`smsatSetFeaturesAACB()` and `smsatSetFeaturesVolatileWriteCacheCB()`
+both open with
+
+```c
+    if (agFirstDword == agNULL && agIOStatus != OSSA_IO_SUCCESS)
+      SM_DBG1(("...: fail, case 1 agFirstDword is NULL when error ..."));
+```
+
+— contemplating a NULL `agFirstDword`, but only when the status is *not*
+success — and then read the response frame under
+
+```c
+    if (agIOInfoLen != 0 && agIOStatus == OSSA_IO_SUCCESS)
+      statDevToHostFisHeader = (agsaFisRegD2HHeader_t *)&(agFirstDword->D2H);
+      ataStatus = statDevToHostFisHeader->status;
+```
+
+which is exactly the case the warning does not cover. `agFirstDword` is
+now in the guard, which is what `smsatPassthroughCB()` in the same file
+already does on its own success path (`/* prcessing the success case */
+if(agFirstDword != NULL)`).
+
+`smsatIDStartCB()`'s internal-IO arm:
+
+```c
+    satOrgIOContext = satIOContext->satOrgIOContext;
+    if (satOrgIOContext == agNULL)
+    {
+      SM_DBG5(("smsatIDStartCB: satOrgIOContext is NULL\n"));
+    }
+    else
+    {
+      smOrgIORequestBody = (smIORequestBody_t *)satOrgIOContext->smRequestBody;
+      if (smOrgIORequestBody == agNULL)
+      {
+        ... free, return;
+      }
+    }
+    ...
+  smIORequest = smOrgIORequestBody->smIORequest;
+```
+
+The outer arm prints and falls through, leaving `smOrgIORequestBody` at
+its `= agNULL` initialiser for the read at the bottom. The nested arm
+three lines down already unwinds exactly the way this one needs to, so
+that is what it now does.
+
+```
+                sys/dev/pms
+                before  after
+OK                 48      48
+ERROR              10      10
+findings           30      16
+```
+
+Fourteen closed, none new. Eleven of them by the macro alone.
+
+### The four survivors that are worth naming
+
+`itdcb.c` reports the same shape four times —
+`tiDeviceHandle = tdIORequestBody->tiDevHandle;` then
+`tiDeviceHandle->tdData` on the next line. `tiDeviceHandle` is declared
+`= agNULL` and that initialiser is the analyser's whole basis; the value
+read is a struct field it cannot constrain. Unconstrained-field class.
+
+`smEnqueueIO()` and `dmCleanAllExp()` are the "tested and only warned"
+shape without a macro:
+
+```c
+    if (smIORequestBody->satIoBodyLink.blink == agNULL)
+    {
+      SM_DBG1(("smEnqueueIO: internal command!!!, io ID %d, blink is NULL!!!\n", ...));
+    }
+    ...
+    SMLIST_DEQUEUE_THIS(&(smIORequestBody->satIoBodyLink));
+```
+
+— and the test is labelled `/* debugging only */` by its author. These
+are left alone deliberately. The correct fix is a `return`, and a
+`return` here skips the dequeue, which leaks the entry off the in-use
+list; picking the right unwind in a vendor driver on a path its author
+documents as impossible is guessing, and guessing is worse than
+recording.
