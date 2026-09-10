@@ -106,7 +106,16 @@ zfs_filestat(kvm_t *kd, struct vnode *vp, struct vnstat *vn)
 	vn->vn_fileid = znode->z_id;
 	vn->vn_mode = znode->z_mode;
 	vn->vn_size = znode->z_size;
+	free(znode);
 	return (0);
 bad:
+	/*
+	 * PBSD: znode = malloc(size) at the top, and neither exit freed
+	 * it -- not the success return above and not this label, which
+	 * three `goto bad' reach.  zfs_filestat() runs once per ZFS
+	 * file, so procstat -f and fstat(1) leaked a znode_t for every
+	 * one they reported.
+	 */
+	free(znode);
 	return (1);
 }

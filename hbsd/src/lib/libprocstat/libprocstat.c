@@ -865,6 +865,18 @@ procstat_getfiles_sysctl(struct procstat *procstat, struct kinfo_proc *kp,
 	int refcount;
 	cap_rights_t cap_rights;
 
+	/*
+	 * PBSD: zero, because the EPERM path below deliberately carries
+	 * on with files == NULL -- and neither producer writes *cntp on
+	 * a failure.  kinfo_getfile() (lib/libutil) returns NULL from
+	 * three places without touching it, and kinfo_getfile_core()
+	 * above sets it only on the line before its success return.  So
+	 * `for (i = 0; i < cnt; i++) { kif = &files[i]; ...
+	 * kif->kf_type ... }' ran an uninitialised number of times
+	 * through a null pointer.  EPERM is the ORDINARY case: it is
+	 * what fstat(1) and procstat(1) get for another user's process.
+	 */
+	cnt = 0;
 	assert(kp);
 	switch (procstat->type) {
 	case PROCSTAT_SYSCTL:
@@ -880,6 +892,8 @@ procstat_getfiles_sysctl(struct procstat *procstat, struct kinfo_proc *kp,
 		warn("kinfo_getfile()");
 		return (NULL);
 	}
+	if (files == NULL)
+		cnt = 0;	/* EPERM: no files to walk, mmaps still can be */
 	procstat->files = files;
 
 	/*
@@ -911,6 +925,8 @@ procstat_getfiles_sysctl(struct procstat *procstat, struct kinfo_proc *kp,
 		    refcount, offset, path, &cap_rights);
 		if (entry != NULL)
 			STAILQ_INSERT_TAIL(head, entry, next);
+		else
+			free(path);	/* it takes ownership only on success */
 	}
 	if (mmapped != 0) {
 		vmentries = procstat_getvmmap(procstat, kp, &cnt);
@@ -938,6 +954,8 @@ procstat_getfiles_sysctl(struct procstat *procstat, struct kinfo_proc *kp,
 			    NULL);
 			if (entry != NULL)
 				STAILQ_INSERT_TAIL(head, entry, next);
+			else
+				free(path);	/* see above */
 		}
 	}
 fail:

@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,993 | 9,056 |
+| 1 | `lib` | 2,827 | 640,033 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,351** | **114,207** |
+| | **total** | **41,143** | **21,301,391** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -697,7 +697,7 @@ function; a file with two hundred of them is a project.
 | 1.298.2 | `lib/libsysdecode/flags.c` | 1,210 | 91 | `TODO-PORT` |
 | 8.11.1 | `sys/amd64/vmm/vmm.c` | 2,106 | 91 | `TODO-MD` |
 | 8.1184.37 | `sys/i386/i386/pmap_base.c` | 983 | 91 | `TODO-MD` |
-| 1.270.6 | `lib/libprocstat/libprocstat.c` | 2,923 | 90 | `TODO-PORT` |
+| 1.270.6 | `lib/libprocstat/libprocstat.c` | 2,941 | 90 | `TODO-PORT` |
 | 4.81.3 | `sbin/pfctl/pfctl.c` | 3,656 | 90 | `TODO-PORT` |
 | 8.880.1 | `sys/dev/otus/if_otus.c` | 3,313 | 90 | `TODO-PORT` |
 | 8.1213.26 | `sys/netinet/in_pcb.c` | 3,425 | 90 | `TODO-PORT` |
@@ -8608,7 +8608,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.211.4.6 `_amd64_kvatop()` · `TODO-FN`
   - [ ] 1.211.4.7 `_amd64_native()` · `TODO-FN`
 - [ ] **1.211.5** `kvm_amd64.h` · 88L · `TODO-HDR`
-- [ ] **1.211.6** `kvm_arm.c` · 278L gen:1 · `TODO-PORT` · 6 fn
+- [ ] **1.211.6** `kvm_arm.c` · 291L gen:1 · `TODO-PORT` · 6 fn
   - [ ] 1.211.6.1 `_kvm_pa2off()` · `TODO-FN`
   - [ ] 1.211.6.2 `_arm_freevtop()` · `TODO-FN`
   - [ ] 1.211.6.3 `_arm_probe()` · `TODO-FN`
@@ -10070,7 +10070,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.270.4.7 `get_args()` · `TODO-FN`
   - [ ] 1.270.4.8 `procstat_core_note_count()` · `TODO-FN`
 - [ ] **1.270.5** `core.h` · 59L · `TODO-HDR`
-- [ ] **1.270.6** `libprocstat.c` · 2,923L · `TODO-PORT` · 90 fn
+- [ ] **1.270.6** `libprocstat.c` · 2,941L · `TODO-PORT` · 90 fn
   - [ ] 1.270.6.1 `procstat_close()` · `TODO-FN`
   - [ ] 1.270.6.2 `procstat_open_sysctl()` · `TODO-FN`
   - [ ] 1.270.6.3 `procstat_open_kvm()` · `TODO-FN`
@@ -10177,7 +10177,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.270.11.1 `smbfs_filestat()` · `TODO-FN`
 - [ ] **1.270.12** `udf.c` · 102L · `TODO-PORT` · 1 fn
   - [ ] 1.270.12.1 `udf_filestat()` · `TODO-FN`
-- [ ] **1.270.13** `zfs.c` · 113L · `TODO-PORT` · 1 fn
+- [ ] **1.270.13** `zfs.c` · 122L · `TODO-PORT` · 1 fn
   - [ ] 1.270.13.1 `zfs_filestat()` · `TODO-FN`
 
 ### 1.271 `lib/libradius`

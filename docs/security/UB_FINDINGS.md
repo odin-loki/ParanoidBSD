@@ -22893,3 +22893,99 @@ The one that remains is not a spot fix and is recorded as what it is:
 twenty-odd `return` paths, and `return (-1)` at `:413` does not even
 `close(fd)`.  That is a single-exit refactor of a function in a
 component `MK_DIALOG` gates off by default, and it is its own change.
+
+## `_arm_kvatop`: the one call in the file that threw the answer away
+
+`_kvm_pa2off()` translates a physical address to an offset in a crash
+dump, and says so in its own body:
+
+```c
+	while (n && (pa < p->p_paddr || pa >= p->p_paddr + p->p_memsz))
+		p++, n--;
+	if (n == 0)
+		return (0);        /* *ofs is NOT written */
+
+	*ofs = (pa - p->p_paddr) + p->p_offset;
+```
+
+`kvm_arm.c` calls it five times.  Four are the function's own return.
+The fifth discards it:
+
+```c
+	pte_pa = (pd & ARM_L1_C_ADDR_MASK) + l2pte_index(va) * sizeof(pte);
+	_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE);
+	if (pread(kd->pmfd, &pte, sizeof(pte), pte_off) != sizeof(pte)) {
+```
+
+An address in no program header of the dump therefore hands `pread(2)`
+an **uninitialised file offset**, and whatever comes back is used as a
+page-table entry.  libkvm reads dumps: the input is a file, and a
+truncated or malformed one is the case this arm exists for.
+
+The amd64 twin has the check, thirty lines away in the same library:
+
+```c
+	s = _kvm_pa2off(kd, pdpe_pa, &ofs);
+	if (s < sizeof(pdpe)) {
+		_kvm_err(kd, kd->program, "_amd64_vatop: pdpe_pa not found");
+		goto invalid;
+	}
+```
+
+Copied.  `lib/libkvm`: 3 findings → 2, and both that remain are named
+below.
+
+## `procstat_getfiles_sysctl`: EPERM is the ordinary case
+
+```c
+	int cnt, fd, fflags;
+	...
+	files = kinfo_getfile(kp->ki_pid, &cnt);
+	...
+	if (files == NULL && errno != EPERM) {
+		warn("kinfo_getfile()");
+		return (NULL);
+	}
+	procstat->files = files;
+	...
+	for (i = 0; i < cnt; i++) {
+		kif = &files[i];
+		type = kinfo_type2fst(kif->kf_type);
+```
+
+Carrying on when `kinfo_getfile()` fails with `EPERM` is deliberate —
+that is what `fstat(1)` and `procstat(1)` get for **another user's
+process**, the ordinary unprivileged case, and the mmapped pass further
+down can still run.
+
+But neither producer writes `*cntp` on a failure.  `kinfo_getfile()` in
+`lib/libutil` returns NULL from three places without touching it, and
+`kinfo_getfile_core()` in this same file sets it only on the line before
+its success return.  So `cnt` was an uninitialised stack `int` and the
+loop ran that many times through a **null** `files`.
+
+Zeroed at the declaration and again, explicitly, where the invariant
+belongs — `if (files == NULL) cnt = 0;`.
+
+Both loops also `strdup()` a path and hand it to
+`filestat_new_entry()`, which takes ownership only on success: it warns
+and returns NULL when its own `calloc()` fails, with the path already in
+hand.  And `zfs_filestat()` `malloc`s a `znode_t` that **neither** exit
+freed — not the success return and not the `bad:` label three `goto`s
+reach — once per ZFS file reported.
+
+`lib/libprocstat`: **4 findings → 0**.
+
+### The two that remain in libkvm, named
+
+* `kvm_minidump_powerpc64_hpt.c:490` reads `pte` after
+  `pte_lookup(kd, va, &pte)` returned something other than -1.
+  `pte_search()` writes `*p` only on the path that returns 0 — but it
+  reaches that path partly through **recursion** (`return (pte_search(kd,
+  slb, LPTEH_HID, ea, p))` for the secondary hash), which the analyser
+  will not follow.
+* `kvm_pcpu.c:168` is `char *buf = malloc(sizeof(struct pcpu))` — the
+  size is right, the pointer type is `char *` because the function
+  returns `void *`.  `unix.MallocSizeof` is a heuristic for exactly that
+  spelling; the same shape accounts for the single findings in
+  `libdevstat`, `libefivar` and `libhbsdcontrol`.

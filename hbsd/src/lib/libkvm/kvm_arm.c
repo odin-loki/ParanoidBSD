@@ -209,7 +209,20 @@ _arm_kvatop(kvm_t *kd, kvaddr_t va, off_t *pa)
 		return  (_kvm_pa2off(kd, *pa, pa, ARM_L1_S_SIZE));
 	}
 	pte_pa = (pd & ARM_L1_C_ADDR_MASK) + l2pte_index(va) * sizeof(pte);
-	_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE);
+	/*
+	 * PBSD: check the result.  _kvm_pa2off() returns 0 and leaves
+	 * *ofs UNWRITTEN when the address falls in no program header of
+	 * the dump, so discarding it here handed pread(2) an
+	 * uninitialised file offset and the bytes that came back were
+	 * used as a page-table entry.  This is the one call in the file
+	 * that threw the answer away -- the other four are the
+	 * function's own return -- and _amd64_vatop() has the check
+	 * this now copies (kvm_amd64.c:239).
+	 */
+	if (_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE) < sizeof(pte)) {
+		_kvm_err(kd, kd->program, "_arm_kvatop: pte_pa not found");
+		goto invalid;
+	}
 	if (pread(kd->pmfd, &pte, sizeof(pte), pte_off) != sizeof(pte)) {
 		_kvm_syserr(kd, kd->program, "_arm_kvatop: pread");
 		goto invalid;

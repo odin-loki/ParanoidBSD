@@ -2621,6 +2621,59 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libkvm/kvm_arm.c": (
+        "if (_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE) < sizeof(pte)) {",
+        "\t_kvm_pa2off(kd, pte_pa, &pte_off, ARM_L1_S_SIZE);",
+        "_kvm_pa2off() returns 0 and leaves *ofs UNWRITTEN when the "
+        "address falls in no program header of the crash dump "
+        "(kvm_arm.c:73). _arm_kvatop() discarded that return at one "
+        "call and then did `pread(kd->pmfd, &pte, sizeof(pte), "
+        "pte_off)' -- an uninitialised file offset, with the bytes that "
+        "came back used as a page-table entry. libkvm reads dumps, so "
+        "the input is a file. This is the ONE call in kvm_arm.c that "
+        "threw the answer away; the other four are the function's own "
+        "return. _amd64_vatop() has the check this copies "
+        "(kvm_amd64.c:239-243). clang core.CallAndMessage, "
+        "kvm_arm.c:213.",
+    ),
+    "hbsd/src/lib/libprocstat/zfs.c": (
+        ("free(znode);", 2),
+        None,
+        "zfs_filestat() does `znode = malloc(size)' at the top and "
+        "neither exit freed it -- not the success return and not the "
+        "`bad:' label that three `goto bad' reach. It runs once per ZFS "
+        "file, so procstat -f and fstat(1) leaked a znode_t for every "
+        "one they reported. clang unix.Malloc, zfs.c:79; "
+        "lib/libprocstat 4 findings -> 0.",
+    ),
+    "hbsd/src/lib/libprocstat/libprocstat.c": [
+        (
+            "\tif (files == NULL)\n\t\tcnt = 0;",
+            None,
+            "procstat_getfiles_sysctl() deliberately carries on when "
+            "kinfo_getfile() fails with EPERM -- that is the ORDINARY "
+            "case, what fstat(1) and procstat(1) get for another user's "
+            "process, and the mmapped pass below can still run. But "
+            "neither producer writes *cntp on a failure: "
+            "kinfo_getfile() (lib/libutil) returns NULL from three "
+            "places without touching it, and kinfo_getfile_core() in "
+            "this file sets it only on the line before its success "
+            "return. So `for (i = 0; i < cnt; i++) { kif = &files[i]; "
+            "... kif->kf_type ... }' ran an UNINITIALISED number of "
+            "times through a null pointer. cnt is zeroed at the "
+            "declaration and again, explicitly, where the invariant "
+            "belongs. clang core.NullDereference, libprocstat.c:895.",
+        ),
+        (
+            ("else\n\t\t\tfree(path);", 1),
+            None,
+            "and both loops strdup() a path and hand it to "
+            "filestat_new_entry(), which takes ownership only on "
+            "success -- it warns and returns NULL when its calloc() "
+            "fails, with the path already in hand. Two clang "
+            "unix.Malloc, libprocstat.c:944. lib/libprocstat 4 -> 1.",
+        ),
+    ],
     "hbsd/src/lib/libfigpar/figpar.c": (
         "if (directive == NULL || n > dsize) {",
         "\t\tif (n > dsize) {",
