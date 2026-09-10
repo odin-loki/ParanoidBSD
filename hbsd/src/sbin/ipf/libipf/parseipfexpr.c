@@ -64,7 +64,11 @@ parseipfexpr(char *line, char **errorptr)
 	 * It should be sets of "ip.dst=1.2.3.4/32;" things.
 	 * There must be a "=" or "!=" and it must end in ";".
 	 */
-	if (temp[strlen(temp) - 1] != ';') {
+	/*
+	 * PBSD: an empty expression read temp[-1] to find its last
+	 * character.
+	 */
+	if (temp[0] == '\0' || temp[strlen(temp) - 1] != ';') {
 		error = "last character not ';'";
 		goto parseerror;
 	}
@@ -251,6 +255,17 @@ parseipfexpr(char *line, char **errorptr)
 				goto parseerror;
 			}
 		}
+	}
+
+	/*
+	 * PBSD: oplist is allocated by the first operand, so an expression
+	 * that is nothing but separators -- `expr ";"' -- leaves it NULL
+	 * and the shift below wrote oplist[0] through it.  Checked before
+	 * free(temp), so parseerror does not free temp twice.
+	 */
+	if (oplist == NULL) {
+		error = "no operands";
+		goto parseerror;
 	}
 
 	free(temp);

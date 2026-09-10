@@ -19626,3 +19626,155 @@ Measured over `sbin/ipfw`, `usr.bin/tftp`, `usr.sbin/pkg` and
 `usr.sbin/efivar`: 17 → 14, twenty-one translation units OK and no
 ERROR either side.  The three that closed are `tftp`'s `setpeer0()`,
 `pkg`'s `verify_pubsignature()` and `efivar`'s `breakdown_name()`.
+
+## column(1): a line of nothing but separators has no columns, and one is printed anyway
+
+`input()` drops a line that is entirely whitespace:
+
+```c
+	for (p = buf; *p && iswspace(*p); ++p);
+	if (!*p)
+		continue;
+```
+
+`maketbl()` splits on `separator`, which `-s` sets and which need not be
+whitespace at all:
+
+```c
+	for (p = *lp; wcschr(separator, *p); ++p)
+		/* nothing */ ;
+	for (coloff = 0; *p;) {
+		...
+	}
+	if ((t->list = calloc(coloff, sizeof(*t->list))) == NULL)
+		err(1, NULL);
+	...
+	for (t->cols = coloff; --coloff >= 0;)
+```
+
+So a line of nothing but separators survives `input()` — `:::` is not
+whitespace — and then `maketbl()`'s skip loop walks it to the NUL before
+the column loop starts.  `coloff` is zero, `t->list` is a `calloc(0)`,
+and `t->cols` is zero.  The printing loop is
+
+```c
+	for (coloff = 0; coloff < t->cols - 1; ++coloff)
+		(void)wprintf(L"%ls%*ls", t->list[coloff], ...);
+	(void)wprintf(L"%ls\n", t->list[coloff]);
+```
+
+`t->cols - 1` is `-1`, so the loop does not run and `coloff` is still
+zero — and the trailing print reads `t->list[0]` out of a zero-sized
+allocation and hands `%ls` whatever it found, as a `wchar_t *`.
+
+`printf 'a:b\n:::\n' | column -t -s:` is the whole reproducer.  A row
+with no columns now prints an empty line.
+
+## ipf(8): an expression made only of separators
+
+`parseipfexpr()` has two defects three lines apart.
+
+```c
+	if (temp[strlen(temp) - 1] != ';') {
+```
+
+For an empty expression `strlen(temp)` is zero and this reads
+`temp[-1]` — one byte before the `strdup()`ed buffer.  If that byte
+happens to be `;`, parsing continues.
+
+```c
+	for (ops = strtok(temp, ";"); ops != NULL; ops = strtok(NULL, ";")) {
+		...
+		if (oplist == NULL)
+			oplist = calloc(asize + 2, sizeof(int));
+		...
+	}
+	free(temp);
+	...
+	for (i = asize; i > 0; i--)
+		oplist[i] = oplist[i - 1];
+	oplist[0] = asize + 2;
+```
+
+`oplist` is allocated by the *first operand*.  `expr ";"` passes the
+last-character test and then yields no operands at all — `strtok` on a
+string of only delimiters returns NULL immediately — so the loop never
+runs, `oplist` is still NULL, and `oplist[0] = asize + 2` writes through
+it.  The check goes in before `free(temp)`, so `parseerror` does not
+free `temp` twice.
+
+## dump(8): the block cache reads a failed mmap as a successful one
+
+```c
+	base = calloc(sizeof(Block), NBlocks);
+	BlockHash = calloc(sizeof(Block *), HSize);
+	DataBase = mmap(NULL, NBlocks * BlockSize,
+			PROT_READ|PROT_WRITE, MAP_ANON, -1, 0);
+	for (i = 0; i < NBlocks; ++i) {
+		base[i].b_Data = DataBase + i * BlockSize;
+```
+
+None of the three was checked, and the loop that follows writes through
+all three unconditionally — `NBlocks` is at least sixteen whenever the
+cache is enabled at all, so this is not the count-allocate-fill shape
+where the zero case saves it.
+
+The `mmap` is the interesting one.  `cread()` decides whether the cache
+has been initialised with
+
+```c
+	if (DataBase == NULL)
+		cinit();
+```
+
+and `mmap` reports failure as `MAP_FAILED`, which is `(void *)-1`, not
+NULL.  A failed mapping therefore reads back as a *successful* one: the
+cache is never re-initialised, and every block is written through
+`(char *)-1 + i * BlockSize`.  Both checks are in now, reporting through
+`quit()`, which `dump.h` already declares `__dead2`.
+
+`cread()`'s own finding — `blk = *ppblk` where `ppblk` is NULL if the
+hash bucket is empty — survives, and reading it out says why it should:
+`cinit()` fills bucket `i / HFACTOR` for every `i` in `[0, NBlocks)`, so
+with `NBlocks == HSize * HFACTOR` every bucket in `[0, HSize)` holds
+exactly `HFACTOR` blocks and none is empty.  That equality is not
+checked anywhere; it holds because `cachesize` is a whole number of
+megabytes and `BlockSize` is a power of two no larger than `MAXBSIZE`,
+which makes `NBlocks` a multiple of sixteen.  Change any of those three
+and both an empty bucket and a one-past-the-end write to
+`BlockHash[HSize]` become reachable.
+
+Measured over `usr.bin/column`, `sbin/dump` and `sbin/ipf`: 15 → 13,
+164 translation units OK and the same 16 ERROR on both sides, all of
+them already on the record.  The two that closed are `column`'s
+`maketbl()` and `ipf`'s `parseipfexpr()`.
+
+## A negative result: "the finding's function calls this helper" is not an oracle either
+
+The `usage()`-ends-in-`exit()` class has paid repeatedly this sweep —
+`ppp`'s `AbortProgram`, `dump`'s `quit`, `lpr`'s seven, `route6d`,
+`chat`, `patch`, `efivar`'s `rep_err`/`rep_errx`.  Every one of those
+came from reading a *finding* and walking back to the helper on its
+path.
+
+So the obvious next step was to automate exactly that walk: take every
+function that carries a pointer finding, run `noreturn_check.py` over
+its directory, and keep the pairs where the finding's function textually
+calls an undeclared-noreturn helper defined in the same file.  Twelve
+pairs came out; three were self-matches from the crude body extraction,
+leaving nine real ones across `nvmecontrol`, `hexdump` (five helpers),
+`m4`, `login`, `ministat`, `rtsold`, `traceroute`, `watchdogd` and
+`makefs`.
+
+All nine declarations went in.  Measured over those nine directories:
+**28 → 28, no change at all**, ninety translation units and the same
+single known ERROR on both sides.  Every one was reverted.
+
+The lesson is sharper than the earlier file-level one.  It is not that
+the lint is noisy — each of the nine statements is *true*, and the
+compiler would accept them.  It is that "`f()` mentions `g()`" says
+nothing about whether the analyser's path to the finding in `f()` runs
+through `g()`.  In all the cases that paid, the guard and the use were
+adjacent and the helper sat between them; here the helper is a `usage()`
+called from an argument-parsing arm that the finding's path never
+takes.  Reading the finding is not a step that can be skipped.

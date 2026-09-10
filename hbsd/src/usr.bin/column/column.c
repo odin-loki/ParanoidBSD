@@ -279,7 +279,19 @@ maketbl(void)
 		for (coloff = 0; coloff < t->cols  - 1; ++coloff)
 			(void)wprintf(L"%ls%*ls", t->list[coloff],
 			    lens[coloff] - t->len[coloff] + 2, L" ");
-		(void)wprintf(L"%ls\n", t->list[coloff]);
+		/*
+		 * PBSD: t->cols is zero for a line made only of separators
+		 * -- `printf "a:b\n:::\n" | column -t -s:' -- because the
+		 * skip loop above walks it to the NUL before the column
+		 * loop starts.  input() drops a line that is all
+		 * *whitespace*, not one that is all *separator*.  cols - 1
+		 * is then -1, the loop does not run, and this read t->list[0]
+		 * out of a calloc(0) and printed through it as a string.
+		 */
+		if (t->cols > 0)
+			(void)wprintf(L"%ls\n", t->list[coloff]);
+		else
+			(void)wprintf(L"\n");
 		free(t->list);
 		free(t->len);
 	}

@@ -4960,6 +4960,41 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/usr.bin/column/column.c": (
+        "if (t->cols > 0)",
+        None,
+        "maketbl(): input() drops a line that is all whitespace, not one "
+        "that is all *separator*, so `printf \"a:b\\n:::\\n\" | column -t "
+        "-s:' left t->cols zero -- cols - 1 is then -1, the column loop "
+        "does not run, and the trailing print read t->list[0] out of a "
+        "calloc(0) and printed through it as a string",
+    ),
+
+    "hbsd/src/sbin/dump/cache.c": (
+        "if (DataBase == MAP_FAILED)",
+        None,
+        "cinit() checked none of its three allocations, and cread() tests "
+        "`DataBase == NULL' to decide whether the cache is initialised -- "
+        "mmap() reports failure as MAP_FAILED, so a failed mapping read "
+        "back as a successful one and every cached block was written "
+        "through (char *)-1",
+    ),
+
+    "hbsd/src/sbin/ipf/libipf/parseipfexpr.c": [
+        (
+            "if (temp[0] == '\\0' || temp[strlen(temp) - 1] != ';') {",
+            "\tif (temp[strlen(temp) - 1] != ';') {",
+            "an empty expression read temp[-1] to find its last character",
+        ),
+        (
+            'if (oplist == NULL) {\n\t\terror = "no operands";',
+            None,
+            "oplist is allocated by the first operand, so an expression "
+            "that is nothing but separators -- `expr \";\"' -- left it NULL "
+            "and the shift at the end wrote oplist[0] through it",
+        ),
+    ],
+
 }
 
 

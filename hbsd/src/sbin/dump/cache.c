@@ -62,10 +62,23 @@ cinit(void)
 	msg("Cache %d MB, blocksize = %d\n", 
 	    NBlocks * BlockSize / (1024 * 1024), BlockSize);
 
+	/*
+	 * PBSD: none of the three was checked, and cread() tests
+	 * `DataBase == NULL' to decide whether the cache is initialised --
+	 * mmap() reports failure as MAP_FAILED, not NULL, so a failed
+	 * mapping was read back as a successful one and every cached
+	 * block was written through (char *)-1.
+	 */
 	base = calloc(sizeof(Block), NBlocks);
 	BlockHash = calloc(sizeof(Block *), HSize);
+	if (base == NULL || BlockHash == NULL)
+		quit("cannot allocate the %d MB block cache\n",
+		    NBlocks * BlockSize / (1024 * 1024));
 	DataBase = mmap(NULL, NBlocks * BlockSize, 
 			PROT_READ|PROT_WRITE, MAP_ANON, -1, 0);
+	if (DataBase == MAP_FAILED)
+		quit("cannot map the %d MB block cache: %s\n",
+		    NBlocks * BlockSize / (1024 * 1024), strerror(errno));
 	for (i = 0; i < NBlocks; ++i) {
 		base[i].b_Data = DataBase + i * BlockSize;
 		base[i].b_Offset = (off_t)-1;

@@ -54,8 +54,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
-| 4 | `sbin` | 533 | 228,601 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,441 | 4,188 |
+| 4 | `sbin` | 533 | 228,629 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,453 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,622 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,766** | **114,207** |
+| | **total** | **41,143** | **21,300,806** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -16442,7 +16442,7 @@ function; a file with two hundred of them is a project.
 
 ### 4.18 `sbin/dump` · 1 module(s) under `pbsd/sbin/dump`
 
-- [ ] **4.18.1** `cache.c` · 145L · `TODO-PORT` · 2 fn
+- [ ] **4.18.1** `cache.c` · 158L · `TODO-PORT` · 2 fn
   - [ ] 4.18.1.1 `cinit()` · `TODO-FN`
   - [ ] 4.18.1.2 `cread()` · `TODO-FN`
 - [ ] **4.18.2** `dump.h` · 181L · `TODO-HDR`
@@ -18425,7 +18425,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.51.68.2 `getoptbyvalue()` · `TODO-FN`
 - [ ] **4.51.69** `parsefields.c` · 52L · `TODO-PORT` · 1 fn
   - [ ] 4.51.69.1 `parsefields()` · `TODO-FN`
-- [ ] **4.51.70** `parseipfexpr.c` · 278L · `TODO-PORT` · 1 fn
+- [ ] **4.51.70** `parseipfexpr.c` · 293L · `TODO-PORT` · 1 fn
   - [ ] 4.51.70.1 `parseipfexpr()` · `TODO-FN`
 - [ ] **4.51.71** `parsewhoisline.c` · 130L · `TODO-GEN` · 1 fn
   - [ ] 4.51.71.1 `parsewhoisline()` · `TODO-FN`
@@ -20904,7 +20904,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.42 `usr.bin/column`
 
-- [ ] **5.42.1** `column.c` · 352L · `TODO-PORT` · 8 fn
+- [ ] **5.42.1** `column.c` · 364L · `TODO-PORT` · 8 fn
   - [ ] 5.42.1.1 `main()` · `TODO-FN`
   - [ ] 5.42.1.2 `c_columnate()` · `TODO-FN`
   - [ ] 5.42.1.3 `r_columnate()` · `TODO-FN`
