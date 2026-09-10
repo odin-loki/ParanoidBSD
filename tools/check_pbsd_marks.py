@@ -2272,16 +2272,27 @@ FIXES = {
         "where upstream's usr.bin/at/panic.h has carried __dead2 on its "
         "perr() all along",
     ),
-    "hbsd/src/usr.sbin/ctladm/ctladm.c": (
-        "PBSD: only when getoption() wrote it.",
-        "\t\t\t\t\t\t   &err_type, &argnum, &subopt);\n"
-        "\t\t\t\terr_desc.lun_error = err_type;",
-        "cctl_error_inject: getoption() writes *cmdnum, *argnum and "
-        "*subopt inside the match branch only, so CC_OR_NOT_FOUND "
-        "writes none of them -- and both arms stored the local into "
-        "err_desc BEFORE the CC_OR_NOT_FOUND test.  This file's two "
-        "other getoption() call sites, at :508 and :4341, check first",
-    ),
+    "hbsd/src/usr.sbin/ctladm/ctladm.c": [
+        (
+            "PBSD: only when getoption() wrote it.",
+            "\t\t\t\t\t\t   &err_type, &argnum, &subopt);\n"
+            "\t\t\t\terr_desc.lun_error = err_type;",
+            "cctl_error_inject: getoption() writes *cmdnum, *argnum and "
+            "*subopt inside the match branch only, so CC_OR_NOT_FOUND "
+            "writes none of them -- and both arms stored the local into "
+            "err_desc BEFORE the CC_OR_NOT_FOUND test.  This file's two "
+            "other getoption() call sites, at :508 and :4341, check first",
+        ),
+        (
+            "\tif (delayloc == NULL) {",
+            'you must specify the delaytime with -t", __func__);\n'
+            "\t\tretval = 1;\n\t\tgoto bailout;\n\t}\n\n"
+            '\tif (strcasecmp(delayloc, "datamove") == 0)',
+            "cctl_delay() starts delayloc at NULL and only -l sets it, "
+            "but only delaytime was checked -- so `ctladm delay -t 5' "
+            "with no -l reached strcasecmp(NULL, \"datamove\")",
+        ),
+    ],
     "hbsd/src/usr.bin/systat/netstat.c": (
         "PBSD: read the socket on both paths.",
         "\t\tif (istcp) {\n\t\t\tKREAD(inpcb->inp_socket, &sockb, "
@@ -4140,6 +4151,17 @@ FIXES = {
             "*portRange",
         ),
     ],
+
+    "hbsd/src/sbin/fsck/fsck.c": (
+        "\tvfstype = estrdup(pvfstype);",
+        '\tvfstype = strdup(pvfstype);\n\tif (vfstype == NULL)\n'
+        '\t\tperr("strdup(pvfstype)");',
+        "checkfs() called perr() on a failed strdup and then strlen() on "
+        "the result -- but perr() only exits when preen is set; vmsg() "
+        "prints and returns otherwise, which is the contract devcheck() "
+        "relies on when it returns origname after each of its three "
+        "perr() calls",
+    ),
 
     "hbsd/src/usr.sbin/yppush/yppush_main.c": (
         "static void __dead2\nyppush_exit(int now)",

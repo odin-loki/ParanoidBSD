@@ -320,9 +320,17 @@ checkfs(const char *pvfstype, const char *spec, const char *mntpt,
 	 * filesystem name, and we do not seem to enforce a filesystem
 	 * name character set.
 	 */
-	vfstype = strdup(pvfstype);
-	if (vfstype == NULL)
-		perr("strdup(pvfstype)");
+	/*
+	 * PBSD: this was `strdup(); if (vfstype == NULL) perr(...)' and
+	 * then strlen(vfstype) on the next line -- but perr() only exits
+	 * when preen is set: vmsg() prints and returns otherwise, which is
+	 * the contract devcheck() relies on, returning origname after each
+	 * of its three perr() calls.  So without -p a failed strdup printed
+	 * a message and walked into strlen(NULL).  estrdup() beside perr()
+	 * in fsutil.c is the checked one, and err(1) is what this file uses
+	 * for a failure it cannot continue past.
+	 */
+	vfstype = estrdup(pvfstype);
 	for (i = 0; i < (int)strlen(vfstype); i++) {
 		vfstype[i] = tolower(vfstype[i]);
 		if (vfstype[i] == ' ')

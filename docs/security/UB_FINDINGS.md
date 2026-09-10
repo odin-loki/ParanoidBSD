@@ -18934,3 +18934,105 @@ having; 26 → 1 is the reminder that the sweep is still the only thing
 that answers the question.  All five of the cases that mattered were
 found by reading a finding and walking back to its cause, not by
 scanning a list — and that remains the method.
+
+## `ctladm delay -t 5`, and an fsck error handler that is only sometimes fatal
+
+`cctl_delay()` in `usr.sbin/ctladm/ctladm.c` collects three options:
+
+```c
+	char *delayloc = NULL;
+	char *delaytype = NULL;
+	int delaytime = -1;
+	...
+		case 'l': delayloc = strdup(optarg); break;
+		case 't': delaytime = strtoul(optarg, NULL, 0); break;
+	...
+	if (delaytime == -1) {
+		warnx("%s: you must specify the delaytime with -t", __func__);
+		retval = 1;
+		goto bailout;
+	}
+
+	if (strcasecmp(delayloc, "datamove") == 0)
+```
+
+One of the two required options is checked.  `ctladm delay -t 5` with no
+`-l` reaches `strcasecmp(NULL, "datamove")`.  The missing test is now
+there, worded like the one above it.
+
+`checkfs()` in `sbin/fsck/fsck.c`:
+
+```c
+	vfstype = strdup(pvfstype);
+	if (vfstype == NULL)
+		perr("strdup(pvfstype)");
+	for (i = 0; i < (int)strlen(vfstype); i++) {
+```
+
+This reads as a fatal error handler and is not one.  `perr()` calls
+`vmsg(1, fmt, ap)`, and `vmsg()` exits **only when `preen` is set**:
+
+```c
+	if (fatal && preen) {
+		(void) printf("%s: UNEXPECTED INCONSISTENCY; RUN %s MANUALLY.\n", ...);
+		exit(8);
+	}
+```
+
+Returning is the contract the rest of the program relies on —
+`devcheck()` calls `perr()` three times and returns `origname` after
+each.  So without `-p`, a failed `strdup` printed a message and walked
+into `strlen(NULL)`.  `fsutil.c` already exports `estrdup()`, which is
+`strdup` plus `err(1, "strdup failed")`, and that is what this line
+wanted.
+
+Worth noting for the lint: `perr()` is a noreturn-shaped function that
+`noreturn_check.py` will never report, and correctly — its last
+statement is `va_end(ap)`, and it is not noreturn anyway, only
+conditionally so.  A helper that exits on some paths and returns on
+others is the shape neither the lint nor a reader is well served by.
+
+```
+                usr.sbin/ctladm + sbin/fsck
+                before  after
+OK                   5       5
+ERROR                0       0
+findings            62      60
+```
+
+## Diffing sweeps without being fooled by line numbers
+
+The two-line `ctladm` fix carries a thirteen-line comment, and every one
+of the forty-eight findings below it in the file moved by thirteen
+lines.  Diffed by the finding's `where`, that reads as 48 closed and 48
+new around a real delta of 2.  This has been hand-checked three times in
+this work — the `ul` batch's "three new", the `tftp` batch's "one new",
+and now this.
+
+`tools/verify/sweep_diff.py` identifies a finding by
+`(file, checker, function, message)` instead, which is stable under
+insertion, and warns if the OK/ERROR counts moved — because two sides
+with different translation-unit counts are not the same measurement.
+
+### Read and not defects in the same round
+
+- `usr.sbin/pkg/config.c:247` — `strcmp(buf, c[i].key)` where `buf`
+  starts NULL.  `buf` is `open_memstream(&buf, &bufsz)`'s target, and
+  the `fflush(buffp)` three lines above always runs; POSIX has the
+  pointer and size updated at that point, for an empty stream too.  The
+  `if (buf != NULL)` guard above is for the first iteration, before
+  anything has been flushed.
+- `sbin/ifconfig/ifconfig.c:1002` — `strcmp(name, p->c_name)` reports
+  `name`, an unconstrained parameter of `cmd_lookup()`.
+- `bin/ed/glbl.c:118` and `bin/ed/main.c:1076` — both are `REALLOC(b, n,
+  i, err)` followed by a `memcpy` into `b`.  The macro's whole body is
+  under `if ((i) > (n))` and returns `err` when the allocation fails, so
+  `b` is non-NULL afterwards on any path where `i > n` — and `i` is
+  `n + 1` or a length plus one at both sites, with `n` starting at zero.
+  The analyser will not relate the macro's guard to the use after it.
+- `usr.bin/units/units.c:619` — `strcmp(*one, *two)` in
+  `compareproducts()`.  `NULLUNIT` is `static char NULLUNIT[] = ""`, not
+  NULL, and the two tests above the `strcmp` return 1 for a NULL `*one`
+  with a non-`NULLUNIT` `*two` and vice versa, while a `NULLUNIT` on
+  either side advances that side instead.  Both are non-NULL by the time
+  the `strcmp` runs.

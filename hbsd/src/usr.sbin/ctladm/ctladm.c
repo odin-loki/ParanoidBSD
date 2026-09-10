@@ -758,6 +758,19 @@ cctl_delay(int fd, int lun, int argc, char **argv,
 		goto bailout;
 	}
 
+	/*
+	 * PBSD: delayloc starts NULL and only -l sets it, but only
+	 * delaytime was checked -- so `ctladm delay -t 5' with no -l
+	 * reached strcasecmp(NULL, "datamove").  The missing test, worded
+	 * like the one above it.
+	 */
+	if (delayloc == NULL) {
+		warnx("%s: you must specify the delay location with -l",
+		      __func__);
+		retval = 1;
+		goto bailout;
+	}
+
 	if (strcasecmp(delayloc, "datamove") == 0)
 		delay_info.delay_loc = CTL_DELAY_LOC_DATAMOVE;
 	else if (strcasecmp(delayloc, "done") == 0)

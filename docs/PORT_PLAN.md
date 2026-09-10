@@ -54,9 +54,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
-| 4 | `sbin` | 533 | 228,544 | 3,567 |
+| 4 | `sbin` | 533 | 228,552 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,410 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,557 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,570 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,610** | **114,207** |
+| | **total** | **41,143** | **21,300,631** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -16661,7 +16661,7 @@ function; a file with two hundred of them is a project.
 
 ### 4.24 `sbin/fsck` · 1 module(s) under `pbsd/sbin/fsck`
 
-- [ ] **4.24.1** `fsck.c` · 582L · `TODO-PORT` · 12 fn
+- [ ] **4.24.1** `fsck.c` · 590L · `TODO-PORT` · 12 fn
   - [ ] 4.24.1.1 `main()` · `TODO-FN`
   - [ ] 4.24.1.2 `isok()` · `TODO-FN`
   - [ ] 4.24.1.3 `checkfs()` · `TODO-FN`
@@ -30071,7 +30071,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.69 `usr.sbin/ctladm`
 
-- [ ] **6.69.1** `ctladm.c` · 4,638L · `TODO-PORT`
+- [ ] **6.69.1** `ctladm.c` · 4,651L · `TODO-PORT`
 - [ ] **6.69.2** `ctladm.h` · 51L · `TODO-HDR`
 - [ ] **6.69.3** `util.c` · 157L · `TODO-PORT` · 3 fn
   - [ ] 6.69.3.1 `iget()` · `TODO-FN`
