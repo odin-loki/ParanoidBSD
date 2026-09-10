@@ -254,13 +254,22 @@ getipv4sourcefilter(int s, struct in_addr interface, struct in_addr group,
 	    sizeof(struct sockaddr_in), fmode, numsrc,
 	    (struct sockaddr_storage *)tmpslist);
 
-	if (tmpslist != NULL && *numsrc != 0) {
-		pina = slist;
-		psu = tmpslist;
-		for (i = 0; i < MIN(onumsrc, *numsrc); i++, psu++) {
-			if (psu->ss.ss_family != AF_INET)
-				continue;
-			*pina++ = psu->sin.sin_addr;
+	/*
+	 * PBSD: the free() was inside the *numsrc != 0 test, so a group
+	 * with no source filters -- and every getsourcefilter() failure
+	 * that leaves *numsrc at zero -- leaked the whole array.
+	 * setipv4sourcefilter() fifty lines above frees its tmpslist
+	 * unconditionally.
+	 */
+	if (tmpslist != NULL) {
+		if (*numsrc != 0) {
+			pina = slist;
+			psu = tmpslist;
+			for (i = 0; i < MIN(onumsrc, *numsrc); i++, psu++) {
+				if (psu->ss.ss_family != AF_INET)
+					continue;
+				*pina++ = psu->sin.sin_addr;
+			}
 		}
 		free(tmpslist);
 	}

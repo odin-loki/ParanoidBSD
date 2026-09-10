@@ -146,8 +146,17 @@ einval:		errno = EINVAL;
 			}
 			while (nrec > t->bt_nrecs + 1)
 				if (__rec_iput(t,
-				    t->bt_nrecs, &tdata, 0) != RET_SUCCESS)
+				    t->bt_nrecs, &tdata, 0) != RET_SUCCESS) {
+					/*
+					 * PBSD: the free() below is on the
+					 * success path only, so a failure
+					 * part-way through filling the gap
+					 * leaked the bt_reclen pad record.
+					 */
+					if (F_ISSET(t, R_FIXLEN))
+						free(tdata.data);
 					return (RET_ERROR);
+				}
 			if (F_ISSET(t, R_FIXLEN))
 				free(tdata.data);
 		}

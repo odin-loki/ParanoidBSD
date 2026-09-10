@@ -4007,6 +4007,22 @@ FIXES = {
         "now total -- defence in depth; the three-file chain that makes "
         "the default unreachable is in the comment",
     ),
+
+    "hbsd/src/lib/libc/net/sourcefilter.c": (
+        "if (tmpslist != NULL) {\n\t\tif (*numsrc != 0) {",
+        "if (tmpslist != NULL && *numsrc != 0) {",
+        "getipv4sourcefilter: the free() was inside the *numsrc != 0 "
+        "test, so a group with no sources leaked the array -- "
+        "setipv4sourcefilter() fifty lines up frees unconditionally",
+    ),
+
+    "hbsd/src/lib/libc/db/recno/rec_put.c": (
+        "if (F_ISSET(t, R_FIXLEN))\n\t\t\t\t\t\tfree(tdata.data);\n\t\t\t\t\treturn (RET_ERROR);",
+        "!= RET_SUCCESS)\n\t\t\t\t\treturn (RET_ERROR);",
+        "__rec_put: a failure part-way through filling a record gap "
+        "returned without freeing the bt_reclen pad record the success "
+        "path frees",
+    ),
 }
 
 

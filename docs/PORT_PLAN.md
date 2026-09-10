@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,732 | 9,056 |
+| 1 | `lib` | 2,827 | 639,750 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,496 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,840** | **114,204** |
+| | **total** | **41,143** | **21,299,858** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -1619,7 +1619,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.63.5** `rec_open.c` · 235L · `TODO-PORT` · 2 fn
   - [ ] 1.63.5.1 `__rec_open()` · `TODO-FN`
   - [ ] 1.63.5.2 `__rec_fd()` · `TODO-FN`
-- [ ] **1.63.6** `rec_put.c` · 271L · `TODO-PORT` · 2 fn
+- [ ] **1.63.6** `rec_put.c` · 280L · `TODO-PORT` · 2 fn
   - [ ] 1.63.6.1 `__rec_put()` · `TODO-FN`
   - [ ] 1.63.6.2 `__rec_iput()` · `TODO-FN`
 - [ ] **1.63.7** `rec_search.c` · 118L · `TODO-PORT` · 1 fn
@@ -3704,7 +3704,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.79.40.18 `sctp_peeloff()` · `TODO-FN`
 - [ ] **1.79.41** `sockatmark.c` · 40L · `TODO-PORT` · 1 fn
   - [ ] 1.79.41.1 `sockatmark()` · `TODO-FN`
-- [ ] **1.79.42** `sourcefilter.c` · 402L · `TODO-PORT` · 5 fn
+- [ ] **1.79.42** `sourcefilter.c` · 411L · `TODO-PORT` · 5 fn
   - [ ] 1.79.42.1 `__inaddr_to_index()` · `TODO-FN`
   - [ ] 1.79.42.2 `setipv4sourcefilter()` · `TODO-FN`
   - [ ] 1.79.42.3 `getipv4sourcefilter()` · `TODO-FN`

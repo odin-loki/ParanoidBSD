@@ -16341,3 +16341,103 @@ use-after-free rather than the NULL dereference reported: `m_collapse()`
 collapses *towards the front*, keeping `m0` and freeing only the mbufs
 after it, and the headers those pointers address were pulled up into
 `m0`. Not a bug.
+
+## The libs shard's malloc set: two leaks under 117 false positives
+
+`unix.Malloc` is the largest single bucket anywhere in the sweep — 112
+findings in the `libs` shard, plus seven `unix.MallocSizeof`. Reading all
+119 produced two fixes, and the ratio is the interesting part.
+
+Thirty-three are in `lib/libc/tests/secure/fortify_*_test.c`, which
+deliberately allocates and abandons buffers to check the fortified
+string functions trap. Forty-three more are the NSS `get*ent` family —
+`getservent`, `getgrent`, `getpwent`, `getrpcent`, `getprotoent` — where
+every allocation is handed to `thr_setspecific()` and freed by the
+thread's destructor. `ttyname()`, `rpc_call()`, `__rpc_getconfip()` and
+`files_getnetgrent_r()` are the same shape one function at a time.
+`_citrus_db_factory_add*_by_string()` ×5 pass their allocation to
+`_citrus_db_factory_add(df, &r, 1, ...)` — the `1` is `keyfree`, telling
+the callee to take ownership. `alloc_segs()` stores its `store` in
+`hashp->dir[]`; `nss_load_module()` appends `mod.name` into the module
+vector; `_citrus_esdb_get_list()` frees on every error path through
+`quit3` and transfers on success. All correct.
+
+### getipv4sourcefilter() frees only when there was something to copy
+
+```c
+	if (tmpslist != NULL && *numsrc != 0) {
+		pina = slist;
+		psu = tmpslist;
+		for (i = 0; i < MIN(onumsrc, *numsrc); i++, psu++) {
+			...
+		}
+		free(tmpslist);
+	}
+```
+
+The `free()` is inside the copy, and the copy is conditional on the
+kernel having returned at least one source. A multicast group with no
+source filters — the ordinary case — leaks the whole `onumsrc *
+sizeof(sockunion_t)` array, and so does every `getsourcefilter()`
+failure that leaves `*numsrc` at zero. `setipv4sourcefilter()` fifty
+lines above ends with
+
+```c
+	if (tmpslist != NULL)
+		free(tmpslist);
+```
+
+which is the same function's own answer. The copy is now nested inside
+an unconditional free.
+
+### __rec_put() and a finding that was pointing at something else
+
+The sweep put a `unix.Malloc` finding on `rec_put.c:150`. Reading the
+function to write the fix found a different leak entirely:
+
+```c
+			if (F_ISSET(t, R_FIXLEN)) {
+				if ((tdata.data = malloc(t->bt_reclen)) == NULL)
+					return (RET_ERROR);
+				...
+			}
+			while (nrec > t->bt_nrecs + 1)
+				if (__rec_iput(t,
+				    t->bt_nrecs, &tdata, 0) != RET_SUCCESS)
+					return (RET_ERROR);
+			if (F_ISSET(t, R_FIXLEN))
+				free(tdata.data);
+```
+
+Putting a record past the end of a fixed-length recno database creates
+the intervening records from a malloc'd pad buffer. The `free()` is on
+the success path only, so a failure part-way through filling the gap
+leaks it. That is now freed on the error return too.
+
+The reported finding did not move — it relocated from 150 to 158,
+tracking the eight lines I inserted, which is the same line. Chasing it:
+the variable it names, `dstvar`, does not exist in `rec_put.c`. It comes
+from `include/ssp/strings.h`:
+
+```c
+#define _ssp_bcopy(srcvar, src, dstvar, dst, lenvar,  len) __extension__ ({ \
+    const void *srcvar = (src);			\
+    void *dstvar = (dst);			\
+```
+
+— the FORTIFY_SOURCE `memmove` wrapper, expanded over
+`memmove(t->bt_rdata.data, data->data, data->size)` seventy lines
+earlier, where `t->bt_rdata.data` came from a `reallocf()` the BTREE
+owns and `__bt_close()` frees. The finding is an artifact of a statement
+expression in a fortification macro. It was still worth having: it is
+why anybody read the function.
+
+```
+              before   after     (lib/libc/net, lib/libc/db)
+OK                72      72
+ERROR              8       8
+findings          48      47
+```
+
+One of the two fixes moves the number. The other fixes a leak the
+analyser never saw, at a line where it was reporting something else.
