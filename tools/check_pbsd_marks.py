@@ -2621,6 +2621,25 @@ FIXES = {
             "divisor",
         ),
     ],
+    "hbsd/src/lib/libveriexec/exec_script.c": (
+        "rc = veriexec_check_path(script);",
+        "if (veriexec_check_path(script) == 0) {",
+        "execv_script() declares `int rc' and assigns it only inside "
+        "`if (veriexec_check_path(script) == 0)' and inside `if "
+        "(interpreter)'. A script veriexec REFUSES for which no "
+        "interpreter is found -- or one refused while GBL_VERIEXEC is "
+        "not set -- reached `return (rc)' with rc never written. The "
+        "function's own comment says \"@return error on failure usually "
+        "EPERM or EAUTH\", and the caller reads it to decide whether the "
+        "script ran: a garbage non-zero reads as some errno, and a "
+        "garbage ZERO reads as SUCCESS -- \"the script was executed\" "
+        "when verification refused it and nothing ran. That is the wrong "
+        "direction for a verified-execution library to fail in. "
+        "veriexec_check_path() has already computed the reason (EAUTH "
+        "for an unverified path, veriexec_check.c:54), so rc holds it. "
+        "clang core.uninitialized.UndefReturn, exec_script.c:117; "
+        "lib/libveriexec 1 finding -> 0.",
+    ),
     "hbsd/src/lib/libcasper/services/cap_net/cap_net.c": (
         ("serrno = ENOTCAPABLE;", 6),
         None,
@@ -2722,6 +2741,21 @@ FIXES = {
             "free_iovec: the reset its own comment documents, without which "
             "the documented `call nmount in a loop\' hands realloc() a "
             "freed pointer",
+        ),
+        (
+            "niov = realloc(*iov, sizeof **iov * (i + 2));",
+            "*iov = realloc(*iov, sizeof **iov * (i + 2));",
+            "and build_iovec one function up grows the same array with "
+            "`*iov = realloc(*iov, n)'. realloc() returning NULL loses "
+            "the old block -- and here the CALLER cannot free it "
+            "either, because *iov is now NULL and *iovlen is -1, so "
+            "every name strdup()ed into the array so far goes with it "
+            "and the free_iovec() above finds nothing to free. Every "
+            "mount_* program builds its nmount(2) arguments through "
+            "this. Through a temporary, which keeps the array and "
+            "leaves free_iovec() able to do its job -- the same idiom "
+            "as lib/libfetch/http.c, found the same day. Six clang "
+            "unix.Malloc findings gone; lib/libutil 11 -> 5.",
         ),
     ],
     "hbsd/src/sbin/mount_msdosfs/mount_msdosfs.c": [

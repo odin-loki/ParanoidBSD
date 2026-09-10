@@ -22488,3 +22488,118 @@ Linux perf, leaking on its own error paths), 9 in
 test bodies), 7 in `lib/libutil/mntopts.c`, and a long tail across
 twenty-four libraries that had never been compiled by anything until
 this pass.
+
+## `execv_script`: a verified-execution library that returns success when it refused
+
+`lib/libveriexec/exec_script.c`.  HardenedBSD's own library for running
+a script under veriexec.
+
+```c
+int
+execv_script(const char *interpreter, char * const *argv)
+{
+	const char *script;
+	int rc;
+
+	script = argv[0];
+	if (veriexec_check_path(script) == 0) {
+		rc = execv(script, argv);
+	}
+	/* still here? we might be allowed to run via interpreter */
+	if (gbl_check_pid(0) & GBL_VERIEXEC) {
+		if (!interpreter)
+			interpreter = find_interpreter(script);
+		if (interpreter) {
+			...
+			rc = execv(interpreter, argv);
+		}
+	}
+	return (rc);
+}
+```
+
+`rc` is assigned in exactly two places, both inside conditions.  Two
+paths reach `return (rc)` with it never written:
+
+* the script is **refused** by veriexec and `GBL_VERIEXEC` is not set;
+* the script is refused, `GBL_VERIEXEC` is set, and `find_interpreter()`
+  finds no `#!` line.
+
+The function's own comment says *"@return error on failure usually EPERM
+or EAUTH"*, and the caller reads it to decide whether the script ran.
+A garbage non-zero reads as some errno.  **A garbage zero reads as
+success** — "the script was executed" — when verification refused it and
+nothing ran.  That is the wrong direction for a verified-execution
+library to fail in.
+
+`veriexec_check_path()` has already computed the reason (`EAUTH` for an
+unverified path, `veriexec_check.c:54`), so `rc` holds it now:
+
+```c
+	rc = veriexec_check_path(script);
+	if (rc == 0) {
+		rc = execv(script, argv);
+	}
+```
+
+`lib/libveriexec`: 4 translation units, **0 findings**.
+
+## `build_iovec`: the same `realloc` idiom, in every `mount_*`
+
+```c
+	*iov = realloc(*iov, sizeof **iov * (i + 2));
+	if (*iov == NULL) {
+		*iovlen = -1;
+		return;
+	}
+```
+
+The libfetch shape again, found the same day, and worse here in one
+respect: the caller **cannot** free the lost block, because `*iov` is
+now NULL and `*iovlen` is -1 — so every option name `strdup()`ed into
+the array so far goes with it, and the `free_iovec()` on the way out
+finds nothing to free.  Every `mount_*` program builds its `nmount(2)`
+arguments through this function.
+
+Through a temporary.  `lib/libutil`: **11 findings → 5**, the six
+`unix.Malloc` reports in `free_iovec()` gone with it.
+
+The five that remain are each in a family already named above: two in
+`login_class.c` are the cleared flag, `gr_util.c:541` is the two
+traversals, `pidfile.c:369` is `return (errno)`, and `mntopts.c:318` is
+an interface-level ownership question rather than a bug —
+`free_iovec()` deliberately frees only the even (name) slots, because
+callers pass string literals and stack buffers as values, and
+`build_iovec_argf()` is the one caller that `strdup()`s one.
+
+## A fifth family: the intrusive queue(3) macros
+
+Six `unix.Malloc` *"Use of memory after it is freed"* across
+`libmemstat`, `libopenbsd`'s `imsg`, `libmixer` and `libusb` are one
+thing.  Every one is the ordinary BSD drain loop:
+
+```c
+	while (!TAILQ_EMPTY(&m->devs)) {
+		dp = TAILQ_FIRST(&m->devs);
+		TAILQ_REMOVE(&m->devs, dp, devs);
+		...
+		free(dp);
+	}
+```
+
+The analyser's path, read out of the plist rather than guessed:
+
+```
+mixer.c:150  Assuming field 'tqh_first' is not equal to null
+mixer.c:150  Entering loop body
+mixer.c:152  Assuming field 'tqe_next' is equal to null
+mixer.c:153  Assuming field 'tqh_first' is not equal to null
+```
+
+It is assuming values for `tqh_first` and `tqe_next` **that
+`TAILQ_REMOVE` has just written**.  The list is intrusive — the links
+live in the element being freed — and clang models those fields as
+independent symbols, so on the next turn of the loop `TAILQ_FIRST` still
+yields the element that was unlinked and freed.  A use-after-free in a
+drain loop is exactly what this checker is for; it cannot see the
+unlink that makes this one safe.

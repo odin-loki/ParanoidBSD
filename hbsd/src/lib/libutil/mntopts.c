@@ -266,16 +266,26 @@ void
 build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val,
 	    size_t len)
 {
+	struct iovec *niov;
 	int i;
 
 	if (*iovlen < 0)
 		return;
 	i = *iovlen;
-	*iov = realloc(*iov, sizeof **iov * (i + 2));
-	if (*iov == NULL) {
+	/*
+	 * PBSD: through a temporary.  `*iov = realloc(*iov, n)' loses
+	 * the old block when realloc() returns NULL -- and here the
+	 * caller cannot free it either, because *iov is now NULL and
+	 * *iovlen is -1, so every name strdup()ed into the array so far
+	 * goes with it.  Keeping the old array also leaves free_iovec()
+	 * able to do its job on the way out.
+	 */
+	niov = realloc(*iov, sizeof **iov * (i + 2));
+	if (niov == NULL) {
 		*iovlen = -1;
 		return;
 	}
+	*iov = niov;
 	(*iov)[i].iov_base = strdup(name);
 	(*iov)[i].iov_len = strlen(name) + 1;
 	i++;

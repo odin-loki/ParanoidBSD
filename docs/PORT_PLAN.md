@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,903 | 9,056 |
+| 1 | `lib` | 2,827 | 639,926 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,261** | **114,207** |
+| | **total** | **41,143** | **21,301,284** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -12306,7 +12306,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.325.24.6 `in_lts()` · `TODO-FN`
 - [ ] **1.325.25** `login_tty.c` · 57L · `TODO-PORT` · 1 fn
   - [ ] 1.325.25.1 `login_tty()` · `TODO-FN`
-- [ ] **1.325.26** `mntopts.c` · 330L · `TODO-PORT` · 10 fn
+- [ ] **1.325.26** `mntopts.c` · 340L · `TODO-PORT` · 10 fn
   - [ ] 1.325.26.1 `getmntopts()` · `TODO-FN`
   - [ ] 1.325.26.2 `rmslashes()` · `TODO-FN`
   - [ ] 1.325.26.3 `checkpath()` · `TODO-FN`
@@ -12414,7 +12414,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.329 `lib/libveriexec`
 
-- [ ] **1.329.1** `exec_script.c` · 160L · `TODO-PORT` · 3 fn
+- [ ] **1.329.1** `exec_script.c` · 173L · `TODO-PORT` · 3 fn
   - [ ] 1.329.1.1 `find_interpreter()` · `TODO-FN`
   - [ ] 1.329.1.2 `execv_script()` · `TODO-FN`
   - [ ] 1.329.1.3 `main()` · `TODO-FN`

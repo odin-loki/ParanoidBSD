@@ -101,7 +101,20 @@ execv_script(const char *interpreter, char * const *argv)
 	int rc;
 
 	script = argv[0];
-	if (veriexec_check_path(script) == 0) {
+	/*
+	 * PBSD: keep the check's own verdict in rc rather than
+	 * discarding it.  rc was assigned only inside this `if' and
+	 * inside `if (interpreter)' below, so a script veriexec refuses
+	 * for which no interpreter is found -- or one refused while
+	 * GBL_VERIEXEC is not set -- reached `return (rc)' with rc
+	 * never written.  A garbage non-zero reads as some errno; a
+	 * garbage ZERO reads as SUCCESS, which here means "the script
+	 * was executed" when verification refused it and nothing ran.
+	 * veriexec_check_path() already computed the reason (EAUTH for
+	 * an unverified path, veriexec_check.c:54), so return that.
+	 */
+	rc = veriexec_check_path(script);
+	if (rc == 0) {
 		rc = execv(script, argv);
 	}
 	/* still here? we might be allowed to run via interpreter */
