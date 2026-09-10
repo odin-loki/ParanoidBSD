@@ -54,8 +54,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
-| 4 | `sbin` | 533 | 228,524 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,272 | 4,186 |
+| 4 | `sbin` | 533 | 228,544 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,366 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,477 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,372** | **114,205** |
+| | **total** | **41,143** | **21,300,486** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -18673,7 +18673,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.52.6.2 `ipfw_main()` · `TODO-FN`
   - [ ] 4.52.6.3 `ipfw_readfile()` · `TODO-FN`
   - [ ] 4.52.6.4 `main()` · `TODO-FN`
-- [ ] **4.52.7** `nat.c` · 1,209L · `TODO-PORT` · 21 fn
+- [ ] **4.52.7** `nat.c` · 1,219L · `TODO-PORT` · 21 fn
   - [ ] 4.52.7.1 `set_addr_dynamic()` · `TODO-FN`
   - [ ] 4.52.7.2 `StrToAddr()` · `TODO-FN`
   - [ ] 4.52.7.3 `StrToPortRange()` · `TODO-FN`
@@ -19018,7 +19018,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **4.71.1** `icmp.c` · 125L · `TODO-PORT` · 1 fn
   - [ ] 4.71.1.1 `SendNeedFragIcmp()` · `TODO-FN`
-- [ ] **4.71.2** `natd.c` · 2,058L · `TODO-PORT` · 30 fn
+- [ ] **4.71.2** `natd.c` · 2,068L · `TODO-PORT` · 30 fn
   - [ ] 4.71.2.1 `SetAliasAddressFromIfName()` · `TODO-FN`
   - [ ] 4.71.2.2 `SetupProtoRedirect()` · `TODO-FN`
   - [ ] 4.71.2.3 `StrToProto()` · `TODO-FN`
@@ -25650,20 +25650,21 @@ function; a file with two hundred of them is a project.
 
 ### 5.218 `usr.bin/ul`
 
-- [ ] **5.218.1** `ul.c` · 575L · `TODO-PORT` · 13 fn
+- [ ] **5.218.1** `ul.c` · 628L · `TODO-PORT` · 14 fn
   - [ ] 5.218.1.1 `main()` · `TODO-FN`
   - [ ] 5.218.1.2 `usage()` · `TODO-FN`
   - [ ] 5.218.1.3 `filter()` · `TODO-FN`
   - [ ] 5.218.1.4 `flushln()` · `TODO-FN`
-  - [ ] 5.218.1.5 `overstrike()` · `TODO-FN`
-  - [ ] 5.218.1.6 `iattr()` · `TODO-FN`
-  - [ ] 5.218.1.7 `initbuf()` · `TODO-FN`
-  - [ ] 5.218.1.8 `fwd()` · `TODO-FN`
-  - [ ] 5.218.1.9 `reverse()` · `TODO-FN`
-  - [ ] 5.218.1.10 `initcap()` · `TODO-FN`
-  - [ ] 5.218.1.11 `outchar()` · `TODO-FN`
-  - [ ] 5.218.1.12 `outc()` · `TODO-FN`
-  - [ ] 5.218.1.13 `setnewmode()` · `TODO-FN`
+  - [ ] 5.218.1.5 `linebuf()` · `TODO-FN`
+  - [ ] 5.218.1.6 `overstrike()` · `TODO-FN`
+  - [ ] 5.218.1.7 `iattr()` · `TODO-FN`
+  - [ ] 5.218.1.8 `initbuf()` · `TODO-FN`
+  - [ ] 5.218.1.9 `fwd()` · `TODO-FN`
+  - [ ] 5.218.1.10 `reverse()` · `TODO-FN`
+  - [ ] 5.218.1.11 `initcap()` · `TODO-FN`
+  - [ ] 5.218.1.12 `outchar()` · `TODO-FN`
+  - [ ] 5.218.1.13 `outc()` · `TODO-FN`
+  - [ ] 5.218.1.14 `setnewmode()` · `TODO-FN`
 
 ### 5.219 `usr.bin/uname`
 
@@ -25734,16 +25735,17 @@ function; a file with two hundred of them is a project.
 
 ### 5.224 `usr.bin/usbhidctl`
 
-- [ ] **5.224.1** `usbhid.c` · 533L · `TODO-PORT` · 9 fn
-  - [ ] 5.224.1.1 `parceargs()` · `TODO-FN`
-  - [ ] 5.224.1.2 `usage()` · `TODO-FN`
-  - [ ] 5.224.1.3 `dumpitem()` · `TODO-FN`
-  - [ ] 5.224.1.4 `hid_collection_type()` · `TODO-FN`
-  - [ ] 5.224.1.5 `dumpitems()` · `TODO-FN`
-  - [ ] 5.224.1.6 `prdata()` · `TODO-FN`
-  - [ ] 5.224.1.7 `dumpdata()` · `TODO-FN`
-  - [ ] 5.224.1.8 `writedata()` · `TODO-FN`
-  - [ ] 5.224.1.9 `main()` · `TODO-FN`
+- [ ] **5.224.1** `usbhid.c` · 574L · `TODO-PORT` · 10 fn
+  - [ ] 5.224.1.1 `colls_append()` · `TODO-FN`
+  - [ ] 5.224.1.2 `parceargs()` · `TODO-FN`
+  - [ ] 5.224.1.3 `usage()` · `TODO-FN`
+  - [ ] 5.224.1.4 `dumpitem()` · `TODO-FN`
+  - [ ] 5.224.1.5 `hid_collection_type()` · `TODO-FN`
+  - [ ] 5.224.1.6 `dumpitems()` · `TODO-FN`
+  - [ ] 5.224.1.7 `prdata()` · `TODO-FN`
+  - [ ] 5.224.1.8 `dumpdata()` · `TODO-FN`
+  - [ ] 5.224.1.9 `writedata()` · `TODO-FN`
+  - [ ] 5.224.1.10 `main()` · `TODO-FN`
 
 ### 5.225 `usr.bin/users`
 

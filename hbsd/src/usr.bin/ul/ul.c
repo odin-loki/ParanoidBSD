@@ -75,6 +75,19 @@ static int	halfpos;
 static int	upln;
 static int	iflag;
 
+/*
+ * PBSD: obuf grows by doubling as a line gets longer, so maxcol is
+ * bounded only by the length of the line.  overstrike() and iattr() each
+ * wrote maxcol + 1 wchar_t into a fixed `wchar_t lbuf[256]', so any line
+ * past 256 columns that carries a mode change -- `ul -i', or
+ * overstriking on a terminal that cannot underline -- ran off the end of
+ * a 1KB stack buffer.  One buffer for both, grown the way obuf is.
+ */
+static wchar_t	*lnbuf;
+static int	lnbuflen;
+
+static wchar_t *linebuf(void);
+
 static void usage(void) __dead2;
 static void setnewmode(int);
 static void initcap(void);
@@ -347,6 +360,26 @@ flushln(void)
 }
 
 /*
+ * Return a line buffer wide enough for maxcol columns plus the sentinel
+ * the trailing-blank trim writes one past them.
+ */
+static wchar_t *
+linebuf(void)
+{
+	wchar_t *nb;
+	int need = maxcol + 2;
+
+	if (lnbuflen < need) {
+		nb = reallocarray(lnbuf, need, sizeof(*lnbuf));
+		if (nb == NULL)
+			err(1, NULL);
+		lnbuf = nb;
+		lnbuflen = need;
+	}
+	return (lnbuf);
+}
+
+/*
  * For terminals that can overstrike, overstrike underlines and bolds.
  * We don't do anything with halfline ups and downs, or Greek.
  */
@@ -354,7 +387,7 @@ static void
 overstrike(void)
 {
 	int i;
-	wchar_t lbuf[256];
+	wchar_t *lbuf = linebuf();
 	wchar_t *cp = lbuf;
 	int hadbold=0;
 
@@ -376,8 +409,18 @@ overstrike(void)
 			break;
 		}
 	putwchar('\r');
-	for (*cp=' '; *cp==' '; cp--)
+	/*
+	 * PBSD: this zeroed the trailing run of blanks by walking back from
+	 * the sentinel, and tested *cp before checking it was still inside
+	 * the buffer -- so a line whose every column came out blank (all
+	 * ALTSET in overstrike(), which maps to a space, and hadmodes is
+	 * true for it) read and wrote lbuf[-1].
+	 */
+	for (*cp = ' '; *cp == ' '; cp--) {
 		*cp = 0;
+		if (cp == lbuf)
+			break;
+	}
 	for (cp=lbuf; *cp; cp++)
 		putwchar(*cp);
 	if (hadbold) {
@@ -394,7 +437,7 @@ static void
 iattr(void)
 {
 	int i;
-	wchar_t lbuf[256];
+	wchar_t *lbuf = linebuf();
 	wchar_t *cp = lbuf;
 
 	for (i=0; i<maxcol; i++)
@@ -407,8 +450,18 @@ iattr(void)
 		case BOLD:	*cp++ = '!'; break;
 		default:	*cp++ = 'X'; break;
 		}
-	for (*cp=' '; *cp==' '; cp--)
+	/*
+	 * PBSD: this zeroed the trailing run of blanks by walking back from
+	 * the sentinel, and tested *cp before checking it was still inside
+	 * the buffer -- so a line whose every column came out blank (all
+	 * ALTSET in overstrike(), which maps to a space, and hadmodes is
+	 * true for it) read and wrote lbuf[-1].
+	 */
+	for (*cp = ' '; *cp == ' '; cp--) {
 		*cp = 0;
+		if (cp == lbuf)
+			break;
+	}
 	for (cp=lbuf; *cp; cp++)
 		putwchar(*cp);
 	putwchar('\n');

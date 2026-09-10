@@ -18110,3 +18110,145 @@ nothing new appeared.
   walking, so it frees only that node and its children.  That unlink is
   itself conditional on finding the node in its sibling list, which the
   analyser cannot prove.
+
+## `ul(1)`: obuf grows, lbuf does not
+
+`usr.bin/ul/ul.c` keeps the current line in `obuf`, and `obuf` grows:
+
+```c
+	if (col == buflen) {
+		...
+		obuf = realloc(obuf, sizeof(*obuf) * 2 * buflen);
+		...
+		buflen *= 2;
+	}
+```
+
+starting from `MAXBUF` 512 and doubling for as long as the line runs.
+`maxcol` tracks the high-water column and so is bounded only by the
+length of the line.
+
+`overstrike()` and `iattr()` each walk `obuf[0 .. maxcol-1]` and write
+one `wchar_t` per column into
+
+```c
+	wchar_t lbuf[256];
+	wchar_t *cp = lbuf;
+```
+
+plus one more, a sentinel at `lbuf[maxcol]`.  256 is not 512 and it is
+certainly not "as long as the line".  A line past 256 columns that
+carries any mode change — `hadmodes` in `flushln()` — runs off the end
+of a 1KB stack buffer.  Both callers are reachable from ordinary use:
+`iattr()` on `ul -i`, `overstrike()` whenever the terminal cannot
+underline and `must_overstrike` is set.  The input is a text file.
+
+`lbuf` is now one buffer shared by both functions, grown on demand the
+way `obuf` itself is grown.
+
+### The same two functions walk off the front
+
+Both end the same way:
+
+```c
+	for (*cp=' '; *cp==' '; cp--)
+		*cp = 0;
+```
+
+which zeroes the trailing run of blanks by walking back from the
+sentinel — and tests `*cp` before checking `cp` is still inside `lbuf`.
+When every column comes out blank the walk passes `lbuf[0]` and reads
+`lbuf[-1]`; if the word before the buffer happens to hold a blank it
+writes a zero there and keeps going.  `overstrike()` reaches that: it
+maps `ALTSET`, `SUPERSC` and `SUBSC` to a space through its `default:`
+arm, while `flushln()`'s `hadmodes` counts a change to any of them, so a
+line entirely in shift-out mode arrives with `lbuf` all blanks.
+
+The loop now stops at `lbuf`.  A differential test of the old and new
+loops over thirteen line shapes, run with a guard cell in front so the
+old one's underrun is legal to observe, gives no difference inside the
+buffer and four writes to the guard cell from the old loop:
+
+```
+cases compared, mismatches=0, old-loop guard-cell writes=4
+```
+
+## `usbhidctl`: a 1000-byte stack buffer filled by the device
+
+`parceargs()` builds the dotted path of HID collections enclosing the
+current item:
+
+```c
+	char colls[1000];
+	...
+	cp = 0;
+	for (d = hid_start_parse(...); hid_get_item(d, &h); ) {
+		if (h.kind == hid_collection) {
+			cp += sprintf(&colls[cp], "%s%s:%s",
+			    cp != 0 ? "." : "",
+			    hid_usage_page(HID_PAGE(h.usage)),
+			    hid_usage_in_page(h.usage));
+		} else if ...
+```
+
+`sprintf`, not `snprintf`, with `cp` advanced by the return and never
+compared against `sizeof(colls)`.  The item stream comes from the report
+descriptor the USB device supplies, so the nesting depth — and the
+usage-page and usage strings at each level — are the device's to choose.
+Enough nested collections write past the end of a 1000-byte stack
+buffer.  The same loop appears twice in the function, once for `-a` and
+once per named variable.
+
+`colls` is also read before anything has written it.  Two lines below
+the loop head:
+
+```c
+	asprintf(&var->name, "%s%s%s:%s",
+	    colls, colls[0] != 0 ? "." : "", ...);
+```
+
+`colls[0]` is tested for every item, and `colls` is passed as a `%s`,
+but only a `hid_collection` item ever writes either.  A descriptor whose
+first item is an input, output or feature item prints uninitialised
+stack into the variable's name — which `usbhidctl` then prints — and
+reads past `colls` if none of the 1000 bytes is a NUL.
+
+Both loops now start with `colls[0] = '\0'`, and the append goes through
+a bounded helper that clamps `cp` to the buffer.
+
+## `StrToPortRange`: the accessor pair reads before it writes
+
+`sbin/ipfw/nat.c` and `sbin/natd/natd.c` carry the same function and the
+same macros:
+
+```c
+#define SETLOPORT(x,y)   ((x) = ((x) & 0x0000ffff) | ((y) << 0x10))
+#define SETNUMPORTS(x,y) ((x) = ((x) & 0xffff0000) | (y))
+```
+
+Each preserves the half of `x` it does not write.  Every path through
+`StrToPortRange()` calls `SETLOPORT(*portRange, ...)` first, so the
+first of the two reads the caller's uninitialised `port_range` — and
+`SETNUMPORTS` then overwrites exactly the half that was read.  The value
+is always discarded, so nothing observable comes of it on any real
+target; it is still an indeterminate read, and `*portRange = 0` at the
+top costs nothing.  Six findings, three in each copy.
+
+```
+                usr.bin/ul + usr.bin/usbhidctl + sbin/ipfw + sbin/natd
+                before  after
+OK                  15      15
+ERROR                0       0
+findings            29      19
+```
+
+Thirteen findings went and three appeared: `nat.c:1049`/`1054` and
+`natd.c:2016` are the same three findings ten lines further down, which
+is the length of the comment and statement inserted above them.  Ten
+real.
+
+Read and not defects in the same scope: `nat_show_data()` at
+`nat.c:1059`/`1064` reports `oh + 1` on a garbage `oh`, where
+`nat_get_cmd()` sets `*ooh` on its only `return (0)` — but does it
+inside a `for (;;)` with a `continue`, which the analyser will not
+unroll.

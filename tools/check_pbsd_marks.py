@@ -4110,19 +4110,74 @@ FIXES = {
         "after mlx_releasecmd(), on a path where mc can be NULL",
     ),
 
-    "hbsd/src/sbin/ipfw/nat.c": (
-        'if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)',
-        'sscanf (str, "%hu-%hu", &loPort, &hiPort);\n\tSETLOPORT',
-        "StrToPortRange: the sscanf() return was ignored, so a port "
-        "range the shell handed it that is not two numbers around a '-' "
-        "installed a NAT redirect over stack contents",
-    ),
+    "hbsd/src/sbin/ipfw/nat.c": [
+        (
+            'if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)',
+            'sscanf (str, "%hu-%hu", &loPort, &hiPort);\n\tSETLOPORT',
+            "StrToPortRange: the sscanf() return was ignored, so a port "
+            "range the shell handed it that is not two numbers around a '-' "
+            "installed a NAT redirect over stack contents",
+        ),
+        (
+            "\t*portRange = 0;",
+            "\tu_short\t hiPort;\n\n\t/* First see if this is a service",
+            "StrToPortRange: SETLOPORT and SETNUMPORTS each preserve the "
+            "half of *portRange they do not write, so the first of the two "
+            "reads the caller's uninitialised port_range",
+        ),
+    ],
 
-    "hbsd/src/sbin/natd/natd.c": (
-        'if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)',
-        'sscanf (str, "%hu-%hu", &loPort, &hiPort);\n\tSETLOPORT',
-        "StrToPortRange: natd's copy of the same ignored sscanf()",
-    ),
+    "hbsd/src/sbin/natd/natd.c": [
+        (
+            'if (sscanf (str, "%hu-%hu", &loPort, &hiPort) != 2)',
+            'sscanf (str, "%hu-%hu", &loPort, &hiPort);\n\tSETLOPORT',
+            "StrToPortRange: natd's copy of the same ignored sscanf()",
+        ),
+        (
+            "\t*portRange = 0;",
+            "u_short         hiPort;\n\t\n\t/* First see if this is a service",
+            "StrToPortRange: natd's copy of the same indeterminate read of "
+            "*portRange",
+        ),
+    ],
+
+    "hbsd/src/usr.bin/ul/ul.c": [
+        (
+            "static wchar_t	*lnbuf;",
+            "\twchar_t lbuf[256];",
+            "overstrike() and iattr() each wrote maxcol + 1 wchar_t into a "
+            "fixed wchar_t lbuf[256] while obuf, which maxcol indexes, "
+            "grows by doubling -- so any line past 256 columns carrying a "
+            "mode change ran off the end of a 1KB stack buffer",
+        ),
+        (
+            ("\t\tif (cp == lbuf)\n\t\t\tbreak;", 2),
+            "\tfor (*cp=' '; *cp==' '; cp--)\n\t\t*cp = 0;",
+            "the trailing-blank trim walked back from the sentinel testing "
+            "*cp before checking it was still inside lbuf, so a line whose "
+            "every column came out blank read and wrote lbuf[-1]",
+        ),
+    ],
+
+    "hbsd/src/usr.bin/usbhidctl/usbhid.c": [
+        (
+            ("cp = colls_append(colls, sizeof(colls), cp,", 2),
+            "cp += sprintf(&colls[cp],",
+            "parceargs() filled colls[1000] with an unbounded sprintf() "
+            "from a report descriptor the USB device supplies, advancing "
+            "cp by the return, so enough nested collections wrote past a "
+            "stack buffer",
+        ),
+        (
+            ("colls[0] = '\\0';", 2),
+            "\t\tcp = 0;\n\t\tfor (d = hid_start_parse(r,",
+            "colls[] is handed to asprintf() as a %s and tested at "
+            "colls[0] for every item, but only a hid_collection item ever "
+            "writes it -- a descriptor whose first item is an input, "
+            "output or feature item printed uninitialised stack into the "
+            "variable's name",
+        ),
+    ],
 
     "hbsd/src/usr.sbin/bhyve/pci_virtio_console.c": (
         "int i, ret = 1;",

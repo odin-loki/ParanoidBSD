@@ -1907,6 +1907,16 @@ int StrToPortRange (const char* str, const char* proto, port_range *portRange)
 	u_short         loPort;
 	u_short         hiPort;
 	
+	/*
+	 * PBSD: SETLOPORT and SETNUMPORTS each preserve the half of
+	 * *portRange they do not write, so the first of the two reads the
+	 * caller's uninitialised port_range before the second overwrites
+	 * what it read.  Every path below sets both halves, so the value
+	 * read is always discarded -- but it is still an indeterminate
+	 * read, and starting from a defined value costs nothing.
+	 */
+	*portRange = 0;
+
 	/* First see if this is a service, return corresponding port if so. */
 	sp = getservbyname (str,proto);
 	if (sp) {

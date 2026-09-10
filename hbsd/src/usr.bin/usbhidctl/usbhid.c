@@ -64,6 +64,31 @@ static void prdata(u_char *buf, struct hid_item *h);
 static void dumpdata(int f, report_desc_t r, int loop);
 static void writedata(int f, report_desc_t r);
 
+/*
+ * PBSD: colls[] accumulates the names of the collections enclosing the
+ * current item.  It was filled by sprintf() with no bound, from a report
+ * descriptor the device supplies, and cp was advanced by the return --
+ * so a descriptor with enough nested collections wrote past a 1000-byte
+ * stack buffer.  Append with a bound instead, and report the truncation
+ * to the caller so its cp stays inside colls[].
+ */
+static int
+colls_append(char *colls, size_t size, int cp, const char *page,
+    const char *usage)
+{
+	int n;
+
+	if (cp < 0 || (size_t)cp >= size)
+		return (cp);
+	n = snprintf(colls + cp, size - cp, "%s%s:%s",
+	    cp != 0 ? "." : "", page, usage);
+	if (n < 0)
+		return (cp);
+	if ((size_t)n >= size - cp)
+		n = (int)(size - cp) - 1;
+	return (cp + n);
+}
+
 static void
 parceargs(report_desc_t r, int all, int nnames, char **names)
 {
@@ -78,13 +103,21 @@ parceargs(report_desc_t r, int all, int nnames, char **names)
 	if (all) {
 		if (wflag)
 			errx(1, "Must not specify -w to read variables");
+		/*
+		 * PBSD: colls[] is handed to asprintf()/snprintf() as a %s
+		 * and tested at colls[0] for every item, but only a
+		 * hid_collection item ever writes it -- a descriptor whose
+		 * first item is an input, output or feature item printed
+		 * uninitialised stack into the variable's name, and read
+		 * past colls[] if none of the 1000 bytes was a NUL.
+		 */
 		cp = 0;
+		colls[0] = '\0';
 		for (d = hid_start_parse(r,
 		    1<<hid_input | 1<<hid_output | 1<<hid_feature, -1);
 		    hid_get_item(d, &h); ) {
 			if (h.kind == hid_collection) {
-				cp += sprintf(&colls[cp], "%s%s:%s",
-				    cp != 0 ? "." : "",
+				cp = colls_append(colls, sizeof(colls), cp,
 				    hid_usage_page(HID_PAGE(h.usage)),
 				    hid_usage_in_page(h.usage));
 			} else if (h.kind == hid_endcollection) {
@@ -132,13 +165,21 @@ parceargs(report_desc_t r, int all, int nnames, char **names)
 		pnext = &var->next;
 
 		instance = 0;
+		/*
+		 * PBSD: colls[] is handed to asprintf()/snprintf() as a %s
+		 * and tested at colls[0] for every item, but only a
+		 * hid_collection item ever writes it -- a descriptor whose
+		 * first item is an input, output or feature item printed
+		 * uninitialised stack into the variable's name, and read
+		 * past colls[] if none of the 1000 bytes was a NUL.
+		 */
 		cp = 0;
+		colls[0] = '\0';
 		for (d = hid_start_parse(r,
 		    1<<hid_input | 1<<hid_output | 1<<hid_feature, -1);
 		    hid_get_item(d, &h); ) {
 			if (h.kind == hid_collection) {
-				cp += sprintf(&colls[cp], "%s%s:%s",
-				    cp != 0 ? "." : "",
+				cp = colls_append(colls, sizeof(colls), cp,
 				    hid_usage_page(HID_PAGE(h.usage)),
 				    hid_usage_in_page(h.usage));
 			} else if (h.kind == hid_endcollection) {
