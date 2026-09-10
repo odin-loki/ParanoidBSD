@@ -700,8 +700,13 @@ verify_pubsignature(int fd_pkg, int fd_sig, struct repository *r)
 	}
 
 	/* Verify the signature. */
-	printf("Verifying signature with public key %s.a.. ", r->pubkey);
-	if (pkgsign_verify_data(sctx, data, datasz, r->pubkey, NULL, 0, pk->sig,
+	/*
+	 * PBSD: pubkey, not r->pubkey.  r is NULL on the bootstrap path
+	 * (verify_pubsignature(fd_pkg, fd_sig, NULL)), which is exactly why
+	 * the block above computed pubkey from CONFIG_PUBKEY instead.
+	 */
+	printf("Verifying signature with public key %s.a.. ", pubkey);
+	if (pkgsign_verify_data(sctx, data, datasz, pubkey, NULL, 0, pk->sig,
 	    pk->siglen) == false) {
 		fprintf(stderr, "Signature is not valid\n");
 		goto cleanup;

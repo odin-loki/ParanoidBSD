@@ -179,6 +179,7 @@ def definitions(lines):
 
 
 RETURN_RE = re.compile(r"\breturn\b")
+VA_END_RE = re.compile(r"va_end\s*\(")
 
 CTRL_RE = re.compile(r"^(?:if|for|while|switch|do|else|return|goto|case|default)\b")
 
@@ -200,7 +201,7 @@ def last_call(lines, body_start, end):
     """
     depth = 0
     cur = []
-    last = None
+    stmts = []
     for k in range(body_start + 1, end):
         s = lines[k]
         # A preprocessor line is not part of any statement.  chat(1)'s
@@ -217,9 +218,26 @@ def last_call(lines, body_start, end):
         depth += s.count("{") - s.count("}")
         joined = " ".join(x.strip() for x in cur).strip()
         if depth <= 0 and (joined.endswith(";") or joined.endswith("}")):
-            last = joined
+            stmts.append(joined)
             cur = []
             depth = 0
+    # A varargs wrapper cleans up after the call that does not return.
+    # efivar(8)'s rep_err() is
+    #
+    #     if (quiet)
+    #             exit(eval);
+    #     va_start(ap, fmt);
+    #     verr(eval, fmt, ap);
+    #     va_end(ap);
+    #
+    # and reading only the last statement saw va_end() -- a call that
+    # does return -- so rep_err() and rep_errx() were never reported,
+    # and breakdown_name() walked out of `rep_errx(1, ...)' and back to
+    # `*cp = NUL' with cp still NULL.  va_end() after a call that does
+    # not return is unreachable; drop it and look at what precedes it.
+    while stmts and VA_END_RE.match(stmts[-1]):
+        stmts.pop()
+    last = stmts[-1] if stmts else None
     if last is None or not last.endswith(";") or CTRL_RE.match(last):
         return None
     # A `return' anywhere in the body means the function has a path back

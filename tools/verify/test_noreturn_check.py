@@ -53,6 +53,12 @@ class NoreturnCheck(unittest.TestCase):
     def test_reports_past_a_preprocessor_line(self):
         self.assertIn("report_after_endif", self.names)
 
+    def test_reports_past_a_trailing_va_end(self):
+        self.assertIn("report_va_end", self.names)
+
+    def test_quiet_when_the_call_before_va_end_returns(self):
+        self.assertNotIn("quiet_va_end", self.names)
+
 
 if __name__ == "__main__":
     unittest.main()

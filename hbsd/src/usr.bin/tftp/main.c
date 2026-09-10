@@ -316,7 +316,13 @@ setpeer0(char *host, const char *lport)
 		break;
 	}
 
-	if (peer < 0)
+	/*
+	 * PBSD: res, not peer.  peer is a file-scope int -- zero, not -1,
+	 * before the first connection -- and the addrlen arm of the loop
+	 * above `continue's without touching it, so exhausting res0 could
+	 * leave peer >= 0 and send the else arm through a NULL res.
+	 */
+	if (res == NULL || peer < 0)
 		warn("%s", cause);
 	else {
 		/* res->ai_addr <= sizeof(peeraddr) is guaranteed */

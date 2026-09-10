@@ -74,7 +74,7 @@ static char *varname;
 static char *fromfile;
 static u_long attrib = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS;
 
-static void
+static void __dead2
 usage(void)
 {
 
@@ -86,7 +86,7 @@ usage(void)
 	    "\tname[=value]");
 }
 
-static void
+static void __dead2
 rep_err(int eval, const char *fmt, ...)
 {
 	va_list ap;
@@ -99,7 +99,7 @@ rep_err(int eval, const char *fmt, ...)
 	va_end(ap);
 }
 
-static void
+static void __dead2
 rep_errx(int eval, const char *fmt, ...)
 {
 	va_list ap;

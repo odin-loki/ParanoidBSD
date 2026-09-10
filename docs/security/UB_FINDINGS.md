@@ -19497,3 +19497,132 @@ whatever it was — which, for the analyser, includes NULL.  The invariant
 is real (`msglen` is only ever raised in the same statement that
 assigns `msg`) and it is one the analyser cannot carry across calls.
 The declarations stay because they are true, not because they paid.
+
+## pkg(8): the bootstrap signature is checked against a pointer that is NULL
+
+`verify_pubsignature()` takes the repository it is verifying for, and
+starts by working out which public key to use:
+
+```c
+	const char *pubkey;
+	...
+	if (r != NULL) {
+		if (r->pubkey == NULL) {
+			warnx("No CONFIG_PUBKEY defined for %s", r->name);
+			goto cleanup;
+		}
+		pubkey = r->pubkey;
+	} else {
+		if (config_string(PUBKEY, &pubkey) != 0) {
+			warnx("No CONFIG_PUBKEY defined");
+			goto cleanup;
+		}
+	}
+```
+
+The whole point of the `else` arm is that `r` may be NULL — and it is:
+the bootstrap path calls `verify_pubsignature(fd_pkg, fd_sig, NULL)`.
+Two hundred lines of the function later, the verification itself did
+not use the local it had just gone to that trouble to compute:
+
+```c
+	printf("Verifying signature with public key %s.a.. ", r->pubkey);
+	if (pkgsign_verify_data(sctx, data, datasz, r->pubkey, NULL, 0,
+	    pk->sig, pk->siglen) == false) {
+```
+
+So `pkg bootstrap` against a repository configured with
+`SIGNATURE_TYPE: PUBKEY` dereferences NULL where it means to check a
+signature.  `pubkey` was written and never read, which is why no
+warning fired.  Both sites now use it.
+
+## tftp(1): the loop's exhaustion is tested through a variable the loop need not set
+
+`setpeer0()` walks `getaddrinfo()`'s result list and breaks on the first
+address it can bind:
+
+```c
+	for (res = res0; res; res = res->ai_next) {
+		if (res->ai_addrlen > sizeof(peeraddr))
+			continue;
+		peer = socket(res->ai_family, res->ai_socktype,
+		    res->ai_protocol);
+		if (peer < 0) { cause = "socket"; continue; }
+		...
+		break;
+	}
+
+	if (peer < 0)
+		warn("%s", cause);
+	else {
+		memcpy(&peer_sock, res->ai_addr, res->ai_addrlen);
+```
+
+The `else` arm reads `res`, so it needs the loop to have `break`ed —
+but what it tests is `peer`.  `peer` is `static int peer;`, which is
+**zero**, not `-1`, before the first connection, and the first arm of
+the loop `continue`s without touching it.  Run off the end of `res0`
+without ever reaching the `socket()` call and `peer` is still `>= 0`:
+the `else` arm then reads `res->ai_addr` through a NULL `res` and hands
+`memcpy` a length from the same place.
+
+Reaching it needs every address in the list to have an `ai_addrlen`
+larger than a `sockaddr_storage`, which today's `getaddrinfo()` will not
+produce.  The defect is the test, not the arithmetic: `res == NULL ||
+peer < 0` is what the `else` arm actually requires, and it costs
+nothing.
+
+## efivar(8): two more helpers that end in `err()`, and a gap in the lint
+
+`breakdown_name()` splits a `guid-name` string from right to left:
+
+```c
+	cp = strrchr(name, '-');
+	if (cp == NULL) {
+		if (ocp != NULL)
+			*ocp = '-';
+		rep_errx(1, "Invalid guid in: %s", name);
+	}
+	if (ocp != NULL)
+		*ocp = '-';
+	*vname = cp + 1;
+	*cp = '\0';
+```
+
+`rep_errx()` does not return — it is `if (quiet) exit(eval);` and then
+`verrx()` — but it was declared `static void`, so the analyser walked
+out of the `cp == NULL` arm and into `*cp = '\0'`.  `rep_err()`,
+`rep_errx()` and `usage()` are all `__dead2` now.
+
+`tools/verify/noreturn_check.py` had not reported them, and the reason
+is worth keeping.  Both wrappers are varargs:
+
+```c
+	va_start(ap, fmt);
+	verr(eval, fmt, ap);
+	va_end(ap);
+```
+
+The lint looks at the body's last top-level statement, and that is
+`va_end(ap)` — a call that does return.  `va_end()` after a call that
+does not return is unreachable, so the lint now drops trailing
+`va_end()` statements before deciding.  Two fixtures went in with it:
+`report_va_end` (the shape above) and `quiet_va_end`, where the call
+before the `va_end()` is `vwarn()` and does come back.
+
+### And a correction to the ipfw floor
+
+The `sz < sizeof(req)` check committed with the previous batch was
+written as a refusal (`return;` / `return (EINVAL);`).  That is wrong
+for `ipfw -n`: `do_get3()` answers `test_only` by returning 0 without
+touching `req` at all, so `req.size` is legitimately zero there, and
+refusing turned `ipfw -n internal iflist` from "print an empty list"
+into `err(EX_OSERR, ...)`.  Both sites now clamp instead —
+`if (sz < sizeof(req)) sz = sizeof(req);` — which removes the
+zero-sized allocation and leaves `-n` printing exactly what it printed
+before.
+
+Measured over `sbin/ipfw`, `usr.bin/tftp`, `usr.sbin/pkg` and
+`usr.sbin/efivar`: 17 → 14, twenty-one translation units OK and no
+ERROR either side.  The three that closed are `tftp`'s `setpeer0()`,
+`pkg`'s `verify_pubsignature()` and `efivar`'s `breakdown_name()`.

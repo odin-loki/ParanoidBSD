@@ -103,3 +103,25 @@ void report_after_endif(int status)
 
 	exit(status);
 }
+
+/* REPORT: a varargs wrapper that cleans up after the call that does not
+ * return -- efivar(8)'s rep_err().  va_end() is unreachable, so the last
+ * statement that decides anything is verr(). */
+void report_va_end(int eval, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	verr(eval, fmt, ap);
+	va_end(ap);
+}
+
+/* QUIET: the same shape, but the call before va_end() does return. */
+void quiet_va_end(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vwarn(fmt, ap);
+	va_end(ap);
+}

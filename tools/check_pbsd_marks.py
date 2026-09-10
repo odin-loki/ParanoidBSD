@@ -4326,13 +4326,26 @@ FIXES = {
         "was built from the wrong one",
     ),
 
-    "hbsd/src/usr.bin/tftp/main.c": (
-        "if (line == NULL || (size_t)len >= sz) {",
-        "if ((size_t)len >= sz)\n\t\t\t\tline = realloc(line, sz = len + 1);",
-        "command() assigned realloc()'s result back over the only pointer "
-        "to the old buffer and copied into it unchecked, updating sz "
-        "inside the call so it described a buffer that did not exist",
-    ),
+    "hbsd/src/usr.bin/tftp/main.c": [
+        (
+            "if (line == NULL || (size_t)len >= sz) {",
+            "if ((size_t)len >= sz)\n\t\t\t\tline = realloc(line, sz = "
+            "len + 1);",
+            "command() assigned realloc()'s result back over the only "
+            "pointer to the old buffer and copied into it unchecked, "
+            "updating sz inside the call so it described a buffer that "
+            "did not exist",
+        ),
+        (
+            "if (res == NULL || peer < 0)",
+            None,
+            "setpeer0() tested the getaddrinfo loop's exhaustion through "
+            "peer, a file-scope int that starts at zero rather than -1 "
+            "and that the addrlen arm of the loop `continue's without "
+            "touching -- so running off the end of res0 could take the "
+            "else arm with res NULL",
+        ),
+    ],
 
     "hbsd/src/usr.sbin/route6d/route6d.c": [
         (
@@ -4840,7 +4853,7 @@ FIXES = {
 
     "hbsd/src/sbin/ipfw/ipfw2.c": [
         (
-            "if (sz < sizeof(req))\n\t\treturn;",
+            "if (sz < sizeof(req))\n\t\tsz = sizeof(req);",
             None,
             "ipfw_list_objects: req.size is filled in by the kernel and was "
             "used as the calloc() size with no floor, so a zero or short "
@@ -4848,7 +4861,7 @@ FIXES = {
             "through",
         ),
         (
-            "if (sz < sizeof(req))\n\t\treturn (EINVAL);",
+            ("if (sz < sizeof(req))\n\t\tsz = sizeof(req);", 2),
             None,
             "ipfw_get_tracked_ifaces: the same unfloored kernel-supplied "
             "size, four hundred lines further down the same file",
@@ -4914,6 +4927,36 @@ FIXES = {
             ('syslog(LOG_ERR, "Can\'t add group %s\\n",\n\t\t\t    nid.nid_name);', 2),
             'Can\'t add group %s\\n",\n\t\t\t    grp->gr_name);',
             "the same on the gid and group-name arms",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/pkg/pkg.c": (
+        "pkgsign_verify_data(sctx, data, datasz, pubkey, NULL, 0, pk->sig,",
+        "pkgsign_verify_data(sctx, data, datasz, r->pubkey, NULL, 0, "
+        "pk->sig,",
+        "verify_pubsignature() computes a local pubkey precisely because "
+        "r is NULL on the bootstrap path, and then verified against "
+        "r->pubkey -- so a PUBKEY-signed bootstrap dereferenced NULL "
+        "instead of checking the signature",
+    ),
+
+    "hbsd/src/usr.sbin/efivar/efivar.c": [
+        (
+            "static void __dead2\nrep_err(int eval, const char *fmt, ...)",
+            None,
+            "rep_err() either exit()s or calls verr(); breakdown_name() "
+            "walked out of its rep_errx() and back to `*cp = NUL' with cp "
+            "still NULL",
+        ),
+        (
+            "static void __dead2\nrep_errx(int eval, const char *fmt, ...)",
+            None,
+            "the same for rep_errx()",
+        ),
+        (
+            "static void __dead2\nusage(void)",
+            None,
+            "usage() ends in errx()",
         ),
     ],
 

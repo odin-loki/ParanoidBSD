@@ -54,9 +54,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
-| 4 | `sbin` | 533 | 228,599 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,435 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,617 | 9,020 |
+| 4 | `sbin` | 533 | 228,601 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,441 | 4,188 |
+| 6 | `usr.sbin` | 1,142 | 657,622 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,753** | **114,207** |
+| | **total** | **41,143** | **21,300,766** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -168,7 +168,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 4.38.16 | `sbin/ifconfig/ifieee80211.c` | 6,403 | 0 | `TODO-PORT` |
 | 8.615.46 | `sys/dev/ath/if_ath_tx.c` | 6,395 | 0 | `TODO-PORT` |
 | 8.960.7 | `sys/dev/qlnx/qlnxr/qlnxr_verbs.c` | 6,391 | 0 | `TODO-PORT` |
-| 4.52.3 | `sbin/ipfw/ipfw2.c` | 6,380 | 0 | `TODO-PORT` |
+| 4.52.3 | `sbin/ipfw/ipfw2.c` | 6,382 | 0 | `TODO-PORT` |
 | 8.74.20 | `sys/cam/scsi/scsi_sa.c` | 6,377 | 0 | `TODO-PORT` |
 | 8.1191.113 | `sys/kern/subr_bus.c` | 6,373 | 0 | `TODO-PORT` |
 | 8.1016.1 | `sys/dev/sound/usb/uaudio.c` | 6,265 | 0 | `TODO-PORT` |
@@ -18652,7 +18652,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.52.2.21 `dummynet_flush()` · `TODO-FN`
   - [ ] 4.52.2.22 `parse_range()` · `TODO-FN`
   - [ ] 4.52.2.23 `dummynet_list()` · `TODO-FN`
-- [ ] **4.52.3** `ipfw2.c` · 6,380L · `TODO-PORT`
+- [ ] **4.52.3** `ipfw2.c` · 6,382L · `TODO-PORT`
 - [ ] **4.52.4** `ipfw2.h` · 471L · `TODO-HDR`
 - [ ] **4.52.5** `ipv6.c` · 523L · `TODO-PORT` · 13 fn
   - [ ] 4.52.5.1 `get_unreach6_code()` · `TODO-FN`
@@ -25125,7 +25125,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.206 `usr.bin/tftp`
 
-- [ ] **5.206.1** `main.c` · 1,091L · `TODO-PORT` · 31 fn
+- [ ] **5.206.1** `main.c` · 1,097L · `TODO-PORT` · 31 fn
   - [ ] 5.206.1.1 `main()` · `TODO-FN`
   - [ ] 5.206.1.2 `urihandling()` · `TODO-FN`
   - [ ] 5.206.1.3 `setpeer0()` · `TODO-FN`
@@ -33335,7 +33335,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.169.6.1 `sha256_buf()` · `TODO-FN`
   - [ ] 6.169.6.2 `sha256_fd()` · `TODO-FN`
 - [ ] **6.169.7** `hash.h` · 33L · `TODO-HDR`
-- [ ] **6.169.8** `pkg.c` · 1,265L gen:1 · `TODO-PORT` · 21 fn
+- [ ] **6.169.8** `pkg.c` · 1,270L gen:1 · `TODO-PORT` · 21 fn
   - [ ] 6.169.8.1 `pkgsign_new()` · `TODO-FN`
   - [ ] 6.169.8.2 `pkgsign_verify_cert()` · `TODO-FN`
   - [ ] 6.169.8.3 `pkgsign_verify_data()` · `TODO-FN`

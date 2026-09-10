@@ -6108,11 +6108,13 @@ ipfw_list_objects(int ac __unused, char *av[] __unused)
 	 * PBSD: req.size is filled in by the kernel.  A zero or short value
 	 * left calloc() with a zero-sized allocation that olh->size then
 	 * wrote through.  The kernel never reports less than the header it
-	 * is describing, so refuse anything that does.
+	 * is describing; clamp rather than refuse, so that `ipfw -n', whose
+	 * do_get3() answers without touching req at all, still sees the
+	 * empty list it always saw.
 	 */
 	sz = req.size;
 	if (sz < sizeof(req))
-		return;
+		sz = sizeof(req);
 	if ((olh = calloc(1, sz)) == NULL)
 		return;
 
@@ -6320,7 +6322,7 @@ ipfw_get_tracked_ifaces(ipfw_obj_lheader **polh)
 	/* PBSD: see ipfw_list_objects() -- a short req.size is not usable. */
 	sz = req.size;
 	if (sz < sizeof(req))
-		return (EINVAL);
+		sz = sizeof(req);
 	if ((olh = calloc(1, sz)) == NULL)
 		return (ENOMEM);
 
