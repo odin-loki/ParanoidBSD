@@ -254,20 +254,48 @@ bhnd_pwrctl_clock_rate(uint32_t pll_type, uint32_t n, uint32_t m)
 
 		m3 = bhnd_pwrctl_factor6(m3);
 
-		switch (mc) {
-		case CHIPC_MC_BYPASS:	
-			return (clock);
-		case CHIPC_MC_M1:	
-			return (clock / m1);
-		case CHIPC_MC_M1M2:	
-			return (clock / (m1 * m2));
-		case CHIPC_MC_M1M2M3:
-			return (clock / (m1 * m2 * m3));
-		case CHIPC_MC_M1M3:
-			return (clock / (m1 * m3));
-		default:
-			printf("unsupported pwrctl mc %#x\n", mc);
-			return (0);
+		{
+			uint32_t div;
+
+			switch (mc) {
+			case CHIPC_MC_BYPASS:
+				return (clock);
+			case CHIPC_MC_M1:
+				div = m1;
+				break;
+			case CHIPC_MC_M1M2:
+				div = m1 * m2;
+				break;
+			case CHIPC_MC_M1M2M3:
+				div = m1 * m2 * m3;
+				break;
+			case CHIPC_MC_M1M3:
+				div = m1 * m3;
+				break;
+			default:
+				printf("unsupported pwrctl mc %#x\n", mc);
+				return (0);
+			}
+
+			/*
+			 * PBSD: refuse a zero divisor.
+			 *
+			 * bhnd_pwrctl_factor6() returns 0 for every encoding
+			 * outside its six-case table, and m1 and m3 come
+			 * straight through it from a chip register field --
+			 * so four of the five arms above divided by zero for
+			 * any chip whose PLL registers hold something the
+			 * table does not name.  Each arm now computes the
+			 * same product it used to divide by; the only new
+			 * behaviour is this refusal, which matches what the
+			 * default arm already does with an mc it cannot use.
+			 */
+			if (div == 0) {
+				printf("unsupported pwrctl factors "
+				    "m1=%#x m2=%#x m3=%#x\n", m1, m2, m3);
+				return (0);
+			}
+			return (clock / div);
 		}
 	case CHIPC_PLL_TYPE2:
 		m1 += CHIPC_T2_BIAS;
@@ -467,6 +495,16 @@ bhnd_pwrctl_fast_pwrup_delay(struct bhnd_pwrctl_softc *sc)
 	fpdelay = 0;
 
 	slowminfreq = bhnd_pwrctl_slowclk_freq(sc, false);
+
+	/*
+	 * PBSD: bhnd_pwrctl_slowclk_freq() returns 0 on two paths -- an
+	 * unknown device type and an unknown slow-clock source, both of
+	 * which it reports with a device_printf() -- and this was the
+	 * divisor.  fpdelay is already zero, which is the answer when
+	 * there is no clock to compute a delay against.
+	 */
+	if (slowminfreq == 0)
+		return (fpdelay);
 
 	pll_on_delay = bhnd_bus_read_4(sc->res, CHIPC_PLL_ON_DELAY) + 2;
 	pll_on_delay *= 1000000;

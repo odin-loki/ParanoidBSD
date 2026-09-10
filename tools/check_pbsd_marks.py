@@ -3592,6 +3592,50 @@ FIXES = {
         "fewer than three bytes left stat[1] and stat[2] uninitialised "
         "for the test",
     ),
+
+    "hbsd/src/sys/dev/gpio/gpioc.c": (
+        "\t\tfree(priv_link, M_GPIOC);\n\t\tmtx_unlock(&priv->mtx);\n\t\treturn (ENOMEM);",
+        "\tif (pin_link == NULL) {\n\t\tmtx_unlock(&priv->mtx);",
+        "gpioc_attach_priv_pin: a failed second allocation returned "
+        "ENOMEM without freeing the first, which nothing has taken yet",
+    ),
+    "hbsd/src/sys/dev/ntb/ntb_transport.c": (
+        "\t\t\tfree(nc, M_DEVBUF);\n\t\t\tbreak;",
+        "device_printf(dev, \"Can not add child.\\n\");\n\t\t\tbreak;",
+        "ntb_transport_attach: a failed device_add_child() broke out of "
+        "the loop without freeing nc, whose ivars are set on the next "
+        "line on the path where there is a child",
+    ),
+    "hbsd/src/sys/dev/sound/sndstat.c": (
+        "\t\t\tfree(ud, M_DEVBUF);\n\t\t\tsx_unlock(&pf->lock);",
+        "\t\tif (err) {\n\t\t\tsx_unlock(&pf->lock);\n\t\t\tgoto done;",
+        "sndstat_add_user_devs: a failed unpack left the userdev "
+        "allocation neither on the list nor freed, on an ioctl a user "
+        "drives with a malformed nvlist",
+    ),
+    "hbsd/src/sys/dev/nvmf/nvmf_transport.c": (
+        "\tstruct nvmf_qpair *qp = NULL;",
+        "\tstruct nvmf_transport *nt;\n\tstruct nvmf_qpair *qp;",
+        "nvmf_allocate_qpair: qp is written only by an iteration of the "
+        "SLIST_FOREACH, and nvmf_supported_trtype() only says the type "
+        "is in range -- not that a transport registered for it",
+    ),
+    "hbsd/src/sys/dev/bhnd/cores/chipc/pwrctl/bhnd_pwrctl_subr.c": [
+        (
+            "\t\t\tif (div == 0) {",
+            "\t\tcase CHIPC_MC_M1:\t\n\t\t\treturn (clock / m1);",
+            "bhnd_pwrctl_clock_rate: bhnd_pwrctl_factor6() returns 0 for "
+            "every encoding outside its six-case table, and four of the "
+            "five arms divided by it or by a product containing it",
+        ),
+        (
+            "\tif (slowminfreq == 0)\n\t\treturn (fpdelay);",
+            "\tslowminfreq = bhnd_pwrctl_slowclk_freq(sc, false);\n\n\tpll_on_delay",
+            "bhnd_pwrctl_fast_pwrup_delay: bhnd_pwrctl_slowclk_freq() "
+            "returns 0 on two paths it reports with a device_printf(), "
+            "and that was the divisor",
+        ),
+    ],
 }
 
 

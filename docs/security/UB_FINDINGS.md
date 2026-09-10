@@ -15422,3 +15422,70 @@ findings          18       7
 
 `if_em.c` and `psm.c` are clean; `fdc.c` keeps two, both
 `bus_space_read_*` out-parameters.
+
+### Four leaks and two divisors a chip register chooses
+
+Reading the dev shard's `unix.Malloc` (19), `unix.cstring.NullArg` (15)
+and the non-allwinner `core.DivideZero` (16) turned up six more.
+
+Three of the leaks are the same shape — a second allocation, or a second
+step, fails and the first is left neither owned nor freed:
+
+- `gpioc_attach_priv_pin()` returns ENOMEM from its second `malloc()`
+  without freeing the first, which is linked onto the two lists only
+  further down, once both have succeeded;
+- `ntb_transport_attach()` breaks out of its child loop when
+  `device_add_child()` returns NULL, one line before
+  `device_set_ivars()` would have handed the softc over;
+- `sndstat_add_user_devs()` `goto done`s when the unpack fails, with the
+  `struct sndstat_userdev` neither on the list nor freed. That one is an
+  ioctl a user drives with a malformed nvlist, so it repeats.
+  `sndstat_dsp_unpack_nvlist()` has exactly one failure return — an
+  `nvlist_clone()` — taken before it writes any of the struct's fields,
+  so a bare `free()` is right and freeing the members would not be.
+
+`nvmf_allocate_qpair()` declares `struct nvmf_qpair *qp;` and writes it
+only inside `SLIST_FOREACH`. `nvmf_supported_trtype()` above it only
+says the transport type is in range — not that any transport has
+registered for it — so with an empty list the `qp == NULL` test read an
+uninitialised local, and a garbage non-zero went on to
+`qp->nq_transport = nt` with `nt` NULL.
+
+The two divisors are both in Broadcom's power control:
+
+`bhnd_pwrctl_factor6()` maps a chip register field to a divisor through
+a six-case switch and returns **0** for everything else. Four of the
+five arms of `bhnd_pwrctl_clock_rate()`'s inner switch then divide by
+`m1`, or by a product containing it. Each arm now computes the same
+product into one variable and the division happens once, after a check
+that refuses zero the way the `default:` arm already refuses an `mc` it
+cannot use — the only new behaviour.
+
+`bhnd_pwrctl_slowclk_freq()` returns 0 on two paths it reports with a
+`device_printf()` — an unknown device type and an unknown slow-clock
+source — and `bhnd_pwrctl_fast_pwrup_delay()` used it as a divisor with
+no check. `fpdelay` is already 0 there, which is the answer when there is
+no clock to measure a delay against.
+
+```
+              before   after     (sys/dev/gpio, ntb, sound, nvmf, bhnd)
+OK               164     164
+findings          30      21
+```
+
+The rest of those three classes are premises the write-ups above have
+already named: ownership transfers into an RB tree or a list
+(`put_file_offset()`, `gntdev_map_grant_ref()`, `kbdmux_init()`'s three),
+`M_ZERO` the kernel `malloc()` model does not carry (`mp_ring_free()`
+walking a ring its allocator zeroed), and predicates tested twice across
+an intervening call — `mdstart_malloc()`'s five are all `notmapped` and
+`vlist`, tested where `dst` is set and again at each use, with the
+author's own explicit `dst = NULL` in the two branches that do not use
+it.
+
+One more, read and left alone: `scgetc()` in `syscons.c` does
+`(void)kbdd_ioctl(sc->kbd, KDGKBSTATE, (caddr_t)&f)` and then tests
+`f & SLKED`. The cast to void discards the one thing that says whether
+`f` was written. It is a keyboard LED state and the fix is a behaviour
+decision — what a scroll-lock key should do when the keyboard driver
+will not say — so it is on the record rather than changed.

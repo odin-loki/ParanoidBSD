@@ -465,6 +465,12 @@ ntb_transport_attach(device_t dev)
 		nc->dev = device_add_child(dev, name, DEVICE_UNIT_ANY);
 		if (nc->dev == NULL) {
 			device_printf(dev, "Can not add child.\n");
+			/*
+			 * PBSD: nothing has taken nc yet -- the child's
+			 * ivars are set on the next line, on the path where
+			 * there is a child.
+			 */
+			free(nc, M_DEVBUF);
 			break;
 		}
 		device_set_ivars(nc->dev, nc);

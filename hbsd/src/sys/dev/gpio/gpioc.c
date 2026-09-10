@@ -319,6 +319,12 @@ gpioc_attach_priv_pin(struct gpioc_cdevpriv *priv,
 	pin_link = malloc(sizeof(struct gpioc_pins), M_GPIOC,
 	    M_NOWAIT | M_ZERO);
 	if (pin_link == NULL) {
+		/*
+		 * PBSD: priv_link is the allocation just above and nothing
+		 * has taken it yet -- it is linked onto the two lists only
+		 * further down, once both allocations have succeeded.
+		 */
+		free(priv_link, M_GPIOC);
 		mtx_unlock(&priv->mtx);
 		return (ENOMEM);
 	}

@@ -1019,6 +1019,14 @@ sndstat_add_user_devs(struct sndstat_file *pf, void *nvlbuf, size_t nbytes)
 		    malloc(sizeof(*ud), M_DEVBUF, M_WAITOK);
 		err = sndstat_dsp_unpack_nvlist(dsps[i], ud);
 		if (err) {
+			/*
+			 * PBSD: ud is not on the list yet, and
+			 * sndstat_dsp_unpack_nvlist() has one failure
+			 * return -- the nvlist_clone() -- taken before it
+			 * writes any of ud's fields, so a bare free is
+			 * right and freeing the members would not be.
+			 */
+			free(ud, M_DEVBUF);
 			sx_unlock(&pf->lock);
 			goto done;
 		}

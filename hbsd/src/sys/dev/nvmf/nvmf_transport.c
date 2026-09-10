@@ -52,7 +52,15 @@ nvmf_allocate_qpair(enum nvmf_trtype trtype, bool controller,
     nvmf_capsule_receive_t *receive_cb, void *receive_cb_arg)
 {
 	struct nvmf_transport *nt;
-	struct nvmf_qpair *qp;
+	/*
+	 * PBSD: `= NULL'.  qp is written only by an iteration of the
+	 * SLIST_FOREACH below, and nvmf_supported_trtype() only says the
+	 * type is in range -- not that any transport has registered for
+	 * it.  With an empty list the `qp == NULL' test after the loop
+	 * read an uninitialised local, and a garbage non-zero went on to
+	 * `qp->nq_transport = nt' with nt NULL.
+	 */
+	struct nvmf_qpair *qp = NULL;
 
 	if (!nvmf_supported_trtype(trtype))
 		return (NULL);

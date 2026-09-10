@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,512 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,578 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,182** | **114,204** |
+| | **total** | **41,143** | **21,299,248** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -64026,7 +64026,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.641.1.10 `bhnd_pwrctl_request_clock()` · `TODO-FN`
 - [ ] **8.641.2** `bhnd_pwrctl.h` · 92L · `TODO-HDR`
 - [ ] **8.641.3** `bhnd_pwrctl_private.h` · 112L · `TODO-HDR`
-- [ ] **8.641.4** `bhnd_pwrctl_subr.c` · 564L · `TODO-PORT` · 12 fn
+- [ ] **8.641.4** `bhnd_pwrctl_subr.c` · 602L · `TODO-PORT` · 12 fn
   - [ ] 8.641.4.1 `bhnd_pwrctl_factor6()` · `TODO-FN`
   - [ ] 8.641.4.2 `bhnd_pwrctl_si_clkreg_m()` · `TODO-FN`
   - [ ] 8.641.4.3 `bhnd_pwrctl_si_clock_rate()` · `TODO-FN`
@@ -72614,7 +72614,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.727.8.54 `gpiobus_pin_setname()` · `TODO-FN`
 - [ ] **8.727.9** `gpiobus_internal.h` · 51L · `TODO-HDR`
 - [ ] **8.727.10** `gpiobusvar.h` · 177L gen:2 · `TODO-HDR`
-- [ ] **8.727.11** `gpioc.c` · 1,087L gen:2 · `TODO-PORT` · 22 fn
+- [ ] **8.727.11** `gpioc.c` · 1,093L gen:2 · `TODO-PORT` · 22 fn
   - [ ] 8.727.11.1 `next_head_event()` · `TODO-FN`
   - [ ] 8.727.11.2 `next_tail_event()` · `TODO-FN`
   - [ ] 8.727.11.3 `number_of_events()` · `TODO-FN`
@@ -88577,7 +88577,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.863.1.38 `ntb_db_set_mask()` · `TODO-FN`
   - [ ] 8.863.1.39 `ntb_peer_db_set()` · `TODO-FN`
 - [ ] **8.863.2** `ntb.h` · 455L gen:1 · `TODO-HDR`
-- [ ] **8.863.3** `ntb_transport.c` · 1,694L gen:8 · `TODO-PORT` · 45 fn
+- [ ] **8.863.3** `ntb_transport.c` · 1,700L gen:8 · `TODO-PORT` · 45 fn
   - [ ] 8.863.3.1 `iowrite32()` · `TODO-FN`
   - [ ] 8.863.3.2 `xeon_link_watchdog_hb()` · `TODO-FN`
   - [ ] 8.863.3.3 `ntb_transport_probe()` · `TODO-FN`
@@ -89375,7 +89375,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.873.3.55 `tcp_send_c2h_pdu()` · `TODO-FN`
   - [ ] 8.873.3.56 `tcp_send_controller_data()` · `TODO-FN`
 - [ ] **8.873.4** `nvmf_tcp.h` · 280L · `TODO-HDR`
-- [ ] **8.873.5** `nvmf_transport.c` · 437L gen:3 · `TODO-PORT` · 21 fn
+- [ ] **8.873.5** `nvmf_transport.c` · 445L gen:3 · `TODO-PORT` · 21 fn
   - [ ] 8.873.5.1 `nvmf_supported_trtype()` · `TODO-FN`
   - [ ] 8.873.5.2 `nvmf_allocate_qpair()` · `TODO-FN`
   - [ ] 8.873.5.3 `nvmf_free_qpair()` · `TODO-FN`
@@ -99992,7 +99992,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1008.2.18 `dummy_probe()` · `TODO-FN`
   - [ ] 8.1008.2.19 `dummy_attach()` · `TODO-FN`
   - [ ] 8.1008.2.20 `dummy_detach()` · `TODO-FN`
-- [ ] **8.1008.3** `sndstat.c` · 1,454L gen:3 · `TODO-PORT` · 28 fn
+- [ ] **8.1008.3** `sndstat.c` · 1,462L gen:3 · `TODO-PORT` · 28 fn
   - [ ] 8.1008.3.1 `sysctl_hw_sndverbose()` · `TODO-FN`
   - [ ] 8.1008.3.2 `sndstat_open()` · `TODO-FN`
   - [ ] 8.1008.3.3 `sndstat_remove_all_userdevs()` · `TODO-FN`
