@@ -822,6 +822,14 @@ mpssas_get_sas_address_for_sata_disk(struct mps_softc *sc,
 	u8 sas_status;
 
 	memset(&ata_identify, 0, sizeof(ata_identify));
+	/*
+	 * PBSD: mpssas_get_sata_identify() only writes *mpi_reply on the
+	 * success path, so every error return leaves this stack struct
+	 * unwritten and the IOCStatus/SASStatus read below -- which decides
+	 * whether to retry -- comes out of stack garbage.  The mpr copy of
+	 * this function already carries this memset; mps was never updated.
+	 */
+	memset(&mpi_reply, 0, sizeof(mpi_reply));
 	try_count = 0;
 	do {
 		rc = mpssas_get_sata_identify(sc, handle, &mpi_reply,
@@ -953,8 +961,17 @@ mpssas_get_sata_identify(struct mps_softc *sc, u16 handle,
 	/* mpssas_ata_id_timeout does not reset controller */
 	KASSERT(cm != NULL, ("%s: surprise command freed", __func__));
 
-	reply = (Mpi2SataPassthroughReply_t *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	/*
+	 * PBSD: KASSERT compiles to nothing without INVARIANTS, and
+	 * mps_wait_command() sets *cmp = NULL whenever MPR_FLAGS_REALLOCATED is
+	 * set -- a softc flag, so the comment's argument ("this handler
+	 * does not reset the controller") is about which handler ran and
+	 * not about what the flag says.  This is the guard the forty-two
+	 * mps_config.c sites already carry.
+	 */
+	if (cm != NULL)
+		reply = (Mpi2SataPassthroughReply_t *)cm->cm_reply;
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
  		/*
  		 * If the request returns an error then we need to do a diag
@@ -982,7 +999,16 @@ out:
 	 * it.  The command and buffer will be freed after we send a Target
 	 * Reset TM and the command comes back from the controller.
 	 */
-	if ((cm->cm_flags & MPS_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {
+	if (cm == NULL) {
+		/*
+		 * PBSD: mps_wait_command() cleared *cmp because a concurrent
+		 * reinit reallocated the whole command pool, so there is no
+		 * command left to free and cm->cm_flags cannot be read.  The
+		 * reinit never touches cm_data, so the buffer malloc()ed above
+		 * is still ours and would otherwise leak.
+		 */
+		free(buffer, M_MPT2);
+	} else if ((cm->cm_flags & MPS_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {
 		mps_free_command(sc, cm);
 		free(buffer, M_MPT2);
 	}

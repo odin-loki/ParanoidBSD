@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,218 | 81,387 |
+| 8 | `sys` | 14,951 | 10,498,276 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,967** | **114,204** |
+| | **total** | **41,143** | **21,300,025** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -40757,7 +40757,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.9 `sys/amd64/pci`
 
-- [ ] **8.9.1** `pci_cfgreg.c` · 388L asm gen:3 · `TODO-MD` · 13 fn
+- [ ] **8.9.1** `pci_cfgreg.c` · 401L asm gen:3 · `TODO-MD` · 13 fn
   - [ ] 8.9.1.1 `pci_cfgregopen()` · `TODO-FN`
   - [ ] 8.9.1.2 `pcie_lookup_region()` · `TODO-FN`
   - [ ] 8.9.1.3 `pci_docfgregread()` · `TODO-FN`
@@ -86514,7 +86514,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.842.7.47 `mprsas_check_id()` · `TODO-FN`
   - [ ] 8.842.7.48 `mprsas_realloc_targets()` · `TODO-FN`
 - [ ] **8.842.8** `mpr_sas.h` · 177L gen:1 · `TODO-HDR`
-- [ ] **8.842.9** `mpr_sas_lsi.c` · 1,696L · `TODO-PORT` · 14 fn
+- [ ] **8.842.9** `mpr_sas_lsi.c` · 1,715L · `TODO-PORT` · 14 fn
   - [ ] 8.842.9.1 `mprsas_evt_handler()` · `TODO-FN`
   - [ ] 8.842.9.2 `mprsas_fw_event_free()` · `TODO-FN`
   - [ ] 8.842.9.3 `mprsas_fw_work()` · `TODO-FN`
@@ -86779,7 +86779,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.844.7.44 `mpssas_check_id()` · `TODO-FN`
   - [ ] 8.844.7.45 `mpssas_realloc_targets()` · `TODO-FN`
 - [ ] **8.844.8** `mps_sas.h` · 171L gen:1 · `TODO-HDR`
-- [ ] **8.844.9** `mps_sas_lsi.c` · 1,331L · `TODO-PORT` · 13 fn
+- [ ] **8.844.9** `mps_sas_lsi.c` · 1,357L · `TODO-PORT` · 13 fn
   - [ ] 8.844.9.1 `mpssas_evt_handler()` · `TODO-FN`
   - [ ] 8.844.9.2 `mpssas_fw_event_free()` · `TODO-FN`
   - [ ] 8.844.9.3 `mpssas_fw_work()` · `TODO-FN`

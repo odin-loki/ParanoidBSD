@@ -71,6 +71,19 @@ int cfgmech = CFGMECH_1;
 
 static struct pcie_mcfg_region *mcfg_regions;
 static int mcfg_numregions;
+/*
+ * PBSD: the three `1 << slot' below are `1U << slot'.
+ *
+ * PCI_SLOTMAX is 31 (sys/dev/pci/pcireg.h:47) and pcie_init_badslots()
+ * walks slot 0..PCI_SLOTMAX, so `1 << 31' on a signed int is EXECUTED on
+ * every boot of a machine with PCIe -- device 31 is where the LPC bridge
+ * lives on Intel chipsets, so it is not a corner either.
+ *
+ * This is the same defect as sys/i386/pci/pci_cfgreg.c, which carries the
+ * long-form note. The analyser reported it there and not here because
+ * i386 is compiled as i386 while amd64 is compiled as x86-64; the shift
+ * is identical on both.
+ */
 static uint32_t pcie_badslots;
 static struct mtx pcicfg_mtx;
 MTX_SYSINIT(pcicfg_mtx, &pcicfg_mtx, "pcicfg_mtx", MTX_SPIN);
@@ -100,7 +113,7 @@ pcie_lookup_region(int domain, int bus)
 static uint32_t
 pci_docfgregread(int domain, int bus, int slot, int func, int reg, int bytes)
 {
-	if (domain == 0 && bus == 0 && (1 << slot & pcie_badslots) != 0)
+	if (domain == 0 && bus == 0 && (1U << slot & pcie_badslots) != 0)
 		return (pcireg_cfgread(bus, slot, func, reg, bytes));
 
 	if (cfgmech == CFGMECH_PCIE) {
@@ -151,7 +164,7 @@ void
 pci_cfgregwrite(int domain, int bus, int slot, int func, int reg, uint32_t data,
     int bytes)
 {
-	if (domain == 0 && bus == 0 && (1 << slot & pcie_badslots) != 0) {
+	if (domain == 0 && bus == 0 && (1U << slot & pcie_badslots) != 0) {
 		pcireg_cfgwrite(bus, slot, func, reg, data, bytes);
 		return;
 	}
@@ -272,7 +285,7 @@ pcie_init_badslots(struct pcie_mcfg_region *region)
 
 			val2 = pciereg_cfgread(region, 0, slot, 0, 0, 4);
 			if (val2 != val1)
-				pcie_badslots |= (1 << slot);
+				pcie_badslots |= (1U << slot);
 		}
 	}
 }

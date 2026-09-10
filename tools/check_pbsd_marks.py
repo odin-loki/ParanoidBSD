@@ -4092,6 +4092,67 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sys/amd64/pci/pci_cfgreg.c": [
+        (
+            ("(1U << slot & pcie_badslots) != 0", 2),
+            "(1 << slot & pcie_badslots) != 0",
+            "amd64's copy of the i386 pcie_badslots defect: PCI_SLOTMAX is "
+            "31 and pcie_init_badslots() walks 0..31, so `1 << 31' on a "
+            "signed int is executed on every PCIe boot - found by grepping "
+            "for the i386 fix's shape, not by a finding",
+        ),
+        (
+            "pcie_badslots |= (1U << slot);",
+            "pcie_badslots |= (1 << slot);",
+            "amd64 pcie_init_badslots(): the write side of the same "
+            "`1 << 31' on a signed int",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/mpr/mpr_sas_lsi.c": [
+        (
+            "if (error || (cm == NULL) || (reply == NULL)) {",
+            "\treply = (Mpi2SataPassthroughReply_t *)cm->cm_reply;\n"
+            "\tif (error || (reply == NULL)) {",
+            "mprsas_get_sata_identify(): mpr_wait_command() sets *cmp = NULL "
+            "on a reinit that reallocated the command pool, and the KASSERT "
+            "guarding cm compiles to nothing without INVARIANTS, so "
+            "cm->cm_reply was read off a null command - the same file's "
+            "IR_CONFIGURATION_CHANGE_LIST handler already writes it this way",
+        ),
+        (
+            "\t} else if ((cm->cm_flags & MPR_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {",
+            "\tif ((cm->cm_flags & MPR_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {",
+            "the same function's out: label read cm->cm_flags "
+            "unconditionally, so guarding only the cm_reply load would have "
+            "moved the fault rather than removed it; the buffer still has to "
+            "be freed on that path because the reinit never touches cm_data",
+        ),
+    ],
+
+    "hbsd/src/sys/dev/mps/mps_sas_lsi.c": [
+        (
+            "if (error || (cm == NULL) || (reply == NULL)) {",
+            "\treply = (Mpi2SataPassthroughReply_t *)cm->cm_reply;\n"
+            "\tif (error || (reply == NULL)) {",
+            "the mps twin of the mpr_sas_lsi.c null-command read",
+        ),
+        (
+            "\t} else if ((cm->cm_flags & MPS_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {",
+            "\tif ((cm->cm_flags & MPS_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {",
+            "the mps twin of the mpr_sas_lsi.c out: label fault",
+        ),
+        (
+            "memset(&mpi_reply, 0, sizeof(mpi_reply));",
+            None,
+            "mpssas_get_sas_address_for_sata_disk() decided whether to retry "
+            "from mpi_reply.IOCStatus and .SASStatus, which "
+            "mpssas_get_sata_identify() only writes on its success path - "
+            "the mpr copy of this function already carried the memset and "
+            "mps was never updated",
+        ),
+    ],
+
     "hbsd/src/usr.sbin/pciconf/cap.c": (
         "if (b < (int)nitems(dw))\n\t\t\t\tdw[b] = dwv;",
         "\t\t\tdw[b] = read_config(fd, &p->pc_sel, ptr, 4);",

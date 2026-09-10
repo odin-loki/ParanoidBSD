@@ -16721,3 +16721,140 @@ be skipped, but only when `done > len` on entry, and `len` is
 `(guest count) * 512` capped at 512 — always a multiple of the 8 that
 `done` advances by, so `done` lands exactly on `len` and the
 `done == len` test catches it.
+
+## The twin hunt: grepping for a fix's shape, not for a finding
+
+`pciconf/cap.c` was found by hand — the kernel's `pci_ea_fill_info()`
+fix was fresh, and the userland copy of the same parser was the obvious
+next place to look. That is worth doing systematically, so it was:
+`check_pbsd_marks.py`'s FIXES table already stores, for 380 of its
+entries, the exact text a fix *replaced*. 308 of those strings are
+long enough to be worth grepping. All 19,799 `.c` and `.h` files in the
+tree were searched for each.
+
+Fifteen shapes turned up somewhere else. Most are generic C — a
+`free(x)` here, a two-line `if` there — and mean nothing. Two were
+precise enough to be the same defect twice.
+
+### `1 << slot` on amd64, five years after i386 was fixed
+
+`sys/i386/pci/pci_cfgreg.c` carries a PBSD fix turning three
+`1 << slot` into `1U << slot`. `PCI_SLOTMAX` is 31, and
+`pcie_init_badslots()` walks `0..PCI_SLOTMAX`, so `1 << 31` on a signed
+`int` is executed on every boot of a PCIe machine — not a corner case,
+since slot 31 is where the LPC bridge sits on Intel chipsets.
+
+`sys/amd64/pci/pci_cfgreg.c` is the same file, with the same three
+shifts, and had never been touched. The grep found it in the one place
+a finding never would: the analyser does not check for signed shift
+overflow at all, and no sweep of `sys/amd64` has ever reported this
+line.
+
+### mpr and mps: a null command, and the label that would have caught the fault
+
+`mprsas_get_sata_identify()` calls `mpr_wait_command(sc, &cm, ...)` and
+then reads `cm->cm_reply` — guarded only by
+
+```c
+	/* mprsas_ata_id_timeout does not reset controller */
+	KASSERT(cm != NULL, ("%s: surprise command freed", __func__));
+```
+
+`KASSERT` compiles to nothing without `INVARIANTS`, which is how the
+release kernel is built. And the comment's argument is about the wrong
+thing: `mpr_wait_command()` clears `*cmp` whenever `MPR_FLAGS_REALLOCATED`
+is set, and that is a *softc* flag set by any reinit that reallocated
+the command pool — not a statement about which timeout handler ran.
+
+The same file's `MPI2_EVENT_IR_CONFIGURATION_CHANGE_LIST` handler
+already writes it the way it should be written:
+
+```c
+	error = mpr_request_polled(sc, &cm);
+	if (cm != NULL)
+		reply = (Mpi2RaidActionReply_t *)cm->cm_reply;
+	if (error || (reply == NULL)) {
+```
+
+so the fix is the driver's own idiom, not an invention. `mpr_config.c`
+carries it at forty-two more sites.
+
+The first attempt at this fix was wrong, and the way it was wrong is
+the interesting part. Guarding the `cm->cm_reply` load alone made the
+`error` path `goto out` — and `out:` reads
+
+```c
+	if ((cm->cm_flags & MPR_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {
+		mpr_free_command(sc, cm);
+		free(buffer, M_MPR);
+	}
+```
+
+unconditionally. With `cm == NULL` that faults one line later than it
+used to. A guard that relocates a fault is not a fix. `out:` had to be
+split:
+
+```c
+	if (cm == NULL) {
+		free(buffer, M_MPR);
+	} else if ((cm->cm_flags & MPR_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {
+		mpr_free_command(sc, cm);
+		free(buffer, M_MPR);
+	}
+```
+
+The `free(buffer, ...)` on the null arm is not symmetry for its own
+sake: `buffer` is `malloc()`ed by this function and only ever reachable
+through `cm->cm_data`, and nothing on the reinit path frees `cm_data` —
+`mpr.c` never calls `free()` on it at all. Dropping the command without
+freeing the buffer leaks it.
+
+`sys/dev/mps/mps_sas_lsi.c` is the same function, same defect, same
+`out:` label.
+
+### And the finding that was next to it
+
+Putting the two `_sas_lsi.c` files under the analyser for a before/after
+turned up something the twin grep could not have found, in the caller:
+
+```
+sys/dev/mps/mps_sas_lsi.c:831  [core.UndefinedBinaryOperatorResult]
+    The left operand of '&' is a garbage value
+```
+
+`mpssas_get_sas_address_for_sata_disk()` declares `Mpi2SataPassthroughReply_t
+mpi_reply;` on the stack, passes it to `mpssas_get_sata_identify()`, and
+then decides whether to retry from
+
+```c
+		ioc_status = le16toh(mpi_reply.IOCStatus) & MPI2_IOCSTATUS_MASK;
+		sas_status = mpi_reply.SASStatus;
+```
+
+`mpssas_get_sata_identify()` writes `*mpi_reply` only on its success
+path, so every error return leaves both reads on stack garbage. The mpr
+copy of this function carries `memset(&mpi_reply, 0, sizeof(mpi_reply));`
+one line after the `ata_identify` memset it already had. mps does not.
+Guard-on-one-of-a-pair again, and this time the pair is two drivers.
+
+```
+                mpr+mps+amd64/pci
+                before  after
+OK                 17      17
+ERROR               0       0
+findings            3       2
+```
+
+The two `_sas_lsi.c` fixes move no number — the analyser never reported
+them, because `mpr_wait_command()` is in another translation unit and
+its effect on `*cmp` is invisible. They are on this page because the
+grep found them and the code says they are real, which is a different
+kind of evidence from a finding and worth naming as such.
+
+The two survivors are both `mprsas_scsiio_complete()` / `mpssas_scsiio_complete()`
+reading `rep->SCSIStatus` after the function's `if (cm->cm_reply == NULL)`
+fast path has already returned. The analyser constrains `rep == NULL`
+from an earlier `if (cm->cm_reply != NULL)` test, then loses the
+relation across `xpt_freeze_simq()` and friends, so the second test
+tells it nothing. That is the "one predicate tested twice across an
+intervening call" class this document has met eight times now.

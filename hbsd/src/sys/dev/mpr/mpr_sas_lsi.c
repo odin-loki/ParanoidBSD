@@ -1133,7 +1133,8 @@ mprsas_get_sata_identify(struct mpr_softc *sc, u16 handle,
     Mpi2SataPassthroughReply_t *mpi_reply, char *id_buffer, int sz, u32 devinfo)
 {
 	Mpi2SataPassthroughRequest_t *mpi_request;
-	Mpi2SataPassthroughReply_t *reply;
+	/* PBSD: = NULL, as the mps copy has, for the cm == NULL guard below. */
+	Mpi2SataPassthroughReply_t *reply = NULL;
 	struct mpr_command *cm;
 	char *buffer;
 	int error = 0;
@@ -1178,8 +1179,17 @@ mprsas_get_sata_identify(struct mpr_softc *sc, u16 handle,
 	/* mprsas_ata_id_timeout does not reset controller */
 	KASSERT(cm != NULL, ("%s: surprise command freed", __func__));
 
-	reply = (Mpi2SataPassthroughReply_t *)cm->cm_reply;
-	if (error || (reply == NULL)) {
+	/*
+	 * PBSD: KASSERT compiles to nothing without INVARIANTS, and
+	 * mpr_wait_command() sets *cmp = NULL whenever MPR_FLAGS_REALLOCATED is
+	 * set -- a softc flag, so the comment's argument ("this handler
+	 * does not reset the controller") is about which handler ran and
+	 * not about what the flag says.  This is the guard the forty-two
+	 * mpr_config.c sites already carry.
+	 */
+	if (cm != NULL)
+		reply = (Mpi2SataPassthroughReply_t *)cm->cm_reply;
+	if (error || (cm == NULL) || (reply == NULL)) {
 		/* FIXME */
 		/*
 		 * If the request returns an error then we need to do a diag
@@ -1207,7 +1217,16 @@ out:
 	 * it.  The command and buffer will be freed after we send a Target
 	 * Reset TM and the command comes back from the controller.
 	 */
-	if ((cm->cm_flags & MPR_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {
+	if (cm == NULL) {
+		/*
+		 * PBSD: mpr_wait_command() cleared *cmp because a concurrent
+		 * reinit reallocated the whole command pool, so there is no
+		 * command left to free and cm->cm_flags cannot be read.  The
+		 * reinit never touches cm_data, so the buffer malloc()ed above
+		 * is still ours and would otherwise leak.
+		 */
+		free(buffer, M_MPR);
+	} else if ((cm->cm_flags & MPR_CM_FLAGS_SATA_ID_TIMEOUT) == 0) {
 		mpr_free_command(sc, cm);
 		free(buffer, M_MPR);
 	}
