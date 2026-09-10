@@ -447,6 +447,7 @@ cycleanalyze(void)
     arctype	*arcp;
     nltype	*nlp;
     cltype	*clp;
+    cltype	*nextclp;
     bool	ret;
     bool	done;
     int		size;
@@ -493,13 +494,22 @@ cycleanalyze(void)
 	free( cyclestack );
 	if ( cyclecnt > 0 ) {
 	    compresslist();
+	    /*
+	     * PBSD: this advanced clp to the next node and then freed
+	     * THAT one -- so cyclehead itself was never released, the
+	     * node still linked behind it was, and the top of the next
+	     * iteration read clp -> list and clp -> size through the
+	     * pointer that had just been freed.  Take the successor
+	     * first, free the node the loop is on, then step.
+	     */
 	    for ( clp = cyclehead ; clp ; ) {
 		endlist = &clp -> list[ clp -> size ];
 		for ( arcpp = clp -> list ; arcpp < endlist ; arcpp++ )
 		    (*arcpp) -> arc_cyclecnt--;
 		cyclecnt--;
-		clp = clp -> next;
+		nextclp = clp -> next;
 		free( clp );
+		clp = nextclp;
 	    }
 	    cyclehead = 0;
 	}
@@ -623,6 +633,7 @@ void
 compresslist(void)
 {
     cltype	*clp;
+    cltype	*nextclp;
     cltype	**prev;
     arctype	**arcpp;
     arctype	**endlist;
@@ -740,9 +751,17 @@ compresslist(void)
 	for ( arcpp = clp -> list ; arcpp < endlist ; arcpp++ )
 	    (*arcpp) -> arc_cyclecnt--;
 	cyclecnt--;
-	*prev = clp -> next;
-	clp = clp -> next;
+	/*
+	 * PBSD: the same mistake as in cycleanalyze() and one worse for
+	 * it -- clp was unlinked from the list, then advanced, and then
+	 * the node it had advanced to was freed.  The unlinked node
+	 * leaked, the freed one was still on the list through *prev, and
+	 * the next iteration walked it.
+	 */
+	nextclp = clp -> next;
+	*prev = nextclp;
 	free( clp );
+	clp = nextclp;
     }
 }
 

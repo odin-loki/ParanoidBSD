@@ -19178,3 +19178,131 @@ The thirty-three that remain, by class:
   three lines above the `strcmp`.
 - The rest are `ppp`'s `command.c` and `ipv6cp.c`, all arrays reached
   through an unconstrained struct pointer.
+
+## `gprof`: two loops that free the node they just stepped to
+
+`usr.bin/gprof/arcs.c` walks the cycle list twice, and both walks make
+the same mistake.  `cycleanalyze()`:
+
+```c
+	for ( clp = cyclehead ; clp ; ) {
+	    endlist = &clp -> list[ clp -> size ];
+	    for ( arcpp = clp -> list ; arcpp < endlist ; arcpp++ )
+		(*arcpp) -> arc_cyclecnt--;
+	    cyclecnt--;
+	    clp = clp -> next;
+	    free( clp );
+	}
+```
+
+Advance, then free.  So `cyclehead` itself is never released, the node
+*behind* it is, and the top of the next iteration reads `clp -> list`
+and `clp -> size` through the pointer that was just freed.
+
+`compresslist()` is the same and one worse, because it also unlinks:
+
+```c
+	*prev = clp -> next;
+	clp = clp -> next;
+	free( clp );
+```
+
+The node it unlinked leaks; the node it freed is still on the list
+through `*prev`; and the loop walks the freed one.  That is also why
+`cycleanalyze()` reports at its *own* loop head — it runs
+`compresslist()` first and then walks a list containing a freed node,
+so the two findings are one defect seen from both ends.
+
+Both now take the successor first, free the node the loop is on, and
+then step.
+
+```
+                usr.bin/gprof
+                before  after
+OK                   9       9
+ERROR                0       0
+findings             2       0
+```
+
+## `ipsend -R` frees a stack address
+
+`ip_resend()` allocates its Ethernet header once and frees it at the
+bottom:
+
+```c
+	eh = (ether_header_t *)malloc(sizeof(*eh));
+	...
+	while ((i = (*r->r_readip)(&mb, NULL, NULL)) > 0) {
+		if (!(opts & OPT_RAW)) {
+			eh = (ether_header_t *)realloc((char *)eh, sizeof(*eh) + len);
+			...
+		} else {
+			eh = (ether_header_t *)mb.mb_buf;
+			len = i;
+		}
+		if (sendip(wfd, (char *)eh, len) == -1)
+			...
+	}
+	(*r->r_close)();
+	free(eh);
+```
+
+`mb` is `mb_t mb;` — a local.  So under `-R`, `eh` is assigned the
+address of a member of this function's own stack frame, the allocation
+it was holding is leaked, and the `free(eh)` at the bottom is handed a
+stack address on every run.
+
+The send now goes through a separate `pkt`, leaving `eh` owning what it
+allocated.  The `realloc` on the other arm also went straight back over
+`eh`, so a failure lost the only pointer to the old header and then
+wrote `ether_type` through NULL; that is checked now too.
+
+```
+                sbin/ipf/ipsend
+                before  after
+OK                   3       3
+ERROR               12      12
+findings             2       0
+```
+
+The twelve ERROR are `NOT_BUILT` translation units already on the
+record, unchanged across the pair.
+
+## The queue-macro use-after-free class
+
+Eleven of the progs shard's thirteen `Use of memory after it is freed`
+findings are one shape, and none of them is a defect:
+
+```c
+	while ((p = TAILQ_FIRST(&head)) != NULL) {
+		...
+		TAILQ_REMOVE(&head, p, entries);
+		free(p);
+	}
+```
+
+`TAILQ_REMOVE` unlinks before the `free`, so the next `TAILQ_FIRST`
+returns a different node — but the analyser does not model the macro as
+unlinking, so it believes the head can still be the pointer just freed.
+
+The eleven: `makefs` `cd9660.c` and `walk.c` (already above), `fsck` and
+`quotacheck`'s shared `preen.c`, `jail`'s `config.c` four times — where
+`free_param()` frees the members, `TAILQ_REMOVE`s and then frees the
+node, and `free_param_strings()` does the same one level down —
+`rtadvd`'s `rm_rainfo()`, `hastd`'s `hastd_reload()`, `systat`'s
+`dsmatchselect()` (which sets `matches = NULL` immediately after the
+`free`), and `tail`'s `r_buf()`.
+
+`tail`'s is worth a second look and survives it: the out-of-memory loop
+reads `first = TAILQ_FIRST(&head)` *before* testing `TAILQ_EMPTY`, and
+uses `first->len` after — which is safe only because the `err(1, ...)`
+between them does not return.  It does not return; `err` is
+`__dead2` in `<err.h>`.
+
+Also read and not a defect: `lpr`'s `rmremote()`, reported as
+`free()` of a global.  `iov[0..3]` and the `2 * users` entries after
+them are string literals and borrowed pointers, `firstreq` is set to
+`4 + 2 * users`, and the `asprintf` results fill exactly
+`[firstreq, firstreq + requests)` — which is exactly what the free loop
+covers.  The analyser will not track which slots of an array hold
+literals across two loops it does not unroll.

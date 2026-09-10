@@ -97,9 +97,26 @@ ip_resend(char *dev, int mtu, struct  ipread  *r, struct  in_addr gwip,
 
 	while ((i = (*r->r_readip)(&mb, NULL, NULL)) > 0)
 	    {
+		char *pkt;
+
 		if (!(opts & OPT_RAW)) {
+			ether_header_t *neh;
+
 			len = ntohs(ip->ip_len);
-			eh = (ether_header_t *)realloc((char *)eh, sizeof(*eh) + len);
+			/*
+			 * PBSD: the result went straight back over eh, so a
+			 * failure lost the only pointer to the header this
+			 * function allocated and then wrote ether_type
+			 * through NULL.
+			 */
+			neh = (ether_header_t *)realloc((char *)eh,
+							sizeof(*eh) + len);
+			if (!neh)
+			    {
+				perror("realloc failed");
+				break;
+			    }
+			eh = neh;
 			eh->ether_type = htons((u_short)ETHERTYPE_IP);
 			if (!gwip.s_addr) {
 				if (arp((char *)&gwip,
@@ -116,12 +133,23 @@ ip_resend(char *dev, int mtu, struct  ipread  *r, struct  in_addr gwip,
 			bcopy(ip, (char *)(eh + 1), len);
 			len += sizeof(*eh);
 			dumppacket(ip);
+			pkt = (char *)eh;
 		} else {
-			eh = (ether_header_t *)mb.mb_buf;
+			/*
+			 * PBSD: this assigned mb.mb_buf -- a member of the
+			 * mb_t on this function's own stack -- over eh,
+			 * which is the malloc()ed header that free(eh) at
+			 * the bottom releases.  With -R that free() was
+			 * handed a stack address every time, and the
+			 * allocation it was meant to release was leaked.
+			 * Send from a separate pointer and leave eh owning
+			 * what it allocated.
+			 */
+			pkt = mb.mb_buf;
 			len = i;
 		}
 
-		if (sendip(wfd, (char *)eh, len) == -1)
+		if (sendip(wfd, pkt, len) == -1)
 		    {
 			perror("send_packet");
 			break;

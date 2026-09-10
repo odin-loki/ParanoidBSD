@@ -2948,15 +2948,33 @@ FIXES = {
         "shorter than the longest seen so far read into what the "
         "previous one left there",
     ),
-    "hbsd/src/usr.bin/gprof/arcs.c": (
-        "PBSD: nothing to pick.",
-        "    } else {\n\t/*\n\t *\tlast choice is edge leading to node "
-        "with only this arc as",
-        "compresslist: the three max*arcp are written only when their "
-        "max*cnt rises above 0, and the last arm was an unconditional "
-        "`else' -- so a list whose arcs all have arc_cyclecnt 0 WROTE "
-        "through a pointer nothing had set",
-    ),
+    "hbsd/src/usr.bin/gprof/arcs.c": [
+        (
+            "PBSD: nothing to pick.",
+            "    } else {\n\t/*\n\t *\tlast choice is edge leading to node "
+            "with only this arc as",
+            "compresslist: the three max*arcp are written only when their "
+            "max*cnt rises above 0, and the last arm was an unconditional "
+            "`else' -- so a list whose arcs all have arc_cyclecnt 0 WROTE "
+            "through a pointer nothing had set",
+        ),
+        (
+            "\t\tnextclp = clp -> next;\n\t\tfree( clp );\n\t\tclp = nextclp;",
+            "\t\tcyclecnt--;\n\t\tclp = clp -> next;\n\t\tfree( clp );",
+            "cycleanalyze() advanced clp to the next node and then freed "
+            "THAT one -- cyclehead itself was never released, the node "
+            "still linked behind it was, and the next iteration read "
+            "clp -> list and clp -> size through the freed pointer",
+        ),
+        (
+            "\tnextclp = clp -> next;\n\t*prev = nextclp;\n\tfree( clp );",
+            "\t*prev = clp -> next;\n\tclp = clp -> next;\n\tfree( clp );",
+            "compresslist() unlinked clp, advanced, and freed the node it "
+            "had advanced to -- the unlinked node leaked, the freed one "
+            "was still on the list through *prev, and the next iteration "
+            "walked it",
+        ),
+    ],
     "hbsd/src/usr.bin/patch/pch.c": (
         "PBSD: n == 0 means neither the copy loop above nor the "
         "blank-line",
@@ -4151,6 +4169,15 @@ FIXES = {
             "*portRange",
         ),
     ],
+
+    "hbsd/src/sbin/ipf/ipsend/resend.c": (
+        "\t\t\tpkt = mb.mb_buf;",
+        "\t\t\teh = (ether_header_t *)mb.mb_buf;\n\t\t\tlen = i;",
+        "ip_resend() assigned mb.mb_buf -- a member of the mb_t on its "
+        "own stack -- over eh, which is the malloc()ed header free(eh) "
+        "at the bottom releases, so with -R that free() was handed a "
+        "stack address every time",
+    ),
 
     "hbsd/src/usr.sbin/ndp/ndp_netlink.c": (
         'ifname = link->ifla_ifname != NULL ? link->ifla_ifname : "?";',

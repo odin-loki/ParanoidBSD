@@ -54,8 +54,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,760 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,109 | 1,063 |
-| 4 | `sbin` | 533 | 228,552 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,410 | 4,188 |
+| 4 | `sbin` | 533 | 228,580 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,429 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,596 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,508 | 81,388 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,657** | **114,207** |
+| | **total** | **41,143** | **21,300,704** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -18243,7 +18243,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.50.11.4 `ip_test5()` · `TODO-FN`
   - [ ] 4.50.11.5 `ip_test6()` · `TODO-FN`
   - [ ] 4.50.11.6 `ip_test7()` · `TODO-FN`
-- [ ] **4.50.12** `resend.c` · 134L · `TODO-PORT` · 2 fn
+- [ ] **4.50.12** `resend.c` · 162L · `TODO-PORT` · 2 fn
   - [ ] 4.50.12.1 `dumppacket()` · `TODO-FN`
   - [ ] 4.50.12.2 `ip_resend()` · `TODO-FN`
 - [ ] **4.50.13** `sbpf.c` · 144L · `TODO-PORT` · 2 fn
@@ -21725,7 +21725,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.84 `usr.bin/gprof` · 1 module(s) under `pbsd/usr.bin/gprof`
 
-- [ ] **5.84.1** `arcs.c` · 960L · `TODO-PORT` · 14 fn
+- [ ] **5.84.1** `arcs.c` · 979L · `TODO-PORT` · 14 fn
   - [ ] 5.84.1.1 `addarc()` · `TODO-FN`
   - [ ] 5.84.1.2 `topcmp()` · `TODO-FN`
   - [ ] 5.84.1.3 `doarcs()` · `TODO-FN`
