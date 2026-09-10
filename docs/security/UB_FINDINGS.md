@@ -18563,3 +18563,74 @@ uninitialised past it, and every static analysis run over the program
 pays for it in noise that has to be read by a person.  `patch(1)`'s
 `fatal()` and `pfatal()` were the same finding earlier in this work.
 Three programs is a shape, not a coincidence.
+
+### A lint for it, and a negative result worth keeping
+
+`tools/verify/noreturn_check.py` finds the shape: a function whose
+body's last top-level statement is a call to something that does not
+return — `exit()`, `abort()`, `err()` and friends, or another function
+in the same file the pass has already concluded does not return — and
+which contains no `return` anywhere, and whose declaration carries no
+noreturn attribute.
+
+Three things it got wrong while it was being written, each now a test
+fixture:
+
+- `\bnoreturn\b` does not match inside `__noreturn__`, because an
+  underscore is a word character.  Every function already marked that
+  way was reported.
+- Taking the *last line* rather than the last top-level statement made
+  `ifconfig`'s `set80211()` — which ends `if (ioctl(...) < 0) err(1,
+  ...)` — look noreturn, and the propagation then called eighty of its
+  callers noreturn too.
+- A body containing a `return` anywhere means the function comes back,
+  whatever its last statement is.  `mapfreq()` scans a table, returns on
+  a hit, and `errx()`s at the bottom when there is none; marking it
+  would have been wrong, not merely noisy.
+
+With those fixed it reports **673 functions across 11,284 files**, and
+reproduces both fixes above when the tree is reverted to before them.
+
+Then the negative result.  The obvious next step was to pick the ones
+worth marking, and the obvious predicate was the file: this file has an
+undeclared-noreturn function, and this file has findings.  Twenty-four
+functions across nineteen files were marked `__dead2` on that basis and
+measured:
+
+```
+                the nineteen files
+                before  after
+OK                  76      76
+ERROR                0       0
+findings           116     116
+```
+
+Exactly nothing.  The batch was reverted.
+
+What separates `route6d` and `ppp`, where two declarations closed
+twenty-one findings, is not the file — it is that the call sits on the
+path the finding walks:
+
+```c
+	if ((p = malloc(n)) == NULL) {
+		fatal("malloc");
+	}
+	memcpy(p, &x, n);        /* the finding, reachable only because
+				    the analyser thinks fatal() returns */
+```
+
+A `usage()` called from `getopt` and followed by nothing costs nothing,
+however undeclared it is.
+
+Two ways of predicting which is which were then tried and both dropped.
+Ranking by findings within 40 lines after a call site scored the
+known-zero batch 18.  Ranking by the guard shape itself — the call alone
+in an `if` body, a name from the condition used after the block — scored
+it 34 sites across 11 functions, because `if (argc < 2) usage();` is
+that shape and an `int argc` produces no finding.  Neither beat the only
+accurate oracle, which is a before/after sweep at the same scope on the
+same tree, and which is cheap.
+
+So the lint reports and does not rank, and it runs in `run_all.sh` as a
+report rather than a gate.  673 items is not a list to apply wholesale;
+it is a list to read against a measurement.

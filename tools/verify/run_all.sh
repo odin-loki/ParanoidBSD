@@ -147,6 +147,22 @@ echo "== pattern check: a masked switch with fewer arms than states"
     python3 tools/verify/masked_switch_check.py
 )
 
+# Reported, not gated, and deliberately: 673 functions in the tree end in
+# exit() without saying so, and marking one only pays where the analyser
+# was reading past a call to it. Two declarations in route6d and ppp
+# closed twenty-one findings; twenty-four more, chosen by a heuristic,
+# closed none and were reverted. The list is here to be read against a
+# measurement, not applied wholesale.
+echo
+echo "== report: functions that end in exit() but are not declared noreturn"
+(
+    cd "$ROOT" || exit 1
+    python3 tools/verify/noreturn_check.py \
+        --scope sys --scope lib --scope bin --scope sbin \
+        --scope usr.bin --scope usr.sbin --scope libexec \
+        --scope stand --scope share 2>&1 | tail -5
+)
+
 # The default clang checkers have no model for mtx_lock, so a leaked
 # mutex is invisible to the stage below: sys/netipsec/ipsec.c compiles
 # clean and reports nothing, and ipsec_chkreplay() returned holding
