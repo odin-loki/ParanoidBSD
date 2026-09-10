@@ -4291,6 +4291,27 @@ FIXES = {
         "stated nowhere and costs one initialiser to remove",
     ),
 
+    "hbsd/src/usr.sbin/virtual_oss/virtual_oss/main.c": [
+        (
+            "if (mod == 0 || mod_internal == 0)\n\t\treturn (CUSE_ERR_INVALID);",
+            None,
+            "vclient_setup_buffers(): the sanity checks a dozen lines "
+            "down reject both a zero format and a zero channel count, "
+            "and they run AFTER the `size % mod' that needs them.  "
+            "vclient_sample_bytes() returns 0 for a format naming no "
+            "bit width",
+        ),
+        (
+            ("temp = pvc->channels * vclient_sample_bytes(pvc);\n\t\tif "
+             "(temp == 0) {", 2),
+            "vclient_input_delay(pvc) / (pvc->channels * "
+            "vclient_sample_bytes(pvc));",
+            "SNDCTL_DSP_CURRENT_IPTR and _OPTR divide by that same "
+            "product without checking it, resting on an invariant "
+            "vclient_setup_buffers() establishes two functions away",
+        ),
+    ],
+
     "hbsd/src/sbin/fsck/fsck.c": (
         "\tvfstype = estrdup(pvfstype);",
         '\tvfstype = strdup(pvfstype);\n\tif (vfstype == NULL)\n'

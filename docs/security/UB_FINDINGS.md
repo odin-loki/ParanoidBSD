@@ -20113,3 +20113,45 @@ and costs one initialiser to remove.
 
 Measured over `usr.bin/chat` and `usr.sbin/gstat`: 4 → 2, two
 translation units OK and no ERROR either side.  Both singletons closed.
+
+## virtual_oss(8): eleven divisions and one invariant, established two functions away
+
+All eleven of the shard's `core.DivideZero` findings in
+`virtual_oss/main.c` divide by the same product:
+
+```c
+	mod = pvc->channels * vclient_sample_bytes(pvc);
+```
+
+and `vclient_sample_bytes()` returns **0** for a format that names no
+bit width — which is what a zeroed `vclient_t` holds.
+
+Read all the way through, the program is safe, and it is worth being
+precise about why rather than claiming a crash it does not have.
+`vclient_open()` allocates the client, calls `vclient_setup_buffers()`
+with the profile's channel count and `vclient_get_default_fmt()` — which
+returns a real format on every arm — and **fails the open** if setup
+returns an error.  Setup rejects a zero format and a channel count
+outside `[1, profile->channels]`.  So a client that exists at all has a
+non-zero `mod`, and none of the eleven divisions can be reached with a
+zero divisor.
+
+Two things are still wrong with how that is written, and both are fixed:
+
+* `vclient_setup_buffers()` does its `size % mod` arithmetic **before**
+  the sanity checks that reject a zero `mod`.  The checks are twelve
+  lines further down, in a block the file labels `/* sanity checks */`.
+  An ordering like that is safe only by accident of which callers exist;
+  the check now precedes the arithmetic it protects.
+* `SNDCTL_DSP_CURRENT_IPTR` and `_OPTR` divide by the product with no
+  check at all, resting on the open-path invariant from two functions
+  away.  Both compute it once into `temp`, refuse zero, and divide by
+  that.
+
+Measured over `usr.sbin/virtual_oss`: 11 → 7, twelve translation units
+OK and the same one known ERROR on both sides.  The seven that remain —
+`vclient_output_delay()`, `vclient_export_read_locked()` twice,
+`vclient_import_write_locked()` three times and `vclient_scale()` — are
+the same invariant seen from the data path, and guarding those would put
+a branch per sample on the audio path to state something the
+configuration boundary already guarantees.  They stay, characterised.

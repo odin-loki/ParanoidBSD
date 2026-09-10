@@ -372,6 +372,17 @@ vclient_setup_buffers(vclient_t *pvc, int size, int frags,
 	mod = pvc->channels * vclient_sample_bytes(pvc);
 	mod_internal = pvc->channels * 8;
 
+	/*
+	 * PBSD: the sanity checks a dozen lines down reject both a zero
+	 * format and a zero channel count -- but they run AFTER the
+	 * arithmetic below.  vclient_sample_bytes() returns 0 for a format
+	 * that names no bit width, which is what pvc->format holds until a
+	 * client sets one, so a SNDCTL_DSP_SETFRAGMENT before
+	 * SNDCTL_DSP_SETFMT reached `size % mod' with mod zero.
+	 */
+	if (mod == 0 || mod_internal == 0)
+		return (CUSE_ERR_INVALID);
+
 	if (size > 0) {
 		size += mod - 1;
 		size -= size % mod;
@@ -1410,20 +1421,35 @@ vclient_ioctl_oss(struct cuse_dev *pdev, int fflags __unused,
 	case SNDCTL_DSP_CURRENT_IPTR:
 		memset(&data.oss_count, 0, sizeof(data.oss_count));
 		/* compute input samples per channel */
+		/*
+		 * PBSD: nothing configures the client before this ioctl can
+		 * be issued, and both divisors are zero until something
+		 * does -- pvc->channels, and vclient_sample_bytes(), which
+		 * returns 0 for a format that names no bit width.
+		 */
+		temp = pvc->channels * vclient_sample_bytes(pvc);
+		if (temp == 0) {
+			error = CUSE_ERR_INVALID;
+			break;
+		}
 		data.oss_count.samples =
 		    vclient_scale(pvc->rx_samples, pvc->sample_rate, voss_dsp_sample_rate);
 		data.oss_count.samples /= pvc->channels;
-		data.oss_count.fifo_samples =
-		    vclient_input_delay(pvc) / (pvc->channels * vclient_sample_bytes(pvc));
+		data.oss_count.fifo_samples = vclient_input_delay(pvc) / temp;
 		break;
 	case SNDCTL_DSP_CURRENT_OPTR:
 		memset(&data.oss_count, 0, sizeof(data.oss_count));
 		/* compute output samples per channel */
+		/* PBSD: as in SNDCTL_DSP_CURRENT_IPTR above. */
+		temp = pvc->channels * vclient_sample_bytes(pvc);
+		if (temp == 0) {
+			error = CUSE_ERR_INVALID;
+			break;
+		}
 		data.oss_count.samples =
 		    vclient_scale(pvc->tx_samples, pvc->sample_rate, voss_dsp_sample_rate);
 		data.oss_count.samples /= pvc->channels;
-		data.oss_count.fifo_samples =
-		    vclient_output_delay(pvc) / (pvc->channels * vclient_sample_bytes(pvc));
+		data.oss_count.fifo_samples = vclient_output_delay(pvc) / temp;
 		break;
 	case SNDCTL_DSP_GETIPTR:
 		memset(&data.oss_count_info, 0, sizeof(data.oss_count_info));
