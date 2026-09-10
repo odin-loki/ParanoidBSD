@@ -1,0 +1,183 @@
+# The third engine, nightly, and REPORT-ONLY.
+#
+# pbsd-verify.yml is the sweep that gates: clang's analyser and CBMC both
+# answer the same question every night, and a change to the answer is a
+# change to the tree. This one cannot do that, and the reason is written
+# into the tool itself:
+#
+#   CLEAN is not a proof. A fuzzer that finds nothing has told you that
+#   it found nothing.
+#
+# A gate wants a signal that only moves when the code moves. AFL's does
+# not: the same function, the same budget and a different runner is a
+# different number of executions, and a crash found on the ninth run of
+# an unchanged tree is a true finding that would have failed the eight
+# runs before it for no reason anybody could act on. So nothing here is
+# `needs:'-ed by anything, every job is continue-on-error, and the
+# result is an artifact and a step summary that a person reads.
+#
+# What it is FOR is the asymmetry. A crash is a certainty - it is a
+# concrete input and a signal, not a path the analyser guessed at - and
+# the crashes this finds are ones the other two engines missed, because
+# it RUNS the code. abs(INT_MIN) came out of the BMC seed on the first
+# real run of it.
+name: PBSD fusebmc
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope_note:
+        description: 'Free text recorded in the summary (what this run is for)'
+        required: false
+        default: ''
+  schedule:
+    # 05:00 UTC, two hours behind pbsd-verify. Not because they conflict
+    # - they share no artifact - but so a morning's reading has the
+    # sweep's numbers already in it to compare against.
+    - cron: '0 5 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pbsd-fusebmc
+  cancel-in-progress: true
+
+jobs:
+  # The reach measurement, over the WHOLE tree, and it is the cheap half:
+  # --dry-run runs parse_params() and stops, which is a regex per
+  # function, so 114,207 (translation unit, function) pairs cost minutes
+  # rather than the budget-per-function a real run would.
+  #
+  # The number it prints is the ERROR histogram, and that histogram IS the
+  # result. 96,838 of the pairs come back "a pointer, array or varargs
+  # parameter" - which is not a defect in the tool, it is the shape of a
+  # kernel tree, and a tool that reported a coverage number without
+  # saying which functions it never reached would be worse than useless.
+  reach:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the function ledger
+        run: python3 tools/port_plan.py
+      # The parser is the whole gate, so it is the whole risk. Every case
+      # in this file is a mistake the parser actually made - `int signo
+      # __unused' read as a type named "int signo" put 148 parameters in
+      # the ERROR histogram under a reason that was true of the TABLE and
+      # false of the CODE, which is the exact failure the histogram exists
+      # to avoid.
+      - name: The parser still reads the parameters it claims to
+        run: python3 tools/verify/test_fusebmc.py
+      - name: What this engine can and cannot reach
+        run: |
+          mkdir -p out
+          python3 tools/verify/fusebmc.py --dry-run \
+            --out out/fusebmc-reach.jsonl 2>&1 | tee out/reach.txt
+      - name: Say it in the summary
+        if: always()
+        env:
+          SCOPE_NOTE: ${{ inputs.scope_note }}
+        run: |
+          {
+            echo '### fusebmc reach (dry run, whole tree)'
+            [ -n "$SCOPE_NOTE" ] && printf '_%s_\n' "$SCOPE_NOTE"
+            echo ''
+            echo 'RUNNABLE is a ceiling, not a result: it says the harness'
+            echo 'would build, not that anything was run.'
+            echo '```'
+            tail -30 out/reach.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fusebmc-reach
+          path: out/
+          retention-days: 14
+
+  # The expensive half, and only over userland. A kernel translation unit
+  # cannot be compiled, linked and RUN on a Linux host - this engine needs
+  # strictly more than CBMC does, and CBMC reaches 749 of 4737 units - so
+  # a fuzz job over sys/ would spend six hours to print the ERROR count
+  # the reach job above already has. The scopes here are the ones where a
+  # harness can actually link.
+  fuzz:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: libc, scopes: '--scope lib/libc' }
+          - { name: msun, scopes: '--scope lib/msun' }
+          - { name: progs, scopes: '--scope bin --scope sbin' }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the instruments
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cbmc clang bmake afl++
+      # A fuzzer that cannot start reports no crashes and looks exactly
+      # like a clean tree - the same failure --check-errors covers in the
+      # analyse sweep. fuzz_one() already refuses to call a run CLEAN
+      # unless afl-fuzz printed "All test cases processed.", but a job
+      # whose afl-clang-fast is missing entirely should say so here, at
+      # the top, rather than four hours later as ERROR=every function.
+      - name: Prove the fuzzer is there before trusting any CLEAN
+        run: |
+          command -v afl-clang-fast || command -v afl-cc
+          command -v cbmc
+      - name: Build the function ledger
+        run: python3 tools/port_plan.py
+      # --limit, because the budget is per FUNCTION and the wall clock is
+      # per JOB. The pairs that cost nothing - NOFUNC, NORETURN, and the
+      # ERROR majority - are decided by a regex and drain fast, so the
+      # limit binds on the RUNNABLE ones, which are the only ones being
+      # paid for.
+      #
+      # --resume is set even though each run starts from an empty --out:
+      # a job reclaimed mid-run leaves a partial .jsonl in the artifact,
+      # and restoring it into out/ makes the re-run continue.
+      - name: Fuzz ${{ matrix.name }}
+        run: |
+          mkdir -p out
+          python3 tools/verify/fusebmc.py ${{ matrix.scopes }} \
+            --jobs 4 --budget 20 --cbmc-timeout 20 --limit 1500 --resume \
+            --out out/fusebmc-${{ matrix.name }}.jsonl \
+            2>&1 | tail -400 | tee out/${{ matrix.name }}.txt
+      # The only line anybody needs: what died on a concrete input.
+      - name: Every CRASH, named
+        if: always()
+        run: |
+          {
+            echo '### fusebmc ${{ matrix.name }}'
+            echo '```'
+            tail -20 out/${{ matrix.name }}.txt 2>/dev/null || echo '(no output)'
+            echo '```'
+            echo '#### CRASH'
+            python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("out/fusebmc-${{ matrix.name }}.jsonl")
+          n = 0
+          for line in p.read_text(errors="replace").splitlines() if p.is_file() else []:
+              try:
+                  r = json.loads(line)
+              except ValueError:
+                  continue
+              if r.get("status") == "CRASH":
+                  n += 1
+                  print("- `%s` %s -- %s" % (r.get("file"), r.get("function"),
+                                             (r.get("detail") or "")[:200]))
+          if not n:
+              print("None this run. That is not a proof of anything.")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fusebmc-${{ matrix.name }}
+          path: out/
+          retention-days: 14

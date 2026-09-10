@@ -20333,3 +20333,121 @@ error test that cannot fire**, and **a check that runs after the
 arithmetic it protects**.  The classes that did not were every attempt
 to find those shapes by a predicate over the source instead of by
 reading a finding — twice, measured, and reverted both times.
+
+## fusebmc at scale: the reach number, and the two crashes that were not
+
+The third engine was built to fuzz what the other two can only reason
+about.  Driving it over the whole tree — 114,207 (translation unit,
+function) pairs from the port ledger — produced two results worth
+keeping, and one of them is a correction to the tool.
+
+### The false CRASH
+
+The first run of it at scale returned four CRASHes.  Two of them were
+`_Exit` and `quick_exit`.
+
+Neither is a defect.  Both do exactly what their names say, and the
+reason the fuzzer said otherwise is structural: AFL detects a crash by
+the child failing to come back to the fork server, and a child that
+called `_Exit(1)` does not come back either.  A tool whose whole claim
+is *a crash is a certainty* cannot carry a fifty per cent false rate on
+the one status that matters.
+
+The fix is a new status rather than a filter, because "this function
+ends the process" is an answer, not a suppression:
+
+```
+  NORETURN    the function ends the process rather than returning.
+```
+
+The predicate is `noreturn_check.py`'s, reused rather than rewritten —
+the seed set of libc names that do not return, propagated through
+functions whose last top-level statement calls one of them, plus
+anything a header declares `__dead2`.  The seed replay was tightened at
+the same time, from "the process exited non-zero" to `returncode < 0`,
+which is a signal; UBSan exits 1 by default, and the two were being
+conflated.
+
+The other two CRASHes survived it, and both are the same real defect:
+`abs(INT_MIN)` and `imaxabs(INTMAX_MIN)`, where negating the most
+negative value of the type is undefined.  One was found by the CBMC
+seed and one by AFL from that seed, which is the method working as
+advertised — the model checker produced the witness, the fuzzer
+confirmed it by running it.
+
+### The reach number
+
+`--dry-run` classifies without spending a budget: `parse_params()` is
+the whole gate and it costs a regex, so the reach of the engine over
+114,207 pairs is a minute rather than a year.
+
+```
+ERROR=101357  NOFUNC=1200  RUNNABLE=11650
+```
+
+`RUNNABLE` is a **ceiling**, not a result.  It says the harness would
+build, not that anything was run, and not that anything was proved.
+
+The ERROR histogram is the actual finding:
+
+| why | pairs |
+|---|---|
+| a pointer, array or varargs parameter | 83,894 |
+| a pointer parameter, without inventing a size | 12,944 |
+| `SYSCTL_HANDLER_ARGS` — a macro standing for a parameter list | 1,140 |
+| `PFS_FILL_ARGS` — likewise | 96 |
+| a long tail of driver-specific handles (`ofw_t`, `bus_space_tag_t`, `KBDC`, …) | 3,283 |
+
+96,838 of 101,357 — **95.5%** — are the pointer answer, and it is not a
+gap to be closed by trying harder.  `cbmc_driver.py` runs pointer
+parameters under an explicit stated precondition (`--min-null-tree-depth`)
+and records the assumption in the result; there is no honest fuzzing
+equivalent, because a fuzzer given a pointer either passes `NULL` — and
+reports the absence of a caller's contract as a crash — or passes a
+buffer of an invented size, and reports the invention.  Both are
+findings about the harness.
+
+`load_tasks()` therefore does **not** intersect the ledger with a goto
+model the way `cbmc_driver.py` does.  A function this engine cannot
+synthesise parameters for is an answer with a reason attached, not a
+task to drop before counting.  Drop them silently and the coverage
+number stops meaning anything.
+
+### What the histogram bought
+
+Two of its buckets were the tool being wrong about itself, and both were
+only visible because the histogram is bucketed on the *reason*:
+
+* **148 parameters read as a type named `int signo`.**  `int signo
+  __unused` — taking the last token for the name makes the rest the
+  type.  The reason printed, "parameter type `int signo` is not a known
+  scalar", was a true statement about the table and a false one about
+  the code.
+* **9,559 pairs reported as "not a known scalar" for `device_t`,
+  `if_t`, `node_p` and friends.**  All of them are pointer typedefs.
+  Saying "a pointer" says why they cannot be reached; saying "not in my
+  table" says nothing.
+
+Widening the scalar table over the types the histogram named — the BSD
+spellings, the POSIX typedefs, the address-sized integers, the
+Linux-compat aliases, `_Bool` and the floating types — took RUNNABLE
+from 10,723 to 11,650.  `_Bool` is normalised rather than `memcpy`d into
+(`(buf[0] & 1) != 0`): an arbitrary byte in a `_Bool` can be a trap
+representation, and reading it back would make the harness the bug.
+
+`tools/verify/test_fusebmc.py` holds all of it — 25 cases, every one a
+mistake this engine actually made.
+
+### Why it is not a gate
+
+`.github/workflows/pbsd-fusebmc.yml` runs nightly and is report-only:
+nothing `needs:` it, every job is `continue-on-error`, and the output is
+an artifact and a step summary a person reads.
+
+A gate wants a signal that only moves when the code moves.  AFL's does
+not.  The same function, the same budget and a different runner is a
+different number of executions, and a crash found on the ninth run of an
+unchanged tree is a true finding that would have failed the eight runs
+before it for no reason anybody could act on.  The asymmetry is what
+makes it worth running anyway: `CLEAN` is worth nothing and is never
+reported as if it were, and `CRASH` is a concrete input and a signal.
