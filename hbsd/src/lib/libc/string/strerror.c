@@ -64,7 +64,13 @@ errstr(int num, const char *uprefix, char *buf, size_t len)
 
 	t = tmp + sizeof(tmp);
 	*--t = '\0';
-	uerr = (num >= 0) ? num : -num;
+	/*
+	 * The negation in UNSIGNED: `-num' is computed in int before it
+	 * reaches uerr, so errstr(INT_MIN, ...) was undefined even
+	 * though the destination could hold the answer.  strsignal()
+	 * had the same line with the same fix.
+	 */
+	uerr = (num >= 0) ? (unsigned int)num : -(unsigned int)num;
 	do {
 		*--t = "0123456789"[uerr % 10];
 	} while (uerr /= 10);

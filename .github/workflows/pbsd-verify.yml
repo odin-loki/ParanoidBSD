@@ -337,6 +337,23 @@ jobs:
       # enumeration in under a second.
       - name: A PaX feature that is off still links
         run: python3 tools/verify/check_pax_options.py
+      # systat's get_tbl_ptr(), libcalendar's easterodn() and libc's
+      # querylocale() are one shape wearing three sets of clothes: a
+      # signed index bounded above and not below, or a signed `%' used
+      # as a subscript, which in C keeps the sign of the dividend. All
+      # three read memory before the array and two hand what they find
+      # back to the caller as a pointer. strsignal(INT_MIN) was the
+      # fourth, found by the checker rather than by hand.
+      #
+      # Only the MOD half gates -- 8 sites tree-wide, every one read and
+      # on the record. The ONESIDED half prints its 264 and does not
+      # fail: they are internal contracts, and a gate demanding 264
+      # readings before the next commit is a gate somebody turns off.
+      - name: An array subscript bounded above and not below
+        run: python3 tools/verify/onesided_index.py --gate
+      - name: The index checker still finds the four it was written for
+        run: python3 tools/verify/test_onesided_index.py
+
       # param_premise.py sorts the sweep's findings by the function they
       # are in, which it works out by reading the text. A rule about where
       # a function begins can be a little bit wrong and still produce a

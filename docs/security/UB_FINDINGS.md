@@ -21095,3 +21095,101 @@ defect was one line further down.
 That is a use for a checker that no count of true positives measures,
 and it is the reason "read every finding" is the rule rather than "fix
 every finding".
+
+## A lint for the shape, and the fourth one it found
+
+Three defects in one day were the same shape:
+
+* `systat`'s `get_tbl_ptr()` — `idx = scale < SC_AUTO ? scale : SC_AUTO`
+* libc's `querylocale()` — `if (type >= XLC_LAST) return (NULL);`
+* `libcalendar`'s `easterodn()` — `mc[y % 19]`
+
+The first two write a bound for a two-sided index as one comparison, and
+the first says so out loud in its own comment — *"if our index is out of
+range"* — while the code checks one end.  The third subscripts with `%`,
+which in C keeps the sign of the dividend.
+
+`tools/verify/onesided_index.py` looks for both:
+
+| rule | what |
+|---|---|
+| `MOD` | `arr[V % C]` where V is a **signed** integer whose value comes from outside the function |
+| `ONESIDED` | `arr[V]` where V is signed, the function bounds it above, and nowhere below |
+
+### The fourth: strsignal(INT_MIN)
+
+```c
+	signum = num;
+	if (num < 0)
+		signum = -signum;
+	...
+	do {
+		*t++ = "0123456789"[signum % 10];
+	} while (signum /= 10);
+```
+
+`strsignal(3)` takes a plain `int` and that `else` arm is the one that
+handles *every* value outside the signal range, so `strsignal(INT_MIN)`
+reaches it.  Negating the most negative `int` is undefined — and it does
+not even come out positive: `signum` stays negative, and the subscript
+reads off the front of the string literal, into the buffer
+`strsignal()` returns to its caller.
+
+The file had carried
+
+```c
+/* XXX: negative 'num' ? (REGR) */
+```
+
+above the definition.  Somebody knew.
+
+`strerror()`'s `errstr()` had the same line — `uerr = (num >= 0) ? num :
+-num;` — and although the destination was already `unsigned`, the `-num`
+is computed in `int` before it gets there.  Same fix, negate in
+`unsigned`, which is exact and modular.  Rendered over the full range
+afterwards, `INT_MIN` included:
+
+```
+ -2147483648 -> -2147483648
+  2147483647 -> 2147483647
+```
+
+**The analyser has nothing here**: `lib/libc/string` measures 0 findings
+across 86 translation units.  Neither does the model checker —
+`strsignal` is not in its reachable set.  This one came from the lint
+alone.
+
+### Only one of the two rules gates
+
+`MOD` reports **8** sites tree-wide, every one read and written into
+`EXPECTED` with the reason: a fraction-digit count from `strlen`, `pr`'s
+own line counter, two `pid_t`s from `fork(2)`, a queue rank, a driver
+ring index counted from zero, a `compat_strtoul()` result, and an
+unsigned buffer offset.  That is a gate.
+
+`ONESIDED` reports **264** — down from 1,109 over four rounds of
+tightening — and they are dominated by internal contracts: a static
+helper whose two callers both pass 0 or 1, a driver's ring index, a
+parameter something three functions away pins.  Each is a reading, not a
+defect, and a gate that demands 264 readings before the next commit is a
+gate somebody turns off.  So it prints and does not fail, which is the
+same call `noreturn_check.py` makes about its 673.
+
+The four rounds are worth listing, because each was the checker being
+wrong about the tree rather than the tree being wrong:
+
+| what it learned | 1,109 → |
+|---|---|
+| a `for (V = …)` initialiser is a loop counter whatever the initialiser is | 656 |
+| `assert(0 < i && …)` — the author stating the bound is a bound | 569 |
+| an index whose value never leaves the function is not this defect | 264 |
+| one report per (function, variable), not per use | 264 |
+
+And two rounds before that were the checker failing to find the defects
+it was written for — the systat shape puts its ceiling on the *source*
+expression rather than on the index, and `if ((scale = get_scale(args))
+!= -1)` puts the floor and the name on either side of a call.  Both are
+now cases in `test_onesided_index.py`, along with the three originals in
+the form they had before they were fixed.  A lint that cannot find the
+bugs it was written for is worth nothing, and the only way to know is to
+keep them.

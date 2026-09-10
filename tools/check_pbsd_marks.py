@@ -5231,6 +5231,28 @@ FIXES = {
         "subnormal inputs give bit-identical results either way.",
     ),
 
+    "hbsd/src/lib/libc/string/strsignal.c": (
+        "signum = (num < 0) ? -(unsigned int)num : (unsigned int)num;",
+        "\t\tsignum = num;\n\t\tif (num < 0)",
+        "strsignal(3) takes a plain int and the else arm handles every "
+        "value outside the signal range, so strsignal(INT_MIN) reached "
+        "`signum = -signum'. Negating the most negative int is "
+        "undefined, and it does not even come out positive: signum "
+        "stayed negative and \"0123456789\"[signum % 10] read off the "
+        "front of the string literal, into the buffer strsignal() "
+        "returns. The file had carried an `XXX: negative num ?' above "
+        "the definition. Negated in unsigned, which is exact.",
+    ),
+
+    "hbsd/src/lib/libc/string/strerror.c": (
+        "uerr = (num >= 0) ? (unsigned int)num : -(unsigned int)num;",
+        "uerr = (num >= 0) ? num : -num;",
+        "errstr()'s destination was already unsigned but `-num' was "
+        "computed in int before it got there, so errstr(INT_MIN, ...) "
+        "was undefined. The same line and the same fix as strsignal().",
+    ),
+
+
     "hbsd/src/lib/libc/locale/xlocale.c": (
         "if (type < 0 || type >= XLC_LAST)",
         "if (type >= XLC_LAST)\n\t\treturn (NULL);",

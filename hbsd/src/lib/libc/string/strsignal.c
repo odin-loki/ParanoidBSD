@@ -82,14 +82,13 @@ thr_err:
 	return (ebuf);
 }
 
-/* XXX: negative 'num' ? (REGR) */
 char *
 strsignal(int num)
 {
 	char *ebuf;
 	char tmp[20];
 	size_t n;
-	int signum;
+	unsigned int signum;
 	char *t, *p;
 
 #if defined(NLS)
@@ -117,9 +116,20 @@ strsignal(int num)
 #endif
 			sizeof(sig_ebuf));
 
-		signum = num;
-		if (num < 0)
-			signum = -signum;
+		/*
+		 * In UNSIGNED.  This file carried an `XXX: negative num ?'
+		 * above the definition for years, and this is the answer.
+		 * strsignal(3) takes a plain int and this is the arm that
+		 * handles every value outside the signal range, so
+		 * strsignal(INT_MIN) reaches it -- and negating the most
+		 * negative int is undefined.  Worse, it does not even
+		 * come out positive: signum stayed negative and
+		 * "0123456789"[signum % 10] read off the front of the
+		 * string literal, into the buffer this returns.  The
+		 * unsigned negation is exact (modular) and every value
+		 * in range is unchanged.
+		 */
+		signum = (num < 0) ? -(unsigned int)num : (unsigned int)num;
 
 		t = tmp;
 		do {
