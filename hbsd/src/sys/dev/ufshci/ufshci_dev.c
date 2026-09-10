@@ -80,6 +80,14 @@ ufshci_dev_read_flag(struct ufshci_controller *ctrlr,
 	param.index = 0;
 	param.selector = 0;
 	param.value = 0;
+	/*
+	 * PBSD: define desc_size.  struct ufshci_query_param is passed BY
+	 * VALUE to ufshci_ctrlr_cmd_send_query_request(), which does
+	 * `upiu->length = param.desc_size' -- so every flag and attribute
+	 * query sent by this file put an uninitialised local in the UPIU's
+	 * length field.  Only ufshci_dev_read_descriptor() set it.
+	 */
+	param.desc_size = 0;
 
 	status.done = 0;
 	ufshci_ctrlr_cmd_send_query_request(ctrlr, ufshci_completion_poll_cb,
@@ -108,6 +116,7 @@ ufshci_dev_set_flag(struct ufshci_controller *ctrlr,
 	param.index = 0;
 	param.selector = 0;
 	param.value = 0;
+	param.desc_size = 0;
 
 	status.done = 0;
 	ufshci_ctrlr_cmd_send_query_request(ctrlr, ufshci_completion_poll_cb,
@@ -134,6 +143,7 @@ ufshci_dev_clear_flag(struct ufshci_controller *ctrlr,
 	param.index = 0;
 	param.selector = 0;
 	param.value = 0;
+	param.desc_size = 0;
 
 	status.done = 0;
 	ufshci_ctrlr_cmd_send_query_request(ctrlr, ufshci_completion_poll_cb,
@@ -161,6 +171,7 @@ ufshci_dev_read_attribute(struct ufshci_controller *ctrlr,
 	param.index = index;
 	param.selector = selector;
 	param.value = 0;
+	param.desc_size = 0;
 
 	status.done = 0;
 	ufshci_ctrlr_cmd_send_query_request(ctrlr, ufshci_completion_poll_cb,
@@ -190,6 +201,7 @@ ufshci_dev_write_attribute(struct ufshci_controller *ctrlr,
 	param.index = index;
 	param.selector = selector;
 	param.value = value;
+	param.desc_size = 0;
 
 	status.done = 0;
 	ufshci_ctrlr_cmd_send_query_request(ctrlr, ufshci_completion_poll_cb,
@@ -680,7 +692,15 @@ ufshci_dev_config_write_booster(struct ufshci_controller *ctrlr)
 {
 	struct ufshci_device *dev = &ctrlr->ufs_dev;
 	uint32_t extended_ufs_feature_support;
-	uint32_t alloc_units;
+	/*
+	 * PBSD: `= 0'.  On the LU-dedicated path alloc_units is written
+	 * only by a loop iteration whose unit-descriptor read succeeded,
+	 * and every iteration may `continue' past it -- so the `alloc_units
+	 * == 0' test below read an uninitialised local, and a garbage
+	 * non-zero went on to size the WriteBooster buffer.  Zero is the
+	 * value that test is looking for.
+	 */
+	uint32_t alloc_units = 0;
 	struct ufshci_unit_descriptor unit_desc;
 	uint8_t lun;
 	bool is_life_time_left;

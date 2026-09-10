@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,419 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,485 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,299,089** | **114,204** |
+| | **total** | **41,143** | **21,299,155** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -72986,7 +72986,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.729.12.12 `gve_setup_sysctl_writables()` · `TODO-FN`
   - [ ] 8.729.12.13 `gve_accum_stats()` · `TODO-FN`
   - [ ] 8.729.12.14 `gve_setup_sysctl()` · `TODO-FN`
-- [ ] **8.729.13** `gve_tx.c` · 959L · `TODO-PORT` · 36 fn
+- [ ] **8.729.13** `gve_tx.c` · 971L · `TODO-PORT` · 36 fn
   - [ ] 8.729.13.1 `gve_tx_fifo_init()` · `TODO-FN`
   - [ ] 8.729.13.2 `gve_tx_free_ring_gqi()` · `TODO-FN`
   - [ ] 8.729.13.3 `gve_tx_free_ring()` · `TODO-FN`
@@ -98165,7 +98165,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.994.1.9 `sdio_f0_read_1()` · `TODO-FN`
   - [ ] 8.994.1.10 `sdio_f0_write_1()` · `TODO-FN`
 - [ ] **8.994.2** `sdio_subr.h` · 106L · `TODO-HDR`
-- [ ] **8.994.3** `sdiob.c` · 1,176L gen:2 · `TODO-PORT` · 28 fn
+- [ ] **8.994.3** `sdiob.c` · 1,191L gen:2 · `TODO-PORT` · 28 fn
   - [ ] 8.994.3.1 `sdioerror()` · `TODO-FN`
   - [ ] 8.994.3.2 `sdiob_rw_direct_sc()` · `TODO-FN`
   - [ ] 8.994.3.3 `sdio_rw_direct()` · `TODO-FN`
@@ -103003,7 +103003,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1048.4.1 `ufshci_ctrlr_cmd_send_task_mgmt_request()` · `TODO-FN`
   - [ ] 8.1048.4.2 `ufshci_ctrlr_cmd_send_nop()` · `TODO-FN`
   - [ ] 8.1048.4.3 `ufshci_ctrlr_cmd_send_query_request()` · `TODO-FN`
-- [ ] **8.1048.5** `ufshci_dev.c` · 778L · `TODO-PORT` · 21 fn
+- [ ] **8.1048.5** `ufshci_dev.c` · 798L · `TODO-PORT` · 21 fn
   - [ ] 8.1048.5.1 `ufshci_dev_read_descriptor()` · `TODO-FN`
   - [ ] 8.1048.5.2 `ufshci_dev_read_device_descriptor()` · `TODO-FN`
   - [ ] 8.1048.5.3 `ufshci_dev_read_geometry_descriptor()` · `TODO-FN`
@@ -105065,7 +105065,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1055.31.24 `urndis_bulk_write_callback()` · `TODO-FN`
   - [ ] 8.1055.31.25 `urndis_intr_read_callback()` · `TODO-FN`
 - [ ] **8.1055.32** `if_urndisreg.h` · 57L · `TODO-HDR`
-- [ ] **8.1055.33** `if_usie.c` · 1,609L gen:7 · `TODO-PORT` · 36 fn
+- [ ] **8.1055.33** `if_usie.c` · 1,628L gen:7 · `TODO-PORT` · 36 fn
   - [ ] 8.1055.33.1 `usie_autoinst()` · `TODO-FN`
   - [ ] 8.1055.33.2 `usie_probe()` · `TODO-FN`
   - [ ] 8.1055.33.3 `usie_attach()` · `TODO-FN`

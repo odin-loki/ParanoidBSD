@@ -666,6 +666,18 @@ gve_xmit(struct gve_tx_ring *tx, struct mbuf *mbuf)
 	l3_off = ETHER_HDR_LEN;
 	mbuf_next = m_getptr(mbuf, l3_off, &offset);
 
+	/*
+	 * PBSD: l4_off and csum_offset start defined.  l4_off is written
+	 * only by the IPv6 and IPv4 arms below and csum_offset only under
+	 * has_csum_flag, but both are handed to gve_tx_fill_pkt_desc()
+	 * unconditionally -- so a frame that is neither IPv4 nor IPv6, or
+	 * one with no checksum offload asked for, put uninitialised stack
+	 * in the transmit descriptor.  Zero is what the comment further
+	 * down describes for a packet that is neither TCP nor UDP.
+	 */
+	l4_off = 0;
+	csum_offset = 0;
+
 	if (is_ipv6) {
 		ip6 = (struct ip6_hdr *)(mtodo(mbuf_next, offset));
 		l4_off = l3_off + sizeof(struct ip6_hdr);

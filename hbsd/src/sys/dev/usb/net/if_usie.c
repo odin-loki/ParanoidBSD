@@ -878,9 +878,27 @@ tr_setup:
 			break;
 #endif
 		default:
+			/*
+			 * PBSD: skip the frame.  This arm used to count an
+			 * error and break out of the SWITCH, falling into
+			 * the two netisr_dispatch(ipv, ...) calls below with
+			 * ipv -- a uint8_t local with no initialiser --
+			 * undefined.  netisr_dispatch() indexes
+			 * netisr_proto[] with it and calls through what it
+			 * finds, so a device sending an aggregated frame
+			 * with any other ether type picked a protocol
+			 * handler out of the stack.  Skipping is what the
+			 * "received wrong type of packet" block above does,
+			 * and this is that block.
+			 */
 			DPRINTF("unsupported ether type\n");
+			m->m_data += diff;
+			m->m_pkthdr.len = (m->m_len -= diff);
 			err++;
-			break;
+			if (m->m_pkthdr.len > 0)
+				continue;
+			m_freem(m);
+			goto done;
 		}
 
 		/* the last packet */
@@ -910,6 +928,7 @@ tr_setup:
 		m->m_data += diff;
 		m->m_pkthdr.len = (m->m_len -= diff);
 	}
+done:
 	NET_EPOCH_EXIT(et);
 
 	mtx_lock(&sc->sc_mtx);

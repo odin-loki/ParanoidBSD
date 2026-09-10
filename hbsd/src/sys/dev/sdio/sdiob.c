@@ -792,7 +792,14 @@ static int
 sdio_get_common_cis_addr(struct sdiob_softc *sc, uint32_t *addr)
 {
 	int error;
-	uint32_t a;
+	/*
+	 * PBSD: `= 0'.  The err: label below sits inside the body of the
+	 * `if (a < SD_IO_CIS_START ...)' that follows, and the three
+	 * `goto err' above it jump past one, two or all three of the
+	 * assignments that build a -- which the CAM_DEBUG there then
+	 * prints.
+	 */
+	uint32_t a = 0;
 	uint8_t val;
 
 	error = sdio_read_direct_sc(sc, 0, SD_IO_CCCR_CISPTR + 0, &val);
@@ -809,6 +816,14 @@ sdio_get_common_cis_addr(struct sdiob_softc *sc, uint32_t *addr)
 	a |= (val << 16);
 
 	if (a < SD_IO_CIS_START || a > SD_IO_CIS_START + SD_IO_CIS_SIZE) {
+		/*
+		 * PBSD: say so in the return value.  This arm leaves *addr
+		 * unwritten and then returns `error', which on this path is
+		 * 0 -- so a card reporting a CIS pointer outside the valid
+		 * range had sdiob_get_card_info() read the CIS from an
+		 * uninitialised local.
+		 */
+		error = EINVAL;
 err:
 		CAM_DEBUG(sc->ccb->ccb_h.path, CAM_DEBUG_PERIPH,
 		    ("%s: bad CIS address: %#04x, error %d\n", __func__, a,

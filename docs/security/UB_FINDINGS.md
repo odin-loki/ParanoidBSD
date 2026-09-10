@@ -15314,3 +15314,74 @@ findings          30       3
 ```
 
 Twenty-seven of thirty, from forty-four one-line changes.
+
+### The dev shard's `core.CallAndMessage`, and what it uncovered
+
+`core.CallAndMessage` — "an uninitialised value passed to a function" —
+is the same defect as `core.uninitialized.*` seen from the call site
+rather than the assignment, and it was the next class to read: 79 in the
+dev shard, 70 of them argument reports and 9 "called function pointer is
+null". Six were real.
+
+`usie_if_rx_callback()` — the Sierra Wireless USB modem's receive path —
+switches on the ether type of each frame in an aggregated USB transfer:
+
+```c
+		default:
+			DPRINTF("unsupported ether type\n");
+			err++;
+			break;
+		}
+```
+
+That `break` leaves the **switch**, not the loop, and the two
+`netisr_dispatch(ipv, ...)` calls twelve lines down take `ipv` — a
+`uint8_t` local with no initialiser. `netisr_dispatch()` indexes
+`netisr_proto[]` with its first argument and calls through what it
+finds, so a device sending a frame with any ether type but IP or IPv6
+picked a protocol handler out of the stack. The arm now does what the
+"received wrong type of packet" block above it does: advance past the
+frame and go round again, or free and stop.
+
+`struct ufshci_query_param` has seven fields and is passed **by value**
+to `ufshci_ctrlr_cmd_send_query_request()`, which does
+`upiu->length = param.desc_size`. Five of the six functions that build
+one set six fields and leave `desc_size` alone — only
+`ufshci_dev_read_descriptor()` sets it — so every UFS flag read, flag
+set, flag clear, attribute read and attribute write sent a query UPIU
+whose length field was an uninitialised local.
+
+Fixing that made a sixth visible in the same file:
+`ufshci_dev_config_write_booster()` declares `uint32_t alloc_units;` and
+writes it, on the LU-dedicated path, only inside a loop iteration whose
+unit-descriptor read succeeded — every iteration may `continue` past it.
+The `if (alloc_units == 0)` after the loop then read it either way, and
+a garbage non-zero went on to size the WriteBooster buffer.
+
+`sdio_get_common_cis_addr()` has two:
+
+- its `err:` label sits **inside the body** of the
+  `if (a < SD_IO_CIS_START || a > ...)` that follows it, so the three
+  `goto err` above jump past one, two or all three of the assignments
+  that build `a` — which the `CAM_DEBUG` at that label then prints;
+- that same range check leaves `*addr` unwritten and returns `error`,
+  which on that path is **0**. A card reporting a CIS pointer outside the
+  valid range therefore had `sdiob_get_card_info()` read the CIS from an
+  uninitialised local. It now returns EINVAL.
+
+`gve_xmit()` is `gve_prep_tso()`'s neighbour with the same shape:
+`l4_off` is written only by the IPv6 and IPv4 arms and `csum_offset` only
+under `has_csum_flag`, and both go to `gve_tx_fill_pkt_desc()`
+unconditionally.
+
+```
+              before   after     (sys/dev/gve, sdio, ufshci, usb)
+OK               164     164
+findings          46      35
+```
+
+`ufshci_dev.c` and `sdiob.c` are now clean. What remains in those four
+directories is nine `core.CallAndMessage` on out-parameters written in
+another translation unit — `bus_space_read_region_4()`,
+`HYPERVISOR_event_channel_op()`, `usbd_*` — and one `unix.Malloc` pair
+in `ufshci_sim.c`, unread.

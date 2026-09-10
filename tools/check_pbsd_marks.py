@@ -3416,13 +3416,30 @@ FIXES = {
         "lio_get_ringparam: the switch has no default, so an arg2 "
         "matching neither case returned an uninitialised errno",
     ),
-    "hbsd/src/sys/dev/sdio/sdiob.c": (
-        "\tchar *cis1_info[4] = { NULL, NULL, NULL, NULL };",
-        "\tchar *cis1_info[4];",
-        "sdio_func_read_cis: the loop fills up to four entries and the "
-        "print loop walks all four -- the kernel twin of the same "
-        "defect already fixed in usr.bin/sdiotool/cam_sdio.c",
-    ),
+    "hbsd/src/sys/dev/sdio/sdiob.c": [
+        (
+            "\tchar *cis1_info[4] = { NULL, NULL, NULL, NULL };",
+            "\tchar *cis1_info[4];",
+            "sdio_func_read_cis: the loop fills up to four entries and "
+            "the print loop walks all four -- the kernel twin of the "
+            "same defect already fixed in usr.bin/sdiotool/cam_sdio.c",
+        ),
+        (
+            "\t\terror = EINVAL;\nerr:",
+            "SD_IO_CIS_SIZE) {\nerr:",
+            "sdio_get_common_cis_addr: the out-of-range arm leaves "
+            "*addr unwritten and returns `error', which on that path is "
+            "0, so the caller read the CIS from an uninitialised local",
+        ),
+        (
+            "\tuint32_t a = 0;",
+            "\tint error;\n\tuint32_t a;\n\tuint8_t val;",
+            "sdio_get_common_cis_addr: the err: label sits inside the "
+            "body of the `if (a < SD_IO_CIS_START ...)' that follows "
+            "it, so the three `goto err' jump past the assignments "
+            "that build the value CAM_DEBUG there prints",
+        ),
+    ],
     "hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9280_olc.c": (
         "\t\t\tuint16_t diff = 0;",
         "\t\t\tuint16_t diff;",
@@ -3515,6 +3532,41 @@ FIXES = {
         "aac_define_int_mode: the legacy arm floors aac_max_msix at 1 "
         "and the MSI-X arm only clamps it down, so firmware reporting "
         "zero vectors reaches the division with a zero divisor",
+    ),
+
+    "hbsd/src/sys/dev/gve/gve_tx.c": (
+        "\tl4_off = 0;\n\tcsum_offset = 0;",
+        "\tl3_off = ETHER_HDR_LEN;\n\tmbuf_next = m_getptr(mbuf, l3_off, &offset);\n\n\tif (is_ipv6) {",
+        "gve_xmit: l4_off is written only by the IPv6 and IPv4 arms and "
+        "csum_offset only under has_csum_flag, and both go to "
+        "gve_tx_fill_pkt_desc() unconditionally",
+    ),
+    "hbsd/src/sys/dev/ufshci/ufshci_dev.c": [
+        (
+        ("\tparam.desc_size = 0;", 5),
+        "\tparam.value = 0;\n\n\tstatus.done = 0;",
+        "struct ufshci_query_param is passed BY VALUE to "
+        "ufshci_ctrlr_cmd_send_query_request(), which does "
+        "`upiu->length = param.desc_size' -- and only the descriptor "
+        "reader set it, so every flag and attribute query carried an "
+        "uninitialised local in the UPIU length field",
+        ),
+        (
+            "\tuint32_t alloc_units = 0;",
+            "\tuint32_t extended_ufs_feature_support;\n\tuint32_t alloc_units;",
+            "ufshci_dev_config_write_booster: on the LU-dedicated path "
+            "alloc_units is written only by an iteration whose "
+            "descriptor read succeeded, and the `alloc_units == 0' test "
+            "after the loop read it either way",
+        ),
+    ],
+    "hbsd/src/sys/dev/usb/net/if_usie.c": (
+        "\t\t\tgoto done;\n\t\t}",
+        "\t\t\tDPRINTF(\"unsupported ether type\\n\");\n\t\t\terr++;\n\t\t\tbreak;",
+        "usie_if_rx_callback: the unsupported-ether-type arm broke out "
+        "of the SWITCH and fell into netisr_dispatch(ipv, ...) with ipv "
+        "undefined, so the device chose a netisr protocol index out of "
+        "the stack",
     ),
 }
 
