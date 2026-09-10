@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,109 | 1,063 |
 | 4 | `sbin` | 533 | 228,514 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,438 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,495 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,254** | **114,205** |
+| | **total** | **41,143** | **21,300,310** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -32277,7 +32277,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.143.2.2 `print_span()` · `TODO-FN`
   - [ ] 6.143.2.3 `print_sys_drive()` · `TODO-FN`
   - [ ] 6.143.2.4 `print_phys_drive()` · `TODO-FN`
-- [ ] **6.143.3** `interface.c` · 290L · `TODO-PORT` · 11 fn
+- [ ] **6.143.3** `interface.c` · 346L · `TODO-PORT` · 11 fn
   - [ ] 6.143.3.1 `mlx_foreach()` · `TODO-FN`
   - [ ] 6.143.3.2 `mlx_perform()` · `TODO-FN`
   - [ ] 6.143.3.3 `mlxd_foreach_ctrlr()` · `TODO-FN`

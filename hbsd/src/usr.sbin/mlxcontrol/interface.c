@@ -187,6 +187,20 @@ mlx_enquiry(int unit, struct mlx_enquiry2 *enq)
 {
     struct mlx_usercommand	cmd;
 
+    /*
+     * PBSD: mlx_perform() does nothing at all when the control device
+     * cannot be opened -- its open() has no else -- so on that path cmd
+     * is never written and the `cmd.mu_status != 0' below is a read of
+     * stack garbage.  Worse, cmd goes to the driver whole through an
+     * _IOWR: mu_command is sixteen bytes and no caller here sets more
+     * than three of them, and mlx_scsi_inquiry() does not set mu_bufptr
+     * at all -- the offset the driver places the data buffer address
+     * at.  Zero it, and leave mu_status nonzero so "did not run" reads
+     * as failure rather than as whatever the stack held.
+     */
+    bzero(&cmd, sizeof(cmd));
+    cmd.mu_status = 0xffff;
+
     /* build the command */
     cmd.mu_datasize = sizeof(*enq);
     cmd.mu_buf = enq;
@@ -208,6 +222,20 @@ int
 mlx_read_configuration(int unit, struct mlx_core_cfg *cfg)
 {
     struct mlx_usercommand	cmd;
+
+    /*
+     * PBSD: mlx_perform() does nothing at all when the control device
+     * cannot be opened -- its open() has no else -- so on that path cmd
+     * is never written and the `cmd.mu_status != 0' below is a read of
+     * stack garbage.  Worse, cmd goes to the driver whole through an
+     * _IOWR: mu_command is sixteen bytes and no caller here sets more
+     * than three of them, and mlx_scsi_inquiry() does not set mu_bufptr
+     * at all -- the offset the driver places the data buffer address
+     * at.  Zero it, and leave mu_status nonzero so "did not run" reads
+     * as failure rather than as whatever the stack held.
+     */
+    bzero(&cmd, sizeof(cmd));
+    cmd.mu_status = 0xffff;
 
     /* build the command */
     cmd.mu_datasize = sizeof(*cfg);
@@ -237,6 +265,20 @@ mlx_scsi_inquiry(int unit, int channel, int target, char **vendor, char **device
     } __attribute__ ((packed))		dcdb_cmd;
     struct scsi_inquiry		*inq_cmd = (struct scsi_inquiry *)&dcdb_cmd.dcdb.dcdb_cdb[0];
     
+    /*
+     * PBSD: mlx_perform() does nothing at all when the control device
+     * cannot be opened -- its open() has no else -- so on that path cmd
+     * is never written and the `cmd.mu_status != 0' below is a read of
+     * stack garbage.  Worse, cmd goes to the driver whole through an
+     * _IOWR: mu_command is sixteen bytes and no caller here sets more
+     * than three of them, and mlx_scsi_inquiry() does not set mu_bufptr
+     * at all -- the offset the driver places the data buffer address
+     * at.  Zero it, and leave mu_status nonzero so "did not run" reads
+     * as failure rather than as whatever the stack held.
+     */
+    bzero(&cmd, sizeof(cmd));
+    cmd.mu_status = 0xffff;
+
     /* build the command */
     cmd.mu_datasize = sizeof(dcdb_cmd);
     cmd.mu_buf = &dcdb_cmd;
@@ -273,6 +315,20 @@ int
 mlx_get_device_state(int unit, int channel, int target, struct mlx_phys_drv *drv)
 {
     struct mlx_usercommand	cmd;
+
+    /*
+     * PBSD: mlx_perform() does nothing at all when the control device
+     * cannot be opened -- its open() has no else -- so on that path cmd
+     * is never written and the `cmd.mu_status != 0' below is a read of
+     * stack garbage.  Worse, cmd goes to the driver whole through an
+     * _IOWR: mu_command is sixteen bytes and no caller here sets more
+     * than three of them, and mlx_scsi_inquiry() does not set mu_bufptr
+     * at all -- the offset the driver places the data buffer address
+     * at.  Zero it, and leave mu_status nonzero so "did not run" reads
+     * as failure rather than as whatever the stack held.
+     */
+    bzero(&cmd, sizeof(cmd));
+    cmd.mu_status = 0xffff;
 
     /* build the command */
     cmd.mu_datasize = sizeof(*drv);

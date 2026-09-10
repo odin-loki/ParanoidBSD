@@ -17762,3 +17762,118 @@ Zero delta, and that is the honest number: the sweep never reported
 either site. Like `ata-promise.c`, they exist in this document because a
 second instrument found what the first could not see, and the unchanged
 OK/ERROR columns are what says the edited files still compile.
+
+## The progs shard, and a command mailbox filled from the stack
+
+```
+                bin + sbin + usr.bin + usr.sbin
+OK                      1822
+ERROR                     40   (all on the record)
+findings                 679
+
+  core.NullDereference            220
+  unix.Malloc                     206
+  core.CallAndMessage              73
+  core.UndefinedBinaryOperatorResult
+                                   71
+  unix.cstring.NullArg             49
+  core.uninitialized.Assign        22
+  core.DivideZero                  21
+  unix.MallocSizeof                12
+  (the rest)                        5
+```
+
+### mlxcontrol: four commands built on uninitialised stack
+
+`usr.sbin/mlxcontrol/interface.c` has four functions of one shape, and
+the sweep reports each of them:
+
+```c
+int
+mlx_enquiry(int unit, struct mlx_enquiry2 *enq)
+{
+    struct mlx_usercommand	cmd;
+
+    /* build the command */
+    cmd.mu_datasize = sizeof(*enq);
+    cmd.mu_buf = enq;
+    cmd.mu_bufptr = 8;
+    cmd.mu_command[0] = MLX_CMD_ENQUIRY2;
+
+    mlx_perform(unit, mlx_command, (void *)&cmd);
+
+    return(cmd.mu_status != 0);
+}
+```
+
+`mlx_perform()` is:
+
+```c
+    if ((fd = open(ctrlrpath(unit), 0)) >= 0) {
+	func(fd, arg);
+	close(fd);
+    }
+```
+
+with no `else`. When the control device cannot be opened — no controller
+present, or not running as root — the command function is never called,
+`cmd` is never written, and `cmd.mu_status != 0` is a read of stack
+garbage. The caller learns whether the command succeeded from whatever
+happened to be on the stack.
+
+The second half is worse and the analyser cannot see it at all. `cmd`
+goes to the driver whole, through `_IOWR('M', 4, struct
+mlx_usercommand)`, and the struct is:
+
+```c
+    u_int16_t	mu_status;	/* command status returned */
+    u_int8_t	mu_command[16];	/* command mailbox contents */
+    int		mu_error;
+```
+
+No caller here sets more than three of those sixteen mailbox bytes —
+`mlx_get_device_state()` sets `[0]`, `[2]` and `[3]`, leaving `[1]` and
+`[4]` through `[15]` as stack — and `mlx_scsi_inquiry()` never sets
+`mu_bufptr` at all, which is the offset at which the driver places the
+data buffer address. A DAC960 controller is handed a command mailbox
+built partly from this process's stack.
+
+All four now `bzero(&cmd, sizeof(cmd))` and set `mu_status = 0xffff`, so
+"the command did not run" reports as failure rather than as whatever the
+stack held.
+
+```
+                usr.sbin/mlxcontrol
+                before  after
+OK                  4       4
+ERROR               0       0
+findings            4       0
+```
+
+### And 36 findings that are one guard's exemption
+
+`ctladm` has 60 findings, a tenth of the shard, and 36 of them are four
+XML end-element callbacks writing the same guard:
+
+```c
+	cur_conn = islist->cur_conn;
+
+	if ((cur_conn == NULL)
+	 && (strcmp(name, "ctlislist") != 0))
+		errx(1, "%s: cur_conn == NULL! (name = %s)", __func__, name);
+	...
+	if (strcmp(name, "initiator") == 0) {
+		cur_conn->initiator = str;
+```
+
+`errx` is `__dead2` and the analyser knows it, so the only surviving
+path with `cur_conn == NULL` is the one where `name` **is**
+`"ctlislist"` — on which none of the `strcmp` arms below matches, so
+none of the writes happens. The correlation is between a string and
+which branch of a chain of string comparisons is taken, and no
+path-sensitive analysis is going to carry that.
+
+`cctl_islist_end_element` (14), `cctl_end_pelement` (13),
+`cctl_end_element` (6) and `cctl_nvlist_end_element` (3) are all this,
+with `ctlislist`, `ctlportlist`, `ctllunlist` and `ctlnvmflist` as their
+respective exempt element names.

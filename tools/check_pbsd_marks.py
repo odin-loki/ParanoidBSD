@@ -4132,6 +4132,18 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/usr.sbin/mlxcontrol/interface.c": (
+        ("bzero(&cmd, sizeof(cmd));\n    cmd.mu_status = 0xffff;", 4),
+        "    struct mlx_usercommand\tcmd;\n\n    /* build the command */\n"
+        "    cmd.mu_datasize",
+        "mlx_perform() does nothing when the control device cannot be "
+        "opened -- its open() has no else -- so cmd is never written and "
+        "`cmd.mu_status != 0' reads stack garbage in all four callers. "
+        "And cmd goes to the driver whole through an _IOWR: mu_command is "
+        "sixteen bytes, no caller sets more than three, and "
+        "mlx_scsi_inquiry() never sets mu_bufptr at all",
+    ),
+
     "hbsd/src/sys/dev/isp/isp_freebsd.c": (
         "\tif (ccb != NULL) {\n\t\tccb->ccb_h.status &= ~CAM_STATUS_MASK;",
         "\tisp_async(isp, ISPASYNC_TARGET_NOTIFY_ACK, inot);\n"
