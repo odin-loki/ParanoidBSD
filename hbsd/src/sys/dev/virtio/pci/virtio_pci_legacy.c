@@ -588,7 +588,14 @@ vtpci_legacy_alloc_resources(struct vtpci_legacy_softc *sc)
 	 * Most hypervisors export the common configuration structure in IO
 	 * space, but some use memory space; try both.
 	 */
-	for (i = 0; nitems(res_types); i++) {
+	/*
+	 * PBSD: `i < nitems(res_types)'.  The condition was the constant
+	 * nitems(res_types), so the loop's only exit was the break below.
+	 * A device that offers neither an I/O nor a memory BAR0 walked i
+	 * past the end of res_types, reading out of bounds and feeding
+	 * whatever it found to bus_alloc_resource_any(), forever.
+	 */
+	for (i = 0; i < nitems(res_types); i++) {
 		rid = PCIR_BAR(0);
 		sc->vtpci_res_type = res_types[i];
 		sc->vtpci_res = bus_alloc_resource_any(dev, res_types[i], &rid,

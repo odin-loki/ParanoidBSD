@@ -372,6 +372,16 @@ gve_prep_tso(struct mbuf *mbuf, int *header_len)
 		l4_off = l3_off + (ip->ip_hl << 2);
 		csum = in_pseudo(ip->ip_src.s_addr, ip->ip_dst.s_addr,
 		    htons(IPPROTO_TCP));
+	} else {
+		/*
+		 * PBSD: refuse.  l4_off is initialised to 0 and csum is not,
+		 * so a frame that is neither IPv4 nor IPv6 fell through with
+		 * th pointing at the Ethernet header and wrote two bytes of
+		 * uninitialised stack into it as a TCP checksum.  The caller
+		 * already handles a non-zero return by counting
+		 * tx_delayed_pkt_tsoerr and dropping.
+		 */
+		return (EINVAL);
 	}
 
 	PULLUP_HDR(mbuf, l4_off + sizeof(struct tcphdr *));

@@ -432,7 +432,13 @@ ig4iic_read(ig4iic_softc_t *sc, uint8_t *buf, uint16_t len,
 	int requested = 0;
 	int received = 0;
 	int burst, target, lowat = 0;
-	int error;
+	/*
+	 * PBSD: error starts at 0.  It is written only by the two
+	 * wait_intr() calls below, which run when a FIFO is not ready --
+	 * so a transfer that never had to wait fell out of the loop and
+	 * `return (error)' handed the caller an uninitialised local.
+	 */
+	int error = 0;
 
 	if (len == 0)
 		return (0);
@@ -494,7 +500,9 @@ ig4iic_write(ig4iic_softc_t *sc, uint8_t *buf, uint16_t len,
 	uint32_t cmd;
 	int sent = 0;
 	int burst, target;
-	int error, lowat;
+	/* PBSD: as in ig4iic_read() -- a write that fits in the TX FIFO
+	 * in one pass never reaches the wait_intr() that sets error. */
+	int error = 0, lowat;
 
 	if (len == 0)
 		return (0);

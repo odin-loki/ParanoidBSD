@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,259 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,381 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,929** | **114,204** |
+| | **total** | **41,143** | **21,299,051** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -62767,7 +62767,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.625.4.8 `ar9280FillCapabilityInfo()` · `TODO-FN`
   - [ ] 8.625.4.9 `ar9280SetAntennaSwitch()` · `TODO-FN`
   - [ ] 8.625.4.10 `ar9280Probe()` · `TODO-FN`
-- [ ] **8.625.5** `ar9280_olc.c` · 407L · `TODO-PORT` · 8 fn
+- [ ] **8.625.5** `ar9280_olc.c` · 417L · `TODO-PORT` · 8 fn
   - [ ] 8.625.5.1 `ar9280olcInit()` · `TODO-FN`
   - [ ] 8.625.5.2 `ar9280olcGetTxGainIndex()` · `TODO-FN`
   - [ ] 8.625.5.3 `ar9280olcGetPDADCs()` · `TODO-FN`
@@ -71837,7 +71837,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.715.9.11 `fwmem_poll()` · `TODO-FN`
   - [ ] 8.715.9.12 `fwmem_mmap()` · `TODO-FN`
 - [ ] **8.715.10** `fwmem.h` · 55L · `TODO-HDR`
-- [ ] **8.715.11** `fwohci.c` · 3,004L gen:3 · `TODO-PORT` · 51 fn
+- [ ] **8.715.11** `fwohci.c` · 3,036L gen:3 · `TODO-PORT` · 51 fn
   - [ ] 8.715.11.1 `fwphy_wrdata()` · `TODO-FN`
   - [ ] 8.715.11.2 `fwohci_set_bus_manager()` · `TODO-FN`
   - [ ] 8.715.11.3 `fwphy_rddata()` · `TODO-FN`
@@ -73023,7 +73023,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.729.13.34 `is_vlan_tagged_pkt()` · `TODO-FN`
   - [ ] 8.729.13.35 `gve_xmit_ifp()` · `TODO-FN`
   - [ ] 8.729.13.36 `gve_qflush()` · `TODO-FN`
-- [ ] **8.729.14** `gve_tx_dqo.c` · 1,150L · `TODO-PORT` · 35 fn
+- [ ] **8.729.14** `gve_tx_dqo.c` · 1,160L · `TODO-PORT` · 35 fn
   - [ ] 8.729.14.1 `gve_unmap_packet()` · `TODO-FN`
   - [ ] 8.729.14.2 `gve_clear_qpl_pending_pkt()` · `TODO-FN`
   - [ ] 8.729.14.3 `gve_free_tx_mbufs_dqo()` · `TODO-FN`
@@ -75929,7 +75929,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.756.1.3 `ig4iic_acpi_detach()` · `TODO-FN`
   - [ ] 8.756.1.4 `ig4iic_acpi_suspend()` · `TODO-FN`
   - [ ] 8.756.1.5 `ig4iic_acpi_resume()` · `TODO-FN`
-- [ ] **8.756.2** `ig4_iic.c` · 1,222L gen:6 · `TODO-PORT` · 26 fn
+- [ ] **8.756.2** `ig4_iic.c` · 1,230L gen:6 · `TODO-PORT` · 26 fn
   - [ ] 8.756.2.1 `reg_write()` · `TODO-FN`
   - [ ] 8.756.2.2 `reg_read()` · `TODO-FN`
   - [ ] 8.756.2.3 `ig4iic_set_intr_mask()` · `TODO-FN`
@@ -81856,7 +81856,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.811.10.3 `lio_mq_start()` · `TODO-FN`
   - [ ] 8.811.10.4 `lio_qflush()` · `TODO-FN`
 - [ ] **8.811.11** `lio_rxtx.h` · 86L · `TODO-HDR`
-- [ ] **8.811.12** `lio_sysctl.c` · 1,970L · `TODO-PORT` · 24 fn
+- [ ] **8.811.12** `lio_sysctl.c` · 1,973L · `TODO-PORT` · 24 fn
   - [ ] 8.811.12.1 `lio_send_queue_count_update()` · `TODO-FN`
   - [ ] 8.811.12.2 `lio_add_hw_stats()` · `TODO-FN`
   - [ ] 8.811.12.3 `lio_get_eeprom()` · `TODO-FN`
@@ -83387,7 +83387,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.825.13.7 `mlx4_register_device()` · `TODO-FN`
   - [ ] 8.825.13.8 `mlx4_unregister_device()` · `TODO-FN`
   - [ ] 8.825.13.9 `mlx4_get_protocol_dev()` · `TODO-FN`
-- [ ] **8.825.14** `mlx4_main.c` · 4,244L gen:33 · `TODO-PORT`
+- [ ] **8.825.14** `mlx4_main.c` · 4,255L gen:33 · `TODO-PORT`
 - [ ] **8.825.15** `mlx4_mcg.c` · 1,649L gen:17 · `TODO-PORT` · 45 fn
   - [ ] 8.825.15.1 `mlx4_get_mgm_entry_size()` · `TODO-FN`
   - [ ] 8.825.15.2 `mlx4_get_qp_per_mgm()` · `TODO-FN`
@@ -94896,7 +94896,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.952.7.29 `qcom_ess_edma_hw_tx_update_cons_idx()` · `TODO-FN`
 - [ ] **8.952.8** `qcom_ess_edma_hw.h` · 87L · `TODO-HDR`
 - [ ] **8.952.9** `qcom_ess_edma_reg.h` · 430L · `TODO-HDR`
-- [ ] **8.952.10** `qcom_ess_edma_rx.c` · 515L gen:1 · `TODO-PORT` · 7 fn
+- [ ] **8.952.10** `qcom_ess_edma_rx.c` · 538L gen:1 · `TODO-PORT` · 7 fn
   - [ ] 8.952.10.1 `qcom_ess_edma_rx_queue_to_cpu()` · `TODO-FN`
   - [ ] 8.952.10.2 `qcom_ess_edma_rx_ring_setup()` · `TODO-FN`
   - [ ] 8.952.10.3 `qcom_ess_edma_rx_ring_clean()` · `TODO-FN`
@@ -96181,7 +96181,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.962.12.8 `ql_isr()` · `TODO-FN`
 - [ ] **8.962.13** `ql_minidump.c` · 10,965L · `TODO-DATA`
 - [ ] **8.962.14** `ql_minidump.h` · 466L · `TODO-HDR`
-- [ ] **8.962.15** `ql_misc.c` · 1,409L · `TODO-PORT` · 30 fn
+- [ ] **8.962.15** `ql_misc.c` · 1,420L · `TODO-PORT` · 30 fn
   - [ ] 8.962.15.1 `ql_rdwr_indreg32()` · `TODO-FN`
   - [ ] 8.962.15.2 `ql_rdwr_offchip_mem()` · `TODO-FN`
   - [ ] 8.962.15.3 `ql_rd_flash32()` · `TODO-FN`
@@ -98165,7 +98165,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.994.1.9 `sdio_f0_read_1()` · `TODO-FN`
   - [ ] 8.994.1.10 `sdio_f0_write_1()` · `TODO-FN`
 - [ ] **8.994.2** `sdio_subr.h` · 106L · `TODO-HDR`
-- [ ] **8.994.3** `sdiob.c` · 1,169L gen:2 · `TODO-PORT` · 28 fn
+- [ ] **8.994.3** `sdiob.c` · 1,176L gen:2 · `TODO-PORT` · 28 fn
   - [ ] 8.994.3.1 `sdioerror()` · `TODO-FN`
   - [ ] 8.994.3.2 `sdiob_rw_direct_sc()` · `TODO-FN`
   - [ ] 8.994.3.3 `sdio_rw_direct()` · `TODO-FN`
@@ -106984,7 +106984,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1075.1.47 `vtpci_negotiated_features_sysctl()` · `TODO-FN`
   - [ ] 8.1075.1.48 `vtpci_setup_sysctl()` · `TODO-FN`
 - [ ] **8.1075.2** `virtio_pci.h` · 131L · `TODO-HDR`
-- [ ] **8.1075.3** `virtio_pci_legacy.c` · 765L gen:1 · `TODO-PORT` · 37 fn
+- [ ] **8.1075.3** `virtio_pci_legacy.c` · 772L gen:1 · `TODO-PORT` · 37 fn
   - [ ] 8.1075.3.1 `vtpci_legacy_probe()` · `TODO-FN`
   - [ ] 8.1075.3.2 `vtpci_legacy_attach()` · `TODO-FN`
   - [ ] 8.1075.3.3 `vtpci_legacy_detach()` · `TODO-FN`

@@ -2615,6 +2615,21 @@ fwohci_add_rx_buf(struct fwohci_dbch *dbch, struct fwohcidb_tr *db_tr,
 			    BUS_DMA_NOWAIT);
 			if (db_tr->buf == NULL)
 				return (ENOMEM);
+		} else {
+			/*
+			 * PBSD: recover the address instead of leaving
+			 * dbuf[0] unwritten.  fwdma_malloc_size() is the
+			 * only thing that writes it, and it is skipped
+			 * whenever the buffer survives from a previous arm
+			 * -- stopping and restarting an isochronous channel
+			 * clears FWXFERQ_RUNNING without calling
+			 * fwohci_db_free(), so db_tr->buf is still there.
+			 * The loop below then programmed db[0].desc.addr
+			 * from a stack slot nothing had written.  The
+			 * descriptor still holds what the previous arm put
+			 * there, which is the address of that same buffer.
+			 */
+			dbuf[0] = FWOHCI_DMA_READ(db[0].db.desc.addr);
 		}
 		db_tr->dbcnt = 1;
 		dsiz[0] = ir->psize;
@@ -2630,8 +2645,25 @@ fwohci_add_rx_buf(struct fwohci_dbch *dbch, struct fwohcidb_tr *db_tr,
 		if (ir->buf != NULL) {
 			db_tr->buf = fwdma_v_addr(ir->buf, poffset);
 			dbuf[db_tr->dbcnt] = fwdma_bus_addr(ir->buf, poffset);
+			db_tr->dbcnt++;
+		} else if (db_tr->dbcnt == 0) {
+			/*
+			 * PBSD: count the descriptor only when we filled it.
+			 * This arm is reached with ir->buf NULL whenever the
+			 * queue is marked FWXFERQ_EXTBUF but has no buffer
+			 * attached yet -- the branch above tests exactly
+			 * that pair.  dsiz was set unconditionally and dbcnt
+			 * was bumped unconditionally, so the loop below
+			 * programmed db[].desc.addr from an unwritten slot of
+			 * a stack array, and the OHCI controller DMAs to
+			 * whatever bus address that held.  With the dummy
+			 * descriptor already counted (every caller passes a
+			 * dummy_dma) dbcnt stays 1 and the chain is valid;
+			 * with nothing at all there is no descriptor to
+			 * build, so refuse.
+			 */
+			return (EINVAL);
 		}
-		db_tr->dbcnt++;
 	}
 	for (i = 0; i < db_tr->dbcnt; i++) {
 		FWOHCI_DMA_WRITE(db[i].db.desc.addr, dbuf[i]);

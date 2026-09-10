@@ -662,7 +662,14 @@ static int
 sdio_func_read_cis(struct sdiob_softc *sc, uint8_t fn, uint32_t cis_addr)
 {
 	char cis1_info_buf[256];
-	char *cis1_info[4];
+	/*
+	 * PBSD: the loop below fills only as many of these as it finds
+	 * NUL-terminated strings for -- up to four, often fewer -- and the
+	 * print loop after it walks all four.  usr.bin/sdiotool/cam_sdio.c
+	 * is the same code with the same defect and already carries this
+	 * fix; this is its kernel twin.
+	 */
+	char *cis1_info[4] = { NULL, NULL, NULL, NULL };
 	int start, i, count, ret;
 	uint32_t addr;
 	uint8_t ch, tuple_id, tuple_len, tuple_count, v;

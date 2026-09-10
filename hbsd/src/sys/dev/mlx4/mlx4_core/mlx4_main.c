@@ -2515,6 +2515,17 @@ int mlx4_counter_alloc(struct mlx4_dev *dev, u32 *idx)
 				   MLX4_CMD_TIME_CLASS_A, MLX4_CMD_WRAPPED);
 		if (!err)
 			*idx = get_param_l(&out_param);
+		else if (err == -ENOSPC) {
+			/*
+			 * PBSD: match __mlx4_counter_alloc(), which sets
+			 * *idx to the sink counter before returning -ENOSPC.
+			 * mlx4_allocate_default_counters() stores idx for
+			 * `!err || err == -ENOSPC', so on this path it was
+			 * storing an uninitialised local as a port's default
+			 * counter index.
+			 */
+			*idx = MLX4_SINK_COUNTER_INDEX(dev);
+		}
 
 		return err;
 	}

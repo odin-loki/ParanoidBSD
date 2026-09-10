@@ -15120,3 +15120,146 @@ intervening call (`in6_control_ioctl()`'s `if_afdata[AF_INET6]` guard,
 `rn_walktree_from()`'s `last = NULL; /* shut up gcc */`, safe because a
 radix head's top node is always internal, and `vsscanf()`'s `ccfn = NULL;
 /* XXX just to keep gcc happy */`.
+
+## Sweep 23, the dev shard
+
+`sys/dev` — 2,633 translation units, 2,573 OK, 60 ERROR, 485 findings,
+`--check-errors` passes. Twelve fixes, in twelve files, all from the
+`core.uninitialized.*` classes: 31 `Assign`, 8 `Branch`, 7 `UndefReturn`,
+6 `ArraySubscript` and one `VLASize`, 53 in all.
+
+### A loop whose condition was a constant
+
+```c
+	for (i = 0; nitems(res_types); i++) {
+```
+
+`vtpci_legacy_alloc_resources()`. `nitems(res_types)` is 2, so the
+condition is always true and the loop's only exit is the `break` taken
+when `bus_alloc_resource_any()` returns something. A virtio device that
+offers BAR0 as neither I/O nor memory space walks `i` past the end of a
+two-element array, reads out of bounds, and hands whatever it finds to
+`bus_alloc_resource_any()` — forever. It is the only instance of that
+shape in the tree; `grep -rn "for (.*; nitems("` finds nothing else.
+
+### Two I²C transfers that reported a random errno
+
+`ig4iic_read()` and `ig4iic_write()` both declare `int error;` and write
+it only through `wait_intr()`, which runs when a FIFO is not ready. A
+read whose bursts were all satisfied by the RX FIFO, or a write that
+fits the TX FIFO in one pass — the common case for an I²C HID touchpad —
+falls out of the loop and returns an uninitialised local as the
+transfer's status. With a garbage non-zero the transfer looks failed; with
+a garbage zero a failed one looks fine.
+
+### Three descriptors and a MAC built from stack
+
+`fwohci_add_rx_buf()` fills a two-element `bus_addr_t dbuf[2]` and then
+programs OHCI DMA descriptors from it. Two of its paths do not fill what
+they program:
+
+- the `ir->buf == NULL` case of the second branch — reached when the
+  queue is marked `FWXFERQ_EXTBUF` but has no buffer attached, the exact
+  pair the branch above tests — sets `dsiz` and bumps `dbcnt` but leaves
+  the `dbuf` slot alone;
+- the first branch skips `fwdma_malloc_size()`, the only writer of
+  `dbuf[0]`, whenever `db_tr->buf` survived from a previous arm — and
+  stopping an isochronous channel clears `FWXFERQ_RUNNING` without
+  calling `fwohci_db_free()`, so a restart takes exactly that path.
+
+In both the controller is handed a bus address from an unwritten stack
+slot. The second one only became visible after the first was fixed.
+
+`ql_read_mac_addr()` drops the return value of `ql_rd_flash32()` twice.
+That function has three failure paths — the flash semaphore and either
+of two indirect register accesses — and none of them writes `*data`. A
+card whose flash read fails comes up with an interface MAC address made
+of stack bytes.
+
+### A receive path that decodes nothing and uses it anyway
+
+`qcom_ess_edma_rx_ring_complete()` pulls `len`, `num_rfds`, `port_id`,
+`priority`, `hash_type`, `hash_val`, `flow_cookie` and `vlan` out of the
+return descriptor — but only inside `if (rrd->rrd7 & EDMA_RRD_DESC_VALID)`.
+The `else` set `len = 0` and nothing else. Downstream, `port_id` indexes
+`sc_gmac_port_map[]` and then `sc_gmac[]`; `vlan` and `priority` go into
+`m_pkthdr.ether_vtag`; `hash_val` goes into `m_pkthdr.flowid`. All from
+uninitialised stack, on the path the hardware takes when it hands back a
+descriptor it has not filled.
+
+The first fix set `port_id` and added a bound check, and the sweep that
+measured it reported **two new findings** at the VLAN and hash blocks —
+the other four locals, which the array-subscript report had been masking.
+The bug you can measure and the bug that is there are not always the same
+bug, and here the first fix is what made the second visible.
+
+While reading it: line 470 builds the VLAN tag as
+`(vlan & 0xfff) | ((priority < 1) & 0xf)`. `priority < 1` is a
+comparison, so that disjunct is 0 or 1 whatever the priority is. It is
+plainly not what was meant — but `<` for `<<` still leaves the shift
+wrong for an 802.1Q TCI, where the PCP sits at bit 13, so correcting it
+means deciding what the author intended rather than what they typed. It
+is on the record here and not changed.
+
+### Four smaller ones
+
+`gve_prep_tso()` leaves `csum` undefined for a TSO frame that is neither
+IPv4 nor IPv6 — `l4_off` is initialised to 0 and `csum` is not — and then
+writes it into `th->th_sum`, which with `l4_off` at 0 lands sixteen bytes
+into the Ethernet header. The caller already counts and drops on a
+non-zero return, so it now gets one.
+
+`lio_get_ringparam()` returns `err` from a switch with no `default`.
+
+`sdio_func_read_cis()` declares `char *cis1_info[4]`, fills as many as it
+finds NUL-terminated strings for, and prints all four. This is the same
+code, with the same defect, as `usr.bin/sdiotool/cam_sdio.c` — which
+already carries this fix. The kernel twin had gone unnoticed because
+nothing had swept `sys/dev` at this level before.
+
+`ar9280ChangeGainBoundarySettings()` returns `*diff`, and writes it only
+when the chip is Merlin 2.0 or later *and* the board's power table offset
+differs from the default. Its one caller passes `&diff` and assigns the
+result back to `diff` — so on any other path the function hands the
+variable straight back unwritten, and `NUM_PDADC(diff)` bounds two loops
+with it. Zero is what the written path computes when the offsets are
+equal.
+
+`mlx4_counter_alloc()` returns `-ENOSPC` from its multifunction path
+without writing `*idx`. `__mlx4_counter_alloc()`, the other path, sets it
+to the sink counter first — and `mlx4_allocate_default_counters()` stores
+`idx` for `!err || err == -ENOSPC`, so on the virtualised path it was
+storing an uninitialised local as a port's default counter index.
+
+### The measurement
+
+Same scope, same tree, the twelve fixes the only difference:
+
+```
+              before   after
+OK             2,573   2,573
+ERROR             60      60     (the same sixty)
+findings         485     473
+```
+
+Every edited file moved. The four `core.uninitialized.*` classes account
+for all twelve:
+
+```
+  Assign          31 -> 25
+  UndefReturn      7 ->  3
+  Branch           8 ->  7
+  ArraySubscript   6 ->  5
+```
+
+`fwohci.c` went 3 -> 2: the uninitialised-descriptor finding is gone and
+the two that remain are a NULL dereference and a leak in
+`fwohci_db_init()`, a different function, unread.
+
+The other 420 findings in this shard have not been read yet, and this
+document does not claim otherwise. Twenty of the 37 `core.DivideZero` are
+the allwinner clock class task #87 already characterised and put a lint
+behind. Twenty-six of the `core.NullDereference` and
+`core.UndefinedBinaryOperatorResult` are two files, `mpr_config.c` and
+`mps_config.c`, in one repeated shape — that one is read and named in the
+next section.

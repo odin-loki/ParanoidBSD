@@ -3388,6 +3388,103 @@ FIXES = {
         "lookup(): the absolute-path test dereferenced fw.name on exactly "
         "the path where the NULL check above it had just failed",
     ),
+
+    "hbsd/src/sys/dev/virtio/pci/virtio_pci_legacy.c": (
+        "\tfor (i = 0; i < nitems(res_types); i++) {",
+        "\tfor (i = 0; nitems(res_types); i++) {",
+        "vtpci_legacy_alloc_resources: the loop condition was the "
+        "constant nitems(res_types), so a device offering neither BAR0 "
+        "type walked i past the end of the array, forever",
+    ),
+    "hbsd/src/sys/dev/ichiic/ig4_iic.c": [
+        (
+            "\tint error = 0;\n\n\tif (len == 0)",
+            "\tint burst, target, lowat = 0;\n\tint error;",
+            "ig4iic_read: error is written only by wait_intr(), so a "
+            "transfer that never waited returned an uninitialised local",
+        ),
+        (
+            "\tint error = 0, lowat;",
+            "\tint error, lowat;",
+            "ig4iic_write: same, for a write that fits the TX FIFO in "
+            "one pass",
+        ),
+    ],
+    "hbsd/src/sys/dev/liquidio/lio_sysctl.c": (
+        "\tint\terr = 0;",
+        "\tuint32_t\t\trx_max_pending = 0, tx_max_pending = 0;\n\tint\terr;",
+        "lio_get_ringparam: the switch has no default, so an arg2 "
+        "matching neither case returned an uninitialised errno",
+    ),
+    "hbsd/src/sys/dev/sdio/sdiob.c": (
+        "\tchar *cis1_info[4] = { NULL, NULL, NULL, NULL };",
+        "\tchar *cis1_info[4];",
+        "sdio_func_read_cis: the loop fills up to four entries and the "
+        "print loop walks all four -- the kernel twin of the same "
+        "defect already fixed in usr.bin/sdiotool/cam_sdio.c",
+    ),
+    "hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9280_olc.c": (
+        "\t\t\tuint16_t diff = 0;",
+        "\t\t\tuint16_t diff;",
+        "ar9280ChangeGainBoundarySettings() returns *diff and writes it "
+        "on only one of its paths, handing this variable straight back "
+        "unwritten to bound a NUM_PDADC() loop",
+    ),
+    "hbsd/src/sys/dev/firewire/fwohci.c": [
+        (
+            "\t\t\tdb_tr->dbcnt++;\n\t\t} else if (db_tr->dbcnt == 0) {",
+            "\t\t}\n\t\tdb_tr->dbcnt++;",
+            "fwohci_add_rx_buf: dbcnt was bumped whether or not the "
+            "dbuf slot was filled, so the OHCI descriptor's bus address "
+            "came from an unwritten slot of a stack array",
+        ),
+        (
+            "\t\t\tdbuf[0] = FWOHCI_DMA_READ(db[0].db.desc.addr);",
+            "\t\t\t\treturn (ENOMEM);\n\t\t}\n\t\tdb_tr->dbcnt = 1;",
+            "fwohci_add_rx_buf: fwdma_malloc_size() is the only writer "
+            "of dbuf[0] and it is skipped when the buffer survives a "
+            "stop/start, so a re-armed descriptor got its bus address "
+            "from an unwritten stack slot",
+        ),
+    ],
+    "hbsd/src/sys/dev/qlxgbe/ql_misc.c": (
+        "\tif (ql_rd_flash32(ha, flash_off, &mac_hi) != 0)\n\t\treturn;",
+        "\tql_rd_flash32(ha, flash_off, &mac_lo);",
+        "ql_read_mac_addr dropped both ql_rd_flash32() returns, and "
+        "none of that function's three failure paths writes *data -- so "
+        "a failed flash read gave the interface a MAC of stack bytes",
+    ),
+    "hbsd/src/sys/dev/qcom_ess_edma/qcom_ess_edma_rx.c": [
+        (
+            "\t\tif (port_id >= 0 &&\n\t\t    port_id < (int)nitems(sc->sc_gmac_port_map) &&",
+            "\t\tif (sc->sc_gmac_port_map[port_id] != -1) {",
+            "qcom_ess_edma_rx_ring_complete: port_id is decoded only "
+            "when the hardware marked the return descriptor valid, and "
+            "the gmac lookup indexed two arrays with it regardless",
+        ),
+        (
+            "\t\t\thash_type = EDMA_RRD_RSS_TYPE_NONE;\n\t\t\thash_val = 0;",
+            "\t\t\tlen = 0;\n\t\t}\n",
+            "qcom_ess_edma_rx_ring_complete: the same arm left vlan, "
+            "priority, hash_type and hash_val undefined too, and the "
+            "VLAN and hash blocks wrote them into m_pkthdr.ether_vtag "
+            "and m_pkthdr.flowid",
+        ),
+    ],
+    "hbsd/src/sys/dev/gve/gve_tx_dqo.c": (
+        "\t\treturn (EINVAL);\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off + sizeof(struct tcphdr *));",
+        "\t\t    htons(IPPROTO_TCP));\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off",
+        "gve_prep_tso: csum is set on the IPv4 and IPv6 arms only, and "
+        "a frame that is neither wrote two bytes of stack into the "
+        "outgoing header as a TCP checksum",
+    ),
+    "hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_main.c": (
+        "\t\t\t*idx = MLX4_SINK_COUNTER_INDEX(dev);",
+        "\t\t\t*idx = get_param_l(&out_param);\n\n\t\treturn err;",
+        "mlx4_counter_alloc: the mfunc path returned -ENOSPC without "
+        "writing *idx, which __mlx4_counter_alloc() does and which "
+        "mlx4_allocate_default_counters() relies on",
+    ),
 }
 
 

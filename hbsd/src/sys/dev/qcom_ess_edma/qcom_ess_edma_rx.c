@@ -404,6 +404,27 @@ qcom_ess_edma_rx_ring_complete(struct qcom_ess_edma_softc *sc, int queue,
 			    !! (rrd->rrd1 & EDMA_RRD_SVLAN));
 		} else {
 			len = 0;
+			/*
+			 * PBSD: port_id too.  Everything above is decoded
+			 * from the RRD only when the hardware marked it
+			 * valid; this arm set just the length, and the
+			 * gmac lookup below then indexed sc_gmac_port_map[]
+			 * -- and sc_gmac[] with what it found -- using an
+			 * uninitialised local -- and the VLAN and hash
+			 * blocks further down read four more of them,
+			 * writing stack bytes into m_pkthdr.ether_vtag
+			 * and m_pkthdr.flowid.  -1 with the bound check
+			 * below skips the lookup, which is what a
+			 * zero-length frame wants anyway; the rest get
+			 * the neutral values their own guards test for.
+			 */
+			port_id = -1;
+			num_rfds = 0;
+			priority = 0;
+			hash_type = EDMA_RRD_RSS_TYPE_NONE;
+			hash_val = 0;
+			flow_cookie = 0;
+			vlan = 0;
 		}
 
 		/* Payload starts after the RRD header */
@@ -418,7 +439,9 @@ qcom_ess_edma_rx_ring_complete(struct qcom_ess_edma_softc *sc, int queue,
 		 * if it's NULL it'll drop it for us.
 		 */
 		m->m_pkthdr.rcvif = NULL;
-		if (sc->sc_gmac_port_map[port_id] != -1) {
+		if (port_id >= 0 &&
+		    port_id < (int)nitems(sc->sc_gmac_port_map) &&
+		    sc->sc_gmac_port_map[port_id] != -1) {
 			struct qcom_ess_edma_gmac *gmac;
 			gmac = &sc->sc_gmac[sc->sc_gmac_port_map[port_id]];
 			QCOM_ESS_EDMA_DPRINTF(sc, QCOM_ESS_EDMA_DBG_RX_FRAME,

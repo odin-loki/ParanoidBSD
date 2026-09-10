@@ -960,7 +960,10 @@ lio_get_ringparam(SYSCTL_HANDLER_ARGS)
 	struct lio		*lio = (struct lio *)arg1;
 	struct octeon_device	*oct = lio->oct_dev;
 	uint32_t		rx_max_pending = 0, tx_max_pending = 0;
-	int	err;
+	/* PBSD: the switch below has no default, so an arg2 that is
+	 * neither LIO_SET_RING_RX nor LIO_SET_RING_TX returned an
+	 * uninitialised local as the sysctl's errno. */
+	int	err = 0;
 
 	if (LIO_CN23XX_PF(oct)) {
 		tx_max_pending = LIO_CN23XX_MAX_IQ_DESCRIPTORS;

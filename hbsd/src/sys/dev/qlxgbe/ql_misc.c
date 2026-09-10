@@ -811,10 +811,21 @@ ql_read_mac_addr(qla_host_t *ha)
 
 	flash_off = Q8_BOARD_CONFIG_OFFSET + Q8_BOARD_CONFIG_MAC0_LO +
 			(ha->pci_func << 3);
-	ql_rd_flash32(ha, flash_off, &mac_lo);
+	/*
+	 * PBSD: read the return values.  ql_rd_flash32() has three failure
+	 * paths -- the flash semaphore, and either of the two indirect
+	 * register accesses -- and none of them writes *data.  Both
+	 * returns were dropped here, so a card whose flash read failed
+	 * came up with an interface MAC address made of stack bytes.  Each
+	 * failure path already prints; leaving hw.mac_addr as the zeroed
+	 * softc found it is at least deterministic.
+	 */
+	if (ql_rd_flash32(ha, flash_off, &mac_lo) != 0)
+		return;
 
 	flash_off += 4;
-	ql_rd_flash32(ha, flash_off, &mac_hi);
+	if (ql_rd_flash32(ha, flash_off, &mac_hi) != 0)
+		return;
 
 	macp = (uint8_t *)&mac_lo;
 	ha->hw.mac_addr[5] = macp[0];
