@@ -20780,3 +20780,52 @@ That is the third time in this engine's short life that the *reporting*
 was the defect rather than the finding, and all three were the same
 mistake in different clothes: a true statement about the tool presented
 as a statement about the code.
+
+### What the three answers were worth, measured
+
+Whole tree, `--dry-run`, same 114,207 pairs:
+
+```
+before   ERROR 101357  NOFUNC 1200  RUNNABLE 11650
+after    ERROR 100953  NOFUNC 1200  RUNNABLE 12054
+```
+
+404 pairs moved, all of them `ERROR` → `RUNNABLE`, and no pair moved in
+any other direction.
+
+One number in the histogram moved in a way worth explaining: the
+pointer bucket *rose*, 83,894 → 84,037.  Nothing became a pointer.  A
+function whose first parameter was an `enum` used to stop there with
+"not a known scalar"; now the `enum` is accepted, the parser reaches a
+*later* parameter that really is a pointer, and the reason it reports is
+the one that was always the actual blocker.  The old answer was true and
+useless — it named the wrong parameter.
+
+The two real scopes, same tree, same budget:
+
+```
+lib/libc + lib/msun
+  before  CLEAN 21  CRASH 2  SANFAIL 1  NOSEED 240  ERROR 4026  NORETURN 11
+  after   CLEAN 29  CRASH 2  SANFAIL 1  NOSEED 329  ERROR 3928  NORETURN 12
+
+bin + sbin + usr.bin + usr.sbin
+  before  CLEAN 15  CRASH 0  NOSEED 684  ERROR 16379  NORETURN 628
+  after   CLEAN 15  CRASH 0  NOSEED 699  ERROR 16364  NORETURN 628
+```
+
+Eight more functions actually fuzzed in the libraries, none in the
+programs — where the 15 that moved went to `NOSEED` instead, because
+CBMC cannot model a complex or a 64-bit `quad_t` counterexample any
+better for having been handed one.  No new crashes, and the two that
+stand are still `abs` and `imaxabs`.
+
+`abs`'s recorded evidence, which is what all of this was for:
+
+```
+lib/libc/stdlib/abs.c:37:17: runtime error: negation of -2147483648
+cannot be represented in type 'int'
+```
+
+`imaxabs`'s was still four stack frames on that run, because the fix had
+been applied to one of the two call sites.  `evidence()` is used on both
+now.

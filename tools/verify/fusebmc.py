@@ -824,17 +824,22 @@ def fuzz_one(src: Path, fn: str, budget: int, workdir: Path,
             back = subprocess.run([str(binp)], input=first,
                                   capture_output=True, timeout=30,
                                   env={**os.environ, **SAN})
-            # `said' is the WHOLE report and `detail' its tail. The
-            # sanitizer prints its own CHECK failure on the FIRST line
-            # and the stack after it, so a tail of 600 characters is
-            # exactly the part that does not contain the answer --
-            # memalign came back CRASH again with the line that would
-            # have classified it three screens above the cut.
+            # `said' is the WHOLE report; classify and quote from all
+            # of it, never from a tail. Both mistakes were made here:
+            # sanitizer_broke() was asked about a 600-character tail and
+            # memalign came back CRASH a second time with the line that
+            # classifies it three screens above the cut, and `detail'
+            # was left as that tail so imaxabs's CRASH was recorded as
+            # four stack frames with
+            #
+            #   SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior
+            #   .../imaxabs.cpp:34:18 in
+            #
+            # sitting in the same string just past it. evidence() is
+            # what the seed-replay path uses; two call sites, one rule.
             said = (back.stderr or b"").decode("utf-8", "replace")
-            detail = _tail(said, 600)
-            if sanitizer_broke(said):
-                detail = evidence(said)
-            elif back.returncode >= 0:
+            detail = evidence(said)
+            if not sanitizer_broke(said) and back.returncode >= 0:
                 # It did not die this time. Say so rather than dressing
                 # a stale artefact up as a reproduction: AFL's own
                 # environment differs from a bare run, and an input that
