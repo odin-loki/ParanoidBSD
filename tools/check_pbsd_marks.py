@@ -4132,6 +4132,16 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sys/dev/videomode/pickmode.c": (
+        "\t\tif (mtemp == NULL)\n\t\t\treturn;",
+        "\t\t}\n\t\taspect = mtemp->hdisplay * 100 / mtemp->vdisplay;",
+        "sort_modes(): mtemp is assigned only by a mode with a positive "
+        "hdisplay -- hbest starts at zero and the test is `>' -- so a mode "
+        "list whose hdisplay all decode to zero left it at its NULL "
+        "initialiser. These modes come from a parsed EDID, which the "
+        "monitor supplies",
+    ),
+
     "hbsd/src/sys/dev/wtap/if_medium.c": [
         (
             "M_WTAP, M_WAITOK | M_ZERO);",

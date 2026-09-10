@@ -17588,3 +17588,40 @@ for a fuzzer: passing NULL reports the absence of a caller's contract as
 a crash, and passing a buffer of an invented size reports the invention.
 Those functions come back ERROR with that sentence as the reason, which
 is true and is the number that matters.
+
+## sort_modes(): a monitor whose EDID decodes to nothing
+
+`sys/dev/videomode/pickmode.c`, the "no preferred mode" arm:
+
+```c
+	struct videomode *mtemp = NULL;
+	...
+		hbest = 0;
+		vbest = 0;
+		for (i = 0; i < nmodes; i++) {
+			if (modes[i].hdisplay > hbest) {
+				hbest = modes[i].hdisplay;
+				vbest = modes[i].vdisplay;
+				mtemp = &modes[i];
+			} else if (...) { ... }
+		}
+		aspect = mtemp->hdisplay * 100 / mtemp->vdisplay;
+```
+
+The loop runs — `if (nmodes < 2) return;` is above it — but `mtemp` is
+assigned only by a mode whose `hdisplay` is greater than `hbest`, and
+`hbest` starts at zero with a strict `>`. A list in which every
+`hdisplay` decodes to zero never assigns it, and the next line reads
+through the `NULL` initialiser.
+
+These modes come from a parsed EDID, which is what the monitor says
+about itself. There is also nothing this arm could compute from such a
+list even if `mtemp` were set: the very next expression divides by
+`vdisplay`. So the guard returns rather than substituting a mode.
+
+```
+                sys/dev/videomode
+                before  after
+findings            2       1
+```
+

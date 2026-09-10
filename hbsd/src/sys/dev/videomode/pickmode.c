@@ -151,6 +151,17 @@ sort_modes(struct videomode *modes, struct videomode **preferred, int nmodes)
 				mtemp = &modes[i];
 			}
 		}
+		/*
+		 * PBSD: mtemp is assigned only by a mode with a positive
+		 * hdisplay -- hbest starts at zero and the test is `>' --
+		 * so a mode list in which every hdisplay decodes to zero
+		 * leaves it at its NULL initialiser here.  These modes come
+		 * from a parsed EDID, which is data the monitor supplies.
+		 * There is also nothing this arm could compute from such a
+		 * list: the aspect ratio below divides by vdisplay.
+		 */
+		if (mtemp == NULL)
+			return;
 		aspect = mtemp->hdisplay * 100 / mtemp->vdisplay;
 		refresh = DIVIDE(DIVIDE(mtemp->dot_clock * 1000,
 		    mtemp->htotal), mtemp->vtotal);
