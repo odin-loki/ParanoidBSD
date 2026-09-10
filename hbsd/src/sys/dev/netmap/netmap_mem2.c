@@ -2890,10 +2890,17 @@ netmap_mem_pt_guest_create(nm_memid_t mem_id)
 	int err = 0;
 
 	ptnmd = nm_os_malloc(sizeof(struct netmap_mem_ptg));
-	if (ptnmd == NULL) {
-		err = ENOMEM;
-		goto error;
-	}
+	/*
+	 * PBSD: this jumped to error:, which calls
+	 * netmap_mem_pt_guest_delete(&ptnmd->up).  That callee does test
+	 * its argument for NULL, so it does not fault -- but forming
+	 * &ptnmd->up on a null ptnmd is undefined (C17 6.5.3.2), and it
+	 * reaches the guard as NULL only because `up' happens to be the
+	 * first member.  There is nothing to delete when the allocation is
+	 * what failed, and err is not read on this path.
+	 */
+	if (ptnmd == NULL)
+		return (NULL);
 
 	ptnmd->up.ops = &netmap_mem_pt_guest_ops;
 	ptnmd->host_mem_id = mem_id;

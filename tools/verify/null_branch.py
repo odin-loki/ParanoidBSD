@@ -27,6 +27,36 @@ False positives to expect, and what is done about them:
   - `p' is a macro parameter, so `p->x' is text, not a dereference.
     Not skipped; read the hit.
 
+TWO PASSES, AND ONLY ONE OF THEM GATES
+
+The default pass reads the guarded BLOCK. It reaches zero across the
+tree and is therefore usable as a gate.
+
+--follow-goto also reads the labels that block jumps to, on the same
+argument the disjunction rule rests on: a `goto L' out of a block that
+proved p NULL arrives at L with p NULL, so a dereference at L faults on
+that path whatever other paths reach it. It found isp_freebsd.c's SRR
+handler (which logs "null ccb" and then jumps to a label that
+dereferences it three lines later), sk_txcksum(), and
+netmap_mem_pt_guest_create().
+
+It does NOT reach zero, and the reasons are not fixable by a grep:
+
+  the label's loop is bounded by a counter that is zero on exactly the
+        path the pointer is null (scandir-compat11.c, efi_variables.c)
+  the guard at the label is on a DIFFERENT variable that is non-null
+        only when this one is (mpi3mr.c's sense_buf and scsi_reply;
+        sym_hipd.c's vaddr and vbp)
+  the null test is a redundant disjunct after an early return already
+        excluded it (bsd_nvpair.c)
+  the label and the dereference are in different #if arms
+        (stand/libsa/nfs.c)
+
+Each of those needs to know what a counter holds or which of two
+variables implies the other, and a pass that needs that is not this
+pass. So --follow-goto reports and the default gates, and the two are
+refused together.
+
 Calibration. Over hbsd/src at the commit that fixed them, this reports
 five sites in sys/dev/{ntb,mpi3mr,firewire} -- ntb_hw_amd.c:697,
 ntb_tool.c:532 and :899, mpi3mr_cam.c:1845, sbp.c:2331 -- and after the
@@ -119,6 +149,54 @@ def condition_of(lines, n):
         if i - n > 12:
             return None
     return None
+
+
+GOTO_RE = re.compile(r'\bgoto\s+([A-Za-z_]\w*)\s*;')
+
+
+def label_body(lines, name, start, end):
+    """Lines of `name:' within [start, end), up to the next label or a
+    statement that leaves (return/break/goto/continue).
+
+    A `goto L' out of a block that proved p NULL arrives at L with p
+    NULL, so a dereference there faults on that path -- exactly the
+    argument the disjunction rule rests on, one jump further along. No
+    control-flow graph is needed for that, only the label's own text:
+    other paths into L are irrelevant, because this one exists.
+
+    sk_txcksum() is the case this exists for. It has `if (m == NULL)
+    { ...; goto sendit; }' and a sendit: that reads m->m_pkthdr, and the
+    brace matcher alone could never see it.
+    """
+    lab = re.compile(r'^\s*' + re.escape(name) + r'\s*:')
+    out = []
+    for j in range(start, min(end, len(lines))):
+        if not lab.match(lines[j]):
+            continue
+        for k in range(j, min(j + 40, end)):
+            t = lines[k].strip()
+            if k > j and re.match(r'^[A-Za-z_]\w*\s*:(?!:)', t):
+                break                      # the next label
+            out.append((k, lines[k]))
+            if re.match(r'^(return|break|continue|goto)\b', t):
+                break
+        break
+    return out
+
+
+def function_bounds(lines, i):
+    """[start, end) of the function containing line i, by column-0 braces."""
+    start = 0
+    for k in range(i, -1, -1):
+        if lines[k].startswith('}'):
+            start = k + 1
+            break
+    end = len(lines)
+    for k in range(i, len(lines)):
+        if lines[k].startswith('}'):
+            end = k + 1
+            break
+    return start, end
 
 
 def block_after(lines, i, col):
@@ -275,10 +353,11 @@ def alias_map(lines):
     return per_line
 
 
-def scan(path, text, raw_lines):
+def scan(path, text, raw_lines, follow_goto=False):
     lines = text.split('\n')
     aliases = alias_map(lines)
     hits = []
+    seen = set()          # one report per site, not one per path to it
     for n, line in enumerate(lines):
         if not IF_RE.match(line):
             continue
@@ -307,6 +386,12 @@ def scan(path, text, raw_lines):
         block = block_after(lines, endline, endcol)
         if len(block) < 1:
             continue
+        # ... and, when asked, whatever label the block jumps to.
+        if follow_goto:
+            fs, fe = function_bounds(lines, n)
+            for (_ln, btext) in list(block):
+                for gm in GOTO_RE.finditer(btext):
+                    block = block + label_body(lines, gm.group(1), fs, fe)
         for name in names:
             # any assignment to the name, including the very common
             # `if ((p = malloc(n)) == NULL)' nested inside a condition
@@ -358,8 +443,10 @@ def scan(path, text, raw_lines):
                 # sizeof(p[0]) names a type, it does not read memory
                 seg = re.sub(r'sizeof\s*\([^()]*\)', ' ', seg)
                 if deref.search(seg):
-                    hits.append((ln + 1, name,
-                                 raw_lines[ln].rstrip()))
+                    if (ln, name) not in seen:
+                        seen.add((ln, name))
+                        hits.append((ln + 1, name,
+                                     raw_lines[ln].rstrip()))
                     break
     return hits
 
@@ -371,6 +458,11 @@ def main():
     ap.add_argument("--scope", action="append")
     ap.add_argument("--gate", action="store_true",
                     help="exit non-zero if any site is found")
+    ap.add_argument("--follow-goto", action="store_true",
+                    help="also scan the labels a guarded block jumps to. "
+                         "Finds real defects (isp_freebsd.c, sk_txcksum, "
+                         "netmap_mem2.c) and has an irreducible false "
+                         "positive rate, so it REPORTS and must not gate.")
     args = ap.parse_args()
 
     roots = [os.path.join(args.root, s) for s in (args.scope or [""])]
@@ -390,12 +482,18 @@ def main():
                 files += 1
                 raw = text.split('\n')
                 clean = '\n'.join(strip_if0(strip_noise(text).split('\n')))
-                for (ln, name, btext) in scan(p, clean, raw):
+                for (ln, name, btext) in scan(p, clean, raw,
+                                              args.follow_goto):
                     rel = os.path.relpath(p, args.root)
                     print("%s:%d  %s is NULL here\n      %s" %
                           (rel, ln, name, btext.strip()))
                     total += 1
     print("\n%d site(s) across %d file(s)" % (total, files), file=sys.stderr)
+    if args.gate and args.follow_goto:
+        print("--gate and --follow-goto are not combined: the goto pass has "
+              "a false-positive floor and cannot carry a build.",
+              file=sys.stderr)
+        return 2
     if args.gate and total:
         print("\nA pointer read inside the branch that tested it for NULL is\n"
               "either dead code or a guaranteed fault. Neither is worth\n"

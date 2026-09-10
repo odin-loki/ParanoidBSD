@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,382 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,479 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,495 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,300,238** | **114,205** |
+| | **total** | **41,143** | **21,300,254** | **114,205** |
 
 | tag | files |
 |---|---:|
@@ -682,7 +682,7 @@ function; a file with two hundred of them is a project.
 | 6.5.1 | `usr.sbin/acpi/acpidump/acpi.c` | 3,056 | 96 | `TODO-PORT` |
 | 8.1235.16 | `sys/ofed/drivers/infiniband/core/ib_mad.c` | 3,323 | 96 | `TODO-PORT` |
 | 8.1306.11 | `sys/vm/swap_pager.c` | 3,489 | 96 | `TODO-PORT` |
-| 8.858.14 | `sys/dev/netmap/netmap_mem2.c` | 2,989 | 95 | `TODO-PORT` |
+| 8.858.14 | `sys/dev/netmap/netmap_mem2.c` | 2,996 | 95 | `TODO-PORT` |
 | 8.878.44 | `sys/dev/ocs_fc/ocs_utils.c` | 2,808 | 95 | `TODO-PORT` |
 | 8.1203.42 | `sys/net80211/ieee80211_node.c` | 3,366 | 95 | `TODO-PORT` |
 | 8.149.29 | `sys/compat/linuxkpi/common/src/linux_pci.c` | 2,246 | 94 | `TODO-PORT` |
@@ -80030,7 +80030,7 @@ function; a file with two hundred of them is a project.
 ### 8.793 `sys/dev/isp`
 
 - [ ] **8.793.1** `isp.c` · 5,417L gen:1 · `TODO-PORT`
-- [ ] **8.793.2** `isp_freebsd.c` · 3,507L gen:2 · `TODO-PORT` · 69 fn
+- [ ] **8.793.2** `isp_freebsd.c` · 3,516L gen:2 · `TODO-PORT` · 69 fn
   - [ ] 8.793.2.1 `isp_role_sysctl()` · `TODO-FN`
   - [ ] 8.793.2.2 `isp_attach_chan()` · `TODO-FN`
   - [ ] 8.793.2.3 `isp_detach_chan()` · `TODO-FN`
@@ -88200,7 +88200,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.858.12.13 `mbq_safe_fini()` · `TODO-FN`
   - [ ] 8.858.12.14 `mbq_fini()` · `TODO-FN`
 - [ ] **8.858.13** `netmap_mbq.h` · 99L · `TODO-HDR`
-- [ ] **8.858.14** `netmap_mem2.c` · 2,989L gen:7 · `TODO-PORT` · 95 fn
+- [ ] **8.858.14** `netmap_mem2.c` · 2,996L gen:7 · `TODO-PORT` · 95 fn
   - [ ] 8.858.14.1 `netmap_mem_get_lut()` · `TODO-FN`
   - [ ] 8.858.14.2 `netmap_mem_get_info()` · `TODO-FN`
   - [ ] 8.858.14.3 `netmap_mem_ofstophys()` · `TODO-FN`

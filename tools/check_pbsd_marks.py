@@ -4132,6 +4132,26 @@ FIXES = {
         "buffer let the guest tear the connection down off a stack word",
     ),
 
+    "hbsd/src/sys/dev/isp/isp_freebsd.c": (
+        "\tif (ccb != NULL) {\n\t\tccb->ccb_h.status &= ~CAM_STATUS_MASK;",
+        "\tisp_async(isp, ISPASYNC_TARGET_NOTIFY_ACK, inot);\n"
+        "\tccb->ccb_h.status &= ~CAM_STATUS_MASK;",
+        "the SRR handler's fail: label dereferenced ccb, and one of the "
+        "six `goto fail' sites is the branch that logs \"SRR[0x%x] null "
+        "ccb\" -- so it arrived having said the pointer was NULL and "
+        "faulted three lines later",
+    ),
+
+    "hbsd/src/sys/dev/netmap/netmap_mem2.c": (
+        "\tif (ptnmd == NULL)\n\t\treturn (NULL);",
+        "\tif (ptnmd == NULL) {\n\t\terr = ENOMEM;\n\t\tgoto error;",
+        "netmap_mem_pt_guest_create() jumped to a label that calls "
+        "netmap_mem_pt_guest_delete(&ptnmd->up). That callee does test for "
+        "NULL, so it did not fault -- but forming &ptnmd->up on a null "
+        "ptnmd is undefined (C17 6.5.3.2) and reaches the guard as NULL "
+        "only because `up' happens to be the first member",
+    ),
+
     "hbsd/src/sys/dev/videomode/pickmode.c": (
         "\t\tif (mtemp == NULL)\n\t\t\treturn;",
         "\t\t}\n\t\taspect = mtemp->hdisplay * 100 / mtemp->vdisplay;",

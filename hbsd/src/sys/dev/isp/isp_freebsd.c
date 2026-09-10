@@ -1548,9 +1548,18 @@ isp_handle_srr_start(ispsoftc_t *isp, atio_private_data_t *atp)
 fail:
 	inot->in_reserved = 1;
 	isp_async(isp, ISPASYNC_TARGET_NOTIFY_ACK, inot);
-	ccb->ccb_h.status &= ~CAM_STATUS_MASK;
-	ccb->ccb_h.status |= CAM_REQ_CMP_ERR;
-	isp_complete_ctio(isp, ccb);
+	/*
+	 * PBSD: one of the six `goto fail' sites is the branch that logs
+	 * "SRR[0x%x] null ccb" -- so this label was reached with ccb NULL,
+	 * having said so, and faulted three lines later.  The notify-ack
+	 * above is the part that has to happen either way; there is no ccb
+	 * to complete when there was no ccb.
+	 */
+	if (ccb != NULL) {
+		ccb->ccb_h.status &= ~CAM_STATUS_MASK;
+		ccb->ccb_h.status |= CAM_REQ_CMP_ERR;
+		isp_complete_ctio(isp, ccb);
+	}
 	return;
 mdp:
 	if (isp_notify_ack(isp, inot)) {

@@ -17682,3 +17682,83 @@ reading is in this document rather than in a suppression list. That
 distinction is the whole point: a finding that has been read and
 explained is closed; a finding that has been silenced is a finding
 nobody will ever look at again.
+
+## Following the goto, and why that pass cannot gate
+
+`sk_txcksum()` and the `mpr` `out:` label were both cases where the
+dereference sits at a `goto` target rather than in the guarded block,
+and the first version of `null_branch.py` recorded that as a limitation
+it would not chase — "the moment this pass needs a control-flow graph it
+stops being the thing it is."
+
+That was too pessimistic by one step. The argument the disjunction rule
+rests on carries straight through a jump: a `goto L` out of a block that
+proved `p` NULL **arrives at L with p NULL**, so a dereference at L
+faults on that path whatever other paths also reach L. Nothing needs to
+be known about those other paths, so no graph is needed — only the
+label's own text, found by name within the enclosing function.
+
+It found two more, in code the analyser sweep reports nothing about:
+
+```c
+	/* isp_freebsd.c, the target-mode SRR handler */
+	ccb = atp->srr_ccb;
+	atp->srr_ccb = NULL;
+	if (ccb == NULL) {
+		isp_prt(isp, ISP_LOGWARN, "SRR[0x%x] null ccb", atp->tag);
+		goto fail;
+	}
+	...
+fail:
+	inot->in_reserved = 1;
+	isp_async(isp, ISPASYNC_TARGET_NOTIFY_ACK, inot);
+	ccb->ccb_h.status &= ~CAM_STATUS_MASK;
+```
+
+It logs that the ccb is null and then faults on it three lines later.
+The notify-ack is the part that has to happen either way; there is no
+ccb to complete when there was no ccb.
+
+`netmap_mem_pt_guest_create()` is the quieter one. Its allocation
+failure jumps to a label calling
+`netmap_mem_pt_guest_delete(&ptnmd->up)`, and that callee *does* test
+its argument for NULL — so it never faults. But forming `&ptnmd->up` on
+a null `ptnmd` is undefined (C17 6.5.3.2), and it arrives at the guard
+as NULL only because `up` happens to be the first member of the struct.
+Nothing states that invariant. The allocation-failure path has nothing
+to delete, so it returns.
+
+### And then it would not go to zero
+
+Six sites remain, and none is fixable by a grep:
+
+| site | why it is not a defect |
+|---|---|
+| `scandir-compat11.c`, `efi_variables.c` | the label's loop is bounded by a counter that is zero on exactly the path where the pointer is null |
+| `mpi3mr.c`, `sym_hipd.c` | the guard at the label is on a *different* variable, non-null only when this one is (`sense_buf`/`scsi_reply`, `vaddr`/`vbp`) |
+| `bsd_nvpair.c` | the null test is a redundant disjunct that an early return already excluded |
+| `stand/libsa/nfs.c` | the label and the dereference are in different `#if` arms |
+
+Each needs to know what a counter holds, or which of two variables
+implies the other, or what the preprocessor kept. A pass that needs any
+of those is not this pass.
+
+So the tool now has two modes and refuses to combine them. The default
+reads the guarded block, reaches zero across 20,324 files, and gates CI.
+`--follow-goto` reads the labels too, finds what the block alone cannot,
+and **reports** — because a lint with a false-positive floor cannot
+carry a build, which is the same conclusion `nowait_check.py`'s
+docstring reached about itself.
+
+```
+                isp+netmap
+                before  after
+OK                 19      19
+ERROR               0       0
+findings            5       5
+```
+
+Zero delta, and that is the honest number: the sweep never reported
+either site. Like `ata-promise.c`, they exist in this document because a
+second instrument found what the first could not see, and the unchanged
+OK/ERROR columns are what says the edited files still compile.
