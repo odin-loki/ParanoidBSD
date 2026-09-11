@@ -480,7 +480,7 @@ kludge_desc(struct keymap **km_sorted, int num_keymaps)
 	int i;
 
 	for (i=0; i<num_keymaps; i++) {
-		char *p;
+		char *p, *nkm;
 		char *km = km_sorted[i]->desc;
 		if ((p = strstr(km, "8x8")) != NULL) {
 			int len;
@@ -489,9 +489,19 @@ kludge_desc(struct keymap **km_sorted, int num_keymaps)
 
 			offset = p - km;
 
-			/* Make enough space for the extra '0' */
+			/*
+			 * Make enough space for the extra '0'.
+			 *
+			 * PBSD: was unchecked, and the shift loop below
+			 * writes through it.  A failure now leaves this
+			 * description unkludged rather than dereferencing
+			 * NULL; realloc(3) keeps the old string either way.
+			 */
 			len = strlen(km);
-			km = realloc(km, len + 2);
+			nkm = realloc(km, len + 2);
+			if (nkm == NULL)
+				continue;
+			km = nkm;
 
 			for (j=len; j!=offset+1; j--)
 				km[j + 1] = km[j];
@@ -512,14 +522,23 @@ unkludge_desc(struct keymap **km_sorted, int num_keymaps)
 	int i;
 
 	for (i=0; i<num_keymaps; i++) {
-		char *p;
+		char *p, *nkm;
 		char *km = km_sorted[i]->desc;
 		if ((p = strstr(km, "8x08")) != NULL) {
 			p += 2;
 			while (*p++)
 				p[-1] = p[0];
 
-			km = realloc(km, p - km - 1);
+			/*
+			 * PBSD: was unchecked, and the NULL went straight
+			 * into km_sorted[i]->desc for the display code to
+			 * read.  This is a shrink and the string is already
+			 * correct in place, so keeping the old buffer costs
+			 * only the slack.
+			 */
+			nkm = realloc(km, p - km - 1);
+			if (nkm != NULL)
+				km = nkm;
 			km_sorted[i]->desc = km;
 		}
 	}

@@ -170,23 +170,39 @@ usage(void)
 static void
 filter(FILE *f)
 {
+	struct CHAR *nobuf, *oldbuf;
 	wint_t c;
 	int i, w;
 	int copy;
-	
+
 	copy = 0;
 
 	while ((c = getwc(f)) != WEOF) {
 		if (col == buflen) {
+			/*
+			 * PBSD: obuf and buflen now move together or not at
+			 * all.  The old spelling answered a failed grow with
+			 * `obuf = sobuf; break;' while leaving buflen at the
+			 * size it had reached -- so the heap buffer leaked
+			 * (main()'s `if (obuf != sobuf) free(obuf)' no longer
+			 * sees it), and, since obuf, buflen and col are all
+			 * file-scope and filter() runs once per file
+			 * argument, the NEXT file indexed the MAXBUF static
+			 * sobuf all the way up to the old buflen before the
+			 * grow test fired again.
+			 */
+			oldbuf = obuf;
 			if (obuf == sobuf) {
 				obuf = NULL;
 				copy = 1;
 			}
-			obuf = realloc(obuf, sizeof(*obuf) * 2 * buflen);
-			if (obuf == NULL) {
-				obuf = sobuf;
+			nobuf = realloc(obuf, sizeof(*obuf) * 2 * buflen);
+			if (nobuf == NULL) {
+				obuf = oldbuf;
 				break;
-			} else if (copy) {
+			}
+			obuf = nobuf;
+			if (copy) {
 				memcpy(obuf, sobuf, sizeof(*obuf) * buflen);
 				copy = 0;
 			}

@@ -29,6 +29,7 @@
 #include <sys/param.h>
 #include <sys/sysctl.h>
 
+#include <err.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <libutil.h>
@@ -126,7 +127,7 @@ boot_disk_select(struct gmesh *mesh)
 	struct gconfig *gc;
 	struct ggeom *gp;
 	struct gprovider *pp;
-	struct bsddialog_menuitem *disks = NULL;
+	struct bsddialog_menuitem *disks = NULL, *newdisks;
 	const char *type, *desc;
 	char diskdesc[512];
 	char *chosen;
@@ -171,7 +172,16 @@ boot_disk_select(struct gmesh *mesh)
 				}
 				g_close(fd);
 
-				disks = realloc(disks, (++n)*sizeof(disks[0]));
+				/*
+				 * PBSD: was unchecked, and the next line
+				 * stores through it.
+				 */
+				newdisks = realloc(disks,
+				    (n + 1) * sizeof(disks[0]));
+				if (newdisks == NULL)
+					err(1, "realloc");
+				disks = newdisks;
+				n++;
 				disks[n-1].name = pp->lg_name;
 				humanize_number(diskdesc, 7, pp->lg_mediasize,
 				    "B", HN_AUTOSCALE, HN_DECIMAL);

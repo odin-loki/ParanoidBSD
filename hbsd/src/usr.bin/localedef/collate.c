@@ -269,12 +269,27 @@ new_pri(void)
 	int i;
 
 	if (numpri >= maxpri) {
-		maxpri = maxpri ? maxpri * 2 : 1024;
-		prilist = realloc(prilist, sizeof (collpri_t) * maxpri);
-		if (prilist == NULL) {
+		collpri_t	*npri;
+		int		newmax;
+
+		/*
+		 * PBSD: through a temporary, with maxpri committed only once
+		 * the list is that big.  `prilist = realloc(prilist, ...)'
+		 * with maxpri already doubled left the failure path
+		 * unrecoverable in both directions: the old list leaked, and
+		 * because numpri was unchanged the NEXT new_pri() found
+		 * `numpri >= maxpri' false, skipped the allocation entirely
+		 * and handed back an index into a NULL prilist for get_pri()
+		 * to take the address of.  No caller checks the -1 either.
+		 */
+		newmax = maxpri ? maxpri * 2 : 1024;
+		npri = realloc(prilist, sizeof (collpri_t) * newmax);
+		if (npri == NULL) {
 			fprintf(stderr,"out of memory\n");
 			return (-1);
 		}
+		prilist = npri;
+		maxpri = newmax;
 		for (i = numpri; i < maxpri; i++) {
 			prilist[i].res = UNKNOWN;
 			prilist[i].pri = 0;

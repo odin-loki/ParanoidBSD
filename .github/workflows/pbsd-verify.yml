@@ -357,24 +357,14 @@ jobs:
       # `p = realloc(p, n)' loses the old block when realloc(3) returns
       # NULL. Six of these were read one at a time before the rule was
       # worth writing down, and the rule then found 148 more. They are
-      # usr.bin/ and usr.sbin/ are NOT yet triaged, so the tree-wide run
-      # reports and does not gate -- a number nobody has read is not a
-      # thing to fail a build on. The test beside it does gate, because
-      # a rule that stopped distinguishing would make the 139 meaningless
-      # in either direction.
+      # Every scope is now read through, site by site: each of the 119
+      # that remain is in EXPECTED with the reason it is harmless, and
+      # everything else was fixed. So this gates over the whole tree
+      # rather than reporting a number nobody has read. A NEW site
+      # anywhere fails the build until someone looks at it, which is
+      # the entire point of the rule.
       - name: An assignment that destroys the pointer it is reporting about
-        run: python3 tools/verify/realloc_self.py
-      # lib, libexec, bin, sbin and sys are read through: every site in
-      # them is either fixed or one of the eighteen written down in
-      # EXPECTED with the reason, so they gate. usr.bin (74) and
-      # usr.sbin (47) are not read yet and do not.
-      - name: ...and the scopes that are read through gate
-        run: |
-          python3 tools/verify/realloc_self.py --scope lib --gate
-          python3 tools/verify/realloc_self.py --scope libexec --gate
-          python3 tools/verify/realloc_self.py --scope bin --gate
-          python3 tools/verify/realloc_self.py --scope sbin --gate
-          python3 tools/verify/realloc_self.py --scope sys --gate
+        run: python3 tools/verify/realloc_self.py --gate
       - name: The realloc rule still tells the six from the four
         run: python3 tools/verify/test_realloc_self.py
 

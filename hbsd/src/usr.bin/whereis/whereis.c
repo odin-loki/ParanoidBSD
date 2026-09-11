@@ -118,7 +118,14 @@ scanopts(int argc, char **argv)
 			dirlist = &sourcedirs;
 		  dolist:
 			i = 0;
+			/*
+			 * PBSD: was unchecked, and the next line stores
+			 * through it.  Everything else in this file aborts
+			 * on a failed allocation.
+			 */
 			*dirlist = realloc(*dirlist, (i + 1) * sizeof(char *));
+			if (*dirlist == NULL)
+				abort();
 			(*dirlist)[i] = NULL;
 			while (optind < argc &&
 			       strcmp(argv[optind], "-f") != 0 &&

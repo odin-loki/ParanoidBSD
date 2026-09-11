@@ -493,7 +493,18 @@ pci_vtscsi_request_handle(struct pci_vtscsi_queue *q, struct iovec *iov_in,
 
 	truncate_iov(iov_in, &niov_in, VTSCSI_IN_HEADER_LEN(sc));
 	truncate_iov(iov_out, &niov_out, VTSCSI_OUT_HEADER_LEN(sc));
-	iov_to_buf(iov_in, niov_in, (void **)&cmd_rd);
+	/*
+	 * PBSD: the return was ignored, and cmd_rd->lun is read below.
+	 * The size iov_to_buf() asks for is the sum of the guest's own
+	 * iovec lengths, so this was a guest-triggerable NULL dereference
+	 * in the device model.  Dropping the request is what the two
+	 * malformed-request guards above this already do.
+	 */
+	if (iov_to_buf(iov_in, niov_in, (void **)&cmd_rd) < 0) {
+		WPRINTF("ignoring request: cannot buffer %d input segments",
+		    niov_in);
+		return (0);
+	}
 
 	cmd_wr = calloc(1, VTSCSI_OUT_HEADER_LEN(sc));
 	io = ctl_scsi_alloc_io(sc->vss_iid);
@@ -587,7 +598,14 @@ pci_vtscsi_controlq_notify(void *vsc, struct vqueue_info *vq)
 		n = vq_getchain(vq, iov, VTSCSI_MAXSEG, &req);
 		assert(n >= 1 && n <= VTSCSI_MAXSEG);
 
+		/* PBSD: as above -- the return was ignored here too. */
 		bufsize = iov_to_buf(iov, n, &buf);
+		if (bufsize < 0) {
+			WPRINTF("ignoring control request: cannot buffer "
+			    "%d segments", n);
+			vq_relchain(vq, req.idx, 0);
+			continue;
+		}
 		iolen = pci_vtscsi_control_handle(sc, buf, bufsize);
 		buf_to_iov((uint8_t *)buf + bufsize - iolen, iolen, iov, n,
 		    bufsize - iolen);

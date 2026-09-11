@@ -5125,6 +5125,16 @@ FIXES = {
 
     "hbsd/src/usr.bin/ul/ul.c": [
         (
+            "\t\t\tif (nobuf == NULL) {\n\t\t\t\tobuf = oldbuf;\n\t\t\t\tbreak;",
+            "\t\t\t\tobuf = sobuf;\n\t\t\t\tbreak;",
+            "filter: a failed grow answered with `obuf = sobuf; break;' "
+            "while leaving buflen at the size it had reached -- so the "
+            "heap buffer leaked, and since obuf, buflen and col are all "
+            "file-scope and filter() runs once per file argument, the "
+            "NEXT file indexed the MAXBUF static all the way up to the "
+            "old buflen",
+        ),
+        (
             "static wchar_t	*lnbuf;",
             "\twchar_t lbuf[256];",
             "overstrike() and iattr() each wrote maxcol + 1 wchar_t into a "
@@ -5677,19 +5687,211 @@ FIXES = {
         "below it is checked with xo_errx",
     ),
 
-    "hbsd/src/usr.sbin/kbdmap/kbdmap.c": (
-        'if (km_sorted == NULL)\n\t\terr(1, "malloc");',
-        None,
-        "menu_read: km_sorted was malloc'd and then indexed in the very "
-        "next statement with no check",
+    "hbsd/src/usr.bin/localedef/ctype.c": [
+        (
+            "\t\t\tnct = realloc(ct, sizeof (*ct) * runetype_ext_nranges);\n\t\t\tif (nct == NULL)",
+            "\t\t\tct = realloc(ct, sizeof (*ct) * runetype_ext_nranges);",
+            "dump_ctype: unchecked, with the range count bumped first, "
+            "and the very next line indexes the result",
+        ),
+        (
+            "\t\t\tnlo = realloc(lo, sizeof (*lo) * maplower_ext_nranges);",
+            "\t\t\tlo = realloc(lo, sizeof (*lo) * maplower_ext_nranges);",
+            "the lower-case map, same shape",
+        ),
+        (
+            "\t\t\tnup = realloc(up, sizeof (*up) * mapupper_ext_nranges);",
+            "\t\t\tup = realloc(up, sizeof (*up) * mapupper_ext_nranges);",
+            "the upper-case map, same shape",
+        ),
+    ],
+
+    "hbsd/src/usr.bin/localedef/collate.c": (
+        "\t\tnpri = realloc(prilist, sizeof (collpri_t) * newmax);",
+        "\t\tmaxpri = maxpri ? maxpri * 2 : 1024;\n\t\tprilist = realloc",
+        "new_pri: maxpri was committed before the allocation, so the "
+        "failure path was unrecoverable in both directions -- the list "
+        "leaked, and with numpri unchanged the NEXT new_pri() found "
+        "`numpri >= maxpri' false, skipped the allocation and returned "
+        "an index into a NULL prilist. No caller checks the -1 either",
     ),
 
-    "hbsd/src/usr.sbin/bsdinstall/partedit/partedit.c": (
-        'if (tobesorted == NULL)\n\t\t\terr(1, "malloc");',
-        None,
-        "apply_changes: the fstab sort array was malloc'd and filled in "
-        "immediately, with no check",
+    "hbsd/src/usr.bin/mkimg/vmdk.c": (
+        "\tnewdesc = realloc(desc, desc_len);\n\tif (newdesc == NULL) {",
+        "\tdesc = realloc(desc, desc_len);\n\tmemset(desc + n, 0,",
+        "vmdk_write: unchecked, and the next line memsets through it",
     ),
+
+    "hbsd/src/usr.bin/netstat/nhops.c": [
+        (
+            "\tif (nh_map == NULL)\n\t\txo_errx(EX_OSERR, \"calloc(%zu)\", nh_size);",
+            None,
+            "nhops_dump: the initial calloc was unchecked",
+        ),
+        (
+            "\t\t\tnmap = realloc(nh_map,\n\t\t\t    nh_size * 2 * sizeof(struct nhops_map));",
+            "\t\t\tnh_size *= 2;\n\t\t\tnh_map = realloc(nh_map,",
+            "and the grow beside it was unchecked too, with nh_size "
+            "committed first and the result indexed four lines later",
+        ),
+    ],
+
+    "hbsd/src/usr.bin/netstat/nhgrp.c": [
+        (
+            "\tif (nhg_map == NULL)\n\t\txo_errx(EX_OSERR, \"calloc(%zu)\", nhg_size);",
+            None,
+            "nhgrp_dump: the initial calloc was unchecked",
+        ),
+        (
+            "\t\t\tnmap = realloc(nhg_map,\n\t\t\t    nhg_size * 2 * sizeof(struct nhops_map));",
+            "\t\t\tnhg_size *= 2;\n\t\t\tnhg_map = realloc(nhg_map,",
+            "the same pair as nhops.c, in the nexthop-group dump",
+        ),
+    ],
+
+    "hbsd/src/usr.bin/whereis/whereis.c": (
+        "\t\t\tif (*dirlist == NULL)\n\t\t\t\tabort();",
+        None,
+        "main's -B/-M/-S handler: the one unchecked allocation in a "
+        "file that abort()s on every other one, and the next line "
+        "stores through it",
+    ),
+
+    "hbsd/src/usr.bin/sdiff/sdiff.c": [
+        (
+            "\t\t\tnflagv = realloc(flagv, flagc + 2);\n\t\t\tif (nflagv == NULL)",
+            "\t\t\tflagv = realloc(flagv, flagc + 2);",
+            "main: unchecked, and the two lines below store at flagc "
+            "and flagc + 1",
+        ),
+        (
+            "\t\t\tdiffargv[flagvidx] = flagv;",
+            None,
+            "and the slot reserved for flagv in diffargv held whatever "
+            "the FIRST malloc returned -- realloc(3) may move the "
+            "block, so every grow after the first left diffargv[1] "
+            "dangling, and that array is what execvp() is handed",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/bhyve/bhyvegc.c": (
+        "\tdata = reallocarray(gc_image->data, width * height,",
+        "\tgc_image->width = width;\n\tgc_image->height = height;\n\tif (!gc->raw) {",
+        "bhyvegc_resize: width and height were committed before the "
+        "allocation, and pci_fbuf.c calls this with sc->memregs.width "
+        "and .height, which the GUEST writes -- so a guest could ask "
+        "for a resize it knew would fail and leave gc_image->data NULL "
+        "while width and height named a frame. bhyvegc_get_image() "
+        "hands that struct straight to the VNC server",
+    ),
+
+    "hbsd/src/usr.sbin/bhyve/iov.c": (
+        "\tnbuf = realloc(*buf, total);\n\tif (nbuf == NULL)\n\t\treturn (-1);\n\t*buf = nbuf;",
+        "\t*buf = realloc(*buf, total);\n\tif (*buf == NULL)",
+        "iov_to_buf: total is the sum of GUEST-supplied iovec lengths, "
+        "and the old spelling handed the caller back a NULL over its "
+        "own pointer",
+    ),
+
+    "hbsd/src/usr.sbin/bhyve/pci_virtio_scsi.c": [
+        (
+            "\tif (iov_to_buf(iov_in, niov_in, (void **)&cmd_rd) < 0) {",
+            "\tiov_to_buf(iov_in, niov_in, (void **)&cmd_rd);",
+            "pci_vtscsi_request_handle: the return was ignored and "
+            "cmd_rd->lun read below it -- a guest-triggerable NULL "
+            "dereference in the device model",
+        ),
+        (
+            "\t\tif (bufsize < 0) {",
+            "\t\tbufsize = iov_to_buf(iov, n, &buf);\n\t\tiolen =",
+            "pci_vtscsi_controlq_notify: the same ignored return, "
+            "feeding buf and bufsize straight into the control handler",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/bsdinstall/partedit/part_wizard.c": (
+        "\t\t\t\tnewdisks = realloc(disks,",
+        "\t\t\t\tdisks = realloc(disks, (++n)*sizeof(disks[0]));",
+        "wizard_partition: unchecked, and the next line stores through "
+        "disks[n-1]",
+    ),
+
+    "hbsd/src/usr.sbin/rpc.yppasswdd/yppasswdd_server.c": (
+        "\tnbuf = realloc(buf, m + 10);\n\tif (nbuf == NULL) {",
+        "\tbuf = realloc(buf, m + 10);\n\tbzero(buf, m + 10);",
+        "copy_yp_pass: unchecked, and the bzero on the next line writes "
+        "through it. buf is static, so the NULL persisted for the life "
+        "of the daemon",
+    ),
+
+    "hbsd/src/usr.sbin/rpcbind/rpcbind.c": (
+        "\t\tnewhosts = realloc(hosts, nhostsbak * sizeof(char *));",
+        "\t\thosts = realloc(hosts, nhostsbak * sizeof(char *));\n\t\tif (nhostsbak == 1)",
+        "init_transport: unchecked -- the test on the next line is "
+        "about nhostsbak, not about hosts -- and both arms of it store "
+        "through the result",
+    ),
+
+    "hbsd/src/usr.sbin/uhsoctl/uhsoctl.c": [
+        (
+            "\t\t\t\tnlist = realloc(list,\n\t\t\t\t    (list_size + 1) * sizeof(char *));",
+            "\t\t\t\tlist = realloc(list, (list_size + 1) * sizeof(char *));",
+            "get_tty: the realloc and the malloc beside it were both "
+            "unchecked, each stored through on the next line",
+        ),
+        (
+            "\tnlist = realloc(list, (list_size + 1) * sizeof(char *));",
+            "\tlist = realloc(list, (list_size + 1) * sizeof(char *));\n\tlist[list_size] = NULL;",
+            "and the NULL-terminating grow at the end of the same "
+            "function",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/powerd/powerd.c": (
+        "\tnfreqs = realloc(*freqs, *numfreqs * sizeof(int));",
+        "\tif ((*freqs = realloc(*freqs, *numfreqs * sizeof(int))) == NULL) {",
+        "read_freqs: `*freqs = realloc(*freqs, ...)' put NULL in the "
+        "only pointer to the array before the free(*freqs) three lines "
+        "down, which was then freeing nothing -- and this is a SHRINK, "
+        "which realloc(3) is still free to satisfy by allocating, "
+        "copying and failing",
+    ),
+
+    "hbsd/src/usr.sbin/kbdmap/kbdmap.c": [
+        (
+            'if (km_sorted == NULL)\n\t\terr(1, "malloc");',
+            None,
+            "menu_read: km_sorted was malloc'd and then indexed in the "
+            "very next statement with no check",
+        ),
+        (
+            "\t\t\tnkm = realloc(km, len + 2);\n\t\t\tif (nkm == NULL)\n\t\t\t\tcontinue;",
+            "\t\t\tkm = realloc(km, len + 2);",
+            "kludge_desc: unchecked, and the shift loop below it writes "
+            "through the result",
+        ),
+        (
+            "\t\t\tnkm = realloc(km, p - km - 1);\n\t\t\tif (nkm != NULL)",
+            "\t\t\tkm = realloc(km, p - km - 1);\n\t\t\tkm_sorted[i]->desc = km;",
+            "unkludge_desc: unchecked, and the NULL went straight into "
+            "km_sorted[i]->desc for the display code to read",
+        ),
+    ],
+
+    "hbsd/src/usr.sbin/bsdinstall/partedit/partedit.c": [
+        (
+            'if (tobesorted == NULL)\n\t\t\terr(1, "malloc");',
+            None,
+            "apply_changes: the fstab sort array was malloc'd and filled "
+            "in immediately, with no check",
+        ),
+        (
+            "\t\tnewitems = realloc(*items,",
+            "\t\t*items = realloc(*items,",
+            "add_geom_children: unchecked, and the next line stores "
+            "through (*items)[*nitems]",
+        ),
+    ],
 
     "hbsd/src/sbin/fsck/preen.c": (
         "free(p->p_mntpt);",

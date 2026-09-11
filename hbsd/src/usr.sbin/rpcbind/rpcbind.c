@@ -309,6 +309,7 @@ init_transport(const struct netconfig *nconf)
 	int addrlen;
 	int nhostsbak;
 	int bound;
+	char **newhosts;
 	u_int32_t host_addr[4];  /* IPv4 or IPv6 */
 	struct sockaddr *sa;
 	struct sockaddr_un sun;
@@ -381,7 +382,16 @@ init_transport(const struct netconfig *nconf)
 		 * Otherwise  make sure 127.0.0.1 is added to the list.
 		 */
 		nhostsbak = nhosts + 1;
-		hosts = realloc(hosts, nhostsbak * sizeof(char *));
+		/*
+		 * PBSD: was unchecked -- the test on the next line is about
+		 * nhostsbak, not about hosts -- and both arms of it store
+		 * through the result.  The -h arm at the bottom of main()
+		 * has had errx(1, "Out of memory") all along.
+		 */
+		newhosts = realloc(hosts, nhostsbak * sizeof(char *));
+		if (newhosts == NULL)
+			errx(1, "Out of memory");
+		hosts = newhosts;
 		if (nhostsbak == 1)
 			hosts[0] = "*";
 		else {

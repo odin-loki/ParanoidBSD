@@ -365,15 +365,31 @@ dump_nhops_sysctl(int fibnum, int af, struct nhops_dump *nd)
 	 */
 	nh_count = 0;
 	nh_size = 16;
+	/* PBSD: was unchecked, as was the realloc that grows it below. */
 	nh_map = calloc(nh_size, sizeof(struct nhops_map));
+	if (nh_map == NULL)
+		xo_errx(EX_OSERR, "calloc(%zu)", nh_size);
 	for (next = buf; next < lim; next += rtm->rtm_msglen) {
 		rtm = (struct rt_msghdr *)next;
 		if (rtm->rtm_version != RTM_VERSION)
 			continue;
 
 		if (nh_count >= nh_size) {
+			struct nhops_map *nmap;
+
+			/*
+			 * PBSD: the old spelling stored the result with no
+			 * check and indexed it four lines later, with
+			 * nh_size already doubled -- so even a checked store
+			 * would have left the map naming entries it does not
+			 * have.
+			 */
+			nmap = realloc(nh_map,
+			    nh_size * 2 * sizeof(struct nhops_map));
+			if (nmap == NULL)
+				xo_errx(EX_OSERR, "realloc(%zu)", nh_size * 2);
+			nh_map = nmap;
 			nh_size *= 2;
-			nh_map = realloc(nh_map, nh_size * sizeof(struct nhops_map));
 		}
 
 		nh = (struct nhop_external *)(rtm + 1); 

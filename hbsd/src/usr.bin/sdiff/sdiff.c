@@ -208,11 +208,11 @@ int
 main(int argc, char **argv)
 {
 	FILE *diffpipe, *file1, *file2;
-	size_t diffargc = 0, flagc = 0, wval = WIDTH;
+	size_t diffargc = 0, flagc = 0, flagvidx, wval = WIDTH;
 	int ch, fd[2], i, ret, status;
 	pid_t pid;
 	const char *errstr, *outfile = NULL;
-	char **diffargv, *diffprog = diff_path, *flagv;
+	char **diffargv, *diffprog = diff_path, *flagv, *nflagv;
 	char *filename1, *filename2, *tmp1, *tmp2, *s1, *s2;
 	char I_arg[] = "-I";
 	char speed_lf[] = "--speed-large-files";
@@ -239,6 +239,7 @@ main(int argc, char **argv)
 		err(2, NULL);
 	flagv[flagc] = '-';
 	flagv[flagc + 1] = '\0';
+	flagvidx = diffargc;
 	diffargv[diffargc++] = flagv;
 
 	while ((ch = getopt_long(argc, argv, "aBbdEHI:ilo:stWw:",
@@ -258,8 +259,23 @@ main(int argc, char **argv)
 		case 'E':
 		case 'i':
 		case 'W':
+			/*
+			 * PBSD: was unchecked, and the two lines below store
+			 * through it at flagc and flagc + 1.
+			 */
 			flagc++;
-			flagv = realloc(flagv, flagc + 2);
+			nflagv = realloc(flagv, flagc + 2);
+			if (nflagv == NULL)
+				err(2, "realloc");
+			flagv = nflagv;
+			/*
+			 * PBSD: and the slot reserved for it above holds
+			 * whatever the FIRST malloc returned.  realloc(3) is
+			 * free to move the block, so every grow after the
+			 * first left diffargv[flagvidx] dangling -- and that
+			 * array is what gets handed to execvp(diffprog, ...).
+			 */
+			diffargv[flagvidx] = flagv;
 			/*
 			 * In diff, the 'W' option is 'w' and the 'w' is 'W'.
 			 */

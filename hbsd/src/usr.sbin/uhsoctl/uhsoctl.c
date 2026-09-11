@@ -1023,7 +1023,7 @@ get_tty(struct ctx *ctx)
 {
 	char buf[64], data[128];
 	int error, i, usbport, usbport0, list_size = 0;
-	char **list = NULL;
+	char **list = NULL, **nlist;
 	size_t len;
 	const char **p, *q;
 	
@@ -1118,14 +1118,29 @@ get_tty(struct ctx *ctx)
 			    buf, error, error == 0 ? data : "FAILED");
 #endif
 			if (error == 0) {
-				list = realloc(list, (list_size + 1) * sizeof(char *));
-				list[list_size] = malloc(strlen(data) + strlen(TTY_NAME));
+				/*
+				 * PBSD: both allocations were unchecked, and
+				 * the next line stores through each.
+				 */
+				nlist = realloc(list,
+				    (list_size + 1) * sizeof(char *));
+				if (nlist == NULL)
+					err(1, "realloc");
+				list = nlist;
+				list[list_size] =
+				    malloc(strlen(data) + strlen(TTY_NAME));
+				if (list[list_size] == NULL)
+					err(1, "malloc");
 		    		sprintf(list[list_size], TTY_NAME, data);
 		    		list_size++;
 			}
 		}
 	}
-	list = realloc(list, (list_size + 1) * sizeof(char *));
+	/* PBSD: was unchecked, and the next line stores through it. */
+	nlist = realloc(list, (list_size + 1) * sizeof(char *));
+	if (nlist == NULL)
+		err(1, "realloc");
+	list = nlist;
 	list[list_size] = NULL;
 	return (list);
 }

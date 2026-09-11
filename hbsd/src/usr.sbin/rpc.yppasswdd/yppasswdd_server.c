@@ -87,12 +87,22 @@ xlate_passwd(struct x_master_passwd *xpwd, struct passwd *pwd)
 static void
 copy_yp_pass(char *p, int x, int m)
 {
-	char *t, *s = p;
+	char *t, *s = p, *nbuf;
 	static char *buf;
 
 	yp_password.pw_fields = 0;
 
-	buf = realloc(buf, m + 10);
+	/*
+	 * PBSD: was unchecked, and the bzero on the next line writes
+	 * through it.  buf is static, so the NULL would also persist for
+	 * the life of the daemon.
+	 */
+	nbuf = realloc(buf, m + 10);
+	if (nbuf == NULL) {
+		yp_error("out of memory");
+		return;
+	}
+	buf = nbuf;
 	bzero(buf, m + 10);
 
 	/* Turn all colons into NULLs */

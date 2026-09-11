@@ -109,7 +109,7 @@ vmdk_write(int fd)
 {
 	struct vmdk_header hdr;
 	uint32_t *gt, *gd, *rgd;
-	char *buf, *desc;
+	char *buf, *desc, *newdesc;
 	off_t cur, lim;
 	uint64_t imagesz;
 	lba_t blkofs, blkcnt;
@@ -133,7 +133,13 @@ vmdk_write(int fd)
 		return (ENOMEM);
 
 	desc_len = (n + VMDK_SECTOR_SIZE - 1) & ~(VMDK_SECTOR_SIZE - 1);
-	desc = realloc(desc, desc_len);
+	/* PBSD: was unchecked, and the next line writes through it. */
+	newdesc = realloc(desc, desc_len);
+	if (newdesc == NULL) {
+		free(desc);
+		return (ENOMEM);
+	}
+	desc = newdesc;
 	memset(desc + n, 0, desc_len - n);
 
 	le64enc(&hdr.desc_offset, 1);

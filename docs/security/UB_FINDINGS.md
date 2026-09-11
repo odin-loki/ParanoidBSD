@@ -24323,3 +24323,135 @@ findings each reported before and after are unchanged apart from the
 `ng_macfilter` softc leak, which is gone.  This is the analyser and a
 textual rule, not a proof: nothing here says these files have no other
 defects.
+
+---
+
+## The realloc rule, read through usr.bin and usr.sbin
+
+That closes the rule: every scope in the tree has now been read site by
+site.  121 reported sites in `usr.bin` (74) and `usr.sbin` (47) were the
+last untriaged population.
+
+Twenty-one of them were the defect.  Nineteen no longer match the rule
+at all; two still do and are fixed anyway, because the rule matches the
+*assignment* and both of those are assignments to an out-parameter on
+the success path.  Reading them turned up six more defects sitting
+beside a reported site that the rule never saw — two unchecked
+`calloc`s, an unchecked `malloc`, a dangling `execvp` argument, and two
+ignored return values.  Twenty-seven fixes across eighteen files.  The
+remaining 102 sites are written down in `EXPECTED` with the reason.
+
+`realloc_self.py` gates over the whole tree from here, so a new site
+anywhere fails the build until someone looks at it.
+
+The overwhelmingly common reason a reported site is **not** a defect
+turns out to be one sentence: the failure path calls something `__dead2`
+on the next line.  `err`, `errx`, `xo_err`, `abort`, `out_of_mem`,
+`bsdar_errc`, `AbortProgram`, `fatal` — a program that exits loses
+nothing by losing the block.  Recording that is not a shrug; it is the
+difference between a rule that has been read and a number that has not.
+
+### Two of them are guest-triggerable, in bhyve
+
+**`usr.sbin/bhyve/bhyvegc.c:85`, `bhyvegc_resize()`**:
+
+```c
+	gc_image->width = width;
+	gc_image->height = height;
+	if (!gc->raw) {
+		gc_image->data = reallocarray(gc_image->data, width * height,
+		    sizeof (uint32_t));
+		if (gc_image->data != NULL)
+			memset(...);
+	}
+```
+
+The NULL is tested, and the dimensions were committed before the
+allocation regardless.  `pci_fbuf.c:378` calls this with
+`sc->memregs.width` and `.height` — registers the **guest** writes — so a
+guest could ask for a resize it knew would fail and walk away with
+`gc_image->data` NULL while `width` and `height` named a frame.
+`bhyvegc_get_image()` hands that struct straight to the VNC server.  Now
+the dimensions move only when the buffer does, and a failure keeps the
+old image intact.
+
+**`usr.sbin/bhyve/iov.c:101`, `iov_to_buf()`** is the other, and it took
+two fixes.  The function's own `*buf = realloc(*buf, total)` handed the
+caller back NULL over its own pointer — where `total` is
+`count_iov(iov, niov)`, the sum of **guest-supplied** iovec lengths.  And
+both call sites in `pci_virtio_scsi.c` ignored the `-1` it returns:
+`:496` reads `cmd_rd->lun` immediately after, and `:590` passes
+`buf` and a `bufsize` of `-1` into `pci_vtscsi_control_handle()` and then
+does pointer arithmetic with it.  Dropping the request is what the two
+malformed-request guards above `:496` already do, so that is what both
+now do.
+
+### The rest
+
+**`usr.bin/ul/ul.c:185`** is the one whose consequence is memory
+corruption rather than a NULL dereference.  A failed grow was answered
+with `obuf = sobuf; break;` — while leaving `buflen` at the size it had
+reached.  `obuf`, `buflen` and `col` are all file-scope and `filter()`
+runs once per file argument, so after one failed grow the *next* file
+indexed the `MAXBUF` static `sobuf` all the way up to the old `buflen`
+before the grow test fired again.  The heap buffer leaked too, invisibly:
+`main()`'s `if (obuf != sobuf) free(obuf)` no longer saw it.
+
+**`usr.bin/sdiff/sdiff.c:262`** needed two fixes as well.  The
+`realloc` was unchecked with two stores through it on the following
+lines — and the slot `diffargv[1]`, reserved for `flagv` before the
+option loop, still held whatever the *first* `malloc` returned.
+`realloc(3)` may move the block, so every grow after the first left that
+slot dangling, and `diffargv` is what `execvp(diffprog, ...)` is handed.
+
+**`usr.bin/localedef/collate.c:273`, `new_pri()`** commits `maxpri`
+before the allocation, which makes the failure path unrecoverable in
+both directions: the list leaks, and because `numpri` is unchanged the
+*next* `new_pri()` finds `numpri >= maxpri` false, skips the allocation
+entirely, and hands back an index into a NULL `prilist` for `get_pri()`
+to take the address of.  No caller checks the `-1` either.
+
+**`usr.bin/localedef/ctype.c:433, :448, :464`** are three unchecked
+reallocs in one loop, each indexed on the very next line, each with its
+range count bumped first.
+
+**`usr.sbin/kbdmap/kbdmap.c:494`** is unchecked with a shift loop writing
+through the result; **`:522`** is a shrink whose NULL went straight into
+`km_sorted[i]->desc` for the display code to read.
+
+**`usr.sbin/rpc.yppasswdd/yppasswdd_server.c:95`** — `buf` is `static`,
+so the NULL the unchecked realloc stored would have persisted for the
+life of the daemon, with a `bzero` through it on the next line.
+
+**`usr.sbin/rpcbind/rpcbind.c:384`** reads as checked and is not: the
+test on the next line is `if (nhostsbak == 1)`, about the count, not
+about `hosts` — and both arms of it store through the result.  The `-h`
+handler at the bottom of `main()` has had `errx(1, "Out of memory")` all
+along.
+
+**`usr.sbin/powerd/powerd.c:251`** is the tidiest statement of the whole
+rule: `*freqs = realloc(*freqs, ...)` puts NULL in the only pointer to
+the array **three lines above a `free(*freqs)`**, which is therefore
+freeing nothing.  And it is a shrink, which `realloc(3)` is still free to
+satisfy by allocating, copying and failing.
+
+Also fixed: `usr.bin/mkimg/vmdk.c:136` (unchecked, `memset` through it on
+the next line), `usr.bin/netstat/nhops.c` and `nhgrp.c` (an unchecked
+`calloc` *and* an unchecked grow with the size committed first, the
+result indexed four lines later, in each),
+`usr.bin/whereis/whereis.c:121` (the one unchecked allocation in a file
+that `abort()`s on every other one),
+`usr.sbin/bsdinstall/partedit/part_wizard.c:174` and `partedit.c:556`
+(both unchecked with a store through the result on the next line),
+`usr.sbin/uhsoctl/uhsoctl.c:1121` and `:1128`.
+
+### What is not claimed
+
+Every one of the eighteen touched files was re-analysed and reports the
+same findings as `HEAD`, with zero compile errors; the counts are in the
+commit.  One rework was needed for that: the first `ul.c` fix used
+`realloc(obuf == sobuf ? NULL : obuf, ...)`, and the ternary split the
+analyser's path so it reported a garbage read that `HEAD` did not.  The
+shipped version keeps `HEAD`'s shape and adds only the restore.  A fix
+that trades a real bug for a new finding is not a fix; the finding is how
+you would know.

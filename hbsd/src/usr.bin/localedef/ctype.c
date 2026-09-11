@@ -298,9 +298,9 @@ dump_ctype(void)
 	FILE		*f;
 	_FileRuneLocale	rl;
 	ctype_node_t	*ctn, *last_ct, *last_lo, *last_up;
-	_FileRuneEntry	*ct = NULL;
-	_FileRuneEntry	*lo = NULL;
-	_FileRuneEntry	*up = NULL;
+	_FileRuneEntry	*ct = NULL, *nct;
+	_FileRuneEntry	*lo = NULL, *nlo;
+	_FileRuneEntry	*up = NULL, *nup;
 	wchar_t		wc;
 	uint32_t	runetype_ext_nranges;
 	uint32_t	maplower_ext_nranges;
@@ -429,8 +429,17 @@ dump_ctype(void)
 		    (last_ct->wc + 1 == wc)) {
 			ct[runetype_ext_nranges - 1].max = htote(wc);
 		} else {
+			/*
+			 * PBSD: unchecked, and the very next line indexes
+			 * the result.  The range count was bumped first as
+			 * well, so it named an entry the allocation never
+			 * had to succeed for.
+			 */
 			runetype_ext_nranges++;
-			ct = realloc(ct, sizeof (*ct) * runetype_ext_nranges);
+			nct = realloc(ct, sizeof (*ct) * runetype_ext_nranges);
+			if (nct == NULL)
+				errf("out of memory");
+			ct = nct;
 			ct[runetype_ext_nranges - 1].min = htote(wc);
 			ct[runetype_ext_nranges - 1].max = htote(wc);
 			ct[runetype_ext_nranges - 1].map =
@@ -444,8 +453,12 @@ dump_ctype(void)
 			lo[maplower_ext_nranges - 1].max = htote(wc);
 			last_lo = ctn;
 		} else {
+			/* PBSD: as above, the lower-case map. */
 			maplower_ext_nranges++;
-			lo = realloc(lo, sizeof (*lo) * maplower_ext_nranges);
+			nlo = realloc(lo, sizeof (*lo) * maplower_ext_nranges);
+			if (nlo == NULL)
+				errf("out of memory");
+			lo = nlo;
 			lo[maplower_ext_nranges - 1].min = htote(wc);
 			lo[maplower_ext_nranges - 1].max = htote(wc);
 			lo[maplower_ext_nranges - 1].map =
@@ -460,8 +473,12 @@ dump_ctype(void)
 			up[mapupper_ext_nranges-1].max = htote(wc);
 			last_up = ctn;
 		} else {
+			/* PBSD: as above, the upper-case map. */
 			mapupper_ext_nranges++;
-			up = realloc(up, sizeof (*up) * mapupper_ext_nranges);
+			nup = realloc(up, sizeof (*up) * mapupper_ext_nranges);
+			if (nup == NULL)
+				errf("out of memory");
+			up = nup;
 			up[mapupper_ext_nranges - 1].min = htote(wc);
 			up[mapupper_ext_nranges - 1].max = htote(wc);
 			up[mapupper_ext_nranges - 1].map =

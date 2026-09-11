@@ -229,6 +229,253 @@ EXPECTED: dict[str, str] = {
         "inside `#ifdef notdef'. The lint reads text and does not run "
         "the preprocessor, which is why this is written down rather "
         "than fixed.",
+    # usr.sbin/ read through. The eleven that were NOT left alone are in
+    # docs/security/UB_FINDINGS.md -- two of them guest-triggerable in
+    # bhyve.
+    "usr.sbin/bhyve/iov.c:101":
+        "iov_to_buf() now goes through a temporary and leaves the "
+        "caller's pointer alone on failure, and BOTH call sites in "
+        "pci_virtio_scsi.c now check the -1 they were ignoring. Still "
+        "reported because the rule matches the ASSIGNMENT to *buf, "
+        "which is the out-parameter being filled on success.",
+    "usr.sbin/binmiscctl/binmiscctl.c:504":
+        "fatal(), whose body ends in exit(-1).",
+    "usr.sbin/bsdinstall/distextract/distextract.c:96":
+        "_errx(EXIT_FAILURE, \"Out of memory!\") on the next line.",
+    "usr.sbin/certctl/certctl.c:1003":
+        "err(1, NULL) -- same statement.",
+    "usr.sbin/fdformat/fdformat.c:97":
+        "errx(EX_UNAVAILABLE, \"out of memory\"). The test is OUTSIDE "
+        "the if that does the realloc, which covers it either way.",
+    "usr.sbin/inetd/inetd.c:2478":
+        "syslog() then exit(EX_OSERR) on the next lines.",
+    "usr.sbin/jls/jls.c:340":
+        "the two reallocs share one `params == NULL || "
+        "param_parent == NULL' test -> xo_err(1, \"realloc\").",
+    "usr.sbin/jls/jls.c:341":
+        "the second of that pair, covered by the same test.",
+    "usr.sbin/lastlogin/lastlogin.c:133":
+        "xo_err(1, \"malloc\") on the next line.",
+    "usr.sbin/mailwrapper/mailwrapper.c:77":
+        "err(EX_TEMPFAIL, \"realloc\") on the next line.",
+    "usr.sbin/mountd/mountd.c:701":
+        "out_of_mem(), whose body is syslog() + exit(2).",
+    "usr.sbin/mountd/mountd.c:859":
+        "out_of_mem() again, the socket array.",
+    "usr.sbin/mountd/mountd.c:3657":
+        "out_of_mem() again, get_line()'s buffer.",
+    "usr.sbin/newsyslog/newsyslog.c:1722":
+        "err(1, \"realloc()\") on the next line. max_logcnt is "
+        "committed first but the overflow check above it is what that "
+        "is for, and the failure exits.",
+    "usr.sbin/newsyslog/newsyslog.c:1731":
+        "err(1, \"realloc()\"); the trim-to-size shrink.",
+    "usr.sbin/nfsd/nfsd.c:204":
+        "errx(1, \"Out of memory\") on the next line.",
+    "usr.sbin/nfsd/nfsd.c:299":
+        "errx(1, \"Out of memory\"); the implicit `*' host.",
+    "usr.sbin/nfsd/nfsd.c:1287":
+        "errx(1, \"Out of memory\"); the DS path list.",
+    "usr.sbin/nfsd/nfsd.c:1301":
+        "errx(1, \"Out of memory\"); the MDS path list.",
+    "usr.sbin/nfsd/nfsd.c:1368":
+        "errx(1, \"Out of memory\"); the DS address list.",
+    "usr.sbin/nfsd/nfsd.c:1380":
+        "errx(1, \"Out of memory\"); the DS host list.",
+    "usr.sbin/pmcstat/pmcpl_calltree.c:198":
+        "errx(EX_SOFTWARE, ...) on the next line, and npmcs is "
+        "committed only after the bzero.",
+    "usr.sbin/pmcstat/pmcpl_calltree.c:237":
+        "errx(EX_SOFTWARE, ...); the arc array, same shape.",
+    "usr.sbin/pmcstat/pmcpl_calltree.c:258":
+        "errx(EX_SOFTWARE, ...); the instr array, same shape.",
+    "usr.sbin/ppp/ether.c:352":
+        "AbortProgram(EX_OSERR), which this tree already declared "
+        "__noreturn__ in usr.sbin/ppp/main.h. `dev' is also a LOCAL "
+        "copy of an iovec base -- the shrink's result is what the "
+        "function goes on to install.",
+    "usr.sbin/ppp/exec.c:180":
+        "AbortProgram(EX_OSERR); the same device-shrink idiom.",
+    "usr.sbin/ppp/netgraph.c:328":
+        "AbortProgram(EX_OSERR); the same idiom.",
+    "usr.sbin/ppp/tty.c:644":
+        "AbortProgram(EX_OSERR); the same idiom.",
+    "usr.sbin/ppp/udp.c:182":
+        "AbortProgram(EX_OSERR); the same idiom.",
+    "usr.sbin/pstat/pstat.c:268":
+        "err(1, \"realloc()\") -- same statement.",
+    "usr.sbin/rpc.lockd/lockd.c:377":
+        "out_of_mem() on the next line.",
+    "usr.sbin/rpc.lockd/lockd.c:551":
+        "out_of_mem() on the next line.",
+    "usr.sbin/rpc.lockd/lockd.c:678":
+        "out_of_mem() on the next line.",
+    "usr.sbin/rpc.statd/statd.c:246":
+        "out_of_mem() on the next line.",
+    "usr.sbin/rpc.statd/statd.c:365":
+        "out_of_mem() on the next line.",
+    "usr.sbin/rpcbind/rpcbind.c:884":
+        "errx(1, \"Out of memory\") on the next line. (The OTHER one, "
+        "in init_transport(), had no check at all and is fixed -- see "
+        "UB_FINDINGS.md.)",
+    "usr.sbin/uefisign/pe.c:506":
+        "append() calls err(1, \"realloc\") on the next line.",
+
+    # usr.bin/ read through. The eleven that were NOT left alone are in
+    # docs/security/UB_FINDINGS.md.  The overwhelming majority of what
+    # is left is one answer: the failure path calls something __dead2
+    # on the next line, so the lost block outlives nothing.
+    "usr.bin/ar/write.c:858":
+        "bsdar_errc(), declared __dead2 in usr.bin/ar/ar.h.",
+    "usr.bin/ar/write.c:892":
+        "bsdar_errc() again, the symbol-offset table.",
+    "usr.bin/ar/write.c:907":
+        "bsdar_errc() again, the symbol-name table.",
+    "usr.bin/c99/c99.c:98":
+        "addarg() calls err(1, \"malloc\").",
+    "usr.bin/cap_mkdb/cap_mkdb.c:164":
+        "errx(1, \"malloc failed\") on the next line.",
+    "usr.bin/col/col.c:305":
+        "err(1, NULL) on the next line.",
+    "usr.bin/col/col.c:438":
+        "err(1, NULL); the sort scratch buffer.",
+    "usr.bin/col/col.c:444":
+        "err(1, NULL); the count array beside it.",
+    "usr.bin/column/column.c:248":
+        "err(1, NULL). The two reallocs are the two arms of one `||' "
+        "and share the test, so a failure in either reaches it.",
+    "usr.bin/column/column.c:250":
+        "the second arm of that same `||'.",
+    "usr.bin/column/column.c:332":
+        "err(1, NULL) on the next line.",
+    "usr.bin/cut/cut.c:228":
+        "err(1, \"realloc\") on the next line.",
+    "usr.bin/cut/cut.c:398":
+        "err(1, \"realloc\") -- the test is OUTSIDE the if that does "
+        "the realloc, which reads oddly but covers it either way.",
+    "usr.bin/fold/fold.c:179":
+        "err(1, \"realloc()\") on the next line.",
+    "usr.bin/gencat/gencat.c:224":
+        "xrealloc() calls NOMEM(), which is error(), which this tree "
+        "already declared __dead2 -- see the comment at gencat.c:109.",
+    "usr.bin/grep/util.c:705":
+        "grep_realloc() calls err(2, \"realloc\").",
+    "usr.bin/indent/io.c:296":
+        "errx(1, \"input line too long\") on the next line.",
+    "usr.bin/iscsictl/iscsictl.c:311":
+        "xo_err(1, \"realloc\") on the next line.",
+    "usr.bin/iscsictl/iscsictl.c:392":
+        "xo_err(1, \"realloc\"); the same loop in another function.",
+    "usr.bin/iscsictl/iscsictl.c:565":
+        "xo_err(1, \"realloc\"); and a third time.",
+    "usr.bin/join/join.c:284":
+        "err(1, NULL) on the next line.",
+    "usr.bin/join/join.c:317":
+        "err(1, NULL) on the next line.",
+    "usr.bin/join/join.c:335":
+        "err(1, NULL) on the next line.",
+    "usr.bin/join/join.c:558":
+        "err(1, NULL) on the next line.",
+    "usr.bin/kdump/kdump.c:466":
+        "errx(1, \"%s\", strerror(ENOMEM)) on the next line.",
+    "usr.bin/last/last.c:236":
+        "xo_err(1, \"realloc\") on the next line.",
+    "usr.bin/localedef/scanner.c:359":
+        "add_tok() does NOT exit -- it yyerror()s and resets tokidx "
+        "and toksz to zero, which leaves token NULL alongside a zero "
+        "size, so the next add_tok() reallocs from NULL and recovers. "
+        "The old buffer leaks once; the state stays consistent, which "
+        "is the property this rule is about.",
+    "usr.bin/localedef/scanner.c:375":
+        "add_wcs(), the same shape and the same reset.",
+    "usr.bin/locate/locate/util.c:118":
+        "err(1, \"realloc\") on the next line.",
+    "usr.bin/mail/list.c:403":
+        "err(1, \"Out of memory\") on the next line.",
+    "usr.bin/mdo/mdo.c:130":
+        "errx(EXIT_FAILURE, ...) on the next line.",
+    "usr.bin/mdo/mdo.c:383":
+        "err(EXIT_FAILURE, \"realloc of groups failed\").",
+    "usr.bin/ministat/ministat.c:385":
+        "assert(pl->data != NULL) on the next line. Unlike a kernel "
+        "KASSERT this is live in the shipped binary: neither "
+        "share/mk nor usr.bin/ministat/Makefile defines NDEBUG, and "
+        "the file leans on assert() throughout. Written down rather "
+        "than converted, because converting it would be asserting "
+        "something about the build that this note can state instead.",
+    "usr.bin/netstat/common.c:115":
+        "xo_errx(EX_OSERR, \"realloc(%d) failed\") on the next line.",
+    "usr.bin/netstat/nhops.c:214":
+        "xo_errx(EX_OSERR, \"realloc(%zu) failed\") on the next line. "
+        "(The OTHER realloc in this file, in nhops_dump(), was "
+        "unchecked and is fixed -- see UB_FINDINGS.md.)",
+    "usr.bin/netstat/route_netlink.c:105":
+        "xo_errx(EX_OSERR, \"realloc(%zu) failed\") on the next line.",
+    "usr.bin/rctl/rctl.c:419":
+        "err(1, \"realloc\") on the next line.",
+    "usr.bin/rctl/rctl.c:502":
+        "err(1, \"realloc\"); the same grow loop again.",
+    "usr.bin/rctl/rctl.c:554":
+        "err(1, \"realloc\"); and a third time.",
+    "usr.bin/ruptime/ruptime.c:205":
+        "err(1, NULL) on the next line.",
+    "usr.bin/sed/compile.c:663":
+        "err(1, \"realloc\") on the next line.",
+    "usr.bin/sed/compile.c:834":
+        "err(1, NULL) on the next line.",
+    "usr.bin/sed/compile.c:883":
+        "err(1, \"realloc\") on the next line.",
+    "usr.bin/sed/process.c:120":
+        "err(1, \"realloc\") -- the test is the same statement.",
+    "usr.bin/sed/process.c:218":
+        "err(1, \"realloc\"); the 'r' command, same shape as 'a'.",
+    "usr.bin/sockstat/main.c:647":
+        "xo_err(1, \"realloc()\") -- same statement.",
+    "usr.bin/sockstat/main.c:800":
+        "xo_err(1, \"realloc()\"); the second sysctl grow loop.",
+    "usr.bin/sockstat/main.c:873":
+        "xo_err(1, \"realloc()\"); kern.file.",
+    "usr.bin/sort/mem.c:78":
+        "sort_realloc() calls err(2, NULL).",
+    "usr.bin/systat/pigs.c:149":
+        "error(\"Out of memory\") then die(0), whose body ends in "
+        "exit(0) -- not declared __dead2, but it does not return.",
+    "usr.bin/systat/proc.c:248":
+        "the same error() + die(0) pair.",
+    "usr.bin/tail/read.c:153":
+        "err(1, \"failed to allocate memory\") on the next line.",
+    "usr.bin/tail/read.c:161":
+        "err(1, ...) on the next line; the per-line buffer.",
+    "usr.bin/top/machine.c:883":
+        "unchecked AT the call, but the very next statement is "
+        "`if (pref == NULL || pbase == NULL || pcpu == NULL)' -> "
+        "quit(TOP_EX_SYS_ERROR). onproc is committed in between and "
+        "nothing reads it before the quit.",
+    "usr.bin/top/machine.c:884":
+        "the second of the two, covered by that same test.",
+    "usr.bin/tsort/tsort.c:182":
+        "grow_buf() calls err(1, NULL).",
+    "usr.bin/whereis/whereis.c:126":
+        "now checked with abort(), like the rest of the file -- it "
+        "was the one unchecked one. Still reported because the rule "
+        "matches the ASSIGNMENT, not the check.",
+    "usr.bin/whereis/whereis.c:215":
+        "decolonify() calls abort() on the next line.",
+    "usr.bin/whereis/whereis.c:285":
+        "abort() on the next line.",
+    "usr.bin/whereis/whereis.c:372":
+        "abort() on the next line.",
+    "usr.bin/whereis/whereis.c:468":
+        "abort() on the next line.",
+    "usr.bin/whereis/whereis.c:540":
+        "abort() on the next line.",
+    "usr.bin/whereis/whereis.c:579":
+        "abort() on the next line.",
+    "usr.bin/whereis/whereis.c:647":
+        "abort() on the next line.",
+    "usr.bin/xargs/xargs.c:370":
+        "warnx() then xexit(*av, 1), whose body ends in exit().",
+
     # bin/, sbin/ and sys/ read through. The ones that were NOT left
     # alone are in docs/security/UB_FINDINGS.md.
     "bin/pax/options.c:747":

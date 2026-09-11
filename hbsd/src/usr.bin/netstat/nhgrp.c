@@ -222,15 +222,24 @@ dump_nhgrp_sysctl(int fibnum, int af, struct nhops_dump *nd)
 	 */
 	nhg_count = 0;
 	nhg_size = 16;
+	/* PBSD: as in nhops.c -- both allocations were unchecked. */
 	nhg_map = calloc(nhg_size, sizeof(struct nhops_map));
+	if (nhg_map == NULL)
+		xo_errx(EX_OSERR, "calloc(%zu)", nhg_size);
 	for (next = buf; next < lim; next += rtm->rtm_msglen) {
 		rtm = (struct rt_msghdr *)next;
 		if (rtm->rtm_version != RTM_VERSION)
 			continue;
 
 		if (nhg_count >= nhg_size) {
+			struct nhops_map *nmap;
+
+			nmap = realloc(nhg_map,
+			    nhg_size * 2 * sizeof(struct nhops_map));
+			if (nmap == NULL)
+				xo_errx(EX_OSERR, "realloc(%zu)", nhg_size * 2);
+			nhg_map = nmap;
 			nhg_size *= 2;
-			nhg_map = realloc(nhg_map, nhg_size * sizeof(struct nhops_map));
 		}
 
 		nhg = (struct nhgrp_external *)(rtm + 1);

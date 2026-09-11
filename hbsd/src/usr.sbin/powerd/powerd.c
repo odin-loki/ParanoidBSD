@@ -205,7 +205,7 @@ static int
 read_freqs(int *numfreqs, int **freqs, int **power, int minfreq, int maxfreq)
 {
 	char *freqstr, *p, *q;
-	int i, j;
+	int i, j, *nfreqs;
 	size_t len = 0;
 
 	if (sysctl(levels_mib, 4, NULL, &len, NULL, 0))
@@ -248,12 +248,21 @@ read_freqs(int *numfreqs, int **freqs, int **power, int minfreq, int maxfreq)
 	}
 
 	*numfreqs = j;
-	if ((*freqs = realloc(*freqs, *numfreqs * sizeof(int))) == NULL) {
+	/*
+	 * PBSD: through a temporary.  `*freqs = realloc(*freqs, ...)' put
+	 * NULL in the only pointer to the array before the free(*freqs)
+	 * three lines down, which was then freeing nothing -- and this is
+	 * a SHRINK, which realloc(3) is still free to satisfy by
+	 * allocating, copying and failing.
+	 */
+	nfreqs = realloc(*freqs, *numfreqs * sizeof(int));
+	if (nfreqs == NULL) {
 		free(freqstr);
 		free(*freqs);
 		free(*power);
 		return (-1);
 	}
+	*freqs = nfreqs;
 
 	free(freqstr);
 	return (0);

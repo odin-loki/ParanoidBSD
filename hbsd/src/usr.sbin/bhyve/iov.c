@@ -97,10 +97,19 @@ iov_to_buf(const struct iovec *iov, int niov, void **buf)
 	size_t ptr, total;
 	int i;
 
+	void *nbuf;
+
 	total = count_iov(iov, niov);
-	*buf = realloc(*buf, total);
-	if (*buf == NULL)
+	/*
+	 * PBSD: through a temporary.  total is the sum of GUEST-supplied
+	 * iovec lengths, so the guest chooses whether this allocation
+	 * succeeds -- and `*buf = realloc(*buf, total)' handed the caller
+	 * back a NULL over its own pointer, leaking whatever was there.
+	 */
+	nbuf = realloc(*buf, total);
+	if (nbuf == NULL)
 		return (-1);
+	*buf = nbuf;
 
 	for (i = 0, ptr = 0; i < niov; i++) {
 		memcpy((uint8_t *)*buf + ptr, iov[i].iov_base, iov[i].iov_len);

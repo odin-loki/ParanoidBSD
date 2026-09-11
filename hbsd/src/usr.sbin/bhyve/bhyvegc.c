@@ -77,17 +77,33 @@ bhyvegc_resize(struct bhyvegc *gc, int width, int height)
 {
 	struct bhyvegc_image *gc_image;
 
+	uint32_t *data;
+
 	gc_image = gc->gc_image;
 
+	if (gc->raw) {
+		gc_image->width = width;
+		gc_image->height = height;
+		return;
+	}
+
+	/*
+	 * PBSD: width and height are committed only once the buffer is
+	 * that big.  pci_fbuf.c calls this with sc->memregs.width and
+	 * .height, which the GUEST writes -- so the old spelling let a
+	 * guest ask for a resize it knew would fail, and walk away with
+	 * gc_image->data NULL while width and height named a frame.
+	 * bhyvegc_get_image() hands that struct straight to the VNC
+	 * server.  The old image also leaked on the way.
+	 */
+	data = reallocarray(gc_image->data, width * height,
+	    sizeof (uint32_t));
+	if (data == NULL)
+		return;
+	gc_image->data = data;
 	gc_image->width = width;
 	gc_image->height = height;
-	if (!gc->raw) {
-		gc_image->data = reallocarray(gc_image->data, width * height,
-		    sizeof (uint32_t));
-		if (gc_image->data != NULL)
-			memset(gc_image->data, 0, width * height *
-			    sizeof (uint32_t));
-	}
+	memset(gc_image->data, 0, width * height * sizeof (uint32_t));
 }
 
 struct bhyvegc_image *

@@ -533,6 +533,7 @@ add_geom_children(struct ggeom *gp, int recurse, struct partedit_item **items,
 	struct gconsumer *cp;
 	struct gprovider *pp;
 	struct gconfig *gc;
+	struct partedit_item *newitems;
 
 	if (strcmp(gp->lg_class->lg_name, "PART") == 0 &&
 	    !LIST_EMPTY(&gp->lg_config)) {
@@ -553,8 +554,12 @@ add_geom_children(struct ggeom *gp, int recurse, struct partedit_item **items,
 		if (strncmp(pp->lg_name, "cd", 2) == 0)
 			continue;
 
-		*items = realloc(*items,
+		/* PBSD: was unchecked, and the next line stores through it. */
+		newitems = realloc(*items,
 		    (*nitems+1)*sizeof(struct partedit_item));
+		if (newitems == NULL)
+			err(1, "realloc");
+		*items = newitems;
 		(*items)[*nitems].indentation = recurse;
 		(*items)[*nitems].name = pp->lg_name;
 		(*items)[*nitems].size = pp->lg_mediasize;
