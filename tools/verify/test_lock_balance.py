@@ -69,6 +69,9 @@ class Tree(unittest.TestCase):
     # tool is only worth its output, and a regression that puts one of
     # these back has to be visible as this test going red rather than as
     # a line reappearing in a list nobody diffs.
+    # NINE entries, TEN leaks: drm_bufs.c carries two functions. The
+    # thirteen this rule reported are these ten plus the three in
+    # lock_balance.EXPECTED, and the file count is not the leak count.
     FIXED = {
         "sys/netipsec/ipsec.c": "ipsec_chkreplay(), th == 0 arm",
         "sys/dev/drm2/drm_bufs.c": "drm_get_resource_start() and _len()",
