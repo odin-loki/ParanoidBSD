@@ -25743,3 +25743,38 @@ from somewhere a device driver does not control: an ioctl
 internal), a FireWire CROM (`fwcrom`, read, internal), a Hyper-V host
 (`vmbus_chan`, read, internal) and a DRM context bitmap (`drm2`, read,
 internal).
+
+## mlx4's slave index: read, and left to upstream
+
+Three of the eleven `mlx4` sites are one function shape:
+
+```c
+	struct mlx4_active_ports actv_ports = mlx4_get_active_ports(dev, slave);
+
+	if (slave >= dev->num_slaves || port > dev->caps.num_ports ||
+	    port <= 0 || !test_bit(port - 1, actv_ports.ports)) {
+		...
+		return SLAVE_PORT_DOWN;
+	}
+	return s_state[slave].port_state[port];
+```
+
+Two things are worth noting and neither is a defect.
+
+The `mlx4_get_active_ports()` call *precedes* the bound check, which
+looks like a use-before-validate — it is not: that function tests
+`slave == 0` and otherwise goes through `mlx4_get_vf_indx()`, which
+returns `-1` for an unknown slave and is checked.  It never subscripts
+with an unvalidated `slave`.
+
+`slave >= dev->num_slaves` is genuinely one-sided, and `slave` reaches
+these three from the master's own loop over `0..num_slaves-1` and from
+`mlx4_master_do_cmd()`, where it is the comm-channel index the firmware
+reports.  `port` in the same condition is bounded at both ends
+(`port > num_ports || port <= 0`) in the same expression, so once again
+the file knows the idiom.
+
+This is Linux-derived vendor code.  Adding a `slave < 0` clause would
+diverge from upstream mlx4 for an internal contract that holds, so it
+is read and written down rather than patched — the same call the
+`sys/kern` internal contracts got, for the same reason.
