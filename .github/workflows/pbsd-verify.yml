@@ -53,6 +53,18 @@ permissions:
 #
 # cancel-in-progress, because a superseded sweep is three hours of
 # runner time spent on a tree nobody is looking at any more.
+#
+# THE COROLLARY, WHICH COST A DAY OF REPORTS. A full run is about three
+# hours and this group cancels the one in flight, so dispatching after
+# every commit means NO RUN EVER FINISHES. Runs 23, 24 and 25 were each
+# killed by the next dispatch and only run 21 produced a report, which
+# is why several commits that day had to say "the next run is what says
+# whether this worked" and then never got one.
+#
+# There is no `push' trigger above, deliberately: committing costs
+# nothing. Dispatching does. Dispatch ONCE and let it land, or let the
+# 03:00 schedule do it -- the nightly is the cadence this instrument can
+# actually keep.
 concurrency:
   group: pbsd-verify
   cancel-in-progress: true
