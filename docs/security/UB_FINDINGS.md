@@ -27145,3 +27145,48 @@ rather than from hope.
   value; it is the `capacity_first` shape rather than a live defect,
   and it is written down here rather than fixed, because the fix would
   be a bound on a number nobody can supply.
+
+## Where run 26's list stands
+
+Nine sections above this one came out of one report.  The honest
+accounting, because a list nobody finishes reading is a list that has
+stopped working:
+
+**Fixed, each marked, revert-verified, probed and measured:**
+
+| where | what |
+|---|---|
+| `lib/libc/db/hash` | `__log2()`'s non-terminating loop; `bsize` shifted before bounded; `init_htab()`'s unbounded `l2`, `nelem` and `HIGH_MASK`; a fifth descriptor leak |
+| `lib/libc/db/btree` | `__bt_defcmp()` subtracting two `size_t` |
+| `lib/libc/stdio` | `printf(3)`'s `-width` on `INT_MIN` and its two unbounded digit loops, ×3 files |
+| `lib/libc/nls` | `catgets(3)` trusting every number in the `.cat` it maps — four defects |
+| `lib/libc/iconv` | `_citrus_db_open()`'s only bound wrapping in `uint32_t`, and the two scalings that trusted it |
+| `lib/libc/stdlib` | `a64l()` unable to read `l64a()`'s own output |
+| `lib/libc/string` | `wcscasecmp`/`wcsncasecmp` subtracting two `wchar_t` |
+| `lib/libc/gen` | `initgroups(3)` sizing a buffer from an unchecked `sysconf()` |
+| `libexec/tftpd` | `send_error()`'s `%n` into an uninitialised `sendto()` length |
+
+**Read and cleared, with the reason written down:** the other 43
+`lib/libc/stdio` entries, all 20 in `lib/libcasper`, `lib/libcasper`'s
+service wrappers, the `libexec` set (already triaged bar the two
+above), the `sys/*` set (`db_access.c`'s `size` is 1, 2, 4, 8 or
+`sizeof(void *)`), `lib/libc/rpc`'s `__fds_bits` bound (fixed in
+`2725a225e`, which postdates the run's head), the standard's own
+undefined cases in `lib/libc/stdlib`, and all eight of the
+both-instruments lines.
+
+**Still unread:** `lib/msun/src` (15, mostly the separately bucketed
+float family), `lib/libcalendar` (7), `lib/libc/softfloat` (6),
+`lib/libc/posix1e` (8), `lib/libc/regex` (2), the rest of
+`lib/libc/locale` (12) and `lib/libc/net` (~12).  Named rather than
+implied.
+
+One line from the analyser section is worth recording here too:
+`lib/libpmc/pmu-events/jevents.c:582` carries **18** `unix.Malloc`
+findings, and they are real — `EXPECT()`'s `goto out_free` jumps past
+the `free_strings:` label, so every one of the twenty-eight `char *`
+locals allocated for that event leaks.  `jevents` is `build-tools:` in
+its own Makefile: it reads the arch JSON, writes `pmu-events.c` and
+exits.  Eighteen genuine leaks with no consequence, which is a
+different verdict from eighteen false positives and should not be
+filed as one.
