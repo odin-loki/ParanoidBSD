@@ -24667,3 +24667,44 @@ Checked rather than assumed: removing one `EXPECTED` entry makes
 `--gate` exit 1, restoring it exits 0, and `--all --gate` is refused
 outright (exit 2) because `--all` is the loose candidate list and gating
 on it would mean gating on a number nobody has read.
+
+---
+
+## Run 21: both shards green, and the count did not move
+
+Verify run 21, on the `.gitignore` fix:
+
+```
+analyze (progs, --scope bin --scope sbin --scope usr.bin --scope usr.sbin)  success
+analyze (libs,  --scope lib --scope libexec)                               success
+```
+
+Green for the first time.  The diagnosis was right.
+
+But the number is the same, and saying "both green" without saying that
+would be the misleading half of a true sentence.  `progs` still reports
+
+```
+ok    all 53 ERROR translation unit(s) are on the record
+```
+
+**ERROR 53, not 40.**  The thirteen LLVM drivers still do not compile in
+CI and never will: the sources are not in the repository.  What changed
+is that all fifty-three are now *accounted for* — the gate passes
+because nothing is unexplained, not because fewer files fail.
+
+That distinction is worth writing down because the two environments
+genuinely disagree and will keep disagreeing.  A future reader comparing
+CI's `ERROR 53` against this container's `ERROR 40` should not conclude
+that something has broken: CI analyses fourteen fewer translation units
+than a tree that has run the `TOOLCHAIN=internal` re-fetch, because CI
+has fourteen fewer files to analyse.  Both numbers are correct for their
+tree.  The inventory's job was never to make them equal — it was to make
+sure neither of them contains a file that silently reports zero findings
+for a reason nobody wrote down.
+
+I predicted "ERROR drops from 53 to 39" when scheduling the check on
+this run.  That prediction was wrong in its arithmetic and right in its
+substance, and the difference is exactly the thing this document exists
+to keep straight: an exemption does not remove a file from the ERROR
+set, it removes it from the *unexplained* ERROR set.
