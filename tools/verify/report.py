@@ -140,11 +140,9 @@ _TRIAGED = re.compile(r"`([\w./-]+\.(?:c|cpp|h)):(\d+(?:\s*,\s*\d+)*)`")
 def triaged() -> frozenset:
     """(path suffix, line) pairs already read and found not to be defects.
 
-    docs/security/UB_FINDINGS.md's last section is the list of findings
-    that looked like defects and were not, each with the reasoning that
-    killed it. Re-listing them every sweep buries the ones nobody has
-    read yet: 44 of them by now, against 65 in the bucket the report
-    asks a person to read.
+    docs/security/UB_FINDINGS.md has a table of findings that looked
+    like defects and were not, each with the reasoning that killed it.
+    Re-listing them every sweep buries the ones nobody has read yet.
 
     They are MARKED and still printed, never dropped. A finding whose
     triage was wrong has to stay visible for that to be discoverable, and
@@ -154,6 +152,25 @@ def triaged() -> frozenset:
     Matching is on the path SUFFIX because that is what the document
     contains - `fread.c:129` for a libc path it names once and
     `sys/x86/isa/clock.c:200` for a kernel one it wants to disambiguate.
+
+    ONLY THE TABLE. This used to read from the table's heading to the
+    end of the file, on the premise -- which the docstring stated --
+    that the table was the last section. It has not been for a long
+    time: 19,500 lines of commit-by-commit writeup sit after it, every
+    one of them citing `file.c:line` in backticks, and all of it was
+    being read as triage. 1049 pairs, of which 148 were the table.
+
+    The 901 were not a harmless superset. The citation that marked
+    `citrus_mapper.c:188` as read is the sentence "Twelve more findings
+    of the same checker are NOT COVERED HERE", and the others include
+    defects that were found and fixed -- whose line numbers have since
+    moved onto something else. A marker that says somebody read this
+    when the document says nobody did is the one failure this whole
+    document set exists to prevent, and it is the direction
+    test_report_triage.py says matters.
+
+    So the scan stops at the next `## ` heading. Prose is prose; a
+    conclusion that belongs in the record goes in the table.
     """
     if not DOC.is_file():
         return frozenset()
@@ -161,8 +178,10 @@ def triaged() -> frozenset:
     head = text.find("## Not defects, and why they looked like defects")
     if head < 0:
         return frozenset()
+    end = text.find("\n## ", head + 1)
+    table = text[head:] if end < 0 else text[head:end]
     out = set()
-    for name, lines in _TRIAGED.findall(text[head:]):
+    for name, lines in _TRIAGED.findall(table):
         for ln in lines.split(","):
             out.add((name, ln.strip()))
     return frozenset(out)

@@ -63,6 +63,24 @@ check("desc_line on something else",
       report.desc_line({"desc": "memcpy source region readable"}), None)
 check("desc_line on an empty record", report.desc_line({}), None)
 
+print("\nprose after the table is not the table")
+# The failure this replaced: the scan ran from the table's heading to
+# the end of the file, and 19,500 lines of writeup sit after it. The
+# sentence that cited this one reads "Twelve more findings of the same
+# checker are NOT COVERED HERE" - and it was being marked as read.
+check("a citation in a later section is not triage",
+      report.is_triaged("lib/libc/iconv/citrus_iconv.c", "100"), False)
+check("...nor another from the same sentence",
+      report.is_triaged("sys/netgraph/ng_parse.c", "148"), False)
+# citrus_mapper.c:188 was in that same sentence until it was actually
+# read; it is in the table now, and that is what moving one looks like.
+check("...but one that was since read and tabled is",
+      report.is_triaged("lib/libc/iconv/citrus_mapper.c", "188"), True)
+# A defect that was FOUND and fixed is cited in its own section too, and
+# its line number now points at something else entirely.
+check("a fixed defect's writeup is not triage",
+      report.is_triaged("sys/dev/bwn/if_bwn.c", "5317"), False)
+
 print("\nthe table is actually being read")
 n = len(report.triaged())
 check("more than twenty entries parsed", n > 20, True)
