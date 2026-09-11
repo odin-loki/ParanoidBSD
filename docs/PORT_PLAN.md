@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,605 | 9,056 |
+| 1 | `lib` | 2,827 | 640,666 | 9,056 |
 | 2 | `libexec` | 170 | 48,065 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,542** | **114,207** |
+| | **total** | **41,143** | **21,302,603** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -1482,7 +1482,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.59.12.6 `bt_psplit()` · `TODO-FN`
   - [ ] 1.59.12.7 `bt_preserve()` · `TODO-FN`
   - [ ] 1.59.12.8 `rec_total()` · `TODO-FN`
-- [ ] **1.59.13** `bt_utils.c` · 243L · `TODO-PORT` · 4 fn
+- [ ] **1.59.13** `bt_utils.c` · 250L · `TODO-PORT` · 4 fn
   - [ ] 1.59.13.1 `__bt_ret()` · `TODO-FN`
   - [ ] 1.59.13.2 `__bt_cmp()` · `TODO-FN`
   - [ ] 1.59.13.3 `__bt_defcmp()` · `TODO-FN`
@@ -1507,7 +1507,7 @@ function; a file with two hundred of them is a project.
 ### 1.61 `lib/libc/db/hash` · 4 module(s) under `pbsd/lib/libc/db/hash`
 
 - [ ] **1.61.1** `extern.h` · 62L · `TODO-HDR`
-- [ ] **1.61.2** `hash.c` · 1,081L · `TODO-PORT` · 20 fn
+- [ ] **1.61.2** `hash.c` · 1,126L · `TODO-PORT` · 20 fn
   - [ ] 1.61.2.1 `__hash_open()` · `TODO-FN`
   - [ ] 1.61.2.2 `hash_close()` · `TODO-FN`
   - [ ] 1.61.2.3 `hash_fd()` · `TODO-FN`
@@ -1550,7 +1550,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.61.6.2 `hash2()` · `TODO-FN`
   - [ ] 1.61.6.3 `hash3()` · `TODO-FN`
   - [ ] 1.61.6.4 `hash4()` · `TODO-FN`
-- [ ] **1.61.7** `hash_log2.c` · 49L · `TODO-PORT` · 1 fn
+- [ ] **1.61.7** `hash_log2.c` · 58L · `TODO-PORT` · 1 fn
   - [ ] 1.61.7.1 `__log2()` · `TODO-FN`
 - [ ] **1.61.8** `hash_page.c` · 971L · `TODO-PORT` · 16 fn
   - [ ] 1.61.8.1 `putpair()` · `TODO-FN`

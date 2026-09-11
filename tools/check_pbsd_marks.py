@@ -2135,7 +2135,7 @@ FIXES = {
     ],
     "hbsd/src/lib/libc/db/hash/hash.c": [
         (
-            ("return (destroy_hash(hashp));", 3),
+            ("return (destroy_hash(hashp));", 4),
             None,
             "init_hash() has four ways to fail and one of them cleaned "
             "up. __hash_open() writes the NULL return over its only "
@@ -2145,7 +2145,56 @@ FIXES = {
             "are gone. Two of the three uncleaned exits are argument "
             "validation on a caller-supplied HASHINFO, so dbopen(3) in "
             "a loop with a bad bsize or lorder leaks a descriptor per "
-            "call",
+            "call. The fourth exit is the nelem bound below",
+        ),
+        (
+            "\t\t\tif (hashp->BSHIFT >= 32 ||\n"
+            "\t\t\t    (1U << hashp->BSHIFT) > MAX_BSIZE) {",
+            "\t\t\thashp->BSIZE = 1 << hashp->BSHIFT;\n"
+            "\t\t\tif (hashp->BSIZE > MAX_BSIZE) {",
+            "init_hash() shifted before it bounded: __log2() answers 31 "
+            "for a HASHINFO.bsize just over 2^30 and 32 for anything "
+            "larger, so `1 << BSHIFT' is signed overflow and then a "
+            "shift past the width of the type. Testing the shifted "
+            "value afterwards is testing a value the standard does not "
+            "define",
+        ),
+        (
+            "\t\t\tif (info->nelem > INT_MAX) {",
+            "\t\tif (info->nelem)\n\t\t\tnelem = info->nelem;",
+            "and HASHINFO.nelem is an unsigned int assigned to an int, "
+            "so a value above INT_MAX arrived negative: `nelem - 1' in "
+            "init_htab() is then signed overflow on INT_MIN and "
+            "MAX(nelem, 2) picks 2, quietly sizing the table for two "
+            "elements",
+        ),
+        (
+            "\tif (l2 > NCACHED - 2) {",
+            None,
+            "init_htab() stores SPARES[l2] and SPARES[l2 + 1] with no "
+            "bound on l2. spares[] holds NCACHED entries and bitmaps[] "
+            "follows it, so l2 of 31 writes page numbers the table "
+            "later reads back; `1 << l2' at 31 is signed overflow "
+            "before the store is even reached. l2 is log2 of nelem over "
+            "FFACTOR, both HASHINFO fields, so dbopen(3) with nelem "
+            "INT_MAX and ffactor 1 lands there with nothing allocated "
+            "in between to fail first",
+        ),
+        (
+            "\thashp->HIGH_MASK = ((u_int32_t)nbuckets << 1) - 1;",
+            "\thashp->HIGH_MASK = (nbuckets << 1) - 1;",
+            "and at the largest l2 the bound now accepts, `nbuckets << "
+            "1' is 1 << 31 in an int -- the shift has to be done in "
+            "HIGH_MASK's own u_int32_t",
+        ),
+        (
+            "\tif (__ibitmap(hashp, OADDR_OF(l2, 1), l2 + 1, 0)) {",
+            "\tif (__ibitmap(hashp, OADDR_OF(l2, 1), l2 + 1, 0))\n"
+            "\t\treturn (-1);",
+            "and init_htab()'s malloc-failure exit returned without "
+            "destroying the table, which is the same descriptor leak "
+            "init_hash()'s three exits had: __hash_open() writes the "
+            "NULL over its only reference to the HTAB",
         ),
         (
             "PBSD: the geometry is read, not checked.",
@@ -2167,6 +2216,26 @@ FIXES = {
             "indexing and the shift actually happen",
         ),
     ],
+    "hbsd/src/lib/libc/db/btree/bt_utils.c": (
+        "\tif (a->size < b->size)\n\t\treturn (-1);",
+        "\treturn ((int)a->size - (int)b->size);",
+        "__bt_defcmp() ended in `(int)a->size - (int)b->size'. Both "
+        "sizes are size_t off a caller-supplied DBT, so the casts are "
+        "implementation-defined past INT_MAX and the difference of the "
+        "two results then overflows. Every caller of bt_cmp reads only "
+        "the sign, so there is nothing to subtract for -- the upstream "
+        "XXX asked for a type wider than size_t and did not need one",
+    ),
+    "hbsd/src/lib/libc/db/hash/hash_log2.c": (
+        "\tfor (i = 0; i < 32 && limit < num; limit = limit << 1, i++)",
+        "\tfor (i = 0; limit < num; limit = limit << 1, i++);",
+        "__log2() had no termination condition of its own: limit is "
+        "u_int32_t, so for a num above 2^31 the shift wraps it to 0 on "
+        "the thirty-second round and `limit < num' is true forever. "
+        "init_hash() reaches here with HASHINFO.bsize, the caller's own "
+        "number, so dbopen(3) with bsize 0xc0000000 hung inside libc. "
+        "Returning 32 lets the caller reject it",
+    ),
     "hbsd/src/lib/libc/db/hash/hash_page.c": [
         (
             "PBSD: freep is assigned only inside the search loop",

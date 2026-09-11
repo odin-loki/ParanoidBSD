@@ -392,18 +392,41 @@ init_hash(HTAB *hashp, const char *file, const HASHINFO *info)
 		if (info->bsize) {
 			/* Round pagesize up to power of 2 */
 			hashp->BSHIFT = __log2(info->bsize);
-			hashp->BSIZE = 1 << hashp->BSHIFT;
-			if (hashp->BSIZE > MAX_BSIZE) {
+			/*
+			 * The bound has to come BEFORE the shift: `1' is an
+			 * int, so `1 << 31' -- which __log2() returns for a
+			 * bsize just over 2^30 -- is signed overflow, and 32
+			 * (its answer for anything larger) is a shift past
+			 * the width of the type.  Testing the shifted value
+			 * afterwards, as this did, is testing a value the
+			 * standard does not define.
+			 */
+			if (hashp->BSHIFT >= 32 ||
+			    (1U << hashp->BSHIFT) > MAX_BSIZE) {
 				errno = EINVAL;
 				return (destroy_hash(hashp));
 			}
+			hashp->BSIZE = 1 << hashp->BSHIFT;
 		}
 		if (info->ffactor)
 			hashp->FFACTOR = info->ffactor;
 		if (info->hash)
 			hashp->hash = info->hash;
-		if (info->nelem)
+		if (info->nelem) {
+			/*
+			 * nelem is an int here and init_htab()'s parameter
+			 * is an int too, so an info->nelem above INT_MAX
+			 * arrives negative: `nelem - 1' is signed overflow
+			 * on INT_MIN and MAX(nelem, 2) then picks 2,
+			 * quietly sizing the table for two elements.  The
+			 * number is the caller's, so say no to it.
+			 */
+			if (info->nelem > INT_MAX) {
+				errno = EINVAL;
+				return (destroy_hash(hashp));
+			}
 			nelem = info->nelem;
+		}
 		if (info->lorder) {
 			if (info->lorder != BIG_ENDIAN &&
 			    info->lorder != LITTLE_ENDIAN) {
@@ -438,6 +461,21 @@ init_htab(HTAB *hashp, int nelem)
 	nelem = (nelem - 1) / hashp->FFACTOR + 1;
 
 	l2 = __log2(MAX(nelem, 2));
+	/*
+	 * SPARES holds NCACHED splitpoints and the two stores below are
+	 * [l2] and [l2 + 1], so an l2 of NCACHED - 1 writes one past the
+	 * array -- over BITMAPS, whose entries are page numbers this then
+	 * reads back.  `1 << l2' is a plain int besides, so l2 of 31 is
+	 * signed overflow before the store is even reached.  nelem is the
+	 * caller's HASHINFO.nelem and FFACTOR its ffactor, so dbopen(3)
+	 * with nelem INT_MAX and ffactor 1 lands on l2 31 with nothing
+	 * allocated in between to fail first.
+	 */
+	if (l2 > NCACHED - 2) {
+		errno = EINVAL;
+		(void)destroy_hash(hashp);
+		return (-1);
+	}
 	nbuckets = 1 << l2;
 
 	hashp->SPARES[l2] = l2 + 1;
@@ -446,11 +484,18 @@ init_htab(HTAB *hashp, int nelem)
 	hashp->LAST_FREED = 2;
 
 	/* First bitmap page is at: splitpoint l2 page offset 1 */
-	if (__ibitmap(hashp, OADDR_OF(l2, 1), l2 + 1, 0))
+	if (__ibitmap(hashp, OADDR_OF(l2, 1), l2 + 1, 0)) {
+		(void)destroy_hash(hashp);
 		return (-1);
+	}
 
 	hashp->MAX_BUCKET = hashp->LOW_MASK = nbuckets - 1;
-	hashp->HIGH_MASK = (nbuckets << 1) - 1;
+	/*
+	 * HIGH_MASK is u_int32_t and nbuckets is an int, so the shift has
+	 * to be done in the destination's type: at the largest l2 this
+	 * function now accepts, `nbuckets << 1' is 1 << 31 in an int.
+	 */
+	hashp->HIGH_MASK = ((u_int32_t)nbuckets << 1) - 1;
 	hashp->HDRPAGES = ((MAX(sizeof(HASHHDR), MINHDRSIZE) - 1) >>
 	    hashp->BSHIFT) + 1;
 

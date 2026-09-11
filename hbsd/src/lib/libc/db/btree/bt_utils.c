@@ -203,16 +203,23 @@ __bt_defcmp(const DBT *a, const DBT *b)
 	u_char *p1, *p2;
 
 	/*
-	 * XXX
-	 * If a size_t doesn't fit in an int, this routine can lose.
-	 * What we need is an integral type which is guaranteed to be
-	 * larger than a size_t, and there is no such thing.
+	 * PBSD: the XXX this replaces wanted "an integral type guaranteed
+	 * to be larger than a size_t, and there is no such thing".  There
+	 * does not need to be one: every caller of bt_cmp reads only the
+	 * sign, so the sizes can be compared rather than subtracted.  The
+	 * subtraction was the whole problem -- (int)a->size for a size
+	 * past INT_MAX is implementation-defined and the difference of the
+	 * two results then overflows, on a length the caller chooses.
 	 */
 	len = MIN(a->size, b->size);
 	for (p1 = a->data, p2 = b->data; len--; ++p1, ++p2)
 		if (*p1 != *p2)
 			return ((int)*p1 - (int)*p2);
-	return ((int)a->size - (int)b->size);
+	if (a->size < b->size)
+		return (-1);
+	if (a->size > b->size)
+		return (1);
+	return (0);
 }
 
 /*

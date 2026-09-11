@@ -43,6 +43,15 @@ __log2(u_int32_t num)
 	u_int32_t i, limit;
 
 	limit = 1;
-	for (i = 0; limit < num; limit = limit << 1, i++);
+	/*
+	 * `i < 32' is the termination condition, not a nicety: limit is
+	 * u_int32_t, so for num above 2^31 the shift wraps limit to 0 on
+	 * the thirty-second round and `limit < num' is true forever.
+	 * __hash_open() reaches here with HASHINFO.bsize, which is the
+	 * caller's number, so dbopen(3) with bsize 0xc0000000 hung in
+	 * libc.  Returning 32 lets the caller reject it.
+	 */
+	for (i = 0; i < 32 && limit < num; limit = limit << 1, i++)
+		;
 	return (i);
 }

@@ -26170,3 +26170,215 @@ had already read by hand and cleared with this reasoning:
 `sys/dev/iwm/if_iwm.c:1979`, and both `close_range` sites in
 `sys/kern/kern_descrip.c`.  Nothing newly appears.  That is the
 argument for teaching it: the sixth of these does not need a person.
+
+## `dbopen(3)`'s own numbers, shifted before they are bounded
+
+Run 26's CBMC list still had `lib/libc/db/hash/hash.c:__hash_open` on it:
+
+```
+  line 395 arithmetic overflow on signed shl in 1 << hashp->hdr.bshift
+  line 395 shift distance is negative in 1 << hashp->hdr.bshift
+```
+
+Line 395 is not the on-disk open path this tree hardened earlier — that
+one reads `hdr.bshift` out of the file and is checked now.  It is the
+**creation** path, the `if (info->bsize)` arm of `init_hash()`, and the
+number it shifts is the caller's:
+
+```c
+		if (info->bsize) {
+			/* Round pagesize up to power of 2 */
+			hashp->BSHIFT = __log2(info->bsize);
+			hashp->BSIZE = 1 << hashp->BSHIFT;
+			if (hashp->BSIZE > MAX_BSIZE) {
+				errno = EINVAL;
+```
+
+The bound is real; it is in the wrong place.  `1` is an `int`, so the
+shift is a signed shift, and the test that would have rejected the
+result runs *after* it.  `MAX_BSIZE` is 32768, so every `bsize` past
+2^30 reaches a shift the standard does not define, and this tree builds
+with UBSan.
+
+### `__log2()` has no termination condition
+
+Chasing where a `bshift` of 31 comes from lands in the two lines that
+produce it:
+
+```c
+	limit = 1;
+	for (i = 0; limit < num; limit = limit << 1, i++);
+```
+
+`limit` is `u_int32_t`.  For a `num` above 2^31 the thirty-second
+shift wraps it to 0, `limit < num` is true again, and it is true on
+every round after that: the loop never ends.  Not a wrong answer — a
+hang, inside `libc`, on `dbopen(3)` with `HASHINFO.bsize` set to
+`0xc0000000`.  CBMC says so as an unwinding assertion, which is the
+honest name for it:
+
+```
+  cbmc -DOLD --unwind 40 --unwinding-assertions --signed-overflow-check \
+      tools/verify/probes/hash_log2_bsize.c
+  [log2_.unwind.0] line 34 unwinding assertion loop 0: FAILURE
+  [main.overflow.1] line 54 arithmetic overflow on signed shl in 1 << bshift: FAILURE
+  [main.assertion.1] line 62 the bucket size is a sane power of two: FAILURE
+  ** 3 of 3 failed        VERIFICATION FAILED
+```
+
+`i < 32` terminates it, and returning 32 — an answer no caller can
+mistake for a shift distance — lets the caller say no.  The caller now
+does, before the shift rather than after:
+
+```c
+			if (hashp->BSHIFT >= 32 ||
+			    (1U << hashp->BSHIFT) > MAX_BSIZE) {
+```
+
+```
+  cbmc --unwind 40 --unwinding-assertions --signed-overflow-check \
+      tools/verify/probes/hash_log2_bsize.c
+  ** 0 of 2 failed        VERIFICATION SUCCESSFUL
+```
+
+### The same defect one frame over, on the other field
+
+Changing what `__log2()` can return means reading its other callers, and
+`init_htab()` — the last thing `init_hash()` does — has the same shape on
+`HASHINFO`'s *other* two numbers:
+
+```c
+	nelem = (nelem - 1) / hashp->FFACTOR + 1;
+
+	l2 = __log2(MAX(nelem, 2));
+	nbuckets = 1 << l2;
+
+	hashp->SPARES[l2] = l2 + 1;
+	hashp->SPARES[l2 + 1] = l2 + 1;
+```
+
+`spares` is `int32_t spares[NCACHED]`, NCACHED is 32, and `bitmaps`
+follows it in the same struct.  Nothing bounds `l2`.  `FFACTOR` is
+`info->ffactor`, taken whenever it is non-zero and never floored, so
+`ffactor` 1 makes `nelem` come through the division unchanged, and
+`nelem` is `info->nelem`.  `dbopen(3)` with `nelem` `INT_MAX` and
+`ffactor` 1 gives `l2` 31, which is:
+
+* `1 << 31` in an `int` — signed overflow, reached first;
+* `SPARES[32]` — a four-byte write one past the array, over
+  `bitmaps[0]` and `bitmaps[1]`, which are page numbers the table reads
+  back as addresses;
+* and `(nbuckets << 1) - 1` into `HIGH_MASK`, signed overflow again.
+
+There is no allocation between `init_htab()`'s entry and that store, so
+there is nothing in between that fails first.
+
+`nelem` has a second problem before any of that: `HASHINFO.nelem` is an
+`unsigned int` and both `init_hash()`'s local and `init_htab()`'s
+parameter are `int`, so a value above `INT_MAX` arrives negative.
+`nelem - 1` on `INT_MIN` is signed overflow, and `MAX(nelem, 2)` then
+picks 2 — a table sized for two elements because the caller asked for
+three billion.
+
+Both directions, on a model of the whole path:
+
+```
+  cbmc -DOLD --unwind 40 --unwinding-assertions --bounds-check \
+      --signed-overflow-check --conversion-check \
+      tools/verify/probes/hash_init_htab_nelem.c
+  [main.overflow.1]    line 68 ... conversion in (signed int)info_nelem: FAILURE
+  [main.overflow.2]    line 70 arithmetic overflow on signed - in nelem - 1: FAILURE
+  [main.overflow.7]    line 78 arithmetic overflow on signed shl in 1 << l2: FAILURE
+  [main.array_bounds.4] line 81 array 'spares' upper bound in spares[l2 + 1]: FAILURE
+  [main.assertion.1]   line 85 the splitpoint fits the spares table: FAILURE
+  ** 9 of 16 failed       VERIFICATION FAILED
+
+  cbmc        ... (same flags, no -DOLD)
+  ** 0 of 16 failed       VERIFICATION SUCCESSFUL
+```
+
+The fix is three bounds and one type.  `init_hash()` rejects an
+`info->nelem` it cannot represent; `init_htab()` rejects an `l2` that
+does not fit `spares`, which also puts `1 << l2` back in range; and
+`HIGH_MASK`'s shift is done in `HIGH_MASK`'s own `u_int32_t`, because at
+the largest `l2` the bound now accepts, `nbuckets << 1` is still `1 <<
+31` in an `int`.
+
+### And one more descriptor leak, in the same function
+
+`init_htab()`'s other failure exit was
+
+```c
+	if (__ibitmap(hashp, OADDR_OF(l2, 1), l2 + 1, 0))
+		return (-1);
+```
+
+which is the leak already written up two sections above, at a fifth
+site: `init_hash()` passes that `-1` on as a NULL return, `__hash_open()`
+writes the NULL over its only reference to the `HTAB`, and the
+descriptor opened three statements earlier is gone.  `__ibitmap()` fails
+only on `malloc()`, which is exactly when a program is least able to
+spare a descriptor.  It destroys the table now, like the other four.
+
+### Measured
+
+`lib/libc/db`, same scope both sides, 40 translation units, the ERROR
+set unchanged at 8 (all of them under `lib/libc/db/test/`, all on the
+record): **14 findings before, 14 after**, the same fourteen.  The
+analyser has nothing to say about any of this, which is the point of
+running two instruments — these are arithmetic properties, and CBMC owns
+them.  ONESIDED over `lib` is unmoved at 9: the new `l2` bound is a
+compared-against-a-constant test, not an index the rule reads.
+
+### And the comparator two directories over
+
+The same report entry had `lib/libc/db/btree/bt_utils.c:__bt_defcmp`:
+
+```
+  line 215 arithmetic overflow on signed - in (signed int)a->size - (signed int)b->size
+```
+
+which is the last line of the default key comparator, under an upstream
+`XXX` that names the problem and says it cannot be solved:
+
+```c
+	/*
+	 * XXX
+	 * If a size_t doesn't fit in an int, this routine can lose.
+	 * What we need is an integral type which is guaranteed to be
+	 * larger than a size_t, and there is no such thing.
+	 */
+```
+
+There does not need to be one.  Every caller of `bt_cmp` — nine sites
+across `bt_delete.c`, `bt_put.c`, `bt_search.c` and `bt_seq.c` — reads
+only the sign, so the sizes can be *compared* rather than subtracted:
+
+```c
+	if (a->size < b->size)
+		return (-1);
+	if (a->size > b->size)
+		return (1);
+	return (0);
+```
+
+The subtraction was the whole problem.  Both operands are `size_t` off a
+caller-supplied `DBT`, so each cast is implementation-defined past
+`INT_MAX` and the difference of the two results then overflows on a
+length the caller chooses.  The byte-wise return above it is fine and
+stays: `u_char` promotes to `int`, so `(int)*p1 - (int)*p2` is in
+[-255, 255].
+
+### Not defects, on the record
+
+Two more `lib/libc/db` entries in the same list are the modular-checking
+artefact, not findings:
+
+* `bt_close.c:83` and `feature_present.c:55`, *free argument has offset
+  zero*.  CBMC checks one function with its arguments unconstrained, so
+  `t = dbp->internal` is an arbitrary pointer and `free(t->bt_cursor.key
+  .data)` cannot be shown to free something `malloc()` returned.  It
+  does: the only writer is `__bt_ret()`, reached from `__bt_curdel()` as
+  `__bt_ret(t, &e, &c->key, &c->key, NULL, NULL, 1)`, and `__bt_ret()`
+  assigns `rkey->data` from `realloc()`.  The field is otherwise only
+  ever set to `NULL`.
