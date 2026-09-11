@@ -3020,7 +3020,8 @@ FIXES = {
         "comment was reaching for. clang "
         "core.UndefinedBinaryOperatorResult, string_m.c:226.",
     ),
-    "hbsd/src/lib/libcam/scsi_cmdparse.c": (
+    "hbsd/src/lib/libcam/scsi_cmdparse.c": [
+        (
         "\t * PBSD: value stays 0 until this function computes one.",
         "\t\t\t\tvalue = *value_p;",
         "next_field() parses one field of camcontrol(8)'s SCSI command "
@@ -3035,7 +3036,18 @@ FIXES = {
         "va_arg or with 0. A round trip of garbage back to its owner. "
         "next_field's own `int value = 0' already had the right answer. "
         "Four clang core.uninitialized.Assign; lib/libcam 4 -> 0.",
-    ),
+        ),
+        (
+            "\t\t\tif (width < 0 || width > 8)",
+            "\t\t\tif (width > 8)",
+            "do_buff_decode()'s bit-field width comes from strtol() on "
+            "a caller-supplied format string and was bounded only from "
+            "above, so `b-1' read mask[-1] and shifted an int by more "
+            "than its width; the other widths in that function are "
+            "compared against a size_t and the conversion already "
+            "rejects them",
+        ),
+    ],
     "hbsd/src/lib/libugidfw/ugidfw.c": [
         (
             "\t\tif (**ap != '\\0') {\n\t\t\targc++;",
@@ -6114,6 +6126,19 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/lib/libkvm/kvm_pcpu.c": (
+        "\tif (cpu < 0 || cpu >= maxcpu || pcpu_data[cpu] == NULL)",
+        "\tif (cpu >= maxcpu || pcpu_data[cpu] == NULL)",
+        "kvm_getpcpu(3) takes the cpu index from its caller and "
+        "checked only the top of pcpu_data[]",
+    ),
+    "hbsd/src/lib/libifconfig/libifconfig_internal.c": (
+        "\tif (addressfamily < 0 || addressfamily > AF_MAX) {",
+        "\tif (addressfamily > AF_MAX) {",
+        "ifconfig_socket() indexes h->sockets[AF_MAX + 1] with an "
+        "address family from libifconfig's caller and checked only "
+        "the top",
+    ),
     "hbsd/src/lib/libc/rpc/svc.c": [
         (
             "\tif ((unsigned int)sock < FD_SETSIZE) {",

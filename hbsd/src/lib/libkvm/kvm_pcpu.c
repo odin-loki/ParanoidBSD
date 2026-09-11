@@ -162,7 +162,7 @@ kvm_getpcpu(kvm_t *kd, int cpu)
 		if (_kvm_pcpu_init(kd) < 0)
 			return ((void *)-1);
 
-	if (cpu >= maxcpu || pcpu_data[cpu] == NULL)
+	if (cpu < 0 || cpu >= maxcpu || pcpu_data[cpu] == NULL)
 		return (NULL);
 
 	buf = malloc(sizeof(struct pcpu));

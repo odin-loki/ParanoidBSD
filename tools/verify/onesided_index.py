@@ -62,11 +62,11 @@ ONE OF THE TWO GATES, AND WHY ONLY ONE
 --gate fails on a MOD site not on the record in EXPECTED below, and does
 NOT fail on ONESIDED. That is a measurement, not a preference. Over the
 whole tree MOD reports 11 sites, every one read and written down.
-ONESIDED reports 237 -- down from 1,109 over five rounds of tightening
+ONESIDED reports 232 -- down from 1,109 over five rounds of tightening
 -- and they are dominated by internal contracts: a static helper whose
 two callers both pass 0 or 1, a driver's ring index, a parameter that a
 comment three functions away pins. Each is a reading, not a defect, and
-a gate demanding 237 readings before the next commit is a gate somebody
+a gate demanding 232 readings before the next commit is a gate somebody
 turns off.
 
 So ONESIDED prints and does not fail. It is the same call
@@ -555,12 +555,12 @@ def main() -> int:
     #
     # ONLY the MOD rule gates, and the reason is a measurement rather
     # than a preference. Over the whole tree MOD reports 11 sites, every
-    # one read and on the record above. ONESIDED reports 237 -- after
+    # one read and on the record above. ONESIDED reports 232 -- after
     # five rounds of tightening that took it from 1,109 -- and they are
     # dominated by internal contracts: a static helper whose two callers
     # both pass 0 or 1, a driver's ring index, a parameter a comment
     # three functions away pins. Each is a reading, not a defect, and a
-    # gate that demands 237 readings before the next commit is a gate
+    # gate that demands 232 readings before the next commit is a gate
     # somebody turns off.
     #
     # So ONESIDED is advisory: it prints, it does not fail. That is the

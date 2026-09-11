@@ -25323,3 +25323,65 @@ in the tree passes anything: it is a public `netname2host(3)` used by
 textual rule.  The analyser is **25 → 25** with 56 of 56 translation
 units compiling, before and after — it never reported either of these,
 which is the point of having more than one instrument.
+
+## Three libraries whose index came from their own caller
+
+Continuing the ONESIDED list into `lib/`.  All three are the same
+shape — a public or near-public entry point that takes an index as an
+`int` and checks only the top — and one of them is a defect reachable
+from a string a user types.
+
+### `libcam`: a negative bit-field width in a SCSI format string
+
+`do_buff_decode()` parses camcontrol(8)'s command format.  For `t` and
+`b` (bit fields) it does
+
+```c
+	width = strtol(fmt, &intendp, 10);
+	fmt = intendp;
+	if (width > 8)
+		done = 1;
+	else {
+		...
+		value = (bits >> (shift - width)) & mask[width];
+```
+
+`mask` is `static u_char mask[] = {0, 0x01, ..., 0xff}` — nine entries.
+A format of `b-1` gives `width == -1`, which passes `width > 8`, reads
+`mask[-1]`, and makes `shift - width` a shift count of 9 or more; a
+larger negative makes it a shift past the width of an `int`, which is
+undefined.  The value read is then handed back to the caller through
+`ARG_PUT`.
+
+What makes this one real and its neighbours not is worth stating,
+because it is the same fact twice:
+
+* `case 'i'` and `case 'c'`/`'z'` bound with `if (ind + width > len)`,
+  and `len` is `size_t` — so a negative `width` converts and the test
+  rejects it.  The `bcopy(&buff[ind], dest, width)` that would follow is
+  unreachable.
+* `case 's'` sets `ind = width`, and a negative `ind` is then rejected
+  by every later `ind >= len` and `ind + width > len` for the same
+  reason.
+* `do_encode()` writes with `if (ind < vec_max)` where `vec_max` is
+  `size_t`, so its absolute seek is covered too.
+
+Only the bit-field width is compared against a **literal**, and that is
+the one that is wrong.  Fixed as `if (width < 0 || width > 8)`.
+
+### `libkvm` and `libifconfig`: the same clause, one word each
+
+`kvm_getpcpu(3)` takes `int cpu` from its caller and tests
+`cpu >= maxcpu || pcpu_data[cpu] == NULL`; `ifconfig_socket()` indexes
+`h->sockets[AF_MAX + 1]` and tests `addressfamily > AF_MAX`.  Every
+in-tree caller passes a loop counter or an `AF_*` constant, so neither
+is a live bug — but both are library entry points whose contract is
+"0..max", and neither says so.  A `< 0` clause each.
+
+### Measured
+
+`lib/libcam`, `lib/libkvm` and `lib/libifconfig` ONESIDED **3 → 0**.
+The analyser is **43 → 43** over those three scopes with the one
+known-ERROR translation unit (`libifconfig_sfp_tables.tpl.c`, a
+template) on the record before and after.  Tree-wide ONESIDED is now
+**232**, from 287 this morning.

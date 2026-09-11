@@ -180,7 +180,16 @@ do_buff_decode(uint8_t *buff, size_t len,
 			fmt++;
 			width = strtol(fmt, &intendp, 10);
 			fmt = intendp;
-			if (width > 8)
+			/*
+			 * A negative width subscripts mask[] before its
+			 * first element and makes `shift - width' a shift
+			 * count past the width of an int.  The other
+			 * widths in this function are compared against
+			 * `len', which is size_t, so the conversion
+			 * rejects them; this one is compared against a
+			 * literal and nothing rejects it.
+			 */
+			if (width < 0 || width > 8)
 				done = 1;
 			else {
 				if (shift <= 0) {
