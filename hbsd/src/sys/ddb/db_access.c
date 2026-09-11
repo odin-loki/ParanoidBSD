@@ -54,6 +54,7 @@ db_get_value(db_addr_t addr, int size, bool is_signed)
 {
 	char		data[sizeof(uint64_t)];
 	db_expr_t	value;
+	uint64_t	uvalue;
 	int		i;
 
 	if (db_read_bytes(addr, size, data) != 0) {
@@ -62,15 +63,34 @@ db_get_value(db_addr_t addr, int size, bool is_signed)
 		kdb_reenter();
 	}
 
-	value = 0;
+	/*
+	 * PBSD: accumulate unsigned.  db_expr_t is SIGNED -- `long' on
+	 * amd64 and arm64, `int' on i386 and arm -- and this loop shifted
+	 * it left eight bits per byte read, so the last byte of a
+	 * full-width read moves a set bit into the sign bit.  That is
+	 * undefined, and on the 32-bit targets it is not an exotic case:
+	 * it happens on every `x/x' of a word whose top bit is set.
+	 *
+	 * uint64_t is the width of `data' and shifts into its top bit are
+	 * defined.  The narrowing back to db_expr_t is
+	 * implementation-defined rather than undefined, and is two's
+	 * complement on every target this tree builds -- which is the bit
+	 * pattern the old expression was already producing, by a route
+	 * the standard does not define.
+	 *
+	 * The db_extend[] sign extension below is unaffected: it only runs
+	 * for size < 4, where value is small and positive either way.
+	 */
+	uvalue = 0;
 #if _BYTE_ORDER == _BIG_ENDIAN
 	for (i = 0; i < size; i++)
 #else	/* _LITTLE_ENDIAN */
 	for (i = size - 1; i >= 0; i--)
 #endif
 	{
-	    value = (value << 8) + (data[i] & 0xFF);
+	    uvalue = (uvalue << 8) | (uint64_t)(data[i] & 0xFF);
 	}
+	value = (db_expr_t)uvalue;
 
 	if (size < 4) {
 	    if (is_signed && (value & db_extend[size]) != 0)

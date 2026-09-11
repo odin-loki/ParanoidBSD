@@ -180,7 +180,18 @@ int __test_sse(void);
 			 (__has_sse == __SSE_UNK && __test_sse()))
 #endif
 
-#define	__get_mxcsr(env)	(((env).__mxcsr_hi << 16) |	\
+/*
+ * PBSD: the cast.  __mxcsr_hi is __uint16_t, which promotes to int, so
+ * `<< 16' moves bit 15 into the sign bit of an int -- undefined for any
+ * value at or above 0x8000.  The high half of MXCSR is reserved and
+ * reads zero on current hardware, so nothing has ever tripped it; the
+ * expression is still undefined for a value it is written to accept,
+ * and this is a header user code expands, not a libm internal.
+ * __set_mxcsr() below already casts to __uint32_t for the matching
+ * shift, which is what makes the omission here look like the oversight
+ * it is.
+ */
+#define	__get_mxcsr(env)	((((__uint32_t)(env).__mxcsr_hi) << 16) | \
 				 ((env).__mxcsr_lo))
 #define	__set_mxcsr(env, x)	do {				\
 	(env).__mxcsr_hi = (__uint32_t)(x) >> 16;		\

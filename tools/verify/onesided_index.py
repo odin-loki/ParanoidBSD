@@ -197,6 +197,53 @@ def _pinned_re(v: str) -> re.Pattern:
         r"|\bfor\s*\(\s*(?:[A-Za-z_]\w*\s+)?%s\s*=" % (v, v))
 
 
+# A parameter NAME, pointers and arrays included. DECL_RE cannot see
+# these: it wants `<type><space><name>', and `struct rmp_packet *req'
+# has a `*' where the space should be, so a function whose parameters
+# are all pointers had an EMPTY parameter set -- which is most of this
+# tree, and rbootd's SendFileNo(struct rmp_packet *, RMPCONN *, char *[])
+# exactly. from_outside() then had nothing to match against and the rule
+# dropped the worst instance of its own shape in the tree.
+#
+# Names only, never types: `out' stays DECL_RE's, because claiming
+# `char *filelist' has type `char' would make a pointer look like a
+# signed index, which is a wrong report rather than a missing one.
+_KEYWORDS = {
+    "void", "const", "volatile", "restrict", "__restrict", "struct",
+    "union", "enum", "unsigned", "signed", "char", "short", "int",
+    "long", "float", "double", "_Bool", "bool",
+}
+
+
+def param_names(decl: str) -> set:
+    """The names in a function declarator's parameter list."""
+    i = decl.find("(")
+    if i < 0:
+        return set()
+    depth, j = 0, i
+    while j < len(decl):
+        if decl[j] == "(":
+            depth += 1
+        elif decl[j] == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        j += 1
+    out = set()
+    for part in decl[i + 1:j].split(","):
+        # `char *argv[]' -- drop the array brackets, keep the name.
+        part = re.sub(r"\[[^\]]*\]", "", part).strip()
+        # `int (*fn)(void)' -- a function-pointer parameter, whose last
+        # identifier is a type in the inner list, not the name. Skipping
+        # it loses a name; guessing one invents a wrong one.
+        if not part or "(" in part:
+            continue
+        names = re.findall(r"[A-Za-z_]\w*", part)
+        if names and names[-1] not in _KEYWORDS:
+            out.add(names[-1])
+    return out
+
+
 def declared(lines, body, end, proto_line):
     """({name: type} for everything in scope, {name} for parameters).
 
@@ -211,6 +258,8 @@ def declared(lines, body, end, proto_line):
             ty = re.sub(r"\s+", " ", m.group(1)).strip()
             out.setdefault(m.group(2), ty)
             params.add(m.group(2))
+    # ...and the ones DECL_RE cannot spell, from the declarator itself.
+    params |= param_names(" ".join(lines[proto_line:body]))
     for k in range(body, min(end, body + 40)):
         for m in DECL_RE.finditer(lines[k]):
             ty = re.sub(r"\s+", " ", m.group(1)).strip()
@@ -241,6 +290,51 @@ def from_outside(v: str, params: set, text: str) -> bool:
             return True
         for p in params:
             if re.search(r"\b%s\b" % re.escape(p), rhs):
+                return True
+    # An OUT-PARAMETER, which has no `V =' anywhere to find.
+    #
+    # rbootd's SendFileNo() reads its array index off the network as
+    #
+    #     GETWORD(req->r_brpl.rmp_seqno, i);   /* SeqNo is really FileNo */
+    #
+    # and GETWORD(w, i) is `(i) = ntohl(w)'. The assignment is inside the
+    # macro, so the source contains no `i =' at all and the loop above
+    # sees a local that came from nowhere -- which is the one case this
+    # rule drops on purpose. It dropped the most serious instance of its
+    # own shape in the tree: a 32-bit wire value, decremented, then
+    # `if (i < C_MAXFILE && filelist[i] != NULL)'.
+    #
+    # The narrow version, and it needs BOTH halves:
+    #
+    #   1. V is never ASSIGNED A VALUE in the body -- no `V = ...'.
+    #      A variable that is read and never assigned got its value
+    #      from somewhere the source does not spell, which is what an
+    #      out-parameter macro is. `V++' and `V--' do NOT disqualify
+    #      it: they modify a value that was already there, and
+    #      SendFileNo()'s `i--' between the GETWORD and the subscript
+    #      is exactly that.
+    #   2. V is passed to a call whose ARGUMENT LIST also mentions a
+    #      parameter of this function, so the value demonstrably comes
+    #      from outside rather than from a constant.
+    #
+    # Half of this was not enough. Requiring only (2) fired on
+    # efx_rx.c's `EFSYS_PROBE2(table, int, index, uint32_t, byte)' --
+    # a TRACE macro taking a loop counter by value, with a parameter
+    # beside it in the list. That is not an out-parameter, and `index'
+    # is assigned by the `for' three lines up, which is what (1) sees.
+    # `V =' and not `V ==', `V <=', `V +=' -- those have a character
+    # between the name and the `=', so requiring the `=' to follow the
+    # name across whitespace alone excludes every one of them.
+    if re.search(r"\b%s\s*=(?!=)" % re.escape(v), text):
+        return False
+    call = re.compile(r"\b[A-Za-z_]\w*\s*\(([^;{}()]{0,200})\)")
+    arg = re.compile(r"(?:^|[(,])\s*&?\s*%s\s*(?:[,)]|$)" % re.escape(v))
+    for m in call.finditer(text):
+        argl = m.group(1)
+        if not arg.search(argl):
+            continue
+        for p in params:
+            if re.search(r"\b%s\b" % re.escape(p), argl):
                 return True
     return False
 
@@ -313,6 +407,26 @@ def scan(path: Path):
 # file had carried an `XXX: negative num ?' above the definition for
 # years. strerror()'s errstr() had the same line and the same fix.
 EXPECTED: dict[str, str] = {
+    # The three the parameter fix made visible. All were reachable by
+    # the rule all along; declared() could not see a pointer parameter,
+    # so from_outside() had nothing to match and none of them reported.
+    "usr.bin/number/number.c:234":
+        "number()'s val is (p[1] - '0') + (p[0] - '0') * 10 over a "
+        "string main() has already walked with isdigit(), branching to "
+        "badnum on anything else, so val is 0..99.",
+    "sys/netpfil/ipfw/nat64/nat64lsn_control.c:662":
+        "nat64lsn_get_pg_byidx()'s pg_idx is (idx->port - "
+        "NAT64_MIN_PORT) / 64, and its one caller rejects "
+        "idx.port < NAT64_MIN_PORT before the loop that calls it.",
+    "sys/dev/mlx4/mlx4_ib/mlx4_ib_cq.c:239":
+        "mlx4_ib_create_cq()'s vector is attr->comp_vector, which the "
+        "uverbs entry points bound first -- ib_uverbs_cmd.c:1004 and "
+        "ib_uverbs_std_types_cq.c:103 both reject "
+        "comp_vector >= num_comp_vectors, and comp_vector is u32 "
+        "there, so the comparison is unsigned and a value with the top "
+        "bit set is rejected as huge rather than accepted as negative. "
+        "The bound is unsigned in one file and the use is signed in "
+        "another, which is why it is worth writing down.",
     "usr.bin/number/number.c:261":
         "pfract()'s len is a fraction-digit count derived from strlen "
         "of the caller's string; it cannot be negative.",

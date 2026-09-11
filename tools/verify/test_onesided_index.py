@@ -152,6 +152,48 @@ class TheGateBites(Base):
         finally:
             tool.write_text(keep)
 
+    def test_a_pointer_parameter_is_a_parameter(self):
+        """declared() wanted `<type><space><name>', so `struct foo *p'
+        had a `*' where the space should be and the parameter set came
+        back EMPTY -- for most of this tree, and for rbootd's
+        SendFileNo(struct rmp_packet *, RMPCONN *, char *[]) exactly.
+        from_outside() then had nothing to match and the rule dropped
+        the worst instance of its own shape in the tree: a 32-bit wire
+        value decremented into `filelist[i]'."""
+        for decl, want in [
+            ("SendFileNo(struct rmp_packet *req, RMPCONN *rconn, "
+             "char *filelist[])", {"req", "rconn", "filelist"}),
+            ("f(int a, char *b)", {"a", "b"}),
+            ("g(void)", set()),
+            # A function-pointer parameter's last identifier is a type in
+            # the inner list, not a name. Skipping it loses a name;
+            # guessing one invents a wrong one.
+            ("h(int x, int (*cmp)(const void *, const void *))", {"x"}),
+        ]:
+            self.assertEqual(onesided_index.param_names(decl), want, decl)
+
+    def test_an_out_parameter_macro_counts_as_outside(self):
+        """GETWORD(w, i) is `(i) = ntohl(w)': the assignment is inside
+        the macro, so there is no `i =' in the source at all. V passed
+        to a call whose argument list also names a parameter, and never
+        assigned a value itself, came from outside."""
+        text = ("\tGETWORD(req->r_brpl.rmp_seqno, i);\n"
+                "\tPUTWORD(i, rpl->r_brpl.rmp_seqno);\n"
+                "\ti--;\n"
+                "\tif (i < C_MAXFILE && filelist[i] != NULL) {\n")
+        self.assertTrue(onesided_index.from_outside("i", {"req"}, text))
+        # `i--' must not disqualify it -- it modifies a value that was
+        # already there. A real assignment does.
+        self.assertFalse(
+            onesided_index.from_outside("i", {"req"},
+                                        "\ti = 0;\n" + text))
+        # And a TRACE macro taking a loop counter by value is not an
+        # out-parameter, however many parameters sit beside it.
+        self.assertFalse(onesided_index.from_outside(
+            "index", {"table"},
+            "\tfor (index = 0; index < N; index++) {\n"
+            "\t\tEFSYS_PROBE2(table, int, index, uint32_t, byte);\n"))
+
     def test_a_site_off_the_record_fails(self):
         src = Path(onesided_index.__file__).read_text()
         holed = src.replace('"usr.bin/pr/pr.c:1420":',

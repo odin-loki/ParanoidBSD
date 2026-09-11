@@ -6006,6 +6006,37 @@ FIXES = {
         "caller passes nfield == NULL today, so it is latent",
     ),
 
+    "hbsd/src/libexec/rbootd/rmpproto.c": (
+        "PBSD: bound the file number BELOW as well as above.",
+        None,
+        "SendFileNo() read its array index off the network -- "
+        "GETWORD(w, i) is `(i) = ntohl(w)\' -- decremented it, and "
+        "tested `i < C_MAXFILE\' with no lower bound, so seqno 0 or "
+        "anything with the top bit set indexed filelist[] from outside "
+        "and the loop below copied a string from whatever pointer it "
+        "found into the reply packet",
+    ),
+
+    "hbsd/src/sys/ddb/db_access.c": (
+        "PBSD: accumulate unsigned.",
+        None,
+        "db_get_value() shifted a SIGNED db_expr_t left eight bits per "
+        "byte read, so the last byte of a full-width read moves a set "
+        "bit into the sign bit -- undefined, and on i386 and arm where "
+        "db_expr_t is int it happens on every x/x of a word whose top "
+        "bit is set",
+    ),
+
+    "hbsd/src/lib/msun/x86/fenv.h": (
+        "PBSD: the cast.",
+        None,
+        "__get_mxcsr() is `((env).__mxcsr_hi << 16) | ...\' and "
+        "__mxcsr_hi is __uint16_t, which promotes to int -- so the "
+        "shift moves bit 15 into an int\'s sign bit for any value at "
+        "or above 0x8000. __set_mxcsr() beside it already casts to "
+        "__uint32_t, and this is a header user code expands",
+    ),
+
     "hbsd/src/lib/libcasper/services/cap_sysctl/cap_sysctl.c": (
         "PBSD: check the reply against the capacity the caller gave us.",
         None,

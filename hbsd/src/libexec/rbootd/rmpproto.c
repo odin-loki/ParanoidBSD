@@ -229,7 +229,37 @@ SendFileNo(struct rmp_packet *req, RMPCONN *rconn, char *filelist[])
 	 */
 	rpl->r_brpl.rmp_type = RMP_BOOT_REPL;
 	PUTWORD(i, rpl->r_brpl.rmp_seqno);
-	i--;
+
+	/*
+	 * PBSD: bound the file number BELOW as well as above.
+	 *
+	 * i is `SeqNo is really FileNo', and GETWORD() above is
+	 * `(i) = ntohl(w)' -- a full 32 bits off the network, into a
+	 * signed int, with no validation anywhere between there and the
+	 * subscript.  The test twenty lines down was
+	 *
+	 *     if (i < C_MAXFILE && filelist[i] != NULL)
+	 *
+	 * which bounds it above (C_MAXFILE is 10) and not below.  A BOOT
+	 * request carrying seqno 0 makes i -1 after the decrement; one
+	 * carrying anything with the top bit set makes it a large
+	 * negative.  Either way filelist[i] reads a pointer from outside
+	 * `struct conn_data', and the loop below then copies a string
+	 * from wherever that pointer lands into the reply packet -- an
+	 * arbitrary read, answered to whoever sent the request, by a
+	 * daemon running as root on a raw socket.
+	 *
+	 * The decrement itself was the reported defect (`i - 1' is
+	 * undefined at INT_MIN); it is the subscript that matters.  Doing
+	 * the range test first fixes both: the decrement now only happens
+	 * for a value already known to be in [1, C_MAXFILE], and
+	 * everything else takes the RMP_E_NODFLT arm that was always
+	 * there for a file number with no file behind it.
+	 */
+	if (i >= 1 && i <= C_MAXFILE)
+		i--;
+	else
+		i = -1;			/* no such file */
 	rpl->r_brpl.rmp_session = 0;
 	rpl->r_brpl.rmp_version = htons(RMP_VERSION);
 
@@ -242,7 +272,7 @@ SendFileNo(struct rmp_packet *req, RMPCONN *rconn, char *filelist[])
 	 *  characters have been copied.  Also, set return code to
 	 *  indicate success or "no more files".
 	 */
-	if (i < C_MAXFILE && filelist[i] != NULL) {
+	if (i >= 0 && filelist[i] != NULL) {
 		src = filelist[i];
 		dst = (char *)&rpl->r_brpl.rmp_flnm;
 		for (; *src && *size < RMPBOOTDATA; (*size)++) {
