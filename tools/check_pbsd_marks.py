@@ -4065,6 +4065,16 @@ FIXES = {
         "line with `line[0] != \'\\0\'\'",
     ),
 
+    "hbsd/src/sys/dev/vmware/vmci/vmci_utils.h": (
+        "\tunsigned int hash = 5381;",
+        "\tint hash = 5381;",
+        "vmci_hash_id() is djb2, which overflows within four rounds; "
+        "with `hash' a signed int both that overflow and the "
+        "`hash << 5' that follows it on a negative value are "
+        "undefined, and this tree runs UBSan. Unsigned wraparound is "
+        "defined and gives the identical bit pattern, so every "
+        "caller's bucket is unchanged",
+    ),
     "hbsd/src/sys/dev/sume/if_sume.c": (
         "\tif (np < 0 || np >= SUME_NPORTS) {",
         "\tif (np > SUME_NPORTS) {",

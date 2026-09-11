@@ -26024,3 +26024,48 @@ the first of them.  Also read from that set and clean:
 
 `sys/dev/sume` ONESIDED **1 → 0**, analyser **0 → 0** with its one
 translation unit compiling both ways.  Tree-wide ONESIDED **226 → 225**.
+
+## `vmci_hash_id`: djb2 in a signed int, in a tree that runs UBSan
+
+Chasing `vmci_hashtable.c:170`'s index — `idx = VMCI_HASHTABLE_HASH(...)`
+— to its floor found something the index rule was not looking for:
+
+```c
+static inline int
+vmci_hash_id(vmci_id id, unsigned size)
+{
+	unsigned i;
+	int hash = 5381;
+
+	for (i = 0; i < sizeof(id); i++)
+		hash = ((hash << 5) + hash) + (uint8_t)(id >> (i * 8));
+
+	return (hash & (size - 1));
+}
+```
+
+The index itself is fine: `size - 1` is `unsigned`, so `hash` converts
+for the `&` and the result is at most `size - 1`.  That is the same
+conversion that took 35 sites off the ONESIDED list this morning,
+arrived at from the other direction.
+
+**The hash is not fine.**  djb2 multiplies by 33 each round; starting
+at 5381 over four bytes it passes `INT_MAX` on the third, and signed
+overflow is undefined.  Once `hash` is negative, `hash << 5` is
+undefined too — a left shift of a negative value, separately.  This
+tree builds with UBSan and its own smoke test checks that UBSan traps
+`1 << 31`, so this is exactly the class the instruments exist for; the
+analyser does not report it because it is not a path-sensitive
+property.
+
+`unsigned int hash` fixes both.  Unsigned wraparound is defined and
+produces the identical bit pattern, so every caller's bucket is
+unchanged — `vmci_hashtable.c` and `vmci_doorbell.c`'s
+`VMCI_DOORBELL_INDEX_TABLE_HASH` both.
+
+### Measured
+
+`sys/dev/vmware` analyser **2 → 2** across 12 translation units, all
+compiling both ways.  No ONESIDED change: the site that led here still
+reports, because its floor is now a fact about `vmci_hash_id()`, which
+is a different function.
