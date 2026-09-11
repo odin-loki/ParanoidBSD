@@ -80,12 +80,13 @@ class Tree(unittest.TestCase):
         "sys/dev/sound/pci/ich.c": "ichchan_init(), default: arm",
         "sys/netpfil/ipfw/ip_fw_table.c": "find_table_entry()",
     }
-    # Reported, and read, and NOT leaks. Kept so that a change which
-    # "fixes" one of them has to say what it did.
+    # Reported, and read, and NOT leaks. Derived from the tool's own
+    # EXPECTED rather than copied, because two lists of the same three
+    # sites drift and the drift is silent -- the copy here would keep
+    # asserting a site --gate had stopped knowing about.
     KNOWN_FALSE = {
-        "sys/dev/cxgbe/iw_cxgbe/cm.c": 1146,        # solisten_dequeue unlocks
-        "sys/kern/vfs_mount.c": 2319,               # dounmount_cleanup does
-        "sys/kern/kern_proc.c": 454,                # _pfind returns it locked
+        k[len("hbsd/src/"):].rsplit(":", 1)[0]: int(k.rsplit(":", 1)[1])
+        for k in lb.EXPECTED
     }
 
     def test_the_fixed_ones_stay_fixed(self):

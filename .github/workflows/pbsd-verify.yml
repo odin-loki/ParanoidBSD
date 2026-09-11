@@ -401,7 +401,15 @@ jobs:
       # over the whole kernel were read and are leaks; the three that are
       # not are named in the test, so a change that stops reporting one
       # of the ten has to say what it did.
+      # This rule found THIRTEEN of these and ten were real leaks, and
+      # until now it has never run here -- only its test did. Its own
+      # docstring says "Reading is not a gate, so this is", and it was
+      # not one. The three that remain are in its EXPECTED with the
+      # callee or the ..._locked() contract that makes each safe, so an
+      # ELEVENTH fails the build instead of waiting to be read.
       - name: A lock released on some paths out of a function and not others
+        run: python3 tools/verify/lock_balance.py --gate
+      - name: ...and the lock rule still finds the ten it was written for
         run: python3 tools/verify/test_lock_balance.py
 
       # The socketcall gate above was broken eight ways on the real tree

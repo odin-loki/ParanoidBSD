@@ -24620,3 +24620,50 @@ dropping post-increment (a narrowed rule) fails them too.
 
 `proc_rtld.c` reports the same findings as `HEAD` — zero — and compiles
 clean.
+
+---
+
+## The rule that found ten leaks was never a gate
+
+`lock_balance.py` exists because clang's default checkers have no model
+for `mtx_lock`: `sys/netipsec/ipsec.c` compiles clean and reports
+nothing, and `ipsec_chkreplay()` returned holding `replay->lock` on one
+of its eleven paths.  The rule found thirteen such returns.  **Ten were
+real leaks and are fixed.**
+
+Its docstring ends: *"Reading is not a gate, so this is."*  It was not
+one.  It had no `--gate` option and it did not run in the verify
+workflow at all — only `test_lock_balance.py` did, which checks that the
+ten stay fixed and that the three non-leaks stay *reported*.  Neither of
+those catches an **eleventh**.
+
+That is the same hole the realloc rule had this morning, in a rule with
+a much better hit rate: a number that gets read once, acted on, and then
+stops being checked.  A tool with a 10-in-13 record for finding kernel
+lock leaks should not be the one thing in `tools/verify/` that CI never
+runs.
+
+It gates now.  The three that remain are in `EXPECTED` with the reason
+each is safe — and each reason is a fact about a *different* function,
+which is exactly why the rule cannot see it and why writing it down is
+the only way it stays known:
+
+- `sys/dev/cxgbe/iw_cxgbe/cm.c:1146` — `process_newconn()` returns
+  holding `SOLISTEN_LOCK(listen_so)` because `solisten_dequeue()`, which
+  it calls, drops it.  The unlock is in the callee.
+- `sys/kern/vfs_mount.c:2319` — `dounmount()` hands `MNT_ILOCK(mp)` to
+  `dounmount_cleanup()`, whose contract is to take the interlock held
+  and release it.
+- `sys/kern/kern_proc.c:454` — `pfind_any_locked()` is one of the
+  `..._locked()` family: returning the process locked *is* the
+  interface, and every caller `PROC_UNLOCK()`s it.
+
+`test_lock_balance.py` no longer keeps its own copy of those three.  It
+derives them from the tool's `EXPECTED`, because two lists of the same
+three sites drift and the drift is silent — the copy would have gone on
+asserting a site that `--gate` had stopped knowing about.
+
+Checked rather than assumed: removing one `EXPECTED` entry makes
+`--gate` exit 1, restoring it exits 0, and `--all --gate` is refused
+outright (exit 2) because `--all` is the loose candidate list and gating
+on it would mean gating on a number nobody has read.

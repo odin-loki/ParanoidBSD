@@ -479,25 +479,64 @@ def check(src: Path, loose: bool = False):
     return out
 
 
+# Reported, read, and NOT leaks. Ten of the thirteen this rule found
+# WERE leaks and are fixed; these three are the remainder, and they are
+# here rather than only in the test so that --gate has something to
+# compare against. A site not here fails the gate, which is the whole
+# point: the rule found ten and nothing currently stops an eleventh.
+EXPECTED: dict[str, str] = {
+    "hbsd/src/sys/dev/cxgbe/iw_cxgbe/cm.c:1146":
+        "process_newconn() returns holding SOLISTEN_LOCK(listen_so) "
+        "because solisten_dequeue() -- which it calls -- drops it. The "
+        "unlock is in the callee, where this rule cannot see it.",
+    "hbsd/src/sys/kern/vfs_mount.c:2319":
+        "dounmount() returns holding MNT_ILOCK(mp) into "
+        "dounmount_cleanup(), whose contract is to take the mount "
+        "interlock held and release it.",
+    "hbsd/src/sys/kern/kern_proc.c:454":
+        "pfind_any_locked() is one of the ..._locked() family: "
+        "returning the process locked IS the interface, and every "
+        "caller PROC_UNLOCK()s it.",
+}
+
+
 def main(argv):
-    args = [a for a in argv[1:] if a != "--all"]
+    args = [a for a in argv[1:] if a not in ("--all", "--gate")]
     loose = "--all" in argv
+    gate = "--gate" in argv
     roots = [Path(a) for a in args] or [Path("hbsd/src/sys")]
     files = []
     for r in roots:
         files.extend(sorted(r.rglob("*.c")) if r.is_dir() else [r])
-    total = 0
+    total = unexpected = 0
     for f in files:
         try:
             hits = check(f, loose)
         except (OSError, RecursionError):
             continue
         for ln, name, arg, head in hits:
-            print(f"{f}:{ln}: return holds {name}({arg}) taken in the "
-                  f"function at :{head}")
+            key = f"{f}:{ln}"
+            known = key in EXPECTED
+            if not known:
+                unexpected += 1
+            print(f"{key}: return holds {name}({arg}) taken in the "
+                  f"function at :{head}"
+                  + ("  [expected]" if known else ""))
             total += 1
     kind = "candidate" if loose else "gated"
-    print(f"{total} {kind} return(s) in {len(files)} file(s)")
+    print(f"{total} {kind} return(s) in {len(files)} file(s), "
+          f"{unexpected} not on the record")
+    if gate and loose:
+        print("--gate is for the narrow rule; --all is a candidate list "
+              "and does not gate.", file=sys.stderr)
+        return 2
+    if gate and unexpected:
+        print("\nA function that takes a lock on one path out and not "
+              "another is how\nipsec_chkreplay() kept replay->lock on one "
+              "of its eleven returns. Fix it,\nor write down which callee "
+              "drops it, or which ..._locked() contract it is.",
+          file=sys.stderr)
+        return 1
     return 0
 
 
