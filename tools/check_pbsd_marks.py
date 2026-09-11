@@ -485,17 +485,6 @@ FIXES = {
         "an uninitialised error-code-valid bit; vmx.c:2740 sets its "
         "equivalent unconditionally before the test that can raise it",
     ),
-    "hbsd/src/lib/libc/nls/msgcat.c": (
-        "#define\tTRY_WLOCK()",
-        "\t\t\t\t\t\tWLOCK(NLERR);",
-        "WLOCK()'s `return (fail)' fires in the middle of an ownership "
-        "transfer to the cache - SAVEFAIL()'s entry, and in load_msgcat() "
-        "the whole mmap'd catalogue with its five allocations - and the "
-        "cache is where that ownership lives, so the failure path lost "
-        "them; _pthread_rwlock_wrlock() on this statically-initialised "
-        "rwlock really can fail, because libthr's rwlock_init() "
-        "aligned_alloc()s on first use and returns ENOMEM",
-    ),
     "hbsd/src/lib/libc/iconv/citrus_stdenc.c": (
         "if (ce == NULL)\n\t\treturn;",
         "{\n\n\tif (ce == &_citrus_stdenc_default)",
@@ -2214,6 +2203,142 @@ FIXES = {
             None,
             "the same bound restated in alloc_segs(), where the "
             "indexing and the shift actually happen",
+        ),
+    ],
+    "hbsd/src/lib/libc/stdio/vfprintf.c": [
+        (
+            "\t\t\tif (width == INT_MIN) {",
+            "\t\t\tif (width >= 0)\n\t\t\t\tgoto rflag;\n"
+            "\t\t\twidth = -width;",
+            "the `%*d' path did `width = -width' on a caller-supplied "
+            "int. The ANSI quotation above it -- a negative field width "
+            "is a `-' flag and a positive field width -- has no reading "
+            "for INT_MIN: there is no positive counterpart, and "
+            "negating INT_MIN is signed overflow. A single printf with "
+            "INT_MIN as the `*' argument is the whole of it, and this "
+            "tree builds with UBSan",
+        ),
+        (
+            "\t\t\t\tif (prec > INT_MAX / 10 ||",
+            "while (is_digit(ch)) {\n"
+            "\t\t\t\tprec = 10 * prec + to_digit(ch);",
+            "and the literal-precision loop multiplied by ten with no "
+            "bound, so a format string of eleven digits wraps prec "
+            "negative -- which downstream means no precision given",
+        ),
+        (
+            "\t\t\t\tif (n > INT_MAX / 10 ||",
+            "\t\t\tdo {\n\t\t\t\tn = 10 * n + to_digit(ch);",
+            "and the same loop for the field width, which doubles as "
+            "the parse of the `n$' argument index",
+        ),
+    ],
+    "hbsd/src/lib/libc/stdio/vfwprintf.c": [
+        (
+            "\t\t\tif (width == INT_MIN) {",
+            "\t\t\tif (width >= 0)\n\t\t\t\tgoto rflag;\n"
+            "\t\t\twidth = -width;",
+            "and wprintf(3) has its own copy of every line of it, "
+            "starting with the negation of INT_MIN",
+        ),
+        (
+            "\t\t\t\tif (prec > INT_MAX / 10 ||",
+            "while (is_digit(ch)) {\n"
+            "\t\t\t\tprec = 10 * prec + to_digit(ch);",
+            "its unbounded precision loop",
+        ),
+        (
+            "\t\t\t\tif (n > INT_MAX / 10 ||",
+            "\t\t\tdo {\n\t\t\t\tn = 10 * n + to_digit(ch);",
+            "and its unbounded width loop",
+        ),
+    ],
+    "hbsd/src/lib/libc/stdio/xprintf.c": [
+        (
+            "\t\t\tif (pi->width == INT_MIN) {",
+            None,
+            "and the extensible-printf machinery that "
+            "register_printf_render(3) turns on has a third copy of "
+            "the negation, in its own parser",
+        ),
+        (
+            "\t\t\t\t\tif (pi->prec > INT_MAX / 10 ||",
+            "is_digit(*fmt)) {\n\t\t\t\t\tpi->prec *= 10;",
+            "with the same unbounded precision loop",
+        ),
+        (
+            "\t\t\t\t\tif (n > INT_MAX / 10 ||",
+            "is_digit(*fmt)) {\n\t\t\t\t\tn *= 10;",
+            "and the same unbounded width loop",
+        ),
+    ],
+    "hbsd/src/lib/libc/nls/msgcat.c": [
+        (
+            "#define\tTRY_WLOCK()",
+            "\t\t\t\t\t\tWLOCK(NLERR);",
+            "WLOCK()'s `return (fail)' fires in the middle of an "
+            "ownership transfer to the cache - SAVEFAIL()'s entry, and "
+            "in load_msgcat() the whole mmap'd catalogue with its five "
+            "allocations - and the cache is where that ownership lives, "
+            "so the failure path lost them; _pthread_rwlock_wrlock() on "
+            "this statically-initialised rwlock really can fail, "
+            "because libthr's rwlock_init() aligned_alloc()s on first "
+            "use and returns ENOMEM",
+        ),
+        (
+            "\tif (!valid_msgcat(data, (size_t)st.st_size)) {",
+            None,
+            "load_msgcat() validated a catalogue by its size against "
+            "sizeof(u_int32_t) and its magic number, and nothing else. "
+            "catgets() then binary-searched with the counts and offsets "
+            "in the mapping -- __nsets, __index, __nmsgs, "
+            "__msg_hdr_offset -- and returned __data + __msg_txt_offset "
+            "+ __offset, which its caller reads as a NUL-terminated "
+            "string. Every one of those is a file-chosen int32_t, and "
+            "catopen(3) finds the file through NLSPATH",
+        ),
+        (
+            "valid_msgcat(const void *data, size_t size)",
+            None,
+            "the whole header is checked once at open, so catgets() may "
+            "trust it: the set table fits the mapping, each set's "
+            "message range fits the message-header table, and each "
+            "message offset is inside the text with a NUL before the "
+            "end -- the property the caller actually needs, and one "
+            "that does not depend on gencat(1)'s __msglen convention",
+        ),
+        (
+            "\tif (st.st_size > SIZE_T_MAX || st.st_size > INT_MAX) {",
+            "\tif (st.st_size > SIZE_T_MAX) {",
+            "and catd->__size is an int, so a file past INT_MAX was "
+            "truncated into it and later handed to munmap()",
+        ),
+        (
+            ("\t\ti = l + (u - l) / 2;", 1),
+            "\t\ti = (l + u) / 2;",
+            "the set search's midpoint overflowed: u is one less than a "
+            "count out of the file, so a negative i subscripted before "
+            "the mapping",
+        ),
+        (
+            ("\t\t\t\ti = l + (u - l) / 2;", 1),
+            "\t\t\t\ti = (l + u) / 2;",
+            "and the message search's, where u is __index + __nmsgs - 1 "
+            "and both are the file's",
+        ),
+        (
+            "\t\tif (set_id == no) {",
+            "\t\tr = set_id - ntohl((u_int32_t)set_hdr[i].__setno);",
+            "and `set_id - __setno' subtracted two int32_t -- one the "
+            "caller's, one the file's -- where only the sign is ever "
+            "read. Same shape as __bt_defcmp, same answer: compare "
+            "rather than subtract",
+        ),
+        (
+            "\t\t\t\tif (msg_id == no) {",
+            "\t\t\t\tr = msg_id -\n"
+            "\t\t\t\t    ntohl((u_int32_t)msg_hdr[i].__msgno);",
+            "and the message number likewise",
         ),
     ],
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (

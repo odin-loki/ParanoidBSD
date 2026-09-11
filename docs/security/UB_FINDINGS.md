@@ -26382,3 +26382,335 @@ artefact, not findings:
   `__bt_ret(t, &e, &c->key, &c->key, NULL, NULL, 1)`, and `__bt_ret()`
   assigns `rkey->data` from `realloc()`.  The field is otherwise only
   ever set to `NULL`.
+
+## Three overflows in printf(3)'s specifier parse, which CBMC never saw
+
+Run 26's list had `lib/libc/stdio/xprintf.c` on it and nothing else from
+the printf family.  That is not because the rest is clean.  `vfprintf()`
+is one of the **649 TIMEOUTs** — a `va_list`, a jump table and a
+thousand lines — so the model checker returns no verdict at all on the
+function every `printf`, `fprintf`, `sprintf`, `snprintf`, `asprintf`
+and `syslog` in the system goes through.  A timeout is not a clean
+result, and the report says so; this is what reading one looks like.
+
+All three defects are in the conversion-specifier parse, all three are
+driven by the format string and its arguments, and all three appear
+*verbatim* in three files: `vfprintf.c`, `vfwprintf.c` (the wide
+version, a line-for-line copy), and `xprintf.c`'s own parser.
+
+### 1. Negating INT_MIN
+
+```c
+		case '*':
+			/*-
+			 * ``A negative field width argument is taken as a
+			 * - flag followed by a positive field width.''
+			 *	-- ANSI X3J11
+			 */
+			GETASTER (width);
+			if (width >= 0)
+				goto rflag;
+			width = -width;
+```
+
+The quotation is the whole of the standard's rewriting, and it has no
+reading for `INT_MIN`: there is no positive counterpart to fall back
+to, and negating `INT_MIN` is signed overflow.  `printf("%*d", INT_MIN,
+0)` is the whole of the reproducer.  This tree builds with UBSan.
+
+There is nothing to clamp to — a field width of 2147483648 could not be
+honoured and the loop that would emit it is not one you want entered —
+so the answer is the one the file already gives for a length it cannot
+represent, four hundred lines up:
+
+```c
+			if (width == INT_MIN) {
+				ret = EOF;
+				errno = EOVERFLOW;
+				goto error;
+			}
+```
+
+### 2 and 3. Ten times the running value, with no bound
+
+```c
+			prec = 0;
+			while (is_digit(ch)) {
+				prec = 10 * prec + to_digit(ch);
+				ch = *fmt++;
+			}
+```
+
+and the identical loop for the field width, which also parses the `n$`
+argument index.  The format string decides how many digits there are,
+so `10 * prec` is the caller's multiplication: `printf("%.9999999999f",
+1.0)` wraps `prec` negative, and a negative `prec` downstream means *no
+precision given* — silently the opposite of what was asked.
+
+The bound has to be exact, not conservative, or a width the
+implementation can honour starts being rejected:
+
+```c
+				if (prec > INT_MAX / 10 ||
+				    (prec == INT_MAX / 10 &&
+				     to_digit(ch) > INT_MAX % 10)) {
+```
+
+`INT_MAX / 10` is 214748364 and `INT_MAX % 10` is 7, so `%2147483647d`
+is still accepted and `%2147483648d` is the first rejection — checked
+against the real arithmetic, compiled with
+`-fsanitize=signed-integer-overflow`:
+
+```
+  2147483647   -> ok         v=2147483647
+  2147483648   -> EOVERFLOW  v=-99
+  9999999999   -> EOVERFLOW  v=-99
+  214748364    -> ok         v=214748364
+  214748365    -> ok         v=214748365
+```
+
+### The probe
+
+`vfprintf()` is too big to model, but the parse is not:
+
+```
+  cbmc -DOLD --unwind 14 --unwinding-assertions --signed-overflow-check \
+      tools/verify/probes/printf_width_parse.c
+  [digits.overflow.2] line 87 arithmetic overflow on signed * in 10 * n: FAILURE
+  [digits.overflow.4] line 87 arithmetic overflow on signed + in 10 * n + ...: FAILURE
+  [main.assertion.1] line 109 the field width is non-negative: FAILURE
+  [main.assertion.2] line 115 the parsed width and precision are non-negative: FAILURE
+  ** 5 of 9 failed        VERIFICATION FAILED
+
+  cbmc (same flags, no -DOLD)
+  ** 0 of 10 failed       VERIFICATION SUCCESSFUL
+```
+
+### Measured
+
+`lib/libc/stdio`, same scope both sides: 111 translation units, **0
+ERROR on both**, and the eleven analyser findings are the same eleven,
+by checker, function and message — the three files still compile and
+nothing new appeared.  ONESIDED over `lib` unmoved at 9.  Nine markers,
+each revert-verified, and each revert checked not to be a no-op first.
+
+### The other forty-three in `lib/libc/stdio`, and why they are one answer
+
+The 46 `lib/libc/stdio` entries in run 26's arithmetic list are almost
+all one reason:
+
+```
+  fgetc.c:fgetc        line 48  arithmetic overflow on signed - in fp->_r - 1
+  fputc.c:fputc        line 474 arithmetic overflow on signed - in _p->_w - 1
+  ftell.c:ftell        line 97  ... in fp->_p - fp->_bf._base
+  wbuf.c:__swbuf       line 76  ... in fp->_p - fp->_bf._base
+  _flock_stub.c        line 66  ... in fp->_fl_count + 1
+```
+
+CBMC checks one function with its arguments unconstrained, so `FILE *fp`
+is an arbitrary pointer to an arbitrary struct and `_r` may be
+`INT_MIN`.  It is not: `_r` is the count of unread bytes in the buffer,
+set by `__srefill()` from a `read(2)` return and only ever decremented
+through zero; `_w` and `_p` are `__swsetup()`'s and `_bf._base`'s to
+maintain.  A `FILE` the program did not get from `fopen()` is already
+undefined behaviour before `getc()` is reached, and there is no
+precondition syntax that says "this is stdio's own bookkeeping" to a
+modular checker.  They stay on the list; the reason is written down
+once.
+
+Three of the 46 are *not* that, and were read on their own:
+
+* `setvbuf.c:146` and `wsetup.c:84`, *signed unary minus in
+  `-fp->_bf._size`*.  Unary minus is only undefined on `INT_MIN`, and
+  `_bf._size` cannot be: `setvbuf()` rejects `size > INT_MAX` at its
+  third line, and every other writer is `__smakebuf()`, which takes its
+  size from `__swhatbuf()` — `BUFSIZ`, or `st_blksize` after an explicit
+  `if (st.st_blksize <= 0)`.  `blksize_t` is `__int32_t`, so the value
+  is in [1, INT_MAX].
+* `fwalk.c:57`, `n - 1` where `n = g->niobs`.  `__sglue` is a file-scope
+  list whose blocks `__sfmoreglue()` builds; the count is its own and
+  positive.  The same modular blind spot, one indirection further out.
+
+And two are `assert()`s CBMC says can fail:
+`xprintf_errno.c:46` (`n >= 1`) and `xprintf_float.c:125` (`n > 0`).
+The only caller passes the literal `__PRINTFMAXARG`:
+
+```c
+			ch = printf_tbl[pi->spec].arginfo(
+			    pi, __PRINTFMAXARG, &argt[nextarg]);
+```
+
+The documented interface is `register_printf_function(3)`, which takes a
+callback rather than calling libc's — so nothing that is supposed to
+call these can reach them with a zero.
+
+### `lib/libcasper`: twenty findings that are the guard, reported as the bug
+
+The next bucket down is twenty entries, and eighteen of them read:
+
+```
+  libcasper.c:cap_close   line 208 assertion chan->cch_magic == CAP_CHANNEL_MAGIC
+  service.c:service_free  line 197 assertion service->s_magic == SERVICE_MAGIC
+```
+
+That assertion *is* the check.  It exists so that a `cap_channel_t *`
+that did not come from `cap_init()` is caught rather than dereferenced,
+and CBMC — which unconstrains the parameter — is reporting that a
+channel whose magic is wrong fails the magic test.  Yes.
+
+The one thing worth checking about an `assert()` is whether the shipped
+build has it.  `share/mk/bsd.debug.mk` adds `-DNDEBUG` only under
+`MK_ASSERT_DEBUG == "no"`, and `ASSERT_DEBUG` is in
+`bsd.opts.mk`'s `__DEFAULT_YES_OPTIONS`.  The guards are live.
+
+The two that are not that family:
+
+* `service.c:133` and `:134`, *signed `*` in `sconn->sc_pollidx * 8`* —
+  the scaling of `pollset_pfds[sconn->sc_pollidx]`.  `sc_pollidx` is
+  written in exactly one place, `pollset_add()`, from a validated index;
+  and `sc_magic` is set only *after* `pollset_add()` succeeds, while
+  `service_connection_remove()` asserts the magic before calling
+  `pollset_remove()`.  A connection that reaches the subscript has an
+  index.
+* `cap_dns.c:367`, `assert(n > 0 && n < (int)sizeof(nvlname))` on
+  `snprintf(nvlname, 64, "family%u", i)`.  The longest `%u` is ten
+  digits, so the longest result is sixteen characters.  CBMC's
+  `snprintf` model leaves the return unconstrained; the code does not.
+
+## `catgets(3)` trusted every number in the file it had mapped
+
+`lib/libc/net`'s bucket held one line that looked like every other
+midpoint:
+
+```
+  lib/libc/nls/msgcat.c:catgets
+      line 308 arithmetic overflow on signed + in l + u
+```
+
+It is the binary search in `catgets(3)`, and the numbers it searches
+over are a file's.  `load_msgcat()` did exactly two checks before
+`mmap`ping a catalogue:
+
+```c
+	/* The file is too small to contain a _NLS_MAGIC. */
+	if (st.st_size < sizeof(u_int32_t)) {
+	...
+	if (ntohl((u_int32_t)((struct _nls_cat_hdr *)data)->__magic) !=
+	    _NLS_MAGIC) {
+```
+
+and nothing anywhere looked at the rest of the header.  `catgets()` then
+did:
+
+```c
+	l = 0;
+	u = ntohl((u_int32_t)cat_hdr->__nsets) - 1;
+	while (l <= u) {
+		i = (l + u) / 2;
+		r = set_id - ntohl((u_int32_t)set_hdr[i].__setno);
+		if (r == 0) {
+			...
+			l = ntohl((u_int32_t)set_hdr[i].__index);
+			u = l + ntohl((u_int32_t)set_hdr[i].__nmsgs) - 1;
+			while (l <= u) {
+				i = (l + u) / 2;
+				...
+				return ((char *) catd->__data +
+				    sizeof(struct _nls_cat_hdr) +
+				    ntohl(cat_hdr->__msg_txt_offset) +
+				    ntohl(msg_hdr[i].__offset));
+```
+
+Every one of `__nsets`, `__index`, `__nmsgs`, `__msg_hdr_offset`,
+`__msg_txt_offset` and `__offset` is an `int32_t` the file chooses.  The
+last three lines are the point: the function **returns a pointer at a
+file-chosen offset from the mapping**, and its caller reads a string
+from it.  `catopen(3)` finds the catalogue through `NLSPATH`, so for any
+program that is not setuid the file belongs to whoever runs it.
+
+Four defects, not one:
+
+1. `(l + u) / 2` overflows — `u` is a file-chosen count minus one, so a
+   negative `i` subscripts *before* the mapping.  Twice, once per loop.
+2. Nothing bounds `__nsets`, so even a non-negative `i` reads past the
+   end of the set table.
+3. Nothing bounds `__index`, `__nmsgs`, `__msg_hdr_offset` or
+   `__offset`, so the message search and the returned pointer are
+   likewise unbounded.
+4. `r = set_id - ntohl(set_hdr[i].__setno)` subtracts two `int32_t` —
+   one the caller's, one the file's — and reads only the sign.  Exactly
+   `__bt_defcmp`'s shape, three sections up, and CBMC found this one
+   only after the others were fixed and it could get past them.
+
+The fix is a `valid_msgcat()` that walks the whole header once at open —
+the set table fits the mapping, each set's message range fits the
+message-header table, each message offset is inside the text and has a
+NUL before the end — plus `l + (u - l) / 2` and a comparison instead of
+a subtraction.  The NUL check is deliberately the property the *caller*
+needs rather than agreement with `__msglen`, so it holds whatever
+`gencat(1)` writes.
+
+### Both instruments, and then the real thing
+
+```
+  cbmc -DOLD ... tools/verify/probes/msgcat_bounds.c
+  [main.overflow.3] line 66 arithmetic overflow on signed + in l + u: FAILURE
+  [main.assertion.1] line 70 the set index is inside the mapping: FAILURE
+  [main.array_bounds.3] line 73 array 'sets' lower bound: FAILURE
+  [main.array_bounds.4] line 73 array 'sets' upper bound: FAILURE
+  ** 7 of 12 failed        VERIFICATION FAILED
+
+  cbmc ... (no -DOLD)
+  ** 0 of 12 failed        VERIFICATION SUCCESSFUL
+```
+
+A model is not enough for a file-format parser, so
+`tools/verify/probes/msgcat_crafted.c` `#include`s `valid_msgcat()`'s
+own source and feeds it catalogues, under ASan and UBSan:
+
+```
+  a well-formed catalogue                    accept   ok
+  __nsets = INT_MAX                          reject   ok
+  __nsets = -1                               reject   ok
+  __msg_hdr_offset = INT_MAX                 reject   ok
+  __msg_txt_offset = -1                      reject   ok
+  set __index huge                           reject   ok
+  set __nmsgs = INT_MAX                      reject   ok
+  set __index = -1                           reject   ok
+  message __offset = INT_MAX                 reject   ok
+  message __offset = -1                      reject   ok
+  message text with no NUL                   reject   ok
+  a four-byte file                           reject   ok
+
+  all cases as expected
+```
+
+Each rejected line is one catalogue `catgets(3)` used to answer by
+returning a pointer outside its mapping.
+
+### Measured
+
+`lib/libc/nls`, one translation unit, 0 ERROR on both sides, and the
+single analyser finding (`msgcat.c:253`, a pre-existing
+`unix.cstring.NullArg`) is the same one before and after.  ONESIDED over
+`lib` unmoved at 9.  Seven markers, each revert-verified and each revert
+checked not to be a no-op.  The file already had one marker, for the
+`TRY_WLOCK()` ownership bug; the two entries are merged, which is what
+`check_pbsd_marks.py` asks for when it catches a duplicate key — and it
+did.
+
+Rejecting hostile catalogues is only half of a change like this; the
+other half is not breaking every real one.  The tree's own `gencat(1)`
+was built and run:
+
+```
+  out.cat:  126 bytes, nsets=2 mhoff=24 mtoff=72   -> ACCEPT
+  big.cat: 15552 bytes, nsets=2 mhoff=24 mtoff=4200 -> ACCEPT
+```
+
+four messages and 348.  The layout `valid_msgcat()` assumes is the one
+`gencat()` writes — `__msg_hdr_offset` and `__msg_txt_offset` relative
+to the end of the catalogue header, `__index` a cumulative index into
+the single message-header table, `__offset` a cumulative byte offset
+into the single string pool — and that was read out of `gencat.c`
+rather than guessed.

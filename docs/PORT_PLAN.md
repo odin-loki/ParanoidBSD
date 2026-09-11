@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,666 | 9,056 |
+| 1 | `lib` | 2,827 | 640,887 | 9,057 |
 | 2 | `libexec` | 170 | 48,065 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,603** | **114,207** |
+| | **total** | **41,143** | **21,302,824** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -3714,13 +3714,14 @@ function; a file with two hundred of them is a project.
 
 ### 1.80 `lib/libc/nls`
 
-- [ ] **1.80.1** `msgcat.c` · 516L gen:1 · `TODO-PORT` · 6 fn
+- [ ] **1.80.1** `msgcat.c` · 616L gen:1 · `TODO-PORT` · 7 fn
   - [ ] 1.80.1.1 `catopen()` · `TODO-FN`
   - [ ] 1.80.1.2 `__catopen_l()` · `TODO-FN`
   - [ ] 1.80.1.3 `catgets()` · `TODO-FN`
   - [ ] 1.80.1.4 `catfree()` · `TODO-FN`
   - [ ] 1.80.1.5 `catclose()` · `TODO-FN`
-  - [ ] 1.80.1.6 `load_msgcat()` · `TODO-FN`
+  - [ ] 1.80.1.6 `valid_msgcat()` · `TODO-FN`
+  - [ ] 1.80.1.7 `load_msgcat()` · `TODO-FN`
 
 ### 1.81 `lib/libc/posix1e` · 9 module(s) under `pbsd/lib/libc/posix1e`
 
@@ -5415,7 +5416,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.108.90.2 `vasprintf()` · `TODO-FN`
 - [ ] **1.108.91** `vdprintf.c` · 71L · `TODO-PORT` · 1 fn
   - [ ] 1.108.91.1 `vdprintf()` · `TODO-FN`
-- [ ] **1.108.92** `vfprintf.c` · 1,090L · `TODO-PORT` · 8 fn
+- [ ] **1.108.92** `vfprintf.c` · 1,130L · `TODO-PORT` · 8 fn
   - [ ] 1.108.92.1 `grouping_init()` · `TODO-FN`
   - [ ] 1.108.92.2 `grouping_print()` · `TODO-FN`
   - [ ] 1.108.92.3 `__sprint()` · `TODO-FN`
@@ -5438,7 +5439,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.108.93.11 `__svfscanf()` · `TODO-FN`
   - [ ] 1.108.93.12 `__sccl()` · `TODO-FN`
   - [ ] 1.108.93.13 `parsefloat()` · `TODO-FN`
-- [ ] **1.108.94** `vfwprintf.c` · 1,145L · `TODO-PORT` · 11 fn
+- [ ] **1.108.94** `vfwprintf.c` · 1,185L · `TODO-PORT` · 11 fn
   - [ ] 1.108.94.1 `get_decpt()` · `TODO-FN`
   - [ ] 1.108.94.2 `get_thousep()` · `TODO-FN`
   - [ ] 1.108.94.3 `grouping_init()` · `TODO-FN`
@@ -5503,7 +5504,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.108.107.2 `wscanf_l()` · `TODO-FN`
 - [ ] **1.108.108** `wsetup.c` · 89L · `TODO-PORT` · 1 fn
   - [ ] 1.108.108.1 `__swsetup()` · `TODO-FN`
-- [ ] **1.108.109** `xprintf.c` · 685L · `TODO-PORT` · 15 fn
+- [ ] **1.108.109** `xprintf.c` · 726L · `TODO-PORT` · 15 fn
   - [ ] 1.108.109.1 `__printf_init()` · `TODO-FN`
   - [ ] 1.108.109.2 `__printf_flush()` · `TODO-FN`
   - [ ] 1.108.109.3 `__printf_puts()` · `TODO-FN`

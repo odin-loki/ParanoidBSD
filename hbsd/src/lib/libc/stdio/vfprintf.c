@@ -519,6 +519,19 @@ reswitch:	switch (ch) {
 			GETASTER (width);
 			if (width >= 0)
 				goto rflag;
+			/*
+			 * PBSD: the quotation above is the whole of the
+			 * standard's rewriting, and it is not available
+			 * for INT_MIN -- there is no positive field width
+			 * to fall back to, and `-width' on INT_MIN is
+			 * signed overflow.  No such width could be
+			 * honoured anyway, so say so rather than wrap.
+			 */
+			if (width == INT_MIN) {
+				ret = EOF;
+				errno = EOVERFLOW;
+				goto error;
+			}
 			width = -width;
 			/* FALLTHROUGH */
 		case '-':
@@ -537,6 +550,21 @@ reswitch:	switch (ch) {
 			}
 			prec = 0;
 			while (is_digit(ch)) {
+				/*
+				 * PBSD: the format string decides how many
+				 * digits there are, so `10 * prec' is the
+				 * caller's multiplication.  A precision
+				 * past INT_MAX cannot be honoured; wrapping
+				 * to a negative one silently means "no
+				 * precision given".
+				 */
+				if (prec > INT_MAX / 10 ||
+				    (prec == INT_MAX / 10 &&
+				     to_digit(ch) > INT_MAX % 10)) {
+					ret = EOF;
+					errno = EOVERFLOW;
+					goto error;
+				}
 				prec = 10 * prec + to_digit(ch);
 				ch = *fmt++;
 			}
@@ -553,6 +581,18 @@ reswitch:	switch (ch) {
 		case '5': case '6': case '7': case '8': case '9':
 			n = 0;
 			do {
+				/*
+				 * and the same for the width, and for the
+				 * argument index `n$' this shares its parse
+				 * with.
+				 */
+				if (n > INT_MAX / 10 ||
+				    (n == INT_MAX / 10 &&
+				     to_digit(ch) > INT_MAX % 10)) {
+					ret = EOF;
+					errno = EOVERFLOW;
+					goto error;
+				}
 				n = 10 * n + to_digit(ch);
 				ch = *fmt++;
 			} while (is_digit(ch));

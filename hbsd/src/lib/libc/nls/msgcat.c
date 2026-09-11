@@ -289,7 +289,8 @@ catgets(nl_catd catd, int set_id, int msg_id, const char *s)
 	struct _nls_cat_hdr *cat_hdr;
 	struct _nls_msg_hdr *msg_hdr;
 	struct _nls_set_hdr *set_hdr;
-	int i, l, r, u;
+	int32_t no;
+	int i, l, u;
 
 	if (catd == NULL || catd == NLERR) {
 		errno = EBADF;
@@ -305,10 +306,21 @@ catgets(nl_catd catd, int set_id, int msg_id, const char *s)
 	l = 0;
 	u = ntohl((u_int32_t)cat_hdr->__nsets) - 1;
 	while (l <= u) {
-		i = (l + u) / 2;
-		r = set_id - ntohl((u_int32_t)set_hdr[i].__setno);
+		/*
+		 * PBSD: `(l + u) / 2' overflows once u is large, and u is
+		 * one less than a count out of the file.  valid_msgcat()
+		 * now bounds that count by the mapping, but the midpoint
+		 * is written the way that does not need it to.
+		 */
+		i = l + (u - l) / 2;
+		/*
+		 * and `set_id - __setno' is a subtraction of two int32_t
+		 * -- one the caller's, one the file's -- where only the
+		 * sign is ever read.  There is nothing to subtract for.
+		 */
+		no = (int32_t)ntohl((u_int32_t)set_hdr[i].__setno);
 
-		if (r == 0) {
+		if (set_id == no) {
 			msg_hdr = (struct _nls_msg_hdr *)
 			    (void *)((char *)catd->__data +
 			    sizeof(struct _nls_cat_hdr) +
@@ -317,17 +329,18 @@ catgets(nl_catd catd, int set_id, int msg_id, const char *s)
 			l = ntohl((u_int32_t)set_hdr[i].__index);
 			u = l + ntohl((u_int32_t)set_hdr[i].__nmsgs) - 1;
 			while (l <= u) {
-				i = (l + u) / 2;
-				r = msg_id -
-				    ntohl((u_int32_t)msg_hdr[i].__msgno);
-				if (r == 0) {
+				/* and the same for the message search */
+				i = l + (u - l) / 2;
+				no = (int32_t)ntohl(
+				    (u_int32_t)msg_hdr[i].__msgno);
+				if (msg_id == no) {
 					return ((char *) catd->__data +
 					    sizeof(struct _nls_cat_hdr) +
 					    ntohl((u_int32_t)
 					    cat_hdr->__msg_txt_offset) +
 					    ntohl((u_int32_t)
 					    msg_hdr[i].__offset));
-				} else if (r < 0) {
+				} else if (msg_id < no) {
 					u = i - 1;
 				} else {
 					l = i + 1;
@@ -337,7 +350,7 @@ catgets(nl_catd catd, int set_id, int msg_id, const char *s)
 			/* not found */
 			goto notfound;
 
-		} else if (r < 0) {
+		} else if (set_id < no) {
 			u = i - 1;
 		} else {
 			l = i + 1;
@@ -394,6 +407,86 @@ catclose(nl_catd catd)
  * Internal support functions
  */
 
+/*
+ * PBSD: nothing in this file validated anything.  load_msgcat() checked
+ * the size against sizeof(u_int32_t) and the magic number, and then
+ * catgets() binary-searched with counts and offsets read straight out
+ * of the mapping -- `u = ntohl(cat_hdr->__nsets) - 1', `l =
+ * ntohl(set_hdr[i].__index)', `u = l + ntohl(set_hdr[i].__nmsgs) - 1'
+ * -- and returned
+ *
+ *	catd->__data + sizeof(struct _nls_cat_hdr) +
+ *	    ntohl(cat_hdr->__msg_txt_offset) + ntohl(msg_hdr[i].__offset)
+ *
+ * which its caller reads as a NUL-terminated string.  Every one of
+ * those numbers is a file-chosen int32_t.  catopen(3) finds the file
+ * through NLSPATH, so for a program that is not setuid the catalogue
+ * belongs to whoever runs it.
+ *
+ * The tables are small and this runs once per open, so the whole file
+ * is checked here and catgets() is allowed to trust it.  The property
+ * the caller actually needs from a message is not that __msglen agrees
+ * with anything -- it is that the returned pointer is inside the
+ * mapping and that a NUL follows it before the end, so that is what is
+ * checked, with no dependence on gencat(1)'s convention.
+ */
+static int
+valid_msgcat(const void *data, size_t size)
+{
+	const struct _nls_cat_hdr *cat;
+	const struct _nls_set_hdr *sets;
+	const struct _nls_msg_hdr *msgs;
+	const char *base, *text;
+	size_t after_hdr, maxmsgs, textspace;
+	int32_t nsets, mhoff, mtoff;
+	int32_t i, j, idx, nmsgs, off;
+
+	if (size < sizeof(*cat))
+		return (0);
+	base = data;
+	cat = data;
+	after_hdr = size - sizeof(*cat);
+
+	nsets = (int32_t)ntohl((u_int32_t)cat->__nsets);
+	mhoff = (int32_t)ntohl((u_int32_t)cat->__msg_hdr_offset);
+	mtoff = (int32_t)ntohl((u_int32_t)cat->__msg_txt_offset);
+	if (nsets < 0 || mhoff < 0 || mtoff < 0)
+		return (0);
+	if ((size_t)mhoff > after_hdr || (size_t)mtoff > after_hdr)
+		return (0);
+
+	/* The set table follows the header. */
+	if ((size_t)nsets > after_hdr / sizeof(*sets))
+		return (0);
+	sets = (const void *)(base + sizeof(*cat));
+
+	/* The message-header table starts __msg_hdr_offset past it. */
+	msgs = (const void *)(base + sizeof(*cat) + mhoff);
+	maxmsgs = (after_hdr - (size_t)mhoff) / sizeof(*msgs);
+
+	text = base + sizeof(*cat) + mtoff;
+	textspace = after_hdr - (size_t)mtoff;
+
+	for (i = 0; i < nsets; i++) {
+		idx = (int32_t)ntohl((u_int32_t)sets[i].__index);
+		nmsgs = (int32_t)ntohl((u_int32_t)sets[i].__nmsgs);
+		if (idx < 0 || nmsgs < 0)
+			return (0);
+		if ((size_t)idx > maxmsgs ||
+		    (size_t)nmsgs > maxmsgs - (size_t)idx)
+			return (0);
+		for (j = idx; j < idx + nmsgs; j++) {
+			off = (int32_t)ntohl((u_int32_t)msgs[j].__offset);
+			if (off < 0 || (size_t)off >= textspace)
+				return (0);
+			if (memchr(text + off, '\0',
+			    textspace - (size_t)off) == NULL)
+				return (0);
+		}
+	}
+	return (1);
+}
+
 static nl_catd
 load_msgcat(const char *path, const char *name, const char *lang)
 {
@@ -444,7 +537,7 @@ load_msgcat(const char *path, const char *name, const char *lang)
 	 * it to the memory.  Probably, this will not be a problem given
 	 * that catalog files are usually small.
 	 */
-	if (st.st_size > SIZE_T_MAX) {
+	if (st.st_size > SIZE_T_MAX || st.st_size > INT_MAX) {
 		_close(fd);
 		SAVEFAIL(name, lang, ENOENT);
 		NLRETERR(ENOENT);
@@ -464,6 +557,13 @@ load_msgcat(const char *path, const char *name, const char *lang)
 		munmap(data, (size_t)st.st_size);
 		SAVEFAIL(name, lang, ENOENT);
 		NLRETERR(ENOENT);
+	}
+
+	/* PBSD: and the rest of the header, which nothing else checks. */
+	if (!valid_msgcat(data, (size_t)st.st_size)) {
+		munmap(data, (size_t)st.st_size);
+		SAVEFAIL(name, lang, EINVAL);
+		NLRETERR(EINVAL);
 	}
 
 	copy_name = strdup(name);

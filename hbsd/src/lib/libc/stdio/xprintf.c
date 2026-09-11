@@ -36,6 +36,8 @@
 #include "namespace.h"
 #include <err.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -322,6 +324,21 @@ __v2printf(FILE *fp, const char *fmt0, unsigned pct, va_list ap)
 					continue;
 				}
 				while (*fmt != '\0' && is_digit(*fmt)) {
+					/*
+					 * PBSD: the format string decides
+					 * how many digits there are, so
+					 * `pi->prec *= 10' is the caller's
+					 * multiplication.  A precision past
+					 * INT_MAX cannot be honoured, and
+					 * wrapping to a negative one
+					 * silently means "none given".
+					 */
+					if (pi->prec > INT_MAX / 10 ||
+					    (pi->prec == INT_MAX / 10 &&
+					     to_digit(*fmt) > INT_MAX % 10)) {
+						errno = EOVERFLOW;
+						return (EOF);
+					}
 					pi->prec *= 10;
 					pi->prec += to_digit(*fmt);
 					fmt++;
@@ -361,6 +378,17 @@ __v2printf(FILE *fp, const char *fmt0, unsigned pct, va_list ap)
 			case '7': case '8': case '9':
 				n = 0;
 				while (*fmt != '\0' && is_digit(*fmt)) {
+					/*
+					 * and the same for the width, and for
+					 * the argument index `n$' this shares
+					 * its parse with.
+					 */
+					if (n > INT_MAX / 10 ||
+					    (n == INT_MAX / 10 &&
+					     to_digit(*fmt) > INT_MAX % 10)) {
+						errno = EOVERFLOW;
+						return (EOF);
+					}
 					n *= 10;
 					n += to_digit(*fmt);
 					fmt++;
@@ -531,6 +559,19 @@ __v2printf(FILE *fp, const char *fmt0, unsigned pct, va_list ap)
 			 *      -- ANSI X3J11
 			 * They don't exclude field widths read from args.
 			 */
+			/*
+			 * PBSD: the quotation above is the whole of the
+			 * standard's rewriting, and it is not available
+			 * for INT_MIN -- there is no positive field width
+			 * to fall back to, and `-pi->width' on INT_MIN is
+			 * signed overflow.  No such width could be
+			 * honoured anyway, so say so rather than wrap.
+			 */
+			if (pi->width == INT_MIN) {
+				__printf_flush(&io);
+				errno = EOVERFLOW;
+				return (EOF);
+			}
 			if (pi->width < 0) {
 				pi->left = 1;
 				pi->width = -pi->width;
