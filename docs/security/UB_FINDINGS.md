@@ -25812,3 +25812,47 @@ Of the other three:
   ternary over two literals.
 * `ath_rate/sample/sample.c:1015` — `rix0` is a rate index from the
   transmit descriptor's own rate series, internal to the rate control.
+
+## `iwx_ampdu_rx_start`: the one that looked worst, and is not
+
+This is the site in the whole list that reads most like a remote kernel
+write, so it is worth writing out in full:
+
+```c
+	tid = _IEEE80211_MASKSHIFT(le16toh(baparamset), IEEE80211_BAPS_TID);
+	sc->ni_rx_ba[tid].ba_winstart =
+	    _IEEE80211_MASKSHIFT(le16toh(baseqctl), IEEE80211_BASEQ_START);
+	sc->ni_rx_ba[tid].ba_winsize =
+	    _IEEE80211_MASKSHIFT(le16toh(baparamset), IEEE80211_BAPS_BUFSIZ);
+	sc->ni_rx_ba[tid].ba_timeout_val = batimeout;
+
+	if (sc->sc_rx_ba_sessions >= IWX_MAX_RX_BA_SESSIONS ||
+	    tid >= IWX_MAX_TID_COUNT)
+		return ENOSPC;
+```
+
+`baparamset` is a field of an **ADDBA request frame off the air**.
+Three writes through `ni_rx_ba[tid]` happen *before* the
+`tid >= IWX_MAX_TID_COUNT` test, and `IWX_MAX_TID_COUNT` is 8.
+
+It is in bounds, and the reason is that those are two different eights:
+
+* `IEEE80211_BAPS_TID` is `0x003c` shifted by 2 — a **four-bit** field,
+  so `tid` is 0..15 and nothing else.
+* `ni_rx_ba` is declared `struct iwx_rx_ba ni_rx_ba[WME_NUM_TID]`, and
+  `WME_NUM_TID` is **16**.
+
+So every `tid` the mask can produce indexes the array.
+`IWX_MAX_TID_COUNT` bounds what the *firmware* is asked to do — the
+number of aggregation queues — not the array, and the check sits after
+the stores because it is about the firmware, not about memory.
+
+Two different limits named after the same concept, one of them half the
+other, with the smaller one checked after the array is written: this is
+a false positive that a reader has to work for, and the work is the
+point of reading the list rather than counting it.
+
+`if_iwn.c:2119` `iwn_check_tx_ring()` is the ordinary case in the same
+family — `ring = &sc->txq[qid]` before any comparison, with `qid` the
+hardware queue id out of a firmware notification and `txq[]` sized
+`IWN5000_NTXQUEUES`.
