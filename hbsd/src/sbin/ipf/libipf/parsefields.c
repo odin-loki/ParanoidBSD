@@ -29,6 +29,10 @@ wordtab_t *parsefields(wordtab_t *table, char *arg)
 		num++;
 		if (fields == NULL) {
 			fields = malloc(2 * sizeof(*fields));
+			if (fields == NULL) {
+				warnx("memory allocation error at %d in %s in %s", __LINE__, __FUNCTION__, __FILE__);
+				abort();
+			}
 		} else {
 			fields = reallocarray(fields, num + 1, sizeof(*fields));
 			if (fields == NULL) {

@@ -358,14 +358,30 @@ do_osd_del(u_int type, struct osd *osd, u_int slot, int list_locked)
 		osd->osd_slots = NULL;
 		osd->osd_nslots = 0;
 	} else if (slot == osd->osd_nslots) {
+		void **nslots;
+
 		/* This was the last slot. */
-		osd->osd_slots = realloc(osd->osd_slots,
-		    sizeof(void *) * (i + 1), M_OSD, M_NOWAIT | M_ZERO);
 		/*
-		 * We always reallocate to smaller size, so we assume it will
-		 * always succeed.
+		 * PBSD: the old spelling stored the result unconditionally
+		 * under the comment "we always reallocate to smaller size,
+		 * so we assume it will always succeed".  realloc(9) does not
+		 * promise that: it returns the same block only while
+		 * size > (alloc >> REALLOC_FRACTION), and a shrink past half
+		 * the allocation falls through to malloc + bcopy + free,
+		 * which M_NOWAIT can fail.  The KASSERT that stood in for the
+		 * check compiles out without INVARIANTS, so a production
+		 * kernel stored the NULL and left osd_nslots non-zero -- and
+		 * osd_get() and osd_del() index osd_slots by it.
+		 *
+		 * realloc(9) has no size-zero special case, so a NULL return
+		 * always means the old block is still ours.  Keep it: the
+		 * array is only ever over-sized, never short, and osd_nslots
+		 * may safely shrink below it.
 		 */
-		KASSERT(osd->osd_slots != NULL, ("realloc() failed"));
+		nslots = realloc(osd->osd_slots,
+		    sizeof(void *) * (i + 1), M_OSD, M_NOWAIT | M_ZERO);
+		if (nslots != NULL)
+			osd->osd_slots = nslots;
 		osd->osd_nslots = i + 1;
 		OSD_DEBUG("Reducing slots array to %u (type=%u).",
 		    osd->osd_nslots, type);

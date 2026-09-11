@@ -624,9 +624,10 @@ ng_macfilter_constructor(node_p node)
     if (mfp == NULL)
 	return ENOMEM;
 
-    int error = macfilter_mactable_resize(mfp);
-    if (error)
-        return error;
+    if (macfilter_mactable_resize(mfp) != 0) {
+        free(mfp, M_NETGRAPH);
+        return ENOMEM;
+    }
 
     NG_NODE_SET_PRIVATE(node, mfp);
 
@@ -655,12 +656,28 @@ ng_macfilter_newhook(node_p node, hook_p hook, const char *hookname)
         }
 
         if (hookid >= mfp->mf_upper_cnt) {
+            hook_p *nupper;
+
             MACFILTER_DEBUG("upper cnt %d -> %d", mfp->mf_upper_cnt, hookid + 1);
 
-            mfp->mf_upper_cnt = hookid + 1;
-            mfp->mf_upper = realloc(mfp->mf_upper,
-                    sizeof(mfp->mf_upper[0])*mfp->mf_upper_cnt,
+            /*
+             * PBSD: through a temporary, checked, and the count is
+             * committed only once the array is that big.  This is a
+             * GROW with M_NOWAIT, and `mf_upper = realloc(mf_upper,...)'
+             * both lost the old array and left NULL in the only pointer
+             * to it -- which the very next line INDEXES.  Connecting a
+             * netgraph hook under memory pressure was a kernel NULL
+             * dereference.  Setting mf_upper_cnt before the call was
+             * the other half: a failure left the node claiming an array
+             * bigger than the one it has.
+             */
+            nupper = realloc(mfp->mf_upper,
+                    sizeof(mfp->mf_upper[0]) * (hookid + 1),
                     M_NETGRAPH, M_NOWAIT | M_ZERO);
+            if (nupper == NULL)
+                return (ENOMEM);
+            mfp->mf_upper = nupper;
+            mfp->mf_upper_cnt = hookid + 1;
         }
 
         mfp->mf_upper[hookid] = hook;
@@ -838,15 +855,28 @@ ng_macfilter_disconnect(hook_p hook)
         }
 
         if (hookid == mfp->mf_upper_cnt - 1) {
+            hook_p *nupper;
+
             /* Reduce the size of the array when the last element was removed */
             for (--hookid; hookid >= 0 && mfp->mf_upper[hookid] == NULL; hookid--)
                 ;
 
             MACFILTER_DEBUG("upper cnt %d -> %d", mfp->mf_upper_cnt, hookid + 1);
-            mfp->mf_upper_cnt = hookid + 1;
-            mfp->mf_upper = realloc(mfp->mf_upper,
-                    sizeof(mfp->mf_upper[0])*mfp->mf_upper_cnt,
+            /*
+             * PBSD: a shrink, so realloc(9) usually hands back the same
+             * block -- but a large enough one does malloc, copy and
+             * free, which M_NOWAIT can fail, and storing the NULL would
+             * take the node's entire hook array with it.  realloc(9)
+             * has no size-zero special case, so a NULL return always
+             * means the old block is still ours; keeping it costs only
+             * the slack.
+             */
+            nupper = realloc(mfp->mf_upper,
+                    sizeof(mfp->mf_upper[0]) * (hookid + 1),
                     M_NETGRAPH, M_NOWAIT | M_ZERO);
+            if (nupper != NULL)
+                mfp->mf_upper = nupper;
+            mfp->mf_upper_cnt = hookid + 1;
         }
     }
 

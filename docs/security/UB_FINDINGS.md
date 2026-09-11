@@ -24117,3 +24117,209 @@ What is **not** claimed: this container cannot reproduce CI's
 environment, so the fix is verified as *"the flag is now unconditional
 and the header resolves without bmake"* rather than as *"CI is green"*.
 The next run says which.
+
+---
+
+## The realloc rule, read through bin, sbin and sys
+
+`realloc_self.py` was written after the sixth `p = realloc(p, n)` in
+`lib/`.  This is the rest of the tree it can gate on: `bin`, `sbin` and
+`sys` read site by site.  Of the twenty-one sites in them, eleven were
+the defect and are fixed, ten are not and are written down with the
+reason; reading them turned up three further defects sitting beside a
+reported site, which are fixed here too.  Two more in `lib/` close out
+that scope.  `usr.bin` (74) and `usr.sbin` (47) are still unread and
+still ungated.
+
+Reading them settled the kernel side of the contract first, because
+nearly every site below depends on it.  From `sys/kern/kern_malloc.c`:
+
+```c
+	/* realloc(NULL, ...) is equivalent to malloc(...) */
+	...
+	if (size <= alloc &&
+	    (size > (alloc >> REALLOC_FRACTION) || alloc == MINALLOCSIZE)) {
+		...
+		return (addr);		/* same block, in place */
+	}
+	if ((newaddr = malloc(size, mtp, flags)) == NULL)
+		return (NULL);		/* OLD BLOCK STILL ALLOCATED */
+	bcopy(addr, newaddr, min(size, alloc));
+	free(addr, mtp);
+```
+
+Three things follow, and each of them is load-bearing below.  There is
+**no size-zero special case**, so a NULL return always means failure and
+never "your block was freed".  A NULL return therefore always leaves the
+old block intact, so *keeping the old pointer is correct* — it is never
+a use-after-free.  And a **shrink can fail**: the in-place return only
+holds while `size > (alloc >> REALLOC_FRACTION)`, so shrinking past half
+the allocation goes through `malloc` + `bcopy` + `free`, which `M_NOWAIT`
+can refuse.
+
+### The kernel
+
+**`sys/netgraph/ng_macfilter.c:661`, `ng_macfilter_newhook()`** — an
+unchecked `M_NOWAIT` **grow** whose result the next line indexes:
+
+```c
+    mfp->mf_upper_cnt = hookid + 1;
+    mfp->mf_upper = realloc(mfp->mf_upper,
+            sizeof(mfp->mf_upper[0])*mfp->mf_upper_cnt,
+            M_NETGRAPH, M_NOWAIT | M_ZERO);
+    }
+
+    mfp->mf_upper[hookid] = hook;
+```
+
+Connecting a netgraph hook under memory pressure was a kernel NULL
+dereference.  Setting `mf_upper_cnt` *before* the call was the other
+half: had the store been checked, a failure would still have left the
+node claiming an array bigger than the one it has.  Both are fixed;
+the count is committed only once the array is that big.
+
+**`ng_macfilter.c:847`, the matching disconnect** is a shrink, which is
+exactly the case the paragraph above is about — fixed to keep the old
+array, which costs only the slack.
+
+**`ng_macfilter.c:627`, `ng_macfilter_constructor()`** was found by the
+analyser on the way past, not by the rule: the softc leaked whenever
+the first `macfilter_mactable_resize()` failed, and the `-1` that
+function returns was handed back to netgraph as an `errno`.
+
+**`sys/kern/kern_osd.c:362`, `osd_del()`** — the interesting one,
+because the bug is in a comment:
+
+```c
+	osd->osd_slots = realloc(osd->osd_slots,
+	    sizeof(void *) * (i + 1), M_OSD, M_NOWAIT | M_ZERO);
+	/*
+	 * We always reallocate to smaller size, so we assume it will
+	 * always succeed.
+	 */
+	KASSERT(osd->osd_slots != NULL, ("realloc() failed"));
+	osd->osd_nslots = i + 1;
+```
+
+The assumption is false, per `REALLOC_FRACTION` above, and the `KASSERT`
+that stood in for a check compiles out without `INVARIANTS`.  On a
+production kernel the NULL is stored while `osd_nslots` stays non-zero —
+and `osd_get()` and `osd_del()` index `osd_slots` by it.
+
+**`sys/crypto/via/padlock_hash.c:179`** and **`sys/netinet/in_fib_dxr.c:485,
+:620`** are the plain shape: the size committed before the allocation,
+the pointer destroyed by the failure report.  `padlock`'s is the sharpest
+statement of the leak — `padlock_sha_free()` goes on to
+`free(ctx->psc_buf)`, which by then is the NULL.
+
+### Userland
+
+**`sbin/ipfw/ipfw2.c:3336`, `pack_object()`** is the kernel shape
+transplanted:
+
+```c
+	if (tstate->count + 1 > tstate->size) {
+		tstate->size += 4;
+		tstate->idx = realloc(tstate->idx, ...);
+		if (tstate->idx == NULL)
+			return (0);
+	}
+```
+
+The check is there, and it does not help.  A failure leaves
+`tstate->count` naming entries in a NULL table, so the *next*
+`pack_object()` walks `tstate->idx[i]` from NULL — and because
+`tstate->size` was already bumped, the growth test no longer fires, so
+it never retries the allocation either.
+
+**`sbin/ggate/ggatel/ggatel.c:143`** is the one whose blast radius is
+widest.  On failure it stored the NULL and set `error = ENOMEM`, but
+`bsize` still named the old, now-leaked buffer:
+
+```c
+	if ((size_t)ggio.gctl_length > bsize) {
+		ggio.gctl_data = realloc(ggio.gctl_data, ggio.gctl_length);
+		if (ggio.gctl_data != NULL)
+			bsize = ggio.gctl_length;
+		else
+			error = ENOMEM;
+	}
+```
+
+so `gctl_length > bsize` was false for every *smaller* request that
+followed and the daemon `pread(2)`'d into NULL from then on.  One
+transient ENOMEM broke the export permanently.  The initial
+`ggio.gctl_data = malloc(bsize)` was unchecked as well, with the same
+effect from the first request.
+
+**`sbin/decryptcore/decryptcore.c:96`** matters for what leaks rather
+than how much: `kdk = realloc(kdk, kdksize)` made the `free(kdk)` at
+`failed:` a no-op, so the kernel dump key material already read out of
+the file stayed on the heap for the life of the process.
+
+**`sbin/ipf/libipf/parsefields.c:31`** — the rule flagged the
+`reallocarray` in one arm of an `if`, which aborts on failure and is
+fine.  The `malloc` in the *other* arm of the same `if` was unchecked,
+two lines above a store through it.
+
+**`bin/sh/histedit.c:592`, `add_match()`** is the one where the rule
+pointed at a **false positive** and the reading found a real bug beside
+it.  The `matches = reallocarray(matches, ...)` is benign: it assigns to
+a by-value *parameter*, and every caller keeps its own pointer and tests
+the NULL return, so `realloc(3)`'s intact old block still has a name.
+The line above it is not:
+
+```c
+	if (match_copy == NULL)
+		return (NULL);
+	matches[i] = match_copy;
+```
+
+with every caller passing `++i`.  A failed `strdup` returns NULL with
+`i` already counting a slot nothing was stored in — and `sh_matches()`'s
+`out:` path `qsort_s`es `matches[1..i]`, so the comparator dereferences
+whatever was in that slot.  The index is now incremented inside
+`add_match()`, after the copy is known good.
+
+### lib
+
+**`lib/libgssapi/gss_buffer_set.c:80`** — a failed grow left
+`set->elements` NULL with `set->count` still non-zero, and
+`gss_release_buffer_set()` walks `elements[0..count-1]`.
+
+**`lib/libpmcstat/libpmcstat_image.c:156`** — an unchecked **shrink**
+whose result is `qsort`ed on the very next statement, over a non-zero
+`pi_symcount`.
+
+### The wrapper, and a correction
+
+`sys/kern/subr_stats.c` has `stats_realloc()`, which is `realloc`
+underneath.  The rule cannot see through it — `\brealloc` does not even
+match inside `stats_realloc` — so its four callers were read by hand.
+
+They are all correct, and an earlier note in this tree said otherwise;
+this supersedes it.  `:1200` assigns to a different name.  `:1290` and
+`:1510` assign to a **local copy** and write back to the owner
+(`tpl_mb->voi_meta`, `*sbpp`) only on success, with every later use
+behind the `if (!error)`.  `:3904` is inside `#ifdef _KERNEL` and passes
+`M_WAITOK` without `M_NOWAIT`, which `realloc(9)` cannot fail.
+
+Being clean is the point worth recording.  A wrapper's contract is not
+knowable from its name, so the only way to know either way is to open
+it — and that is as true of the ones that turn out fine as of the ones
+that do not.  The reasons are in `EXPECTED` under
+`sys/kern/subr_stats.c:395` so the next reader need not derive them
+again.
+
+### What is not claimed
+
+Ten sites in these scopes are reported and **not** defects, each written
+down in `EXPECTED` with why — almost all of them "the failure path calls
+something `__dead2` on the next line", which is a real answer and not a
+shrug.  `bin`, `sbin` and `sys` now gate alongside `lib` and `libexec`.
+
+All eleven touched files were re-analysed and compile clean, and the
+findings each reported before and after are unchanged apart from the
+`ng_macfilter` softc leak, which is gone.  This is the analyser and a
+textual rule, not a proof: nothing here says these files have no other
+defects.

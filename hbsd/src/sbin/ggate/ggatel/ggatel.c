@@ -90,6 +90,7 @@ static void
 g_gatel_serve(int fd)
 {
 	struct g_gate_ctl_io ggio;
+	void *newdata;
 	size_t bsize;
 
 	if (g_gate_verbose == 0) {
@@ -102,7 +103,10 @@ g_gatel_serve(int fd)
 	ggio.gctl_version = G_GATE_VERSION;
 	ggio.gctl_unit = unit;
 	bsize = sectorsize;
+	/* PBSD: was unchecked; a NULL here breaks every request that follows. */
 	ggio.gctl_data = malloc(bsize);
+	if (ggio.gctl_data == NULL)
+		g_gate_xlog("Cannot allocate %zu bytes.", bsize);
 	for (;;) {
 		int error;
 once_again:
@@ -123,9 +127,15 @@ once_again:
 			/* Buffer too small. */
 			assert(ggio.gctl_cmd == BIO_DELETE ||
 			    ggio.gctl_cmd == BIO_WRITE);
-			ggio.gctl_data = realloc(ggio.gctl_data,
-			    ggio.gctl_length);
-			if (ggio.gctl_data != NULL) {
+			/*
+			 * PBSD: through a temporary.  realloc(9)'s userland
+			 * contract leaves the old block intact on failure,
+			 * and storing the NULL over the only pointer to it
+			 * leaked the buffer on the way to g_gate_xlog().
+			 */
+			newdata = realloc(ggio.gctl_data, ggio.gctl_length);
+			if (newdata != NULL) {
+				ggio.gctl_data = newdata;
 				bsize = ggio.gctl_length;
 				goto once_again;
 			}
@@ -140,11 +150,22 @@ once_again:
 		switch (ggio.gctl_cmd) {
 		case BIO_READ:
 			if ((size_t)ggio.gctl_length > bsize) {
-				ggio.gctl_data = realloc(ggio.gctl_data,
+				/*
+				 * PBSD: as above, and here it mattered.  The
+				 * old spelling stored the NULL and carried on
+				 * round the loop with bsize still naming the
+				 * leaked buffer, so `gctl_length > bsize' was
+				 * false for every smaller request that
+				 * followed and the daemon pread(2)'d into
+				 * NULL from then on.  One transient ENOMEM
+				 * broke the export permanently.
+				 */
+				newdata = realloc(ggio.gctl_data,
 				    ggio.gctl_length);
-				if (ggio.gctl_data != NULL)
+				if (newdata != NULL) {
+					ggio.gctl_data = newdata;
 					bsize = ggio.gctl_length;
-				else
+				} else
 					error = ENOMEM;
 			}
 			if (error == 0) {

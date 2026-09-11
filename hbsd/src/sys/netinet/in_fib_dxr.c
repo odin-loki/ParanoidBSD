@@ -472,24 +472,34 @@ chunk_ref(struct dxr_aux *da, uint32_t chunk)
 	LIST_INSERT_HEAD(&da->chunk_hashtbl[hash & CHUNK_HASH_MASK], cdp,
 	    cd_hash_le);
 	if (da->rtbl_top >= da->rtbl_size) {
+		void *nrange;
+
 		if (da->rtbl_top >= BASE_MAX) {
 			FIB_PRINTF(LOG_ERR, da->fd,
 			    "structural limit exceeded at %d "
 			    "range table elements", da->rtbl_top);
 			return (1);
 		}
-		da->rtbl_size += RTBL_SIZE_INCR;
 		i = (BASE_MAX - da->rtbl_top) * LOG_DEBUG / BASE_MAX;
 		FIB_PRINTF(i, da->fd, "range table at %d%% structural limit",
 		    da->rtbl_top * 100 / BASE_MAX);
-		da->range_tbl = realloc(da->range_tbl,
-		    sizeof(*da->range_tbl) * da->rtbl_size + FRAGS_PREF_SHORT,
-		    M_DXRAUX, M_NOWAIT);
-		if (da->range_tbl == NULL) {
+		/*
+		 * PBSD: through a temporary, and rtbl_size is committed only
+		 * once the table is that big.  The old spelling put NULL in
+		 * the only pointer to the range table before reporting the
+		 * failure, so the table leaked for the life of the FIB and
+		 * rtbl_size claimed a size that was never allocated.
+		 */
+		nrange = realloc(da->range_tbl,
+		    sizeof(*da->range_tbl) * (da->rtbl_size + RTBL_SIZE_INCR) +
+		    FRAGS_PREF_SHORT, M_DXRAUX, M_NOWAIT);
+		if (nrange == NULL) {
 			FIB_PRINTF(LOG_NOTICE, da->fd,
 			    "Unable to allocate DXR range table");
 			return (1);
 		}
+		da->range_tbl = nrange;
+		da->rtbl_size += RTBL_SIZE_INCR;
 	}
 
 	return (0);
@@ -616,14 +626,19 @@ trie_ref(struct dxr_aux *da, uint32_t index)
 	    &da->direct_tbl[index << dxr_x], sizeof(*da->x_tbl) << dxr_x);
 	da->trietbl[index] = tp;
 	if (da->all_trie_cnt >= da->xtbl_size >> dxr_x) {
-		da->xtbl_size += XTBL_SIZE_INCR;
-		da->x_tbl = realloc(da->x_tbl,
-		    sizeof(*da->x_tbl) * da->xtbl_size, M_DXRAUX, M_NOWAIT);
-		if (da->x_tbl == NULL) {
+		struct direct_entry *nx;
+
+		/* PBSD: as above -- the extension table, same shape. */
+		nx = realloc(da->x_tbl,
+		    sizeof(*da->x_tbl) * (da->xtbl_size + XTBL_SIZE_INCR),
+		    M_DXRAUX, M_NOWAIT);
+		if (nx == NULL) {
 			FIB_PRINTF(LOG_NOTICE, da->fd,
 			    "Unable to allocate DXR extension table");
 			return (-1);
 		}
+		da->x_tbl = nx;
+		da->xtbl_size += XTBL_SIZE_INCR;
 	}
 	return(tp->td_index);
 }

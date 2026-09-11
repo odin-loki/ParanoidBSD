@@ -76,7 +76,7 @@ wait_for_process(pid_t pid)
 static struct kerneldumpkey *
 read_key(int kfd)
 {
-	struct kerneldumpkey *kdk;
+	struct kerneldumpkey *kdk, *nkdk;
 	ssize_t size;
 	size_t kdksize;
 
@@ -93,11 +93,19 @@ read_key(int kfd)
 	if (size == (ssize_t)kdksize) {
 		kdk->kdk_encryptedkeysize = dtoh32(kdk->kdk_encryptedkeysize);
 		kdksize += (size_t)kdk->kdk_encryptedkeysize;
-		kdk = realloc(kdk, kdksize);
-		if (kdk == NULL) {
+		/*
+		 * PBSD: through a temporary.  `kdk = realloc(kdk, ...)' put
+		 * NULL in the only pointer to the block on failure, so the
+		 * free(kdk) at `failed' freed nothing and the key material
+		 * already read out of the file stayed on the heap for the
+		 * life of the process.
+		 */
+		nkdk = realloc(kdk, kdksize);
+		if (nkdk == NULL) {
 			pjdlog_errno(LOG_ERR, "Unable to reallocate kernel dump key");
 			goto failed;
 		}
+		kdk = nkdk;
 		size += read(kfd, &kdk->kdk_encryptedkey,
 		    kdk->kdk_encryptedkeysize);
 	}

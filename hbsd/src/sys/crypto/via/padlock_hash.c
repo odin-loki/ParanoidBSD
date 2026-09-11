@@ -175,11 +175,23 @@ padlock_sha_update(void *vctx, const void *buf, u_int bufsize)
 
 	ctx = vctx;
 	if (ctx->psc_size - ctx->psc_offset < bufsize) {
-		ctx->psc_size = MAX(ctx->psc_size * 2, ctx->psc_size + bufsize);
-		ctx->psc_buf = realloc(ctx->psc_buf, ctx->psc_size, M_PADLOCK,
-		    M_NOWAIT);
-		if(ctx->psc_buf == NULL)
+		uint8_t *nbuf;
+		int nsize;
+
+		/*
+		 * PBSD: through a temporary, and the size is committed only
+		 * once the buffer is that big.  The old spelling destroyed
+		 * the only pointer to the buffer on failure, so the ENOMEM
+		 * below left it leaked -- padlock_sha_free() goes on to
+		 * free(ctx->psc_buf), which by then is NULL -- and left
+		 * psc_size claiming a buffer that was never allocated.
+		 */
+		nsize = MAX(ctx->psc_size * 2, ctx->psc_size + bufsize);
+		nbuf = realloc(ctx->psc_buf, nsize, M_PADLOCK, M_NOWAIT);
+		if (nbuf == NULL)
 			return (ENOMEM);
+		ctx->psc_buf = nbuf;
+		ctx->psc_size = nsize;
 	}
 	bcopy(buf, ctx->psc_buf + ctx->psc_offset, bufsize);
 	ctx->psc_offset += bufsize;

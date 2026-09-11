@@ -64,6 +64,7 @@ OM_uint32
 gss_add_buffer_set_member(OM_uint32 * minor_status,
     const gss_buffer_t member_buffer, gss_buffer_set_t *buffer_set)
 {
+	gss_buffer_desc *nelements;
 	gss_buffer_set_t set;
 	gss_buffer_t p;
 	OM_uint32 ret;
@@ -77,12 +78,17 @@ gss_add_buffer_set_member(OM_uint32 * minor_status,
 	}
 
 	set = *buffer_set;
-	set->elements = reallocarray(set->elements, set->count + 1,
+	/*
+	 * Keep the old array on failure: leaving set->elements NULL with
+	 * set->count non-zero makes gss_release_buffer_set() walk it.
+	 */
+	nelements = reallocarray(set->elements, set->count + 1,
 	    sizeof(set->elements[0]));
-	if (set->elements == NULL) {
+	if (nelements == NULL) {
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
+	set->elements = nelements;
 
 	p = &set->elements[set->count];
 

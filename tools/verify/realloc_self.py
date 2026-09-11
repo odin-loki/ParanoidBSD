@@ -34,7 +34,9 @@ WHAT THIS REPORTS
 
 One rule, and it is textual on purpose: an assignment whose target is
 spelled exactly the same as realloc()'s first argument, after whitespace
-is normalised.  `p = realloc(p, n)', `*iov = realloc(*iov, n)',
+is normalised.  reallocarray(3) counts: same contract, same NULL return,
+same old block left behind, and the tree has sixty-four assignments of
+it.  `p = realloc(p, n)', `*iov = realloc(*iov, n)',
 `s->buf = realloc(s->buf, n)', and the same three inside an `if ((...) ==
 NULL)'.  Nothing else.
 
@@ -57,6 +59,20 @@ the analyser, which reports it, and not for a grep.
 
 contrib/.  Third-party trees carry their own conventions and their own
 maintainers.
+
+A PROJECT-LOCAL WRAPPER, WHICH IS THIS RULE'S KNOWN BLIND SPOT.
+subr_stats.c's stats_realloc() is realloc underneath, so
+`sb = stats_realloc(sb, ...)' would be the same defect one level up --
+and this rule cannot see it, because a wrapper's contract is not
+knowable from its name.  `\brealloc' does not even match inside
+`stats_realloc', so the four callers had to be read by hand.  They are
+all correct, for three different reasons, and the reasons are written
+down under sys/kern/subr_stats.c:395 in EXPECTED so the next reader
+does not have to derive them again.  Being correct is the point worth
+making here: the rule found a shape and the shape was clean, which is
+exactly as informative as finding a shape that is not, and neither is
+knowable without opening the wrapper.  A wrapper nobody opens stays
+invisible either way.
 
 A site being reported is not by itself a defect: a program that exits on
 allocation failure loses nothing by losing the block.  That is what the
@@ -149,7 +165,7 @@ def _norm(s: str) -> str:
 def scan(path: Path):
     raw = path.read_text(errors="replace")
     text = _strip(raw)
-    for m in re.finditer(r"\brealloc\s*\(", text):
+    for m in re.finditer(r"\brealloc(?:array)?\s*\(", text):
         args = _args(text, text.index("(", m.start()))
         if not args or len(args) < 2:
             continue                 # one argument: not realloc's shape
@@ -213,6 +229,46 @@ EXPECTED: dict[str, str] = {
         "inside `#ifdef notdef'. The lint reads text and does not run "
         "the preprocessor, which is why this is written down rather "
         "than fixed.",
+    # bin/, sbin/ and sys/ read through. The ones that were NOT left
+    # alone are in docs/security/UB_FINDINGS.md.
+    "bin/pax/options.c:747":
+        "the -I option list. The failure path paxwarn()s and exit(1)s "
+        "on the next line, so the lost block outlives nothing.",
+    "bin/sh/memalloc.c:79":
+        "ckrealloc() calls error(\"Out of space\"), which is __dead2 in "
+        "sh's error.h -- it longjmps to the top level and never "
+        "returns the NULL. The caller's own pointer is untouched, and "
+        "realloc(3) left the old block intact.",
+    "sbin/camcontrol/camcontrol.c:8997":
+        "warns, sets retval and goes straight to bailout, which calls "
+        "freebusdevlist() -- free(NULL) on the slot, nothing walks "
+        "periph_matches by the already-incremented num_periphs, and "
+        "the process exits. The lost block outlives nothing.",
+    "sbin/ccdconfig/ccdconfig.c:315":
+        "warnx() and return (1) on the next line; the caller exits.",
+    "sbin/ipf/ipfstat/ipfstat.c:1391":
+        "perror() and exit(-1) on the next line.",
+    "sbin/ipf/libipf/parsefields.c:37":
+        "abort() on the next line. (The malloc() in the sibling arm "
+        "of the same if WAS unchecked and is now checked the same "
+        "way -- see UB_FINDINGS.md.)",
+    "sbin/mount/mount.c:532":
+        "append_arg() calls xo_errx(1, ...), which is __dead2.",
+    "sbin/rcorder/ealloc.c:102":
+        "erealloc() calls enomem(), whose whole body is "
+        "errx(2, ...) -- __dead2, so the NULL is never returned.",
+    "sbin/savecore/savecore.c:1364":
+        "logmsg() then exit(EXIT_FAILURE) on the next line.",
+    "sys/kern/subr_stats.c:395":
+        "stats_realloc() is a WRAPPER whose contract is realloc's own: "
+        "it returns the NULL, and its four callers handle it. :1200 "
+        "assigns to a different name; :1290 and :1510 assign to a "
+        "LOCAL copy and write back to the owner (tpl_mb->voi_meta, "
+        "*sbpp) only on success, with every later use behind the "
+        "error check; :3904 is inside #ifdef _KERNEL and passes "
+        "M_WAITOK without M_NOWAIT, which realloc(9) cannot fail. "
+        "The rule cannot see through a project-local wrapper, which "
+        "is why the callers are named here rather than counted.",
     "lib/libprocstat/libprocstat.c:1844":
         "getargv() sets `argv = av->argv' on the way in and "
         "`av->argv = argv' after each successful grow, so av->argv "

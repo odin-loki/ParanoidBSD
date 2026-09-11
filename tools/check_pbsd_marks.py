@@ -4031,13 +4031,28 @@ FIXES = {
         "caller's limit never trips and a repeated address parameter "
         "leaks per repeat",
     ),
-    "hbsd/src/sys/netinet/in_fib_dxr.c": (
-        "\t\tda->updates_low = DIRECT_TBL_SIZE - 1;\n\t\tda->updates_high = 0;",
-        "malloc(sizeof(*dxr->aux), M_DXRAUX, M_NOWAIT);",
-        "dxr_build: the aux struct was allocated without M_ZERO and the "
-        "init block named neither updates_low nor updates_high, which "
-        "index the chunk walk and the updates_mask bzero",
-    ),
+    "hbsd/src/sys/netinet/in_fib_dxr.c": [
+        (
+            "\t\tda->updates_low = DIRECT_TBL_SIZE - 1;\n\t\tda->updates_high = 0;",
+            "malloc(sizeof(*dxr->aux), M_DXRAUX, M_NOWAIT);",
+            "dxr_build: the aux struct was allocated without M_ZERO and "
+            "the init block named neither updates_low nor updates_high, "
+            "which index the chunk walk and the updates_mask bzero",
+        ),
+        (
+            "\t\tnrange = realloc(da->range_tbl,",
+            "\t\tda->rtbl_size += RTBL_SIZE_INCR;\n\t\ti =",
+            "chunk_ref: `range_tbl = realloc(range_tbl, ...)' with "
+            "rtbl_size committed first -- a failure leaked the range "
+            "table for the life of the FIB and left rtbl_size claiming "
+            "a size never allocated",
+        ),
+        (
+            "\t\tnx = realloc(da->x_tbl,",
+            "\t\tda->xtbl_size += XTBL_SIZE_INCR;\n\t\tda->x_tbl = realloc",
+            "trie_ref: the extension table, the same shape as chunk_ref",
+        ),
+    ],
 
     "hbsd/src/sys/net/if_bridge.c": (
         "\t\t\tif_inc_counter(ifp, IFCOUNTER_IERRORS, 1);\n\t\t\tm_freem(m);",
@@ -5525,6 +5540,14 @@ FIXES = {
             "ipfw_get_tracked_ifaces: the same unfloored kernel-supplied "
             "size, four hundred lines further down the same file",
         ),
+        (
+            "\t\tnidx = realloc(tstate->idx, (tstate->size + 4) *",
+            "\t\ttstate->size += 4;\n\t\ttstate->idx = realloc(tstate->idx",
+            "pack_object: `idx = realloc(idx, ...)' with tstate->size "
+            "already bumped -- a failure left count naming entries in a "
+            "NULL table AND stopped the growth test from ever firing "
+            "again, so the next call indexed NULL",
+        ),
     ],
 
     "hbsd/src/sbin/ipfw/tables.c": (
@@ -5535,6 +5558,116 @@ FIXES = {
         "zero and table_fill_objheader() wrote an ipfw_obj_header through "
         "a zero-sized allocation",
     ),
+
+    "hbsd/src/bin/sh/histedit.c": (
+        "\tmatches[++*i] = match_copy;",
+        "\tmatches[i] = match_copy;",
+        "add_match: the caller passed ++i, so a failed strdup returned "
+        "NULL with i already counting a slot nothing had been stored "
+        "in -- and sh_matches()' out: path qsort_s()es matches[1..i]. "
+        "The index is now bumped inside, after the copy is known good, "
+        "and the reallocarray goes through a temporary",
+    ),
+
+    "hbsd/src/lib/libgssapi/gss_buffer_set.c": (
+        "\tnelements = reallocarray(set->elements, set->count + 1,",
+        "\tset->elements = reallocarray(set->elements, set->count + 1,",
+        "gss_add_buffer_set_member: a failed grow left set->elements "
+        "NULL with set->count still non-zero, and "
+        "gss_release_buffer_set() walks elements[0..count-1]",
+    ),
+
+    "hbsd/src/lib/libpmcstat/libpmcstat_image.c": (
+        "\t\tnsymbols = reallocarray(image->pi_symbols,",
+        "\t\timage->pi_symbols = reallocarray(image->pi_symbols,",
+        "pmcstat_image_add_symbols: an unchecked SHRINK whose result is "
+        "qsort()ed on the next line -- realloc(3) may still malloc and "
+        "copy, so it can fail, and pi_symcount is non-zero",
+    ),
+
+    "hbsd/src/sys/crypto/via/padlock_hash.c": (
+        "\t\tnbuf = realloc(ctx->psc_buf, nsize, M_PADLOCK, M_NOWAIT);",
+        "\t\tctx->psc_size = MAX(ctx->psc_size * 2, ctx->psc_size + bufsize);",
+        "padlock_sha_update: `psc_buf = realloc(psc_buf, ...)' under "
+        "M_NOWAIT with psc_size committed first -- the ENOMEM return "
+        "left the buffer leaked (padlock_sha_free() then free()s NULL) "
+        "and psc_size claiming a buffer never allocated",
+    ),
+
+    "hbsd/src/sys/netgraph/ng_macfilter.c": [
+        (
+            "    if (macfilter_mactable_resize(mfp) != 0) {\n        free(mfp, M_NETGRAPH);",
+            "    int error = macfilter_mactable_resize(mfp);",
+            "ng_macfilter_constructor: the softc leaked whenever the "
+            "first mactable_resize() failed, and the -1 it returns was "
+            "passed back to netgraph as an errno",
+        ),
+        (
+            "            nupper = realloc(mfp->mf_upper,\n                    sizeof(mfp->mf_upper[0]) * (hookid + 1),",
+            "            mfp->mf_upper_cnt = hookid + 1;\n            mfp->mf_upper = realloc(mfp->mf_upper,",
+            "ng_macfilter_newhook: an unchecked M_NOWAIT GROW whose "
+            "result the NEXT LINE indexes -- connecting a hook under "
+            "memory pressure was a kernel NULL dereference",
+        ),
+        (
+            "            if (nupper != NULL)\n                mfp->mf_upper = nupper;",
+            None,
+            "ng_macfilter_disconnect: the matching shrink; realloc(9) "
+            "still malloc+copy+frees a large enough shrink, and storing "
+            "the NULL would take the node's whole hook array with it",
+        ),
+    ],
+
+    "hbsd/src/sys/kern/kern_osd.c": (
+        "\t\tnslots = realloc(osd->osd_slots,",
+        "\t\tosd->osd_slots = realloc(osd->osd_slots,",
+        "osd_del: the store rested on the comment \"we always reallocate "
+        "to smaller size, so we assume it will always succeed\" and a "
+        "KASSERT that compiles out without INVARIANTS. realloc(9) "
+        "returns the same block only while size > (alloc >> "
+        "REALLOC_FRACTION); a shrink past half falls through to malloc "
+        "+ bcopy + free, which M_NOWAIT can fail",
+    ),
+
+    "hbsd/src/sbin/decryptcore/decryptcore.c": (
+        "\t\tnkdk = realloc(kdk, kdksize);",
+        "\t\tkdk = realloc(kdk, kdksize);",
+        "read_key: `kdk = realloc(kdk, ...)' made the free(kdk) at "
+        "failed: a no-op, so the kernel dump key material already read "
+        "out of the file stayed on the heap for the life of the process",
+    ),
+
+    "hbsd/src/sbin/ipf/libipf/parsefields.c": (
+        "\t\t\tfields = malloc(2 * sizeof(*fields));\n\t\t\tif (fields == NULL) {",
+        None,
+        "parsefields: the first-time malloc was the one unchecked "
+        "allocation in the loop -- the reallocarray in the sibling arm "
+        "of the same if has warnx+abort",
+    ),
+
+    "hbsd/src/sbin/ggate/ggatel/ggatel.c": [
+        (
+            "\tif (ggio.gctl_data == NULL)\n\t\tg_gate_xlog(\"Cannot allocate %zu bytes.\", bsize);",
+            None,
+            "g_gatel_serve: the initial buffer malloc was unchecked",
+        ),
+        (
+            ("\t\t\t\tnewdata = realloc(ggio.gctl_data,", 1),
+            "\t\t\t\tggio.gctl_data = realloc(ggio.gctl_data,",
+            "g_gatel_serve BIO_READ: storing the NULL left bsize still "
+            "naming the leaked buffer, so `gctl_length > bsize' was "
+            "false for every smaller request after it and the daemon "
+            "pread(2)'d into NULL from then on -- one transient ENOMEM "
+            "broke the export permanently",
+        ),
+        (
+            "\t\t\tnewdata = realloc(ggio.gctl_data, ggio.gctl_length);",
+            None,
+            "g_gatel_serve ENOMEM arm: the same shape on the way to "
+            "g_gate_xlog(), which is __dead2 -- a leak at exit, fixed "
+            "for uniformity with the one above it",
+        ),
+    ],
 
     "hbsd/src/bin/ps/ps.c": (
         'if (path == NULL)\n\t\txo_errx(1, "calloc failed");',

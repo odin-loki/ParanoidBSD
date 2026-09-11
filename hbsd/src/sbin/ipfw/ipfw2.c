@@ -3332,11 +3332,23 @@ pack_object(struct tidx *tstate, const char *name, int otype)
 	}
 
 	if (tstate->count + 1 > tstate->size) {
-		tstate->size += 4;
-		tstate->idx = realloc(tstate->idx, tstate->size *
+		ipfw_obj_ntlv *nidx;
+
+		/*
+		 * PBSD: through a temporary, and the size is committed only
+		 * once the array is that big.  `idx = realloc(idx, ...)'
+		 * destroyed the only pointer to the table on failure while
+		 * leaving tstate->count naming entries in it, so the NEXT
+		 * pack_object() walked tstate->idx[i] from NULL -- and with
+		 * tstate->size already bumped, the growth test no longer
+		 * fired, so it never retried the allocation either.
+		 */
+		nidx = realloc(tstate->idx, (tstate->size + 4) *
 		    sizeof(ipfw_obj_ntlv));
-		if (tstate->idx == NULL)
+		if (nidx == NULL)
 			return (0);
+		tstate->idx = nidx;
+		tstate->size += 4;
 	}
 
 	ntlv = &tstate->idx[i];

@@ -589,14 +589,25 @@ comparator(const void *a, const void *b, void *thunk)
 }
 
 static char
-**add_match(char **matches, size_t i, size_t *size, char *match_copy)
+**add_match(char **matches, size_t *i, size_t *size, char *match_copy)
 {
+	char **nmatches;
+
+	/*
+	 * Only claim the slot once the copy succeeded: the caller reads
+	 * matches[1..*i] on the way out, so a bumped *i with no string
+	 * stored would leave it sorting an uninitialised pointer.
+	 */
 	if (match_copy == NULL)
 		return (NULL);
-	matches[i] = match_copy;
-	if (i >= *size - 1) {
+	matches[++*i] = match_copy;
+	if (*i >= *size - 1) {
+		nmatches = reallocarray(matches, *size * 2,
+		    sizeof(matches[0]));
+		if (nmatches == NULL)
+			return (NULL);
+		matches = nmatches;
 		*size *= 2;
-		matches = reallocarray(matches, *size, sizeof(matches[0]));
 	}
 
 	return (matches);
@@ -650,7 +661,7 @@ static char
 					continue;
 			} else if (entry->d_type != DT_REG)
 				continue;
-			rmatches = add_match(matches, ++i, &size,
+			rmatches = add_match(matches, &i, &size,
 				strdup(entry->d_name));
 			if (rmatches == NULL) {
 				closedir(dir);
@@ -663,7 +674,7 @@ static char
 	for (const unsigned char *bp = builtincmd; *bp != 0; bp += 2 + bp[0]) {
 		if (curpos > bp[0] || memcmp(bp + 2, text, curpos) != 0)
 			continue;
-		rmatches = add_match(matches, ++i, &size, strndup(bp + 2, bp[0]));
+		rmatches = add_match(matches, &i, &size, strndup(bp + 2, bp[0]));
 		if (rmatches == NULL)
 			goto out;
 		matches = rmatches;
@@ -671,7 +682,7 @@ static char
 	for (const struct alias *ap = NULL; (ap = iteralias(ap)) != NULL;) {
 		if (strncmp(ap->name, text, curpos) != 0)
 			continue;
-		rmatches = add_match(matches, ++i, &size, strdup(ap->name));
+		rmatches = add_match(matches, &i, &size, strdup(ap->name));
 		if (rmatches == NULL)
 			goto out;
 		matches = rmatches;
@@ -681,7 +692,7 @@ static char
 			continue;
 		if (strncmp(e.cmdname, text, curpos) != 0)
 			continue;
-		rmatches = add_match(matches, ++i, &size, strdup(e.cmdname));
+		rmatches = add_match(matches, &i, &size, strdup(e.cmdname));
 		if (rmatches == NULL)
 			goto out;
 		matches = rmatches;

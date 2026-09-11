@@ -83,6 +83,20 @@ check("a one-argument call is not realloc's shape",
 check("a different member of the same struct",
       hits("void f(void){ s->a = realloc(s->b, n); }") == [])
 
+# --- reallocarray(3): same contract, same defect -------------------------
+check("reallocarray is the same shape",
+      hits("void f(void){ p = reallocarray(p, n, sz); }") == ["p"])
+check("...through a member too",
+      hits("void f(void){ s->sb = reallocarray(s->sb, n, sz); }")
+      == ["s->sb"])
+check("...and through a dereference",
+      hits("void f(void){ *items = reallocarray(*items, n, sz); }")
+      == ["*items"])
+check("reallocarray to a different name is still the fix",
+      hits("void f(void){ q = reallocarray(p, n, sz); }") == [])
+check("reallocf is still not reallocarray",
+      hits("void f(void){ p = reallocf(p, n); }") == [])
+
 # --- and it must find the ones the tree was fixed for --------------------
 SRC = Path(__file__).resolve().parents[2] / "hbsd" / "src"
 for rel in ("lib/libfetch/http.c", "lib/libutil/mntopts.c",

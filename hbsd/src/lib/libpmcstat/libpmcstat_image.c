@@ -152,9 +152,18 @@ pmcstat_image_add_symbols(struct pmcstat_image *image, Elf *e,
 	/*
 	 * Return space to the system if there were duplicates.
 	 */
-	if (newsyms < nfuncsyms)
-		image->pi_symbols = reallocarray(image->pi_symbols,
+	if (newsyms < nfuncsyms) {
+		struct pmcstat_symbol *nsymbols;
+
+		/*
+		 * A shrink can still fail; keep the old array rather than
+		 * qsort() a NULL one over a non-zero pi_symcount.
+		 */
+		nsymbols = reallocarray(image->pi_symbols,
 		    image->pi_symcount, sizeof(*symptr));
+		if (nsymbols != NULL)
+			image->pi_symbols = nsymbols;
+	}
 
 	/*
 	 * Keep the list of symbols sorted.
