@@ -25385,3 +25385,85 @@ The analyser is **43 → 43** over those three scopes with the one
 known-ERROR translation unit (`libifconfig_sfp_tables.tpl.c`, a
 template) on the record before and after.  Tree-wide ONESIDED is now
 **232**, from 287 this morning.
+
+## Three more defects from the same list, in three more libraries
+
+### `libdpv`: `vsnprintf` can return a negative number
+
+`status_printf()` in `lib/libdpv/status.c`:
+
+```c
+	n = vsnprintf(status_buf, status_width + 1, fmt, args);
+	...
+	if (n < status_width) {
+		status_buf[n] = ' ';
+		status_buf[status_width] = '\0';
+	}
+```
+
+`vsnprintf(3)` returns a negative value on an encoding error, and `n <
+status_width` is *true* for it — so `status_buf[n]` writes one byte
+before the buffer.  `n` is clamped to 0 first now; the `memset` above
+has already filled the line with spaces, so nothing else needs saying.
+The file already carries one PBSD marker, for the `realloc` on the same
+static buffer three lines up.
+
+### `libpmc`: a clamp that left no room for the terminator
+
+`json_copystr()` in `lib/libpmc/pmu-events/json.c`:
+
+```c
+	jlen = json_len(t);
+	if (jlen > len)
+		jlen = len - 1;
+
+	memcpy(s, map + t->start, jlen);
+	s[jlen] = '\0';
+```
+
+`jevents.c` calls it as `json_copystr(map, field, buf, sizeof(buf))`.
+A JSON token of **exactly** `sizeof(buf)` bytes passes `jlen > len`
+unchanged, `memcpy` fills the buffer, and `s[len] = '\0'` writes one
+past the end.  That is not a corner case of a hostile file — it is
+every token that happens to fit exactly.  `>=` is the fix.  A `len` of
+zero would also have made the clamp `-1` and `memcpy`'s length
+`SIZE_MAX`, so that is rejected up front.
+
+### `libc`'s hash database: a negative bitmap page, and a NULL `CLRBIT`
+
+`__free_ovflpage()` in `lib/libc/db/hash/hash_page.c`:
+
+```c
+	bit_address =
+	    (ndx ? hashp->SPARES[ndx - 1] : 0) + (addr & SPLITMASK) - 1;
+	...
+	free_page = (bit_address >> (hashp->BSHIFT + BYTE_SHIFT));
+	...
+	if (!(freep = hashp->mapp[free_page]))
+		freep = fetch_bitmap(hashp, free_page);
+	...
+	CLRBIT(freep, free_bit);
+```
+
+`SPARES[]` comes out of the database header and `addr` out of a page, so
+`bit_address` can be `-1` on a crafted file: `mapp[-1]` is a read before
+the array and `fetch_bitmap(hashp, -1)` **writes a malloc'd pointer
+there**.  This is the same file whose `__hash_open()` was hardened
+earlier today — the header validation added there does not reach
+`SPARES[]`, which is why this one survived it.
+
+Two smaller things fall out of the same three lines.  `fetch_bitmap()`
+bounded its index only from above, so it gained the floor as well.  And
+`CLRBIT(freep, free_bit)` runs on a NULL `freep` in every build without
+`DEBUG` — `fetch_bitmap()` returns NULL on a failed `malloc()` too, and
+the `#ifdef DEBUG assert(0)` above it is the whole of the existing
+handling.  The buffer is still reclaimed either way; the overflow page
+is leaked, which is what a file this broken has earned.
+
+### Measured
+
+`lib/libc/db`, `lib/libdpv` and `lib/libpmc` ONESIDED **3 → 1**, the
+survivor being `json_copystr`'s own `jlen` — its floor is
+`json_len(t)`, a function call, and stays invisible.  The analyser is
+**53 → 53** over those scopes with all 11 known-ERROR translation units
+on the record before and after.  Tree-wide ONESIDED **232 → 230**.

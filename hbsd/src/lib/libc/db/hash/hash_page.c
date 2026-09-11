@@ -839,8 +839,18 @@ __free_ovflpage(HTAB *hashp, BUFHEAD *obufp)
 	free_page = (bit_address >> (hashp->BSHIFT + BYTE_SHIFT));
 	free_bit = bit_address & ((hashp->BSIZE << BYTE_SHIFT) - 1);
 
-	if (!(freep = hashp->mapp[free_page]))
-		freep = fetch_bitmap(hashp, free_page);
+	/*
+	 * bit_address is built from the on-disk SPARES[] and the page
+	 * address, so a corrupt file can make it negative -- and then
+	 * mapp[free_page] is a read before the array and fetch_bitmap()
+	 * a write before it.  The buffer is still reclaimed; the page is
+	 * leaked, which is what a file this broken has earned.
+	 */
+	if (bit_address >= 0 && free_page < hashp->nmaps) {
+		if (!(freep = hashp->mapp[free_page]))
+			freep = fetch_bitmap(hashp, free_page);
+	} else
+		freep = NULL;
 #ifdef DEBUG
 	/*
 	 * This had better never happen.  It means we tried to read a bitmap
@@ -850,7 +860,13 @@ __free_ovflpage(HTAB *hashp, BUFHEAD *obufp)
 	if (!freep)
 		assert(0);
 #endif
-	CLRBIT(freep, free_bit);
+	/*
+	 * And CLRBIT() on a NULL freep was a NULL dereference in every
+	 * build without DEBUG -- fetch_bitmap() returns NULL on a failed
+	 * malloc() too.
+	 */
+	if (freep != NULL)
+		CLRBIT(freep, free_bit);
 #ifdef DEBUG2
 	(void)fprintf(stderr, "FREE_OVFLPAGE: ADDR: %d BIT: %d PAGE %d\n",
 	    obufp->addr, free_bit, free_page);
@@ -920,7 +936,7 @@ squeeze_key(u_int16_t *sp, const DBT *key, const DBT *val)
 static u_int32_t *
 fetch_bitmap(HTAB *hashp, int ndx)
 {
-	if (ndx >= hashp->nmaps)
+	if (ndx < 0 || ndx >= hashp->nmaps)
 		return (NULL);
 	if ((hashp->mapp[ndx] = (u_int32_t *)malloc(hashp->BSIZE)) == NULL)
 		return (NULL);

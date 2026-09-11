@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,572 | 9,056 |
+| 1 | `lib` | 2,827 | 640,605 | 9,056 |
 | 2 | `libexec` | 170 | 48,065 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,450** | **114,207** |
+| | **total** | **41,143** | **21,302,483** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -1552,7 +1552,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.61.6.4 `hash4()` · `TODO-FN`
 - [ ] **1.61.7** `hash_log2.c` · 49L · `TODO-PORT` · 1 fn
   - [ ] 1.61.7.1 `__log2()` · `TODO-FN`
-- [ ] **1.61.8** `hash_page.c` · 955L · `TODO-PORT` · 16 fn
+- [ ] **1.61.8** `hash_page.c` · 971L · `TODO-PORT` · 16 fn
   - [ ] 1.61.8.1 `putpair()` · `TODO-FN`
   - [ ] 1.61.8.2 `__delpair()` · `TODO-FN`
   - [ ] 1.61.8.3 `__split_page()` · `TODO-FN`
@@ -7137,7 +7137,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.171.7.2 `dpv_free()` · `TODO-FN`
 - [ ] **1.171.8** `dpv.h` · 164L · `TODO-HDR`
 - [ ] **1.171.9** `dpv_private.h` · 66L · `TODO-HDR`
-- [ ] **1.171.10** `status.c` · 120L · `TODO-PORT` · 2 fn
+- [ ] **1.171.10** `status.c` · 127L · `TODO-PORT` · 2 fn
   - [ ] 1.171.10.1 `status_printf()` · `TODO-FN`
   - [ ] 1.171.10.2 `status_free()` · `TODO-FN`
 - [ ] **1.171.11** `status.h` · 42L · `TODO-HDR`
@@ -9925,7 +9925,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.266.2.6 `jsmn_init()` · `TODO-FN`
   - [ ] 1.266.2.7 `jsmn_strerror()` · `TODO-FN`
 - [ ] **1.266.3** `jsmn.h` · 69L · `TODO-HDR`
-- [ ] **1.266.4** `json.c` · 177L · `TODO-PORT` · 10 fn
+- [ ] **1.266.4** `json.c` · 187L · `TODO-PORT` · 10 fn
   - [ ] 1.266.4.1 `mapfile()` · `TODO-FN`
   - [ ] 1.266.4.2 `unmapfile()` · `TODO-FN`
   - [ ] 1.266.4.3 `parse_json()` · `TODO-FN`

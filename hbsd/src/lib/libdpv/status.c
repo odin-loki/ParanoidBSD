@@ -88,6 +88,13 @@ status_printf(const char *fmt, ...)
 	n = vsnprintf(status_buf, status_width + 1, fmt, args);
 	va_end(args);
 
+	/* vsnprintf(3) returns a NEGATIVE value on an encoding error, and
+	 * `n < status_width' is true for it, so status_buf[n] was a write
+	 * one byte before the buffer. Nothing was printed in that case,
+	 * and the memset above already filled the line with spaces. */
+	if (n < 0)
+		n = 0;
+
 	/* If vsnprintf(3) produced less bytes than the maximum, change the
 	 * implicitly-added NUL-terminator into a space and terminate at max */
 	if (n < status_width) {

@@ -165,8 +165,18 @@ int json_copystr(char *map, jsmntok_t *t, char *s, int len)
 {
 	int jlen;
 
+	if (len <= 0)
+		return (0);
+
+	/*
+	 * `>' left no room for the terminator: a token of exactly `len'
+	 * bytes was copied whole and then s[len] wrote one past the end
+	 * of the caller's buffer -- jevents.c passes sizeof(buf).  A
+	 * `len' of zero also turned the clamp into -1 and memcpy()'s
+	 * length into SIZE_MAX.
+	 */
 	jlen = json_len(t);
-	if (jlen > len)
+	if (jlen >= len)
 		jlen = len - 1;
 
 	memcpy(s, map + t->start, jlen);

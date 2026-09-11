@@ -277,13 +277,24 @@ FIXES = {
         "handed the caller an xt with a NULL data and a non-zero size, "
         "which it reads.",
     ),
-    "hbsd/src/lib/libdpv/status.c": (
-        "nbuf = realloc(status_buf, status_width + 1);",
-        "status_buf = realloc(status_buf, status_width + 1);",
-        "status_printf()'s status_buf is a file-scope static and the "
-        "only pointer to the buffer, so assigning realloc's NULL over "
-        "it lost the buffer the function was already using.",
-    ),
+    "hbsd/src/lib/libdpv/status.c": [
+        (
+            "nbuf = realloc(status_buf, status_width + 1);",
+            "status_buf = realloc(status_buf, status_width + 1);",
+            "status_printf()'s status_buf is a file-scope static and "
+            "the only pointer to the buffer, so assigning realloc's "
+            "NULL over it lost the buffer the function was already "
+            "using.",
+        ),
+        (
+            "\tif (n < 0)\n\t\tn = 0;",
+            None,
+            "status_printf() takes vsnprintf(3)'s return and tests "
+            "`n < status_width' before status_buf[n] = ' '; vsnprintf "
+            "returns a NEGATIVE value on an encoding error, which "
+            "passes that test and writes one byte before the buffer",
+        ),
+    ],
     "hbsd/src/lib/libsecureboot/efi/efi_variables.c": [
         (
             "ncerts = realloc(certs,",
@@ -2168,6 +2179,26 @@ FIXES = {
             "a crafted .db writes through an indeterminate pointer at "
             "an offset the file also chooses. Same shape as the "
             "run-time linker's DT_RELR bitmap",
+        ),
+            (
+            "\tif (bit_address >= 0 && free_page < hashp->nmaps) {",
+            "freep = fetch_bitmap(hashp, free_page);\n#ifdef DEBUG",
+            "__free_ovflpage() builds bit_address from the on-disk "
+            "SPARES[] and the page address, so a corrupt file makes it "
+            "negative and mapp[free_page] a read before the array, "
+            "fetch_bitmap() a write before it",
+        ),
+        (
+            "\tif (freep != NULL)\n\t\tCLRBIT(freep, free_bit);",
+            None,
+            "and CLRBIT() on a NULL freep was a NULL dereference in "
+            "every build without DEBUG; fetch_bitmap() also returns "
+            "NULL on a failed malloc()",
+        ),
+        (
+            "\tif (ndx < 0 || ndx >= hashp->nmaps)",
+            "\tif (ndx >= hashp->nmaps)",
+            "fetch_bitmap() bounded its index only from above",
         ),
     ],
     "hbsd/src/libexec/rtld-elf/aarch64/reloc.c": [
@@ -6126,6 +6157,15 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/lib/libpmc/pmu-events/json.c": (
+        "\tif (jlen >= len)",
+        "\tif (jlen > len)",
+        "json_copystr() clamped with `>', leaving no room for the "
+        "terminator: a token of exactly `len' bytes was copied whole "
+        "and then s[len] wrote one past the caller's buffer, which "
+        "jevents.c sizes with sizeof(buf); a len of zero also turned "
+        "the clamp into -1 and memcpy()'s length into SIZE_MAX",
+    ),
     "hbsd/src/lib/libkvm/kvm_pcpu.c": (
         "\tif (cpu < 0 || cpu >= maxcpu || pcpu_data[cpu] == NULL)",
         "\tif (cpu >= maxcpu || pcpu_data[cpu] == NULL)",
