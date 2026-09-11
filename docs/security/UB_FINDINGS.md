@@ -5471,6 +5471,7 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/dev/firmware/arm/scmi_shmem.c:191` `index * 4u` | `index` is rejected by `if (index < 0 || index >= len)` five lines above. `len` is the return of `OF_getencprop_alloc_multi()`, which CBMC leaves unconstrained, so `index < len` bounds nothing in its model. |
 | `libexec/tftpd/tftp-io.c:151` `error - 100` | `error` is an errno the caller built as `errno + 100`; `strerror()` accepts any `int` and the result is only printed. |
 | `sys/x86/x86/delay.c:179`, `sys/i386/i386/machdep.c:1807`, `sys/riscv/riscv/machdep.c:263` | `td_pinned + 1` and `md_spinlock_count - 1`: per-thread counters incremented and decremented in matched pairs, with no input from outside the kernel. |
+| `libexec/rtld-elf/xmalloc.c:100` `memcpy` src/dst overlap | `xstrdup()` is `copy = xmalloc(len); memcpy(copy, str, len)`. A fresh allocation cannot alias a live object, and `xmalloc()` does not return on failure — it calls `rtld_fdputstr()` and `_exit(1)`. CBMC models the allocator's return as an unconstrained pointer, so `copy` and `str` may be the same. The same answer covers every "overlap" on a just-allocated destination in this sweep. |
 
 
 ## Sweep 9's newly readable files: nineteen findings, no defects

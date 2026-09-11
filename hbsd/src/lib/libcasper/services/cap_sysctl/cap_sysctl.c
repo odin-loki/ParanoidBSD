@@ -240,9 +240,40 @@ cap_sysctlnametomib(cap_channel_t *chan, const char *name, int *mibp,
 	}
 
 	mib = nvlist_get_binary(req, "mib", &mibsz);
-	*sizep = mibsz / sizeof(int);
 
-	memcpy(mibp, mib, mibsz); 
+	/*
+	 * PBSD: check the reply against the capacity the caller gave us.
+	 *
+	 * *sizep is in/out, exactly as in sysctlnametomib(3): on the way
+	 * in it is how many ints mibp holds, and it was sent to the
+	 * service as "size" eight lines up.  On the way back the reply's
+	 * length was copied into mibp without ever being compared to it
+	 * -- and *sizep had already been overwritten with the reply's own
+	 * count, so a caller could not tell afterwards either.  A service
+	 * that answers with more mib than was asked for writes past the
+	 * end of the caller's array, which is typically
+	 * `int mib[CTL_MAXNAME]' on the stack.
+	 *
+	 * The service is the more-privileged side of the channel, so this
+	 * is not an attack path in the Capsicum threat model.  It is the
+	 * sandboxed process failing to bound something that arrived over
+	 * a channel, which is the one thing casper exists to make easy to
+	 * get right, and a protocol skew between the two halves is enough
+	 * to trigger it.  ENOMEM is what sysctlnametomib(3) returns for a
+	 * buffer that is too small.
+	 *
+	 * Divide rather than multiply: `*sizep * sizeof(int)' overflows
+	 * for a caller that passes an absurd capacity, and the comparison
+	 * wants to be in the units *sizep is written in anyway.
+	 */
+	if (mibsz / sizeof(int) > *sizep) {
+		nvlist_destroy(req);
+		errno = ENOMEM;
+		return (-1);
+	}
+
+	memcpy(mibp, mib, mibsz);
+	*sizep = mibsz / sizeof(int);
 
 	nvlist_destroy(req);
 

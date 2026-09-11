@@ -6006,6 +6006,18 @@ FIXES = {
         "caller passes nfield == NULL today, so it is latent",
     ),
 
+    "hbsd/src/lib/libcasper/services/cap_sysctl/cap_sysctl.c": (
+        "PBSD: check the reply against the capacity the caller gave us.",
+        None,
+        "cap_sysctlnametomib() sends *sizep to the service as \"size\" "
+        "and then memcpy\'d the reply\'s whole length into mibp "
+        "without comparing it back -- overwriting *sizep with the "
+        "reply\'s own count first, so the caller could not tell "
+        "either. A reply longer than the caller\'s array writes past "
+        "the end of what is typically int mib[CTL_MAXNAME] on the "
+        "stack",
+    ),
+
     "hbsd/src/sys/dev/clk/starfive/jh7110_clk.c": [
         (
             "PBSD: a reset id is an index, and a negative one is neither",
