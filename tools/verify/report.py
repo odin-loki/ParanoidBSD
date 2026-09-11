@@ -133,7 +133,16 @@ def bucket(rec: dict) -> str:
 
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/security/UB_FINDINGS.md"
-_TRIAGED = re.compile(r"`([\w./-]+\.(?:c|cpp|h)):(\d+(?:\s*,\s*\d+)*)`")
+# A citation in the table: `path/to/file.c:123` or `file.c:12, 34`, and
+# the CONTINUATION form the document uses when a row names several lines
+# in one file -- `dis_tables.c:6419`, `:6447`. The path group is optional
+# for exactly that: 64 bare `:NNN` across 31 of the table's rows had
+# never matched anything, so a third of the rows were carrying lines the
+# marker could not see. Those are findings somebody did read and write
+# up, silently unmarked -- the harmless direction of the same failure the
+# section boundary above was the harmful one of.
+_TRIAGED = re.compile(
+    r"`(?:([\w./-]+\.(?:c|cpp|h))|):(\d+(?:\s*,\s*\d+)*)`")
 
 
 @functools.lru_cache(maxsize=1)
@@ -181,9 +190,20 @@ def triaged() -> frozenset:
     end = text.find("\n## ", head + 1)
     table = text[head:] if end < 0 else text[head:end]
     out = set()
-    for name, lines in _TRIAGED.findall(table):
-        for ln in lines.split(","):
-            out.add((name, ln.strip()))
+    for row in table.split("\n"):
+        # Row by row, so a bare `:NNN` attaches to the path named to its
+        # LEFT IN THE SAME ROW and can never reach across into another.
+        if not row.lstrip().startswith("|"):
+            continue
+        here = None
+        for m in _TRIAGED.finditer(row):
+            name, lines = m.group(1), m.group(2)
+            if name:
+                here = name
+            elif here is None:
+                continue        # a continuation with nothing to continue
+            for ln in lines.split(","):
+                out.add((here, ln.strip()))
     return frozenset(out)
 
 

@@ -81,6 +81,20 @@ check("...but one that was since read and tabled is",
 check("a fixed defect's writeup is not triage",
       report.is_triaged("sys/dev/bwn/if_bwn.c", "5317"), False)
 
+print("\nthe continuation form attaches to the path on its left")
+# The document writes `dis_tables.c:6419`, `:6447` when one row names
+# several lines in one file. 64 of those across 31 rows matched nothing
+# at all until the path group was made optional.
+check("a bare `:NNN` continues the row's last path",
+      report.is_triaged("sys/cddl/dev/dtrace/x86/dis_tables.c", "6447"), True)
+# ...and "last path" means the nearest one to its LEFT, not the row's
+# first: this row opens on nfs_clrpcops.c, names nfs_clstate.c:4960
+# mid-sentence, and then continues with `:5070`/`:5071`.
+check("it is the nearest path to the left, not the row's first",
+      report.is_triaged("sys/fs/nfsclient/nfs_clstate.c", "5071"), True)
+check("...and not the row's opening file",
+      report.is_triaged("sys/fs/nfsclient/nfs_clrpcops.c", "5071"), False)
+
 print("\nthe table is actually being read")
 n = len(report.triaged())
 check("more than twenty entries parsed", n > 20, True)
