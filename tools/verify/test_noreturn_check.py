@@ -13,6 +13,8 @@ import noreturn_check as nc
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "testdata", "noreturn", "cases.c")
+NS_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "testdata", "noreturn", "libc", "gen", "ns.c")
 
 
 class NoreturnCheck(unittest.TestCase):
@@ -79,6 +81,22 @@ class NoreturnCheck(unittest.TestCase):
 
     def test_a_local_seed_name_that_exits_is_put_back_by_propagation(self):
         self.assertIn("report_ends_in_local_exiting_panic", self.names)
+
+    def test_a_libc_private_name_is_judged_by_its_public_one(self):
+        """lib/libc/gen/err.c defines _err(); <err.h> declares err()
+        __dead2; namespace.h turns the second into the first before any
+        libc source sees it. Reading only the private name made _err()
+        the sole --guards candidate in all of lib, and it was a false
+        positive -- the attribute is there, under the erased name."""
+        nc._HDR_CACHE.clear()
+        nc._NS_CACHE.clear()
+        names = {name for _, name, _ in nc.scan(NS_FIXTURE)}
+        self.assertNotIn("_err", names)
+        # Finding an alias is not itself the excuse: quit() is renamed
+        # the same way and is not declared noreturn anywhere.
+        self.assertIn("_quit", names)
+        # And a private name with no alias at all is untouched.
+        self.assertIn("_privately_exits", names)
 
     def test_builtin_trap_does_not_return(self):
         """rtld's abort() is raise() then __builtin_trap(). Without the

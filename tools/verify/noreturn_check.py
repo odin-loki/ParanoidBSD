@@ -28,13 +28,19 @@ no noreturn attribute.  "Last statement" is the conservative part: a
 function that exits down every arm of a switch is not reported, because
 proving that needs a control-flow graph and this does not have one.
 
-It is a lint, not a proof, and it does NOT gate CI.  673 functions in
-the tree are reported, and marking one is only worth a vendor-tree diff
-where it buys something.  The first attempt to pick those by file --
-"this file has an undeclared-noreturn function and this file has
-findings" -- put __dead2 on 24 functions across 19 files and moved the
-sweep by exactly nothing: 116 findings before, 116 after.  That batch
-was reverted.
+It is a lint, not a proof, and it does NOT gate CI.  1471 functions in
+22220 files are reported, and marking one is only worth a vendor-tree
+diff where it buys something.  (This file said 673 until the tree-wide
+run was made to finish -- see decl_noreturn_names().  673 was never a
+whole-tree count: crypto/libecc's 49MB header has been in the tree
+since 2026-08-30, ten days before this lint was written, and no run
+that reads it ever came back.  A number nobody can afford to
+recompute is a number that stops being checked.)
+
+The first attempt to pick those by file -- "this file has an
+undeclared-noreturn function and this file has findings" -- put
+__dead2 on 24 functions across 19 files and moved the sweep by exactly
+nothing: 116 findings before, 116 after.  That batch was reverted.
 
 What separates route6d and ppp, where two declarations closed
 twenty-one findings, is not the file.  It is that the call sits on the
@@ -76,6 +82,40 @@ whose measured answer was 0.
 It is still a prior, not the answer.  The oracle is a before/after sweep
 at the same scope on the same tree, which is cheap; --guards only says
 where to spend one.
+
+That sweep has been spent, on all of it.  --guards named twenty-six
+functions across bin, sbin, libexec, usr.bin and usr.sbin, and each was
+marked __dead2, analysed at its own directory scope, and compared
+against the same scope unmarked:
+
+	usr.sbin/yppush   yppush_exit()    2 -> 0   kept
+	the other twenty-five              n -> n   reverted
+
+One paid.  (--guards reports twenty-four now, not twenty-six:
+yppush_exit() carries the attribute, and restore's badentry() left the
+list when a locally defined panic() stopped being trusted by name --
+see the comment on `local' below.)
+
+So the answer for the rest of this tree is no, and the reason is not
+that --guards has the shape wrong.  It is that the five cases which pay
+had already been done: route6d, ppp, lpc, dump and pfctl are the
+examples the heuristic was FITTED to, and a heuristic fitted to every
+known positive has, by construction, only the unknown ones left to
+find.  Here there was one.
+
+Fifteen of the twenty-six could not have paid whatever their shape,
+because their directory's analyse sweep reports zero findings at all --
+bin/date, sbin/pfilctl, sbin/rcorder, usr.bin/ar (two), cap_mkdb,
+csplit, touch, usbhidaction, usr.sbin/bluetooth's bcmfw, l2control and
+sdpcontrol, inetd, pwd_mkdb and rwhod.  --guards scores a declaration,
+not a directory, and a declaration in a scope with nothing to remove
+removes nothing.  Reading the scope's finding count first is a cheaper
+filter than either, and it is the one to apply before spending another
+of these sweeps.
+
+The twenty-seventh candidate, and the only one in all of lib, was
+libc's own _err() -- and it was this file's mistake, not a missing
+mark.  See namespace_aliases().
 """
 
 import argparse
@@ -116,6 +156,10 @@ DEF_RE = re.compile(
 CALL_RE = re.compile(r"^\s*(?:\(\s*void\s*\)\s*)?([A-Za-z_]\w*)\s*\(")
 
 
+# The only characters that can begin a comment or a literal.
+_PLAIN_RE = re.compile(r"[/\"']")
+
+
 def strip_noise(text):
     """Blank out comments and string/char literals, keeping line count."""
     out = []
@@ -140,8 +184,20 @@ def strip_noise(text):
             out.append("".join(ch if ch == "\n" else " " for ch in text[i:j]))
             i = j
         else:
-            out.append(c)
-            i += 1
+            # Ordinary text: copy it in one slice, up to the next
+            # character that could start a comment or a literal.
+            # Stepping one character at a time here is what made a
+            # whole-tree run take hours -- crypto/libecc ships a 49MB
+            # generated header of test vectors, and headers_for() reads
+            # every .h in a directory, so that file alone was fifty
+            # million iterations of this loop.  The regex does the same
+            # walk in C.  Searching from i + 1 is safe: text[i] reached
+            # this branch, so it is not a quote, and if it is a `/' it
+            # is one the two cases above already declined.
+            m = _PLAIN_RE.search(text, i + 1)
+            j = m.start() if m else n
+            out.append(text[i:j])
+            i = j
     return "".join(out)
 
 
@@ -297,9 +353,38 @@ _HDR_NORETURN = {}
 # is declared __dead2 in dump.h and defined in another file, so quit()
 # looked like a function that returns and its own missing attribute went
 # unreported.
-DECL_NORETURN_RE = re.compile(
-    r"\b([A-Za-z_]\w*)\s*\([^;{]*\)[^;{]*(?:__dead2|__dead\b|_Noreturn|noreturn)"
-    r"[^;{]*;")
+# Read attribute-first, not name-first.  Written as one regex --
+#
+#     \b(\w+)\s*\([^;{]*\)[^;{]*(?:__dead2|...)[^;{]*;
+#
+# -- it is quadratic in the distance to the next `;' or `{', and
+# crypto/libecc ships a 49MB generated header of test vectors, where
+# that distance is megabytes: the regex alone did not finish in four
+# minutes on it, which is most of why a whole-tree run took hours and
+# why the count in this file's own docstring was allowed to go stale.
+# Finding the attribute first and reading backwards to the statement it
+# sits in is the same answer in one linear pass.
+ATTR_IN_DECL = re.compile(r"__dead2|__dead\b|_Noreturn|noreturn")
+NAME_CALL_RE = re.compile(r"([A-Za-z_]\w*)\s*\(")
+
+
+def decl_noreturn_names(text):
+    """Names declared noreturn by a `f(...) __dead2;' in `text'."""
+    names = set()
+    for m in ATTR_IN_DECL.finditer(text):
+        # The statement the attribute sits in: back to the previous `;'
+        # or `{', forward to the next `;'.  A `{' in between means this
+        # is a definition or an initialiser, not a declaration.
+        a = max(text.rfind(";", 0, m.start()), text.rfind("{", 0, m.start()))
+        b = text.find(";", m.end())
+        if b < 0 or "{" in text[m.end():b]:
+            continue
+        head = text[a + 1:m.start()]
+        nm = NAME_CALL_RE.search(head)
+        # The parameter list has to be closed before the attribute.
+        if nm and ")" in head[nm.end():]:
+            names.add(nm.group(1))
+    return names
 
 
 def headers_for(path):
@@ -325,7 +410,7 @@ def headers_for(path):
             except OSError:
                 pass
         _HDR_CACHE[d] = "\n".join(parts)
-        _HDR_NORETURN[d] = set(DECL_NORETURN_RE.findall(_HDR_CACHE[d]))
+        _HDR_NORETURN[d] = decl_noreturn_names(_HDR_CACHE[d])
     return _HDR_CACHE[d]
 
 
@@ -335,6 +420,58 @@ def header_noreturn(path):
     if d not in _HDR_NORETURN:
         headers_for(path)
     return _HDR_NORETURN.get(d, set())
+
+
+_NS_CACHE = {}
+
+# `#define\terr\t\t_err' -- one public name, one private name, nothing
+# else on the line.  A parameterised macro has a `(' before the space
+# and does not match; so does a #define with an expression body.
+NS_DEFINE_RE = re.compile(r"^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]+(\w+)[ \t]*$",
+                          re.M)
+
+
+def namespace_aliases(path):
+    """Public names that libc's namespace.h renames to a private one.
+
+    lib/libc/gen/err.c defines `_err', and nothing anywhere declares
+    `_err' noreturn -- which is how this lint came to report it as the
+    only candidate in all of lib.  It was wrong.  namespace.h:43 is
+
+    	#define		err				_err
+
+    and every libc source includes it BEFORE <err.h>, so the prototype
+    the compiler actually sees is `void _err(int, const char *, ...)
+    __dead2;'.  The attribute is there; it is written under the name the
+    rename erased, in a header two directories up that headers_for()
+    would not read even if the name matched.
+
+    So map private back to public and ask about the public name.  The
+    walk up stops at a directory called libc that has the header,
+    because this rename is libc's own convention and nothing else in the
+    tree uses it.
+    """
+    d = os.path.dirname(os.path.abspath(path))
+    cand = None
+    while True:
+        c = os.path.join(d, "include", "namespace.h")
+        if os.path.basename(d) == "libc" and os.path.isfile(c):
+            cand = c
+            break
+        nd = os.path.dirname(d)
+        if nd == d:
+            return {}
+        d = nd
+    if d not in _NS_CACHE:
+        m = {}
+        try:
+            with open(cand, encoding="utf-8", errors="surrogateescape") as fh:
+                for pub, priv in NS_DEFINE_RE.findall(strip_noise(fh.read())):
+                    m.setdefault(priv, set()).add(pub)
+        except OSError:
+            m = {}
+        _NS_CACHE[d] = m
+    return _NS_CACHE[d]
 
 
 # A guard whose condition tests a pointer against NULL.  `!p' is
@@ -516,6 +653,10 @@ def scan(path):
         if name == "main" or name.startswith("__attribute"):
             continue
         if declared_noreturn(decls, name):
+            continue
+        # ... or declares it under the name libc renamed away.
+        if any(a in noreturn or declared_noreturn(decls, a)
+               for a in namespace_aliases(path).get(name, ())):
             continue
         hits.append((start + 1, name, callee))
     return hits
