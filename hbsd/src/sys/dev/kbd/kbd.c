@@ -1124,7 +1124,14 @@ genkbd_get_fkeystr(keyboard_t *kbd, int fkey, size_t *len)
 	if (kbd == NULL)
 		return (NULL);
 	fkey -= F_FN;
-	if (fkey > kbd->kb_fkeytab_size)
+	/*
+	 * fkey is KEYCHAR(c) of a keymap entry, which is a full int
+	 * masked to 24 bits, so it is neither small nor necessarily
+	 * above F_FN.  `>' also admitted entry kb_fkeytab_size, one past
+	 * the table.  The GETFKEY and SETFKEY ioctls twelve lines up
+	 * already spell this bound `>=' over a u_short keynum.
+	 */
+	if (fkey < 0 || fkey >= kbd->kb_fkeytab_size)
 		return (NULL);
 	*len = kbd->kb_fkeytab[fkey].len;
 	return (kbd->kb_fkeytab[fkey].str);

@@ -25642,3 +25642,65 @@ did not touch.
 `sys/dev/etherswitch` ONESIDED **2 → 0**; the analyser **36 → 36** with
 all 10 known-ERROR translation units on the record both ways.
 Tree-wide ONESIDED **230 → 228**.
+
+## `genkbd_get_fkeystr`: a function-key index straight out of the keymap
+
+```c
+static u_char *
+genkbd_get_fkeystr(keyboard_t *kbd, int fkey, size_t *len)
+{
+	if (kbd == NULL)
+		return (NULL);
+	fkey -= F_FN;
+	if (fkey > kbd->kb_fkeytab_size)
+		return (NULL);
+	*len = kbd->kb_fkeytab[fkey].len;
+	return (kbd->kb_fkeytab[fkey].str);
+}
+```
+
+The caller is the keystroke decoder:
+
+```c
+	case FKEY | SPCLKEY:	/* a function key, return string */
+		cp = kbdd_get_fkeystr(kbd, KEYCHAR(c), &len);
+		if (cp != NULL) {
+			while (len-- >  0)
+				genkbd_putc(sc, *cp++);
+		}
+```
+
+`c` is a keymap entry — a full `int` in `struct keyent_t` — and
+`KEYCHAR(c)` masks it to **24 bits**.  So `fkey` after `-= F_FN` is
+anywhere in `-0x1b .. 0xffffe5`, while `kb_fkeytab_size` is typically
+`NUM_FKEYS`, 96.  `>` admits every negative value and entry 96 itself,
+and the result is a `str` pointer and a `len` read from wherever that
+lands, then pushed byte by byte into the input queue.
+
+The same file gets it right twice, twelve lines up: `PIO_KEYMAPENT` and
+the `GETFKEY`/`SETFKEY` arms all use `keynum >= kb_fkeytab_size` over a
+`u_short`.
+
+### Reachability, and where HardenedBSD already helps
+
+Loading a keymap goes through `key_change_ok()`, whose first line is
+
+```c
+	/* Low keymap_restrict_change means any changes are OK. */
+	if (keymap_restrict_change <= 0)
+		return (0);
+```
+
+Upstream FreeBSD leaves `keymap_restrict_change` at 0.  **HardenedBSD's
+`PAX_HARDENING` initialises it to 4**, which routes every keymap change
+through `priv_check(td, PRIV_KEYBOARD)` — so on a PBSD kernel built the
+normal way this is root-only, and on an upstream one with the sysctl at
+its default it is not.  That is a good illustration of what the
+hardening patches are for, and not a reason to leave the bound wrong.
+
+### Measured
+
+`sys/dev/kbd` ONESIDED **1 → 0**.  The analyser reports **0 → 0** over
+that scope with its 1 translation unit compiling both ways — it has
+never had anything to say here, which is the point.  Tree-wide ONESIDED
+**228 → 227**.

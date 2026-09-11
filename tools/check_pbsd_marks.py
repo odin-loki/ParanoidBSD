@@ -4065,6 +4065,15 @@ FIXES = {
         "line with `line[0] != \'\\0\'\'",
     ),
 
+    "hbsd/src/sys/dev/kbd/kbd.c": (
+        "\tif (fkey < 0 || fkey >= kbd->kb_fkeytab_size)",
+        "\tif (fkey > kbd->kb_fkeytab_size)",
+        "genkbd_get_fkeystr() subscripts kb_fkeytab[] with "
+        "KEYCHAR(c) - F_FN of a keymap entry -- a full int masked to 24 "
+        "bits -- and bounded it only from above, and by one too many; "
+        "the GETFKEY and SETFKEY ioctls in the same file already spell "
+        "the bound `>=' over a u_short keynum",
+    ),
     "hbsd/src/sys/netpfil/ipfw/ip_dummynet.c": [
         (
             "\tif (pf->samples_no < 0 || pf->samples_no > ED_MAX_SAMPLES_NO)",

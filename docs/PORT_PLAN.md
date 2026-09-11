@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,924 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,768 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,775 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,513** | **114,207** |
+| | **total** | **41,143** | **21,302,520** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -81528,7 +81528,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.804 `sys/dev/kbd`
 
-- [ ] **8.804.1** `kbd.c` · 1,539L gen:2 · `TODO-PORT` · 39 fn
+- [ ] **8.804.1** `kbd.c` · 1,546L gen:2 · `TODO-PORT` · 39 fn
   - [ ] 8.804.1.1 `kbd_realloc_array()` · `TODO-FN`
   - [ ] 8.804.1.2 `kbd_init_struct()` · `TODO-FN`
   - [ ] 8.804.1.3 `kbd_set_maps()` · `TODO-FN`
