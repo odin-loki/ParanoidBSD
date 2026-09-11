@@ -451,6 +451,38 @@ def scan(path, text, raw_lines, follow_goto=False):
     return hits
 
 
+# Third-party trees, with third-party maintainers. Every other rule in
+# tools/verify/ skips these; this one walked them, which is the only
+# reason it could not gate -- all NINE sites it reports tree-wide are
+# here, and NONE is in code this project owns:
+#
+#   contrib/unbound/respip/respip.c:956                  raddr
+#   contrib/wpa/src/drivers/driver_bsd.c:732             drv
+#   contrib/elftoolchain/libelf/elf_data.c:59, :233      d
+#   contrib/ofed/opensm/libvendor/osm_vendor_al.c:368    p_vend
+#   contrib/ofed/opensm/libvendor/osm_vendor_mlx.c:206   p_vend
+#   contrib/ofed/opensm/libvendor/osm_vendor_mlx_anafa.c:250  p_bo
+#   crypto/openssl/crypto/thread/internal.c:51           tdata
+#   crypto/openssl/apps/cms.c:743                        key_param
+#
+# They are real by this rule's own standard -- a pointer read inside the
+# branch that tested it for NULL is dead code or a guaranteed fault --
+# and they are upstream's to fix. Written down rather than merely
+# excluded, so that "the rule reports nothing" cannot be confused with
+# "the rule found nothing".
+#
+# crypto/ is entirely vendored in this tree (heimdal, krb5, libecc,
+# openssh, openssl) and check_pbsd_marks.py has no entry under it, which
+# is the check that it is not somewhere PBSD edits.
+VENDOR = ("contrib/", "crypto/", "sys/contrib/", "sys/cddl/", "cddl/")
+
+
+def is_vendor(rel: str) -> bool:
+    """True for a path under a third-party tree."""
+    rel = rel.replace(os.sep, "/")
+    return rel.startswith(VENDOR) or "/contrib/" in "/" + rel
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -468,6 +500,7 @@ def main():
     roots = [os.path.join(args.root, s) for s in (args.scope or [""])]
     total = 0
     files = 0
+    skipped = 0
     for root in roots:
         for dirpath, dirnames, filenames in os.walk(root):
             dirnames[:] = [d for d in dirnames if d not in (".git",)]
@@ -475,6 +508,9 @@ def main():
                 if not fn.endswith((".c", ".h")):
                     continue
                 p = os.path.join(dirpath, fn)
+                if is_vendor(os.path.relpath(p, args.root)):
+                    skipped += 1
+                    continue
                 try:
                     text = open(p, errors="replace").read()
                 except OSError:
@@ -488,7 +524,8 @@ def main():
                     print("%s:%d  %s is NULL here\n      %s" %
                           (rel, ln, name, btext.strip()))
                     total += 1
-    print("\n%d site(s) across %d file(s)" % (total, files), file=sys.stderr)
+    print("\n%d site(s) across %d file(s), %d vendored file(s) skipped"
+          % (total, files, skipped), file=sys.stderr)
     if args.gate and args.follow_goto:
         print("--gate and --follow-goto are not combined: the goto pass has "
               "a false-positive floor and cannot carry a build.",

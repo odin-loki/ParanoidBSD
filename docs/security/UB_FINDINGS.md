@@ -24708,3 +24708,73 @@ this run.  That prediction was wrong in its arithmetic and right in its
 substance, and the difference is exactly the thing this document exists
 to keep straight: an exemption does not remove a file from the ERROR
 set, it removes it from the *unexplained* ERROR set.
+
+---
+
+## null_branch found nine, all of them upstream's
+
+`null_branch.py` looks for one shape:
+
+```c
+	if (p == NULL)		/* or !p, or an && chain containing either */
+		... p->field ...
+```
+
+Dead code or a guaranteed fault, with no third reading.  It needs no
+premise about reachability, so it runs over the whole tree in seconds
+rather than over the translation units that happen to compile.
+
+It has never run in CI, and the reason turns out to be neither its speed
+nor its accuracy.  It walked `contrib/` and `crypto/` — which no other
+rule in `tools/verify/` does — and **all nine sites it reports tree-wide
+are in those vendored trees**:
+
+```
+contrib/unbound/respip/respip.c:956                       raddr
+contrib/wpa/src/drivers/driver_bsd.c:732                  drv
+contrib/elftoolchain/libelf/elf_data.c:59, :233           d
+contrib/ofed/opensm/libvendor/osm_vendor_al.c:368         p_vend
+contrib/ofed/opensm/libvendor/osm_vendor_mlx.c:206        p_vend
+contrib/ofed/opensm/libvendor/osm_vendor_mlx_anafa.c:250  p_bo
+crypto/openssl/crypto/thread/internal.c:51                tdata
+crypto/openssl/apps/cms.c:743                             key_param
+```
+
+None is in code this project owns.  They are real by the rule's own
+standard and they belong to their upstreams.  They are listed in the
+source rather than merely excluded, so that *"the rule reports nothing"*
+cannot be read as *"the rule found nothing"*.
+
+With the same vendor exclusion every other lint has, it reports **0
+across 16,675 files**, with 26,508 skipped — and 16,675 + 26,508 is
+43,183, the original total, so the exclusion loses no file to a typo.
+`crypto/` was checked before excluding it: it holds only heimdal, krb5,
+libecc, openssh and openssl, and `check_pbsd_marks.py` has no entry
+under it, which is the test for "somewhere PBSD edits".
+
+### A rule that reports zero is the one that most needs a test
+
+There was none.  From its output alone, a rule finding nothing is
+indistinguishable from a rule that has stopped looking — and this one
+now gates on finding nothing, which makes the distinction load-bearing.
+
+`test_null_branch.py` drives it twenty-two ways: three shapes it must
+report (`p == NULL`, `!p`, `NULL == p`), four it must not (the ordinary
+guard that returns, a different pointer, a re-assignment before the
+read, a non-NULL test), nine paths for the vendor predicate including a
+near miss (`lib/libcrypto_shim/` is not `crypto/`), and — the one that
+actually settles it — that **five of the nine vendored sites are still
+found when scanned directly**.  Zero because scoped, not zero because
+broken.
+
+Checked rather than assumed: widening `VENDOR` to swallow `lib/` makes
+the test exit 1, and restoring it exits 0.
+
+### `noreturn_check.py` is still not in CI
+
+It is the fourth rule that has never run there, and it does not go in
+with this commit.  Tree-wide it was **killed at the 900-second timeout**
+in this container, so the question of what it reports is still open —
+and putting a fifteen-minute step into the `lints` job without knowing
+its number would be adding an unread gate, which is the thing this whole
+exercise has been removing.  It stays on the list.

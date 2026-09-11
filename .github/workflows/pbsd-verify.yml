@@ -407,6 +407,23 @@ jobs:
       # not one. The three that remain are in its EXPECTED with the
       # callee or the ..._locked() contract that makes each safe, so an
       # ELEVENTH fails the build instead of waiting to be read.
+      # `if (p == NULL) ... p->field ...' is dead code or a guaranteed
+      # fault, with no third reading -- so it needs no premise about
+      # reachability and can run over the whole tree in seconds. It has
+      # never run here either, for one reason: it walked contrib/ and
+      # crypto/, which no other rule in tools/verify/ does, and ALL NINE
+      # sites it reports are in those vendored trees. None is in code
+      # this project owns. With the same exclusion the others have it
+      # reports zero across 16,675 files, so it gates.
+      - name: A pointer read inside the branch that tested it for NULL
+        run: python3 tools/verify/null_branch.py --gate
+      # A rule reporting ZERO is indistinguishable, from its output
+      # alone, from a rule that has stopped looking. This one checks
+      # that the nine vendored sites are STILL FOUND when scanned
+      # directly: zero because scoped, not zero because broken.
+      - name: ...and the nine it excludes are still visible to it
+        run: python3 tools/verify/test_null_branch.py
+
       - name: A lock released on some paths out of a function and not others
         run: python3 tools/verify/lock_balance.py --gate
       - name: ...and the lock rule still finds the ten it was written for
