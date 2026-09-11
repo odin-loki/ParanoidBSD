@@ -242,7 +242,14 @@ sume_rx_build_mbuf(struct sume_adapter *adapter, uint32_t len)
 
 	/* We got the packet from one of the even bits */
 	np = (ffs(dport & SUME_DPORT_MASK) >> 1) - 1;
-	if (np > SUME_NPORTS) {
+	/*
+	 * ffs(0) is 0, so a dport with no bit in SUME_DPORT_MASK makes
+	 * np -1 -- and ifp[] is if_t ifp[SUME_NPORTS], so ifp[-1] was a
+	 * read before the array whose result is then dereferenced and
+	 * counted through (nf_priv->stats.rx_packets++).  `>' also let
+	 * through entry SUME_NPORTS itself.
+	 */
+	if (np < 0 || np >= SUME_NPORTS) {
 		device_printf(dev, "invalid destination port 0x%04x (%d)\n",
 		    dport, np);
 		adapter->packets_err++;

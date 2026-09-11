@@ -25965,3 +25965,62 @@ resolves translation units from the kernel configuration.
   validation and the `d_reclen` walk produced; fsck's contract with a
   corrupt filesystem is `errx`, and it takes it on the paths above
   these.
+
+## `sume`: `ffs(0)` is zero, and the port index is one less than that
+
+Working the `sys/dev` backlog in bulk — printing, for each unread site,
+the statement that *assigns* the index rather than the one that reads
+it — turned up one more defect immediately:
+
+```c
+	/* We got the packet from one of the even bits */
+	np = (ffs(dport & SUME_DPORT_MASK) >> 1) - 1;
+	if (np > SUME_NPORTS) {
+		... return (NULL);
+	}
+	ifp = adapter->ifp[np];
+	nf_priv = if_getsoftc(ifp);
+	nf_priv->stats.rx_packets++;
+```
+
+`SUME_DPORT_MASK` is `0xaa` — bits 1, 3, 5 and 7 — so a valid `dport`
+gives `ffs` of 2, 4, 6 or 8, `>> 1` of 1..4, and `np` of 0..3, which is
+exactly `if_t ifp[SUME_NPORTS]` with `SUME_NPORTS` 4.
+
+`ffs(0)` is **0**.  A `dport` carrying no bit of the mask gives
+`np == -1`, `ifp[-1]` is a read before the array, and the pointer that
+comes back is dereferenced and then written through
+(`nf_priv->stats.rx_packets++`).  `dport` is RX metadata the NetFPGA
+card DMAs in.
+
+`>` was also one too many, for the usual reason, so the test is now
+`np < 0 || np >= SUME_NPORTS`.
+
+### The bulk pass that found it
+
+94 sites in `sys/dev` were still unread.  Classifying them by the
+*source* of the index rather than reading each in full sorts almost all
+of them at a glance:
+
+| source | sites | verdict |
+|---|---|---|
+| a parameter, floor at the caller | 54 | internal contract |
+| `& mask` or `__SHIFTOUT` | 6 | floored by the mask |
+| a ternary over two literals | 6 | 0..1, 1..2, 2..3 |
+| `find_first_bit` / `find_first_zero_bit` | 3 | 0..size, never negative |
+| `device_get_unit()` | 2 | non-negative for an attached device |
+| a fixed constant or another local | 2 | — |
+| **computed** | **21** | **worth reading one by one** |
+
+The computed ones are where the reading effort belongs, and `sume` was
+the first of them.  Also read from that set and clean:
+`mlx5_ib_gsi.c:473` (`qp_index = wr->pkey_index`, and `pkey_index` is
+`u16` in `struct ib_ud_wr`), `agp_ali.c:185`
+(`pci_read_config(...) & 0xf`), `bwirf.c:1023` (`__SHIFTOUT`),
+`mwlhal.c:2763` (`le16toh` of a firmware field),
+`mlx4_resource_tracker.c:748` (`(sched_queue & 0x40) ? 2 : 1`).
+
+### Measured
+
+`sys/dev/sume` ONESIDED **1 → 0**, analyser **0 → 0** with its one
+translation unit compiling both ways.  Tree-wide ONESIDED **226 → 225**.

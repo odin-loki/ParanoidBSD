@@ -4065,6 +4065,15 @@ FIXES = {
         "line with `line[0] != \'\\0\'\'",
     ),
 
+    "hbsd/src/sys/dev/sume/if_sume.c": (
+        "\tif (np < 0 || np >= SUME_NPORTS) {",
+        "\tif (np > SUME_NPORTS) {",
+        "sume_rx_build_mbuf() derives the port as "
+        "`(ffs(dport & SUME_DPORT_MASK) >> 1) - 1' and ffs(0) is 0, so "
+        "a dport carrying no bit of the mask makes np -1; ifp[] is "
+        "if_t ifp[SUME_NPORTS], so ifp[-1] was a read before the array "
+        "whose result is dereferenced and counted through",
+    ),
     "hbsd/src/sys/dev/kbd/kbd.c": (
         "\tif (fkey < 0 || fkey >= kbd->kb_fkeytab_size)",
         "\tif (fkey > kbd->kb_fkeytab_size)",
