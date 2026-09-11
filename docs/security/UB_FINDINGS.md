@@ -27075,3 +27075,73 @@ construction.
 `lib/libc/gen`, same scope both sides: 171 translation units, 0 ERROR
 on both, and the forty analyser findings are the same forty by checker,
 function and message.  Two markers, revert-verified.
+
+## The eight lines both instruments flag: eight shared blind spots
+
+The report prints these last and tells you what to expect:
+
+> Agreement is corroboration only where they fail independently.
+> A shared blind spot — an unconstrained pointer parameter, an
+> invariant held in a struct field — makes them agree and both be
+> wrong.  Worth thirty seconds each; not worth more on trust.
+
+Eight lines, eight blind spots.  That is not a disappointing result —
+it is the section doing its job, and it is worth writing down that the
+score was 0 for 8, because the next reading should start from there
+rather than from hope.
+
+* **`lib/libc/iconv/citrus_mapper.c:188`** — CBMC: *pointer NULL in
+  `cm->cm_ops->mo_uninit`*; analyser: *called function pointer is
+  null*.  `mapper_close()` checks `cm_ops` and `cm_closure` but not
+  `mo_uninit`.  The check is two functions away, in `mapper_init()`:
+
+  ```c
+	if (!cm->cm_ops->mo_init ||
+	    !cm->cm_ops->mo_uninit ||
+	    !cm->cm_ops->mo_convert ||
+	    !cm->cm_ops->mo_init_state) {
+		ret = EINVAL;
+		goto err;
+	}
+  ```
+
+  and `cm_closure` is `NULL` from `mapper_init()`'s own initialiser
+  until `mo_init` — which runs only *after* that check — sets it.  So
+  on every path where `cm_closure != NULL`, `mo_uninit` is non-NULL.
+
+* **`lib/libc/stdio/fread.c:129` and `:140`** — the `FILE`-internals
+  class again: `fp->_p` is `NULL` only for a `FILE` whose buffer was
+  never made, and the `memcpy` at 129 runs only under `if (r != 0)`,
+  where `r` is `fp->_r`, which `__srefill()` sets together with `_p`.
+
+* **`lib/libc/stdio/getdelim.c:103`** — `sappend()` does
+  `expandtofit(dstp, srclen + *dstlenp + 1, dstcapp)` and then
+  `memcpy(*dstp + *dstlenp, src, srclen)`.  The sum is `size_t` and
+  could wrap for an `srclen` near `SIZE_MAX`, but `srclen` is
+  `getdelim()`'s own `endp - fp->_p`, bounded by the buffer it came
+  from.
+
+* **`lib/libc/stdio/vfwprintf.c:195`** — `__sprint()` walks a
+  `struct __suio *` the caller filled; unconstrained, its `iov_base`
+  is arbitrary.  `len` is assigned in the body before the increment
+  expression that reads it, on every iteration that reaches the
+  increment.
+
+* **`libexec/getty/chat.c:251`, `:254`, `:257`** — `cleanchr()` does
+  `char *tmp = buf ? *buf : tmpbuf;` and then writes through `tmp`, so
+  a non-NULL `buf` holding a NULL pointer is a NULL write.  Its only
+  two callers are `cleanchr(NULL, ch)` and, in `cleanstr()`,
+  `cleanchr(&p, ...)` with `p = tmp` — and `tmp` is a static that is
+  non-NULL whenever `tmplen` is large enough, because `tmplen` is
+  assigned only inside `if (ntmp != NULL)`.  The `tmplen < l * 4 + 1`
+  test above it returns `"(mem alloc error)"` otherwise.
+
+  One thing in `cleanstr()` is worth recording even though it is not
+  reachable: `l` is an `int` from `strlen(str)`, and `l * 4 + 1` is
+  `int` arithmetic.  An `l` above about 536 million makes the capacity
+  negative, both tests false, and the `while (i < l)` loop writes `l`
+  characters into whatever `tmp` currently is.  The strings come from
+  `gettytab`'s chat script, so this needs a half-gigabyte capability
+  value; it is the `capacity_first` shape rather than a live defect,
+  and it is written down here rather than fixed, because the fix would
+  be a bound on a number nobody can supply.
