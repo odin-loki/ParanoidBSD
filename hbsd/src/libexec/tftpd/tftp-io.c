@@ -151,7 +151,26 @@ send_error(int peer, int error)
 		pe->e_msg = strerror(error - 100);
 		tp->th_code = EUNDEF;   /* set 'undef' errorcode */
 	}
-	snprintf(tp->th_msg, MAXPKTSIZE - 4, "%s%n", pe->e_msg, &length);
+	/*
+	 * PBSD: this was `"%s%n", pe->e_msg, &length' on an uninitialised
+	 * int.  %n stores only if the conversion is reached, so a
+	 * snprintf() that fails -- it returns negative on an encoding
+	 * error -- leaves length indeterminate, and the next two
+	 * statements are `length += 5' and sendto(peer, buf, length).
+	 * That is a stack buffer and a length nobody chose, written to a
+	 * socket.  snprintf() returns the count; there was never a reason
+	 * to ask for it a second way, and %n in a format string is the
+	 * thing FORTIFY_SOURCE exists to refuse.
+	 *
+	 * The clamp is the truncating case: th_msg has MAXPKTSIZE - 4
+	 * bytes, so at most MAXPKTSIZE - 5 characters and a terminator,
+	 * and the packet is then exactly MAXPKTSIZE.
+	 */
+	length = snprintf(tp->th_msg, MAXPKTSIZE - 4, "%s", pe->e_msg);
+	if (length < 0)
+		length = 0;
+	else if (length > MAXPKTSIZE - 5)
+		length = MAXPKTSIZE - 5;
 	length += 5; /* header and terminator */
 
 	if (debug & DEBUG_PACKETS)

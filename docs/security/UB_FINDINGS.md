@@ -26823,3 +26823,74 @@ by every file in `lib/libc/iconv`, and changing it is a change to the
 locale layer's locking rather than a one-line bound; it wants its own
 pass, not a footnote to a file-format fix.  Written down so the next
 reading starts from the reason rather than the symptom.
+
+## tftpd's error packet takes its length from `%n` into an uninitialised int
+
+`libexec/tftpd`'s bucket had one entry not already on the not-a-defect
+table:
+
+```
+  libexec/tftpd/tftp-io.c:send_error
+      line 155 arithmetic overflow on signed + in length + 5
+```
+
+CBMC says `length + 5` because `length` is unconstrained.  It is:
+
+```c
+	int length;
+	...
+	snprintf(tp->th_msg, MAXPKTSIZE - 4, "%s%n", pe->e_msg, &length);
+	length += 5; /* header and terminator */
+	...
+	if (sendto(peer, buf, length, 0,
+		(struct sockaddr *)&peer_sock, peer_sock.ss_len) != length)
+```
+
+`%n` stores only if the conversion is reached.  `snprintf()` returns
+negative on an encoding error and there is no path on which `length` is
+otherwise written, so a failed conversion leaves it indeterminate — and
+the next two statements add five to it and hand it to `sendto()` as the
+length of a stack buffer.  That is an arbitrary count of `buf`'s frame
+put on the wire, or a `sendto` that fails on a nonsense length; which
+one depends on what was in the slot.
+
+`snprintf()` already returns the count.  There was never a reason to ask
+for it a second way, and `%n` in a format string is the construct
+`FORTIFY_SOURCE` exists to refuse:
+
+```c
+	length = snprintf(tp->th_msg, MAXPKTSIZE - 4, "%s", pe->e_msg);
+	if (length < 0)
+		length = 0;
+	else if (length > MAXPKTSIZE - 5)
+		length = MAXPKTSIZE - 5;
+	length += 5; /* header and terminator */
+```
+
+The clamp is the truncating case, which the `%n` form got right only by
+accident: `th_msg` has `MAXPKTSIZE - 4` bytes, so at most
+`MAXPKTSIZE - 5` characters and a terminator, and the packet is then
+exactly `MAXPKTSIZE`.
+
+`usr.bin/tftp`'s Makefile has `.PATH: ${SRCTOP}/libexec/tftpd` and
+builds `tftp-io.c` too, so this is both ends of the protocol.
+
+### The other two in the same file, read and not changed
+
+* `receive_packet:396`, `-timeout` and `1000 * (timeout < 0 ? -timeout
+  : timeout)`.  Unary minus is undefined only on `INT_MIN`, and
+  `timeoutpacket` cannot be: `option_timeout()` rejects anything
+  outside `[TIMEOUT_MIN, TIMEOUT_MAX]` — 0 and 255 — before assigning
+  it, and that is the only path from the client's RFC 2349 `timeout`
+  option.  `tftp-transfer.c:436` passes `-timeoutpacket`, which is why
+  the negation is there at all.  One clamp in another file is the whole
+  of the argument, so it is written down here rather than left implied.
+* `send_error:151`, `strerror(error - 100)`.  The caller builds `error`
+  as `errno + 100`; `strerror()` accepts any `int`.  Already on the
+  not-a-defect table from run 21.
+
+### Measured
+
+`libexec/tftpd`, same scope both sides: 7 translation units, 0 ERROR on
+both, 0 analyser findings on both.  One marker, revert-verified, and
+the revert checked not to be a no-op.

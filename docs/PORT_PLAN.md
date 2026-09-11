@@ -52,7 +52,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
 | 1 | `lib` | 2,827 | 640,904 | 9,057 |
-| 2 | `libexec` | 170 | 48,065 | 623 |
+| 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,841** | **114,208** |
+| | **total** | **41,143** | **21,302,860** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -14527,7 +14527,7 @@ function; a file with two hundred of them is a project.
   - [ ] 2.44.1.10 `read_close()` · `TODO-FN`
   - [ ] 2.44.1.11 `synchnet()` · `TODO-FN`
 - [ ] **2.44.2** `tftp-file.h` · 40L · `TODO-HDR`
-- [ ] **2.44.3** `tftp-io.c` · 448L · `TODO-PORT` · 9 fn
+- [ ] **2.44.3** `tftp-io.c` · 467L · `TODO-PORT` · 9 fn
   - [ ] 2.44.3.1 `errtomsg()` · `TODO-FN`
   - [ ] 2.44.3.2 `send_packet()` · `TODO-FN`
   - [ ] 2.44.3.3 `send_error()` · `TODO-FN`

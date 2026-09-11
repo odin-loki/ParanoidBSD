@@ -2373,6 +2373,19 @@ FIXES = {
             "the offset ever runs",
         ),
     ],
+    "hbsd/src/libexec/tftpd/tftp-io.c": (
+        "\tlength = snprintf(tp->th_msg, MAXPKTSIZE - 4, \"%s\", pe->e_msg);",
+        "\tsnprintf(tp->th_msg, MAXPKTSIZE - 4, \"%s%n\", pe->e_msg, &length);",
+        "send_error() took the packet length from a %n into an "
+        "uninitialised int. %n stores only if the conversion is "
+        "reached, so a snprintf() that fails -- it returns negative on "
+        "an encoding error -- leaves length indeterminate, and the next "
+        "two statements are `length += 5' and sendto(peer, buf, "
+        "length): a stack buffer and a length nobody chose, written to "
+        "a socket. snprintf() returns the count, clamped here for the "
+        "truncating case, and %n in a format string is what "
+        "FORTIFY_SOURCE exists to refuse",
+    ),
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (
         "\tif (a->size < b->size)\n\t\treturn (-1);",
         "\treturn ((int)a->size - (int)b->size);",
