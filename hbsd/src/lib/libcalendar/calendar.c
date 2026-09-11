@@ -27,7 +27,34 @@
  */
 
 #include <sys/cdefs.h>
+#include <limits.h>
 #include "calendar.h"
+
+/*
+ * PBSD: the largest year and day count this library can answer for.
+ *
+ * Everything here goes through ndaysji(), which is
+ *
+ *	idt->d + month1[idt->m] + idt->y * 365 + idt->y / 4
+ *
+ * in an int, so a year past INT_MAX / 366 overflows.  It overflows
+ * BEFORE any of the range tests can see it, because the tests in this
+ * file are written after the arithmetic they bound -- date2idt()
+ * computes `dt->y - 1' and only then asks whether the result is
+ * negative, which is a question about a value the standard does not
+ * define.
+ *
+ * ncal(1) range-checks the year it takes as a positional argument
+ * (1..9999) but not the one in -d or -H, both of which are strtol()
+ * straight into an int.  So the number really does arrive from a
+ * command line.
+ *
+ * CAL_MAXDAYS is the same bound expressed the way jdate() and gdate()
+ * are handed it.  At CAL_MAXYEAR the whole expression is
+ * 5864662*365 + 1466165 + 337 + 30, comfortably inside an int.
+ */
+#define	CAL_MAXYEAR	(INT_MAX / 366)
+#define	CAL_MAXDAYS	(CAL_MAXYEAR * 365 + CAL_MAXYEAR / 4)
 
 #ifndef NULL
 #define NULL 0
@@ -68,6 +95,10 @@ jdate(int ndays, date *dt)
 {
 	date    idt;		/* Internal date representation */
 	int     r;		/* hold the rest of days */
+
+	/* and the same bound from the other direction (see CAL_MAXYEAR) */
+	if (ndays < 0 || ndays > CAL_MAXDAYS)
+		return (NULL);
 
 	/*
 	 * Compute the year by starting with an approximation not smaller
@@ -133,6 +164,10 @@ gdate(int ndays, date *dt)
 	int const *montht;	/* month-table */
 	date    idt;		/* for internal date representation */
 	int     r;		/* holds the rest of days */
+
+	/* and the same bound from the other direction (see CAL_MAXYEAR) */
+	if (ndays < 0 || ndays > CAL_MAXDAYS)
+		return (NULL);
 
 	/*
 	 * Compute the year by starting with an approximation not smaller
@@ -238,7 +273,17 @@ week(int nd, int *y)
 	date    dt;
 	int     fw;		/* 1st day of week 1 of previous, this and
 				 * next year */
-	gdate(nd, &dt);
+	/*
+	 * PBSD: this ignored gdate()'s return, which was safe only
+	 * because gdate() had no early exit -- it always filled dt.  Now
+	 * that it rejects a day count it cannot express, `dt.y' on the
+	 * rejected path is an uninitialised read, and the analyser said
+	 * so the moment the bound went in: "The left operand of '+' is a
+	 * garbage value".  That is what the before/after measurement is
+	 * for.  -1 is the failure value the rest of this library uses.
+	 */
+	if (gdate(nd, &dt) == NULL)
+		return (-1);
 	for (*y = dt.y + 1; nd < (fw = firstweek(*y)); (*y)--)
 		;
 	return ((nd - fw) / 7 + 1);
@@ -303,6 +348,18 @@ weekday(int nd)
 static date *
 date2idt(date *idt, date *dt)
 {
+
+	/*
+	 * PBSD: bound first.  `dt->y - 1' on INT_MIN, `dt->m + 9' near
+	 * INT_MAX and `dt->d - 1' on INT_MIN are all signed overflow,
+	 * and the test below cannot reject what it cannot see.  The
+	 * accepted domain is unchanged: every (y, m, d) the old test
+	 * let through still gets through, because each clause here
+	 * rejects only values that overflowed.
+	 */
+	if (dt->y < 0 || dt->y > CAL_MAXYEAR || dt->d == INT_MIN ||
+	    dt->m > INT_MAX - 9 || dt->m < INT_MIN + 3)
+		return (NULL);
 
 	idt->d = dt->d - 1;
 	if (dt->m > 2) {

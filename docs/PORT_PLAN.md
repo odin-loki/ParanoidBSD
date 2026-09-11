@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,971 | 9,057 |
+| 1 | `lib` | 2,827 | 641,043 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,927** | **114,208** |
+| | **total** | **41,143** | **21,302,999** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -6552,7 +6552,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.138 `lib/libcalendar` · 1 module(s) under `pbsd/lib/libcalendar`
 
-- [ ] **1.138.1** `calendar.c` · 339L · `TODO-PORT` · 11 fn
+- [ ] **1.138.1** `calendar.c` · 396L · `TODO-PORT` · 11 fn
   - [ ] 1.138.1.1 `jdate()` · `TODO-FN`
   - [ ] 1.138.1.2 `ndaysj()` · `TODO-FN`
   - [ ] 1.138.1.3 `ndaysji()` · `TODO-FN`
@@ -6565,7 +6565,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.138.1.10 `date2idt()` · `TODO-FN`
   - [ ] 1.138.1.11 `idt2date()` · `TODO-FN`
 - [ ] **1.138.2** `calendar.h` · 43L · `TODO-HDR`
-- [ ] **1.138.3** `easter.c` · 113L · `TODO-PORT` · 4 fn
+- [ ] **1.138.3** `easter.c` · 128L · `TODO-PORT` · 4 fn
   - [ ] 1.138.3.1 `easterg()` · `TODO-FN`
   - [ ] 1.138.3.2 `easterog()` · `TODO-FN`
   - [ ] 1.138.3.3 `easteroj()` · `TODO-FN`

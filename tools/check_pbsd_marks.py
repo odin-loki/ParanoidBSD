@@ -2471,6 +2471,82 @@ FIXES = {
             "against ITS limit rather than against this malloc",
         ),
     ],
+    "hbsd/src/lib/libcalendar/calendar.c": [
+        (
+            "#define\tCAL_MAXYEAR\t(INT_MAX / 366)",
+            None,
+            "everything in this library goes through ndaysji(), which "
+            "is `d + month1[m] + y * 365 + y / 4' in an int, so a year "
+            "past INT_MAX / 366 overflows -- and overflows BEFORE any "
+            "of the range tests can see it, because the tests here are "
+            "written after the arithmetic they bound. ncal(1) "
+            "range-checks the year it takes as a positional argument "
+            "but not the one in -d or -H, both strtol() straight into "
+            "an int",
+        ),
+        (
+            "\tif (dt->y < 0 || dt->y > CAL_MAXYEAR || dt->d == INT_MIN ||",
+            "{\n\n\tidt->d = dt->d - 1;",
+            "date2idt() computed `dt->y - 1', `dt->m + 9' and "
+            "`dt->d - 1' and only then asked whether the results were "
+            "in range. The accepted domain is unchanged: every "
+            "(y, m, d) the old test let through still gets through, "
+            "because each new clause rejects only values that "
+            "overflowed",
+        ),
+        (
+            ("\tif (ndays < 0 || ndays > CAL_MAXDAYS)", 2),
+            None,
+            "and the same bound from the other direction: jdate() and "
+            "gdate() are handed the day count directly, and "
+            "`ndays / 365' near INT_MAX puts the year straight back "
+            "past CAL_MAXYEAR",
+        ),
+        (
+            "\tif (gdate(nd, &dt) == NULL)\n\t\treturn (-1);",
+            "\tgdate(nd, &dt);",
+            "and week() ignored gdate()'s return, which was safe only "
+            "because gdate() had no early exit -- it always filled dt. "
+            "With the bound in, `dt.y' on the rejected path is an "
+            "uninitialised read, and the analyser said so the moment "
+            "the bound went in. That is what the before/after "
+            "measurement is for",
+        ),
+        (
+            "nd = (int)(((long long)nd - nmonday) % 7);",
+            "nd = (nd - nmonday) % 7;",
+            "weekday() subtracted a cached day number of 729652 from "
+            "its int parameter, which overflows -- undefined, not "
+            "merely wrong -- for every nd below INT_MIN + 729652. It "
+            "is a public libcalendar entry point with no stated "
+            "domain, so that is its whole int range. Found by the "
+            "fuzzing engine, which replayed the input and got a UBSan "
+            "report naming the line.",
+        ),
+    ],
+    "hbsd/src/lib/libcalendar/easter.c": [
+        (
+            "\tif (y < 0 || y > INT_MAX / 366)\n\t\treturn (NULL);",
+            None,
+            "easterg() computes `y + y/4', which is signed overflow "
+            "for a year past INT_MAX - INT_MAX/4, and it is a public "
+            "entry point taking a plain int with no stated domain. "
+            "The same bound calendar.c uses keeps the two halves of "
+            "the library agreeing about what a year is",
+        ),
+        (
+            "dt.d = mc[((y % 19) + 19) % 19];",
+            "dt.d = mc[y % 19];",
+            "C's % keeps the sign of the dividend, so y % 19 is "
+            "negative for every negative year and mc[] was indexed out "
+            "of bounds. easterog() and easteroj() are public entry "
+            "points taking a plain int year with no stated domain, and "
+            "the rest of this library does handle years before 1. The "
+            "metonic cycle is periodic mod 19, so the Euclidean "
+            "remainder is also the mathematically right index and "
+            "nothing at or above zero changes.",
+        ),
+    ],
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (
         "\tif (a->size < b->size)\n\t\treturn (-1);",
         "\treturn ((int)a->size - (int)b->size);",
@@ -6985,30 +7061,8 @@ FIXES = {
     ),
 
 
-    "hbsd/src/lib/libcalendar/easter.c": (
-        "dt.d = mc[((y % 19) + 19) % 19];",
-        "dt.d = mc[y % 19];",
-        "C's % keeps the sign of the dividend, so y % 19 is negative "
-        "for every negative year and mc[] was indexed out of bounds. "
-        "easterog() and easteroj() are public entry points taking a "
-        "plain int year with no stated domain, and the rest of this "
-        "library does handle years before 1. The metonic cycle is "
-        "periodic mod 19, so the Euclidean remainder is also the "
-        "mathematically right index and nothing at or above zero "
-        "changes.",
-    ),
 
 
-    "hbsd/src/lib/libcalendar/calendar.c": (
-        "nd = (int)(((long long)nd - nmonday) % 7);",
-        "nd = (nd - nmonday) % 7;",
-        "weekday() subtracted a cached day number of 729652 from its "
-        "int parameter, which overflows -- undefined, not merely wrong "
-        "-- for every nd below INT_MIN + 729652. It is a public "
-        "libcalendar entry point with no stated domain, so that is its "
-        "whole int range. Found by the fuzzing engine, which replayed "
-        "the input and got a UBSan report naming the line.",
-    ),
 
 
     "hbsd/src/usr.sbin/crunch/crunchide/exec_elf32.c": (

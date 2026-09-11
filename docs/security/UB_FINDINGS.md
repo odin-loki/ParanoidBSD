@@ -27190,3 +27190,102 @@ its own Makefile: it reads the arch JSON, writes `pmu-events.c` and
 exits.  Eighteen genuine leaks with no consequence, which is a
 different verdict from eighteen false positives and should not be
 filed as one.
+
+## `libcalendar`: seven findings, one bound, and a regression the measurement caught
+
+`lib/libcalendar`'s seven entries are all the same shape — arithmetic
+on a year, bounded afterwards:
+
+```
+  calendar.c:jdate   line 122 ... in idt->y * 365
+  calendar.c:ndaysg  line 307 ... in dt->d - 1
+                     line 313 ... in dt->y - 1
+  easter.c:easterg   line 47  ... in y + y / 4
+  easter.c:easterog  line 111 ... in dn + ns[return_value_weekday]
+```
+
+`date2idt()` is where it starts:
+
+```c
+	idt->d = dt->d - 1;
+	if (dt->m > 2) {
+		idt->m = dt->m - 3;
+		idt->y = dt->y;
+	} else {
+		idt->m = dt->m + 9;
+		idt->y = dt->y - 1;
+	}
+	if (idt->m < 0 || idt->m > 11 || idt->y < 0)
+		return (NULL);
+```
+
+The test is written *after* the arithmetic it bounds.  `dt->y - 1` on
+`INT_MIN` is signed overflow, and `idt->y < 0` cannot reject a value the
+standard does not define.  `ncal(1)` range-checks the year it takes as a
+positional argument — `1..9999` — but not the one in `-d` or `-H`, both
+of which are `strtol()` straight into an `int`.
+
+Everything else follows from `ndaysji()`:
+
+```c
+	return (idt->d + month1[idt->m] + idt->y * 365 + idt->y / 4);
+```
+
+so one bound serves the whole library: `CAL_MAXYEAR` is `INT_MAX / 366`,
+and `CAL_MAXDAYS` is the same number expressed the way `jdate()` and
+`gdate()` are handed it.  With `dt->y` bounded there, `easterodn()`'s
+`dn + ns[weekday(dn)]` is bounded too, because `dn` comes back from
+`ndaysj()`.  The accepted domain is unchanged — each new clause rejects
+only values that overflowed.
+
+### And then the measurement earned its keep
+
+Before/after over `lib/libcalendar` came back **0 findings → 1**:
+
+```
+  lib/libcalendar/calendar.c:277  [core.UndefinedBinaryOperatorResult]
+      The left operand of '+' is a garbage value          (fn: week)
+```
+
+```c
+week(int nd, int *y)
+{
+	date    dt;
+	int     fw;
+
+	gdate(nd, &dt);
+	for (*y = dt.y + 1; nd < (fw = firstweek(*y)); (*y)--)
+```
+
+`week()` has always ignored `gdate()`'s return.  That was safe only
+because `gdate()` had no early exit — it always filled `dt`.  Giving
+`gdate()` a bound turned an old piece of sloppiness into a live
+uninitialised read, and the analyser said so on the first run after the
+change.
+
+This is the case the before/after exists for.  A fix that is right in
+isolation is not right until the same instrument has been pointed at
+the tree on both sides of it — and a fix that trades an overflow for an
+uninitialised read is not an improvement.  `week()` checks now, and
+returns `-1`, which is the failure value `ndaysj()` and `ndaysg()`
+already use.
+
+### Measured
+
+`lib/libcalendar`, same scope both sides: 2 translation units, 0 ERROR
+on both, **0 analyser findings on both**.  The intermediate state — the
+one with the regression in it — is written up above rather than
+quietly fixed, because the interesting thing here is not the bound, it
+is that the bound broke something and the procedure caught it.
+
+`--check-errors` earned its keep in the same pass: the first version of
+the `easterg()` guard used `NULL` in a file that includes only
+`<sys/cdefs.h>` and `"calendar.h"`, and the gate refused it —
+*`lib/libcalendar/easter.c` does not compile and is not in EXPECTED*.
+A file that does not compile reports zero findings and is
+indistinguishable from a clean one; that is the whole reason the flag
+is there.
+
+Seven markers, each revert-verified.  Two of them are the file's
+existing entries, folded into the new lists because
+`check_pbsd_marks.py` caught the duplicate keys — twice in one day now.

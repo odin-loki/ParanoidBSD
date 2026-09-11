@@ -27,6 +27,8 @@
  */
 
 #include <sys/cdefs.h>
+#include <limits.h>
+#include <stddef.h>
 #include "calendar.h"
 
 typedef struct date date;
@@ -38,6 +40,19 @@ date *
 easterg(int y, date *dt)
 {
 	int c, i, j, k, l, n;
+
+	/*
+	 * PBSD: `y + y/4' below is signed overflow for a year past
+	 * INT_MAX - INT_MAX/4, and this is a public entry point taking a
+	 * plain int with no stated domain.  calendar.c bounds the year at
+	 * INT_MAX / 366 because everything there goes through
+	 * `y * 365 + y / 4' in an int; the same bound serves here and
+	 * keeps the two halves of the library agreeing about what a year
+	 * is.  NULL is what gdate() and jdate() already return for a date
+	 * they cannot express.
+	 */
+	if (y < 0 || y > INT_MAX / 366)
+		return (NULL);
 
 	n = y % 19;
 	c = y / 100;
