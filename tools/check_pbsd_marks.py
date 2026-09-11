@@ -5687,6 +5687,18 @@ FIXES = {
         "below it is checked with xo_errx",
     ),
 
+    "hbsd/src/lib/libproc/proc_rtld.c": (
+        "\t\ttmp = reallocarray(phdl->mappings, phdl->maparrsz * 2,",
+        "\t\tphdl->maparrsz *= 2;\n\t\ttmp = reallocarray(phdl->mappings, phdl->maparrsz,",
+        "map_iter: the POINTER was already handled correctly, through "
+        "tmp -- the SIZE was not. Doubling maparrsz before the "
+        "allocation left a failed grow returning -1 with maparrsz "
+        "claiming twice the array that exists, so the next call found "
+        "`nmappings >= maparrsz' false, skipped the grow entirely, and "
+        "wrote past the end of the real array. Neither clang's analyser "
+        "nor realloc_self.py can see this one",
+    ),
+
     "hbsd/src/usr.bin/localedef/ctype.c": [
         (
             "\t\t\tnct = realloc(ct, sizeof (*ct) * runetype_ext_nranges);\n\t\t\tif (nct == NULL)",

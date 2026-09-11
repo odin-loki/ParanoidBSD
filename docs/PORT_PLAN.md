@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,362 | 9,056 |
+| 1 | `lib` | 2,827 | 640,371 | 9,056 |
 | 2 | `libexec` | 170 | 48,035 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,124** | **114,207** |
+| | **total** | **41,143** | **21,302,133** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -10002,7 +10002,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.268.5** `proc_regs.c` · 145L · `TODO-PORT` · 2 fn
   - [ ] 1.268.5.1 `proc_regget()` · `TODO-FN`
   - [ ] 1.268.5.2 `proc_regset()` · `TODO-FN`
-- [ ] **1.268.6** `proc_rtld.c` · 136L · `TODO-PORT` · 4 fn
+- [ ] **1.268.6** `proc_rtld.c` · 145L · `TODO-PORT` · 4 fn
   - [ ] 1.268.6.1 `map_iter()` · `TODO-FN`
   - [ ] 1.268.6.2 `rdl2prmap()` · `TODO-FN`
   - [ ] 1.268.6.3 `proc_rdagent()` · `TODO-FN`

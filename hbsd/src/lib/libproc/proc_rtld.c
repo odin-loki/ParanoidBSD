@@ -49,12 +49,21 @@ map_iter(const rd_loadobj_t *lop, void *arg)
 
 	phdl = arg;
 	if (phdl->nmappings >= phdl->maparrsz) {
-		phdl->maparrsz *= 2;
-		tmp = reallocarray(phdl->mappings, phdl->maparrsz,
+		/*
+		 * PBSD: maparrsz is committed only once the array is that
+		 * big.  The pointer was already handled correctly, through
+		 * tmp -- the SIZE was not.  Doubling it before the
+		 * allocation meant a failed grow returned -1 with maparrsz
+		 * claiming twice the array that exists, so the next call
+		 * found `nmappings >= maparrsz' false, skipped the grow
+		 * entirely, and wrote past the end of the real array.
+		 */
+		tmp = reallocarray(phdl->mappings, phdl->maparrsz * 2,
 		    sizeof(*phdl->mappings));
 		if (tmp == NULL)
 			return (-1);
 		phdl->mappings = tmp;
+		phdl->maparrsz *= 2;
 	}
 
 	mapping = &phdl->mappings[phdl->nmappings];

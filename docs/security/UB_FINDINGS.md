@@ -24536,3 +24536,87 @@ Not claimed: that CI is green.  The local ERROR set is provably
 unchanged by this commit — `absent_toolchain_sources()` returns an empty
 dict here, and the test asserts it — so the only thing that can confirm
 the fix is the next run, again.
+
+---
+
+## The other half of the same failure: the capacity, committed first
+
+`realloc_self.py` finds the pointer being destroyed by the report of its
+own failure.  There is a second half, and it hides in the sites where the
+pointer was handled *correctly*:
+
+```c
+	phdl->maparrsz *= 2;
+	tmp = reallocarray(phdl->mappings, phdl->maparrsz,
+	    sizeof(*phdl->mappings));
+	if (tmp == NULL)
+		return (-1);
+	phdl->mappings = tmp;
+```
+
+`lib/libproc/proc_rtld.c:52`.  Textbook temporary, textbook check — and a
+failed grow returns `-1` with `maparrsz` claiming twice the array that
+exists.  The next call to `map_iter()` evaluates `nmappings >= maparrsz`,
+finds it **false**, skips the grow entirely, and writes past the end of
+the real array.  The allocation is never retried, because the structure
+already believes it happened.
+
+Neither instrument sees this.  clang's analyser does not model the
+struct field across calls; `realloc_self.py` does not fire because the
+pointer never touches the failing expression.  The only way to find it is
+to notice that two lines are in the wrong order — which is why it is now
+a rule, `tools/verify/capacity_first.py`.
+
+The shape had already been the defect ten times today, every one of them
+caught only because the *pointer* was also destroyed: `ng_macfilter`
+twice, `padlock_sha_update`, `chunk_ref`, `trie_ref`, `osd_del`,
+`pack_object`, `nhops_dump`, `nhgrp_dump`, `new_pri`, `bhyvegc_resize`.
+`proc_rtld` is the one where only the size was wrong, and it is the one
+nothing was going to find.
+
+### Seven sites, one defect, six reasons
+
+The rule is narrow on purpose.  It wants a **running** capacity — `+=`,
+`*=`, `<<=`, `++` — on a **struct field**, within five lines before an
+allocation whose size mentions it, with a failure arm that leaves the
+function and neither restores the variable nor calls something `__dead2`.
+Each clause earns its place: `x = CONST` before an allocation is the
+ordinary "this is how big it will be" idiom and there are four hundred of
+those in `sys` alone; a bare local is re-derived on the next call; no
+failure arm at all is `realloc_self.py`'s finding; and a program that
+exits loses nothing by losing the count.
+
+The six that are not defects are each true for a reason **one level
+removed from the site**, which is exactly why they are written down
+rather than left to be re-derived:
+
+- `lib/libc/gen/wordexp.c:233` — `we_askshell()` does bump `we_wordc` and
+  `we_nbytes` first, but every error return from it reaches `wordexp()`,
+  which calls `wordfree(we)` before returning, and that zeroes both
+  counts and both pointers.
+- `lib/libc/net/getservent.c:1332` and `lib/libc/rpc/getrpcent.c:964` —
+  a failure returns with `st->buffer` NULL, and the *next* call takes the
+  `if (st->buffer == NULL)` arm at the top of the same function, which
+  re-mallocs at the INITIAL size and sets `st->bufsize` back to it.  Both
+  halves reset together.
+- `sys/dev/gpio/gpiobus.c:357` — safe only because of **two** facts at
+  once: both callers of `gpiobus_init_softc()` propagate the error, so
+  newbus tears the device down; and `gpiobus_detach()` guards its walk
+  with `if (sc->sc_pins)` before indexing by `sc_npins`.  Either one
+  alone would not be enough.
+- `sys/netipsec/xform_esp.c:386` and `:945` — the bumped
+  `crp->crp_aad_length` belongs to a crypto request that `crp_aad_fail`
+  destroys with `crypto_freereq(crp)` on that very path.
+
+### Proving the rule still distinguishes
+
+A rule with a six-entry table and one find can stop distinguishing
+without the gate noticing: widen it and the gate still passes, narrow it
+and the gate still passes.  So `test_capacity_first.py` writes the shapes
+out and drives them directly — three it must report, seven it must not —
+and both failure modes were checked by hand rather than assumed:
+dropping the "restored" exemption (a widened rule) fails the tests, and
+dropping post-increment (a narrowed rule) fails them too.
+
+`proc_rtld.c` reports the same findings as `HEAD` — zero — and compiles
+clean.

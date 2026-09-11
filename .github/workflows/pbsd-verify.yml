@@ -368,6 +368,22 @@ jobs:
       - name: The realloc rule still tells the six from the four
         run: python3 tools/verify/test_realloc_self.py
 
+      # The other half of the same failure, and the half a realloc rule
+      # cannot see: the POINTER goes through a temporary and is checked,
+      # and the SIZE was already committed. lib/libproc/proc_rtld.c was
+      # exactly that -- textbook temporary, textbook check, and a failed
+      # grow still left maparrsz naming an array nobody allocated, so the
+      # next call skipped the grow and wrote past the end. Seven sites
+      # tree-wide; one was the defect, six are on the record with the
+      # reason, so this gates.
+      - name: A capacity committed before the allocation that earns it
+        run: python3 tools/verify/capacity_first.py --gate
+      # A rule with a six-entry table and one find can stop
+      # distinguishing without the gate noticing. These cases fail on a
+      # WIDENED rule and on a NARROWED one, both checked by hand.
+      - name: The capacity rule still tells the one from the six
+        run: python3 tools/verify/test_capacity_first.py
+
       # param_premise.py sorts the sweep's findings by the function they
       # are in, which it works out by reading the text. A rule about where
       # a function begins can be a little bit wrong and still produce a
