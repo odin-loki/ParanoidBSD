@@ -354,6 +354,18 @@ jobs:
       - name: The index checker still finds the four it was written for
         run: python3 tools/verify/test_onesided_index.py
 
+      # `p = realloc(p, n)' loses the old block when realloc(3) returns
+      # NULL. Six of these were read one at a time before the rule was
+      # worth writing down, and the rule then found 148 more. They are
+      # NOT yet triaged, so this reports and does not gate -- a number
+      # nobody has read is not a thing to fail a build on. The test
+      # beside it does gate, because a rule that stopped distinguishing
+      # would make the 148 meaningless in either direction.
+      - name: An assignment that destroys the pointer it is reporting about
+        run: python3 tools/verify/realloc_self.py
+      - name: The realloc rule still tells the six from the four
+        run: python3 tools/verify/test_realloc_self.py
+
       # param_premise.py sorts the sweep's findings by the function they
       # are in, which it works out by reading the text. A rule about where
       # a function begins can be a little bit wrong and still produce a

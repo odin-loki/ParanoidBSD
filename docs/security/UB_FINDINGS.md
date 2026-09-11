@@ -23879,3 +23879,64 @@ Checked by reverting the file and watching the gate name the fix, and by
 `clang -fsyntax-only -Wall`, which is where an unset `ret` on some path
 would have surfaced.  `lib/libfigpar` 1 finding to 0; what remains in
 the file is `deadcode.DeadStores`, which this sweep does not run.
+
+## A lint for `p = realloc(p, n)`, seen six times
+
+`onesided_index.py` exists because one array-subscript shape turned up
+three times in a day.  This one turned up six times, in four functions,
+across two libraries:
+
+| | |
+|---|---|
+| libfetch `http_next_header()` | ×2 |
+| libutil `build_iovec()` | ×1 |
+| libfigpar `parse_config()` | ×3 |
+
+`realloc(3)` returns NULL on failure and **leaves the old block
+allocated**.  Assigning the result back over the only pointer to it does
+two things in one expression: it reports the failure, and it destroys
+the sole means of recovering from it.  The caller is then holding NULL
+and cannot free what it still owns.  The libfigpar three were the
+sharpest statement of that — nothing else in the function held a copy,
+so the block was unrecoverable in principle and not merely in practice.
+
+`tools/verify/realloc_self.py` is one textual rule: an assignment whose
+target is spelled exactly the same as `realloc`'s first argument, after
+whitespace is normalised.  Everything about it is a decision not to
+report something:
+
+* **`reallocf(3)` is not reported.**  It frees the old block itself, so
+  `p = reallocf(p, n)` is correct — it is the thing this rule is telling
+  people to reach for.
+* **`realloc(9)` with `M_WAITOK` is not reported.**  The kernel's
+  four-argument spelling with a flags word naming `M_WAITOK` and not
+  `M_NOWAIT` is the caller saying it will sleep until the allocation
+  succeeds, so the NULL return this rule is about does not happen.  That
+  one exemption takes `sys/kern` from ten sites to two.  A flags word
+  that is a *variable* says nothing about which it will be, and is
+  reported — `subr_stats.c:395` is exactly that.
+* **An assignment to a different name is not reported.**  That is the
+  fix, not the defect.
+* **`contrib/` is not scanned.**
+
+`tools/verify/test_realloc_self.py` is twenty-three checks, and the
+shape of it is the point: eight say the rule finds the defect, twelve
+say it stays quiet on the things that look like it — `q = realloc(p, n)`,
+`reallocf`, `M_WAITOK`, `M_WAITOK | M_ZERO` (but not `M_NOWAIT | M_ZERO`),
+a block comment, a line comment, a string literal, `==` rather than `=`,
+`+=`, a one-argument call, and a different member of the same struct —
+and the last three run it over `http.c`, `mntopts.c` and `figpar.c` and
+require **silence**, because those are the three this document fixed
+today.  A rule that could not tell the fixed ones from the broken ones
+would say nothing either way.
+
+Over the tree, excluding `contrib/`: **148 sites**, none of which the
+analyser reported.  That is not a contradiction — `unix.Malloc` fires
+when it can prove the block is unreachable on that path, and in a
+function with any other exit it usually cannot.  The 148 are **not
+triaged**, and a site being on the list is not by itself a defect: a
+program that exits on allocation failure loses nothing by losing the
+block.  So the CI step runs the rule and prints, and does not gate; the
+test beside it *does* gate, because a rule that quietly stopped
+distinguishing would make the 148 meaningless in both directions.
+`EXPECTED` starts empty and `--gate` is there for when it is not.
