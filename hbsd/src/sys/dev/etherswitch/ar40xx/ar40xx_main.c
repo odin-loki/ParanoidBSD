@@ -922,7 +922,13 @@ ar40xx_atu_fetch_table_entry(device_t dev, etherswitch_atu_entry_t *e)
 
 	id = e->id;
 	AR40XX_LOCK(sc);
-	if (id > sc->atu.count) {
+	/*
+	 * id comes straight off IOETHERSWITCHGETATUENTRY and the entry
+	 * is memcpy'd back out to the caller, so `>' was both one too
+	 * many -- entry `count' is the first unfilled one -- and no
+	 * bound at all from below.
+	 */
+	if (id < 0 || id >= sc->atu.count) {
 		err = ENOENT;
 		goto done;
 	}

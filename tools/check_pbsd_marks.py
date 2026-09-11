@@ -4758,6 +4758,12 @@ FIXES = {
         "sc->vlans[FELIX_NUM_VLANS] with no bound check on either side",
     ),
 
+    "hbsd/src/sys/dev/etherswitch/arswitch/arswitch.c": (
+        "\tif (id < 0 || id >= sc->atu.count) {\n\t\tARSWITCH_UNLOCK(sc);",
+        "\tif (id > sc->atu.count) {",
+        "arswitch_atu_fetch_table_entry() is the same ioctl and the "
+        "same memcpy back to the caller, over a malloc'd entries[]",
+    ),
     "hbsd/src/sys/dev/etherswitch/arswitch/arswitch_vlans.c": (
         ("vg->es_vlangroup >= sc->info.es_nvlangroups)", 2),
         "if (vg->es_vlangroup > sc->info.es_nvlangroups)",
@@ -4766,13 +4772,24 @@ FIXES = {
         "sc->vid[], had no test at all",
     ),
 
-    "hbsd/src/sys/dev/etherswitch/ar40xx/ar40xx_main.c": (
-        ("vg->es_vlangroup >= sc->sc_info.es_nvlangroups)", 2),
-        "if (vg->es_vlangroup > sc->sc_info.es_nvlangroups)",
-        "ar40xx_getvgroup's > test was off by one and missed negatives; "
-        "ar40xx_setvgroup, which writes vlan_id[], vlan_ports[] and "
-        "vlan_untagged[], had no test at all",
-    ),
+    "hbsd/src/sys/dev/etherswitch/ar40xx/ar40xx_main.c": [
+        (
+            ("vg->es_vlangroup >= sc->sc_info.es_nvlangroups)", 2),
+            "if (vg->es_vlangroup > sc->sc_info.es_nvlangroups)",
+            "ar40xx_getvgroup's > test was off by one and missed "
+            "negatives; ar40xx_setvgroup, which writes vlan_id[], "
+            "vlan_ports[] and vlan_untagged[], had no test at all",
+        ),
+        (
+            "\tif (id < 0 || id >= sc->atu.count) {\n\t\terr = ENOENT;",
+            "\tif (id > sc->atu.count) {",
+            "ar40xx_atu_fetch_table_entry() takes id off "
+            "IOETHERSWITCHGETATUENTRY and memcpy's the entry back out "
+            "to the caller; `>' let through entry `count', the first "
+            "unfilled one, and every negative id, which reads before "
+            "entries[AR40XX_NUM_ATU_ENTRIES] and copies it to userland",
+        ),
+    ],
 
     "hbsd/src/sys/dev/etherswitch/e6000sw/e6000sw.c": (
         ("if (port >= sc->num_ports)", 2),

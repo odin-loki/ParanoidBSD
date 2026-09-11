@@ -25602,3 +25602,43 @@ loop over `mca_banks`; and `ufs/ufs/ufs_dirhash.c:914`, `:1017`,
 the kernel produced itself by walking `d_reclen`, with a `KASSERT` at
 two of the three saying so (`:1017` is inside `#ifdef DIAGNOSTIC`
 entirely).
+
+## etherswitch, again: the ATU table this time
+
+Task #123 fixed `es_vlangroup` — an index off an etherswitch ioctl with
+no bound at all, in seven drivers.  The ATU (address table) side of the
+same ioctl interface has the same shape in two more:
+
+```c
+	id = e->id;
+	AR40XX_LOCK(sc);
+	if (id > sc->atu.count) {
+		err = ENOENT;
+		goto done;
+	}
+	memcpy(e, &sc->atu.entries[id], sizeof(*e));
+```
+
+`e` is the caller's `etherswitch_atu_entry_t` from
+`IOETHERSWITCHGETATUENTRY`, so `e->id` is whatever userland put there
+and the entry is copied straight back out.  `>` is wrong twice:
+
+* **Off by one.**  `atu.count` is how many entries the last fetch
+  filled, so entry `count` is the first *unfilled* one.  `etherswitch(8)`
+  walks `for (i = 0; ; i++)` until the ioctl fails, so it reads one
+  stale entry every time.
+* **No floor.**  A negative `id` reads before `entries[]` and copies
+  the result to userland.  `ar40xx` has a fixed
+  `entries[AR40XX_NUM_ATU_ENTRIES]`; `arswitch` has a malloc'd one.
+  Either way it is kernel memory going out through a `memcpy`.
+
+`/dev/etherswitchN` is 0600 root:wheel, so this is not a privilege
+boundary — it is the same "an ioctl argument is an index" class the
+vlangroup fix covered, found by the same rule in the two files that fix
+did not touch.
+
+### Measured
+
+`sys/dev/etherswitch` ONESIDED **2 → 0**; the analyser **36 → 36** with
+all 10 known-ERROR translation units on the record both ways.
+Tree-wide ONESIDED **230 → 228**.

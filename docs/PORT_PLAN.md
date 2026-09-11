@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,924 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,756 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,768 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,501** | **114,207** |
+| | **total** | **41,143** | **21,302,513** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -70537,7 +70537,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.698.16.3 `ar40xx_hw_vtu_flush()` · `TODO-FN`
   - [ ] 8.698.16.4 `ar40xx_hw_vtu_get_vlan()` · `TODO-FN`
 - [ ] **8.698.17** `ar40xx_hw_vtu.h` · 40L · `TODO-HDR`
-- [ ] **8.698.18** `ar40xx_main.c` · 988L gen:10 · `TODO-PORT` · 26 fn
+- [ ] **8.698.18** `ar40xx_main.c` · 994L gen:10 · `TODO-PORT` · 26 fn
   - [ ] 8.698.18.1 `ar40xx_probe()` · `TODO-FN`
   - [ ] 8.698.18.2 `ar40xx_tick()` · `TODO-FN`
   - [ ] 8.698.18.3 `ar40xx_statchg()` · `TODO-FN`
@@ -70579,7 +70579,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.699 `sys/dev/etherswitch/arswitch`
 
-- [ ] **8.699.1** `arswitch.c` · 1,314L gen:8 · `TODO-PORT` · 42 fn
+- [ ] **8.699.1** `arswitch.c` · 1,320L gen:8 · `TODO-PORT` · 42 fn
   - [ ] 8.699.1.1 `arswitch_probe()` · `TODO-FN`
   - [ ] 8.699.1.2 `arswitch_attach_phys()` · `TODO-FN`
   - [ ] 8.699.1.3 `arswitch_reset()` · `TODO-FN`
