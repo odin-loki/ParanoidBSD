@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,371 | 9,056 |
+| 1 | `lib` | 2,827 | 640,521 | 9,056 |
 | 2 | `libexec` | 170 | 48,035 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,910 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,666 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,691 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,133** | **114,207** |
+| | **total** | **41,143** | **21,302,308** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -1507,7 +1507,7 @@ function; a file with two hundred of them is a project.
 ### 1.61 `lib/libc/db/hash` · 4 module(s) under `pbsd/lib/libc/db/hash`
 
 - [ ] **1.61.1** `extern.h` · 62L · `TODO-HDR`
-- [ ] **1.61.2** `hash.c` · 1,006L · `TODO-PORT` · 20 fn
+- [ ] **1.61.2** `hash.c` · 1,081L · `TODO-PORT` · 20 fn
   - [ ] 1.61.2.1 `__hash_open()` · `TODO-FN`
   - [ ] 1.61.2.2 `hash_close()` · `TODO-FN`
   - [ ] 1.61.2.3 `hash_fd()` · `TODO-FN`
@@ -1950,7 +1950,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.66.1 `getbootfile()` · `TODO-FN`
 - [ ] **1.68.67** `getbsize.c` · 101L · `TODO-PORT` · 1 fn
   - [ ] 1.68.67.1 `getbsize()` · `TODO-FN`
-- [ ] **1.68.68** `getcap.c` · 1,052L · `TODO-PORT` · 13 fn
+- [ ] **1.68.68** `getcap.c` · 1,072L · `TODO-PORT` · 13 fn
   - [ ] 1.68.68.1 `cgetset()` · `TODO-FN`
   - [ ] 1.68.68.2 `cgetcap()` · `TODO-FN`
   - [ ] 1.68.68.3 `cgetent()` · `TODO-FN`
@@ -2732,7 +2732,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.72.43.6 `_citrus_unload_module()` · `TODO-FN`
 - [ ] **1.72.44** `citrus_module.h` · 56L · `TODO-HDR`
 - [ ] **1.72.45** `citrus_namespace.h` · 244L · `TODO-HDR`
-- [ ] **1.72.46** `citrus_none.c` · 238L gen:2 · `TODO-PORT` · 9 fn
+- [ ] **1.72.46** `citrus_none.c` · 249L gen:2 · `TODO-PORT` · 9 fn
   - [ ] 1.72.46.1 `_citrus_NONE_stdenc_init()` · `TODO-FN`
   - [ ] 1.72.46.2 `_citrus_NONE_stdenc_uninit()` · `TODO-FN`
   - [ ] 1.72.46.3 `_citrus_NONE_stdenc_init_state()` · `TODO-FN`
@@ -4500,7 +4500,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.101.16.3 `common_crypt()` · `TODO-FN`
 - [ ] **1.101.17** `des_soft.c` · 66L · `TODO-PORT` · 1 fn
   - [ ] 1.101.17.1 `des_setparity()` · `TODO-FN`
-- [ ] **1.101.18** `getnetconfig.c` · 729L · `TODO-PORT` · 11 fn
+- [ ] **1.101.18** `getnetconfig.c` · 742L · `TODO-PORT` · 11 fn
   - [ ] 1.101.18.1 `nc_key_init()` · `TODO-FN`
   - [ ] 1.101.18.2 `__nc_error()` · `TODO-FN`
   - [ ] 1.101.18.3 `setnetconfig()` · `TODO-FN`
@@ -6898,7 +6898,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.155 `lib/libcasper/services/cap_sysctl`
 
-- [ ] **1.155.1** `cap_sysctl.c` · 532L gen:1 · `TODO-PORT` · 13 fn
+- [ ] **1.155.1** `cap_sysctl.c` · 563L gen:1 · `TODO-PORT` · 13 fn
   - [ ] 1.155.1.1 `cap_sysctl_limit_init()` · `TODO-FN`
   - [ ] 1.155.1.2 `cap_sysctl_limit_name()` · `TODO-FN`
   - [ ] 1.155.1.3 `cap_sysctl_limit_mib()` · `TODO-FN`
@@ -66252,7 +66252,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.663 `sys/dev/clk/starfive`
 
-- [ ] **8.663.1** `jh7110_clk.c` · 278L gen:1 · `TODO-PORT` · 8 fn
+- [ ] **8.663.1** `jh7110_clk.c` · 303L gen:1 · `TODO-PORT` · 8 fn
   - [ ] 8.663.1.1 `jh7110_reset_assert()` · `TODO-FN`
   - [ ] 8.663.1.2 `jh7110_reset_is_asserted()` · `TODO-FN`
   - [ ] 8.663.1.3 `jh7110_clk_init()` · `TODO-FN`
