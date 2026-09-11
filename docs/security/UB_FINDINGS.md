@@ -25938,3 +25938,30 @@ resolves translation units from the kernel configuration.
   `makefs/msdos/msdosfs_conv.c:206` — table lookups and buffer offsets
   the program computed itself, each bounded above by the same
   expression that produced them.
+
+## `usr.bin` and `sbin`, read
+
+* `m4/gnum4.c:286` — `add_sub(n)` indexes `pm[n]` after
+  `if (n > (int)re->re_nsub)`, another `(int)` cast over a `size_t`.
+  The floor is the parse: `if (isdigit((unsigned char)p[1]))
+  add_sub(*(++p) - '0', ...)`, so `n` is 0..9.
+* `bsdiff/bsdiff.c:82` — `x = st + (en - st) / 2` inside the suffix
+  array binary search, recursing from `(0, oldsize)`.
+* `systat/proc.c:83`, `usr.bin/procstat/procstat_sigs.c:54` and `:73`,
+  `usr.bin/netstat/pfkey.c:100`, `usr.bin/m4/main.c:629` — display and
+  table indices out of the program's own loops.
+* `diff/diffreg.c:1471`, `gzip/unpack.c:125` — read above.
+* `sbin/ipf/ipf/bpf_filter.c:222` — `buflen` is `u_int`, so every
+  `k + sizeof(...) > buflen` and `k >= buflen` in the BPF interpreter is
+  an unsigned comparison and a negative `k` from a filter program is
+  rejected by it.
+* `sbin/pfctl/pfctl_osfp.c:876` — `get_str()` returns early on
+  `fieldlen < minlen`, which is the floor when `minlen >= 0`, and every
+  caller passes 1 or more.
+* `sbin/routed/parms.c:947` and `rtquery/rtquery.c:809` — `i` is
+  `(int)(mname - name)`, a pointer difference inside one string.
+* `sbin/fsck_ffs/fsutil.c:171` and `suj.c:658` — `inum % fs_ipg` and
+  `rounddown(doff, DIRBLKSIZ)` over on-disk values the superblock
+  validation and the `d_reclen` walk produced; fsck's contract with a
+  corrupt filesystem is `errx`, and it takes it on the paths above
+  these.
