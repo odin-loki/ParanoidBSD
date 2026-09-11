@@ -365,8 +365,10 @@ jobs:
         run: python3 tools/verify/realloc_self.py
       # lib/ is read through: five fixed, eight written down with the
       # reason. It gates. The rest of the tree does not, yet.
-      - name: ...and lib/ is read through, so it gates
-        run: python3 tools/verify/realloc_self.py --scope lib --gate
+      - name: ...and lib/ and libexec/ are read through, so they gate
+        run: |
+          python3 tools/verify/realloc_self.py --scope lib --gate
+          python3 tools/verify/realloc_self.py --scope libexec --gate
       - name: The realloc rule still tells the six from the four
         run: python3 tools/verify/test_realloc_self.py
 

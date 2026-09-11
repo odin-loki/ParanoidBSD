@@ -52,7 +52,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
 | 1 | `lib` | 2,827 | 640,347 | 9,056 |
-| 2 | `libexec` | 170 | 48,021 | 623 |
+| 2 | `libexec` | 170 | 48,035 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,493 | 4,188 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,743** | **114,207** |
+| | **total** | **41,143** | **21,301,757** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -13962,7 +13962,7 @@ function; a file with two hundred of them is a project.
 
 ### 2.17 `libexec/getty`
 
-- [ ] **2.17.1** `chat.c` · 486L · `TODO-PORT` · 10 fn
+- [ ] **2.17.1** `chat.c` · 500L · `TODO-PORT` · 10 fn
   - [ ] 2.17.1.1 `chat_alrm()` · `TODO-FN`
   - [ ] 2.17.1.2 `chat_unalarm()` · `TODO-FN`
   - [ ] 2.17.1.3 `getdigit()` · `TODO-FN`

@@ -24013,3 +24013,36 @@ is that they fail *identically* at `HEAD` and after the edit — the same
 `clang -fsyntax-only` over the same flags, on the file as git has it and
 on the file as it now is.  That is weaker than a clean compile and is
 said here rather than glossed.
+
+### libexec had one, and it was a static
+
+```c
+static const char *
+cleanstr(const char *s, int l)
+{
+	static char * tmp = NULL;
+	static int tmplen = 0;
+
+	if (tmplen < l * 4 + 1)
+		tmp = realloc(tmp, tmplen = l * 4 + 1);
+
+	if (tmp == NULL) {
+		tmplen = 0;
+		return "(mem alloc error)";
+```
+
+`tmp` is a **static**, and it is the only pointer to the buffer.  So the
+NULL goes over a buffer that had been serving every previous call, and
+`tmplen = 0` beside it makes the next call grow from nothing — the loss
+is for the life of the process rather than for the duration of a
+function.  getty(8) runs as root on every tty.
+
+And keeping the old buffer costs nothing at all here, which is what
+makes the fix obvious once the shape is named: the old buffer is not
+*wrong*, it is merely too small for **this** string, which is exactly
+what the error return already says.  `tmplen` is now assigned only
+alongside `tmp`, so the second test catches precisely the cases the old
+`tmp == NULL` did, and one more — a successful earlier allocation that
+is still too small.
+
+`libexec/` gates too.

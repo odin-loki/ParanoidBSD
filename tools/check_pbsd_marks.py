@@ -302,6 +302,18 @@ FIXES = {
             "arm had just zeroed, over a pointer it had just nulled.",
         ),
     ],
+    "hbsd/src/libexec/getty/chat.c": (
+        "char *ntmp = realloc(tmp, l * 4 + 1);",
+        "tmp = realloc(tmp, tmplen = l * 4 + 1);",
+        "cleanstr()'s tmp is a static and the only pointer to the "
+        "buffer, so assigning realloc's NULL over it lost the one "
+        "already there for the life of the process - and the tmplen = 0 "
+        "beside it then made the next call grow from nothing.  Keeping "
+        "the old buffer costs nothing: it is simply too small for THIS "
+        "string, which is what the error return reports.  tmplen is now "
+        "set only alongside tmp, so the second test catches exactly the "
+        "failure the old `tmp == NULL' did.",
+    ),
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",

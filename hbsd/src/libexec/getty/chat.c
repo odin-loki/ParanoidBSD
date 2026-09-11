@@ -273,11 +273,25 @@ cleanstr(const char *s, int l)
 	static char * tmp = NULL;
 	static int tmplen = 0;
 
-	if (tmplen < l * 4 + 1)
-		tmp = realloc(tmp, tmplen = l * 4 + 1);
+	if (tmplen < l * 4 + 1) {
+		/*
+		 * PBSD: through a temporary.  tmp is a static and the only
+		 * pointer to the buffer, so assigning realloc's NULL over
+		 * it lost the one already there for the life of the
+		 * process -- and the tmplen = 0 beside it then made the
+		 * next call grow from nothing.  Keeping the old buffer
+		 * costs nothing: it is simply too small for THIS string,
+		 * which is what the NULL return below reports.
+		 */
+		char *ntmp = realloc(tmp, l * 4 + 1);
 
-	if (tmp == NULL) {
-		tmplen = 0;
+		if (ntmp != NULL) {
+			tmp = ntmp;
+			tmplen = l * 4 + 1;
+		}
+	}
+
+	if (tmplen < l * 4 + 1) {
 		return "(mem alloc error)";
 	} else {
 		int i = 0;
