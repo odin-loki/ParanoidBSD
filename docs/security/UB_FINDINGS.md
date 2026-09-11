@@ -26069,3 +26069,44 @@ unchanged — `vmci_hashtable.c` and `vmci_doorbell.c`'s
 compiling both ways.  No ONESIDED change: the site that led here still
 reports, because its floor is now a fact about `vmci_hash_id()`, which
 is a different function.
+
+## The rest of the twenty-one computed `sys/dev` indices
+
+With `sume` fixed and `vmci_hash_id` fixed, the remaining computed ones
+are read and clean:
+
+* `bxe/bxe.c:6902` — `abs_func = n * (2 * vn + SC_PORT(sc)) + SC_PATH(sc)`
+  inside `for (vn = VN_0; vn < SC_MAX_VN_NUM(sc); vn++)`.  `VN_0` is 0,
+  `n` is 2 or 4, `SC_PORT` and `SC_PATH` are 0 or 1; the
+  `abs_func >= E1H_FUNC_MAX` test is the ceiling and the loop is the
+  floor.  The comment above it writes the formula out, which is how the
+  reading took one minute rather than ten.
+* `qat_c2xxx/qat.c:855` — `ETR_RING_AP_BANK_NUMBER(ring)` is
+  `((ring) >> 5)` and `qr_ring` is `uint32_t`.
+* `mlx4_ib/mlx4_ib_alias_GUID.c:104` — `slave_id = block_num *
+  NUM_ALIAS_GUID_IN_REC + i` with `i` the enclosing loop's counter, so
+  the floor is `block_num`, an `int` parameter every caller derives
+  from a GUID record index.
+* `cxgb/cxgb_main.c:1221` — `mod = pi->phy.modtype`, a
+  `phy_modtype_none`-based enumerator the PHY driver sets.
+* `cxgbe/iw_cxgbe/cm.c:1120` — `state = ep->com.state`, the endpoint
+  state machine's own enum.
+* `virtio/virtqueue.c:626` — `idx = *last`, a cursor every caller
+  initialises to 0 and hands back unchanged.
+* `bwi/bwirf.c:181` — `n = rf_atten + 14 * (bbp_atten / 2)` where both
+  parameters are `uint16_t`; `:2432` — `rssi = hdr->rxh_rssi`, a
+  `uint8_t` in the RX header, with the `>= BWI_NRSSI_TBLSZ` clamp above
+  the subscript.
+* `ocs_fc/ocs_pci.c:516` and `pms/.../agtiapi.c:695` —
+  `device_get_unit(dev)`, non-negative for an attached device.
+* `rndtest/rndtest.c:263` — `len = RNDTEST_RUNS_NINTERVAL`, a constant.
+* `syscons/daemon/daemon_saver.c:155` — `px = xoff`, the saver's own
+  animation offset.
+* `sound/pcm/feeder_matrix.c:670` — `ch = (*map >> (i * 4)) & 0xf`.
+
+That closes the computed set.  What is left in `sys/dev` is 54 sites
+whose index is a parameter and whose floor is therefore at the caller,
+plus the masks, ternaries and `find_first_bit` results tabulated in the
+`sume` section.  The parameter set is the honest remainder: each one
+needs its callers read, and they are driver-internal contracts of the
+kind `mlx4`'s `slave` and `iwn`'s `qid` turned out to be.
