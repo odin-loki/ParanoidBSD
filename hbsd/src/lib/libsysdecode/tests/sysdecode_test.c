@@ -44,8 +44,8 @@ static void
 check_sysdecode_cap_rights(FILE *fp, char **bufp, size_t *szp,
     cap_rights_t *rightsp, const char *tab[])
 {
-	const char *next, *tok;
-	char *buf;
+	const char *tok;
+	char *base, *buf;
 	int i;
 
 	sysdecode_cap_rights(fp, rightsp);
@@ -53,8 +53,21 @@ check_sysdecode_cap_rights(FILE *fp, char **bufp, size_t *szp,
 	ATF_REQUIRE(fflush(fp) == 0);
 	(*bufp)[*szp] = '\0';
 
-	buf = strdup(*bufp);
-	for (tok = buf; (next = strsep(&buf, ",")), tok != NULL; tok = next) {
+	/*
+	 * strsep(3) advances its first argument, so the free() has to be
+	 * given the base and not the cursor -- the second loop below
+	 * breaks out mid-string on a match, which left free() holding a
+	 * pointer into the middle of the allocation every time the rights
+	 * it is looking for were found.
+	 *
+	 * The walk itself was `for (tok = buf; (next = strsep(&buf, ",")),
+	 * tok != NULL; tok = next)', which visits the FIRST token twice --
+	 * tok lags one strsep() behind next for exactly one iteration --
+	 * and is the canonical loop written the long way round.
+	 */
+	base = buf = strdup(*bufp);
+	ATF_REQUIRE(base != NULL);
+	while ((tok = strsep(&buf, ",")) != NULL) {
 		for (i = 0; tab[i] != NULL; i++) {
 			if (strcmp(tok, tab[i]) == 0)
 				break;
@@ -62,16 +75,16 @@ check_sysdecode_cap_rights(FILE *fp, char **bufp, size_t *szp,
 		ATF_REQUIRE_MSG(tab[i] != NULL,
 		    "did not find '%s' in table", tok);
 	}
-	free(buf);
+	free(base);
 
 	for (i = 0; tab[i] != NULL; i++) {
-		buf = strdup(*bufp);
-		for (tok = buf; (next = strsep(&buf, ",")), tok != NULL;
-		    tok = next) {
+		base = buf = strdup(*bufp);
+		ATF_REQUIRE(base != NULL);
+		while ((tok = strsep(&buf, ",")) != NULL) {
 			if (strcmp(tok, tab[i]) == 0)
 				break;
 		}
-		free(buf);
+		free(base);
 		ATF_REQUIRE_MSG(tok != NULL,
 		    "did not find '%s' in output stream", tab[i]);
 	}

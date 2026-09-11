@@ -23735,3 +23735,84 @@ only send frames matching parameters this side already negotiated.
 `build_iovec()`'s own remaining report, `pidfile_signal()`,
 `phttpget.c:471`, `efivar-dp-parse.c:3947` and `rtld.c:4845` are the
 four families named in the section above.
+
+## The strsep(3) cursor, twice in one day
+
+`check_sysdecode_cap_rights()` in libsysdecode's own test suite has the
+same bug this document wrote up two sections ago in rtld's
+`open_binary_fd()`, and reaches it more reliably:
+
+```c
+	buf = strdup(*bufp);
+	for (tok = buf; (next = strsep(&buf, ",")), tok != NULL; tok = next) {
+		...
+	}
+	free(buf);
+
+	for (i = 0; tab[i] != NULL; i++) {
+		buf = strdup(*bufp);
+		for (tok = buf; (next = strsep(&buf, ",")), tok != NULL;
+		    tok = next) {
+			if (strcmp(tok, tab[i]) == 0)
+				break;
+		}
+		free(buf);
+```
+
+One variable is both the allocation and the cursor, and `strsep(3)`
+advances the cursor.  The second loop **breaks out on a match** — which
+is the case it exists to find, once per entry in the table — so that
+`free()` is handed a pointer into the middle of the allocation on
+essentially every iteration of the outer loop.
+
+Reading it also turned up the loop itself.
+`for (tok = buf; (next = strsep(&buf, ",")), tok != NULL; tok = next)`
+is the canonical `strsep` walk written the long way round, and it is off
+by one: the initialiser sets `tok` to `buf`, the first condition sets
+`next` to the first token — which is the same pointer — and the first
+increment is therefore a no-op, so the first token is visited twice and
+`tok` lags `next` by one iteration from then on.  For a membership test
+that is harmless, which is why it survived.  Both loops are now
+
+```c
+	base = buf = strdup(*bufp);
+	ATF_REQUIRE(base != NULL);
+	while ((tok = strsep(&buf, ",")) != NULL) {
+```
+
+with `free(base)`, which fixes the cursor, the off-by-one and an
+unchecked `strdup` in one shape.  Three findings to none.
+
+### The cap_fileargs nine, and why they are not ten
+
+The nine `core.CallAndMessage` in
+`lib/libcasper/services/cap_fileargs/tests` are all this:
+
+```c
+	ATF_REQUIRE(test_file_open(fa, files[i], &fd) == 0);
+	ATF_REQUIRE(close(fd) == 0);
+```
+
+and the first suspicion is the family ypxfr(8) fell into above — an
+`ATF_REQUIRE` whose failure arm is not declared `noreturn`, so the
+analyser walks out of a failed assertion and on into code the test
+never reaches.  It is not that.  `atf_tc_fail_requirement()` carries
+`ATF_DEFS_ATTRIBUTE_NORETURN` in `contrib/atf/atf-c/tc.h`, and
+`contrib/atf/atf-c/defs.h` — which for this tree is checked in rather
+than generated — expands it to `__attribute__((__noreturn__))`.  The
+path notes agree: they say *"Taking false branch"* inside
+`ATF_REQUIRE`, which is the assertion **holding**.
+
+The answer is in what the notes do not contain.  There is no
+*"Calling 'test_file_open'"*, so the analyser never entered it — and
+`test_file_open()` is where `*fdp = fd` happens.  The unseen-callee
+family, with the callee a static function in the same file that clang
+declined to inline.
+
+That closes the widened `lib` scope's tail.  What remains is the four
+already-characterised populations: 54 in libdevstat (the metric table,
+now guarded by its own `_Static_assert` and a CI lint), 45 in
+`lib/clang/liblldb` (SWIG `%extend` bodies analysed as their own entry
+points), 21 in `lib/libpmc/pmu-events/jevents.c` (a build-time generator
+imported from Linux perf), and three in `lib/libjail` that are the
+documented `jailparam` API contract.

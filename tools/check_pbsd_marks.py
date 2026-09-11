@@ -245,6 +245,18 @@ FIXES = {
         "caller owns, and in fetch_writev() that test also guards "
         "pfd.fd and pfd.events",
     ),
+    "hbsd/src/lib/libsysdecode/tests/sysdecode_test.c": (
+        ("base = buf = strdup(*bufp);", 2),
+        "for (tok = buf; (next = strsep(&buf, \",\")), tok != NULL;",
+        "check_sysdecode_cap_rights() free'd buf, which strsep(3) had "
+        "advanced -- and its second loop BREAKS on a match, so the free "
+        "held a pointer into the middle of the allocation every time it "
+        "found the right it was looking for.  The same strsep-cursor "
+        "shape as rtld's open_binary_fd(), twice in one day.  The walk "
+        "itself was the canonical loop written the long way round and "
+        "visited its first token twice, tok lagging next by one "
+        "iteration; it is now while ((tok = strsep(&buf, \",\")) != NULL).",
+    ),
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",
