@@ -171,6 +171,30 @@ for g in "check_exec_bits.py" "check_source_includes.py --gate" \
     say "$rc" "tools/$g"
 done
 
+# docs/PORT_PLAN.md is the committed half of the ledger, and it goes
+# stale the moment a vendor file changes length. The check lived only in
+# the verify workflow's `plan' job, so the one script a contributor runs
+# before committing could not see it -- and a run died on exactly that,
+# two runs after one died on check_exec_bits.py above. Both are gates
+# that can only fail on a tree somebody has changed, which is precisely
+# when they are easiest to skip.
+#
+# --out and --json into a scratch directory, so this reports the drift
+# without silently fixing it: a gate that repairs what it is checking
+# tells you nothing the next time.
+if [ -t 1 ]; then printf '  ..   docs/PORT_PLAN.md is current\r'; fi
+pp_tmp=$(mktemp -d)
+if (cd "$ROOT" && python3 tools/port_plan.py --out "$pp_tmp/PORT_PLAN.md" \
+        --json "$pp_tmp/port_plan.json" >/dev/null 2>&1 &&
+        cmp -s "$pp_tmp/PORT_PLAN.md" docs/PORT_PLAN.md); then
+    rc=ok
+else
+    rc=FAIL
+fi
+rm -rf "$pp_tmp"
+if [ -t 1 ]; then printf '\033[2K'; fi
+say "$rc" "docs/PORT_PLAN.md is current (python3 tools/port_plan.py)"
+
 echo
 if [ "$fail" = 0 ]; then
     cat <<'DONE'
