@@ -2386,6 +2386,67 @@ FIXES = {
         "truncating case, and %n in a format string is what "
         "FORTIFY_SOURCE exists to refuse",
     ),
+    "hbsd/src/lib/libc/stdlib/a64l.c": [
+        (
+            "\tuint32_t value;",
+            "\tint digit, i, value;",
+            "value was an int and the accumulation was `value |= digit "
+            "<< shift' with shift reaching 30, so any sixth character "
+            "whose digit is 2 or more is a shift past the width of an "
+            "int. Not a corner: l64a_r() converts through a uint32_t "
+            "and so emits a sixth character for every value with bit 31 "
+            "set, which makes a64l(l64a(0x80000000)) into `2 << 30'. "
+            "UBSan traps it. The answers are unchanged on all thirteen "
+            "test values, sign bit included -- the old code only "
+            "produced them because the wrap did what unsigned "
+            "arithmetic does",
+        ),
+        (
+            "\t\tvalue |= (uint32_t)digit << shift;",
+            "\t\tvalue |= digit << shift;",
+            "and *s is a plain char, so a byte above 0x7f is negative "
+            "where char is signed: the first arm made digit negative "
+            "and the shift operand with it. POSIX leaves a string "
+            "l64a() did not produce unspecified, which is not the same "
+            "as undefined",
+        ),
+        (
+            "\treturn ((long)(int32_t)value);",
+            "\treturn (value);",
+            "and the sign extension that returning an int used to do is "
+            "now written down",
+        ),
+    ],
+    "hbsd/src/lib/libc/string/wcscasecmp.c": [
+        (
+            "\t\t\treturn (c1 < c2 ? -1 : 1);",
+            "\t\t\treturn ((int)c1 - c2);",
+            "`(int)c1 - c2' is the difference of two wchar_t, which is "
+            "int32_t here, so it is not representable in general -- and "
+            "only its sign is specified, or read. Same shape as "
+            "__bt_defcmp and catgets()",
+        ),
+        (
+            "\treturn (*s2 == 0 ? 0 : -1);",
+            "\treturn (-*s2);",
+            "and the tail `-*s2' was undefined on WCHAR_MIN and had the "
+            "wrong sign for any negative wchar_t besides: s1 ended "
+            "first, so s1 is the shorter string and must compare less, "
+            "but `-*s2' on a negative *s2 is positive",
+        ),
+    ],
+    "hbsd/src/lib/libc/string/wcsncasecmp.c": [
+        (
+            "\t\t\treturn (c1 < c2 ? -1 : 1);",
+            "\t\t\treturn ((int)c1 - c2);",
+            "the same difference of two wchar_t, in the bounded form",
+        ),
+        (
+            "\treturn (*s2 == 0 ? 0 : -1);",
+            "\treturn (-*s2);",
+            "and the same tail",
+        ),
+    ],
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (
         "\tif (a->size < b->size)\n\t\treturn (-1);",
         "\treturn ((int)a->size - (int)b->size);",

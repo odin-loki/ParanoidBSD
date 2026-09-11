@@ -23,7 +23,27 @@ long
 a64l(const char *s)
 {
 	long shift;
-	int digit, i, value;
+	int digit, i;
+	/*
+	 * PBSD: value was an int and the accumulation was `value |=
+	 * digit << shift' with shift reaching 30, so any sixth character
+	 * whose digit is 2 or more is a shift past the width of an int.
+	 * That is not a corner: l64a_r() converts through a uint32_t, so
+	 * it emits a sixth character for every value with bit 31 set, and
+	 * a64l(l64a(0x80000000)) is ".....0" -- 2 << 30.  UBSan traps it.
+	 *
+	 * And *s is a plain char, so a byte above 0x7f is negative on the
+	 * architectures where char is signed: the first arm then makes
+	 * digit negative and the shift operand is negative too.  POSIX
+	 * leaves a string l64a() did not produce unspecified, which is
+	 * not the same as undefined.
+	 *
+	 * Accumulating in uint32_t settles both -- the conversion is
+	 * modular and the shift is defined for every digit -- and the
+	 * result is sign-extended on return, which is what returning an
+	 * int used to do.
+	 */
+	uint32_t value;
 
 	value = 0;
 	shift = 0;
@@ -37,8 +57,8 @@ a64l(const char *s)
 		else
 			digit = *s - Aa + 38;
 
-		value |= digit << shift;
+		value |= (uint32_t)digit << shift;
 		shift += 6;
 	}
-	return (value);
+	return ((long)(int32_t)value);
 }

@@ -40,9 +40,20 @@ wcsncasecmp(const wchar_t *s1, const wchar_t *s2, size_t n)
 		c1 = towlower(*s1);
 		c2 = towlower(*s2);
 		if (c1 != c2)
-			return ((int)c1 - c2);
+			/*
+			 * PBSD: `(int)c1 - c2' is the difference of two
+			 * wchar_t, which is int32_t here, so it is not
+			 * representable in general -- and only its sign
+			 * is specified, or read.  Compare instead.
+			 */
+			return (c1 < c2 ? -1 : 1);
 		if (--n == 0)
 			return (0);
 	}
-	return (-*s2);
+	/*
+	 * s1 ended first, so it is the shorter string unless s2 ended
+	 * too.  `-*s2' was undefined on WCHAR_MIN and had the wrong sign
+	 * for any negative wchar_t besides.
+	 */
+	return (*s2 == 0 ? 0 : -1);
 }

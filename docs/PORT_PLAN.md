@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,904 | 9,057 |
+| 1 | `lib` | 2,827 | 640,946 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,860** | **114,208** |
+| | **total** | **41,143** | **21,302,902** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -5557,7 +5557,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **1.109.1** `_Exit.c` · 21L · `TODO-PORT` · 1 fn
   - [ ] 1.109.1.1 `_Exit()` · `TODO-FN`
-- [ ] **1.109.2** `a64l.c` · 45L gen:1 · `TODO-PORT` · 1 fn
+- [ ] **1.109.2** `a64l.c` · 65L gen:1 · `TODO-PORT` · 1 fn
   - [ ] 1.109.2.1 `a64l()` · `TODO-FN`
 - [ ] **1.109.3** `abort.c` · 76L · `TODO-PORT` · 1 fn
   - [ ] 1.109.3.1 `abort()` · `TODO-FN`
@@ -5972,7 +5972,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.114.56.1 `__ssp_real()` · `TODO-FN`
 - [ ] **1.114.57** `wcpncpy.c` · 47L · `TODO-PORT` · 1 fn
   - [ ] 1.114.57.1 `__ssp_real()` · `TODO-FN`
-- [ ] **1.114.58** `wcscasecmp.c` · 45L · `TODO-PORT` · 1 fn
+- [ ] **1.114.58** `wcscasecmp.c` · 56L · `TODO-PORT` · 1 fn
   - [ ] 1.114.58.1 `wcscasecmp()` · `TODO-FN`
 - [ ] **1.114.59** `wcscat.c` · 53L gen:1 · `TODO-PORT` · 1 fn
   - [ ] 1.114.59.1 `__ssp_real()` · `TODO-FN`
@@ -5995,7 +5995,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.114.67.1 `__ssp_real()` · `TODO-FN`
 - [ ] **1.114.68** `wcslen.c` · 50L gen:1 · `TODO-PORT` · 1 fn
   - [ ] 1.114.68.1 `wcslen()` · `TODO-FN`
-- [ ] **1.114.69** `wcsncasecmp.c` · 49L · `TODO-PORT` · 1 fn
+- [ ] **1.114.69** `wcsncasecmp.c` · 60L · `TODO-PORT` · 1 fn
   - [ ] 1.114.69.1 `wcsncasecmp()` · `TODO-FN`
 - [ ] **1.114.70** `wcsncat.c` · 60L gen:1 · `TODO-PORT` · 1 fn
   - [ ] 1.114.70.1 `__ssp_real()` · `TODO-FN`

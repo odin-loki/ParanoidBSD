@@ -26894,3 +26894,121 @@ builds `tftp-io.c` too, so this is both ends of the protocol.
 `libexec/tftpd`, same scope both sides: 7 translation units, 0 ERROR on
 both, 0 analyser findings on both.  One marker, revert-verified, and
 the revert checked not to be a no-op.
+
+## `a64l(3)` cannot read `l64a(3)`'s own output without overflowing
+
+`lib/libc/stdlib`'s bucket is mostly the standard's own undefined cases
+— `abs(INT_MIN)`, `div(x, 0)`, `div(INT_MIN, -1)` — which are the
+contract, not defects.  One is not:
+
+```
+  lib/libc/stdlib/a64l.c:a64l
+      line 40 arithmetic overflow on signed shl in digit << shift
+      line 40 shift operand is negative in digit << shift
+```
+
+```c
+	long shift;
+	int digit, i, value;
+	...
+		value |= digit << shift;
+		shift += 6;
+```
+
+`shift` runs 0, 6, 12, 18, 24, 30, so the sixth character shifts by 30
+into an `int`.  A digit of 2 is `2 << 30`, which is `0x80000000` — past
+the width.  That is not a corner case, because `l64a_r()` converts
+through a `uint32_t`:
+
+```c
+	uint32_t v;
+
+	v = value;
+	while (buflen-- > 0) {
+		if (v == 0) { *buffer = '\0'; return (0); }
+		*buffer++ = chars[v & 0x3f];
+		v >>= 6;
+	}
+```
+
+so it emits a sixth character for **every value with bit 31 set**.
+`a64l(l64a(0x80000000))` is `a64l(".....0")`, and the sixth digit is 2:
+
+```
+  $ cc -fsanitize=undefined -fno-sanitize-recover=all …
+  a.c:15:18: runtime error: left shift of 2 by 30 places cannot be
+                            represented in type 'int'
+  exit=1
+```
+
+The round trip that is the whole point of the pair is undefined for
+half the range.
+
+The second half is `*s`: a plain `char`, so a byte above 0x7f is
+negative where `char` is signed, the first arm makes `digit` negative,
+and the shift operand is negative too.  POSIX leaves a string `l64a()`
+did not produce *unspecified*, which is not the same as undefined.
+
+Accumulating in `uint32_t` settles both — the conversion is modular and
+the shift is defined for every digit — and the sign extension that
+returning an `int` used to do is now written down as
+`(long)(int32_t)value`.  **The answers do not change**, checked against
+the old expression on thirteen values including every sign-bit case:
+
+```
+  0x7fffffff -> "zzzzz/" -> new 0x000000007fffffff  old 0x000000007fffffff  ok
+  0x80000000 -> ".....0" -> new 0xffffffff80000000  old 0xffffffff80000000  ok
+  0xffffffff -> "zzzzz1" -> new 0xffffffffffffffff  old 0xffffffffffffffff  ok
+  0xdeadbeef -> "jvPfS1" -> new 0xffffffffdeadbeef  old 0xffffffffdeadbeef  ok
+
+  round-trips, and matches the old answer
+```
+
+The old code only produced those answers because the wrap happened to
+do what unsigned arithmetic does.
+
+## `wcscasecmp` subtracts two `wchar_t`, which is `__bt_defcmp` again
+
+```
+  lib/libc/string/wcscasecmp.c:wcscasecmp   line 41 ... in (signed int)c1 - c2
+  lib/libc/string/wcsncasecmp.c:wcsncasecmp line 43 ... in (signed int)c1 - c2
+```
+
+```c
+		if (c1 != c2)
+			return ((int)c1 - c2);
+	}
+	return (-*s2);
+```
+
+`wchar_t` is `int32_t` here, so the difference of two is not
+representable in general — and only its sign is specified by POSIX, or
+read by anyone.  The third time this shape has come up today, after
+`__bt_defcmp` and `catgets()`, and the same answer: compare rather than
+subtract.
+
+The tail is worse than an overflow.  `-*s2` is undefined on `WCHAR_MIN`,
+and for *any* negative `wchar_t` it has the **wrong sign**: the loop
+ended because `s1` ended, so `s1` is a prefix of `s2` and must compare
+less, but `-*s2` on a negative `*s2` is positive.
+
+```
+  empty vs {-5}: old  1  new -1
+```
+
+That is a deliberate behaviour change, and the only one: the sign is
+identical on every ordinary case, and the magnitude — which POSIX does
+not specify — is now 1 rather than a difference.
+
+### Measured
+
+`lib/libc/stdlib` and `lib/libc/string` together, same scope both
+sides: 157 translation units, 0 ERROR on both, and the six analyser
+findings are the same six by checker, function and message.  Seven
+markers, each revert-verified.
+
+The rest of the two buckets is the standard's own contract
+(`abs(INT_MIN)`, `div(x, 0)`, `div(INT_MIN, -1)` and their `long` and
+`long long` twins), `wcswidth`'s accumulator over a string's own
+length, and `random.c`'s `5 * (rst_rptr - rst_state)` on internal
+state a caller has no way to reach.
