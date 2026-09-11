@@ -229,6 +229,42 @@ class TheGateBites(Base):
         # Nor is a sizeof that is not the operand being compared to V.
         self.assertFalse(u("i").search("memcpy(a, b, sizeof(x));"))
 
+    def test_a_file_local_nitems_alias(self):
+        """hccontrol's util.c spells nitems() itself --
+        `#define SIZE(x) (sizeof((x))/sizeof((x)[0]))' -- and uses it
+        fifteen times. What makes the comparison unsigned is the sizeof
+        quotient, not the name, so the file is asked for its aliases.
+        68 files in the tree define one: SIZE, N, ARRAY_SIZE, AS,
+        UCODE, NUM_ELEMENTS, X."""
+        self.assertEqual(
+            onesided_index.sizeof_macros(
+                "#define SIZE(x) (sizeof((x))/sizeof((x)[0]))\n"),
+            frozenset({"SIZE"}))
+        self.assertEqual(
+            onesided_index.sizeof_macros(
+                "#define\tARRAY_SIZE(x)\t(sizeof(x) / sizeof((x)[0]))\n"),
+            frozenset({"ARRAY_SIZE"}))
+        # A macro that merely mentions sizeof promises no type.
+        self.assertEqual(
+            onesided_index.sizeof_macros(
+                "#define ZERO(x) memset((x), 0, sizeof(*(x)))\n"),
+            frozenset())
+        # And an object-like macro is not a nitems alias either.
+        self.assertEqual(
+            onesided_index.sizeof_macros("#define NT sizeof(t)/sizeof(t[0])\n"),
+            frozenset())
+        body = ("#define SIZE(x) (sizeof((x))/sizeof((x)[0]))\n"
+                "\n"
+                "char const *\n"
+                "hci_role2str(int role)\n"
+                "{\n"
+                "\tstatic char const * const roles[] = { \"a\", \"b\" };\n"
+                "\n"
+                "\treturn (role >= SIZE(roles)? \"Unknown role\" : roles[role]);\n"
+                "}\n")
+        self.assertFalse([h for h in self.hits(body) if h[0] == "ONESIDED"],
+                         self.hits(body))
+
     def test_long_long_is_excluded_from_the_unsigned_operand_floor(self):
         """On a 32-bit target size_t is unsigned int and a long long
         can represent all of it, so the size_t converts to long long

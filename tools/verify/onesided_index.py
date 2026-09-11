@@ -62,11 +62,11 @@ ONE OF THE TWO GATES, AND WHY ONLY ONE
 --gate fails on a MOD site not on the record in EXPECTED below, and does
 NOT fail on ONESIDED. That is a measurement, not a preference. Over the
 whole tree MOD reports 11 sites, every one read and written down.
-ONESIDED reports 252 -- down from 1,109 over five rounds of tightening
+ONESIDED reports 237 -- down from 1,109 over five rounds of tightening
 -- and they are dominated by internal contracts: a static helper whose
 two callers both pass 0 or 1, a driver's ring index, a parameter that a
 comment three functions away pins. Each is a reading, not a defect, and
-a gate demanding 252 readings before the next commit is a gate somebody
+a gate demanding 237 readings before the next commit is a gate somebody
 turns off.
 
 So ONESIDED prints and does not fail. It is the same call
@@ -135,13 +135,32 @@ _LONG_LONG = {"long long", "long long int", "signed long long",
               "off_t", "quad_t"}
 _SIZEOF = r"(?:nitems\s*\(|sizeof\b)"
 
+# `#define SIZE(x) (sizeof((x))/sizeof((x)[0]))' -- hccontrol's util.c
+# spells nitems() itself and uses it fifteen times, and the rule called
+# every one of them one-sided because it was matching a NAME. What makes
+# the comparison unsigned is the sizeof quotient, not what the file
+# chose to call it, so the file is asked what its own aliases are.
+# Required to BE a quotient of two sizeofs: a macro that merely mentions
+# sizeof has no promised type.
+_NITEMS_DEFINE = re.compile(
+    r"^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]*\([^)\n]*\)"
+    r"[^\n]*\bsizeof\b[^\n]*/[^\n]*\bsizeof\b", re.M)
 
-def _unsigned_operand_re(v: str) -> re.Pattern:
+
+def sizeof_macros(text: str) -> frozenset:
+    return frozenset(m.group(1) for m in _NITEMS_DEFINE.finditer(text))
+
+
+def _unsigned_operand_re(v: str, aliases=frozenset()) -> re.Pattern:
     v = re.escape(v)
+    sz = _SIZEOF
+    if aliases:
+        sz = (r"(?:nitems\s*\(|sizeof\b|(?:%s)\s*\()"
+              % "|".join(re.escape(a) for a in sorted(aliases)))
     return re.compile(
         r"\b%s\s*(?:<|<=|>|>=)\s*%s"
         r"|%s[^;{]{0,60}?(?:<|<=|>|>=)\s*\b%s\b"
-        % (v, _SIZEOF, _SIZEOF, v))
+        % (v, sz, sz, v))
 
 
 def _floor_re(v: str) -> re.Pattern:
@@ -389,6 +408,7 @@ def scan(path: Path):
     # same `which' five more; five lines saying one thing is four lines
     # of a report nobody finishes reading.
     seen = set()
+    aliases = sizeof_macros(raw)
     for name, proto, body, end in noreturn_check.definitions(lines):
         decl, params = declared(lines, body, end, proto)
         text = "\n".join(lines[body:end])
@@ -412,7 +432,7 @@ def scan(path: Path):
                 if _floor_re(v).search(text):
                     continue                    # bounded below somewhere
                 if (ty not in _LONG_LONG
-                        and _unsigned_operand_re(v).search(text)):
+                        and _unsigned_operand_re(v, aliases).search(text)):
                     continue                    # the comparison is unsigned
                 if _two_sided_re(v).search(text):
                     continue                    # one guard, both bounds
@@ -535,12 +555,12 @@ def main() -> int:
     #
     # ONLY the MOD rule gates, and the reason is a measurement rather
     # than a preference. Over the whole tree MOD reports 11 sites, every
-    # one read and on the record above. ONESIDED reports 252 -- after
+    # one read and on the record above. ONESIDED reports 237 -- after
     # five rounds of tightening that took it from 1,109 -- and they are
     # dominated by internal contracts: a static helper whose two callers
     # both pass 0 or 1, a driver's ring index, a parameter a comment
     # three functions away pins. Each is a reading, not a defect, and a
-    # gate that demands 252 readings before the next commit is a gate
+    # gate that demands 237 readings before the next commit is a gate
     # somebody turns off.
     #
     # So ONESIDED is advisory: it prints, it does not fail. That is the

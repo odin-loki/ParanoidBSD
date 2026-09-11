@@ -24999,6 +24999,30 @@ straight off a ternary, and `sys/kern/kern_tslog.c:68` indexes with a
 `long` from `atomic_fetchadd_long`; both are floored by the conversion
 and by nothing else.
 
+### …and the file is allowed to spell `nitems` itself
+
+`usr.sbin/bluetooth/hccontrol/util.c` was fifteen of the remaining
+sites, all one line:
+
+```c
+#define SIZE(x) (sizeof((x))/sizeof((x)[0]))
+...
+	return (role >= SIZE(roles)? "Unknown role" : roles[role]);
+```
+
+That is `nitems()` under another name, and it is unsigned for exactly
+the same reason — what makes the comparison convert is the quotient of
+two `sizeof`s, not what the file chose to call it.  So the rule now asks
+each file for its own aliases, requiring the macro to **be** a sizeof
+quotient rather than merely to mention `sizeof`: a `#define ZERO(x)
+memset((x), 0, sizeof(*(x)))` promises no type at all.
+
+**68 files in the tree define one** — `SIZE`, `N`, `ARRAY_SIZE`, `AS`,
+`UCODE`, `NUM_ELEMENTS`, `X` — across `sys/dev/ath`, `sys/kern`,
+`sys/net80211`, the sysent tables and the Linux compat layers.
+ONESIDED **252 → 237**, and the diff is exactly the fifteen hccontrol
+lines with nothing newly appearing.
+
 ### The pf ruleset number: five sites, one fact, in another file
 
 Five more ONESIDED sites are one reading:
