@@ -4001,6 +4001,27 @@ FIXES = {
         "zero guard, and nothing establishes that count is non-zero",
     ),
 
+    "hbsd/src/lib/libc/posix1e/mac.c": (
+        "PBSD: an empty line has no last character.",
+        None,
+        "mac_init_internal() read `line[strlen(line) - 1]\' off an "
+        "fgets() buffer with no length test, so a line whose first "
+        "byte is NUL reads line[-1] -- below the caller\'s stack "
+        "array, and writes there if that byte is a newline. The path "
+        "comes from MAC_CONFFILE through secure_getenv(), so a "
+        "non-set-id program reads a file of its caller\'s choosing",
+    ),
+
+    "hbsd/src/usr.sbin/ppp/auth.c": (
+        ("if (buff[0] != '\\0')", 3),
+        None,
+        "three copies of `buff[strlen(buff) - 1] = 0\' over an fgets() "
+        "buffer with only a `#\' comment test in front of them, so a "
+        "line in SECRETFILE whose first byte is NUL writes one byte "
+        "below the stack array. cron\'s in_file() guards the identical "
+        "line with `line[0] != \'\\0\'\'",
+    ),
+
     "hbsd/src/sys/kern/kern_descrip.c": [
         (
             "\tif (ret != 0)\n\t\tsigiofree(sigio);\n\treturn (ret);",

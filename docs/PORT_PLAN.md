@@ -51,12 +51,12 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,532 | 9,056 |
+| 1 | `lib` | 2,827 | 640,546 | 9,056 |
 | 2 | `libexec` | 170 | 48,065 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,910 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,924 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,728 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,386** | **114,207** |
+| | **total** | **41,143** | **21,302,414** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -3870,7 +3870,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.81.28** `extattr.c` · 77L · `TODO-PORT` · 2 fn
   - [ ] 1.81.28.1 `extattr_namespace_to_string()` · `TODO-FN`
   - [ ] 1.81.28.2 `extattr_string_to_namespace()` · `TODO-FN`
-- [ ] **1.81.29** `mac.c` · 448L · `TODO-PORT` · 17 fn
+- [ ] **1.81.29** `mac.c` · 462L · `TODO-PORT` · 17 fn
   - [ ] 1.81.29.1 `mac_destroy_labels()` · `TODO-FN`
   - [ ] 1.81.29.2 `mac_destroy_internal()` · `TODO-FN`
   - [ ] 1.81.29.3 `mac_add_type()` · `TODO-FN`
@@ -33695,7 +33695,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.5.6 `async_Decode()` · `TODO-FN`
   - [ ] 6.179.5.7 `async_LayerPull()` · `TODO-FN`
 - [ ] **6.179.6** `async.h` · 54L · `TODO-HDR`
-- [ ] **6.179.7** `auth.c` · 488L · `TODO-PORT` · 13 fn
+- [ ] **6.179.7** `auth.c` · 502L · `TODO-PORT` · 13 fn
   - [ ] 6.179.7.1 `Auth2Nam()` · `TODO-FN`
   - [ ] 6.179.7.2 `pam_conv()` · `TODO-FN`
   - [ ] 6.179.7.3 `auth_CheckPasswd()` · `TODO-FN`

@@ -182,7 +182,9 @@ again:
       lineno++;
       if (buff[0] == '#')
         continue;
-      buff[strlen(buff) - 1] = '\0';
+      /* PBSD: an empty line has no last character; see below. */
+      if (buff[0] != '\0')
+        buff[strlen(buff) - 1] = '\0';
       memset(vector, '\0', sizeof vector);
       if ((n = MakeArgs(buff, vector, VECSIZE(vector), PARSE_REDUCE)) < 0)
         log_Printf(LogWARN, "%s: %d: Invalid line\n", SECRETFILE, lineno);
@@ -243,7 +245,9 @@ again:
       lineno++;
       if (buff[0] == '#')
         continue;
-      buff[strlen(buff) - 1] = '\0';
+      /* PBSD: an empty line has no last character; see below. */
+      if (buff[0] != '\0')
+        buff[strlen(buff) - 1] = '\0';
       memset(vector, '\0', sizeof vector);
       if ((n = MakeArgs(buff, vector, VECSIZE(vector), PARSE_REDUCE)) < 0)
         log_Printf(LogWARN, "%s: %d: Invalid line\n", SECRETFILE, lineno);
@@ -310,7 +314,17 @@ again:
       lineno++;
       if (buff[0] == '#')
         continue;
-      buff[strlen(buff) - 1] = 0;
+      /*
+       * PBSD: an empty line has no last character.  fgets()
+       * returns a zero-length string for a line whose first byte
+       * is NUL, and `buff[strlen(buff) - 1] = 0' then writes
+       * buff[-1] -- one byte below the stack array, driven by
+       * the contents of SECRETFILE.  cron's in_file() guards the
+       * identical line with `line[0] != '\\0'' and this is that
+       * guard.
+       */
+      if (buff[0] != '\0')
+        buff[strlen(buff) - 1] = 0;
       memset(vector, '\0', sizeof vector);
       if ((n = MakeArgs(buff, vector, VECSIZE(vector), PARSE_REDUCE)) < 0)
         log_Printf(LogWARN, "%s: %d: Invalid line\n", SECRETFILE, lineno);

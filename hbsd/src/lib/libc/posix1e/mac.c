@@ -183,9 +183,23 @@ mac_init_internal(int ignore_errors)
 
 	while (fgets(line, LINE_MAX, file)) {
 		char *comment, *parse, *statement;
+		size_t len;
 
-		if (line[strlen(line)-1] == '\n')
-			line[strlen(line)-1] = '\0';
+		/*
+		 * PBSD: an empty line has no last character.  fgets()
+		 * returns a zero-length string for a line whose first byte
+		 * is NUL, and `line[strlen(line) - 1]' is then line[-1] --
+		 * a read below the caller's stack array, and a write below
+		 * it if that byte happens to be a newline.  The config file
+		 * is not necessarily more trusted than the process: the
+		 * path comes from MAC_CONFFILE through secure_getenv(), so
+		 * any program that is not set-id reads a file of its
+		 * caller's choosing.  A line with no newline takes the
+		 * `else' arm, and a line with no characters has no newline.
+		 */
+		len = strlen(line);
+		if (len > 0 && line[len - 1] == '\n')
+			line[len - 1] = '\0';
 		else {
 			if (ignore_errors)
 				continue;
