@@ -27175,11 +27175,20 @@ above), the `sys/*` set (`db_access.c`'s `size` is 1, 2, 4, 8 or
 undefined cases in `lib/libc/stdlib`, and all eight of the
 both-instruments lines.
 
-**Still unread:** `lib/msun/src` (15, mostly the separately bucketed
-float family), `lib/libcalendar` (7), `lib/libc/softfloat` (6),
+**Still unread, as of when this section was written:** `lib/msun/src`
+(15), `lib/libcalendar` (7), `lib/libc/softfloat` (6),
 `lib/libc/posix1e` (8), `lib/libc/regex` (2), the rest of
 `lib/libc/locale` (12) and `lib/libc/net` (~12).  Named rather than
 implied.
+
+**All seven have since been read** — `libcalendar` under *one bound for
+the library*, the other six under *the last of run 26's list*, both
+below.  The claim above that `lib/msun/src` is "mostly the separately
+bucketed float family" was wrong, and reading it is what showed that:
+its fifteen are integer overflow on exponent and quadrant arithmetic,
+not division.  The line is left standing with this correction under it
+rather than edited away, because a record that quietly repairs its own
+wrong guesses is not a record.
 
 One line from the analyser section is worth recording here too:
 `lib/libpmc/pmu-events/jevents.c:582` carries **18** `unix.Malloc`
