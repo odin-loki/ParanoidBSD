@@ -136,7 +136,16 @@ verify_event_validity(libusb_context *ctx)
 			memset(&ne, 0, sizeof(ne));
 			if (!snl_parse_nlmsg(&ctx->ss, hdr, &nlevent_get_parser, &ne))
 				return (broken_event);
-			if (strcmp(ne.subsystem, "DEVICE") == 0)
+			/*
+			 * ne was memset to zero and NLSE_ATTR_SUBSYSTEM is
+			 * not required for snl_parse_nlmsg() to succeed, so
+			 * an event that carries no subsystem attribute
+			 * leaves ne.subsystem NULL.  It is not a DEVICE
+			 * event; the devd branch below says the same thing
+			 * with strstr(), which is null-safe by construction.
+			 */
+			if (ne.subsystem != NULL &&
+			    strcmp(ne.subsystem, "DEVICE") == 0)
 				return (valid_event);
 			return (invalid_event);
 		}

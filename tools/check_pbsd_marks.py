@@ -139,6 +139,57 @@ FIXES = {
         "the generated half of the fdset_init fix: FD_SET, FD_CLR and "
         "FD_ISSET, six bodies each",
     ),
+    "hbsd/src/lib/libusb/libusb10.c": (
+        "refcnt = --(dev->refcnt);",
+        "dev->refcnt--;\n\tCTX_UNLOCK(dev->ctx);\n\n\tif (dev->refcnt == 0)",
+        "libusb_unref_device() decremented under CTX_LOCK, unlocked, and "
+        "then read dev->refcnt again to decide whether to free; two "
+        "threads dropping the last two references could both see zero",
+    ),
+    "hbsd/src/lib/libusb/libusb10_hotplug.c": (
+        "ne.subsystem != NULL &&",
+        None,
+        "verify_event_validity() strcmp'd ne.subsystem, which is NULL "
+        "whenever the netlink event carried no NLSE_ATTR_SUBSYSTEM - the "
+        "devd branch three lines down uses strstr(), which cannot",
+    ),
+    "hbsd/src/lib/libmixer/mixer.c": [
+        (
+            ("free(dp);", 2),
+            None,
+            "mixer_open() goto fail'd on a mixer_readvol() failure with dp "
+            "calloc'd but not yet TAILQ_INSERT_TAIL'd, so the mixer_close() "
+            "on that label could not free it",
+        ),
+        (
+            ("free(ctl);", 2),
+            None,
+            "mixer_add_ctl() allocated ctl before the duplicate check and "
+            "returned -1 from inside it without freeing",
+        ),
+        (
+            "strncmp(cp->name, ctl->name,",
+            None,   # mixer_get_ctl_byname() has the old text legitimately
+            "the same duplicate check strncmp'd name, which the strlcpy() "
+            "eight lines up is guarded against being NULL",
+        ),
+    ],
+    "hbsd/src/libexec/ypxfr/ypxfr_main.c": [
+        (
+            ("__dead2;", 2),
+            None,
+            "ypxfr_exit() ends in exit(0) on every path and usage() in "
+            "exit(1) or ypxfr_exit(); neither said so, so every error "
+            "path in main() read as falling through",
+        ),
+        (
+            "if (yp_get_default_domain(&ypxfr_dest_domain) != 0)",
+            None,
+            "the return was dropped, and yp_get_default_domain() sets "
+            "*domp to NULL and returns YPERR_NODOM when getdomainname(2) "
+            "fails - the sibling arm of the same if already reported it",
+        ),
+    ],
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",
@@ -367,12 +418,22 @@ FIXES = {
     # Three memory-safety fixes in the netlink RPC transport, found by
     # clang's analyser and each reproduced on the single file before and
     # after. See docs/security/UB_FINDINGS.md.
-    "hbsd/src/sys/netlink/netlink_snl.h": (
-        "ss->init_done = false;",
-        None,
-        "snl_free() is idempotent; snl_init() calls it and callers call it "
-        "again, which closed the fd twice and freed ss->buf twice",
-    ),
+    "hbsd/src/sys/netlink/netlink_snl.h": [
+        (
+            "ss->init_done = false;",
+            None,
+            "snl_free() is idempotent; snl_init() calls it and callers call "
+            "it again, which closed the fd twice and freed ss->buf twice",
+        ),
+        (
+            "if (pslen <= 0)",
+            None,
+            "find_parser() read ps[0].type and ps[pslen - 1].type before "
+            "any bound test; snl_donemsg_parser is declared field-only, so "
+            "its .np is NULL and .np_size 0, and snl_parse_header() passes "
+            "them to snl_parse_attrs_raw() unconditionally",
+        ),
+    ],
     "hbsd/src/lib/libc/rpc/svc_nl.c": (
         "struct nl_request_parsed req = {};",
         None,

@@ -454,6 +454,20 @@ find_parser(const struct snl_attr_parser *ps, int pslen, int key)
 {
 	int left_i = 0, right_i = pslen - 1;
 
+	/*
+	 * A field-only parser has no attribute table at all:
+	 * SNL_DECLARE_FIELD_PARSER_EXT() sets .fp and .fp_size and leaves
+	 * .np and .np_size at their zero initialiser, and
+	 * snl_donemsg_parser below is declared that way.
+	 * snl_parse_header() still calls snl_parse_attrs_raw()
+	 * unconditionally, so a message whose payload runs past its fixed
+	 * header - which is the kernel's to decide, not ours - enters
+	 * NLA_FOREACH and arrives here with ps NULL and pslen 0.  Both
+	 * ps[0] and ps[pslen - 1] below are read before any bound test.
+	 */
+	if (pslen <= 0)
+		return (NULL);
+
 	if (key < ps[0].type || key > ps[pslen - 1].type)
 		return (NULL);
 

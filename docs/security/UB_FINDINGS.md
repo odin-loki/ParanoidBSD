@@ -23290,3 +23290,194 @@ counted — 21 of them in `fortify_string_test.c`, six each in
 not new information, only newly visible.  A test process that leaks and
 exits is not a defect; an uninitialised read is.  Fourteen findings
 became four, and the ten that went are the ten that were real.
+
+## find_parser: a netlink parser with no attribute table
+
+`sys/netlink/netlink_snl.h` is the small-netlink client header, and it is
+`#include`d by libifconfig, libpfctl, libusb's hotplug thread, ifconfig(8),
+route(8) and genl(1) — everything in the tree that reads a netlink socket.
+The sweep put two `core.NullDereference` on one line of it, reported
+through two different consumers:
+
+```
+sys/netlink/netlink_snl.h:486:49: Passing null pointer value via 1st parameter 'ps'
+sys/netlink/netlink_snl.h:486:37: Calling 'find_parser'
+sys/netlink/netlink_snl.h:457:12: Dereference of null pointer
+```
+
+`find_parser()` is a binary search over a sorted attribute table, and it
+starts by rejecting keys outside the table's range:
+
+```c
+	int left_i = 0, right_i = pslen - 1;
+
+	if (key < ps[0].type || key > ps[pslen - 1].type)
+		return (NULL);
+```
+
+Both subscripts are read before anything has tested `pslen`.  The
+question is whether a caller can reach it with an empty table, and
+the header answers that itself, twice.
+
+First, `SNL_DECLARE_FIELD_PARSER_EXT()` builds a parser out of
+designated initialisers and sets only the *field* half:
+
+```c
+#define	SNL_DECLARE_FIELD_PARSER_EXT(_name, _sz_h_in, _sz_out, _fp, _cb) \
+static const struct snl_hdr_parser _name = {				\
+	.out_size = _sz_out,						\
+	.fp = &((_fp)[0]),						\
+	.fp_size = nitems(_fp),						\
+	...
+```
+
+`.np` and `.np_size` are not mentioned, so they are `NULL` and `0`.
+Second, the header declares one such parser five hundred lines down:
+
+```c
+SNL_DECLARE_FIELD_PARSER(snl_donemsg_parser, struct nlmsgerr, nlf_p_donemsg);
+```
+
+And third, `snl_parse_header()` does not ask whether there is an
+attribute table before walking for attributes:
+
+```c
+	nla_head = (struct nlattr *)(void *)((char *)hdr + parser->in_hdr_size);
+	bool result = snl_parse_attrs_raw(ss, nla_head, len - parser->in_hdr_size,
+	    parser->np, parser->np_size, target);
+```
+
+So an `NLMSG_DONE` whose payload runs past `sizeof(struct nlmsgerr)`
+enters `NLA_FOREACH`, and the first attribute in it calls
+`find_parser(NULL, 0, type)`.  The length that decides this is the
+kernel's, in a message the client is obliged to parse; a client library
+that dereferences NULL on a message longer than it expected is not
+parsing it.  The guard goes where the unchecked subscripts are:
+
+```c
+	if (pslen <= 0)
+		return (NULL);
+```
+
+Both findings go, in both consumers.
+
+## Four more of the same six families, and two that were not
+
+The rest of the widened `lib` scope's tail, read one path at a time.
+
+**`libusb_unref_device()` — a race the analyser did not prove.**  The
+reported path was `unix.Malloc`, "use of memory after it is freed" at
+`libusb_free_device_list()`, and it rested on `refcnt` reaching zero
+inside `libusb_open()`'s error arm — which it cannot, because
+`libusb_ref_device()` incremented it three lines earlier.  The
+unconstrained-field family.  But reading it turned up this:
+
+```c
+	CTX_LOCK(dev->ctx);
+	dev->refcnt--;
+	CTX_UNLOCK(dev->ctx);
+
+	if (dev->refcnt == 0) {
+```
+
+`CTX_LOCK` is `pthread_mutex_lock(&(ctx)->ctx_lock)`.  The decrement is
+under the lock and the decision is not.  Two threads dropping the last
+two references can both read zero and both free; the loser can also read
+a field of memory the winner has already released.  `libusb10_io.c`'s
+own `refcnt++` is inside the context lock it holds across the whole
+`TAILQ_FOREACH`, so once again one of two sites had it right.  Fixed by
+taking the post-decrement value out with `refcnt = --(dev->refcnt);`.
+The analyser still reports the old finding afterwards, which is correct
+of it: the false positive was never about the race.
+
+**`verify_event_validity()` — `strcmp()` of a NULL subsystem.**
+
+```c
+	memset(&ne, 0, sizeof(ne));
+	if (!snl_parse_nlmsg(&ctx->ss, hdr, &nlevent_get_parser, &ne))
+		return (broken_event);
+	if (strcmp(ne.subsystem, "DEVICE") == 0)
+```
+
+`snl_parse_nlmsg()` succeeds on a message that carries no
+`NLSE_ATTR_SUBSYSTEM` — nothing in the parser table makes an attribute
+required — and `ne` was zeroed, so `ne.subsystem` is NULL.  Nine lines
+below, the devd branch of the same function asks the same question with
+`strstr(buf, "subsystem=DEVICE")`, which cannot fault.  Guarded.
+
+**`mixer_open()` and `mixer_add_ctl()` — two leaks and a second NULL.**
+`mixer_open()` `goto fail`s on a `mixer_readvol()` failure with `dp`
+calloc'd but three lines short of its `TAILQ_INSERT_TAIL`, so the
+`mixer_close()` on that label — which frees what is on `m->devs` — cannot
+reach it.  `mixer_add_ctl()` allocates `ctl`, then runs its
+duplicate check, then returns `-1` from inside it without freeing.  The
+same three lines also hold this:
+
+```c
+	if (name != NULL)
+		(void)strlcpy(ctl->name, name, sizeof(ctl->name));
+	...
+		if (!strncmp(cp->name, name, sizeof(cp->name)) || cp->id == id) {
+```
+
+Eight lines apart, the same `name`: guarded against NULL on the way in,
+dereferenced on the way through.  The fix compares `ctl->name` instead,
+which is the empty string in that case — well defined, and it makes two
+unnamed controls collide, which is the answer a duplicate check owes
+them.  (The file's own `XXX: should we accept NULL name?` is directly
+above.)
+
+**ypxfr(8) — a `noreturn` that was not declared, and a dropped return.**
+Two `unix.cstring.NullArg`, on `strlen(ypxfr_master)` and
+`strlen(ypxfr_dest_domain)`, as the map's `YP_MASTER_NAME` and
+`YP_DOMAIN_NAME` records are written.  The first is the patch(1) family
+this tree has already seen: `ypxfr_exit()` ends in `exit(0)` on every
+path and `usage()` in `exit(1)` or `ypxfr_exit()`, and neither says so,
+so every error arm in `main()` reads as falling through.  Both given
+`__dead2`.
+
+The second survives that, and is real:
+
+```c
+	if (ypxfr_dest_domain == NULL) {
+		if (ypxfr_use_yplib) {
+			yp_get_default_domain(&ypxfr_dest_domain);
+		} else {
+			yp_error("no destination domain specified and \
+the local domain name isn't set");
+			ypxfr_exit(YPXFR_BADARGS,NULL);
+		}
+	}
+```
+
+```c
+yp_get_default_domain_locked(char **domp)
+{
+	*domp = NULL;
+	if (_yp_domain[0] == '\0')
+		if (getdomainname(_yp_domain, sizeof _yp_domain))
+			return (YPERR_NODOM);
+```
+
+The failure sets the output to NULL and reports itself in the return
+value, and the return value is dropped.  The `else` arm of the very same
+`if` already has the error message this case needs, and uses it.  The
+fix checks the return and says the same thing.
+
+**Three that are families, recorded and not touched.**
+`setusercontext()`'s two `core.NullDereference` on `pwd->pw_gid` and
+`pwd->pw_name` are the cleared flag: `login_class.c:546` is
+`flags &= ~(LOGIN_SETGROUP | LOGIN_SETLOGIN)` on exactly the `pwd ==
+NULL` arm, and clang's constraint manager tracks ranges, not bits, so
+`flags & LOGIN_SETGROUP` seven lines later is still "assuming the
+condition is true".  `grcopy()`'s null `gr_mem` is the caller-invariant
+family with the invariant checkable in the same file — the comment says
+*"If name is not NULL, newgr->gr_mem is known to be not NULL"*, and
+`grmemlen()`, its only source of `ndx`, does `if (name != NULL) { i++;
+...}` before `*num_mem = i`.  And `cgialloc()`'s `core.DivideZero` is
+the unconstrained-field family with a named validator: the divisor is
+`INOPB(fs)`, i.e. `fs->fs_inopb`, and `ffs_subr.c:620` pins it to
+`fs->fs_bsize / sizeof(struct ufs2_dinode)` while `:564` floors
+`fs_bsize` at `MINBSIZE`, so it is at least 16 in any superblock
+`ffs_sbget()` accepted.  `libpfctl`'s two syncookie findings are
+`return (errno)`, for the fourth time.

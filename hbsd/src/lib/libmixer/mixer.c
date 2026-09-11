@@ -118,8 +118,15 @@ dunit:
 		dp->parent_mixer = m;
 		dp->devno = i;
 		dp->nctl = 0;
-		if (MIX_ISDEV(m, i) && mixer_readvol(dp) < 0)
+		if (MIX_ISDEV(m, i) && mixer_readvol(dp) < 0) {
+			/*
+			 * dp is not on m->devs yet -- the insert is three
+			 * lines down -- so mixer_close() below cannot free
+			 * it for us.
+			 */
+			free(dp);
 			goto fail;
+		}
 		(void)strlcpy(dp->name, names[i], sizeof(dp->name));
 		TAILQ_INIT(&dp->ctls);
 		TAILQ_INSERT_TAIL(&m->devs, dp, devs);
@@ -230,8 +237,17 @@ mixer_add_ctl(struct mix_dev *parent_dev, int id, const char *name,
 	ctl->print = print;
 	dp = ctl->parent_dev;
 	/* Make sure the same ID or name doesn't exist already. */
+	/*
+	 * Compare against ctl->name and not name: name is allowed to be
+	 * NULL -- the strlcpy() above is guarded on it -- and strncmp()
+	 * of a null pointer is undefined.  ctl->name is the empty string
+	 * in that case, which also makes two unnamed controls collide,
+	 * which is what a duplicate check should say about them.
+	 */
 	TAILQ_FOREACH(cp, &dp->ctls, ctls) {
-		if (!strncmp(cp->name, name, sizeof(cp->name)) || cp->id == id) {
+		if (!strncmp(cp->name, ctl->name, sizeof(cp->name)) ||
+		    cp->id == id) {
+			free(ctl);
 			errno = EINVAL;
 			return (-1);
 		}

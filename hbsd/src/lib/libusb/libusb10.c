@@ -605,14 +605,23 @@ libusb_ref_device(libusb_device *dev)
 void
 libusb_unref_device(libusb_device *dev)
 {
+	int refcnt;
+
 	if (dev == NULL)
 		return;			/* be NULL safe */
 
+	/*
+	 * Take the post-decrement value out from under the lock.  Reading
+	 * dev->refcnt again after CTX_UNLOCK() lets two threads dropping
+	 * the last two references both observe zero and both free, and
+	 * lets the loser read a field of memory the winner has already
+	 * freed.
+	 */
 	CTX_LOCK(dev->ctx);
-	dev->refcnt--;
+	refcnt = --(dev->refcnt);
 	CTX_UNLOCK(dev->ctx);
 
-	if (dev->refcnt == 0) {
+	if (refcnt == 0) {
 		libusb_unref_device(dev->parent_dev);
 		libusb20_dev_free(dev->os_priv);
 		free(dev);

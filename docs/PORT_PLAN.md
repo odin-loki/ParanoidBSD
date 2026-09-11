@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,126 | 9,056 |
-| 2 | `libexec` | 170 | 47,997 | 623 |
+| 1 | `lib` | 2,827 | 640,160 | 9,056 |
+| 2 | `libexec` | 170 | 48,012 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,493 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,789 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,579 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,593 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,484** | **114,207** |
+| | **total** | **41,143** | **21,301,547** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -8949,7 +8949,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.222 `lib/libmixer`
 
-- [ ] **1.222.1** `mixer.c` · 519L · `TODO-PORT` · 18 fn
+- [ ] **1.222.1** `mixer.c` · 535L · `TODO-PORT` · 18 fn
   - [ ] 1.222.1.1 `mixer_readvol()` · `TODO-FN`
   - [ ] 1.222.1.2 `mixer_open()` · `TODO-FN`
   - [ ] 1.222.1.3 `mixer_close()` · `TODO-FN`
@@ -11865,7 +11865,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.323.2.37 `usb_get_busses()` · `TODO-FN`
   - [ ] 1.323.2.38 `usb_get_driver_np()` · `TODO-FN`
   - [ ] 1.323.2.39 `usb_detach_kernel_driver_np()` · `TODO-FN`
-- [ ] **1.323.3** `libusb10.c` · 1,946L · `TODO-PORT` · 64 fn
+- [ ] **1.323.3** `libusb10.c` · 1,955L · `TODO-PORT` · 64 fn
   - [ ] 1.323.3.1 `libusb_get_version()` · `TODO-FN`
   - [ ] 1.323.3.2 `libusb_set_debug()` · `TODO-FN`
   - [ ] 1.323.3.3 `libusb_set_nonblocking()` · `TODO-FN`
@@ -11955,7 +11955,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.323.5.21 `libusb_free_container_id_descriptor()` · `TODO-FN`
   - [ ] 1.323.5.22 `libusb_get_platform_descriptor()` · `TODO-FN`
   - [ ] 1.323.5.23 `libusb_free_platform_descriptor()` · `TODO-FN`
-- [ ] **1.323.6** `libusb10_hotplug.c` · 437L gen:1 · `TODO-PORT` · 10 fn
+- [ ] **1.323.6** `libusb10_hotplug.c` · 446L gen:1 · `TODO-PORT` · 10 fn
   - [ ] 1.323.6.1 `netlink_init()` · `TODO-FN`
   - [ ] 1.323.6.2 `devd_init()` · `TODO-FN`
   - [ ] 1.323.6.3 `verify_event_validity()` · `TODO-FN`
@@ -14599,7 +14599,7 @@ function; a file with two hundred of them is a project.
 - [ ] **2.47.2** `ypxfr_extern.h` · 63L · `TODO-HDR`
 - [ ] **2.47.3** `ypxfr_getmap.c` · 100L · `TODO-PORT` · 1 fn
   - [ ] 2.47.3.1 `ypxfr_get_map()` · `TODO-FN`
-- [ ] **2.47.4** `ypxfr_main.c` · 578L · `TODO-PORT` · 4 fn
+- [ ] **2.47.4** `ypxfr_main.c` · 593L · `TODO-PORT` · 4 fn
   - [ ] 2.47.4.1 `ypxfr_exit()` · `TODO-FN`
   - [ ] 2.47.4.2 `usage()` · `TODO-FN`
   - [ ] 2.47.4.3 `ypxfr_foreach()` · `TODO-FN`
@@ -128214,7 +128214,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1221.18.3 `rtnl_load()` · `TODO-FN`
   - [ ] 8.1221.18.4 `rtnl_unload()` · `TODO-FN`
 - [ ] **8.1221.19** `netlink_route.h` · 45L · `TODO-HDR`
-- [ ] **8.1221.20** `netlink_snl.h` · 1,349L gen:5 · `TODO-HDR`
+- [ ] **8.1221.20** `netlink_snl.h` · 1,363L gen:5 · `TODO-HDR`
 - [ ] **8.1221.21** `netlink_snl_generic.h` · 176L gen:2 · `TODO-HDR`
 - [ ] **8.1221.22** `netlink_snl_route.h` · 202L · `TODO-HDR`
 - [ ] **8.1221.23** `netlink_snl_route_compat.h` · 54L · `TODO-HDR`

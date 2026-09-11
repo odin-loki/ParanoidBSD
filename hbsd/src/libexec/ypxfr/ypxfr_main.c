@@ -63,6 +63,8 @@ static struct sockaddr_in ypxfr_callback_addr;
 static struct yppushresp_xfr ypxfr_resp;
 static DB *dbp;
 
+static void ypxfr_exit(ypxfrstat, char *) __dead2;
+
 static void
 ypxfr_exit(ypxfrstat retval, char *temp)
 {
@@ -104,6 +106,8 @@ ypxfr_exit(ypxfrstat retval, char *temp)
 
 	exit(0);
 }
+
+static void usage(void) __dead2;
 
 static void
 usage(void)
@@ -274,7 +278,18 @@ main(int argc, char *argv[])
 	 */
 	if (ypxfr_dest_domain == NULL) {
 		if (ypxfr_use_yplib) {
-			yp_get_default_domain(&ypxfr_dest_domain);
+			/*
+			 * yp_get_default_domain() sets *domp to NULL and
+			 * returns YPERR_NODOM when getdomainname(2) fails.
+			 * Dropping the return left ypxfr_dest_domain NULL
+			 * all the way down to the strlen() that writes
+			 * YP_DOMAIN_NAME into the new map.
+			 */
+			if (yp_get_default_domain(&ypxfr_dest_domain) != 0) {
+				yp_error("no destination domain specified and \
+the local domain name isn't set");
+				ypxfr_exit(YPXFR_BADARGS,NULL);
+			}
 		} else {
 			yp_error("no destination domain specified and \
 the local domain name isn't set");
