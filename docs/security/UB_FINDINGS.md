@@ -25169,3 +25169,88 @@ Fourteen sites, and the other thirteen are internal contracts:
 * `subr_trap.c:227`, `:248` `ast_register`, `ast_deregister` — every
   one of the twenty-odd callers passes a `TDA_*` enumerator at
   subsystem init.
+
+## Nineteen more of the list: bhyve's ten and net80211's nine
+
+Both clusters are the same story as `sys/kern` — every one is a
+contract held somewhere the checker cannot look — but three of them are
+worth naming because they are the shapes that *would* be defects if the
+contract were anywhere else, and one because I expected it to be one and
+it is not.
+
+### bhyve
+
+`pci_passthru.c:422`, `:494` — `msix_table_read`, `msix_table_write`.
+The reported line is `entry = &pi->pi_msix.table[index]` and the only
+comparison on `index` is `assert(index < table_count)`, which under
+`NDEBUG` is nothing at all.  The floor is on a *different variable*, two
+statements earlier:
+
+```c
+	if (offset < table_offset ||
+	    offset >= table_offset + table_count * MSIX_TABLE_ENTRY_SIZE) {
+		... raw BAR access, returns ...
+	}
+	offset -= table_offset;
+	index = offset / MSIX_TABLE_ENTRY_SIZE;
+```
+
+`offset` is `uint64_t` and is known `>= table_offset` by the time it is
+decremented, so `index` is in `[0, table_count)` by construction.  A
+guest MMIO write into a passed-through device's MSI-X BAR is about as
+hostile an input as bhyve has, and the bound holds.
+
+`pci_emul.c:1964` `pci_generate_msix(pi, index)` — `if (index >=
+pi->pi_msix.table_count) return;` and nothing below.  The floor is the
+caller's *type*: `vi_interrupt()` takes `uint16_t msix_idx` and every
+virtio device passes `vq->vq_msix_idx`, itself `uint16_t`.  The guest
+writes that register, but it cannot make a `uint16_t` negative.
+
+`pci_virtio_net.c:686` `pci_vtnet_cfgwrite(offset)` — `if (offset <
+(int)sizeof(sc->vsc_config.mac))` guards the top only, and
+`&sc->vsc_config.mac[offset]` follows.  The floor is in `virtio.c`:
+`newoff = offset - virtio_config_size` is computed *inside* `if (offset
+>= virtio_config_size)`, on a `uint64_t`.
+
+The other seven: `gdb.c:927` `vcpu_id()` is bhyve's own index;
+`pci_emul.c:558`, `:583` take `bidx` from the `long arg2` bhyve itself
+passed to `register_mem()`; `pci_passthru.c:727` `passthru_get_mmio` is
+called with loop counters and constants; `pci_virtio_console.c:236` was
+read in an earlier commit (the guest can use a port, not create one);
+`virtio.c:226` `_vq_record(i)` is `vq_getchain()`'s loop counter from 0.
+
+### net80211
+
+`ieee80211_crypto.c:359` `ieee80211_crypto_newkey(cipher)` is the one I
+expected to be a defect.  `cipher >= IEEE80211_CIPHER_MAX` is the whole
+guard, `ciphers[cipher]` and `cipher_modnames[cipher]` both follow, and
+the value comes from a `SIOCS80211` ioctl.  It is safe twice over:
+`ik.ik_type` is `uint8_t` in `struct ieee80211req_key`, and the other
+caller passes `IEEE80211_CIPHER_WEP`.
+
+`ieee80211_ioctl.c:1332` `mlmedebug(op)` is guarded — just not in a
+shape the rule matches:
+
+```c
+	} else if (!(IEEE80211_MLME_ASSOC <= op && op <= IEEE80211_MLME_AUTH)) {
+```
+
+is two-sided, with `op` on the *right* of the lower comparison.
+`_two_sided_re()` wants the variable on the left of both.  One site in
+the whole tree has that shape, so it is read rather than taught — the
+probe that measured it also showed why a looser version would be wrong:
+matching `<` before the name catches `(1 << dev)` in
+`sys/dev/sound/pcm/mixer.c:303` and calls a shift a bound.
+
+`ieee80211_proto.c:475`, `:486`, `:495` and `ieee80211_ratectl.c:60`,
+`:68`, `:124` are six registration-table entries with `type >= ..._MAX`
+and nothing below.  Every caller is a constant: the authenticators come
+from `ieee80211_auth_setup()`'s own `SYSINIT`, the ratectl ones from
+`IEEE80211_RATECTL_ALG(amrr, IEEE80211_RATECTL_AMRR, amrr)` and its two
+siblings, and `ieee80211_ratectl_set()` is called once, with
+`IEEE80211_RATECTL_AMRR`.  `ieee80211_authenticator_get()`'s ioctl
+caller runs a `switch` over the five valid `IEEE80211_AUTH_*` values
+with `default: return EINVAL` before it.
+
+`ieee80211_ioctl.c:562` was read in an earlier commit: `i_len & 0x7fff`
+is a mask, not a comparison, and masks bound both ends.
