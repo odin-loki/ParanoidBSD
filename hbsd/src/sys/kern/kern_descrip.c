@@ -3614,7 +3614,23 @@ fget_only_user(struct filedesc *fdp, int fd, const cap_rights_t *needrightsp,
 	MPASS(FILEDESC_IS_ONLY_USER(fdp));
 
 	*fpp = NULL;
-	if (__predict_false(fd >= fdp->fd_nfiles))
+	/*
+	 * PBSD: bound both ends, as the rest of the family does.
+	 * fdt_nfiles is an int (filedesc.h:79), so `fd >= fd_nfiles'
+	 * is a SIGNED comparison and a negative fd walks straight
+	 * past it into fdt_ofiles[fd].  The three inline accessors
+	 * beside it -- filedesc.h:317, :330 and :343 -- all write
+	 * `(u_int)fd >= (u_int)fdp->fd_nfiles', where the cast makes
+	 * one comparison reject both ends; this one did not.
+	 *
+	 * Not reachable today: both callers come through select and
+	 * poll, and pollscan() skips `fds->fd < 0' before an entry is
+	 * ever registered, so pollrescan() cannot walk one.  That is
+	 * a guard two functions away in another file, protecting the
+	 * fast path into the descriptor table.  The cast costs
+	 * nothing and says it here.
+	 */
+	if (__predict_false((u_int)fd >= (u_int)fdp->fd_nfiles))
 		return (EBADF);
 
 	fdt = fdp->fd_files;
@@ -3640,7 +3656,8 @@ fget_only_user(struct filedesc *fdp, int fd, const cap_rights_t *needrightsp,
 	MPASS(FILEDESC_IS_ONLY_USER(fdp));
 
 	*fpp = NULL;
-	if (__predict_false(fd >= fdp->fd_nfiles))
+	/* PBSD: the same cast, in the !CAPABILITIES twin. */
+	if (__predict_false((u_int)fd >= (u_int)fdp->fd_nfiles))
 		return (EBADF);
 
 	fp = fdp->fd_ofiles[fd].fde_file;

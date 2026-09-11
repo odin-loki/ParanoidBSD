@@ -4001,14 +4001,31 @@ FIXES = {
         "zero guard, and nothing establishes that count is non-zero",
     ),
 
-    "hbsd/src/sys/kern/kern_descrip.c": (
-        "\tif (ret != 0)\n\t\tsigiofree(sigio);\n\treturn (ret);",
-        "\t\tsigiofree(osigio);\n\treturn (ret);",
-        "fsetown: every failing path left the new sigio neither stored "
-        "nor freed, so an unprivileged fcntl(F_SETOWN) against a pid in "
-        "another session leaked the allocation and a ucred reference, "
-        "once per call and without bound",
-    ),
+    "hbsd/src/sys/kern/kern_descrip.c": [
+        (
+            "\tif (ret != 0)\n\t\tsigiofree(sigio);\n\treturn (ret);",
+            "\t\tsigiofree(osigio);\n\treturn (ret);",
+            "fsetown: every failing path left the new sigio neither "
+            "stored nor freed, so an unprivileged fcntl(F_SETOWN) "
+            "against a pid in another session leaked the allocation and "
+            "a ucred reference, once per call and without bound",
+        ),
+        (
+            "PBSD: bound both ends, as the rest of the family does.",
+            None,
+            "fget_only_user() tested `fd >= fdp->fd_nfiles\', and "
+            "fdt_nfiles is an int, so the comparison is signed and a "
+            "negative fd walks past it into fdt_ofiles[fd]. The three "
+            "inline accessors beside it -- filedesc.h:317, :330, :343 "
+            "-- all cast both sides to u_int so one comparison rejects "
+            "both ends",
+        ),
+        (
+            "PBSD: the same cast, in the !CAPABILITIES twin.",
+            None,
+            "the second definition of fget_only_user(), under #else",
+        ),
+    ],
     "hbsd/src/sys/kern/kern_proc.c": (
         "\t\tstack_destroy(st);\n\t\tfree(kkstp, M_TEMP);\n\t\treturn (error);",
         "\t\tPROC_UNLOCK(p);\n\t\treturn (error);\n\t}\n\tdo {",

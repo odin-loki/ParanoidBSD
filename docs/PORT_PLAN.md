@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,910 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,711 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,728 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,369** | **114,207** |
+| | **total** | **41,143** | **21,302,386** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -184,7 +184,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.1213.79 | `sys/netinet/sctp_input.c` | 5,859 | 0 | `TODO-PORT` |
 | 8.690.39 | `sys/dev/e1000/if_em.c` | 5,785 | 0 | `TODO-PORT` |
 | 8.1213.77 | `sys/netinet/sctp_indata.c` | 5,732 | 0 | `TODO-PORT` |
-| 8.1191.23 | `sys/kern/kern_descrip.c` | 5,695 | 0 | `TODO-PORT` |
+| 8.1191.23 | `sys/kern/kern_descrip.c` | 5,712 | 0 | `TODO-PORT` |
 | 8.1191.218 | `sys/kern/vfs_bio.c` | 5,694 | 0 | `TODO-PORT` |
 | 8.1191.38 | `sys/kern/kern_jail.c` | 5,680 | 0 | `TODO-PORT` |
 | 8.1145.5 | `sys/fs/nfs/nfs_commonsubs.c` | 5,671 | 0 | `TODO-PORT` |
@@ -114743,7 +114743,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.22.1 `link_elf_ctf_get()` · `TODO-FN`
   - [ ] 8.1191.22.2 `link_elf_ctf_get_ddb()` · `TODO-FN`
   - [ ] 8.1191.22.3 `link_elf_ctf_lookup_typename()` · `TODO-FN`
-- [ ] **8.1191.23** `kern_descrip.c` · 5,695L gen:13 · `TODO-PORT`
+- [ ] **8.1191.23** `kern_descrip.c` · 5,712L gen:13 · `TODO-PORT`
 - [ ] **8.1191.24** `kern_devctl.c` · 612L gen:4 · `TODO-PORT` · 23 fn
   - [ ] 8.1191.24.1 `devctl_init()` · `TODO-FN`
   - [ ] 8.1191.24.2 `devctl_attach_handler()` · `TODO-FN`

@@ -194,6 +194,22 @@ class TheGateBites(Base):
             "\tfor (index = 0; index < N; index++) {\n"
             "\t\tEFSYS_PROBE2(table, int, index, uint32_t, byte);\n"))
 
+    def test_an_unsigned_cast_is_a_floor(self):
+        """`(u_int)fd >= fdt->fdt_nfiles' is the kernel's idiom for
+        bounding a descriptor and it bounds BOTH ends in one
+        comparison: the cast turns a negative fd into a value above any
+        real limit, so the same `>=' rejects it. kern_descrip.c spells
+        it that way and the rule called it one-sided."""
+        self.assertTrue(onesided_index._floor_re("fd").search(
+            "if (__predict_false((u_int)fd >= fdt->fdt_nfiles))"))
+        self.assertTrue(onesided_index._floor_re("i").search(
+            "if ((size_t)i >= n)"))
+        # The cast has to be to an unsigned type, and to V itself.
+        self.assertFalse(onesided_index._floor_re("fd").search(
+            "if ((int)fd >= fdt->fdt_nfiles)"))
+        self.assertFalse(onesided_index._floor_re("fd").search(
+            "if (fd >= (u_int)fdt->fdt_nfiles)"))
+
     def test_a_site_off_the_record_fails(self):
         src = Path(onesided_index.__file__).read_text()
         holed = src.replace('"usr.bin/pr/pr.c:1420":',

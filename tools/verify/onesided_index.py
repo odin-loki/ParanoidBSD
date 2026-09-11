@@ -131,7 +131,17 @@ def _floor_re(v: str) -> re.Pattern:
         # sentinel are on the same statement with the call between
         # them, so a rule anchored on the name alone does not see it.
         r"|\b%s\b\s*=[^;{]{0,60}?(?:!=|==)\s*-\s*1"
-        % (v, v, v, v))
+        # `if (__predict_false((u_int)fd >= fdt->fdt_nfiles))' -- the
+        # kernel's idiom for bounding a descriptor, and it bounds BOTH
+        # ends in one comparison: the cast turns a negative fd into a
+        # value above any real limit, so the same `>=' rejects it.
+        # kern_descrip.c spells it this way three times and the rule
+        # called all three one-sided. The cast has to be to an UNSIGNED
+        # type and has to be on V itself; `(int)V' is not a floor.
+        r"|\(\s*(?:unsigned|u_int|u_long|u_quad_t|size_t|uint\d+_t|"
+        r"unsigned\s+(?:int|long|long\s+long|short|char))\s*\)\s*"
+        r"\(?\s*\b%s\b"
+        % (v, v, v, v, v))
 
 
 def _two_sided_re(v: str) -> re.Pattern:
