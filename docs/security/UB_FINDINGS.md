@@ -25917,3 +25917,24 @@ record, and `kern_environment.c` itself `{"status": "OK", "findings":
 []}`**.  The edit compiles clean against the real kernel include path
 and flags, which a single-file analyse cannot show because the sweep
 resolves translation units from the kernel configuration.
+
+## The rest of `usr.sbin`, read
+
+* `bluetooth/bthidd/kbd.c:516` — `kbd_xlate(code)` bounds only
+  `code >= xsize`, and `code` is a HID usage from a paired keyboard's
+  report.  The floor is at the one caller: `kbd_write()` walks
+  `i = fb; while (i < xsize)`, and every `kbd_write()` call site tests
+  the `bit_ffs()` sentinel (`if (f1 == -1) ... assert(f1 != -1)`)
+  before calling.
+* `jail/state.c:274` — `depfrom = JF_DO_STOP(j->flags) ? DEP_TO :
+  DEP_FROM`, a ternary over two constants.
+* `mptable/mptable.c:928` — `pnstr(s, c)` clamps `c > MAXPNSTR` and
+  then does `strncpy(string, s, c)`, so a negative `c` would be
+  `SIZE_MAX`.  All five call sites pass a literal: 4, 4, 8, 12, 6.
+* `ppp/mbuf.c:158` — `MemMap[type]`, with `type` an `MB_*` enumerator
+  at every call site.
+* `bsnmpd/.../bridge_sys.c:1477`, `moused/msconvd.c:1065`,
+  `pmcstat/pmcpl_calltree.c:377`, `makefs/cd9660.c:1094`,
+  `makefs/msdos/msdosfs_conv.c:206` — table lookups and buffer offsets
+  the program computed itself, each bounded above by the same
+  expression that produced them.
