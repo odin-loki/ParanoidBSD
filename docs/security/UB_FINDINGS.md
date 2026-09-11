@@ -24899,3 +24899,129 @@ nothing follows.  Gating on that number would be gating on something
 nobody has read, and `--guards` narrows it to eighteen precisely because
 the other 519 cost nothing.  What this commit changes is that the
 eighteen can now be trusted enough to spend a sweep on.
+
+## Two rules that were reading one spelling of a bound and missing the other
+
+Two checkers were widened today from the same observation, arrived at
+twice by accident: **the shape a rule looks for and the shape the tree
+writes are not the same thing**, and a rule that matches only the first
+reports a number that says more about the rule than about the code.
+
+### `masked_switch_check.py`: the mask was allowed to be named, not written
+
+The analyser reported `usr.sbin/bhyve/pci_ahci.c:1628`,
+`core.CallAndMessage`, 4th argument uninitialised.  Reading it,
+`pc = acmd[2] >> 6` on a `uint8_t` is 0..3 and all four arms are there
+— a false positive.  But it is the procctl shape written with a shift
+and a literal instead of named bits, and `masked_switch_check.py` could
+not see that spelling at all: its pattern was
+`... & (A | B | ...)`, names only.
+
+The state count is `2**popcount(mask)` whichever way the mask is
+written, and a shift around it changes nothing — `(mca_error & 0x000c)
+>> 2` has the same four states as `flags & (A | B)`.  One rule, two
+spellings.  Coverage over the seven scopes it walks: **47 masked
+switches → 178** (60 named, 118 literal), state-gap sites **14 → 38**.
+
+Four things had to be right for that to mean anything:
+
+* A literal mask is cut above four bits.  `instr & 0x7f` is 128 states
+  by the formula and ten in fact; every site in the tree above a nibble
+  is an opcode decoder (`0x1f`, `0x3f`, `0x7f`, `0xff`, `0xff0`,
+  `0xff000000`).  **90** literal masks are cut on that line.
+* `ASSIGN` could not see past a case label, so
+  `case A:	d = 1; break;` — the house style for a short switch, and
+  the shape in the checker's own docstring — read as no assignment at
+  all.  Condition (4) was invisible in its commonest spelling.
+* `DECL` could not see `struct nfsnode *np;`.  `char *p;` has no space
+  between the star and the name, so the pointer form never matched.
+* Which is why condition (4) grew a second half.  With pointers
+  visible, `sys/fs/nfs/nfs_commonsubs.c:556` and `:1010` report: three
+  arms for eight states of `nd_flag & (ND_NFSV2 | ND_NFSV3 | ND_NFSV4)`,
+  and `np` assigned in an arm.  They are not defects — `np` is set to
+  `NULL` at the top of the `ND_NFSV4` arm and read only inside it.  `d`
+  in procctl was read by `*(int *)data = d;` after the switch, and that
+  is the whole difference.  The name must now be **read after the
+  switch closes**.
+
+**The rule found no new defect.**  Thirty-eight switches have a state
+gap and none of them lets an uninitialised value out.  That is the
+result, not a preamble to one.
+
+Two things fell out of reading it rather than running it.  The report
+path had a `len(names)` left from the named-mask-only version and would
+have raised `NameError` on the first finding this rule ever made — a
+checker at zero cannot exercise its own reporting, so `format_hit()` is
+a function now and the test calls it on a planted defect.  And the
+default scope was `sys` alone, from when this was a kernel stack
+disclosure rule; it costs five seconds over all seven scopes, so
+`--gate` looks at the whole of the tree PBSD owns rather than a seventh
+of it.
+
+### `onesided_index.py`: the unsignedness can be on either side of the `<`
+
+`sys/opencrypto/crypto.c:681` was on the ONESIDED list:
+
+```c
+static enum alg_type
+alg_type(int alg)
+{
+	if (alg < nitems(alg_types))
+		return (alg_types[alg]);
+	return (ALG_NONE);
+}
+```
+
+`alg` is `int`, the comparison is one-sided in form, and the rule said
+so.  It is wrong: `nitems()` is `sizeof(x) / sizeof(x[0])`, which is
+`size_t`, so `alg` is **converted to `size_t` for the comparison** and a
+negative `alg` compares above the limit.  The same `<` rejects both
+ends.
+
+This is the `kern_descrip.c` cast idiom — `(u_int)fd >= fdt->fdt_nfiles`
+— with the unsignedness on the other side of the operator, and the rule
+already knew the cast form.  `nitems()` and `sizeof` are the two
+spellings in this tree that are `size_t` by definition rather than by a
+guess about a name, so those two are what the rule learned.
+
+Sound for every index type **except `long long`**, and only there on a
+32-bit target: `size_t` is `unsigned int`, `long long` can represent all
+of it, so the `size_t` converts to `long long` and the index stays
+signed.  The tree targets i386, armv7 and 32-bit powerpc, so that case
+is real; `long long` and the 64-bit `*_t` aliases are excluded rather
+than argued about.
+
+ONESIDED **287 → 252**.  All 35 cleared sites were read back: every one
+is a real `V < nitems(...)`, `V >= nitems(...)` or `V > sizeof(...) - 1`
+guard.  Two are worth naming because they look like the defect and are
+not — `sys/x86/linux/linux_x86.c:97` is a trap-code table indexed
+straight off a ternary, and `sys/kern/kern_tslog.c:68` indexes with a
+`long` from `atomic_fetchadd_long`; both are floored by the conversion
+and by nothing else.
+
+### The pf ruleset number: five sites, one fact, in another file
+
+Five more ONESIDED sites are one reading:
+`sys/netpfil/pf/pf_ioctl.c:449`, `:2187`, `:2298`, `sys/netpfil/pf/pf_nl.c:915`
+and the two further `pf_get_ruleset_number()` callers at `:3834` and
+`:3964`.  Each does
+
+```c
+	rs_num = pf_get_ruleset_number(rule_action);
+	if (rs_num >= PF_RULESET_MAX)
+		return (NULL);
+	... ruleset->rules[rs_num] ...
+```
+
+and the floor is in `pf_ruleset.c`: `pf_get_ruleset_number()` is a
+`switch` over an action returning one of `PF_RULESET_SCRUB`, `FILTER`,
+`NAT`, `BINAT`, `RDR` or, in `default:`, `PF_RULESET_MAX`.  Every one is
+non-negative and every named one is below `MAX`, so the single `>=` is
+the complete bound.  `pf_lb.c:1032` says as much in a comment —
+*"where pf_get_ruleset_number() has already guaranteed the …"*.
+
+This is the reason family the ONESIDED list is mostly made of, and the
+reason it is advisory: the bound is a fact about a **different
+function**, which is exactly what a per-function grep cannot see and a
+reader can.  It is not teachable without an interprocedural pass, so it
+is written down here instead.

@@ -61,16 +61,16 @@ ONE OF THE TWO GATES, AND WHY ONLY ONE
 
 --gate fails on a MOD site not on the record in EXPECTED below, and does
 NOT fail on ONESIDED. That is a measurement, not a preference. Over the
-whole tree MOD reports 8 sites, every one read and written down.
-ONESIDED reports 264 -- down from 1,109 over four rounds of tightening
+whole tree MOD reports 11 sites, every one read and written down.
+ONESIDED reports 252 -- down from 1,109 over five rounds of tightening
 -- and they are dominated by internal contracts: a static helper whose
 two callers both pass 0 or 1, a driver's ring index, a parameter that a
 comment three functions away pins. Each is a reading, not a defect, and
-a gate demanding 264 readings before the next commit is a gate somebody
+a gate demanding 252 readings before the next commit is a gate somebody
 turns off.
 
 So ONESIDED prints and does not fail. It is the same call
-noreturn_check.py makes about its 673, for the same reason: a report
+noreturn_check.py makes about its 1,471, for the same reason: a report
 nobody finishes reading is a report that has stopped working.
 
 It is a lint, not a proof.
@@ -117,6 +117,33 @@ SUB_VAR_RE = re.compile(r"\[\s*([A-Za-z_]\w*)\s*\]")
 
 # A comparison that puts a floor under V. `V == -1' and `V != -1' count:
 # rejecting the sentinel is how most of this tree spells the floor.
+# A signed index compared against a size_t operand is converted to
+# size_t for the comparison, so the SAME test rejects a negative value:
+# opencrypto's `if (alg < nitems(alg_types)) return (alg_types[alg]);'
+# is bounded at both ends by one `<'. This is the kern_descrip.c cast
+# idiom with the unsignedness on the other side of the operator, and
+# nitems() and sizeof are the two spellings in this tree that are
+# size_t by definition rather than by a guess about a name.
+#
+# Sound for every index type EXCEPT long long, and only there on a
+# 32-bit target: size_t is unsigned int, long long can represent all of
+# it, so the size_t converts to long long and the index stays signed.
+# The tree targets i386, armv7 and 32-bit powerpc, so that case is real
+# and `long long' is excluded rather than argued about.
+_LONG_LONG = {"long long", "long long int", "signed long long",
+              "int64_t", "int_fast64_t", "int_least64_t", "intmax_t",
+              "off_t", "quad_t"}
+_SIZEOF = r"(?:nitems\s*\(|sizeof\b)"
+
+
+def _unsigned_operand_re(v: str) -> re.Pattern:
+    v = re.escape(v)
+    return re.compile(
+        r"\b%s\s*(?:<|<=|>|>=)\s*%s"
+        r"|%s[^;{]{0,60}?(?:<|<=|>|>=)\s*\b%s\b"
+        % (v, _SIZEOF, _SIZEOF, v))
+
+
 def _floor_re(v: str) -> re.Pattern:
     v = re.escape(v)
     return re.compile(
@@ -384,6 +411,9 @@ def scan(path: Path):
                     continue                    # a loop counter
                 if _floor_re(v).search(text):
                     continue                    # bounded below somewhere
+                if (ty not in _LONG_LONG
+                        and _unsigned_operand_re(v).search(text)):
+                    continue                    # the comparison is unsigned
                 if _two_sided_re(v).search(text):
                     continue                    # one guard, both bounds
                 if not _ceiling_re(v).search(text):
@@ -504,17 +534,17 @@ def main() -> int:
           % (hits, unexpected, advisory), file=sys.stderr)
     #
     # ONLY the MOD rule gates, and the reason is a measurement rather
-    # than a preference. Over the whole tree MOD reports 8 sites, every
-    # one read and on the record above. ONESIDED reports 264 -- after
-    # four rounds of tightening that took it from 1,109 -- and they are
+    # than a preference. Over the whole tree MOD reports 11 sites, every
+    # one read and on the record above. ONESIDED reports 252 -- after
+    # five rounds of tightening that took it from 1,109 -- and they are
     # dominated by internal contracts: a static helper whose two callers
     # both pass 0 or 1, a driver's ring index, a parameter a comment
     # three functions away pins. Each is a reading, not a defect, and a
-    # gate that demands 264 readings before the next commit is a gate
+    # gate that demands 252 readings before the next commit is a gate
     # somebody turns off.
     #
     # So ONESIDED is advisory: it prints, it does not fail. That is the
-    # same call noreturn_check.py makes about its 673, and for the same
+    # same call noreturn_check.py makes about its 1,471, and for the same
     # reason -- a report nobody finishes reading is a report that has
     # stopped working.
     if args.gate and unexpected:

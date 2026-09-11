@@ -210,6 +210,44 @@ class TheGateBites(Base):
         self.assertFalse(onesided_index._floor_re("fd").search(
             "if (fd >= (u_int)fdt->fdt_nfiles)"))
 
+    def test_an_unsigned_operand_is_a_floor(self):
+        """`alg < nitems(alg_types)' is the same bound with the
+        unsignedness on the other side of the operator: nitems() is
+        size_t, so alg converts to size_t and a negative alg compares
+        above the limit. opencrypto's alg_type() is written that way
+        and the rule called it one-sided. 35 sites in the tree are."""
+        u = onesided_index._unsigned_operand_re
+        self.assertTrue(u("alg").search(
+            "return (alg < nitems(alg_types) ? alg_types[alg] : ALG_NONE);"))
+        self.assertTrue(u("ipi_idx").search(
+            "if (ipi_idx >= nitems(xen_ipis))"))
+        self.assertTrue(u("len").search("if (len > sizeof(buf) - 1)"))
+        self.assertTrue(u("i").search("if (nitems(tab) <= i)"))
+        # A comparison against something that is not size_t is not it.
+        self.assertFalse(u("alg").search("if (alg < ALG_LAST)"))
+        self.assertFalse(u("i").search("if (i < sc->sc_ntab)"))
+        # Nor is a sizeof that is not the operand being compared to V.
+        self.assertFalse(u("i").search("memcpy(a, b, sizeof(x));"))
+
+    def test_long_long_is_excluded_from_the_unsigned_operand_floor(self):
+        """On a 32-bit target size_t is unsigned int and a long long
+        can represent all of it, so the size_t converts to long long
+        and the index stays signed. The tree targets i386, armv7 and
+        32-bit powerpc, so that case is not hypothetical."""
+        body = ("static int\n"
+                "f(long long idx, int n)\n"
+                "{\n"
+                "\tif (idx < nitems(tab))\n"
+                "\t\treturn (tab[idx]);\n"
+                "\treturn (0);\n"
+                "}\n")
+        r = self.hits(body)
+        self.assertTrue(any(h[0] == "ONESIDED" and h[3] == "idx"
+                            for h in r), r)
+        self.assertTrue(any(ty in onesided_index._LONG_LONG
+                            for ty in ("long long", "int64_t")))
+        self.assertNotIn("int", onesided_index._LONG_LONG)
+
     def test_a_site_off_the_record_fails(self):
         src = Path(onesided_index.__file__).read_text()
         holed = src.replace('"usr.bin/pr/pr.c:1420":',
