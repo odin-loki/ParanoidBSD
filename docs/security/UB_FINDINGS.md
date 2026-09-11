@@ -25778,3 +25778,37 @@ This is Linux-derived vendor code.  Adding a `slave < 0` clause would
 diverge from upstream mlx4 for an internal contract that holds, so it
 is read and written down rather than patched — the same call the
 `sys/kern` internal contracts got, for the same reason.
+
+## The `ath` cluster: six of the nine are entry points nothing calls
+
+`ar5210`, `ar5211` and `ar5212` each export a `SetTxQueueProps` and a
+`GetTxQueueProps` with the same body:
+
+```c
+	if (q >= HAL_NUM_TX_QUEUES) {
+		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: invalid queue num %u\n",
+		    __func__, q);
+		return AH_FALSE;
+	}
+	return ath_hal_setTxQProps(ah, &ahp->ah_txq[q], qInfo);
+```
+
+The bound is one-sided, and the accessor macros that would reach them —
+`ath_hal_setTxQueueProps` and `ath_hal_getTxQueueProps` in
+`if_athvar.h` — **have no call site anywhere in the tree**.  Six HAL
+methods reachable only through a table nothing indexes into.  Six
+readings for one grep.
+
+Of the other three:
+
+* `if_ath_tx_ht.c:424` `ath_compute_num_delims()` takes
+  `peer_mpdudensity` from the peer's advertised HT capability — over
+  the air — and its floor is a **mask**:
+  `_IEEE80211_MASKSHIFT(ni->ni_htparam, IEEE80211_HTCAP_MPDUDENSITY)`
+  is 0..7, and the `max()` against `vap->iv_ampdu_density` only raises
+  it.  The same invisible-floor shape as `i_len & 0x7fff` in
+  `ieee80211_ioctl.c`.
+* `if_ath_tdma.c:651` — `otherant = sc->sc_defant & 1 ? 2 : 1`, a
+  ternary over two literals.
+* `ath_rate/sample/sample.c:1015` — `rix0` is a rate index from the
+  transmit descriptor's own rate series, internal to the rate control.
