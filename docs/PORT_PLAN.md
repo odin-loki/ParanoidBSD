@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,946 | 9,057 |
+| 1 | `lib` | 2,827 | 640,971 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,902** | **114,208** |
+| | **total** | **41,143** | **21,302,927** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -2173,7 +2173,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.90.22 `err_nomatch()` · `TODO-FN`
   - [ ] 1.68.90.23 `err_aborted()` · `TODO-FN`
   - [ ] 1.68.90.24 `qprintf()` · `TODO-FN`
-- [ ] **1.68.91** `initgroups.c` · 86L · `TODO-PORT` · 3 fn
+- [ ] **1.68.91** `initgroups.c` · 111L · `TODO-PORT` · 3 fn
   - [ ] 1.68.91.1 `initgroups_impl()` · `TODO-FN`
   - [ ] 1.68.91.2 `initgroups()` · `TODO-FN`
   - [ ] 1.68.91.3 `freebsd14_initgroups()` · `TODO-FN`

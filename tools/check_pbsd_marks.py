@@ -2447,6 +2447,30 @@ FIXES = {
             "and the same tail",
         ),
     ],
+    "hbsd/src/lib/libc/gen/initgroups.c": [
+        (
+            "\tngroups_max = sysconf(_SC_NGROUPS_MAX);\n"
+            "\tif (ngroups_max < 0)\n\t\tngroups_max = NGROUPS_MAX;",
+            "\tngroups_max = sysconf(_SC_NGROUPS_MAX) + 2;",
+            "sysconf() returns -1 on failure and this added two to it "
+            "without looking: a failed _SC_NGROUPS_MAX gives "
+            "ngroups_max 1, a four-byte allocation, and ngroups 1. "
+            "KERN_NGROUPS is a static sysctl and does not fail today, "
+            "but the size of an allocation should not depend on that",
+        ),
+        (
+            "\tif (ngroups > (int)ngroups_max)\n"
+            "\t\tngroups = (int)ngroups_max;",
+            None,
+            "and getgrouplist() reports an overflow by setting *ngroups "
+            "to the count it needed -- that is what its own -1 return "
+            "means, and the return is discarded here -- so setgroups() "
+            "was handed a count larger than the buffer. The kernel's "
+            "`gidsetsize > ngroups_max' test is the only thing between "
+            "that and a copyin() past the allocation, and it tests "
+            "against ITS limit rather than against this malloc",
+        ),
+    ],
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (
         "\tif (a->size < b->size)\n\t\treturn (-1);",
         "\treturn ((int)a->size - (int)b->size);",

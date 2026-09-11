@@ -27012,3 +27012,66 @@ The rest of the two buckets is the standard's own contract
 `long long` twins), `wcswidth`'s accumulator over a string's own
 length, and `random.c`'s `5 * (rst_rptr - rst_state)` on internal
 state a caller has no way to reach.
+
+## `initgroups(3)` sizes its buffer from an unchecked `sysconf()`
+
+```
+  lib/libc/gen/initgroups.c:initgroups
+      line 60 arithmetic overflow on signed + in return_value_sysconf + 2
+```
+
+The overflow CBMC names needs `sysconf()` to return `LONG_MAX`, which
+is not the interesting half.  This is:
+
+```c
+	/*
+	 * Provide space for one group more than possible to allow setgroups()
+	 * to fail and set 'errno' in case we get back more than {NGROUPS_MAX} +
+	 * 1 groups.
+	 */
+	ngroups_max = sysconf(_SC_NGROUPS_MAX) + 2;
+	groups = malloc(sizeof(*groups) * ngroups_max);
+	...
+	ngroups = (int)ngroups_max;
+	(void)getgrouplist(uname, agroup, groups, &ngroups);
+	ret = (*setgroups)(ngroups, groups);
+```
+
+`sysconf()` returns **-1** on failure, and this adds two to it without
+looking: `ngroups_max` becomes 1, the allocation four bytes, and
+`ngroups` 1.
+
+`getgrouplist()` reports an overflow by writing the count it *needed*
+into `*grpcnt` — that is exactly what `__getgroupmembership()`'s
+`return (*grpcnt > maxgrp ? -1 : 0)` means — and the return is
+discarded here.  So `setgroups()` is handed a count larger than the
+buffer, and `sys_setgroups()` does
+
+```c
+	if (gidsetsize > ngroups_max || gidsetsize < 0)
+		return (EINVAL);
+	...
+	error = copyin(uap->gidset, groups, gidsetsize * sizeof(gid_t));
+```
+
+which is the *kernel's* limit (1023), not this `malloc`.  A count
+between 2 and 1023 passes the test and `copyin()`s past the four-byte
+allocation, in every program that calls `initgroups(3)`: `login`, `su`,
+`sshd`, `cron`, `ftpd`.
+
+`KERN_NGROUPS` is a static sysctl and `sysconf(_SC_NGROUPS_MAX)` does
+not fail on this kernel, so this is not live — but the comment above it
+describes a design in which `setgroups()` is *expected* to be handed an
+over-limit count and reject it, and the size of a heap allocation
+should not rest on a `sysctl` never failing.  Two bounds: fall back to
+`NGROUPS_MAX` when `sysconf()` fails, and clamp `ngroups` to what was
+allocated before handing it on.  The comment's intent survives — a
+count above the kernel's limit still reaches `setgroups()` and is still
+rejected — because `NGROUPS_MAX + 2` is above that limit by
+construction.
+
+### Measured
+
+`lib/libc/gen`, same scope both sides: 171 translation units, 0 ERROR
+on both, and the forty analyser findings are the same forty by checker,
+function and message.  Two markers, revert-verified.

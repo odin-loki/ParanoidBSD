@@ -38,6 +38,7 @@
 #include <sys/cdefs.h>
 
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -57,13 +58,37 @@ initgroups_impl(const char *uname, gid_t agroup,
 	 * to fail and set 'errno' in case we get back more than {NGROUPS_MAX} +
 	 * 1 groups.
 	 */
-	ngroups_max = sysconf(_SC_NGROUPS_MAX) + 2;
+	/*
+	 * PBSD: sysconf() returns -1 on failure, and this added two to
+	 * it without looking: a failed _SC_NGROUPS_MAX gives ngroups_max
+	 * 1, a four-byte allocation, and ngroups 1.  getgrouplist() then
+	 * writes back the number of groups the user actually has --
+	 * that is what its own -1 return means, and it is discarded
+	 * below -- so setgroups() is handed a count larger than the
+	 * buffer and the kernel copyin()s past it.  The kernel's
+	 * `gidsetsize > ngroups_max' test is the only thing between that
+	 * and a heap over-read, and it is testing against ITS limit, not
+	 * against this allocation.  KERN_NGROUPS is a static sysctl and
+	 * does not fail today; the bound should not depend on that.
+	 */
+	ngroups_max = sysconf(_SC_NGROUPS_MAX);
+	if (ngroups_max < 0)
+		ngroups_max = NGROUPS_MAX;
+	ngroups_max += 2;
 	groups = malloc(sizeof(*groups) * ngroups_max);
 	if (groups == NULL)
 		return (-1); /* malloc() set 'errno'. */
 
 	ngroups = (int)ngroups_max;
 	(void)getgrouplist(uname, agroup, groups, &ngroups);
+	/*
+	 * and getgrouplist() reports an overflow by setting *ngroups to
+	 * the count it needed, so clamp before handing it on: the
+	 * comment above wants setgroups() to reject a count over the
+	 * limit, not to be told a length this buffer does not have.
+	 */
+	if (ngroups > (int)ngroups_max)
+		ngroups = (int)ngroups_max;
 	ret = (*setgroups)(ngroups, groups);
 
 	free(groups);
