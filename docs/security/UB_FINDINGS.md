@@ -27289,3 +27289,96 @@ is there.
 Seven markers, each revert-verified.  Two of them are the file's
 existing entries, folded into the new lists because
 `check_pbsd_marks.py` caught the duplicate keys — twice in one day now.
+
+## The last of run 26's list: five buckets read, no defects
+
+`lib/msun/src` (15), `lib/libc/softfloat` (6), `lib/libc/posix1e` (8),
+`lib/libc/regex` (2), and the remainder of `lib/libc/locale` and
+`lib/libc/net`.  All read; none is a defect.  The reasons are worth the
+space because they are five *different* reasons, and three of them are
+not the modular-checking blind spot everything else in this document
+turned out to be.
+
+**`lib/msun/src` — the file says so.**  The fifteen entries are not the
+float family; they are integer overflow on exponent and quadrant
+arithmetic.  `k_exp.c:80` is the clearest:
+
+```c
+ * The present implementation is narrowly tailored for our hyperbolic and
+ * exponential functions.  We assume expt is small (0 or -1), and the caller
+ * has filtered out very large x, for which overflow would be inevitable.
+ */
+double
+__ldexp_exp(double x, int expt)
+{
+	...
+	expt += ex_expt;
+	INSERT_WORDS(scale, (0x3ff + expt) << 20, 0);
+```
+
+`__ldexp_exp` is msun-internal, the contract is written above it in the
+source, and CBMC is reporting that the contract is not in the type.  The
+`-n` family (`s_cos`, `s_sin`, `s_tan`, `s_sincos` and their `f`
+variants, all at the same line of the same inlined block) is
+`__kernel_rem_pio2`'s return — a quadrant count, small and non-negative
+— negated.  `s_fma.c:125`'s `-((int)(hibits >> 52) & 0x7ff) - scale + 1`
+is in a `static` called once, with `spread`, which the fma algorithm
+bounds; that is the report's own *253 static (callers constrain the
+domain)* bucket, appearing in the exported list because the caller is
+exported.
+
+**`lib/libc/softfloat` — the type is `int`, the domain is `{0, 1}`.**
+Six entries, all the same line of six near-identical files:
+
+```c
+flag
+__gedf2(float64 a, float64 b)
+{
+
+	/* libgcc1.c says (a >= b) - 1 */
+	return float64_le(b, a) - 1;
+}
+```
+
+`typedef int flag;` — so `float64_le`'s return is an `int` as far as the
+checker is concerned, and `x - 1` on `INT_MIN` overflows.  It returns 0
+or 1 and always has.  This is the day's recurring theme stated in its
+purest form: *the type does not carry the invariant*, and an instrument
+that reads types rather than intentions cannot be blamed for saying so.
+Not fixed — narrowing `flag` is an ABI-visible change to code shared
+with five architectures' `-gcc.h`, and the payoff is a checker message.
+
+**`lib/libc/posix1e` — the assert is the check.**  `_acl_brand_as()`'s
+`assert(_acl_brand_may_be(acl, brand))` and `acl_strip_np()`'s
+`assert(_acl_brand(aclp) == ACL_BRAND_POSIX)` are the same family as
+`libcasper`'s magic numbers, and `ASSERT_DEBUG` is default-yes so they
+are live.  `acl_get_entry:139`'s `ats_cur_entry + 1` is a cursor bounded
+by `ACL_MAX_ENTRIES`.
+
+**`lib/libc/regex` — the guard is right there.**
+
+```c
+	if (cflags&REG_PEND) {
+		if (preg->re_endp < pattern)
+			return(REG_INVARG);
+		len = preg->re_endp - pattern;
+```
+
+Subtracting two pointers into different objects is undefined however it
+is guarded, but `REG_PEND`'s whole contract is that `re_endp` points
+into `pattern`, and the ordering test is the most a library can do about
+a caller that breaks it.
+
+**`lib/libc/locale` and `lib/libc/net` — two already fixed, the rest
+bounded upstream of the arithmetic.**  `xlocale.c:353`'s
+`ffs(...) - 1` is the residue of a fix already in this tree: the
+`type < 0 || type >= XLC_LAST` bound is three lines below it, and CBMC
+reports the subtraction because `ffs()` is an extern whose 0..32 return
+it cannot see.  `gethostnamadr.c:106`'s `len += he->h_length` grows by
+4 or 16 per address in a `hostent` the resolver built from a packet it
+had already bounded.  The `free argument has offset zero` entries in
+`hesiod.c`, `nscache.c`, `sctp_sys_calls.c` and `auth_des.c` are
+`bt_close.c`'s answer again — a `free()` of a field of an unconstrained
+struct parameter.
+
+That closes run 26.
