@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,887 | 9,057 |
+| 1 | `lib` | 2,827 | 640,904 | 9,057 |
 | 2 | `libexec` | 170 | 48,065 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,824** | **114,208** |
+| | **total** | **41,143** | **21,302,841** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -2616,7 +2616,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.72.12.9 `get_none()` · `TODO-FN`
   - [ ] 1.72.12.10 `_citrus_csmapper_open()` · `TODO-FN`
 - [ ] **1.72.13** `citrus_csmapper.h` · 50L · `TODO-HDR`
-- [ ] **1.72.14** `citrus_db.c` · 332L · `TODO-PORT` · 10 fn
+- [ ] **1.72.14** `citrus_db.c` · 349L · `TODO-PORT` · 10 fn
   - [ ] 1.72.14.1 `_citrus_db_open()` · `TODO-FN`
   - [ ] 1.72.14.2 `_citrus_db_close()` · `TODO-FN`
   - [ ] 1.72.14.3 `_citrus_db_lookup()` · `TODO-FN`

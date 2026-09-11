@@ -2341,6 +2341,38 @@ FIXES = {
             "and the message number likewise",
         ),
     ],
+    "hbsd/src/lib/libc/iconv/citrus_db.c": [
+        (
+            "\tif (be32toh(dhx->dhx_num_entries) >\n"
+            "\t    _memstream_remainder(&ms) / _CITRUS_DB_ENTRY_SIZE)",
+            "\tif (be32toh(dhx->dhx_num_entries)*_CITRUS_DB_ENTRY_SIZE >\n"
+            "\t    _memstream_remainder(&ms))",
+            "_citrus_db_open()'s only bound on dhx_num_entries could be "
+            "walked past: be32toh() is uint32_t and _CITRUS_DB_ENTRY_SIZE "
+            "is a plain 24, so the product is uint32_t arithmetic and "
+            "wraps. A .db claiming 178956971 entries multiplies out to "
+            "8, which is under the remainder of any file at all. "
+            "Dividing is the same test with nothing to wrap",
+        ),
+        (
+            "\t\t    (size_t)hashval * _CITRUS_DB_ENTRY_SIZE;",
+            "\t\t    hashval * _CITRUS_DB_ENTRY_SIZE;",
+            "and _citrus_db_lookup() scaled a uint32_t hash bucket by "
+            "the same constant in uint32_t, so the offset it seeks to "
+            "wrapped along with the bound that was supposed to keep it "
+            "in range",
+        ),
+        (
+            "\t    (size_t)idx * _CITRUS_DB_ENTRY_SIZE;",
+            "\toffset = be32toh(dhx->dhx_entry_offset) + idx * "
+            "_CITRUS_DB_ENTRY_SIZE;",
+            "and _citrus_db_get_entry() scaled an int index by it in "
+            "int: its own bound is `(uint32_t)idx >= num_entries' and "
+            "num_entries is the file's, so an index the file permits is "
+            "signed overflow before the seek that would have rejected "
+            "the offset ever runs",
+        ),
+    ],
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (
         "\tif (a->size < b->size)\n\t\treturn (-1);",
         "\treturn ((int)a->size - (int)b->size);",

@@ -72,8 +72,16 @@ _citrus_db_open(struct _citrus_db **rdb, struct _region *r, const char *magic,
 	if (_memstream_seek(&ms, be32toh(dhx->dhx_entry_offset), SEEK_SET))
 		return (EFTYPE);
 
-	if (be32toh(dhx->dhx_num_entries)*_CITRUS_DB_ENTRY_SIZE >
-	    _memstream_remainder(&ms))
+	/*
+	 * PBSD: this was the only bound on dhx_num_entries, and it could
+	 * be walked past.  be32toh() is uint32_t and _CITRUS_DB_ENTRY_SIZE
+	 * is a plain 24, so the product is computed in uint32_t and wraps:
+	 * a file claiming 178956971 entries multiplies out to 8, which is
+	 * under the remainder of any file at all.  Divide instead -- the
+	 * same test, with nothing to wrap.
+	 */
+	if (be32toh(dhx->dhx_num_entries) >
+	    _memstream_remainder(&ms) / _CITRUS_DB_ENTRY_SIZE)
 		return (EFTYPE);
 
 	db = malloc(sizeof(*db));
@@ -119,8 +127,9 @@ _citrus_db_lookup(struct _citrus_db *db, struct _citrus_region *key,
 			return (ENOENT);
 	} else {
 		hashval = db->db_hashfunc(key)%num_entries;
+		/* and the scaling is done in offset's own size_t */
 		offset = be32toh(dhx->dhx_entry_offset) +
-		    hashval * _CITRUS_DB_ENTRY_SIZE;
+		    (size_t)hashval * _CITRUS_DB_ENTRY_SIZE;
 		if (dl)
 			dl->dl_hashval = hashval;
 	}
@@ -307,7 +316,15 @@ _citrus_db_get_entry(struct _citrus_db *db, int idx, struct _region *key,
 		return (EINVAL);
 
 	/* seek to the next entry */
-	offset = be32toh(dhx->dhx_entry_offset) + idx * _CITRUS_DB_ENTRY_SIZE;
+	/*
+	 * and here idx is an int, so `idx * 24' is int arithmetic: idx
+	 * above 89478485 is signed overflow before the seek that would
+	 * have rejected the offset ever runs.  _citrus_db_get_entry()'s
+	 * own bound is `(uint32_t)idx >= num_entries', and num_entries
+	 * is the file's.
+	 */
+	offset = be32toh(dhx->dhx_entry_offset) +
+	    (size_t)idx * _CITRUS_DB_ENTRY_SIZE;
 	if (_citrus_memory_stream_seek(&ms, offset, SEEK_SET))
 		return (EFTYPE);
 	/* get the entry record */

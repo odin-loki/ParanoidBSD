@@ -26714,3 +26714,112 @@ to the end of the catalogue header, `__index` a cumulative index into
 the single message-header table, `__offset` a cumulative byte offset
 into the single string pool — and that was read out of `gencat.c`
 rather than guessed.
+
+## The same shape again, in the file iconv(3) maps
+
+`lib/libc/iconv`'s bucket had
+
+```
+  lib/libc/iconv/citrus_db.c:_citrus_db_get_entry
+      line 310 arithmetic overflow on signed * in idx * 24
+```
+
+and the twenty-four is `_CITRUS_DB_ENTRY_SIZE`.  `_citrus_db_get_entry()`
+is careful about the index — `if (idx < 0 || (uint32_t)idx >=
+num_entries)` — so the question is what bounds `num_entries`, and the
+answer is one line in `_citrus_db_open()`:
+
+```c
+	if (be32toh(dhx->dhx_num_entries)*_CITRUS_DB_ENTRY_SIZE >
+	    _memstream_remainder(&ms))
+		return (EFTYPE);
+```
+
+`be32toh()` is `uint32_t` and `_CITRUS_DB_ENTRY_SIZE` is a plain `24`,
+so the product is computed in `uint32_t` and **wraps**.  178956971 × 24
+is 4294967304, which is 8 after the wrap — under the remainder of any
+file at all.  The sole bound on the entry table is bypassable by
+choosing a number, and `dhx_num_entries` is read out of the `.db` the
+library maps for `iconv(3)`.
+
+With that number accepted, both scalings that trust it go the same way:
+`_citrus_db_get_entry()` computes `idx * 24` in `int` (signed overflow
+above 89478485) and `_citrus_db_lookup()` computes `hashval * 24` in
+`uint32_t` (wraps).  In each case the `_citrus_memory_stream_seek()`
+that follows would have rejected the offset — but only after the
+arithmetic the standard does not define, and only for the values that
+happen to land outside.
+
+The fix is a division and two casts.  Dividing is the same test with
+nothing to wrap:
+
+```c
+	if (be32toh(dhx->dhx_num_entries) >
+	    _memstream_remainder(&ms) / _CITRUS_DB_ENTRY_SIZE)
+		return (EFTYPE);
+```
+
+and the scalings are done in the `size_t` the offset already is.  The
+writer side, `citrus_db_factory.c`, has the same expression three times
+and is left alone: that is `mkcsmapper(1)` and `mkesdb(1)` building a
+file from their own counts, not reading somebody else's.
+
+```
+  cbmc -DOLD --unwind 4 --signed-overflow-check --conversion-check \
+      tools/verify/probes/citrus_db_entries.c
+  [main.assertion.1] line 63 an accepted entry table fits the mapping: FAILURE
+  [main.overflow.2] line 71 arithmetic overflow on signed * in idx * 24: FAILURE
+  [main.assertion.2] line 75 the entry the index names is inside the table: FAILURE
+  ** 4 of 5 failed        VERIFICATION FAILED
+
+  cbmc (same flags, no -DOLD)
+  ** 0 of 4 failed        VERIFICATION SUCCESSFUL
+```
+
+The first assertion is the one that matters: *an accepted entry table
+fits the mapping* is the entire content of the check in
+`_citrus_db_open()`, and before this it did not hold.
+
+### Measured
+
+`lib/libc/iconv`, same scope both sides: 33 translation units, 0 ERROR
+on both, and the thirteen analyser findings are the same thirteen by
+checker, function and message.  Three markers, each revert-verified and
+each revert checked not to be a no-op.
+
+### `citrus_mapper.c`'s "must hold lock upon unlock", which is real but narrow
+
+Two entries in the same bucket are not arithmetic:
+
+```
+  citrus_mapper.c:_citrus_mapper_close          line 10 must hold lock upon unlock
+  citrus_mapper.c:_citrus_mapper_set_persistent line 10 must hold lock upon unlock
+```
+
+Line 10 is `citrus_lock.h`:
+
+```c
+#define WLOCK(lock)	if (__isthreaded)		\
+			    pthread_rwlock_wrlock(lock);
+#define UNLOCK(lock)	if (__isthreaded)		\
+			    pthread_rwlock_unlock(lock);
+```
+
+Both arms test the same global, so they pair — *unless the global
+changes between them*.  `__isthreaded` is set by libthr when a program
+creates its first thread, and it only ever goes 0 → 1, so the reachable
+case is: `WLOCK` skipped, a thread is created, `UNLOCK` runs on a lock
+nobody took.  `pthread_rwlock_unlock()` returns `EPERM` for that and the
+return is discarded, so the consequence is a missed unlock rather than
+undefined behaviour.
+
+The second half is the one already written up for `msgcat.c`'s
+`TRY_WLOCK()`: `pthread_rwlock_wrlock()`'s return is discarded here too,
+and it really can fail — libthr's `rwlock_init()` `aligned_alloc()`s on
+first use.  A failed `wrlock` runs the critical section unlocked.
+
+Not fixed here, and not claimed clean.  The macro's contract is shared
+by every file in `lib/libc/iconv`, and changing it is a change to the
+locale layer's locking rather than a one-line bound; it wants its own
+pass, not a footnote to a file-format fix.  Written down so the next
+reading starts from the reason rather than the symptom.
