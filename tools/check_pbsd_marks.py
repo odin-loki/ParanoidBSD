@@ -6006,6 +6006,23 @@ FIXES = {
         "caller passes nfield == NULL today, so it is latent",
     ),
 
+    "hbsd/src/sys/dev/clk/starfive/jh7110_clk.c": [
+        (
+            "PBSD: a reset id is an index, and a negative one is neither",
+            None,
+            "jh7110_reset_assert() computed `1UL << id % 32\' -- C\'s % "
+            "keeps the sign of the left operand, so a negative reset id "
+            "shifts by a negative amount -- and `id / 32 * 4\', which "
+            "wraps in the uint32_t offset and hands bus_read_4() an "
+            "address outside the CRG window mem_res maps",
+        ),
+        (
+            "PBSD: the same negative id, in the read path.",
+            None,
+            "jh7110_reset_is_asserted() has the same two expressions",
+        ),
+    ],
+
     "hbsd/src/lib/libc/rpc/getnetconfig.c": (
         "PBSD: get rid of the newline if there is one.",
         None,

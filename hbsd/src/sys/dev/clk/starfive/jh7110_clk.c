@@ -58,8 +58,29 @@ int
 jh7110_reset_assert(device_t dev, intptr_t id, bool assert)
 {
 	struct jh7110_clkgen_softc *sc;
-	uint32_t regvalue, offset, bitmask = 1UL << id % 32;
+	uint32_t regvalue, offset, bitmask;
 
+	/*
+	 * PBSD: a reset id is an index, and a negative one is neither
+	 * a shift distance nor an offset.  C's % keeps the sign of the
+	 * left operand, so `1UL << id % 32' shifts by a negative
+	 * amount -- undefined -- and `id / 32 * 4' is negative too,
+	 * which wraps in the uint32_t offset and hands bus_read_4() a
+	 * value near 4G, outside the CRG window mem_res maps.  The id
+	 * comes from the reset specifier in the device tree, so this
+	 * is the firmware's to get wrong rather than a user's; it is
+	 * still a shift the standard does not define and an MMIO
+	 * access at an address the driver did not choose.
+	 *
+	 * There is no upper bound to check against: the softc carries
+	 * reset_status_offset and reset_selector_offset but no count
+	 * of resets, so an id past the end of the window is still
+	 * only caught by the bus.
+	 */
+	if (id < 0)
+		return (EINVAL);
+
+	bitmask = 1UL << (id % 32);
 	sc = device_get_softc(dev);
 	offset = sc->reset_selector_offset + id / 32 * 4;
 
@@ -84,13 +105,17 @@ jh7110_reset_is_asserted(device_t dev, intptr_t id, bool *reset)
 	struct jh7110_clkgen_softc *sc;
 	uint32_t regvalue, offset, bitmask;
 
+	/* PBSD: the same negative id, in the read path. */
+	if (id < 0)
+		return (EINVAL);
+
 	sc = device_get_softc(dev);
 	offset = sc->reset_status_offset + id / 32 * 4;
 
 	mtx_lock(&sc->mtx);
 
 	regvalue = READ4(sc, offset);
-	bitmask = 1UL << id % 32;
+	bitmask = 1UL << (id % 32);
 
 	mtx_unlock(&sc->mtx);
 
