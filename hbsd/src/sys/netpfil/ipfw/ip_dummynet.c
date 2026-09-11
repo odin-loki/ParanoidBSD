@@ -1930,7 +1930,18 @@ config_profile(struct dn_profile *pf, struct dn_id *arg)
 	i = pf->link_nr;
 	if (i <= 0 || i >= DN_MAX_ID)
 		return EINVAL;
-	/* XXX other sanity checks */
+	/*
+	 * samples_no is the modulus extra_bits() takes `random() %
+	 * samples_no' by, and the result subscripts samples[], which the
+	 * struct declares as ED_MAX_SAMPLES_NO entries.  Nothing between
+	 * the setsockopt and that subscript has ever checked it: a
+	 * negative value makes the modulus enormous (random() returns
+	 * u_long, so the int converts) and any value above the array
+	 * length indexes past it.  This is the "XXX other sanity checks"
+	 * the comment here used to stand in for.
+	 */
+	if (pf->samples_no < 0 || pf->samples_no > ED_MAX_SAMPLES_NO)
+		return EINVAL;
 	DN_BH_WLOCK();
 	for (; i < 2*DN_MAX_ID; i += DN_MAX_ID) {
 		s = locate_scheduler(i);
@@ -1967,7 +1978,14 @@ config_profile(struct dn_profile *pf, struct dn_id *arg)
 		olen = s->profile->oid.len;
 		if (olen < pf->oid.len)
 			olen = pf->oid.len;
-		memcpy(s->profile, pf, pf->oid.len);
+		/*
+		 * pf points at do_config()'s union, which is one
+		 * struct dn_profile long; oid.len is the user's own
+		 * number and only checked to be at least that. Copying
+		 * oid.len bytes read up to 61KB of kernel heap past the
+		 * union and into a buffer the get-config path hands back.
+		 */
+		memcpy(s->profile, pf, sizeof(*pf));
 		s->profile->oid.len = olen;
 	}
 	DN_BH_WUNLOCK();

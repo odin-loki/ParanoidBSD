@@ -25467,3 +25467,84 @@ survivor being `json_copystr`'s own `jlen` — its floor is
 `json_len(t)`, a function call, and stays invisible.  The analyser is
 **53 → 53** over those scopes with all 11 known-ERROR translation units
 on the record before and after.  Tree-wide ONESIDED **232 → 230**.
+
+## dummynet: "XXX other sanity checks" was load-bearing
+
+`sys/netpfil/ipfw/ip_dn_io.c:599` was on the ONESIDED list:
+
+```c
+static uint64_t
+extra_bits(struct mbuf *m, struct dn_schk *s)
+{
+	int index;
+	struct dn_profile *pf = s->profile;
+
+	if (!pf || pf->samples_no == 0)
+		return 0;
+	index  = random() % pf->samples_no;
+	bits = div64((uint64_t)pf->samples[index] * s->link.bandwidth, 1000);
+```
+
+`samples[]` is `int samples[ED_MAX_SAMPLES_NO]` — 1024 entries — and
+`samples_no` is a plain `int` in the same struct.  Following it back:
+`config_profile()` is where a `struct dn_profile` arrives from
+`setsockopt(IP_DUMMYNET3)`, and it checks `oid.len` and `link_nr` and
+then says
+
+```c
+	/* XXX other sanity checks */
+```
+
+`samples_no` is never one of them.  Two ways out of the array:
+
+* **Negative.**  `random(9)` returns `u_long`, so the `int` converts:
+  `random() % (u_long)(-1)` is `random()` itself, truncated back into
+  `int index` as a value in the tens of millions.
+* **Too large.**  Nothing ties `samples_no` to `ED_MAX_SAMPLES_NO`, so
+  `samples_no = 100000` indexes 400KB past the array.
+
+Both are kernel out-of-bounds reads from a configuration path.
+`ipfw(8)` is root-only (`PRIV_NETINET_DUMMYNET`), so this is not a
+privilege boundary — it is a kernel that trusts a struct it copied in.
+
+### And the copy that brought it in
+
+Reading the same function turned up a second one, which no checker
+reported:
+
+```c
+		memcpy(s->profile, pf, pf->oid.len);
+```
+
+`pf` is `&dn->profile`, where `dn` is `do_config()`'s union — one
+`struct dn_profile` long, about 4KB.  `oid.len` is the user's own
+number, checked only to be *at least* `sizeof(*pf)`, and a `dn_id`
+length runs to 2^16.  So the copy reads up to ~61KB of kernel heap past
+the union, into a buffer `ipfw pipe show` hands straight back.
+
+`sizeof(*pf)` is the only length that is actually available, so that is
+what it copies now.  The `olen` bookkeeping above it — which preserves
+the larger of the old and new lengths, with its own `XXX double check`
+— is left alone; the allocation is `oid.len` bytes either way, so the
+tail stays inside it.
+
+### Measured
+
+`sys/netpfil/ipfw` ONESIDED **4 → 4**: the `extra_bits()` site still
+reports, and correctly, because its floor is now in `config_profile()`
+— a different function, which is exactly what this rule cannot see.
+The analyser is **41 → 41** with all 3 known-ERROR translation units on
+the record before and after.  Neither instrument found either of these;
+both came out of reading the list.
+
+### The rest of the ipfw cluster
+
+* `dn_heap.c:461` `dn_ht_find()` — `i = hash(...) & ht->buckets` looks
+  like a mask by a count, which would be off by one for a power of two.
+  It is not: `dn_ht_init()` rounds the request to a power of two and
+  then stores **size - 1**, allocating `buckets + 1` entries, and says
+  so in two comments.  `i` is 0..buckets and the array has buckets + 1.
+* `ip_fw_sockopt.c:3765` `ipfw_objhash_free_idx()` — `idx` is an object
+  index from the namespace allocator, which hands out from zero.
+* `ip_fw_table.c:2361` `ipfw_del_table_algo()` — `idx` is what
+  `ipfw_add_table_algo()` returned to the same caller.

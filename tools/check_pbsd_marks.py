@@ -4065,6 +4065,28 @@ FIXES = {
         "line with `line[0] != \'\\0\'\'",
     ),
 
+    "hbsd/src/sys/netpfil/ipfw/ip_dummynet.c": [
+        (
+            "\tif (pf->samples_no < 0 || pf->samples_no > ED_MAX_SAMPLES_NO)",
+            "\t/* XXX other sanity checks */\n\tDN_BH_WLOCK();",
+            "config_profile() validated link_nr and nothing else, so a "
+            "dn_profile from setsockopt(IP_DUMMYNET3) carried an "
+            "unchecked samples_no into extra_bits()'s "
+            "`random() % pf->samples_no' -- random() is u_long, so a "
+            "negative int converts to an enormous modulus, and any "
+            "value above ED_MAX_SAMPLES_NO subscripts samples[] past "
+            "the end of the struct's own array",
+        ),
+        (
+            "\t\tmemcpy(s->profile, pf, sizeof(*pf));",
+            "\t\tmemcpy(s->profile, pf, pf->oid.len);",
+            "and pf points at do_config()'s union, one struct "
+            "dn_profile long, while oid.len is the user's own number "
+            "checked only to be at least that -- so the copy read up "
+            "to 61KB of kernel heap past the union into a buffer the "
+            "get-config path hands straight back",
+        ),
+    ],
     "hbsd/src/sys/kern/kern_environment.c": (
         "\t\t\tif (i >= KENV_SIZE) {",
         "\t\t\tif (i > KENV_SIZE) {",

@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,924 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,738 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,756 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,483** | **114,207** |
+| | **total** | **41,143** | **21,302,501** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -708,7 +708,7 @@ function; a file with two hundred of them is a project.
 | 8.648.6 | `sys/dev/bnxt/bnxt_re/qplib_fp.c` | 3,608 | 87 | `TODO-PORT` |
 | 8.786.29 | `sys/dev/irdma/irdma_utils.c` | 2,674 | 86 | `TODO-PORT` |
 | 8.1166.1 | `sys/geom/mirror/g_mirror.c` | 3,639 | 85 | `TODO-PORT` |
-| 8.1224.20 | `sys/netpfil/ipfw/ip_dummynet.c` | 2,825 | 85 | `TODO-PORT` |
+| 8.1224.20 | `sys/netpfil/ipfw/ip_dummynet.c` | 2,843 | 85 | `TODO-PORT` |
 
 ## 1. `lib` — Userland libraries
 
@@ -129026,7 +129026,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1224.18.14 `dummynet_io()` · `TODO-FN`
   - [ ] 8.1224.18.15 `dn_free_pkts()` · `TODO-FN`
 - [ ] **8.1224.19** `ip_dn_private.h` · 493L gen:3 · `TODO-HDR`
-- [ ] **8.1224.20** `ip_dummynet.c` · 2,825L gen:6 · `TODO-PORT` · 85 fn
+- [ ] **8.1224.20** `ip_dummynet.c` · 2,843L gen:6 · `TODO-PORT` · 85 fn
   - [ ] 8.1224.20.1 `dummynet()` · `TODO-FN`
   - [ ] 8.1224.20.2 `dummynet_sched_lock()` · `TODO-FN`
   - [ ] 8.1224.20.3 `dummynet_sched_unlock()` · `TODO-FN`
