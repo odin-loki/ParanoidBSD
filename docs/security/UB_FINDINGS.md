@@ -25704,3 +25704,42 @@ hardening patches are for, and not a reason to leave the bound wrong.
 that scope with its 1 translation unit compiling both ways — it has
 never had anything to say here, which is the point.  Tree-wide ONESIDED
 **228 → 227**.
+
+## Where the ONESIDED list stands, and what is honestly still unread
+
+Today took it from **287 to 227**, in two different ways that are worth
+keeping separate:
+
+**Taught (55 sites, no code changed).**  Three facts the rule could not
+see and now can:
+
+| what | sites |
+|---|---|
+| a comparison whose other operand is `size_t` — `V < nitems(x)`, `V > sizeof(x) - 1` | 35 |
+| the same, where the file spells `nitems` itself (`SIZE`, `N`, `ARRAY_SIZE`, `AS`, `UCODE`, `NUM_ELEMENTS`, `X` — 68 files define one) | 15 |
+| the `(unsigned)V < N` cast idiom, already known, now reached by `libc/rpc`'s new code | 2 |
+
+**Fixed (11 sites, 9 files).**  `libc/rpc`'s `__svc_xports` and
+`netname2host`; `libcam`'s bit-field width; `libkvm` and `libifconfig`'s
+entry points; `libdpv`'s `vsnprintf` return; `libpmc`'s `json_copystr`;
+`libc/db`'s `__free_ovflpage`; `kern_environment`'s terminator; ipfw
+dummynet's `samples_no` **and** its `oid.len` copy; the two etherswitch
+ATU fetches; `kbd`'s function-key index.
+
+**Read and left alone (about 90 sites).**  `sys/kern` ×14, bhyve ×10,
+net80211 ×9, the pf ruleset family ×5, ipfw ×3, `sys/vm` ×2, riscv ×4,
+`x86/mca` ×3, `ufs_dirhash` ×3, the libc locale/resolv/stdio/stdlib
+group, and a dozen more, each with its reason in the sections above.
+
+**Still unread: roughly 90, nearly all in `sys/dev`.**  `mlx4` ×11,
+`bwi` ×6, `cxgbe` ×5, `mlx5` ×4, `ath` ×9, `mwl`, `qat`, `bnxt`, `iwm`,
+`iwn`, `iwx`, `et`, `bxe`, `agp`, `exca`, `clk` and the rest — ring
+indices, queue numbers, slave and VF numbers, and register-derived
+values.  They are not read, this document does not pretend they are,
+and the rule prints them precisely so that they stay visible.  The ones
+picked out of that cluster today were chosen because their index comes
+from somewhere a device driver does not control: an ioctl
+(`etherswitch` ×2), a keymap (`kbd`), an SR-IOV guest (`ice_iov`, read,
+internal), a FireWire CROM (`fwcrom`, read, internal), a Hyper-V host
+(`vmbus_chan`, read, internal) and a DRM context bitmap (`drm2`, read,
+internal).
