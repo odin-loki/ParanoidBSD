@@ -779,7 +779,22 @@ clknode_init_parent_idx(struct clknode *clknode, int idx)
 		clknode->parent = NULL;
 		return;
 	}
-	if ((idx == CLKNODE_IDX_NONE) ||
+	/*
+	 * PBSD: the third clause read the array while the first two were
+	 * still deciding whether the index was usable.  CLKNODE_IDX_NONE
+	 * is -1, so it caught exactly one negative value: an idx of -2 or
+	 * below passed both tests and parent_names[idx] was read before
+	 * the array.  `idx < 0' subsumes CLKNODE_IDX_NONE and closes the
+	 * rest.
+	 *
+	 * Nothing in this tree reaches it -- every caller passes a
+	 * literal 0 or a masked register field -- but this is the
+	 * clock framework's exported entry point, the guard panics by
+	 * design because it exists to catch a driver's mistake, and a
+	 * defensive check that dereferences out of bounds while deciding
+	 * whether to panic is worth one comparison.
+	 */
+	if ((idx < 0) ||
 	    (idx >= clknode->parent_cnt) ||
 	    (clknode->parent_names[idx] == NULL))
 		panic("%s: Invalid parent index %d for clock %s",

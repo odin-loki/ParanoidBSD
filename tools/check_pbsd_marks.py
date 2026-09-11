@@ -1924,6 +1924,21 @@ FIXES = {
             "clknode_set_parent_by_idx(clk, best_parent) on the far "
             "side of the guard",
         ),
+        (
+            "\tif ((idx < 0) ||\n\t    (idx >= clknode->parent_cnt) ||",
+            "\tif ((idx == CLKNODE_IDX_NONE) ||\n"
+            "\t    (idx >= clknode->parent_cnt) ||",
+            "clknode_init_parent_idx()'s guard read parent_names[idx] "
+            "in its third clause while the first two were still "
+            "deciding whether idx was usable. CLKNODE_IDX_NONE is -1, "
+            "so it caught exactly one negative value: an idx of -2 or "
+            "below passed both tests and the array was read before its "
+            "start. Nothing in this tree reaches it -- every caller "
+            "passes a literal 0 or a masked register field -- but this "
+            "is the clock framework's exported entry point and the "
+            "guard panics by design, because it exists to catch a "
+            "driver's mistake",
+        ),
     ],
     "hbsd/src/sys/dev/clk/rockchip/rk_clk_composite.c": [
         (
@@ -2547,6 +2562,16 @@ FIXES = {
             "nothing at or above zero changes.",
         ),
     ],
+    "hbsd/src/sys/dev/iicbus/mux/iicmux.c": (
+        "\tif (busidx < 0 || busidx >= sc->numbuses) {",
+        "\tif (busidx >= sc->numbuses) {",
+        "iicmux_add_child() is the helper iicmux.h documents as the one "
+        "a hardware-specific mux driver `must call' to register a "
+        "downstream bus, and nothing in this tree calls it -- so this "
+        "EINVAL is the entire contract between a driver's idea of a bus "
+        "index and sc->childdevs[]. It checked the top only, and the "
+        "next statement reads childdevs[busidx]",
+    ),
     "hbsd/src/lib/libc/db/btree/bt_utils.c": (
         "\tif (a->size < b->size)\n\t\treturn (-1);",
         "\treturn ((int)a->size - (int)b->size);",

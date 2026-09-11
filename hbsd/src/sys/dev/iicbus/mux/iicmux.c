@@ -220,9 +220,17 @@ iicmux_add_child(device_t dev, device_t child, int busidx)
 {
 	struct iicmux_softc *sc = device_get_softc(dev);
 
-	if (busidx >= sc->numbuses) {
+	/*
+	 * PBSD: both ends.  This is the helper iicmux.h documents as the
+	 * one a hardware-specific mux driver "must call" to register a
+	 * downstream bus, and nothing in this tree calls it -- so this
+	 * EINVAL is the entire contract between a driver's idea of a bus
+	 * index and sc->childdevs[].  It checked the top only, and the
+	 * next statement reads childdevs[busidx].
+	 */
+	if (busidx < 0 || busidx >= sc->numbuses) {
 		device_printf(dev,
-		    "iicmux_add_child: bus idx %d too big", busidx);
+		    "iicmux_add_child: bus idx %d out of range", busidx);
 		return (EINVAL);
 	}
 	if (sc->childdevs[busidx] != NULL) {

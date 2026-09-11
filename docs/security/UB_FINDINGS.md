@@ -27391,3 +27391,96 @@ had already bounded.  The `free argument has offset zero` entries in
 struct parameter.
 
 That closes run 26.
+
+## The ONESIDED list's `sys/dev` remainder: the exported half
+
+Task 154's leftover was ~54 `sys/dev` sites whose index is a function
+parameter, so the floor — if there is one — lives at the caller.
+Classifying the 92 by linkage split them 63 static / 29 exported, and
+the 29 are the ones worth a person: a `static`'s callers are all in the
+file, an exported driver helper's are not necessarily in the tree.
+
+Two of the 29 are defects, and they are the same shape as each other:
+**an exported helper that validates its index at one end**.
+
+### `clknode_init_parent_idx()` reads the array while deciding to panic
+
+```c
+	if ((idx == CLKNODE_IDX_NONE) ||
+	    (idx >= clknode->parent_cnt) ||
+	    (clknode->parent_names[idx] == NULL))
+		panic("%s: Invalid parent index %d for clock %s", ...);
+```
+
+`CLKNODE_IDX_NONE` is `-1`, so the first clause catches exactly one
+negative value.  An `idx` of `-2` or below passes both tests and the
+third clause reads `parent_names[idx]` *before the array* — inside the
+guard whose entire job is to reject an index like that.
+
+Nothing in this tree reaches it: eleven callers pass a literal `0`, and
+the two that compute — `qcom_clk_rcg2.c:293` and `jh7110_clk.c:147` —
+both use `(reg & MASK) >> SHIFT`, which is non-negative by
+construction.  (`jh7110_clk_init()` also declares `int idx = 0;`, so the
+no-mux path is not the uninitialised read it looks like at a glance;
+that was checked before it was written down rather than after.)
+
+It is still worth the comparison.  This is the clock framework's
+exported entry point, every new clock driver calls it, and the guard
+`panic`s *by design* because it exists to catch a driver's mistake.  A
+defensive check that dereferences out of bounds while deciding whether
+to panic is not a defensive check.  `idx < 0` subsumes
+`CLKNODE_IDX_NONE` and closes the rest.
+
+### `iicmux_add_child()` has no caller at all
+
+```c
+	if (busidx >= sc->numbuses) {
+		device_printf(dev, "iicmux_add_child: bus idx %d too big", busidx);
+		return (EINVAL);
+	}
+	if (sc->childdevs[busidx] != NULL) {
+```
+
+`iicmux.h` describes this as the function a hardware-specific mux driver
+**must call** to register a downstream bus, and nothing in the tree
+calls it.  So that `EINVAL` is the whole of the contract between a
+driver's idea of a bus index and `sc->childdevs[]`, and it checked one
+end while the next statement read the other.
+
+### The other twenty-seven
+
+* **The mask family, again.**
+  `feeder_matrix_oss_set_channel_order()` — `SNDCTL_DSP_GET_CHNORDER`'s
+  setter, so the most user-facing of the lot — computes
+  `ch = (*map >> (i * 4)) & 0xf`, brackets it with `ch <
+  SND_CHN_OSS_BEGIN` and `ch > SND_CHN_OSS_END` (and `oss_to_snd_chn[]`
+  is declared `[SND_CHN_OSS_END + 1]`, sized by the same bound), and
+  only then uses it.  Non-negative by construction, twice over.
+* **`device_get_unit()`.**  `dmc620_pmc_register(u, ...)`'s only caller
+  is `pmu_dmc620.c:165` with `u = device_get_unit(dev)`.
+* **A literal at every call site.**  `fdt_get_range()`'s three callers
+  all pass `0`.  `virtqueue_drain()`'s eight all pass `&last` where
+  `last` is a local initialised to `0` that only the function
+  increments.
+* **Already fixed upstream of the site.**  `vmci_hashtable_add_entry()`'s
+  `idx = VMCI_HASHTABLE_HASH(...)` is safe because of *this morning's*
+  `vmci_hash_id()` fix — djb2 in an `unsigned int` returning
+  `(int)(hash & (size - 1))`.  The lint still flags the site because the
+  bound there is `ASSERT(idx < table->size)`, one-sided; the reason it
+  holds is two commits away.
+* **A driver constant at registration.**  `emumix_set_volume()`'s
+  `mixer_idx` reaches it from `SYSCTL_ADD_PROC(..., mix_id, ...)`, where
+  `mix_id` is the driver's own enumerator, not the sysctl's value.
+* And the `ath` HAL's six `Set/GetTxQueueProps`, the four `mlx4` slave
+  indices and the rest, which are entry points reached through a method
+  table from code that computes the index itself.
+
+### Measured
+
+`sys/dev/clk`: 53 translation units, 0 ERROR both sides, the same 23
+analyser findings.  `sys/dev/iicbus`: 68 units, 2 ERROR both sides
+(both on the record), the same 1 finding.  **ONESIDED over `sys/dev`
+92 → 90**, which is the two fixes and nothing else moving.  Two
+markers, each revert-verified; `clk.c` already had an entry and the two
+are merged, which `check_pbsd_marks.py` caught — the third duplicate
+key it has caught today.
