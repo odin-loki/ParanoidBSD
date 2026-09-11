@@ -178,7 +178,18 @@ _citrus_NONE_stdenc_mbtowc(struct _citrus_stdenc * __restrict ce __unused,
 
 	*nresult = **s == '\0' ? 0 : 1;
 
-	if ((hooks != NULL) && (hooks->wc_hook != NULL))
+	/*
+	 * PBSD: pwc is optional -- twelve lines up this function
+	 * checks it for NULL before storing through it, because
+	 * mbrtowc(3) and every wrapper of it may be called with a
+	 * null wide-character pointer to mean "convert but discard".
+	 * Reading *pwc back for the hook dropped that check, so a
+	 * caller that sets iconv hooks and passes no pwc dereferences
+	 * NULL.  The stdenc template's copy of this line has the same
+	 * shape but its wc is a pointer this file's caller cannot
+	 * make null.
+	 */
+	if ((pwc != NULL) && (hooks != NULL) && (hooks->wc_hook != NULL))
 		hooks->wc_hook(*pwc, hooks->data);
 
 	return (0);

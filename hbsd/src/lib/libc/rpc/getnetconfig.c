@@ -559,9 +559,22 @@ parse_ncp(char *stringp, struct netconfig *ncp)
     char    *tokenp;	/* for processing tokens */
     char    *lasts;
     char    **nc_lookups;
+    size_t  len;
 
     nc_error = NC_BADFILE;	/* nearly anything that breaks is for this reason */
-    stringp[strlen(stringp)-1] = '\0';	/* get rid of newline */
+    /*
+     * PBSD: get rid of the newline if there is one.  Both callers fill
+     * stringp with fgets(), which cannot return an empty string for a
+     * line that has any character in it -- but a line whose first byte
+     * is NUL is stored as one, fgets() returns it, and strlen() is then
+     * 0, so `stringp[strlen(stringp) - 1]' wrote a byte in front of the
+     * malloc'd buffer.  Testing for the newline also stops the
+     * unconditional chop from eating a real character off a line that
+     * filled MAXNETCONFIGLINE without one.
+     */
+    len = strlen(stringp);
+    if (len > 0 && stringp[len - 1] == '\n')
+	stringp[len - 1] = '\0';
     /* netid */
     if ((ncp->nc_netid = strtok_r(stringp, "\t ", &lasts)) == NULL) {
 	return (-1);

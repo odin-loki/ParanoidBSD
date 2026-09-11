@@ -1039,8 +1039,28 @@ nfcmp(char *nf, char *rec)
 	char *cp, tmp;
 	int ret;
 
-	for (cp = rec; *cp != ':'; cp++)
+	/*
+	 * PBSD: stop at the terminator as well as at the colon.
+	 * cgetmatch() above, which is what decides a record is worth
+	 * comparing, treats '\0' as ending the name field just as
+	 * '|' and ':' do -- so a database line with no colon in it at
+	 * all reaches here, and this loop then walked off the end of
+	 * the heap block getent() read the line into, looking for a
+	 * ':' byte in whatever follows.  `*(cp + 1) = '\0'' below
+	 * makes that a WRITE.  A record with no name-field
+	 * terminator is not a match.
+	 *
+	 * Unreachable as the tree stands -- every caller of getent()
+	 * passes nfield == NULL, so this function is never entered --
+	 * which is why nothing has ever crashed on it.  The two
+	 * functions still disagree about what a record is, and that
+	 * disagreement is a write primitive waiting for the first
+	 * caller that passes a name field.
+	 */
+	for (cp = rec; *cp != ':' && *cp != '\0'; cp++)
 		;
+	if (*cp == '\0')
+		return (1);
 
 	tmp = *(cp + 1);
 	*(cp + 1) = '\0';

@@ -38,6 +38,8 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -153,11 +155,59 @@ __hash_open(const char *file, int flags, int mode,
 		if ((int32_t)hashp->hash(CHARKEY, sizeof(CHARKEY)) != hashp->H_CHARKEY)
 			RETURN_ERROR(EFTYPE, error1);
 		/*
+		 * PBSD: the geometry is read, not checked.  Three lines
+		 * below this one the header that _read() just filled in is
+		 * a divisor, two shift counts, an array subscript and two
+		 * allocation bounds, and until here nothing has looked at
+		 * any of them:
+		 *
+		 *   howmany(MAX_BUCKET + 1, SGSIZE) divides by ssize, so
+		 *   ssize == 0 is SIGFPE, and max_bucket == UINT32_MAX
+		 *   makes the numerator zero;
+		 *
+		 *   alloc_segs() computes `nsegs << SSHIFT' and indexes
+		 *   `store[i << SSHIFT]', undefined for a shift outside
+		 *   [0, 31], and fills dir[0 .. nsegs-1] in a directory it
+		 *   allocated with DSIZE entries -- so a header whose
+		 *   max_bucket and ssize imply more segments than its dsize
+		 *   writes pointers off the end of the heap block;
+		 *
+		 *   SPARES[OVFL_POINT] indexes spares[NCACHED] with an
+		 *   int32 straight off the disk;
+		 *
+		 *   and memset(mapp, 0, bpages * sizeof(...)) writes bpages
+		 *   pointers into mapp[NCACHED], with bpages derived from
+		 *   that same spares entry -- which hdestroy() then walks
+		 *   to nmaps, calling free() on whatever it finds.
+		 *
+		 * dbopen(3) with DB_HASH is how /etc/pwd.db, /etc/spwd.db,
+		 * login.conf.db and services.db are read, and db(3) is a
+		 * public interface, so the file is not always more trusted
+		 * than the process reading it.  A header that cannot be
+		 * honoured is EFTYPE, like every other one above.
+		 *
+		 * ssize == 1 << sshift and bsize == 1 << bshift are what
+		 * init_hash() and __init_htab() write (DEF_SEGSIZE is 256,
+		 * DEF_SEGSIZE_SHIFT 8; DEF_BUCKET_SIZE 4096, shift 12) and
+		 * what hash_page.c assumes of every file it reads back.
+		 */
+		if (hashp->BSHIFT < 0 || hashp->BSHIFT >= 32 ||
+		    hashp->BSIZE <= 0 || hashp->BSIZE > MAX_BSIZE ||
+		    hashp->BSIZE != (1 << hashp->BSHIFT) ||
+		    hashp->SSHIFT < 0 || hashp->SSHIFT >= 32 ||
+		    hashp->SGSIZE != (1 << hashp->SSHIFT) ||
+		    hashp->DSIZE <= 0 ||
+		    hashp->OVFL_POINT < 0 || hashp->OVFL_POINT >= NCACHED ||
+		    hashp->MAX_BUCKET >= INT32_MAX)
+			RETURN_ERROR(EFTYPE, error1);
+		/*
 		 * Figure out how many segments we need.  Max_Bucket is the
 		 * maximum bucket number, so the number of buckets is
 		 * max_bucket + 1.
 		 */
 		nsegs = howmany(hashp->MAX_BUCKET + 1, hashp->SGSIZE);
+		if (nsegs > hashp->DSIZE)
+			RETURN_ERROR(EFTYPE, error1);
 		if (alloc_segs(hashp, nsegs))
 			/*
 			 * If alloc_segs fails, table will have been destroyed
@@ -169,6 +219,16 @@ __hash_open(const char *file, int flags, int mode,
 		    (hashp->BSIZE << BYTE_SHIFT) - 1) >>
 		    (hashp->BSHIFT + BYTE_SHIFT);
 
+		/*
+		 * mapp[] is NCACHED pointers and nmaps is how many of them
+		 * hdestroy() will free.  alloc_segs() has already run, so
+		 * the table is built: hdestroy() rather than a goto.
+		 */
+		if (bpages < 0 || bpages > NCACHED) {
+			(void)hdestroy(hashp);
+			errno = EFTYPE;
+			return (NULL);
+		}
 		hashp->nmaps = bpages;
 		(void)memset(&hashp->mapp[0], 0, bpages * sizeof(u_int32_t *));
 	}
@@ -928,6 +988,21 @@ alloc_segs(HTAB *hashp, int nsegs)
 	hashp->nsegs = nsegs;
 	if (nsegs == 0)
 		return (0);
+	/*
+	 * PBSD: dir was just allocated with DSIZE entries and the loop
+	 * below writes nsegs of them, and `nsegs << SSHIFT' is the count
+	 * handed to calloc().  __init_htab() derives both from a bucket
+	 * count it computed itself, but __hash_open() takes them from the
+	 * file; that path checks the header before calling here, and this
+	 * is the same bound stated where the indexing happens.
+	 */
+	if (nsegs < 0 || nsegs > hashp->DSIZE ||
+	    nsegs > (INT_MAX >> hashp->SSHIFT)) {
+		save_errno = EFTYPE;
+		(void)hdestroy(hashp);
+		errno = save_errno;
+		return (-1);
+	}
 	/* Allocate segments */
 	if ((store = calloc(nsegs << hashp->SSHIFT, sizeof(SEGMENT))) == NULL) {
 		save_errno = errno;

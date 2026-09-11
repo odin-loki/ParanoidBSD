@@ -2136,6 +2136,25 @@ FIXES = {
             "a loop with a bad bsize or lorder leaks a descriptor per "
             "call",
         ),
+        (
+            "PBSD: the geometry is read, not checked.",
+            None,
+            "__hash_open() computed with every field of the on-disk "
+            "header before validating any of them: howmany(MAX_BUCKET + "
+            "1, SGSIZE) divides by ssize, `nsegs << SSHIFT\' shifts by "
+            "an int32 off the disk, alloc_segs() fills dir[0..nsegs-1] "
+            "in a directory it sized by DSIZE, SPARES[OVFL_POINT] "
+            "indexes spares[NCACHED], and memset(mapp, 0, bpages * ...) "
+            "writes bpages pointers into mapp[NCACHED] -- which "
+            "hdestroy() then free()s. dbopen(3) with DB_HASH is how "
+            "pwd.db, login.conf.db and services.db are read",
+        ),
+        (
+            "PBSD: dir was just allocated with DSIZE entries",
+            None,
+            "the same bound restated in alloc_segs(), where the "
+            "indexing and the shift actually happen",
+        ),
     ],
     "hbsd/src/lib/libc/db/hash/hash_page.c": [
         (
@@ -5974,6 +5993,39 @@ FIXES = {
         "-s:' left t->cols zero -- cols - 1 is then -1, the column loop "
         "does not run, and the trailing print read t->list[0] out of a "
         "calloc(0) and printed through it as a string",
+    ),
+
+    "hbsd/src/lib/libc/gen/getcap.c": (
+        "PBSD: stop at the terminator as well as at the colon.",
+        None,
+        "nfcmp() scanned for \':\' with no bound, and cgetmatch() -- "
+        "which decides whether a record is worth comparing -- accepts "
+        "\'\\0\' as ending the name field, so a database line with no "
+        "colon reached it. The loop then walked off the end of the heap "
+        "block, and `*(cp + 1) = \'\\0\'\' made that a write. Every "
+        "caller passes nfield == NULL today, so it is latent",
+    ),
+
+    "hbsd/src/lib/libc/rpc/getnetconfig.c": (
+        "PBSD: get rid of the newline if there is one.",
+        None,
+        "parse_ncp() opened with `stringp[strlen(stringp) - 1] = "
+        "\'\\0\'\'. fgets() cannot return an empty string for a line "
+        "with any character in it, but a line whose first byte is NUL "
+        "is stored and returned as one -- strlen() is then 0 and the "
+        "subscript is -1, a write in front of the malloc\'d buffer. "
+        "Testing for the newline also stops the unconditional chop "
+        "eating a real character off a line that filled "
+        "MAXNETCONFIGLINE without one",
+    ),
+
+    "hbsd/src/lib/libc/iconv/citrus_none.c": (
+        "PBSD: pwc is optional",
+        None,
+        "_citrus_NONE_stdenc_mbtowc() checks pwc for NULL before "
+        "storing through it -- mbrtowc(3) documents a null wide "
+        "pointer as convert-and-discard -- and then read *pwc back "
+        "unconditionally to pass to the iconv wc_hook",
     ),
 
     "hbsd/src/sbin/dump/cache.c": (
