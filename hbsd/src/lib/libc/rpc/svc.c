@@ -110,7 +110,15 @@ xprt_register(SVCXPRT *xprt)
 		}
 		memset(__svc_xports, '\0', (FD_SETSIZE + 1) * sizeof(SVCXPRT *));
 	}
-	if (sock < FD_SETSIZE) {
+	/*
+	 * Bound both ends in one comparison: makefd_xprt() calls this
+	 * with whatever fd svc_fd_create() was handed, and that is only
+	 * assert(fd != -1) -- which does not reject -2, and is gone
+	 * entirely under NDEBUG.  A negative fd here is a write through
+	 * __svc_xports before the allocation.  The unsigned cast is the
+	 * same idiom kern_descrip.c uses for a descriptor.
+	 */
+	if ((unsigned int)sock < FD_SETSIZE) {
 		__svc_xports[sock] = xprt;
 		FD_SET(sock, &svc_fdset);
 		svc_maxfd = max(svc_maxfd, sock);
@@ -145,7 +153,8 @@ __xprt_do_unregister(SVCXPRT *xprt, bool_t dolock)
 
 	if (dolock)
 		rwlock_wrlock(&svc_fd_lock);
-	if ((sock < FD_SETSIZE) && (__svc_xports[sock] == xprt)) {
+	if (((unsigned int)sock < FD_SETSIZE) &&
+	    (__svc_xports[sock] == xprt)) {
 		__svc_xports[sock] = NULL;
 		FD_CLR(sock, &svc_fdset);
 		if (sock >= svc_maxfd) {

@@ -189,6 +189,14 @@ netname2host(char netname[MAXNETNAMELEN + 1], char *hostname, int hostlen)
 	int             vallen;
 	char           *domain;
 
+	/*
+	 * Every write below is bounded by hostlen, so a caller that
+	 * passes zero or less turns `vallen = hostlen - 1' into -1 and
+	 * strncpy()'s length argument into SIZE_MAX.  There is no
+	 * buffer a caller can legitimately describe that way.
+	 */
+	if (hostlen <= 0)
+		return (0);
 	if (getnetid(netname, valbuf)) {
 		val = valbuf;
 		if ((*val == '0') && (val[1] == ':')) {

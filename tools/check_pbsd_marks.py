@@ -6114,6 +6114,29 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/lib/libc/rpc/svc.c": [
+        (
+            "\tif ((unsigned int)sock < FD_SETSIZE) {",
+            "\tif (sock < FD_SETSIZE) {",
+            "xprt_register() indexed __svc_xports with xprt->xp_fd "
+            "guarded only from above; makefd_xprt() registers before "
+            "any validation and svc_fd_create()'s own check is an "
+            "assert(fd != -1), so a negative descriptor wrote through "
+            "the allocation's front",
+        ),
+        (
+            "\tif (((unsigned int)sock < FD_SETSIZE) &&",
+            "\tif ((sock < FD_SETSIZE) && (__svc_xports[sock] == xprt)) {",
+            "__xprt_do_unregister() read the same array the same way",
+        ),
+    ],
+    "hbsd/src/lib/libc/rpc/netnamer.c": (
+        "\tif (hostlen <= 0)\n\t\treturn (0);",
+        None,
+        "netname2host() clamps with `vallen = hostlen - 1', so a "
+        "hostlen of zero makes vallen -1 and strncpy()'s length "
+        "SIZE_MAX",
+    ),
     "hbsd/src/lib/libc/rpc/getnetconfig.c": (
         "PBSD: get rid of the newline if there is one.",
         None,

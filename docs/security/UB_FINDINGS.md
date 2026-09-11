@@ -25254,3 +25254,72 @@ with `default: return EINVAL` before it.
 
 `ieee80211_ioctl.c:562` was read in an earlier commit: `i_len & 0x7fff`
 is a mask, not a comparison, and masks bound both ends.
+
+## libc's RPC server table, indexed with a descriptor nothing floors
+
+Two more from the ONESIDED list, both in `lib/libc/rpc/svc.c`:
+
+```c
+	sock = xprt->xp_fd;
+	...
+	if (sock < FD_SETSIZE) {
+		__svc_xports[sock] = xprt;
+		FD_SET(sock, &svc_fdset);
+```
+
+and the same read in `__xprt_do_unregister()`.  `__svc_xports` is a
+`mem_alloc((FD_SETSIZE + 1) * sizeof(SVCXPRT *))`, and the only bound on
+the index is from above.
+
+The floor is supposed to be the caller, and it is not there.
+`svc_fd_create()` — a public libc entry point that takes the descriptor
+from its caller — checks with
+
+```c
+	assert(fd != -1);
+```
+
+which does not reject `-2`, and which `bsd.debug.mk` compiles out
+entirely when `MK_ASSERT_DEBUG=no`.  Worse, the registration happens
+*before* any validation: `svc_fd_create()` calls `makefd_xprt()`, which
+does `xprt->xp_fd = fd; ... xprt_register(xprt);` and only then does the
+`_getsockname()` that would notice a bad descriptor.
+
+So the tree's own idiom applies, the one `kern_descrip.c` uses three
+times for exactly this:
+
+```c
+	if ((unsigned int)sock < FD_SETSIZE) {
+```
+
+One comparison, both ends.  The `else if (sock == FD_SETSIZE)` arms are
+already exact and are left alone.
+
+### `netname2host`: a zero-length buffer makes `strncpy` copy `SIZE_MAX`
+
+Same file family, same list.  `netname2host(netname, hostname, hostlen)`
+clamps with
+
+```c
+	vallen = val2 - val;
+	if (vallen > (hostlen - 1))
+		vallen = hostlen - 1;
+	(void) strncpy(hostname, val, vallen);
+	hostname[vallen] = 0;
+```
+
+`vallen` is never negative on its own — it is a pointer difference
+within one string — but `hostlen - 1` is `-1` when a caller passes zero,
+and `strncpy`'s third argument is `size_t`.  There is no buffer a caller
+can legitimately describe as length zero, so the function now returns 0
+for it, as it already does for every other malformed input.  No caller
+in the tree passes anything: it is a public `netname2host(3)` used by
+`keyserv` and the NIS+ tools.
+
+### Measured
+
+`lib/libc/rpc` ONESIDED **3 → 1**; the remaining one is `netname2host`'s
+`vallen`, whose floor is the pointer difference and stays invisible to a
+textual rule.  The analyser is **25 → 25** with 56 of 56 translation
+units compiling, before and after — it never reported either of these,
+which is the point of having more than one instrument.

@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,546 | 9,056 |
+| 1 | `lib` | 2,827 | 640,563 | 9,056 |
 | 2 | `libexec` | 170 | 48,065 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,424** | **114,207** |
+| | **total** | **41,143** | **21,302,441** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -4580,7 +4580,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.101.27.1 `getnetname()` · `TODO-FN`
   - [ ] 1.101.27.2 `user2netname()` · `TODO-FN`
   - [ ] 1.101.27.3 `host2netname()` · `TODO-FN`
-- [ ] **1.101.28** `netnamer.c` · 320L · `TODO-PORT` · 4 fn
+- [ ] **1.101.28** `netnamer.c` · 328L · `TODO-PORT` · 4 fn
   - [ ] 1.101.28.1 `netname2user()` · `TODO-FN`
   - [ ] 1.101.28.2 `_getgroups()` · `TODO-FN`
   - [ ] 1.101.28.3 `netname2host()` · `TODO-FN`
@@ -4707,7 +4707,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.101.47** `rtime.c` · 153L · `TODO-PORT` · 2 fn
   - [ ] 1.101.47.1 `rtime()` · `TODO-FN`
   - [ ] 1.101.47.2 `do_close()` · `TODO-FN`
-- [ ] **1.101.48** `svc.c` · 757L · `TODO-PORT` · 28 fn
+- [ ] **1.101.48** `svc.c` · 766L · `TODO-PORT` · 28 fn
   - [ ] 1.101.48.1 `xprt_register()` · `TODO-FN`
   - [ ] 1.101.48.2 `xprt_unregister()` · `TODO-FN`
   - [ ] 1.101.48.3 `__xprt_unregister_unlocked()` · `TODO-FN`
