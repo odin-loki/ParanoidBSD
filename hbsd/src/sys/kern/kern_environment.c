@@ -432,7 +432,17 @@ init_dynamic_kenv_from(char *init_env, int *curpos)
 		for (cp = init_env; cp != NULL; cp = cpnext) {
 			cpnext = kernenv_next(cp);
 			len = strlen(cp) + 1;
-			if (i > KENV_SIZE) {
+			/*
+			 * kenvp has KENV_SIZE + 1 slots and the last one
+			 * holds the NULL terminator, so KENV_SIZE strings
+			 * is the limit and i == KENV_SIZE is already one
+			 * too many: it takes the terminator's slot and
+			 * leaves init_dynamic_kenv() writing the NULL to
+			 * kenvp[KENV_SIZE + 1], off the end of the
+			 * allocation.  kenv(2)'s own KENV_SET path spells
+			 * the same bound `i >= KENV_SIZE'.
+			 */
+			if (i >= KENV_SIZE) {
 				printf(
 				"WARNING: too many kenv strings, ignoring %s\n",
 				    cp);

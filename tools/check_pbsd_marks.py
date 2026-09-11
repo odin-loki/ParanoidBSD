@@ -4022,6 +4022,16 @@ FIXES = {
         "line with `line[0] != \'\\0\'\'",
     ),
 
+    "hbsd/src/sys/kern/kern_environment.c": (
+        "\t\t\tif (i >= KENV_SIZE) {",
+        "\t\t\tif (i > KENV_SIZE) {",
+        "init_dynamic_kenv_from() allowed i == KENV_SIZE, which puts a "
+        "string in the slot kenvp reserves for its NULL terminator and "
+        "leaves init_dynamic_kenv() writing that NULL to "
+        "kenvp[KENV_SIZE + 1], one pointer past a "
+        "(KENV_SIZE + 1) * sizeof(char *) allocation; kenv(2)'s own "
+        "KENV_SET path already spells the bound `i >= KENV_SIZE'",
+    ),
     "hbsd/src/sys/kern/kern_descrip.c": [
         (
             "\tif (ret != 0)\n\t\tsigiofree(sigio);\n\treturn (ret);",

@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,924 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,728 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,738 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,414** | **114,207** |
+| | **total** | **41,143** | **21,302,424** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -114792,7 +114792,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.26.14 `dumpsys_pb_init()` · `TODO-FN`
   - [ ] 8.1191.26.15 `dumpsys_pb_progress()` · `TODO-FN`
   - [ ] 8.1191.26.16 `minidumpsys()` · `TODO-FN`
-- [ ] **8.1191.27** `kern_environment.c` · 1,201L gen:1 · `TODO-PORT` · 39 fn
+- [ ] **8.1191.27** `kern_environment.c` · 1,211L gen:1 · `TODO-PORT` · 39 fn
   - [ ] 8.1191.27.1 `kenv_dump()` · `TODO-FN`
   - [ ] 8.1191.27.2 `sys_kenv()` · `TODO-FN`
   - [ ] 8.1191.27.3 `init_static_kenv()` · `TODO-FN`

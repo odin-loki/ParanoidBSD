@@ -25049,3 +25049,123 @@ reason it is advisory: the bound is a fact about a **different
 function**, which is exactly what a per-function grep cannot see and a
 reader can.  It is not teachable without an interprocedural pass, so it
 is written down here instead.
+
+## `init_dynamic_kenv_from`: the guard leaves no room for the terminator
+
+Working the ONESIDED list's `sys/kern` cluster turned up one that is a
+defect rather than a reading.  `sys/kern/kern_environment.c`:
+
+```c
+kenvp = malloc((KENV_SIZE + 1) * sizeof(char *), M_KENV, M_WAITOK | M_ZERO);
+
+dynamic_envpos = 0;
+init_dynamic_kenv_from(md_envp, &dynamic_envpos);
+init_dynamic_kenv_from(kern_envp, &dynamic_envpos);
+kenvp[dynamic_envpos] = NULL;
+```
+
+and inside the loop that fills it,
+
+```c
+	if (i > KENV_SIZE) {
+		printf("WARNING: too many kenv strings, ignoring %s\n", cp);
+		goto sanitize;
+	}
+	...
+	kenvp[i] = malloc(len, M_KENV, M_WAITOK);
+	strcpy(kenvp[i++], cp);
+```
+
+The `+ 1` slot exists to hold the NULL terminator — `kenv(2)`'s own
+`KENV_SET` path says so in the same file, bounding with
+`if (i < 0 || i >= KENV_SIZE)` and then writing `kenvp[i] = buf;
+kenvp[i + 1] = NULL;`.  `init_dynamic_kenv_from()` uses `>` where that
+one uses `>=`, so `i == KENV_SIZE` is accepted: the string takes the
+terminator's slot, the cursor comes back as `KENV_SIZE + 1`, and
+`kenvp[dynamic_envpos] = NULL` writes one pointer past the end of the
+allocation.
+
+The fix is `>=`, matching the sibling path.
+
+### Checked, not argued
+
+The string store is in bounds under **both** guards; what goes out of
+bounds is the terminator, written by the *caller* from the cursor this
+function hands back.  That is why reading the loop alone does not show
+it, and it is exactly the kind of claim worth handing to a solver
+rather than asserting.  `tools/verify/probes/kenv_terminator.c` models
+the two calls and the store, with `KENV_SIZE` cut to 8 so CBMC can
+unwind:
+
+```
+cbmc -DOLD_GUARD --unwind 16 --unwinding-assertions \
+    tools/verify/probes/kenv_terminator.c
+[init_dynamic_kenv_from.assertion.1] the string store is in bounds: SUCCESS
+[main.assertion.1] the NULL terminator is in bounds: FAILURE
+** 1 of 3 failed         VERIFICATION FAILED
+
+cbmc --unwind 16 --unwinding-assertions \
+    tools/verify/probes/kenv_terminator.c
+[main.assertion.1] the NULL terminator is in bounds: SUCCESS
+** 0 of 3 failed         VERIFICATION SUCCESSFUL
+```
+
+### Reachability, stated plainly
+
+The kernel environment comes from the boot loader and the static
+`ENV` blob, not from a syscall, so reaching it wants 513 environment
+strings supplied at the loader prompt or built in.  It is an off-by-one
+heap write at boot, not a remote hole.  It is still a one-character
+bound that the same file already spells correctly twelve lines further
+down, and the `M_ZERO` allocation means the value written is the same
+NULL that is already there — on a heap where the next allocation's
+first pointer is not.
+
+### The rest of the `sys/kern` cluster, read
+
+Fourteen sites, and the other thirteen are internal contracts:
+
+* `kern_descrip.c:217` `fd_first_free(low)` — `fdalloc()` does
+  `if (fdp->fd_freefile > minfd) minfd = fdp->fd_freefile;` before the
+  call, and `fd_freefile` is never negative, so `minfd` is floored one
+  frame up.
+* `kern_descrip.c:241` `fdlastfile_single(off)` — the loop is
+  `for (minoff = NDSLOT(0); off >= minoff; --off)`, a countdown whose
+  own condition is the floor.  Only two sites in the tree have that
+  shape, so it is read rather than taught.
+* `kern_descrip.c:1552`, `:1578` `close_range_flags`, `close_range_impl`
+  — `fd` is `int` and `highfd` is `u_int`, so `if (fd > highfd)` is an
+  unsigned comparison and a `lowfd` above `INT_MAX` is rejected by it.
+  The same family as `nitems()` above, with the unsignedness in a
+  variable's declared type rather than in `sizeof`; only four sites in
+  the tree turn on that, so it too is read rather than taught.
+* `kern_descrip.c:297` `fdunused(fd)` — `KASSERT(fdisused(fdp, fd))`
+  first, and every caller has already allocated the descriptor.
+* `kern_environment.c:472` — the site above.
+* `kern_switch.c:508` `runq_findq(lvl_min)` — `CHECK_IDX()` is
+  `KASSERT(0 <= _idx && _idx < RQ_NQS)`, a genuine two-sided bound
+  under `INVARIANTS`, and the callers are the scheduler.
+* `subr_bus.c:1157` `devclass_find_free_unit`, `:2789`
+  `device_set_unit` — both really are one-sided
+  (`unit < dc->maxunit && dc->devices[unit]`), so the floor is at the
+  callers, and there are three of them.  `devclass_find_free_unit` is
+  called once, from `ata-pci.c:126`, with the literal `2`.
+  `device_set_unit` is called twice: `acpi_cpu.c` passes an ACPI
+  processor id, and `blkfront.c` passes `xbd_vdevice_to_unit()`'s
+  output — whose three exits are `(vdevice & ((1 << 28) - 1)) >> 8`,
+  `info[i].base + (minor >> info[i].shift)` and `minor >> 4`, with
+  `vdevice` a `uint32_t` and `minor` its low byte.  Non-negative on
+  every path.
+* `subr_scanf.c:599` `__sccl(c)` — `c = *fmt++` where `fmt` is
+  `const u_char *`, so `c` is 0..255 and `tab` is 256 bytes.
+* `subr_stats.c:1430`, `:3536` `voi_id` — the guard really is
+  `voi_id >= NVOIS(sb)` alone, and a negative id would read before
+  `sb->vois`.  What holds is the call graph: every one of the twenty-odd
+  `stats_voi_update_abs_*` and `stats_voistat_fetch_*` sites in
+  `sys/netinet` passes a `VOI_TCP_*` enumerator, and the ids in a blob
+  come from the template, which assigns them from zero.  An internal
+  contract, not a proof — worth saying plainly, because it is the
+  weakest of the thirteen.
+* `subr_trap.c:227`, `:248` `ast_register`, `ast_deregister` — every
+  one of the twenty-odd callers passes a `TDA_*` enumerator at
+  subsystem init.
