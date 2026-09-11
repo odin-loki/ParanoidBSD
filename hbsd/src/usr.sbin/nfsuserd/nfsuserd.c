@@ -800,7 +800,15 @@ xdr_getname(XDR *xdrsp, caddr_t cp)
 
 	if (!xdr_long(xdrsp, &len))
 		return (0);
-	if (len > MAXNAME)
+	/*
+	 * len is a long straight off the XDR stream and the only test
+	 * was from above.  A negative one reaches xdr_opaque() as a
+	 * u_int of nearly 2^32 -- which fails on any stream this
+	 * daemon actually sees, so the write below is unreachable
+	 * today by accident rather than by design -- and then
+	 * name[len] is a store before the buffer.
+	 */
+	if (len < 0 || len > MAXNAME)
 		return (0);
 	if (!xdr_opaque(xdrsp, ifp->name, len))
 		return (0);

@@ -25856,3 +25856,64 @@ point of reading the list rather than counting it.
 family — `ring = &sc->txq[qid]` before any comparison, with `qid` the
 hardware queue id out of a firmware notification and `txq[]` sized
 `IWN5000_NTXQUEUES`.
+
+## `nfsuserd`: a length off the XDR stream, and three near-misses beside it
+
+```c
+static bool_t
+xdr_getname(XDR *xdrsp, caddr_t cp)
+{
+	struct info *ifp = (struct info *)cp;
+	long len;
+
+	if (!xdr_long(xdrsp, &len))
+		return (0);
+	if (len > MAXNAME)
+		return (0);
+	if (!xdr_opaque(xdrsp, ifp->name, len))
+		return (0);
+	ifp->name[len] = '\0';
+```
+
+`len` is a `long` straight off the wire and `name` is
+`char name[MAXNAME + 1]`.  The test is one-sided.
+
+What saves it today is an accident: `xdr_opaque()`'s third parameter is
+`u_int`, so a negative `len` arrives as nearly 2^32 and
+`XDR_GETBYTES()` refuses on any stream this daemon actually sees, so
+the function returns before the store.  That is not a bound — it is a
+different function declining to read four billion bytes.  `len < 0 ||`
+makes it one.
+
+Three others in `usr.sbin` are the same shape and genuinely safe:
+
+* `syslogd.c:1602` — `fac = LOG_FAC(pri)` is `(pri & LOG_FACMASK) >> 3`,
+  a mask, so the floor is invisible to the rule and real; the
+  `fac > LOG_NFACILITIES` test is the ceiling.  Note the arrays are
+  `LOG_NFACILITIES + 1` = 25 entries while the mask alone allows 0..31
+  — the ceiling is doing work, and it is there.
+* `ypldap/ber.c:1152` — `((u_char *)elm->be_val)[len] = '\0'` on a
+  BER length off an LDAP connection.  `get_len()` ends with
+  `if (s < 0) { errno = ERANGE; return -1; }`, so the floor is one
+  frame up and explicit.
+* `acpi/acpidump/acpi.c:1495` and `:1532` — these are the
+  `nitems()` family **defeated by a cast**:
+  `if (ift >= (int)nitems(if_names) || if_names[ift] == NULL)`.  The
+  `(int)` turns the `size_t` back into a signed comparison, so the
+  conversion that bounds `alg < nitems(alg_types)` in opencrypto does
+  not happen here.  `ift` is a `UINT8` out of the SPCR table, so it is
+  safe anyway — but it is the reason these two stay on the list while
+  the other 35 came off it.  `usr.bin/netstat/pfkey.c:100` does the
+  same thing with `const int max = nitems(...)`.
+
+### Measured
+
+`usr.sbin/nfsuserd` ONESIDED **1 → 0**, analyser **0 → 0** with its one
+translation unit compiling both ways.  Tree-wide ONESIDED **227 → 226**.
+
+Separately: `sys/kern` was re-analysed after the `kern_environment.c`
+fix — **231 findings, all 5 known-ERROR translation units on the
+record, and `kern_environment.c` itself `{"status": "OK", "findings":
+[]}`**.  The edit compiles clean against the real kernel include path
+and flags, which a single-file analyse cannot show because the sweep
+resolves translation units from the kernel configuration.

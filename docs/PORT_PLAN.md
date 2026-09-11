@@ -56,7 +56,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,924 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,498,775 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,302,520** | **114,207** |
+| | **total** | **41,143** | **21,302,528** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -32805,7 +32805,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.157 `usr.sbin/nfsuserd`
 
-- [ ] **6.157.1** `nfsuserd.c` · 931L · `TODO-PORT` · 8 fn
+- [ ] **6.157.1** `nfsuserd.c` · 939L · `TODO-PORT` · 8 fn
   - [ ] 6.157.1.1 `main()` · `TODO-FN`
   - [ ] 6.157.1.2 `nfsuserdsrv()` · `TODO-FN`
   - [ ] 6.157.1.3 `xdr_getid()` · `TODO-FN`

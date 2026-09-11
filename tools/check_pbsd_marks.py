@@ -6092,6 +6092,16 @@ FIXES = {
             'Can\'t add group %s\\n",\n\t\t\t    grp->gr_name);',
             "the same on the gid and group-name arms",
         ),
+            (
+            "\tif (len < 0 || len > MAXNAME)",
+            "\tif (len > MAXNAME)",
+            "xdr_getname() takes len as a long straight off the XDR "
+            "stream and tested it only from above, then stores "
+            "name[len]; a negative len reaches xdr_opaque() as a u_int "
+            "of nearly 2^32, which fails on any stream this daemon "
+            "sees, so the store was unreachable by accident rather "
+            "than by design",
+        ),
     ],
 
     "hbsd/src/usr.sbin/pkg/pkg.c": (
