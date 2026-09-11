@@ -61,6 +61,7 @@ __nss_common_cache_read(void *retval, void *mdata, va_list ap)
 
 	nss_cache_info const *cache_info;
 	nss_cache_data *cache_data;
+	char *nkey;
 	va_list ap_new;
 	int res;
 
@@ -71,6 +72,8 @@ __nss_common_cache_read(void *retval, void *mdata, va_list ap)
 	params.socket_path = CACHED_SOCKET_PATH;
 
 	cache_data->key = (char *)malloc(NSS_CACHE_KEY_INITIAL_SIZE);
+	if (cache_data->key == NULL)
+		return (NS_UNAVAIL);
 	memset(cache_data->key, 0, NSS_CACHE_KEY_INITIAL_SIZE);
 	cache_data->key_size = NSS_CACHE_KEY_INITIAL_SIZE;
 	va_copy(ap_new, ap);
@@ -85,8 +88,25 @@ __nss_common_cache_read(void *retval, void *mdata, va_list ap)
 				break;
 
 			cache_data->key_size <<= 1;
-			cache_data->key = realloc(cache_data->key,
-			    cache_data->key_size);
+			/*
+			 * PBSD: through a temporary, and checked.  BOTH
+			 * allocations in this function fed a memset() on
+			 * the very next line with nothing between them, so
+			 * an allocation failure on the nsswitch cache path
+			 * was a NULL dereference inside libc -- and
+			 * `key = realloc(key, n)' lost the old block on the
+			 * way there.  NS_UNAVAIL is this file's own way of
+			 * saying this source cannot answer, which is what
+			 * nsdispatch(3) needs in order to try the next one.
+			 */
+			nkey = realloc(cache_data->key, cache_data->key_size);
+			if (nkey == NULL) {
+				free(cache_data->key);
+				cache_data->key = NULL;
+				cache_data->key_size = 0;
+				return (NS_UNAVAIL);
+			}
+			cache_data->key = nkey;
 			memset(cache_data->key, 0, cache_data->key_size);
 			va_copy(ap_new, ap);
 		}

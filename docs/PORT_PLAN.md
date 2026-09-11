@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,296 | 9,056 |
+| 1 | `lib` | 2,827 | 640,347 | 9,056 |
 | 2 | `libexec` | 170 | 48,021 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,692** | **114,207** |
+| | **total** | **41,143** | **21,301,743** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -3591,7 +3591,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.79.28.15 `comp_dst()` · `TODO-FN`
   - [ ] 1.79.28.16 `gai_addr2scopetype()` · `TODO-FN`
 - [ ] **1.79.29** `netdb_private.h` · 163L · `TODO-HDR`
-- [ ] **1.79.30** `nscache.c` · 439L · `TODO-PORT` · 8 fn
+- [ ] **1.79.30** `nscache.c` · 459L · `TODO-PORT` · 8 fn
   - [ ] 1.79.30.1 `__nss_cache_handler()` · `TODO-FN`
   - [ ] 1.79.30.2 `__nss_common_cache_read()` · `TODO-FN`
   - [ ] 1.79.30.3 `__nss_common_cache_write()` · `TODO-FN`
@@ -7137,7 +7137,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.171.7.2 `dpv_free()` · `TODO-FN`
 - [ ] **1.171.8** `dpv.h` · 164L · `TODO-HDR`
 - [ ] **1.171.9** `dpv_private.h` · 66L · `TODO-HDR`
-- [ ] **1.171.10** `status.c` · 110L · `TODO-PORT` · 2 fn
+- [ ] **1.171.10** `status.c` · 120L · `TODO-PORT` · 2 fn
   - [ ] 1.171.10.1 `status_printf()` · `TODO-FN`
   - [ ] 1.171.10.2 `status_free()` · `TODO-FN`
 - [ ] **1.171.11** `status.h` · 42L · `TODO-HDR`
@@ -8503,7 +8503,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.209.2.3 `quirk_vendor2unix()` · `TODO-FN`
   - [ ] 1.209.2.4 `quirk_unix2vendor()` · `TODO-FN`
 - [ ] **1.209.3** `quirks.h` · 46L · `TODO-HDR`
-- [ ] **1.209.4** `xlat16_iconv.c` · 465L · `TODO-PORT` · 6 fn
+- [ ] **1.209.4** `xlat16_iconv.c` · 474L · `TODO-PORT` · 6 fn
   - [ ] 1.209.4.1 `kiconv_add_xlat16_cspair()` · `TODO-FN`
   - [ ] 1.209.4.2 `kiconv_add_xlat16_cspairs()` · `TODO-FN`
   - [ ] 1.209.4.3 `kiconv_xlat16_open()` · `TODO-FN`
@@ -10545,7 +10545,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **1.280.1** `efi_init.c` · 73L · `TODO-PORT` · 1 fn
   - [ ] 1.280.1.1 `ve_efi_init()` · `TODO-FN`
-- [ ] **1.280.2** `efi_variables.c` · 275L · `TODO-PORT` · 5 fn
+- [ ] **1.280.2** `efi_variables.c` · 287L · `TODO-PORT` · 5 fn
   - [ ] 1.280.2.1 `efi_secure_boot_enabled()` · `TODO-FN`
   - [ ] 1.280.2.2 `efi_get_certs()` · `TODO-FN`
   - [ ] 1.280.2.3 `efi_get_forbidden_digests()` · `TODO-FN`

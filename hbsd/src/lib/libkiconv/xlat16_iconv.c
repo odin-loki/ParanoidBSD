@@ -160,6 +160,7 @@ kiconv_xlat16_open(const char *tocode, const char *fromcode, int lcase)
 	struct quirk_replace_list *pre_q_list, *post_q_list;
 	iconv_t cd;
 	char *p;
+	void *ndata;
 
 	xt.data = NULL;
 	xt.size = 0;
@@ -295,7 +296,15 @@ kiconv_xlat16_open(const char *tocode, const char *fromcode, int lcase)
 	my_iconv_close(cd);
 
 	xt.size = p - (char *)xt.data;
-	xt.data = realloc(xt.data, xt.size);
+	/*
+	 * PBSD: this realloc only SHRINKS to the size actually used, so
+	 * failing it costs nothing but the slack -- whereas assigning the
+	 * result back lost the table and handed the caller an xt with a
+	 * NULL data and a non-zero size, which it goes on to read.
+	 */
+	ndata = realloc(xt.data, xt.size);
+	if (ndata != NULL)
+		xt.data = ndata;
 	return (xt);
 }
 

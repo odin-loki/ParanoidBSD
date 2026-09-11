@@ -83,7 +83,7 @@ efi_secure_boot_enabled(void)
 static br_x509_certificate*
 efi_get_certs(const char *name, size_t *count)
 {
-	br_x509_certificate *certs;
+	br_x509_certificate *certs, *ncerts;
 	UINT8 *database;
 	EFI_SIGNATURE_LIST *list;
 	EFI_SIGNATURE_DATA *entry;
@@ -129,12 +129,19 @@ efi_get_certs(const char *name, size_t *count)
 		    sizeof(EFI_SIGNATURE_LIST) +
 		    list->SignatureHeaderSize);
 
-		certs = realloc(certs,
+		/*
+		 * PBSD: through a temporary, and the count is left alone.
+		 * `certs = realloc(certs, n)' dropped the array on failure,
+		 * and zeroing cert_count then stopped the fail: label's
+		 * free_certificates(certs, cert_count) from releasing the
+		 * certificates already built -- so the one path that could
+		 * not allocate leaked everything it had allocated.
+		 */
+		ncerts = realloc(certs,
 		    (cert_count + 1) * sizeof(br_x509_certificate));
-		if (certs == NULL) {
-			cert_count = 0;
+		if (ncerts == NULL)
 			goto fail;
-		}
+		certs = ncerts;
 
 		certs[cert_count].data_len = list->SignatureSize - sizeof(EFI_GUID);
 		certs[cert_count].data = malloc(certs[cert_count].data_len);
@@ -168,7 +175,7 @@ hash_data*
 efi_get_forbidden_digests(size_t *count)
 {
 	UINT8 *database;
-	hash_data *digests;
+	hash_data *digests, *ndigests;
 	EFI_SIGNATURE_LIST *list;
 	EFI_SIGNATURE_DATA *entry;
 	size_t db_size, header_size, hash_size;
@@ -224,12 +231,17 @@ efi_get_forbidden_digests(size_t *count)
 		entry_count /= list->SignatureSize;
 		entry = (EFI_SIGNATURE_DATA*)((UINT8*)list + header_size);
 		while (entry_count-- > 0) {
-			digests = realloc(digests,
+			/*
+			 * PBSD: the same shape, and the same fail: label
+			 * cost -- `while (digest_count--) xfree(...)' runs
+			 * zero times against a count this arm had just set
+			 * to zero, over a pointer it had just set to NULL.
+			 */
+			ndigests = realloc(digests,
 			    (digest_count + 1) * sizeof(hash_data));
-			if (digests == NULL) {
-				digest_count = 0;
+			if (ndigests == NULL)
 				goto fail;
-			}
+			digests = ndigests;
 
 			digests[digest_count].data = malloc(hash_size);
 			if (digests[digest_count].data == NULL)

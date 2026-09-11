@@ -257,6 +257,51 @@ FIXES = {
         "visited its first token twice, tok lagging next by one "
         "iteration; it is now while ((tok = strsep(&buf, \",\")) != NULL).",
     ),
+    "hbsd/src/lib/libc/net/nscache.c": (
+        "nkey = realloc(cache_data->key, cache_data->key_size);",
+        "cache_data->key = realloc(cache_data->key,",
+        "__nss_common_cache_read() had BOTH of its allocations feeding a "
+        "memset() on the very next line with nothing in between, so an "
+        "allocation failure on the nsswitch cache path was a NULL "
+        "dereference inside libc - and the grow was also "
+        "`key = realloc(key, n)', which lost the old block on the way "
+        "there.  Both checked; NS_UNAVAIL is the file's own way of "
+        "saying this source cannot answer.",
+    ),
+    "hbsd/src/lib/libkiconv/xlat16_iconv.c": (
+        "ndata = realloc(xt.data, xt.size);",
+        "xt.data = realloc(xt.data, xt.size);",
+        "kiconv_xlat16_open()'s final realloc only SHRINKS the table to "
+        "the size actually used, and its result went back over xt.data "
+        "unchecked - so a failure that costs nothing but slack instead "
+        "handed the caller an xt with a NULL data and a non-zero size, "
+        "which it reads.",
+    ),
+    "hbsd/src/lib/libdpv/status.c": (
+        "nbuf = realloc(status_buf, status_width + 1);",
+        "status_buf = realloc(status_buf, status_width + 1);",
+        "status_printf()'s status_buf is a file-scope static and the "
+        "only pointer to the buffer, so assigning realloc's NULL over "
+        "it lost the buffer the function was already using.",
+    ),
+    "hbsd/src/lib/libsecureboot/efi/efi_variables.c": [
+        (
+            "ncerts = realloc(certs,",
+            "\t\t\tcert_count = 0;\n\t\t\tgoto fail;",
+            "efi_get_certs() dropped the array on a failed realloc AND "
+            "zeroed cert_count, which stopped the fail: label's "
+            "free_certificates(certs, cert_count) from releasing the "
+            "certificates already built - so the one path that could "
+            "not allocate leaked everything it had allocated.",
+        ),
+        (
+            "ndigests = realloc(digests,",
+            "\t\t\t\tdigest_count = 0;\n\t\t\t\tgoto fail;",
+            "efi_get_digests(), the same shape: `while (digest_count--) "
+            "xfree(...)' at fail: runs zero times against a count that "
+            "arm had just zeroed, over a pointer it had just nulled.",
+        ),
+    ],
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",

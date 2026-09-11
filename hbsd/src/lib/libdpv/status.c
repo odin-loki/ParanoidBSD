@@ -48,6 +48,7 @@ void
 status_printf(const char *fmt, ...)
 {
 	int n, attrs;
+	char *nbuf;
 	chtype color = dlg_color_pair(dlg_color_table[BUTTON_ACTIVE_ATTR].fg,
 	    dlg_color_table[SCREEN_ATTR].bg) | A_BOLD;
 	va_list args;
@@ -64,11 +65,20 @@ status_printf(const char *fmt, ...)
 
 	/* Resize buffer if terminal width is greater */
 	if ((status_width + 1) > status_bufsize) {
-		status_buf = realloc(status_buf, status_width + 1);
-		if (status_buf == NULL) {
+		/*
+		 * PBSD: through a temporary.  status_buf is a file-scope
+		 * static and the only pointer to the buffer, so assigning
+		 * realloc's NULL over it lost the one this function was
+		 * already using -- and the bufsize = -1 beside it says the
+		 * buffer is unusable from here on, which is true of the old
+		 * one only because the assignment threw it away.
+		 */
+		nbuf = realloc(status_buf, status_width + 1);
+		if (nbuf == NULL) {
 			status_bufsize = -1;
 			return;
 		}
+		status_buf = nbuf;
 		status_bufsize = status_width + 1;
 	}
 

@@ -23940,3 +23940,76 @@ block.  So the CI step runs the rule and prints, and does not gate; the
 test beside it *does* gate, because a rule that quietly stopped
 distinguishing would make the 148 meaningless in both directions.
 `EXPECTED` starts empty and `--gate` is there for when it is not.
+
+### And then `lib/` was read through
+
+The rule found fourteen sites under `lib/`, none of which the analyser
+had reported.  Reading all fourteen took an hour and split them six-eight.
+
+**Five were fixed** (the sixth, `figpar`, is the section above):
+
+`__nss_common_cache_read()` in **libc** was the worst of them, and the
+realloc was only half of it:
+
+```c
+	cache_data->key = (char *)malloc(NSS_CACHE_KEY_INITIAL_SIZE);
+	memset(cache_data->key, 0, NSS_CACHE_KEY_INITIAL_SIZE);
+	...
+			cache_data->key = realloc(cache_data->key,
+			    cache_data->key_size);
+			memset(cache_data->key, 0, cache_data->key_size);
+```
+
+Both allocations feed a `memset` on the very next line with nothing
+between them.  An allocation failure anywhere on the nsswitch cache path
+— which is every `getpwnam`, `getgrnam` and `gethostbyname` on a system
+running `nscd` — was a NULL dereference *inside libc*.  Both are checked
+now, returning `NS_UNAVAIL`, which is this file's own way of telling
+`nsdispatch(3)` to try the next source.
+
+`kiconv_xlat16_open()`'s last statement is a realloc that only **shrinks**
+the table to the size actually used — so failing it costs nothing but the
+slack.  Assigning the result back turned that into an `xt` handed to the
+caller with a NULL `data` and a non-zero `size`, which the caller reads.
+
+`status_printf()` in libdpv: `status_buf` is a file-scope static and the
+only pointer to the buffer, so the NULL went over the buffer the function
+was already using.
+
+And `efi_get_certs()` and `efi_get_digests()` in libsecureboot, twice,
+where the realloc was not even the expensive part:
+
+```c
+		certs = realloc(certs, (cert_count + 1) * sizeof(...));
+		if (certs == NULL) {
+			cert_count = 0;
+			goto fail;
+		}
+```
+
+`fail:` is `free_certificates(certs, cert_count)`.  The failure arm nulls
+the pointer *and* zeroes the count, so the cleanup it jumps to releases
+nothing — every certificate already extracted from the UEFI variable
+leaks along with the array.  `efi_get_digests()`'s `while (digest_count--)
+xfree(digests[digest_count].data)` is the same thing said with a loop.
+Both now grow through a temporary and leave the count alone, which is
+what makes `fail:` able to do its job.
+
+**Eight were written down.**  Three exit — `err(1)`, `err(2)`, and
+libiscsiutil's `log_err`, which is `__dead2` in its own header.  One is
+inside `#ifdef notdef`, which a textual rule cannot see and which is why
+it is recorded rather than fixed.  Two keep a second name for the block:
+`fetch_getln()` does `tmp = conn->buf` *before* the realloc, so
+`conn->buf` still names it, and `getargv()` sets `av->argv` after every
+successful grow.  And one is a test whose next line will fault — left as
+it is, rather than made to look handled.
+
+So `lib/` gates.  The other 134 sites do not, yet.
+
+Two of the five could not be compiled here: `libsecureboot` and `libdpv`
+are `MK_BEARSSL` and `MK_DIALOG`, both off by default and both already on
+the record in `expected_errors.py` as `DEFAULT_OFF:`.  What was checked
+is that they fail *identically* at `HEAD` and after the edit — the same
+`clang -fsyntax-only` over the same flags, on the file as git has it and
+on the file as it now is.  That is weaker than a clean compile and is
+said here rather than glossed.

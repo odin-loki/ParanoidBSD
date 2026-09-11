@@ -183,7 +183,43 @@ def scan(path: Path):
 # Every site read and left alone, with the reason. A site not here fails
 # --gate. The six that were NOT left alone are named in the docstring
 # above and written up in docs/security/UB_FINDINGS.md.
-EXPECTED: dict[str, str] = {}
+EXPECTED: dict[str, str] = {
+    # lib/ is read through. The six that were NOT left alone are in
+    # docs/security/UB_FINDINGS.md: libc's nscache, libkiconv's
+    # xlat16_iconv, libdpv's status, and libsecureboot's efi_variables
+    # twice -- plus the three the rule was written for.
+    "lib/libfetch/common.c:1419":
+        "fetch_getln() assigns conn->buf into tmp FIRST, so the old "
+        "block still has a name when realloc fails: `tmp = conn->buf; "
+        "... tmp = realloc(tmp, tmpsize)'. conn->buf is what "
+        "fetch_close() frees.",
+    "lib/libiscsiutil/text.c:213":
+        "text_read_keys() calls log_err(1, ...) on the NULL, and "
+        "log_err is __dead2 in libiscsiutil.h.",
+    "lib/libusbhid/usage.c:114":
+        "hid_init() calls err(1, \"realloc\") on the NULL.",
+    "lib/libusbhid/usage.c:132":
+        "hid_init() again, err(1, \"alloc\").",
+    "lib/libc/tests/gen/fmtmsg_test.c:197":
+        "read_fd() calls err(2, \"realloc\") on the NULL; a test, and "
+        "it exits.",
+    "lib/libutil/tests/humanize_number_test.c:526":
+        "main()'s buffer, grown once per test case and never checked. "
+        "A test that cannot allocate four bytes will fault on the next "
+        "line rather than report a wrong number, which is the failure "
+        "mode a test wants; left as it is rather than made to look "
+        "handled.",
+    "lib/libkvm/kvm_proc.c:674":
+        "inside `#ifdef notdef'. The lint reads text and does not run "
+        "the preprocessor, which is why this is written down rather "
+        "than fixed.",
+    "lib/libprocstat/libprocstat.c:1844":
+        "getargv() sets `argv = av->argv' on the way in and "
+        "`av->argv = argv' after each successful grow, so av->argv "
+        "always names the last array that was allocated and the "
+        "warn()-and-return-NULL path leaves it free-able by the "
+        "caller's procstat_freeargv().",
+}
 
 
 def main() -> int:
