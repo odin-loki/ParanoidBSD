@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,078 | 9,056 |
+| 1 | `lib` | 2,827 | 640,126 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,436** | **114,207** |
+| | **total** | **41,143** | **21,301,484** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -599,7 +599,7 @@ Files with twenty or more macro invocations that look like generators. The
 | 8.192.12 | `sys/contrib/dev/acpica/include/acglobal.h` | 531 | 0 | 168 |
 | 8.192.25 | `sys/contrib/dev/acpica/include/acpixf.h` | 1,451 | 0 | 167 |
 | 8.1191.146 | `sys/kern/subr_msan.c` | 1,613 | 65 | 160 |
-| 1.124.5 | `lib/libc/tests/secure/fortify_socket_test.c` | 1,972 | 0 | 154 |
+| 1.124.5 | `lib/libc/tests/secure/fortify_socket_test.c` | 1,981 | 0 | 154 |
 | 8.671.15 | `sys/dev/cxgbe/t4_main.c` | 14,284 | 0 | 139 |
 | 1.124.6 | `lib/libc/tests/secure/fortify_stdio_test.c` | 1,560 | 0 | 136 |
 | 8.801.3 | `sys/dev/ixl/i40e_adminq_cmd.h` | 3,043 | 0 | 131 |
@@ -635,7 +635,7 @@ Files with twenty or more macro invocations that look like generators. The
 | 8.1254.30 | `sys/powerpc/powerpc/pmap_dispatch.c` | 279 | 8 | 70 |
 | 8.1304.7 | `sys/ufs/ffs/ffs_softdep.c` | 15,021 | 0 | 70 |
 | 8.1213.131 | `sys/netinet/tcp_subr.c` | 5,049 | 0 | 69 |
-| 1.124.10 | `lib/libc/tests/secure/fortify_uio_test.c` | 936 | 0 | 67 |
+| 1.124.10 | `lib/libc/tests/secure/fortify_uio_test.c` | 948 | 0 | 67 |
 | 8.2.30 | `sys/amd64/amd64/support.S` | 1,998 | 0 | 67 |
 | 8.715.22 | `sys/dev/firewire/sbp.c` | 2,866 | 59 | 67 |
 | 8.173.2 | `sys/contrib/ck/include/gcc/ppc64/ck_pr.h` | 428 | 0 | 65 |
@@ -6252,14 +6252,14 @@ function; a file with two hundred of them is a project.
 
 - [ ] **1.124.1** `fortify_poll_test.c` · 618L gen:37 · `SKIP-TESTS`
 - [ ] **1.124.2** `fortify_random_test.c` · 317L gen:16 · `SKIP-TESTS`
-- [ ] **1.124.3** `fortify_select_test.c` · 770L gen:55 · `SKIP-TESTS`
+- [ ] **1.124.3** `fortify_select_test.c` · 797L gen:55 · `SKIP-TESTS`
 - [ ] **1.124.4** `fortify_signal_test.c` · 317L gen:16 · `SKIP-TESTS`
-- [ ] **1.124.5** `fortify_socket_test.c` · 1,972L gen:154 · `SKIP-TESTS`
+- [ ] **1.124.5** `fortify_socket_test.c` · 1,981L gen:154 · `SKIP-TESTS`
 - [ ] **1.124.6** `fortify_stdio_test.c` · 1,560L gen:136 · `SKIP-TESTS`
 - [ ] **1.124.7** `fortify_stdlib_test.c` · 611L gen:46 · `SKIP-TESTS`
 - [ ] **1.124.8** `fortify_string_test.c` · 2,272L gen:196 · `SKIP-TESTS`
 - [ ] **1.124.9** `fortify_strings_test.c` · 616L gen:46 · `SKIP-TESTS`
-- [ ] **1.124.10** `fortify_uio_test.c` · 936L gen:67 · `SKIP-TESTS`
+- [ ] **1.124.10** `fortify_uio_test.c` · 948L gen:67 · `SKIP-TESTS`
 - [ ] **1.124.11** `fortify_unistd_test.c` · 2,200L gen:196 · `SKIP-TESTS`
 - [ ] **1.124.12** `fortify_wchar_test.c` · 2,125L gen:181 · `SKIP-TESTS`
 

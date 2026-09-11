@@ -104,6 +104,41 @@ FIXES = {
     # reading confirmed every one; the tool's own test asserts they stay
     # reported as fixed, and these entries are what survives a vendor
     # merge that drops the hunk without dropping the file.
+    "hbsd/src/lib/libc/tests/secure/generate-fortify-tests.lua": [
+        (
+            "local descriptor_init = [[",
+            None,
+            "the readv(2), preadv(2) and recvmmsg(2) fortify tests handed "
+            "the call an array of descriptors they never initialised, so "
+            "__ssp_check_iovec read iov[i].iov_len - and "
+            "__ssp_check_msghdr six msghdr fields - out of stack residue",
+        ),
+        (
+            "local fdset_init = [[",
+            None,
+            "the FD_SET, FD_CLR and FD_ISSET fortify tests handed the "
+            "macro an fd_set they never zeroed, and FD_SET is a "
+            "read-modify-write of one word of it",
+        ),
+    ],
+    "hbsd/src/lib/libc/tests/secure/fortify_uio_test.c": (
+        ("memset(__stack.__buf, 0, __bufsz);", 12),
+        None,
+        "the generated half of the descriptor_init fix: six readv and "
+        "six preadv bodies, stack and heap",
+    ),
+    "hbsd/src/lib/libc/tests/secure/fortify_socket_test.c": (
+        ("memset(__stack.__buf, 0, __bufsz);", 6),
+        None,
+        "the generated half of the descriptor_init fix: the six "
+        "recvmmsg msgvec bodies, stack and heap",
+    ),
+    "hbsd/src/lib/libc/tests/secure/fortify_select_test.c": (
+        ("FD_ZERO(BUF);", 18),
+        None,
+        "the generated half of the fdset_init fix: FD_SET, FD_CLR and "
+        "FD_ISSET, six bodies each",
+    ),
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",

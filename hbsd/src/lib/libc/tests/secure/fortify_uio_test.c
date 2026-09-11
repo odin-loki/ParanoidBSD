@@ -179,6 +179,7 @@ ATF_TC_BODY(readv_before_end, tc)
 	const size_t __len = 2 - 1;
 	const size_t __idx __unused = __len - 1;
 
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	readv(STDIN_FILENO, __stack.__buf, __len);
@@ -202,6 +203,7 @@ ATF_TC_BODY(readv_end, tc)
 	const size_t __len = 2;
 	const size_t __idx __unused = __len - 1;
 
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	readv(STDIN_FILENO, __stack.__buf, __len);
@@ -234,6 +236,7 @@ ATF_TC_BODY(readv_after_end, tc)
 
 	/* Child */
 	disable_coredumps();
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	readv(STDIN_FILENO, __stack.__buf, __len);
@@ -280,6 +283,7 @@ ATF_TC_BODY(readv_heap_before_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	readv(STDIN_FILENO, __stack.__buf, __len);
@@ -304,6 +308,7 @@ ATF_TC_BODY(readv_heap_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	readv(STDIN_FILENO, __stack.__buf, __len);
@@ -337,6 +342,7 @@ ATF_TC_BODY(readv_heap_after_end, tc)
 	/* Child */
 	disable_coredumps();
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	readv(STDIN_FILENO, __stack.__buf, __len);
@@ -551,6 +557,7 @@ ATF_TC_BODY(preadv_before_end, tc)
 	const size_t __len = 2 - 1;
 	const size_t __idx __unused = __len - 1;
 
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	preadv(STDIN_FILENO, __stack.__buf, __len, 0);
@@ -574,6 +581,7 @@ ATF_TC_BODY(preadv_end, tc)
 	const size_t __len = 2;
 	const size_t __idx __unused = __len - 1;
 
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	preadv(STDIN_FILENO, __stack.__buf, __len, 0);
@@ -606,6 +614,7 @@ ATF_TC_BODY(preadv_after_end, tc)
 
 	/* Child */
 	disable_coredumps();
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	preadv(STDIN_FILENO, __stack.__buf, __len, 0);
@@ -652,6 +661,7 @@ ATF_TC_BODY(preadv_heap_before_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	preadv(STDIN_FILENO, __stack.__buf, __len, 0);
@@ -676,6 +686,7 @@ ATF_TC_BODY(preadv_heap_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	preadv(STDIN_FILENO, __stack.__buf, __len, 0);
@@ -709,6 +720,7 @@ ATF_TC_BODY(preadv_heap_after_end, tc)
 	/* Child */
 	disable_coredumps();
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 	replace_stdin();
 
 	preadv(STDIN_FILENO, __stack.__buf, __len, 0);

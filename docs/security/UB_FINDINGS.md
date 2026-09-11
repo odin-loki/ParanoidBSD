@@ -23151,3 +23151,142 @@ and that error is what `if (error != 0) return (error);` catches two
 lines above the switch.  The unseen-callee family, with the callee named
 and its rejection list quoted — which is the difference between "the
 analyser cannot see it" and "nobody checked".
+
+## The fortify tests hand the fortify check an uninitialised buffer
+
+Two findings in this sweep landed not in a library but in
+`include/ssp/socket.h:41` and `include/ssp/ssp.h:122` — the
+`_FORTIFY_SOURCE` headers.  PBSD compiles with `-D_FORTIFY_SOURCE=2`,
+so `__SSP_FORTIFY_LEVEL > 0` and every translation unit that reaches
+`<sys/socket.h>` or `<sys/select.h>` pulls these in.  A finding in a
+header that everything includes is worth reading carefully, because the
+answer is either "a defect in the safety net" or "one caller is holding
+it wrong", and the two are not close.
+
+It was the second, and the caller was the test suite for the safety net.
+
+```
+include/ssp/ssp.h:122:34: The right operand of '<' is a garbage value
+  fortify_uio_test.c:579: note: Calling 'preadv'
+  include/ssp/uio.h:46:   note: Calling '__ssp_check_iovec'
+  include/ssp/ssp.h:118:  note: Assuming the condition is false
+  include/ssp/ssp.h:121:  note: Loop condition is true.  Entering loop body
+  include/ssp/ssp.h:122:  note: The right operand of '<' is a garbage value
+```
+
+`ssp.h:118` is the count check, and it is the one the test is aiming at:
+
+```c
+	const size_t iovsz = __ssp_bos(iov);
+
+	if (iovsz != (size_t)-1 && iovsz / sizeof(*iov) < (size_t)iovcnt)
+		__chk_fail();
+
+	for (i = 0; i < iovcnt; i++) {
+		if (__ssp_bos(iov[i].iov_base) < iov[i].iov_len)
+			__chk_fail();
+	}
+```
+
+Line 121 is the part the test did not aim at and got anyway.  Having
+cleared the count, the wrapper walks the array and reads `iov_len` out
+of every element — and `fortify_uio_test.c:579` is this:
+
+```c
+	struct {
+		uint8_t padding_l;
+		struct iovec __buf[2];
+		uint8_t padding_r;
+	} __stack;
+	const size_t __len = 2;
+
+	replace_stdin();
+
+	preadv(STDIN_FILENO, __stack.__buf, __len, 0);
+```
+
+`__buf` is two `struct iovec` that nothing ever writes to.  The
+`socket.h` finding is the same shape one level worse:
+`__ssp_check_msghdr` reads six fields out of each `msghdr` —
+`msg_name`, `msg_namelen`, `msg_control`, `msg_controllen`, and the
+`msg_iov`/`msg_iovlen` pair it then hands straight back to
+`__ssp_check_iovec` — so `recvmmsg_msgvec_end` has the wrapper walking
+an iovec array whose address and length both came from stack residue.
+
+Three things are wrong with that, in rising order:
+
+1.  It is an uninitialised read, which is the thing this whole sweep is
+    for, in the one file whose subject is memory safety.
+2.  The abort these tests assert about becomes a function of stack
+    residue.  `__ssp_bos()` of an indeterminate pointer is `(size_t)-1`
+    in practice, so the comparison is false and the `_end` variants pass
+    — but that is an accident of what `__builtin_object_size` can prove,
+    not a property the test establishes.  A residue value it *can*
+    resolve turns `_end` into a spurious "FORTIFY_SOURCE aborted".
+3.  Past the check, the syscall runs.  `preadv(2)` with two indeterminate
+    `iov_base` pointers is a write through them; the usual answer is
+    `EFAULT`, and the unusual one is that the residue pointed somewhere
+    mapped.
+
+These files are generated, by `generate-fortify-tests.lua`, so the fix
+belongs in the generator — and the generator already knew.  Twelve lines
+above the `readv` entry:
+
+```lua
+local poll_init = [[
+	for (size_t i = 0; i < howmany(__bufsz, sizeof(struct pollfd)); i++) {
+		__stack.__buf[i].fd = -1;
+	}
+]]
+```
+
+`poll(2)` takes an array of descriptors, so its tests initialise the
+array, bounded by `__bufsz` — the buffer's own size — and not by
+`__len`, which the `_after_end` variants deliberately set past the end.
+`readv`, `preadv` and `recvmmsg` also take an array of descriptors, and
+theirs had no `init` at all.  The **"one of two sites got it right"**
+fingerprint, for the fifth time in this tree, and the first time in a
+test generator rather than in the code under test.
+
+The same reading of the same file turned up the third instance, which
+the sweep had already been reporting for some time under a different
+checker: twelve `core.uninitialized.Assign` in
+`fortify_select_test.c`, one for each `FD_SET` and `FD_CLR` body.
+
+```c
+	fd_set __buf;
+	...
+	FD_SET(__idx, &__stack.__buf);
+```
+
+`FD_SET` is `fds_bits[n / NFDBITS] |= mask` — a read-modify-write of a
+word nothing has written.  `FD_ZERO` is the answer and it is in the same
+header.
+
+So: `descriptor_init` (a `memset` of `__bufsz`) on the three
+descriptor-array entries, `fdset_init` (`FD_ZERO(BUF)`) on the three
+select entries, and the same change applied by hand to the three
+generated files, because `flua` is not in this container and a
+regeneration that cannot be run is not a fix.  `BUF` is already the
+right expression in both shapes — `&__stack.__buf` on the stack, the
+malloc'd `__stack.__buf` on the heap — so `fdset_init` needed no case
+analysis.
+
+Measured, per file, at `--scope lib --scope libexec`:
+
+| file | before | after |
+|---|---|---|
+| `fortify_select_test.c` | 12 | 0 |
+| `fortify_socket_test.c` | 1 | 0 |
+| `fortify_uio_test.c` | 1 | 4 |
+
+The uio file going *up* is the honest half of the result.  Clang sinks a
+path at the first report on it, so the garbage-value finding at
+`ssp.h:122` was standing in front of four `unix.Malloc` leaks in the
+`readv_heap_*` and `preadv_heap_*` bodies, which malloc `__bufsz` and
+never free it.  That family is already on the record and already
+counted — 21 of them in `fortify_string_test.c`, six each in
+`fortify_strings_test.c` and `fortify_wchar_test.c` — so these four are
+not new information, only newly visible.  A test process that leaks and
+exits is not a defect; an uninitialised read is.  Fourteen findings
+became four, and the ten that went are the ten that were real.

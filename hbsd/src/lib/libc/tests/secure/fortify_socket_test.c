@@ -1537,6 +1537,8 @@ ATF_TC_BODY(recvmmsg_msgvec_before_end, tc)
 	const size_t __idx __unused = __len - 1;
 	int sock[2] = { -1, -1 };
 
+	memset(__stack.__buf, 0, __bufsz);
+
 	recvmmsg(sock[0], __stack.__buf, __len, 0, NULL);
 #undef BUF
 
@@ -1558,6 +1560,8 @@ ATF_TC_BODY(recvmmsg_msgvec_end, tc)
 	const size_t __len = 2;
 	const size_t __idx __unused = __len - 1;
 	int sock[2] = { -1, -1 };
+
+	memset(__stack.__buf, 0, __bufsz);
 
 	recvmmsg(sock[0], __stack.__buf, __len, 0, NULL);
 #undef BUF
@@ -1590,6 +1594,8 @@ ATF_TC_BODY(recvmmsg_msgvec_after_end, tc)
 
 	/* Child */
 	disable_coredumps();
+	memset(__stack.__buf, 0, __bufsz);
+
 	recvmmsg(sock[0], __stack.__buf, __len, 0, NULL);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */
 
@@ -1635,6 +1641,7 @@ ATF_TC_BODY(recvmmsg_msgvec_heap_before_end, tc)
 	int sock[2] = { -1, -1 };
 
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 
 	recvmmsg(sock[0], __stack.__buf, __len, 0, NULL);
 #undef BUF
@@ -1659,6 +1666,7 @@ ATF_TC_BODY(recvmmsg_msgvec_heap_end, tc)
 	int sock[2] = { -1, -1 };
 
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 
 	recvmmsg(sock[0], __stack.__buf, __len, 0, NULL);
 #undef BUF
@@ -1692,6 +1700,7 @@ ATF_TC_BODY(recvmmsg_msgvec_heap_after_end, tc)
 	/* Child */
 	disable_coredumps();
 	__stack.__buf = malloc(__bufsz);
+	memset(__stack.__buf, 0, __bufsz);
 
 	recvmmsg(sock[0], __stack.__buf, __len, 0, NULL);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */

@@ -179,6 +179,8 @@ ATF_TC_BODY(FD_SET_before_end, tc)
 	const size_t __len = FD_SETSIZE - 1;
 	const size_t __idx __unused = __len - 1;
 
+	FD_ZERO(BUF);
+
 	FD_SET(__idx, &__stack.__buf);
 #undef BUF
 
@@ -199,6 +201,8 @@ ATF_TC_BODY(FD_SET_end, tc)
 	const size_t __bufsz __unused = sizeof(__stack.__buf);
 	const size_t __len = FD_SETSIZE;
 	const size_t __idx __unused = __len - 1;
+
+	FD_ZERO(BUF);
 
 	FD_SET(__idx, &__stack.__buf);
 #undef BUF
@@ -230,6 +234,8 @@ ATF_TC_BODY(FD_SET_after_end, tc)
 
 	/* Child */
 	disable_coredumps();
+	FD_ZERO(BUF);
+
 	FD_SET(__idx, &__stack.__buf);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */
 
@@ -274,6 +280,7 @@ ATF_TC_BODY(FD_SET_heap_before_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_SET(__idx, __stack.__buf);
 #undef BUF
@@ -297,6 +304,7 @@ ATF_TC_BODY(FD_SET_heap_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_SET(__idx, __stack.__buf);
 #undef BUF
@@ -329,6 +337,7 @@ ATF_TC_BODY(FD_SET_heap_after_end, tc)
 	/* Child */
 	disable_coredumps();
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_SET(__idx, __stack.__buf);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */
@@ -373,6 +382,8 @@ ATF_TC_BODY(FD_CLR_before_end, tc)
 	const size_t __len = FD_SETSIZE - 1;
 	const size_t __idx __unused = __len - 1;
 
+	FD_ZERO(BUF);
+
 	FD_CLR(__idx, &__stack.__buf);
 #undef BUF
 
@@ -393,6 +404,8 @@ ATF_TC_BODY(FD_CLR_end, tc)
 	const size_t __bufsz __unused = sizeof(__stack.__buf);
 	const size_t __len = FD_SETSIZE;
 	const size_t __idx __unused = __len - 1;
+
+	FD_ZERO(BUF);
 
 	FD_CLR(__idx, &__stack.__buf);
 #undef BUF
@@ -424,6 +437,8 @@ ATF_TC_BODY(FD_CLR_after_end, tc)
 
 	/* Child */
 	disable_coredumps();
+	FD_ZERO(BUF);
+
 	FD_CLR(__idx, &__stack.__buf);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */
 
@@ -468,6 +483,7 @@ ATF_TC_BODY(FD_CLR_heap_before_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_CLR(__idx, __stack.__buf);
 #undef BUF
@@ -491,6 +507,7 @@ ATF_TC_BODY(FD_CLR_heap_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_CLR(__idx, __stack.__buf);
 #undef BUF
@@ -523,6 +540,7 @@ ATF_TC_BODY(FD_CLR_heap_after_end, tc)
 	/* Child */
 	disable_coredumps();
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_CLR(__idx, __stack.__buf);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */
@@ -567,6 +585,8 @@ ATF_TC_BODY(FD_ISSET_before_end, tc)
 	const size_t __len = FD_SETSIZE - 1;
 	const size_t __idx __unused = __len - 1;
 
+	FD_ZERO(BUF);
+
 	FD_ISSET(__idx, &__stack.__buf);
 #undef BUF
 
@@ -587,6 +607,8 @@ ATF_TC_BODY(FD_ISSET_end, tc)
 	const size_t __bufsz __unused = sizeof(__stack.__buf);
 	const size_t __len = FD_SETSIZE;
 	const size_t __idx __unused = __len - 1;
+
+	FD_ZERO(BUF);
 
 	FD_ISSET(__idx, &__stack.__buf);
 #undef BUF
@@ -618,6 +640,8 @@ ATF_TC_BODY(FD_ISSET_after_end, tc)
 
 	/* Child */
 	disable_coredumps();
+	FD_ZERO(BUF);
+
 	FD_ISSET(__idx, &__stack.__buf);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */
 
@@ -662,6 +686,7 @@ ATF_TC_BODY(FD_ISSET_heap_before_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_ISSET(__idx, __stack.__buf);
 #undef BUF
@@ -685,6 +710,7 @@ ATF_TC_BODY(FD_ISSET_heap_end, tc)
 	const size_t __idx __unused = __len - 1;
 
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_ISSET(__idx, __stack.__buf);
 #undef BUF
@@ -717,6 +743,7 @@ ATF_TC_BODY(FD_ISSET_heap_after_end, tc)
 	/* Child */
 	disable_coredumps();
 	__stack.__buf = malloc(__bufsz);
+	FD_ZERO(BUF);
 
 	FD_ISSET(__idx, __stack.__buf);
 	_exit(EX_SOFTWARE);	/* Should have aborted. */

@@ -138,6 +138,35 @@ local stdio_init = [[
 	replace_stdin();
 ]]
 
+-- readv(2), preadv(2) and recvmmsg(2) are handed an ARRAY OF DESCRIPTORS,
+-- and the fortification wrapper walks every element of it: ssp.h's
+-- __ssp_check_iovec reads iov[i].iov_len for each i < iovcnt, and
+-- socket.h's __ssp_check_msghdr reads six fields out of each msghdr,
+-- including the msg_iov it then hands to __ssp_check_iovec in turn.  An
+-- uninitialised __buf therefore makes the abort these tests assert about
+-- depend on stack residue, and hands the syscall behind the check
+-- indeterminate pointers and lengths.  poll_init above already
+-- initialises its pollfd array for exactly this reason; these did not.
+--
+-- The bound is __bufsz, the buffer's own size, and not __len: the
+-- _after_end variants set __len past the end of the buffer on purpose,
+-- and a memset of __len would be the overflow the test is hunting for.
+local descriptor_init = [[
+	memset(__stack.__buf, 0, __bufsz);
+]]
+
+-- FD_SET and FD_CLR are a read-modify-write of one word of the fd_set:
+-- fds_bits[n / NFDBITS] |= mask.  On an fd_set that was never zeroed
+-- that word is indeterminate, which is what FD_ZERO is for.  BUF is the
+-- right expression in both shapes - it is &__stack.__buf on the stack
+-- and the malloc'd __stack.__buf on the heap - and it names exactly one
+-- fd_set, so this stays in bounds even in the _after_end variants,
+-- where it is __idx and not the buffer that is deliberately past the end.
+local fdset_init = [[
+	FD_ZERO(BUF);
+]]
+local readv_buf_init = descriptor_init .. stdio_init
+
 local string_stackvars = "\tchar src[__len];\n"
 local string_init = [[
 	memset(__stack.__buf, 0, __len);
@@ -199,6 +228,7 @@ local all_tests = {
 				"__idx",
 				"__buf",
 			},
+			init = fdset_init,
 		},
 		{
 			func = "FD_CLR",
@@ -208,6 +238,7 @@ local all_tests = {
 				"__idx",
 				"__buf",
 			},
+			init = fdset_init,
 		},
 		{
 			func = "FD_ISSET",
@@ -217,6 +248,7 @@ local all_tests = {
 				"__idx",
 				"__buf",
 			},
+			init = fdset_init,
 		},
 	},
 	socket = {
@@ -370,6 +402,7 @@ local all_tests = {
 				"NULL",
 			},
 			stackvars = socket_stackvars,
+			init = descriptor_init,
 		},
 		{
 			-- We'll assume that recvmsg is covering msghdr
@@ -411,7 +444,7 @@ local all_tests = {
 				"__buf",
 				"__len",
 			},
-			init = stdio_init,
+			init = readv_buf_init,
 		},
 		{
 			func = "readv",
@@ -436,7 +469,7 @@ local all_tests = {
 				"__len",
 				"0",
 			},
-			init = stdio_init,
+			init = readv_buf_init,
 		},
 		{
 			func = "preadv",
