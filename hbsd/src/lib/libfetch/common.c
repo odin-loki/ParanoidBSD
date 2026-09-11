@@ -1304,11 +1304,20 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 	struct timeval now, timeout, delta;
 	struct pollfd pfd;
 	ssize_t rlen;
-	int deltams;
+	int deltams, tmo;
 
-	if (fetchTimeout > 0) {
+	/*
+	 * Read fetchTimeout ONCE.  It is a global the caller owns and may
+	 * change at any point, including from a signal handler, and
+	 * `timeout' is set under this test and read under the same test
+	 * further down with a read() or SSL_read() in between.  Two
+	 * evaluations of one predicate is what lets the second find a
+	 * timeval the first never wrote.
+	 */
+	tmo = fetchTimeout;
+	if (tmo > 0) {
 		gettimeofday(&timeout, NULL);
-		timeout.tv_sec += fetchTimeout;
+		timeout.tv_sec += tmo;
 	}
 
 	deltams = INFTIM;
@@ -1349,7 +1358,7 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 			return (-1);
 		}
 		// assert(rlen == FETCH_READ_WAIT);
-		if (fetchTimeout > 0) {
+		if (tmo > 0) {
 			gettimeofday(&now, NULL);
 			if (!timercmp(&timeout, &now, >)) {
 				errno = ETIMEDOUT;
@@ -1445,19 +1454,27 @@ fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
 	struct timeval now, timeout, delta;
 	struct pollfd pfd;
 	ssize_t wlen, total;
-	int deltams;
+	int deltams, tmo;
 
+	/*
+	 * As in fetch_read() above, and more so: this test guards
+	 * pfd.fd and pfd.events as well as `timeout', and the loop below
+	 * polls with that pfd.  Re-reading the global is what lets the
+	 * poll() run on a pollfd the memset left pointing at fd 0 with
+	 * no events, against a timeval nothing set.
+	 */
+	tmo = fetchTimeout;
 	memset(&pfd, 0, sizeof pfd);
-	if (fetchTimeout) {
+	if (tmo) {
 		pfd.fd = conn->sd;
 		pfd.events = POLLOUT | POLLERR;
 		gettimeofday(&timeout, NULL);
-		timeout.tv_sec += fetchTimeout;
+		timeout.tv_sec += tmo;
 	}
 
 	total = 0;
 	while (iovcnt > 0) {
-		while (fetchTimeout && pfd.revents == 0) {
+		while (tmo && pfd.revents == 0) {
 			gettimeofday(&now, NULL);
 			if (!timercmp(&timeout, &now, >)) {
 				errno = ETIMEDOUT;

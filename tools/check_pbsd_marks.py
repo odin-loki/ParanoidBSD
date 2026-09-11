@@ -236,6 +236,15 @@ FIXES = {
             "skipped the FreePool (DevicePathStr) that ends the function",
         ),
     ],
+    "hbsd/src/lib/libfetch/common.c": (
+        ("tmo = fetchTimeout;", 2),
+        None,
+        "fetch_read() and fetch_writev() set `timeout' under "
+        "if (fetchTimeout) and read it under the same test again with a "
+        "socket read or write in between; fetchTimeout is a global the "
+        "caller owns, and in fetch_writev() that test also guards "
+        "pfd.fd and pfd.events",
+    ),
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",
@@ -2949,9 +2958,18 @@ FIXES = {
             "by `while (*stringp == ' ')', which dereferences NULL on "
             "allocation failure.",
         ),
+        (
+            'if (argc > 0 && strcmp("not", argv[current]) == 0)',
+            None,
+            "and bsde_parse_subject() and bsde_parse_object() both read "
+            "argv[0] before the `current < argc' loop that bounds every "
+            "other read in them.  An empty clause is legal -- `ugidfw "
+            "add subject uid 0 object mode rw' has no object elements -- "
+            "and reaches them with argc 0.",
+        ),
     ],
     "hbsd/src/lib/libufs/sblock.c": (
-        "\t\t\tif (fs->fs_si != NULL)\n\t\t\t\tfs->fs_csp = savedcsp;",
+        "\t\t\tif (havesi)\n\t\t\t\tfs->fs_csp = savedcsp;",
         None,
         "sbput() saves fs->fs_csp into savedcsp only inside `if "
         "(fs->fs_si != NULL)', and restores it in two places -- the "
@@ -2963,8 +2981,12 @@ FIXES = {
         "summary that newfs(8), fsck_ffs(8) and tunefs(8) go on to use. "
         "One of the two restore sites had the test and the other did "
         "not -- the same fingerprint as cap_net. clang "
-        "core.uninitialized.Assign, sblock.c:268. The two reports that "
-        "remain are the unseen-callee family and the callee is known: "
+        "core.uninitialized.Assign, sblock.c:268. Both restores now test "
+        "havesi, captured once beside the save: they belong to whether "
+        "this function SAVED, not to what fs_si says after the "
+        "ffs_sbput() calls in between, which is a different question "
+        "about a struct the callee holds a pointer to -- and it is the "
+        "question the two remaining reports rested on, since "
         "ffs_sbput() (sys/ufs/ffs/ffs_subr.c) saves fs->fs_si, clears "
         "it for the write and restores it before returning, so the two "
         "`fs_si != NULL' tests do agree -- across a translation unit "
@@ -3138,6 +3160,17 @@ FIXES = {
             "leaves free_iovec() able to do its job -- the same idiom "
             "as lib/libfetch/http.c, found the same day. Six clang "
             "unix.Malloc findings gone; lib/libutil 11 -> 5.",
+        ),
+        (
+            "free(dup);",
+            None,
+            "and build_iovec_argf() one function down strdup'd its "
+            "formatted value straight into build_iovec(), which takes "
+            "ownership only when it STORES it -- not when *iovlen is "
+            "already -1 from an earlier realloc failure, and not when "
+            "its own realloc fails.  Both leave *iovlen at -1, so every "
+            "call after the first failure duplicated a string and "
+            "dropped it.",
         ),
     ],
     "hbsd/src/sbin/mount_msdosfs/mount_msdosfs.c": [

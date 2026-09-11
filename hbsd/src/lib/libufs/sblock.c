@@ -246,16 +246,23 @@ use_pread(void *devfd, off_t loc, void **bufp, int size)
 int
 sbput(int devfd, struct fs *fs, int numaltwrite)
 {
-	struct csum *savedcsp;
+	struct csum *savedcsp = NULL;
 	off_t savedactualloc;
-	int i, error;
+	int i, error, havesi;
 
 	error = ffs_sbput(&devfd, fs, fs->fs_sblockactualloc, use_pwrite);
 	fflush(NULL); /* flush any messages */
 	if (error != 0 || numaltwrite == 0)
 		return (error);
 	savedactualloc = fs->fs_sblockactualloc;
-	if (fs->fs_si != NULL) {
+	/*
+	 * PBSD: decide once.  The two restores below are governed by
+	 * whether we SAVED, not by what fs->fs_si says after the
+	 * ffs_sbput() calls in between -- that is a different question,
+	 * asked of a struct the callee was handed a pointer to.
+	 */
+	havesi = (fs->fs_si != NULL);
+	if (havesi) {
 		savedcsp = fs->fs_csp;
 		fs->fs_csp = NULL;
 	}
@@ -275,13 +282,13 @@ sbput(int devfd, struct fs *fs, int numaltwrite)
 			 * and tunefs(8) go on to use.  One of the two restore
 			 * sites had the test and the other did not.
 			 */
-			if (fs->fs_si != NULL)
+			if (havesi)
 				fs->fs_csp = savedcsp;
 			return (error);
 		}
 	}
 	fs->fs_sblockactualloc = savedactualloc;
-	if (fs->fs_si != NULL)
+	if (havesi)
 		fs->fs_csp = savedcsp;
 	fflush(NULL); /* flush any messages */
 	return (0);

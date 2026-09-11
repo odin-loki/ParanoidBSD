@@ -23607,3 +23607,131 @@ callee: `readln()` only returns 0 when its own `strnstr()` found the
 CRLF, so `eolp` is non-NULL and `hln[7]` is bounded by it — but clang
 does not model `recv(2)` as initialising the buffer those bytes came
 from.
+
+## One predicate, read twice, with a call in between
+
+Four more out of the `lib` tail, and three of the four are one shape:
+a value saved under a test, and used under a second evaluation of the
+same test, with something in between that could have changed what the
+test asks about.  The analyser cannot carry the first result across the
+call, which is why it reports; the code cannot either, which is why the
+report is worth acting on even where the value happens not to change.
+
+**`fetch_read()` and `fetch_writev()`.**  `fetchTimeout` is a global,
+part of libfetch's documented interface, and the caller may assign to it
+at any point — including from a signal handler.
+
+```c
+	if (fetchTimeout > 0) {
+		gettimeofday(&timeout, NULL);
+		timeout.tv_sec += fetchTimeout;
+	}
+	...
+		rlen = fetch_socket_read(conn->sd, buf, len);
+	...
+		if (fetchTimeout > 0) {
+			gettimeofday(&now, NULL);
+			if (!timercmp(&timeout, &now, >)) {
+```
+
+`fetch_writev()` is the same and worse, because there the first test
+guards `pfd.fd` and `pfd.events` as well:
+
+```c
+	memset(&pfd, 0, sizeof pfd);
+	if (fetchTimeout) {
+		pfd.fd = conn->sd;
+		pfd.events = POLLOUT | POLLERR;
+		...
+	}
+	...
+		while (fetchTimeout && pfd.revents == 0) {
+			...
+			if (poll(&pfd, 1, deltams) < 0) {
+```
+
+A `fetchTimeout` that becomes non-zero after the first test gives that
+`poll()` the pollfd the `memset` left behind: **fd 0, no events**, and a
+`timeval` nothing ever wrote.  Both functions now read the global once,
+into `tmo`, and use that everywhere.
+
+**`sbput()`.**  Fixed once already today — one of the two restore sites
+had the `fs->fs_si != NULL` test and the other did not — and the two
+reports that survived that fix were this same shape one level up:
+
+```c
+	if (fs->fs_si != NULL) {
+		savedcsp = fs->fs_csp;
+		fs->fs_csp = NULL;
+	}
+	for (i = 0; i < numaltwrite; i++) {
+		... ffs_sbput(&devfd, fs, ...) ...
+```
+
+`ffs_sbput()` is handed the same `struct fs *`, and (as the marker for
+the earlier fix already records) it saves, clears and restores
+`fs->fs_si` around its own write.  So the restore is asking a question
+about a field a callee has been manipulating, when the question it means
+to ask is *did this function save anything*.  Captured once into
+`havesi`; both restores test that.  Two findings to none.
+
+**And one that is a plain leak.**  `build_iovec_argf()`:
+
+```c
+	build_iovec(iov, iovlen, name, strdup(val), (size_t)-1);
+```
+
+`build_iovec()` takes ownership of that duplicate only when it stores
+it, and it declines to store anything in two cases: when `*iovlen` is
+already `-1`, which is how it reports an *earlier* realloc failure, and
+when its own realloc fails — which is the arm this document added a
+`niov` temporary to earlier today.  Both leave `*iovlen` at `-1`, so
+every `build_iovec_argf()` call after the first failure duplicated a
+string and dropped it.  Now freed when `*iovlen` says nothing was
+stored.
+
+**And one bound that ran before the loop that bounds everything else.**
+`bsde_parse_subject()` and `bsde_parse_object()` in libugidfw both open
+with
+
+```c
+	if (strcmp("not", argv[current]) == 0) {
+```
+
+with `current` zero, ahead of the `while (current < argc)` that guards
+every other read of `argv`.  An empty clause is legal — `ugidfw add
+subject uid 0 object mode rw` has no object elements at all, and means
+"any object" — and `bsde_parse_rule()` passes that through as `argc`
+zero, with `argv` pointing at the keyword that ended the previous
+clause, or, for the last clause, one past the end of its own array.
+Both guarded on `argc > 0`, which leaves the empty-clause semantics
+exactly as they were.
+
+Per file, all four to zero: `common.c` 2, `sblock.c` 2, `mntopts.c` 1,
+`ugidfw.c` 1.
+
+### Three read and left alone
+
+`nvmf_tcp_write_pdu_iov()` walks its iovec with `while (iov->iov_len <=
+(size_t)nwritten) { nwritten -= iov->iov_len; iovcnt--; iov++; }` —
+decrementing `iovcnt` and never testing it.  It terminates because
+`len` equals the sum of the iovec lengths on entry and the caller
+returned already if `len` reached zero, so some iovec still holds data.
+That invariant is real and checkable: `nvmf_tcp_construct_pdu()` builds
+`plen` out of `hlen`, the header digest, the pad, `data_len` and the
+data digest, and then builds the iovec out of the same five terms in the
+same order.  The bound is implicit rather than absent, which is the
+one-sided-index shape `tools/verify/onesided_index.py` exists to find,
+and it is recorded here rather than changed in the network path.
+
+`sbc_decode()` reads `left[k]` for `k != (sbc->blocks * sbc->bands)`
+against a `float left[160]`, with `left` filled by a loop over
+`sbc->channels`.  Those three are not wire values.  `sbc_decode_frame()`
+composes `config` from the local `cfg->freq`, `cfg->blocks`,
+`cfg->chmode`, `cfg->allocm` and `cfg->bands` and then rejects any frame
+whose second header byte is not exactly that, so a Bluetooth peer can
+only send frames matching parameters this side already negotiated.
+
+`build_iovec()`'s own remaining report, `pidfile_signal()`,
+`phttpget.c:471`, `efivar-dp-parse.c:3947` and `rtld.c:4845` are the
+four families named in the section above.

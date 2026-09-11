@@ -310,11 +310,23 @@ build_iovec_argf(struct iovec **iov, int *iovlen, const char *name,
 {
 	va_list ap;
 	char val[255] = { 0 };
+	char *dup;
 
 	va_start(ap, fmt);
 	vsnprintf(val, sizeof(val), fmt, ap);
 	va_end(ap);
-	build_iovec(iov, iovlen, name, strdup(val), (size_t)-1);
+	/*
+	 * PBSD: build_iovec() takes ownership of the duplicate only when
+	 * it stores it, and it declines to store anything twice: when
+	 * *iovlen is already -1, which is how it reports an EARLIER
+	 * realloc() failure, and when its own realloc() fails.  Both
+	 * leave *iovlen at -1, which is the test.  Every call after the
+	 * first failure used to duplicate a string and drop it.
+	 */
+	dup = strdup(val);
+	build_iovec(iov, iovlen, name, dup, (size_t)-1);
+	if (*iovlen < 0)
+		free(dup);
 }
 
 /*

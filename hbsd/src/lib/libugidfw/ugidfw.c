@@ -645,7 +645,16 @@ bsde_parse_subject(int argc, char *argv[],
 	neg = 0;
 	nextnot = 0;
 
-	if (strcmp("not", argv[current]) == 0) {
+	/*
+	 * PBSD: an empty clause is legal -- `ugidfw add subject uid 0
+	 * object mode rw' has no object elements at all -- and
+	 * bsde_parse_rule() hands that through as argc 0 with argv
+	 * pointing at the keyword that ended the previous clause, or,
+	 * for the last clause, one past the end of its own argv.  The
+	 * strcmp() ran before the `current < argc' loop that bounds
+	 * everything else here.
+	 */
+	if (argc > 0 && strcmp("not", argv[current]) == 0) {
 		not_seen = 1;
 		current++;
 	} else
@@ -815,7 +824,16 @@ bsde_parse_object(int argc, char *argv[],
 	nextnot = 0;
 	type = 0;
 
-	if (strcmp("not", argv[current]) == 0) {
+	/*
+	 * PBSD: an empty clause is legal -- `ugidfw add subject uid 0
+	 * object mode rw' has no object elements at all -- and
+	 * bsde_parse_rule() hands that through as argc 0 with argv
+	 * pointing at the keyword that ended the previous clause, or,
+	 * for the last clause, one past the end of its own argv.  The
+	 * strcmp() ran before the `current < argc' loop that bounds
+	 * everything else here.
+	 */
+	if (argc > 0 && strcmp("not", argv[current]) == 0) {
 		not_seen = 1;
 		current++;
 	} else

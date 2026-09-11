@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,205 | 9,056 |
+| 1 | `lib` | 2,827 | 640,259 | 9,056 |
 | 2 | `libexec` | 170 | 48,021 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,601** | **114,207** |
+| | **total** | **41,143** | **21,301,655** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -7284,7 +7284,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.177 `lib/libfetch`
 
-- [ ] **1.177.1** `common.c` · 1,774L · `TODO-PORT` · 43 fn
+- [ ] **1.177.1** `common.c` · 1,791L · `TODO-PORT` · 43 fn
   - [ ] 1.177.1.1 `fetch_finderr()` · `TODO-FN`
   - [ ] 1.177.1.2 `fetch_seterr()` · `TODO-FN`
   - [ ] 1.177.1.3 `fetch_syserr()` · `TODO-FN`
@@ -11758,7 +11758,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.319.3.1 `getinode()` · `TODO-FN`
   - [ ] 1.319.3.2 `putinode()` · `TODO-FN`
 - [ ] **1.319.4** `libufs.h` · 191L gen:1 · `TODO-HDR`
-- [ ] **1.319.5** `sblock.c` · 303L · `TODO-PORT` · 9 fn
+- [ ] **1.319.5** `sblock.c` · 310L · `TODO-PORT` · 9 fn
   - [ ] 1.319.5.1 `sbread()` · `TODO-FN`
   - [ ] 1.319.5.2 `sbfind()` · `TODO-FN`
   - [ ] 1.319.5.3 `handle_disk_read()` · `TODO-FN`
@@ -11776,7 +11776,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.320 `lib/libugidfw`
 
-- [ ] **1.320.1** `ugidfw.c` · 1,348L · `TODO-PORT` · 19 fn
+- [ ] **1.320.1** `ugidfw.c` · 1,366L · `TODO-PORT` · 19 fn
   - [ ] 1.320.1.1 `bsde_rule_to_string()` · `TODO-FN`
   - [ ] 1.320.1.2 `bsde_parse_uidrange()` · `TODO-FN`
   - [ ] 1.320.1.3 `bsde_parse_gidrange()` · `TODO-FN`
@@ -12306,7 +12306,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.325.24.6 `in_lts()` · `TODO-FN`
 - [ ] **1.325.25** `login_tty.c` · 57L · `TODO-PORT` · 1 fn
   - [ ] 1.325.25.1 `login_tty()` · `TODO-FN`
-- [ ] **1.325.26** `mntopts.c` · 340L · `TODO-PORT` · 10 fn
+- [ ] **1.325.26** `mntopts.c` · 352L · `TODO-PORT` · 10 fn
   - [ ] 1.325.26.1 `getmntopts()` · `TODO-FN`
   - [ ] 1.325.26.2 `rmslashes()` · `TODO-FN`
   - [ ] 1.325.26.3 `checkpath()` · `TODO-FN`
