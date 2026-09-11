@@ -6689,7 +6689,7 @@ symlook_init_from_req(SymLook *dst, const SymLook *src)
 static int
 open_binary_fd(const char *argv0, bool search_in_path, const char **binpath_res)
 {
-	char *binpath, *pathenv, *pe, *res1;
+	char *binpath, *pathenv, *pathenv_base, *pe, *res1;
 	const char *res;
 	int fd;
 
@@ -6702,11 +6702,20 @@ open_binary_fd(const char *argv0, bool search_in_path, const char **binpath_res)
 			_rtld_error("-p and no PATH environment variable");
 			rtld_die();
 		}
-		pathenv = strdup(pathenv);
-		if (pathenv == NULL) {
+		/*
+		 * strsep() advances its first argument past each token, so
+		 * pathenv does not point at the allocation any more once
+		 * the loop below has run.  Keep the base: the free() after
+		 * the loop was releasing either NULL, when the loop ran to
+		 * the end of PATH, or a pointer into the middle of the
+		 * allocation, when it found the binary and broke.
+		 */
+		pathenv_base = strdup(pathenv);
+		if (pathenv_base == NULL) {
 			_rtld_error("Cannot allocate memory");
 			rtld_die();
 		}
+		pathenv = pathenv_base;
 		fd = -1;
 		errno = ENOENT;
 		while ((pe = strsep(&pathenv, ":")) != NULL) {
@@ -6723,7 +6732,7 @@ open_binary_fd(const char *argv0, bool search_in_path, const char **binpath_res)
 				break;
 			}
 		}
-		free(pathenv);
+		free(pathenv_base);
 	} else {
 		fd = open(argv0, O_RDONLY | O_CLOEXEC | O_VERIFY);
 		res = argv0;

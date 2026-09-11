@@ -23481,3 +23481,129 @@ the unconstrained-field family with a named validator: the divisor is
 `fs_bsize` at `MINBSIZE`, so it is at least 16 in any superblock
 `ffs_sbget()` accepted.  `libpfctl`'s two syncookie findings are
 `return (errno)`, for the fourth time.
+
+## rtld's -p path frees a pointer strsep(3) has already moved
+
+The one in this batch that is not a leak and not a crash-on-bad-input, but
+an abort in the dynamic linker on an ordinary successful run.
+
+`open_binary_fd()` implements direct-exec rtld's `-p`, the flag that makes
+`/libexec/ld-elf.so.1 -p prog` search `PATH` the way a shell would:
+
+```c
+	char *binpath, *pathenv, *pe, *res1;
+	...
+		pathenv = strdup(pathenv);
+		...
+		while ((pe = strsep(&pathenv, ":")) != NULL) {
+			...
+			fd = open(binpath, O_RDONLY | O_CLOEXEC | O_VERIFY);
+			if (fd != -1 || errno != ENOENT) {
+				res = binpath;
+				break;
+			}
+		}
+		free(pathenv);
+```
+
+One variable holds both the allocation and the cursor, and `strsep(3)`
+advances the cursor: it sets `*stringp` to the character after the
+delimiter it found, or `NULL` when there is none left.  So by the time
+control reaches `free(pathenv)`, `pathenv` is one of two things, and
+neither of them is what `strdup()` returned:
+
+* the loop ran off the end of `PATH` — `pathenv` is `NULL`, and the
+  `free()` is a no-op.  The string leaks, which does not matter, because
+  the process is about to `exec`.
+* the loop found the binary and `break`'d — `pathenv` points **into the
+  middle of the allocation**, and `free()` is handed an interior pointer.
+  That is undefined behaviour, and on FreeBSD's jemalloc it is an abort.
+
+The second is the ordinary case.  `rtld -p prog` where `prog` is in any
+`PATH` element but the last aborts inside the run-time linker.  Fixed by
+keeping the base in `pathenv_base` and freeing that.
+
+The reported finding was `unix.Malloc`, "potential leak of memory pointed
+to by `pe`" — the analyser modelling `strsep()`'s *return* as the thing
+that goes unfreed.  It had the right two lines and the wrong noun.
+
+## Four more, and three more families
+
+**`proc_addr2sym()` demangles an uninitialised pointer.**
+`lookup_symbol_by_addr()` ends:
+
+```c
+	s = elf_strptr(e, symtab->stridx, symp->st_name);
+	if (s != NULL && namep != NULL)
+		*namep = s;
+	return (0);
+```
+
+`elf_strptr()` returns NULL for an `st_name` that is not a valid offset
+into the string table — which a truncated or hostile object gives it —
+and the function still returns 0 with `*namep` untouched.  The caller's
+`s` is `const char *s;`, an uninitialised local, and on `error == 0` it
+goes straight to `demangle(s, name, namesz)`, whose first act is
+`symbol[0] == '_'`.  libproc reads the ELF objects a *target process* has
+mapped, for procstat(1) and dtrace(1), so the object is not the
+analysing program's to trust.  `*namep` is now always written, NULL
+included, and the caller checks it.
+
+**`yppasswd_local()` frees seven of its eight strings.**  The `done:`
+label releases `pw_name`, `pw_passwd`, `pw_class`, `pw_gecos`, `pw_dir`,
+`pw_shell` and `oldpass`, and scrubs the two that are passwords.  It does
+not release `yppwd.domain`, which the function `strdup`'d eleven lines
+into itself.  `yppasswd_remote()`, immediately below, has no `domain`
+field in its `struct yppasswd` and frees everything it allocates.  One of
+two sites, again — and here it is the one with the extra field that
+forgot the extra field.
+
+**`do_challenge()` leaks the user's typed response.**  Seven `return`s
+between the first `rad_cvt_string()` and the tail, and the tail is the
+only place that frees:
+
+```c
+	memset(resp[num_msgs-1].resp, 0, strlen(resp[num_msgs-1].resp));
+	free(resp[num_msgs-1].resp);
+	free(resp);
+	while (num_msgs > 0)
+		free(msgs[--num_msgs].msg);
+	return (PAM_SUCCESS);
+```
+
+Every one of those seven leaks each `msgs[i].msg` the RADIUS reply loop
+had already allocated.  One of them leaks more than memory: the
+`build_access_request(...) == -1` arm returns with `resp` intact, and
+`resp[num_msgs-1].resp` is what the user typed at the challenge prompt.
+The `memset()` three lines below exists because that string is
+password-equivalent; the failure path skipped the scrub and the free
+both, leaving it in the heap of a process that is usually sshd or
+login(1).  Restructured onto a single `out:` label, which also picks up a
+NULL check on `resp[num_msgs-1].resp` that the original `strlen()` did
+not have.
+
+**Two EDK2 allocation-failure leaks.**
+`UefiDevicePathLibConvertTextToDevicePath()` allocates an end-node
+`DevicePath` and then a `DevicePathStr`; if the second fails it returns
+without the first.  And the `AllocatePool` inside its loop returns from
+*inside* the loop, so it skips both the `DevicePath` it is holding and
+the `FreePool (DevicePathStr)` that ends the function.  Both given their
+frees.
+
+**Recorded, not touched.**  `efivar-dp-parse.c:3947`'s `ParamStr` is the
+non-const dispatch table: the loop condition is
+`mUefiDevicePathLibDevPathFromTextTable[Index].Function != NULL` and the
+body assigns that same `.Function` to `FromText`, but the table is
+declared `GLOBAL_REMOVE_IF_UNREFERENCED DEVICE_PATH_FROM_TEXT_TABLE
+mUefiDevicePathLibDevPathFromTextTable[]` — no `const` — so the
+intervening `GetParamByNodeName()` call could have changed it, and clang
+will not carry `FromText != NULL` past it.  `rtld.c:4845` is
+`fill_search_info()` reached through a function pointer, so clang
+analyses `path_enumerate()` with an unconstrained `arg`: the
+address-taken-callback family.  `pidfile_signal()` is `return (errno)`,
+which is why the `if (pid <= 0) return (EDOM);` two lines further on is
+there, with a comment saying so.  And `phttpget.c:471` is the unseen
+callee: `readln()` only returns 0 when its own `strnstr()` found the
+CRLF, so `eolp` is non-NULL and `hln[7]` is bounded by it — but clang
+does not model `recv(2)` as initialising the buffer those bytes came
+from.

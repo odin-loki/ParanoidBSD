@@ -487,8 +487,15 @@ lookup_symbol_by_addr(Elf *e, struct symtab *symtab, uintptr_t addr,
 			break;
 	}
 	(void)gelf_getsym(data, symtab->index[i - 1], symp);
+	/*
+	 * elf_strptr() returns NULL for a st_name that is not a valid
+	 * offset into the string table, which a truncated or hostile
+	 * object gives it.  This used to leave *namep untouched and
+	 * still return 0, and proc_addr2sym()'s s is an uninitialised
+	 * local that it hands straight to demangle().  Say NULL instead.
+	 */
 	s = elf_strptr(e, symtab->stridx, symp->st_name);
-	if (s != NULL && namep != NULL)
+	if (namep != NULL)
 		*namep = s;
 	return (0);
 }
@@ -527,7 +534,10 @@ proc_addr2sym(struct proc_handle *p, uintptr_t addr, char *name,
 		    &s, symcopy);
 	if (error == 0) {
 		symcopy->st_value += off;
-		demangle(s, name, namesz);
+		if (s != NULL)
+			demangle(s, name, namesz);
+		else if (namesz > 0)
+			name[0] = '\0';
 	}
 	return (error);
 }

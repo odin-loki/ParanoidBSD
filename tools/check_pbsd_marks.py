@@ -190,6 +190,52 @@ FIXES = {
             "fails - the sibling arm of the same if already reported it",
         ),
     ],
+    "hbsd/src/lib/libproc/proc_sym.c": [
+        (
+            "\tif (namep != NULL)",
+            "if (s != NULL && namep != NULL)",
+            "lookup_symbol_by_addr() returned 0 with *namep untouched "
+            "whenever elf_strptr() could not resolve st_name",
+        ),
+        (
+            "\t\tif (s != NULL)",
+            None,
+            "and proc_addr2sym()'s s is an uninitialised local it handed "
+            "straight to demangle()",
+        ),
+    ],
+    "hbsd/src/lib/libypclnt/ypclnt_passwd.c": (
+        "free(yppwd.domain);",
+        None,
+        "yppasswd_local() strdup'd yppwd.domain and its done: label freed "
+        "the other seven strings but not that one; yppasswd_remote() next "
+        "door, whose struct has no domain, frees everything it allocates",
+    ),
+    "hbsd/src/lib/libpam/modules/pam_radius/pam_radius.c": (
+        ("goto out;", 7),
+        None,
+        "every error path in do_challenge() returned straight out, leaking "
+        "each msgs[i].msg already allocated - and the build_access_request "
+        "one leaked resp[num_msgs-1].resp, the user's typed challenge "
+        "response, which the success path scrubs before freeing precisely "
+        "because it is password-equivalent",
+    ),
+    "hbsd/src/lib/libefivar/efivar-dp-parse.c": [
+        (
+            ("    FreePool (DevicePath);", 4),
+            None,
+            "UefiDevicePathLibConvertTextToDevicePath() dropped the "
+            "END_DEVICE_PATH_LENGTH allocation when the following "
+            "StrDuplicate failed, and dropped it again when the "
+            "in-loop AllocatePool failed",
+        ),
+        (
+            "        FreePool (DevicePathStr);",
+            None,
+            "the same in-loop return is inside the loop, so it also "
+            "skipped the FreePool (DevicePathStr) that ends the function",
+        ),
+    ],
     "hbsd/src/sys/netipsec/ipsec.c": (
         "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
         "if (th == 0)\n\t\t\treturn (0);",
@@ -923,6 +969,14 @@ FIXES = {
         "on error == 0",
     ),
     "hbsd/src/libexec/rtld-elf/rtld.c": [
+        (
+            "free(pathenv_base);",
+            None,
+            "open_binary_fd()'s -p path free'd pathenv, which strsep() "
+            "had advanced: NULL when PATH ran out, and a pointer into "
+            "the middle of the allocation when the binary was found and "
+            "the loop broke",
+        ),
         (
             "PBSD: phdyn gets the same NULL as its two siblings",
             None,

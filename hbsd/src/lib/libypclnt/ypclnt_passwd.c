@@ -217,6 +217,7 @@ yppasswd_local(ypclnt_t *ypclnt, const struct passwd *pwd)
 		clnt_destroy(clnt);
 	}
 	endnetconfig(localhandle);
+	free(yppwd.domain);
 	free(yppwd.newpw.pw_name);
 	if (yppwd.newpw.pw_passwd != NULL) {
 		memset(yppwd.newpw.pw_passwd, 0, strlen(yppwd.newpw.pw_passwd));

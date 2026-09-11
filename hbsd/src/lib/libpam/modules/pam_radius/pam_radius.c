@@ -230,6 +230,7 @@ do_challenge(pam_handle_t *pamh, struct rad_handle *radh, const char *user,
 	state = NULL;
 	statelen = 0;
 	num_msgs = 0;
+	resp = NULL;
 	while ((attrtype = rad_get_attr(radh, &attrval, &attrlen)) > 0) {
 		switch (attrtype) {
 
@@ -242,13 +243,15 @@ do_challenge(pam_handle_t *pamh, struct rad_handle *radh, const char *user,
 			if (num_msgs >= MAX_CHALLENGE_MSGS) {
 				syslog(LOG_CRIT,
 				    "Too many RADIUS challenge messages");
-				return (PAM_SERVICE_ERR);
+				retval = PAM_SERVICE_ERR;
+				goto out;
 			}
 			msgs[num_msgs].msg = rad_cvt_string(attrval, attrlen);
 			if (msgs[num_msgs].msg == NULL) {
 				syslog(LOG_CRIT,
 				    "rad_cvt_string: out of memory");
-				return (PAM_SERVICE_ERR);
+				retval = PAM_SERVICE_ERR;
+				goto out;
 			}
 			msgs[num_msgs].msg_style = PAM_TEXT_INFO;
 			msg_ptrs[num_msgs] = &msgs[num_msgs];
@@ -258,13 +261,15 @@ do_challenge(pam_handle_t *pamh, struct rad_handle *radh, const char *user,
 	}
 	if (attrtype == -1) {
 		syslog(LOG_CRIT, "rad_get_attr: %s", rad_strerror(radh));
-		return (PAM_SERVICE_ERR);
+		retval = PAM_SERVICE_ERR;
+		goto out;
 	}
 	if (num_msgs == 0) {
 		msgs[num_msgs].msg = strdup("(null RADIUS challenge): ");
 		if (msgs[num_msgs].msg == NULL) {
 			syslog(LOG_CRIT, "Out of memory");
-			return (PAM_SERVICE_ERR);
+			retval = PAM_SERVICE_ERR;
+			goto out;
 		}
 		msgs[num_msgs].msg_style = PAM_TEXT_INFO;
 		msg_ptrs[num_msgs] = &msgs[num_msgs];
@@ -273,21 +278,38 @@ do_challenge(pam_handle_t *pamh, struct rad_handle *radh, const char *user,
 	msgs[num_msgs-1].msg_style = PAM_PROMPT_ECHO_ON;
 	if ((retval = pam_get_item(pamh, PAM_CONV, &item)) != PAM_SUCCESS) {
 		syslog(LOG_CRIT, "do_challenge: cannot get PAM_CONV");
-		return (retval);
+		goto out;
 	}
 	conv = (const struct pam_conv *)item;
 	if ((retval = conv->conv(num_msgs, msg_ptrs, &resp,
 	    conv->appdata_ptr)) != PAM_SUCCESS)
-		return (retval);
+		goto out;
 	if (build_access_request(radh, user, resp[num_msgs-1].resp, nas_id,
-	    nas_ipaddr, rhost, state, statelen) == -1)
-		return (PAM_SERVICE_ERR);
-	memset(resp[num_msgs-1].resp, 0, strlen(resp[num_msgs-1].resp));
-	free(resp[num_msgs-1].resp);
-	free(resp);
+	    nas_ipaddr, rhost, state, statelen) == -1) {
+		retval = PAM_SERVICE_ERR;
+		goto out;
+	}
+	retval = PAM_SUCCESS;
+
+	/*
+	 * Every error path above used to return straight out, leaking each
+	 * msgs[i].msg the loop had already allocated.  The build_access_request
+	 * one leaked more than memory: resp[num_msgs-1].resp is what the user
+	 * typed at the challenge prompt, and the success path here scrubs it
+	 * before freeing precisely because it is password-equivalent.
+	 */
+ out:
+	if (resp != NULL) {
+		if (resp[num_msgs-1].resp != NULL) {
+			memset(resp[num_msgs-1].resp, 0,
+			    strlen(resp[num_msgs-1].resp));
+			free(resp[num_msgs-1].resp);
+		}
+		free(resp);
+	}
 	while (num_msgs > 0)
 		free(msgs[--num_msgs].msg);
-	return (PAM_SUCCESS);
+	return (retval);
 }
 
 PAM_EXTERN int

@@ -51,8 +51,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,160 | 9,056 |
-| 2 | `libexec` | 170 | 48,012 | 623 |
+| 1 | `lib` | 2,827 | 640,205 | 9,056 |
+| 2 | `libexec` | 170 | 48,021 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,493 | 4,188 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,547** | **114,207** |
+| | **total** | **41,143** | **21,301,601** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -144,8 +144,8 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.1213.101 | `sys/netinet/sctp_usrreq.c` | 7,541 | 0 | `TODO-PORT` |
 | 8.1191.230 | `sys/kern/vfs_subr.c` | 7,518 | 0 | `TODO-PORT` |
 | 8.892.2 | `sys/dev/pms/RefTisa/discovery/dm/dmdisc.c` | 7,466 | 0 | `TODO-PORT` |
+| 2.28.6 | `libexec/rtld-elf/rtld.c` | 7,274 | 0 | `TODO-PORT` |
 | 8.1229.9 | `sys/netpfil/pf/pf_ioctl.c` | 7,267 | 0 | `TODO-PORT` |
-| 2.28.6 | `libexec/rtld-elf/rtld.c` | 7,265 | 0 | `TODO-PORT` |
 | 8.1014.2 | `sys/dev/sound/pci/hda/hdaa.c` | 7,216 | 0 | `TODO-PORT` |
 | 8.615.8 | `sys/dev/ath/if_ath.c` | 7,126 | 0 | `TODO-PORT` |
 | 8.671.20 | `sys/dev/cxgbe/t4_sge.c` | 7,098 | 0 | `TODO-PORT` |
@@ -7213,7 +7213,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.173.3.56 `efidp_format_device_path_node()` · `TODO-FN`
   - [ ] 1.173.3.57 `efidp_size()` · `TODO-FN`
   - [ ] 1.173.3.58 `efidp_extract_file_path()` · `TODO-FN`
-- [ ] **1.173.4** `efivar-dp-parse.c` · 4,066L · `TODO-PORT`
+- [ ] **1.173.4** `efivar-dp-parse.c` · 4,078L · `TODO-PORT`
 - [ ] **1.173.5** `efivar-dp-xlate.c` · 788L · `TODO-PORT` · 13 fn
   - [ ] 1.173.5.1 `geom_pp_attr()` · `TODO-FN`
   - [ ] 1.173.5.2 `find_provider_by_efimedia()` · `TODO-FN`
@@ -9531,7 +9531,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.251 `lib/libpam/modules/pam_radius`
 
-- [ ] **1.251.1** `pam_radius.c` · 418L gen:1 · `TODO-PORT` · 6 fn
+- [ ] **1.251.1** `pam_radius.c` · 440L gen:1 · `TODO-PORT` · 6 fn
   - [ ] 1.251.1.1 `build_access_request()` · `TODO-FN`
   - [ ] 1.251.1.2 `do_accept()` · `TODO-FN`
   - [ ] 1.251.1.3 `do_reject()` · `TODO-FN`
@@ -10007,7 +10007,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.268.6.2 `rdl2prmap()` · `TODO-FN`
   - [ ] 1.268.6.3 `proc_rdagent()` · `TODO-FN`
   - [ ] 1.268.6.4 `proc_updatesyms()` · `TODO-FN`
-- [ ] **1.268.7** `proc_sym.c` · 715L · `TODO-PORT` · 19 fn
+- [ ] **1.268.7** `proc_sym.c` · 725L · `TODO-PORT` · 19 fn
   - [ ] 1.268.7.1 `crc32_file()` · `TODO-FN`
   - [ ] 1.268.7.2 `demangle()` · `TODO-FN`
   - [ ] 1.268.7.3 `symvalcmp()` · `TODO-FN`
@@ -12673,7 +12673,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.338.5.1 `ypclnt_get()` · `TODO-FN`
 - [ ] **1.338.6** `ypclnt_new.c` · 63L · `TODO-PORT` · 1 fn
   - [ ] 1.338.6.1 `ypclnt_new()` · `TODO-FN`
-- [ ] **1.338.7** `ypclnt_passwd.c` · 314L · `TODO-PORT` · 4 fn
+- [ ] **1.338.7** `ypclnt_passwd.c` · 315L · `TODO-PORT` · 4 fn
   - [ ] 1.338.7.1 `ypclnt_havepasswdd()` · `TODO-FN`
   - [ ] 1.338.7.2 `ypclnt_passwd()` · `TODO-FN`
   - [ ] 1.338.7.3 `yppasswd_local()` · `TODO-FN`
@@ -14216,7 +14216,7 @@ function; a file with two hundred of them is a project.
   - [ ] 2.28.5.6 `obj_new()` · `TODO-FN`
   - [ ] 2.28.5.7 `convert_prot()` · `TODO-FN`
   - [ ] 2.28.5.8 `convert_flags()` · `TODO-FN`
-- [ ] **2.28.6** `rtld.c` · 7,265L · `TODO-PORT`
+- [ ] **2.28.6** `rtld.c` · 7,274L · `TODO-PORT`
 - [ ] **2.28.7** `rtld.h` · 446L gen:1 · `TODO-HDR`
 - [ ] **2.28.8** `rtld_lock.c` · 506L · `TODO-PORT` · 25 fn
   - [ ] 2.28.8.1 `def_dlerror_loc()` · `TODO-FN`

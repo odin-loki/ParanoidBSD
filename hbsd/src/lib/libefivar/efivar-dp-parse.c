@@ -3999,6 +3999,7 @@ UefiDevicePathLibConvertTextToDevicePath (
   DevicePathStr = UefiDevicePathLibStrDuplicate (TextDevicePath);
 
   if (DevicePathStr == NULL) {
+    FreePool (DevicePath);
     return NULL;
   }
 
@@ -4021,6 +4022,17 @@ UefiDevicePathLibConvertTextToDevicePath (
       DeviceNode = (EFI_DEVICE_PATH_PROTOCOL *)AllocatePool (END_DEVICE_PATH_LENGTH);
       if (DeviceNode == NULL) {
         ASSERT (DeviceNode != NULL);
+        //
+        // The FreePool (DevicePathStr) that ends this function is past
+        // the loop, and DevicePath is whatever the last
+        // AppendDevicePathNode() returned.  Returning from inside the
+        // loop dropped both.
+        //
+        if (DevicePath != NULL) {
+          FreePool (DevicePath);
+        }
+
+        FreePool (DevicePathStr);
         return NULL;
       }
 
