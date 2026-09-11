@@ -25548,3 +25548,57 @@ both came out of reading the list.
   index from the namespace allocator, which hands out from zero.
 * `ip_fw_table.c:2361` `ipfw_del_table_algo()` — `idx` is what
   `ipfw_add_table_algo()` returned to the same caller.
+
+## Thirteen more of the list: vm, riscv, x86/mca, ufs and the ipfilter FTP proxy
+
+None is a defect.  Four are worth the space.
+
+`sys/vm/vm_phys.c:960` `vm_phys_alloc_freelist_pages()` is the neatest
+illustration of why this rule exists at all, because the *same
+function* gets it right one line earlier:
+
+```c
+	KASSERT(domain >= 0 && domain < vm_ndomains, ...);
+	KASSERT(freelist < VM_NFREELIST, ...);
+	...
+	flind = vm_freelist_to_flind[freelist];
+```
+
+`domain` is bounded at both ends; `freelist`, subscripted three lines
+down, at one.  Every caller passes a `VM_FREELIST_*` constant, so
+nothing is wrong today — but the tree plainly knows the idiom and
+applies it unevenly, which is the whole reason a grep for the shape
+finds 230 sites.
+
+`sys/riscv/riscv/identcpu.c:202` looks worse than it is:
+
+```c
+	while (isa[idx] != '_' && idx < len) {
+		idx++;
+	}
+```
+
+The subscript is evaluated *before* the bound.  It is still in range:
+`len` is `strlen(isa)`, so at `idx == len` the read is of the NUL
+terminator, which is not `'_'`, and the second conjunct then ends the
+loop.  Reversing the operands would be clearer and changes nothing, so
+it is left as upstream has it.
+
+`sys/vm/vm_page.c:5812` `vm_page_ps_test()` — `KASSERT(psind <= m->psind)`
+is a ceiling relative to the page's own superpage level, and the floor
+is the caller's loop, which starts at 0.
+
+`sys/netpfil/ipfilter/netinet/ip_ftp_pxy.c:1577` — `rev` is
+`(nat->nat_dir == NAT_OUTBOUND) ? 0 : 1`, a ternary over two literals.
+The same shape as `pf.c:1924`, read in an earlier commit; the checker
+sees it because `_ceiling_re()` looks for a relational operator in the
+ternary and `==` is not one.
+
+The other nine: `identcpu.c:168`, `:214` and `:274` are the same ISA
+string with the same `len`; `x86/x86/mca.c:1416`, `:1454` and `:1560`
+index `cmc_state[cpuid][i]` with `i` a machine-check bank number from a
+loop over `mca_banks`; and `ufs/ufs/ufs_dirhash.c:914`, `:1017`,
+`:1065` compute `block = offset / DIRBLKSIZ` from a directory offset
+the kernel produced itself by walking `d_reclen`, with a `KASSERT` at
+two of the three saying so (`:1017` is inside `#ifdef DIAGNOSTIC`
+entirely).
