@@ -125,3 +125,65 @@ void quiet_va_end(const char *fmt, ...)
 	vwarn(fmt, ap);
 	va_end(ap);
 }
+
+/*
+ * A SEED name this file DEFINES, whose body can return.  sbin/restore
+ * has exactly this: its own panic() that prints and comes back unless
+ * the user says to abort.  Trusting the name made badentry() -- which
+ * ends in it -- the highest-scoring --guards candidate in the tree, and
+ * putting __dead2 on it would have been a lie told to the optimiser.
+ */
+int yflag;
+void
+panic(const char *fmt)
+{
+	fprintf(stderr, "%s", fmt);
+	if (yflag)
+		return;
+	done(1);
+}
+
+void
+quiet_ends_in_local_panic(void)
+{
+	fprintf(stderr, "bad entry\n");
+	panic("flags");
+}
+
+/*
+ * ...and the same shape where the local definition really does exit.
+ * fsck_ffs, fsck and at all define panic() like this, so dropping the
+ * seed must not cost them: propagation puts it straight back.
+ */
+void
+exiting_panic(const char *fmt)
+{
+	fprintf(stderr, "%s", fmt);
+	exit(8);
+}
+
+void
+report_ends_in_local_exiting_panic(void)
+{
+	fprintf(stderr, "bad entry\n");
+	exiting_panic("flags");
+}
+
+/*
+ * rtld's abort(): raise() then a builtin that cannot come back.  Without
+ * __builtin_trap in SEED, dropping the local name took __assert() with
+ * it -- a true positive lost to a false-positive fix.
+ */
+void
+local_abort(void)
+{
+	raise(SIGABRT);
+	__builtin_trap();
+}
+
+void
+report_ends_in_trapping_abort(void)
+{
+	fprintf(stderr, "assertion failed\n");
+	local_abort();
+}

@@ -89,6 +89,12 @@ SEED = {
     "err", "errx", "verr", "verrx", "errc", "verrc",
     "panic", "longjmp", "siglongjmp", "_longjmp", "_siglongjmp",
     "execl", "execle", "execlp", "execv", "execvp", "execvP", "execve",
+    # Compiler builtins. No translation unit can shadow these, so they
+    # are the one part of SEED that is safe to trust by name alone --
+    # and rtld's local abort() needs them: it is `raise(SIGABRT);
+    # __builtin_trap();', so without them __assert() stops being
+    # reported the moment a locally-defined name stops being trusted.
+    "__builtin_trap", "__builtin_unreachable",
 }
 
 # Anything that marks a declaration as noreturn.  Not `\bnoreturn\b':
@@ -463,7 +469,26 @@ def scan(path):
         return []
     decls = text + "\n" + headers_for(path)
 
-    noreturn = set(SEED) | header_noreturn(path)
+    # A SEED name this FILE DEFINES is judged by its body, not by its
+    # name. sbin/restore defines its own panic():
+    #
+    #     if (yflag)
+    #             return;
+    #     if (reply("abort") == GOOD) { ... done(1); }
+    #
+    # -- which returns, twice over, and is nothing like panic(9). Trusting
+    # the seed there made badentry() the highest-scoring --guards
+    # candidate in the tree, and acting on it would have put __dead2 on a
+    # function that comes back: a lie told to the optimiser, which is a
+    # worse outcome than the finding it was meant to remove.
+    #
+    # Dropping it is self-correcting rather than a special case: the
+    # other three userland panic()s (fsck_ffs, fsck, at) end in exit()
+    # or errx(), so propagation below puts them straight back, and so it
+    # does for libc's own exit() and errx(). Only a definition that
+    # really can return stays out.
+    local = {name for name, _s, _b, _e in defs}
+    noreturn = (set(SEED) - local) | header_noreturn(path)
     ends_with = {}
     for name, start, body, end in defs:
         callee = last_call(lines, body, end)

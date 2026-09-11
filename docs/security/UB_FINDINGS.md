@@ -24778,3 +24778,96 @@ in this container, so the question of what it reports is still open —
 and putting a fifteen-minute step into the `lints` job without knowing
 its number would be adding an unread gate, which is the thing this whole
 exercise has been removing.  It stays on the list.
+
+---
+
+## noreturn_check's top recommendation would have been a lie
+
+`noreturn_check.py` is deliberately not a CI gate, and its docstring
+says why: 673 functions in the tree are reported, marking one is only
+worth a vendor-tree diff where it buys something, and an early batch of
+24 markers moved the sweep from 116 findings to 116 and was reverted.
+`--guards` is its third and working predictor of which ones pay — the
+call must sit in an `if` testing a **pointer** for NULL, with that
+pointer dereferenced after the block.
+
+I went to act on the highest scorer.  `sbin/restore/utilities.c:314`,
+`badentry() ends in panic()`, score 4 — the top candidate in the whole
+tree.  Marking it `__dead2` would have been **wrong**:
+
+```c
+panic(const char *fmt, ...)
+{
+	...
+	if (yflag)
+		return;
+	if (reply("abort") == GOOD) {
+		if (reply("dump core") == GOOD)
+			abort();
+		done(1);
+	}
+}
+```
+
+`restore` defines its **own** `panic()`, and it returns — twice over,
+once on `yflag` and once by falling off the end.  Nothing like
+`panic(9)`.  Putting `__dead2` on `badentry()` would have told the
+optimiser a falsehood to remove a finding, which is a worse outcome than
+the finding.
+
+The tool already has the guard that should have caught it —
+*"a `return` anywhere in the body means the function has a path back to
+its caller"* — and it never fired, because `panic` is in `SEED` and
+`SEED` is consulted **before** any body is read.  The seed is a list of
+names, and a name is not a contract: four userland programs define their
+own `panic()`, and only `restore`'s comes back.
+
+### The fix, and the two wrong versions of it before it
+
+A SEED name that the file itself defines is now judged by its body, not
+its name.  That is self-correcting rather than a special case — the
+other three `panic()`s end in `exit()` or `errx()`, so propagation puts
+them straight back.
+
+The first attempt also made those local definitions *reportable*, and
+`lib/` went from 24 findings to **34**: libc's own `exit()`, `abort()`,
+`errx()`, `verrx()`, `err()`, `errc()`, `verrc()`, `_Exit()` and
+`quick_exit()`, every one genuinely noreturn and genuinely declared so,
+in headers `headers_for()` cannot reach.  Trading one false positive for
+ten is not a fix.  Dropped.
+
+The second attempt stopped trusting the name for propagation only — and
+quietly lost a **true** positive.  `libexec/rtld-elf/rtld-libc` defines
+its own `abort()`:
+
+```c
+abort(void)
+{
+	raise(SIGABRT);
+	__builtin_trap();
+}
+```
+
+That one really cannot return, so `__assert()` really is noreturn — but
+`__builtin_trap` was not in `SEED`, so once the local `abort` stopped
+being trusted by name, nothing was left to derive it from.  The builtins
+are now seeded, where they belong: no translation unit can shadow them,
+which makes them the one part of `SEED` that is safe to trust by name
+alone.
+
+**Net effect on the tree: exactly one report changes.** `sbin` 87 → 86,
+the false positive; `lib` 24 → 24, `bin` 26 → 26, `libexec` 17 → 17,
+`usr.bin` 189 → 189.  Four new cases in the fixture, and both halves of
+the fix were checked by removing them one at a time: without the
+local-definition rule the tests exit 1, without the builtins they exit
+1, with both they exit 0.
+
+### It still does not gate
+
+Unchanged, and for the reason already written in the tool: `lib` 24,
+`bin` 26, `sbin` 86, `libexec` 17, `usr.bin` 189, `usr.sbin` 195 — 537
+in userland alone, most of them a `usage()` that `getopt` calls and
+nothing follows.  Gating on that number would be gating on something
+nobody has read, and `--guards` narrows it to eighteen precisely because
+the other 519 cost nothing.  What this commit changes is that the
+eighteen can now be trusted enough to spend a sweep on.

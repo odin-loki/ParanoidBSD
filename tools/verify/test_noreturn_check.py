@@ -59,6 +59,33 @@ class NoreturnCheck(unittest.TestCase):
     def test_quiet_when_the_call_before_va_end_returns(self):
         self.assertNotIn("quiet_va_end", self.names)
 
+    # A SEED name the FILE ITSELF defines is judged by its body. sbin/
+    # restore's panic() returns; the kernel's panic(9) does not, and the
+    # seed cannot tell them apart by name.
+    def test_a_local_seed_name_that_returns_is_not_trusted(self):
+        self.assertNotIn("quiet_ends_in_local_panic", self.names)
+
+    def test_a_local_seed_name_is_still_not_itself_reported(self):
+        """Dropping the seed for PROPAGATION must not also make the
+        definition reportable: the first attempt did both, and lib/
+        gained ten findings that were libc's own exit(), abort() and
+        errx() -- all genuinely noreturn, all declared so in headers
+        headers_for() cannot reach. panic() is the seeded name here;
+        exiting_panic() and local_abort() are not, and SHOULD be
+        reported, which is the rule working as intended."""
+        self.assertNotIn("panic", self.names)
+        self.assertIn("exiting_panic", self.names)
+        self.assertIn("local_abort", self.names)
+
+    def test_a_local_seed_name_that_exits_is_put_back_by_propagation(self):
+        self.assertIn("report_ends_in_local_exiting_panic", self.names)
+
+    def test_builtin_trap_does_not_return(self):
+        """rtld's abort() is raise() then __builtin_trap(). Without the
+        builtin in SEED, dropping the local name lost __assert() -- a
+        true positive traded away for a false-positive fix."""
+        self.assertIn("report_ends_in_trapping_abort", self.names)
+
 
 if __name__ == "__main__":
     unittest.main()
