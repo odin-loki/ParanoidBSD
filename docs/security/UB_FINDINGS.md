@@ -24046,3 +24046,74 @@ alongside `tmp`, so the second test catches precisely the cases the old
 is still too small.
 
 `libexec/` gates too.
+
+## CI and this container disagreed about the flags, and said nothing
+
+The verify workflow's five sweep shards came back green after the
+exec-bit fix.  Two of its six *analyse* shards did not, and the reason
+is the failure this whole inventory exists to prevent, found in the
+measuring apparatus rather than the tree.
+
+```
+   [1862/1862] 1.2/s  findings=555  ERROR=53  OK=1809
+   ...
+      13  missing header: llvm/Support/LLVMDriver.h
+          e.g. usr.bin/clang/clang/clang-driver.cpp
+   FAIL  usr.bin/clang/clang/clang-driver.cpp does not compile and is not in EXPECTED
+```
+
+Thirteen, plus `lib/clang/liblldb/LLDBWrapLua.cpp` in the libs shard.
+The same sweep on this container, same tree, same scope, reports
+**ERROR 40** and all fourteen of those files `OK`.
+
+The unit counts are identical — **1862 on both sides** — so the two
+environments agree about *which* files are translation units and
+disagree only about the **flags**.  Fourteen files were compiling here
+and not compiling there, and a file that does not compile reports zero
+findings and is indistinguishable from a clean one.  Nobody reading the
+CI numbers would have known.
+
+`llvm/Support/LLVMDriver.h` is not a system header — it exists exactly
+once, at `contrib/llvm-project/llvm/include/llvm/Support/LLVMDriver.h`,
+inside the tree.  So the question was never *where is it*; it was *who
+puts it on the command line*.  The answer was bmake, through the
+per-directory userland CFLAGS cache in `/tmp/pbsd_userland_builder_*`,
+which CI rebuilds cold on every run.
+
+That is not a thing to leave to chance, because the build states it
+outright, in four `.mk` fragments:
+
+```make
+llvm.pre.mk      LLVM_BASE  = ${SRCTOP}/contrib/llvm-project
+                 LLVM_SRCS  = ${LLVM_BASE}/llvm
+llvm.build.mk    CFLAGS+= -I${SRCTOP}/lib/clang/include
+                 CFLAGS+= -I${LLVM_SRCS}/include
+clang.pre.mk     CLANG_SRCS = ${LLVM_BASE}/clang
+clang.build.mk   CFLAGS+= -I${CLANG_SRCS}/include
+lldb.pre.mk      LLDB_SRCS  = ${LLVM_BASE}/lldb
+liblldb/Makefile CFLAGS+= -I${LLDB_SRCS}/include -I${LLDB_SRCS}/source
+```
+
+and exactly two directories in the whole tree include any of them:
+`lib/clang` and `usr.bin/clang`.  `llvm_shim()` now says it directly.
+It is a pure function of the path with no bmake in it, so cold cache and
+warm cache cannot give different answers.
+
+This is the second layer of the same hole.  `libcxx_shim()`, thirty
+lines above it, was written for **these same thirteen files** when they
+were ERROR on `'type_traits' file not found`; its docstring says so.
+One layer of the include path was pinned and the next was left to be
+re-derived.
+
+The test does not go through bmake either, because the property under
+test is that the rule does not need it: it asks `llvm_shim()` alone,
+builds a probe out of nothing but its flags and `libcxx_shim()`'s, and
+requires that `#include <llvm/Support/LLVMDriver.h>` resolve.  Plus six
+checks that the right directories are named, that liblldb gets its two
+extra ones, and that neither `lib/libc/stdio/printf.c` nor the near-miss
+prefix `lib/libclang_rt/` takes the rule at all.
+
+What is **not** claimed: this container cannot reproduce CI's
+environment, so the fix is verified as *"the flag is now unconditional
+and the header resolves without bmake"* rather than as *"CI is green"*.
+The next run says which.

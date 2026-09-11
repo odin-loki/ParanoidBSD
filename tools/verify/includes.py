@@ -406,6 +406,55 @@ def libcxx_shim() -> tuple[str, ...]:
 
 
 @functools.lru_cache(maxsize=None)
+def llvm_shim(rel: str) -> tuple[str, ...]:
+    """The -I lib/clang/*.mk state, stated here instead of re-derived.
+
+    These came out of bmake, through the userland CFLAGS cache -- and
+    CI and this container DISAGREED about them, silently.  Verify run 19
+    reported
+
+        13  missing header: llvm/Support/LLVMDriver.h
+            e.g. usr.bin/clang/clang/clang-driver.cpp
+
+    for the same thirteen driver stubs libcxx_shim() above was written
+    for, on a tree where all thirteen compile here.  Same unit count on
+    both sides -- 1862 -- so the unit list agreed and only the FLAGS
+    differed: thirteen translation units reporting zero findings in CI,
+    and saying nothing about it, which is the failure this whole
+    inventory exists to make impossible.
+
+    A path the build states outright in four .mk fragments is not
+    something the analyser should have to ask bmake for:
+
+        llvm.pre.mk     LLVM_BASE  = ${SRCTOP}/contrib/llvm-project
+                        LLVM_SRCS  = ${LLVM_BASE}/llvm
+        llvm.build.mk   -I${SRCTOP}/lib/clang/include
+                        -I${LLVM_SRCS}/include
+        clang.pre.mk    CLANG_SRCS = ${LLVM_BASE}/clang
+        clang.build.mk  -I${CLANG_SRCS}/include
+        lldb.pre.mk     LLDB_SRCS  = ${LLVM_BASE}/lldb
+        liblldb/Makefile -I${LLDB_SRCS}/include  -I${LLDB_SRCS}/source
+
+    Only two directories in the tree include any of them -- lib/clang
+    and usr.bin/clang -- so that is the whole scope of this rule.  The
+    ${OBJTOP} entries in liblldb/Makefile are tablegen output and have
+    no source-tree equivalent; a file that needs one is still an ERROR
+    and still has to go on the record with that as its reason.
+    """
+    if not (rel.startswith("lib/clang/") or rel.startswith("usr.bin/clang/")):
+        return ()
+    base = SRC / "contrib" / "llvm-project"
+    out = [f"-I{SRC / 'lib' / 'clang' / 'include'}",
+           f"-I{base / 'llvm' / 'include'}",
+           f"-I{base / 'clang' / 'include'}",
+           f"-I{base / 'lld' / 'include'}"]
+    if "lldb" in rel:
+        out += [f"-I{base / 'lldb' / 'include'}",
+                f"-I{base / 'lldb' / 'source'}"]
+    return tuple(out)
+
+
+@functools.lru_cache(maxsize=None)
 def machine_shim(arch: str = "amd64") -> str:
     """A directory laid out the way the installed header tree is.
 
@@ -3916,6 +3965,11 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     # sys/ today, so nothing takes that branch yet.
     if src.suffix in (".cpp", ".cc") and not rel.startswith("sys/"):
         flags.extend(libcxx_shim())
+
+    # ...and lib/clang and usr.bin/clang get what the .mk fragments say,
+    # rather than whatever bmake could be persuaded to answer on the day.
+    # See llvm_shim().
+    flags.extend(llvm_shim(rel))
 
     flags.append(f"-I{machine_shim(arch)}")
 

@@ -1082,6 +1082,41 @@ check_that("a stale shim is reaped", not _stale.exists(), str(_stale))
 check_that("...and a fresh one is not", _fresh.is_dir(), str(_fresh))
 _fresh.rmdir()
 
+# llvm_shim(): the thirteen usr.bin/clang drivers and lib/clang/liblldb
+# compiled here and reported `missing header: llvm/Support/LLVMDriver.h'
+# in CI, on the same tree and the same 1862 units -- the unit list
+# agreed and only the FLAGS did not, which is thirteen translation
+# units reporting zero findings in CI and saying so nowhere. The point
+# of the rule is that it does NOT go through bmake, so the test must
+# not either: it asks llvm_shim() alone, and compiles a probe with
+# nothing but its flags and libcxx_shim()'s.
+_drv = includes.llvm_shim("usr.bin/clang/llvm-nm/llvm-nm-driver.cpp")
+check_that("a usr.bin/clang driver gets llvm/include",
+           any(x.endswith("contrib/llvm-project/llvm/include") for x in _drv),
+           str(_drv))
+check_that("...and clang/include",
+           any(x.endswith("contrib/llvm-project/clang/include") for x in _drv),
+           str(_drv))
+check_that("...and lib/clang/include, where the .def files are",
+           any(x.endswith("lib/clang/include") for x in _drv), str(_drv))
+_lldb = includes.llvm_shim("lib/clang/liblldb/LLDBWrapLua.cpp")
+check_that("liblldb also gets lldb/include and lldb/source",
+           sum(1 for x in _lldb if "/lldb/" in x) == 2, str(_lldb))
+check("nothing else in the tree takes the rule",
+      includes.llvm_shim("lib/libc/stdio/printf.c"), ())
+check("...nor a near miss on the prefix",
+      includes.llvm_shim("lib/libclang_rt/foo.c"), ())
+
+# The header CI could not find has to resolve from these flags ALONE.
+_probe = Path(tempfile.mkdtemp(prefix="pbsd_llvmshim_")) / "p.cpp"
+_probe.write_text("#include <llvm/Support/LLVMDriver.h>\nint main(){return 0;}\n")
+_p = subprocess.run(
+    ["clang++", "-fsyntax-only", "-nostdinc", "-std=c++17", *_drv, str(_probe)],
+    capture_output=True, text=True, timeout=300)
+check_that("llvm/Support/LLVMDriver.h resolves with no bmake at all",
+           "LLVMDriver.h' file not found" not in _p.stderr,
+           _p.stderr.split("\n")[0] if _p.stderr else "")
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")
