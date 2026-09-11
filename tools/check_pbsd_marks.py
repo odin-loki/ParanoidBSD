@@ -2898,20 +2898,37 @@ FIXES = {
             "unix.Malloc, libprocstat.c:944. lib/libprocstat 4 -> 1.",
         ),
     ],
-    "hbsd/src/lib/libfigpar/figpar.c": (
-        "if (directive == NULL || n > dsize) {",
-        "\t\tif (n > dsize) {",
-        "parse_config() measures a directive with `for (n = 0; r != 0; "
-        "n++)' and breaks at n == 0 when the first character is `=' -- "
-        "have_equals is set and the loop stops before its first read(2). "
-        "n == 0 with r != 0 falls past the EOF test below it, and with "
-        "dsize also 0 the test `n > dsize' was false, so the buffer was "
-        "never allocated and `directive[n] = 0' four lines down wrote "
-        "through NULL. A configuration file whose first directive line "
-        "begins with `=' crashed the parser -- one character of input. "
-        "The value buffer had the identical shape at `n > vsize'. Two "
-        "clang core.NullDereference, figpar.c:213 and :378.",
-    ),
+    "hbsd/src/lib/libfigpar/figpar.c": [
+        (
+            "\tfree(directive);\n\tfree(value);\n\tclose(fd);\n"
+            "\treturn (ret);",
+            "(directive = realloc(directive, n + 1))",
+            "parse_config() grows directive and value across the whole "
+            "parse and freed them on NONE of its twenty-three returns -- "
+            "not the error paths and not the successful one -- so every "
+            "call leaked both.  The three sites that grew them were also "
+            "`X = realloc(X, n)', which drops the old block when realloc "
+            "returns NULL, and one return inside the read loop did not "
+            "even close(fd): the `require_equals && !have_equals' abort "
+            "at call_function:.  All twenty-three now reach one exit that "
+            "frees both and closes the descriptor, and the three reallocs "
+            "go through nbuf.",
+        ),
+        (
+            "if (directive == NULL || n > dsize) {",
+            "\t\tif (n > dsize) {",
+            "parse_config() measures a directive with `for (n = 0; r != 0; "
+            "n++)' and breaks at n == 0 when the first character is `=' -- "
+            "have_equals is set and the loop stops before its first read(2). "
+            "n == 0 with r != 0 falls past the EOF test below it, and with "
+            "dsize also 0 the test `n > dsize' was false, so the buffer was "
+            "never allocated and `directive[n] = 0' four lines down wrote "
+            "through NULL. A configuration file whose first directive line "
+            "begins with `=' crashed the parser -- one character of input. "
+            "The value buffer had the identical shape at `n > vsize'. Two "
+            "clang core.NullDereference, figpar.c:213 and :378.",
+        ),
+    ],
     "hbsd/src/lib/libfigpar/string_m.c": (
         "d[0] = d[1] = d[2] = d[3] = '\\0';",
         "\t\t\td[3] = '\\0'; /* pre-terminate the string */",

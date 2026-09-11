@@ -23816,3 +23816,66 @@ now guarded by its own `_Static_assert` and a CI lint), 45 in
 points), 21 in `lib/libpmc/pmu-events/jevents.c` (a build-time generator
 imported from Linux perf), and three in `lib/libjail` that are the
 documented `jailparam` API contract.
+
+## parse_config: twenty-three returns and no free
+
+This one was recorded in an earlier pass as backlog rather than fixed —
+*"`parse_config()` never frees `directive` or `value` on any of its
+twenty-odd `return` paths, and `return (-1)` at `:413` does not even
+`close(fd)` — a single-exit refactor in a component `MK_DIALOG` gates
+off by default."*  The pam_radius restructure above is the same shape
+done once already today, so it is no longer a reason to wait.
+
+`directive` and `value` are the two buffers the parser grows across the
+whole file — `realloc`ed up whenever a directive or value is longer than
+the last one — and they are freed on **none** of the function's
+twenty-three returns.  Not the twenty error paths, and not the
+successful one:
+
+```c
+	close(fd);
+	return (0);
+}
+```
+
+So every call to `parse_config()` leaks both, whatever it returns.
+
+Two more things were sitting in the same function.  The three sites that
+grow the buffers are the `p = realloc(p, n)` idiom, for the fourth,
+fifth and sixth time in this tree:
+
+```c
+		if (directive == NULL || n > dsize) {
+			if ((directive = realloc(directive, n + 1)) == NULL) {
+				close(fd);
+				return (-1);
+			}
+```
+
+which drops the old block when `realloc` returns NULL — and here nothing
+else held a copy, so the leak was unrecoverable even in principle.  And
+exactly one return inside the read loop was not preceded by a
+`close(fd)`:
+
+```c
+call_function:
+		/* Abort if we're seeking only assignments */
+		if (require_equals && !have_equals)
+			return (-1);
+```
+
+That is `FIGPAR_REQUIRE_EQUALS` meeting a directive with no `=`, which
+is ordinary malformed input rather than an exotic path, and it leaked
+the descriptor as well as the two buffers.
+
+All twenty-three now set `ret` and `goto out`, and `out:` frees both
+buffers and closes the descriptor once.  The three reallocs go through
+`nbuf`.  The three returns that happen *before* the `open(2)` — the
+`options == NULL && unknown == NULL` sanity check, `realpath` and `open`
+itself — stay as plain returns, because at that point there is nothing
+to release.
+
+Checked by reverting the file and watching the gate name the fix, and by
+`clang -fsyntax-only -Wall`, which is where an unset `ret` on some path
+would have surfaced.  `lib/libfigpar` 1 finding to 0; what remains in
+the file is `deadcode.DeadStores`, which this sweep does not run.

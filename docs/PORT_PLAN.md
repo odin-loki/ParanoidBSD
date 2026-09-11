@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 640,272 | 9,056 |
+| 1 | `lib` | 2,827 | 640,296 | 9,056 |
 | 2 | `libexec` | 170 | 48,021 | 623 |
 | 3 | `bin` | 162 | 58,112 | 1,063 |
 | 4 | `sbin` | 533 | 228,663 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,301,668** | **114,207** |
+| | **total** | **41,143** | **21,301,692** | **114,207** |
 
 | tag | files |
 |---|---:|
@@ -7429,7 +7429,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.178 `lib/libfigpar`
 
-- [ ] **1.178.1** `figpar.c` · 477L · `TODO-PORT` · 2 fn
+- [ ] **1.178.1** `figpar.c` · 501L · `TODO-PORT` · 2 fn
   - [ ] 1.178.1.1 `get_config_option()` · `TODO-FN`
   - [ ] 1.178.1.2 `parse_config()` · `TODO-FN`
 - [ ] **1.178.2** `figpar.h` · 98L · `TODO-HDR`

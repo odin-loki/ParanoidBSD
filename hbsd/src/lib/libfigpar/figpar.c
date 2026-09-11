@@ -99,8 +99,10 @@ parse_config(struct figpar_config options[], const char *path,
 	char *directive;
 	char *t;
 	char *value;
+	char *nbuf;
 	int error;
 	int fd;
+	int ret;
 	ssize_t r = 1;
 	uint32_t dsize;
 	uint32_t line = 1;
@@ -155,14 +157,14 @@ parse_config(struct figpar_config options[], const char *path,
 		}
 		/* Test for EOF; if EOF then no directive was found */
 		if (r == 0) {
-			close(fd);
-			return (0);
+			ret = 0;
+			goto out;
 		}
 
 		/* Get the current offset */
 		if ((curpos = lseek(fd, 0, SEEK_CUR)) == -1) {
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 		curpos--;
 
@@ -181,14 +183,14 @@ parse_config(struct figpar_config options[], const char *path,
 
 		/* Test for EOF, if EOF then no directive was found */
 		if (n == 0 && r == 0) {
-			close(fd);
-			return (0);
+			ret = 0;
+			goto out;
 		}
 
 		/* Go back to the beginning of the directive */
 		if (lseek(fd, curpos, SEEK_SET) == -1) {
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 
 		/*
@@ -205,10 +207,11 @@ parse_config(struct figpar_config options[], const char *path,
 		 * with `=' crashed the parser.
 		 */
 		if (directive == NULL || n > dsize) {
-			if ((directive = realloc(directive, n + 1)) == NULL) {
-				close(fd);
-				return (-1);
+			if ((nbuf = realloc(directive, n + 1)) == NULL) {
+				ret = -1;
+				goto out;
 			}
+			directive = nbuf;
 			dsize = n;
 		}
 		r = read(fd, directive, n);
@@ -248,8 +251,8 @@ parse_config(struct figpar_config options[], const char *path,
 		    (bsemicolon && *p == ';')) {
 			/* Initialize the value if not already done */
 			if (value == NULL && (value = malloc(1)) == NULL) {
-				close(fd);
-				return (-1);
+				ret = -1;
+				goto out;
 			}
 			value[0] = '\0';
 			goto call_function;
@@ -257,8 +260,8 @@ parse_config(struct figpar_config options[], const char *path,
 
 		/* Get the current offset */
 		if ((curpos = lseek(fd, 0, SEEK_CUR)) == -1) {
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 		curpos--;
 
@@ -279,8 +282,8 @@ parse_config(struct figpar_config options[], const char *path,
 
 			/* Get the current offset */
 			if ((charpos = lseek(fd, 0, SEEK_CUR)) == -1) {
-				close(fd);
-				return (-1);
+				ret = -1;
+				goto out;
 			}
 			charpos--;
 
@@ -290,8 +293,8 @@ parse_config(struct figpar_config options[], const char *path,
 			 * should continue).
 			 */
 			if (lseek(fd, -2, SEEK_CUR) == -1) {
-				close(fd);
-				return (-1);
+				ret = -1;
+				goto out;
 			}
 			r = read(fd, p, 1);
 
@@ -302,16 +305,16 @@ parse_config(struct figpar_config options[], const char *path,
 			for (n = 1; *p == '\\'; n++) {
 				/* Move back another offset to read */
 				if (lseek(fd, -2, SEEK_CUR) == -1) {
-					close(fd);
-					return (-1);
+					ret = -1;
+					goto out;
 				}
 				r = read(fd, p, 1);
 			}
 
 			/* Move offset back to the key and read it */
 			if (lseek(fd, charpos, SEEK_SET) == -1) {
-				close(fd);
-				return (-1);
+				ret = -1;
+				goto out;
 			}
 			r = read(fd, p, 1);
 
@@ -361,8 +364,8 @@ parse_config(struct figpar_config options[], const char *path,
 
 		/* Get the current offset */
 		if ((charpos = lseek(fd, 0, SEEK_CUR)) == -1) {
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 
 		/* Get the length of the value */
@@ -372,16 +375,17 @@ parse_config(struct figpar_config options[], const char *path,
 
 		/* Move offset back to the beginning of the value */
 		if (lseek(fd, curpos, SEEK_SET) == -1) {
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 
 		/* Allocate and read the value into memory */
 		if (value == NULL || n > vsize) {	/* see directive, above */
-			if ((value = realloc(value, n + 1)) == NULL) {
-				close(fd);
-				return (-1);
+			if ((nbuf = realloc(value, n + 1)) == NULL) {
+				ret = -1;
+				goto out;
 			}
+			value = nbuf;
 			vsize = n;
 		}
 		r = read(fd, value, n);
@@ -397,32 +401,39 @@ parse_config(struct figpar_config options[], const char *path,
 		/* Escape the escaped quotes (replaceall is in string_m.c) */
 		x = strcount(value, "\\\""); /* in string_m.c */
 		if (x != 0 && (n + x) > vsize) {
-			if ((value = realloc(value, n + x + 1)) == NULL) {
-				close(fd);
-				return (-1);
+			if ((nbuf = realloc(value, n + x + 1)) == NULL) {
+				ret = -1;
+				goto out;
 			}
+			value = nbuf;
 			vsize = n + x;
 		}
 		if (replaceall(value, "\\\"", "\\\\\"") < 0) {
 			/* Replace operation failed for some unknown reason */
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 
 		/* Remove all new line characters */
 		if (replaceall(value, "\\\n", "") < 0) {
 			/* Replace operation failed for some unknown reason */
-			close(fd);
-			return (-1);
+			ret = -1;
+			goto out;
 		}
 
 		/* Resolve escape sequences */
 		strexpand(value); /* in string_m.c */
 
 call_function:
+		/*
+		 * PBSD: this one did not even close(fd) -- it is the only
+		 * return in the read loop that was not preceded by one.
+		 */
 		/* Abort if we're seeking only assignments */
-		if (require_equals && !have_equals)
-			return (-1);
+		if (require_equals && !have_equals) {
+			ret = -1;
+			goto out;
+		}
 
 		found = have_equals = 0; /* reset */
 
@@ -430,8 +441,8 @@ call_function:
 		if (options == NULL && unknown != NULL) {
 			error = unknown(NULL, line, directive, value);
 			if (error != 0) {
-				close(fd);
-				return (error);
+				ret = error;
+				goto out;
 			}
 			continue;
 		}
@@ -448,14 +459,14 @@ call_function:
 					    &options[n],
 					    line, directive, value);
 					if (error != 0) {
-						close(fd);
-						return (error);
+						ret = error;
+						goto out;
 					}
 				}
 			} else if (error != FNM_NOMATCH) {
 				/* An error has occurred */
-				close(fd);
-				return (-1);
+				ret = -1;
+				goto out;
 			}
 		}
 		if (!found && unknown != NULL) {
@@ -465,12 +476,25 @@ call_function:
 			 */
 			error = unknown(NULL, line, directive, value);
 			if (error != 0) {
-				close(fd);
-				return (error);
+				ret = error;
+				goto out;
 			}
 		}
 	}
 
+	ret = 0;
+	goto out;
+ out:
+	/*
+	 * PBSD: one exit.  directive and value are grown across the whole
+	 * parse and were freed on NONE of this function's returns -- not
+	 * the twenty-odd error paths and not the successful one -- so
+	 * every call leaked both.  The three sites that grew them were
+	 * also `X = realloc(X, n)', which drops the old block when
+	 * realloc() returns NULL and left nothing able to free it.
+	 */
+	free(directive);
+	free(value);
 	close(fd);
-	return (0);
+	return (ret);
 }
