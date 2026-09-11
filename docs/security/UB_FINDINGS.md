@@ -26110,3 +26110,63 @@ plus the masks, ternaries and `find_first_bit` results tabulated in the
 `sume` section.  The parameter set is the honest remainder: each one
 needs its callers read, and they are driver-internal contracts of the
 kind `mlx4`'s `slave` and `iwn`'s `qid` turned out to be.
+
+## The third spelling of the same bound: an unsigned *variable*
+
+`nitems(x)` and `sizeof x` are `size_t` because the language says so.
+A comparison against a *variable* is `size_t` — or `u_int`, or `u_long`
+— because the file said so, and the rule could read that too:
+
+```c
+static int
+close_range_flags(struct thread *td, u_int lowfd, u_int highfd, int flags)
+{
+	int fd, fde_flags;
+	...
+	fd = lowfd;
+	if (__predict_false(fd > highfd)) {
+		goto out_locked;
+	}
+	for (; fd <= highfd; fd++) {
+		fde = &fdt->fdt_ofiles[fd];
+```
+
+One comparison, both ends, exactly as `(u_int)fd >= n` would be — and
+this is `close_range(2)`'s own path, where `lowfd` above `INT_MAX`
+is the case that matters.
+
+### Rank, not signedness
+
+The conversion rule is about **rank**, so the clause has to be:
+
+* an `unsigned long` / `size_t` / `uint64_t` bound converts every index
+  except the long-long family — it is at least as wide as `long` on
+  every target this tree builds for;
+* an `unsigned int` / `u_int` / `uint32_t` bound converts only an index
+  of rank at most `int`.  A `long` index on LP64 is **not** converted:
+  `long` has the higher rank and can represent every `unsigned int`, so
+  the *bound* converts and the index stays signed.
+
+Both halves are tested, in both directions.
+
+### `DECL_RE` did not know `u_int` existed
+
+Reading the bound's type meant `declared()` had to have it, and it did
+not: the type alternation ends in `__?[A-Za-z_]\w*|[A-Za-z_]\w*_t`, and
+`u_int` has no leading underscore and does not end in `_t`.  So a
+variable declared `u_int i` had no recorded type at all.
+
+For an *index* that was harmless — an unknown type is not in `SIGNED`,
+so the site is skipped, which is the right answer by luck.  For a
+*bound* it was the whole difference.  The `u_` family is listed
+explicitly now, and a test asserts both that `DECL_RE` sees them and
+that they are still not in `SIGNED`.
+
+### Measured
+
+ONESIDED **225 → 220**, and the five are exactly the ones this session
+had already read by hand and cleared with this reasoning:
+`lib/libc/net/getnameinfo.c:469`, `sbin/ipf/ipf/bpf_filter.c:222`,
+`sys/dev/iwm/if_iwm.c:1979`, and both `close_range` sites in
+`sys/kern/kern_descrip.c`.  Nothing newly appears.  That is the
+argument for teaching it: the sixth of these does not need a person.

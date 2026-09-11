@@ -284,6 +284,45 @@ class TheGateBites(Base):
                             for ty in ("long long", "int64_t")))
         self.assertNotIn("int", onesided_index._LONG_LONG)
 
+    def test_an_unsigned_variable_is_a_floor(self):
+        """`if (fd > highfd)' with `int fd' and `u_int highfd' is the
+        nitems() conversion with the unsignedness in a declared type
+        instead of an operator, and close_range_flags() writes exactly
+        that. The rule reads the BOUND's declared type, so DECL_RE had
+        to learn the u_* family first -- `u_int' has no leading
+        underscore and does not end in `_t', so declared() did not know
+        the type existed."""
+        d = {"fd": "int", "highfd": "u_int", "n": "size_t",
+             "big": "long long", "l": "long"}
+        u = onesided_index.unsigned_bound
+        self.assertTrue(u("fd", "int", d, "if (fd > highfd)"))
+        self.assertTrue(u("fd", "int", d, "while (fd <= n)"))
+        # Rank decides, not signedness alone: on LP64 a long can
+        # represent every unsigned int, so the unsigned int converts and
+        # the index stays signed.
+        self.assertFalse(u("l", "long", d, "if (l > highfd)"))
+        self.assertTrue(u("l", "long", d, "if (l > n)"))
+        # And a size_t cannot convert a long long, for the same reason
+        # the nitems() clause excludes it.
+        self.assertFalse(u("big", "long long", d, "if (big > n)"))
+        # A signed bound is not a floor at all.
+        self.assertFalse(u("fd", "int", d, "if (fd > l)"))
+        self.assertFalse(u("fd", "int", d, "if (fd > unknown)"))
+
+    def test_decl_re_knows_the_u_family(self):
+        """An index declared u_int was skipped before because its type
+        was unknown, which was the right answer by luck. Now it is the
+        right answer by knowledge -- and the same change is what lets a
+        u_int BOUND be read."""
+        got = dict(m.groups()[::-1] for m in onesided_index.DECL_RE.finditer(
+            "\tu_int highfd;\n\tu_long n;\n\tu_char c;\n\tint fd;\n"))
+        self.assertEqual(got.get("highfd"), "u_int")
+        self.assertEqual(got.get("n"), "u_long")
+        self.assertEqual(got.get("c"), "u_char")
+        self.assertEqual(got.get("fd"), "int")
+        self.assertNotIn("u_int", onesided_index.SIGNED)
+        self.assertNotIn("u_long", onesided_index.SIGNED)
+
     def test_a_site_off_the_record_fails(self):
         src = Path(onesided_index.__file__).read_text()
         holed = src.replace('"usr.bin/pr/pr.c:1420":',

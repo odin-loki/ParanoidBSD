@@ -62,11 +62,11 @@ ONE OF THE TWO GATES, AND WHY ONLY ONE
 --gate fails on a MOD site not on the record in EXPECTED below, and does
 NOT fail on ONESIDED. That is a measurement, not a preference. Over the
 whole tree MOD reports 11 sites, every one read and written down.
-ONESIDED reports 225 -- down from 1,109 over five rounds of tightening
+ONESIDED reports 220 -- down from 1,109 over five rounds of tightening
 -- and they are dominated by internal contracts: a static helper whose
 two callers both pass 0 or 1, a driver's ring index, a parameter that a
 comment three functions away pins. Each is a reading, not a defect, and
-a gate demanding 225 readings before the next commit is a gate somebody
+a gate demanding 220 readings before the next commit is a gate somebody
 turns off.
 
 So ONESIDED prints and does not fail. It is the same call
@@ -107,9 +107,16 @@ SIGNED = {
 _TYPE = r"(?:const\s+|volatile\s+|register\s+|static\s+)*"
 # `int foo', `int32_t foo', `long long foo' -- a declaration or a
 # parameter. The type is captured whole so SIGNED can be consulted.
+# The `u_' family has to be listed: `u_int' has no leading underscore
+# and does not end in `_t', so the two catch-alls below it miss it
+# entirely and declared() simply did not know the type existed. That was
+# harmless for an INDEX -- an unknown type is not in SIGNED, so it is
+# skipped -- and wrong for a BOUND, which is what unsigned_bound() reads.
 DECL_RE = re.compile(
     _TYPE + r"\b((?:signed\s+|unsigned\s+)?"
-    r"(?:long\s+long|long|short|char|int|__?[A-Za-z_]\w*|[A-Za-z_]\w*_t)"
+    r"(?:u_int64_t|u_int32_t|u_int16_t|u_int8_t|u_quad_t|u_long|u_int|"
+    r"u_short|u_char|long\s+long|long|short|char|int|"
+    r"__?[A-Za-z_]\w*|[A-Za-z_]\w*_t)"
     r"(?:\s+int)?)\s+([A-Za-z_]\w*)\s*(?:[,;)=]|$)")
 
 SUB_MOD_RE = re.compile(r"\[\s*([A-Za-z_]\w*)\s*%\s*[^\]]+\]")
@@ -149,6 +156,49 @@ _NITEMS_DEFINE = re.compile(
 
 def sizeof_macros(text: str) -> frozenset:
     return frozenset(m.group(1) for m in _NITEMS_DEFINE.finditer(text))
+
+
+# Unsigned types wide enough to convert the index, split by width
+# because the conversion rule is about RANK, not about signedness alone.
+# An `unsigned int' bound converts an `int' index -- same rank, unsigned
+# wins -- but NOT a `long' one on LP64, where long has the higher rank
+# and can represent every unsigned int. A `u_long'/`size_t' bound is at
+# least as wide as long on every target this tree builds for, so it
+# converts everything except the long long family.
+_U_WIDE = {"u_long", "unsigned long", "size_t", "uint64_t", "u_int64_t",
+           "uintptr_t", "uintmax_t", "u_quad_t", "unsigned long long"}
+_U_INT = {"u_int", "unsigned", "unsigned int", "uint32_t", "u_int32_t",
+          "in_addr_t"}
+# Ranks at or below int: an `unsigned int' comparison converts these.
+_RANK_INT = {"char", "signed char", "short", "short int", "signed short",
+             "int", "signed", "signed int", "int8_t", "int16_t", "int32_t",
+             "int_fast8_t", "int_fast16_t", "int_least8_t", "int_least16_t",
+             "int_least32_t"}
+_CMP_WITH = re.compile(r"\s*(?:<|<=|>|>=)\s*([A-Za-z_]\w*)\b")
+
+
+def unsigned_bound(v: str, ty: str, decl: dict, text: str) -> bool:
+    """V is compared against a VARIABLE whose declared type is unsigned.
+
+    The same conversion _unsigned_operand_re() reads off `nitems(x)',
+    with the unsignedness in a declared type instead of an operator:
+    close_range_flags() writes `if (fd > highfd)' with `int fd' and
+    `u_int highfd', and that one comparison rejects a lowfd above
+    INT_MAX exactly as `(u_int)fd >= n' would.
+
+    Six sites in the tree turn on this, all of them read by hand first;
+    it is here so the seventh does not have to be.
+    """
+    for m in re.finditer(r"\b%s\b" % re.escape(v), text):
+        c = _CMP_WITH.match(text, m.end())
+        if c is None:
+            continue
+        w = decl.get(c.group(1))
+        if w in _U_WIDE and ty not in _LONG_LONG:
+            return True
+        if w in _U_INT and ty in _RANK_INT:
+            return True
+    return False
 
 
 def _unsigned_operand_re(v: str, aliases=frozenset()) -> re.Pattern:
@@ -434,6 +484,8 @@ def scan(path: Path):
                 if (ty not in _LONG_LONG
                         and _unsigned_operand_re(v, aliases).search(text)):
                     continue                    # the comparison is unsigned
+                if unsigned_bound(v, ty, decl, text):
+                    continue                    # ...against an unsigned var
                 if _two_sided_re(v).search(text):
                     continue                    # one guard, both bounds
                 if not _ceiling_re(v).search(text):
@@ -555,12 +607,12 @@ def main() -> int:
     #
     # ONLY the MOD rule gates, and the reason is a measurement rather
     # than a preference. Over the whole tree MOD reports 11 sites, every
-    # one read and on the record above. ONESIDED reports 225 -- after
+    # one read and on the record above. ONESIDED reports 220 -- after
     # five rounds of tightening that took it from 1,109 -- and they are
     # dominated by internal contracts: a static helper whose two callers
     # both pass 0 or 1, a driver's ring index, a parameter a comment
     # three functions away pins. Each is a reading, not a defect, and a
-    # gate that demands 225 readings before the next commit is a gate
+    # gate that demands 220 readings before the next commit is a gate
     # somebody turns off.
     #
     # So ONESIDED is advisory: it prints, it does not fail. That is the
