@@ -42,6 +42,10 @@ analyser had never read. One -D and it compiles.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parents[2] / "hbsd" / "src"
+
 EXPECTED = {
     # Named by no Makefile, in a directory whose other sources ARE named
     # - so a prefix here would absorb the daemon along with the probes.
@@ -1004,6 +1008,77 @@ EXPECTED = {
     "sys/contrib/dev/ath/ath_hal/ar9300/ar9300_sim.c":
         "not built: the ar9300 HAL's simulator, in no files* or SRCS",
 }
+
+
+# The fourteen drivers whose sources this REPOSITORY does not carry.
+#
+# .gitignore:161 excludes /hbsd/src/contrib/llvm-project/llvm/ and
+# /lldb/ from the repository, deliberately, with the re-fetch recipe for
+# TOOLCHAIN=internal written in the comment above the rule. So a fresh
+# checkout - which is what CI is - does not have llvm/Support/LLVMDriver.h
+# or lldb/API/SBDefines.h at all, and the files that #include them cannot
+# compile there no matter what is on the include path. A tree that HAS
+# run that recipe does have them, and there they must compile.
+#
+# That is why this asks the disk rather than listing the files
+# unconditionally. Listing them would make analyze.py --check-errors
+# report a stale exemption on every developer tree that has the sources,
+# which is the symmetric lie to the one the ERROR inventory exists to
+# prevent: an entry that is wrong in the other direction is still an
+# entry nobody can trust. Naming the header each group needs, and
+# testing for it, is true in both places and self-correcting - fetch the
+# sources and the exemption disappears on its own.
+#
+# This does NOT excuse llvm_shim() in includes.py. That function is what
+# puts these trees on the include path WHEN THEY ARE PRESENT, without
+# going through bmake, and it is the reason the files compile in a tree
+# that has run the recipe. It simply was not, as its commit message
+# claimed, the reason CI was failing.
+_LLVM_HDR = "contrib/llvm-project/llvm/include/llvm/Support/LLVMDriver.h"
+_LLDB_HDR = "contrib/llvm-project/lldb/include/lldb/API/SBDefines.h"
+
+_LLVM_DRIVERS = (
+    "usr.bin/clang/clang-scan-deps/clang-scan-deps-driver.cpp",
+    "usr.bin/clang/clang/clang-driver.cpp",
+    "usr.bin/clang/lld/lld-driver.cpp",
+    "usr.bin/clang/llvm-ar/llvm-ar-driver.cpp",
+    "usr.bin/clang/llvm-cxxfilt/llvm-cxxfilt-driver.cpp",
+    "usr.bin/clang/llvm-dwp/llvm-dwp-driver.cpp",
+    "usr.bin/clang/llvm-nm/llvm-nm-driver.cpp",
+    "usr.bin/clang/llvm-objcopy/llvm-objcopy-driver.cpp",
+    "usr.bin/clang/llvm-objdump/llvm-objdump-driver.cpp",
+    "usr.bin/clang/llvm-profdata/llvm-profdata-driver.cpp",
+    "usr.bin/clang/llvm-readobj/llvm-readobj-driver.cpp",
+    "usr.bin/clang/llvm-size/llvm-size-driver.cpp",
+    "usr.bin/clang/llvm-symbolizer/llvm-symbolizer-driver.cpp",
+)
+
+def absent_toolchain_sources(src: Path) -> dict[str, str]:
+    """EXPECTED entries for the drivers whose sources `src' lacks.
+
+    A pure function of the tree so it can be driven both ways by
+    test_expected_errors.py: a tree WITH the sources must produce an
+    empty dict, or the exemption would be permanent and would quietly
+    absorb a real regression in those files.
+    """
+    out: dict[str, str] = {}
+    if not (src / _LLVM_HDR).exists():
+        for rel in _LLVM_DRIVERS:
+            out[rel] = (
+                "contrib/llvm-project/llvm/ is not in this tree - "
+                ".gitignore:161 excludes it from the repository. Fetch "
+                "it with the recipe in that comment and this exemption "
+                "goes away on its own.")
+    if not (src / _LLDB_HDR).exists():
+        out["lib/clang/liblldb/LLDBWrapLua.cpp"] = (
+            "contrib/llvm-project/lldb/ is not in this tree - "
+            ".gitignore:162 excludes it from the repository. Fetch it "
+            "with the recipe in that comment and this exemption goes "
+            "away on its own.")
+    return out
+
+
+EXPECTED.update(absent_toolchain_sources(_SRC))
 
 
 # A whole vendored driver that the module build never enters. Naming

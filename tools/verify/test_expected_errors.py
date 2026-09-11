@@ -16,11 +16,13 @@ file under a prefix compiles. So the justification is checked here
 instead, against the build system, the way the flags are.
 """
 from __future__ import annotations
-import re, shutil, sys
+import re, shutil, sys, tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
+from expected_errors import (EXPECTED, NOT_BUILT, not_built,  # noqa: E402
+                             absent_toolchain_sources,
+                             _LLVM_DRIVERS, _LLVM_HDR, _LLDB_HDR)
 
 ROOT = Path(__file__).resolve().parents[2]
 SYS = ROOT / "hbsd" / "src" / "sys"
@@ -408,6 +410,43 @@ setters = [p for p in sorted((SYS).glob("*/conf/*"))
                          re.M)]
 check(f"no kernel config sets {opt}", not setters,
       f"set by {[p.name for p in setters]}")
+
+# The exemption for the fourteen drivers whose sources .gitignore keeps
+# out of the repository is CONDITIONAL on the tree, so it has to be
+# driven both ways. A permanent list would quietly absorb a real
+# regression in those files on every tree that does have the sources --
+# the ERROR inventory's own failure mode, pointed the other way.
+_src = ROOT / "hbsd" / "src"
+_toolchain = absent_toolchain_sources(_src)
+_have_llvm = (_src / _LLVM_HDR).exists()
+_have_lldb = (_src / _LLDB_HDR).exists()
+
+if _have_llvm and _have_lldb:
+    check("this tree HAS the toolchain sources, so nothing is exempt",
+          _toolchain == {},
+          f"exempted anyway: {sorted(_toolchain)}")
+else:
+    check("this tree LACKS them, so the drivers are exempt",
+          len(_toolchain) == (0 if _have_llvm else len(_LLVM_DRIVERS))
+                           + (0 if _have_lldb else 1),
+          f"got {len(_toolchain)}")
+
+with tempfile.TemporaryDirectory() as _d:
+    _absent = absent_toolchain_sources(Path(_d))
+    check("a tree with neither exempts all fourteen",
+          sorted(_absent) == sorted(_LLVM_DRIVERS +
+                                    ("lib/clang/liblldb/LLDBWrapLua.cpp",)),
+          f"got {sorted(_absent)}")
+    check("...and says why, naming the .gitignore line",
+          all(".gitignore:" in v for v in _absent.values()))
+
+# The rule is only true if .gitignore really does exclude those trees.
+# Asserting it from memory is how a check goes blind.
+_gi = (ROOT / ".gitignore").read_text()
+check("/hbsd/src/contrib/llvm-project/llvm/ is in .gitignore",
+      "\n/hbsd/src/contrib/llvm-project/llvm/\n" in _gi)
+check("/hbsd/src/contrib/llvm-project/lldb/ is in .gitignore",
+      "\n/hbsd/src/contrib/llvm-project/lldb/\n" in _gi)
 
 print()
 if fails:

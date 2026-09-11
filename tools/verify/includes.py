@@ -409,19 +409,28 @@ def libcxx_shim() -> tuple[str, ...]:
 def llvm_shim(rel: str) -> tuple[str, ...]:
     """The -I lib/clang/*.mk state, stated here instead of re-derived.
 
-    These came out of bmake, through the userland CFLAGS cache -- and
-    CI and this container DISAGREED about them, silently.  Verify run 19
+    NOT why CI was failing.  This was written after verify run 19
     reported
 
         13  missing header: llvm/Support/LLVMDriver.h
             e.g. usr.bin/clang/clang/clang-driver.cpp
 
-    for the same thirteen driver stubs libcxx_shim() above was written
-    for, on a tree where all thirteen compile here.  Same unit count on
-    both sides -- 1862 -- so the unit list agreed and only the FLAGS
-    differed: thirteen translation units reporting zero findings in CI,
-    and saying nothing about it, which is the failure this whole
-    inventory exists to make impossible.
+    on a tree where all thirteen compile here, and the diagnosis was
+    that the -I came from bmake through the userland CFLAGS cache,
+    which CI rebuilds cold.  That diagnosis was WRONG, and run 20 said
+    so: ERROR stayed at 53 and the same thirteen files failed the same
+    way.  The header is not on CI's disk at all -- .gitignore:161
+    excludes contrib/llvm-project/llvm/ from the repository, on purpose.
+    No include path can find a file that was never checked out.  The
+    honest answer is in expected_errors.py, conditional on whether the
+    tree has the sources.
+
+    What this function IS for stands: the -I are a fact the build states
+    outright, and asking bmake for a fact means two environments can
+    answer differently and say nothing about it.  In a tree that HAS run
+    the re-fetch recipe -- TOOLCHAIN=internal, and this container -- this
+    is what puts those sources on the include path, with no bmake in it,
+    so a cold cache and a warm cache cannot disagree.
 
     A path the build states outright in four .mk fragments is not
     something the analyser should have to ask bmake for:

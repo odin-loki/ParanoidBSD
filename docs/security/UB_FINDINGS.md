@@ -24455,3 +24455,84 @@ analyser's path so it reported a garbage read that `HEAD` did not.  The
 shipped version keeps `HEAD`'s shape and adds only the restore.  A fix
 that trades a real bug for a new finding is not a fix; the finding is how
 you would know.
+
+---
+
+## The last commit's diagnosis was wrong, and run 20 said so
+
+The previous entry above claimed the CI/container ERROR gap came from
+`bmake`'s cold include-path cache, fixed it with `llvm_shim()`, and
+closed by saying *"this container cannot reproduce CI's environment, so
+the fix is verified as 'the flag is now unconditional and the header
+resolves without bmake' rather than as 'CI is green'. The next run says
+which."*
+
+The next run said **no**.  Verify run 20, on that exact commit:
+
+```
+[1862/1862] findings=555  ERROR=53  OK=1809
+   13  missing header: llvm/Support/LLVMDriver.h
+       e.g. usr.bin/clang/clang/clang-driver.cpp
+```
+
+ERROR unchanged at 53, the same thirteen files, the same message.  The
+hedge was the right hedge and the fix was still not a fix.
+
+The actual cause is one line of `.gitignore`:
+
+```
+/hbsd/src/contrib/llvm-project/llvm/
+/hbsd/src/contrib/llvm-project/lldb/
+```
+
+`llvm/` and `lldb/` are **excluded from this repository**, deliberately,
+with the re-fetch recipe for `TOOLCHAIN=internal` written in the comment
+directly above the rule.  `git ls-files` does not know
+`llvm/Support/LLVMDriver.h` exists.  A fresh checkout — which is exactly
+what CI is — does not have it on disk, and no include path can point at
+a file that was never checked out.  This container has it only because
+somebody ran that recipe here.
+
+That is why the earlier reasoning felt airtight and was not: every
+statement in it was about *this* tree.  "The header exists exactly once,
+inside the tree" was true of the disk in front of me and false of the
+repository.  The check that would have caught it is one `git ls-files`,
+and it was never run — the whole investigation asked the filesystem.
+
+### The fix, and why it asks the disk
+
+`expected_errors.py` now exempts those fourteen files (thirteen LLVM
+drivers plus `lib/clang/liblldb/LLDBWrapLua.cpp`) **conditionally**, on
+whether the header each group needs is present.
+
+An unconditional list would have been the symmetric lie.  `analyze.py
+--check-errors` reports a *stale* exemption as loudly as an unexpected
+ERROR, precisely so that an entry cannot outlive its reason — so a
+permanent list would fail on every developer tree that does have the
+sources, and, worse, would silently absorb a real regression in those
+files on those trees.  An entry that is wrong in the other direction is
+still an entry nobody can trust.
+
+Naming the header and testing for it is true in both places and
+self-correcting: fetch the sources and the exemption disappears on its
+own.
+
+`absent_toolchain_sources()` is a pure function of the tree so the test
+can drive it both ways, and `test_expected_errors.py` now checks that
+this tree (which has the sources) exempts **nothing**, that an empty
+tree exempts all fourteen with the `.gitignore` line named in each
+reason, and — because a check that asserts the rule from memory is a
+check that has gone blind — that `.gitignore` really does still carry
+both exclusions.
+
+`llvm_shim()` stays, with its docstring corrected to say it was not the
+reason CI failed.  What it is for stands on its own: the `-I` are a fact
+four `.mk` fragments state outright, and asking `bmake` for a fact means
+two environments can answer differently and say nothing about it.  In a
+tree that has run the re-fetch, it is what puts those sources on the
+include path with no `bmake` in it.
+
+Not claimed: that CI is green.  The local ERROR set is provably
+unchanged by this commit — `absent_toolchain_sources()` returns an empty
+dict here, and the test asserts it — so the only thing that can confirm
+the fix is the next run, again.
