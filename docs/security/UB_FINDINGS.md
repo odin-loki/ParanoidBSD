@@ -27803,3 +27803,41 @@ option"*, it is the deprecated RFC 2292 interface that
 `inet6_opt_init(3)` replaced, and nothing in the tree calls it.
 Rejecting a `nbytes` it cannot represent would mean inventing an error
 return the interface does not have.  Recorded rather than changed.
+
+### And the 14 in the static bucket, since the deferral is a policy and not an answer
+
+The same shard's `static` bucket is deferred by policy — a static's
+callers are all in the file, so the signature domain is the wrong
+domain.  It is 14 entries, which is small enough to read, and reading
+63 of them in `sys/dev` this morning turned up three defects, so the
+policy is not self-justifying.  None of these 14 is one:
+
+* `getopt_long.c:gcd` — `a % b` with `b == 0`, and `INT_MIN % -1`.
+  `permute_args()` is its only caller and passes
+  `nnonopts = nonopt_end - nonopt_start` and
+  `nopts = optind - nonopt_end`.  All three call sites are guarded by
+  `nonopt_end != -1`, which is only set once at least one option has
+  followed the non-options, and `optind++` runs before each of them, so
+  both are at least 1.  `gcd` then never sees `b == 0`: `c = a % b` is
+  in `[0, b-1]` and the loop exits on `c == 0` before assigning it.
+* `setlocale.c:loadlocale` — `strcpy src/dst overlap` on
+  `strcpy(__xlocale_global_locale.components[category-1]->locale, new)`.
+  `new` is `new_categories[category]` and the destination is reached
+  through a pointer the startup code fills in, which a modular check
+  leaves unconstrained, so CBMC cannot prove they are different
+  objects.  They are.
+* `rtld_lock.c:def_lock_create` — `free argument has offset zero` on
+  `free(base)`, where `base` is `xmalloc()`'s return and `xmalloc` has
+  no model.  The function stores `l->base = base` and
+  `def_lock_destroy()` frees exactly that.
+* `rtld_lock.c:sig_fastunblock`, `acl_strip.c:_posix1e_acl_strip_np`
+  and `svc_vc.c:makefd_xprt` — the code's own `assert()`s, fired by an
+  unconstrained global or argument.
+* `nsap_addr.c:xtob`, `strptime.c:first_wday_of`,
+  `b_tgamma.c:large_gam`, `e_lgamma_r.cpp:sin_pi` and the two
+  `add_and_denormalize` — an internally-produced index, digit or
+  exponent.
+* `libcalendar.c:firstweek` and `easter.c:easterodn` are the two that
+  are still reported after this morning's `date2idt` bound, because the
+  bound is in the caller and `firstweek` is `static`.  Unreachable in
+  the tree, and left visible rather than silenced.
