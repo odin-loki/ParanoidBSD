@@ -607,6 +607,22 @@ rpc_broadcast_exp(rpcprog_t prog, rpcvers_t vers, rpcproc_t proc,
 						    fdlist[i].nconf, uaddrp);
 						done = (*eachresult)(resultsp,
 						    np, fdlist[i].nconf);
+						/*
+						 * PBSD: the netbuf owns the
+						 * sockaddr at np->buf, which
+						 * uaddr2taddr() mallocs
+						 * separately.  This ran once
+						 * per broadcast REPLY, so the
+						 * leak was as large as the
+						 * network cared to make it.
+						 * np is NULL on a uaddr this
+						 * transport cannot parse, so
+						 * the guard is needed where
+						 * the bare free() did not
+						 * need one.
+						 */
+						if (np != NULL)
+							free(np->buf);
 						free(np);
 #ifdef PORTMAP
 					}

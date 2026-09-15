@@ -27698,3 +27698,108 @@ analyser findings before and after, no line moved either way**.  Five
 markers added across four files, each revert-verified with the revert
 itself checked not to be a no-op; `clk.c` already had an entry and the
 new tuple went into the existing list.
+
+## The userland shard's arithmetic list, which no report has shown
+
+Runs 27 through 31 all lost the userland model check to an OOMed
+runner, so the "EXPORTED, arithmetic — READ THESE" bucket for
+`lib/libc`, `lib/msun` and `libexec` has not appeared in a report since
+run 26.  A local run at the current head puts 34 in it.  Reading them
+found one defect, and it is not an arithmetic one — CBMC pointed at the
+line and the line was innocent; the function around it was not.
+
+### `lib/libc/rpc` — a netbuf freed by half, twice
+
+CBMC's finding on `pmap_set()` is
+
+```
+line 80 free argument has offset zero
+```
+
+which is CBMC saying it cannot prove `na` points at the start of an
+allocation, because `uaddr2taddr()` is an extern it has no model for.
+As a finding that is nothing.  Reading the function is not nothing:
+
+```c
+	na = uaddr2taddr(nconf, buf);
+	...
+	rslt = rpcb_set(..., nconf, na);
+	free(na);
+```
+
+`__rpc_uaddr2taddr_af()` in `rpc_generic.c` mallocs the `struct netbuf`
+**and** the `struct sockaddr_in` or `sockaddr_in6` it hangs off
+`ret->buf`.  The caller owns both.  `free(na)` releases one of them.
+
+`__rpcb_findaddr_timed()` in `rpcb_clnt.c` — the same library, the same
+`uaddr2taddr()` — writes `free(na->buf); free(na);`, which is what
+makes this a slip rather than a convention.  The other two call sites
+return the netbuf to their own callers, so ownership passes and there
+is nothing to free.
+
+The second half-free is worse.  `rpc_broadcast_exp()` in
+`clnt_bcast.c`:
+
+```c
+	np = uaddr2taddr(fdlist[i].nconf, uaddrp);
+	done = (*eachresult)(resultsp, np, fdlist[i].nconf);
+	free(np);
+```
+
+That is inside the loop over broadcast **replies**, so the leak is one
+sockaddr per reply and its size is chosen by whoever is answering on
+the broadcast domain.  `np` is NULL for a uaddr the transport cannot
+parse — which `free(np)` tolerated and `free(np->buf)` does not — so
+the fix there carries a guard `pmap_set()`'s does not need.
+
+`tools/verify/probes/rpc_netbuf_free.c` models the ownership under
+LeakSanitizer: **OLD `32 byte(s) leaked in 2 allocation(s)`, NEW
+clean.**
+
+### The other 33, read
+
+* **Not arithmetic at all, and not the function's fault: an unmodelled
+  extern's return.**  `querylocale`'s `return_value_ffs - 1`, and the
+  six softfloat comparison helpers whose overflowing operand is
+  literally spelled `return_value___softfloat_float64_le`.  These were
+  in this bucket only because `report.py` decided *extern-driven* from
+  a hand-kept list of function NAMES, which had `cosl`, `sinl` and
+  `tanl` and not these.  The driver now records CBMC's own `no body for
+  function X` and the bucket is decided from that.
+* **The same thing, one call deeper.**  `s_cos`, `s_sin`, `s_tan` and
+  the three `f` variants all report `arithmetic overflow on signed
+  unary minus in -n`, where `n` comes from `__ieee754_rem_pio2`, whose
+  body calls `__kernel_rem_pio2`, which CBMC has no model for.  The
+  evidence is real but the expression does not name the return, so the
+  rule declines to guess and these stay here.  Same for `e_jnf`'s
+  `ynf`.
+* **The caller's contract, in the standard's own words.**  `abs`,
+  `labs`, `llabs`: C17 7.22.6.1p2 is *"If the result cannot be
+  represented, the behavior is undefined"* — a constraint on the
+  caller, and negating `INT_MIN` is the implementation doing what the
+  standard permits.  Under a `MK_UBSAN=yes` build that traps, which
+  catches the caller, and making it return `INT_MIN` quietly would hide
+  exactly the bug the trap is for.  `div`, `ldiv`, `lldiv` are
+  7.22.6.2p2 plus language-level division by zero.
+* **The library's own assertions, reported as the bugs they exist to
+  catch.**  `_acl_brand_as` and `_entry_brand_as` on
+  `_acl_brand_may_be(acl, brand)`, `acl_strip_np` on
+  `_acl_brand(aclp) == ACL_BRAND_POSIX`, `cap_init` on `ret`.  A
+  modular check hands them an unconstrained `acl_t` and the assertion
+  fires, which is the assertion working.
+* **Exponent arithmetic on a `double`'s bit pattern.**  `k_exp`'s
+  `expt + ex_expt` and `0x3FF + expt`, `k_expf`'s pair, `s_fma` and
+  `s_fmal`'s `-((int)(hibits >> 52) & 0x7FF) - scale`.  The exponent
+  field is eleven bits wide and `scale` is bounded by the callers in
+  `s_exp` and `s_cexp`; the modular check sees neither.
+* **Already on the record.**  `rpc.rstatd`'s `stat_init` and
+  `updatestat`, marked `[triaged]` by the report itself.
+
+And one that is none of the above and is left alone deliberately:
+`inet6_option_space(int nbytes)` does `nbytes += 2` and
+`(nbytes + 7) & ~7` with no bound, and is exported from libc.  Its
+documented argument is *"the size of the structure defining the
+option"*, it is the deprecated RFC 2292 interface that
+`inet6_opt_init(3)` replaced, and nothing in the tree calls it.
+Rejecting a `nbytes` it cannot represent would mean inventing an error
+return the interface does not have.  Recorded rather than changed.

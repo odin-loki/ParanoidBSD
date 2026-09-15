@@ -6772,6 +6772,28 @@ FIXES = {
         "address family from libifconfig's caller and checked only "
         "the top",
     ),
+    "hbsd/src/lib/libc/rpc/pmap_clnt.c": [
+        (
+            "PBSD: __rpc_uaddr2taddr_af() mallocs the netbuf AND the",
+            "\trslt = rpcb_set((rpcprog_t)program, (rpcvers_t)version, nconf, na);\n\tfree(na);",
+            "pmap_set() freed the netbuf uaddr2taddr() returned and not "
+            "the sockaddr hanging off its ->buf, which "
+            "__rpc_uaddr2taddr_af() mallocs separately. One leak per "
+            "call. __rpcb_findaddr_timed() in rpcb_clnt.c frees the same "
+            "pair correctly",
+        ),
+    ],
+    "hbsd/src/lib/libc/rpc/clnt_bcast.c": [
+        (
+            "PBSD: the netbuf owns the",
+            "\t\t\t\t\t\t    np, fdlist[i].nconf);\n\t\t\t\t\t\tfree(np);",
+            "rpc_broadcast_exp() had the same half-free INSIDE the loop "
+            "over broadcast replies, so its size was the network's to "
+            "choose. np is NULL for a uaddr the transport cannot parse, "
+            "which the bare free() tolerated, so the fix here carries a "
+            "guard pmap_set()'s does not need",
+        ),
+    ],
     "hbsd/src/lib/libc/rpc/svc.c": [
         (
             "\tif ((unsigned int)sock < FD_SETSIZE) {",

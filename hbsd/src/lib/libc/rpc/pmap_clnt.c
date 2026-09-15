@@ -77,6 +77,14 @@ pmap_set(u_long program, u_long version, int protocol, int port)
 		return (FALSE);
 	}
 	rslt = rpcb_set((rpcprog_t)program, (rpcvers_t)version, nconf, na);
+	/*
+	 * PBSD: __rpc_uaddr2taddr_af() mallocs the netbuf AND the
+	 * sockaddr it hangs off ret->buf, so freeing only the netbuf
+	 * leaks the sockaddr on every call.  rpcb_clnt.c's
+	 * __rpcb_findaddr_timed() frees the same pair correctly, twenty
+	 * lines of the same library away.
+	 */
+	free(na->buf);
 	free(na);
 	freenetconfigent(nconf);
 	return (rslt);
