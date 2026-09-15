@@ -1423,8 +1423,17 @@ stats_v1_voistat_fetch_dptr(struct statsblobv1 *sb, int32_t voi_id,
 	struct voi *v;
 	struct voistat *vs;
 
+	/*
+	 * PBSD: `voi_id < 0'.  NVOIS() casts to int32_t, so the comparison
+	 * is signed and a negative voi_id passed it; &sb->vois[voi_id] then
+	 * addressed before the array and v->voistatmaxid and v->stats_off
+	 * were read from there and handed back to the caller as *retvsd.
+	 * stats_v1_tpl_add_voistats() in this same file already opens with
+	 * `if (voi_id < 0 || ...) return (EINVAL);' -- this is that check,
+	 * in the two entry points that did not have it.
+	 */
 	if (retvsd == NULL || sb == NULL || sb->abi != STATS_ABI_V1 ||
-	    voi_id >= NVOIS(sb))
+	    voi_id < 0 || voi_id >= NVOIS(sb))
 		return (EINVAL);
 
 	v = &sb->vois[voi_id];
@@ -3530,8 +3539,18 @@ stats_v1_voi_update(struct statsblobv1 *sb, int32_t voi_id,
 
 	error = 0;
 
-	if (sb == NULL || sb->abi != STATS_ABI_V1 || voi_id >= NVOIS(sb) ||
-	    voi_dtype == 0 || voi_dtype >= VSD_NUM_DTYPES || voival == NULL)
+	/*
+	 * PBSD: `voi_id < 0', as in stats_v1_voistat_fetch_dptr() above and
+	 * stats_v1_tpl_add_voistats() further up.  This is the path that
+	 * WRITES: past the guard it reads v->dtype, v->id and v->flags from
+	 * before the array and, if those happen to agree, updates a
+	 * statistic through BLOB_OFFSET(sb, v->stats_off) -- an offset it
+	 * also read from out of bounds.  Five other properties of the
+	 * arguments are checked on this line; the sign was the one missing.
+	 */
+	if (sb == NULL || sb->abi != STATS_ABI_V1 || voi_id < 0 ||
+	    voi_id >= NVOIS(sb) || voi_dtype == 0 ||
+	    voi_dtype >= VSD_NUM_DTYPES || voival == NULL)
 		return (EINVAL);
 	v = &sb->vois[voi_id];
 	if (voi_dtype != v->dtype || v->id < 0 ||

@@ -569,6 +569,55 @@ FIXES = {
         None,
         "same uninitialised parse target, in genl(1)",
     ),
+    "hbsd/src/sys/kern/subr_bus.c": [
+        (
+            "PBSD: `unit < 0' is the other end.  DEVICE_UNIT_ANY is -1 and is",
+            "\tif (dc == NULL)\n\t\treturn (unit);\n\twhile (unit < dc->maxunit && dc->devices[unit] != NULL)",
+            "devclass_find_free_unit() bounded its unit above and not "
+            "below and then read dc->devices[unit]. DEVICE_UNIT_ANY is "
+            "-1 and is what this same API uses to mean any unit, so it "
+            "is the number a caller is most likely to arrive with. It "
+            "now starts the search at 0, which is what the function's "
+            "own documentation -- the first free unit at or above -- "
+            "means for any",
+        ),
+        (
+            "PBSD: the same missing end, on an exported entry point whose one",
+            "\tdc = device_get_devclass(dev);\n\tif (unit < dc->maxunit && dc->devices[unit])\n\t\treturn (EBUSY);",
+            "device_set_unit() is exported in <sys/bus.h> and its whole "
+            "job is to decide whether a unit number is usable. A "
+            "negative unit read dc->devices[unit] from before the array "
+            "and let what it found decide EBUSY. EINVAL, because this "
+            "function wires a device to a SPECIFIC unit and "
+            "DEVICE_UNIT_ANY is not one. All three callers in the tree "
+            "pass a non-negative unit, so no path changes",
+        ),
+    ],
+    "hbsd/src/sys/kern/subr_stats.c": [
+        (
+            "PBSD: `voi_id < 0'.  NVOIS() casts to int32_t, so the comparison",
+            "\tif (retvsd == NULL || sb == NULL || sb->abi != STATS_ABI_V1 ||\n\t    voi_id >= NVOIS(sb))",
+            "stats_v1_voistat_fetch_dptr() bounded the caller's int32_t "
+            "voi_id above and not below. NVOIS() casts to int32_t so the "
+            "comparison is signed, and &sb->vois[voi_id] then addressed "
+            "before the array; v->voistatmaxid and v->stats_off were "
+            "read from there and a pointer built from them handed back "
+            "as *retvsd",
+        ),
+        (
+            "PBSD: `voi_id < 0', as in stats_v1_voistat_fetch_dptr() above and",
+            "\tif (sb == NULL || sb->abi != STATS_ABI_V1 || voi_id >= NVOIS(sb) ||\n\t    voi_dtype == 0",
+            "stats_v1_voi_update() is the same bound on the path that "
+            "WRITES: past the guard it reads v->dtype, v->id and "
+            "v->flags from before the array and updates a statistic "
+            "through BLOB_OFFSET(sb, v->stats_off), an offset also read "
+            "out of bounds. Five other properties of the arguments are "
+            "checked on the same line. lib/libstats builds this file, "
+            "so both are a shared library's exported interface, and "
+            "stats_v1_tpl_add_voistats() in this same file already "
+            "opens with `voi_id < 0'",
+        ),
+    ],
     "hbsd/src/sys/kern/kern_procctl.c": [
         (
             "int d = PROC_PROTMAX_NOFORCE;",

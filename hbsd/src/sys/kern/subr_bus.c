@@ -1154,6 +1154,16 @@ devclass_find_free_unit(devclass_t dc, int unit)
 {
 	if (dc == NULL)
 		return (unit);
+	/*
+	 * PBSD: `unit < 0' is the other end.  DEVICE_UNIT_ANY is -1 and is
+	 * the value this API uses everywhere else to mean "any unit" --
+	 * device_add_child(parent, name, DEVICE_UNIT_ANY) is the idiom --
+	 * so it is the number a caller is most likely to arrive with, and
+	 * it read dc->devices[-1].  Starting the search at 0 is what "the
+	 * first free unit at or above any" means.
+	 */
+	if (unit < 0)
+		unit = 0;
 	while (unit < dc->maxunit && dc->devices[unit] != NULL)
 		unit++;
 	return (unit);
@@ -2786,6 +2796,16 @@ device_set_unit(device_t dev, int unit)
 	if (unit == dev->unit)
 		return (0);
 	dc = device_get_devclass(dev);
+	/*
+	 * PBSD: the same missing end, on an exported entry point whose one
+	 * job is to decide whether a unit number is usable.  A negative
+	 * unit -- DEVICE_UNIT_ANY being -1 -- read dc->devices[unit] from
+	 * before the array and let whatever it found decide EBUSY.  EINVAL
+	 * is the answer: this function wires a device to a specific unit,
+	 * and "any" is not one.
+	 */
+	if (unit < 0)
+		return (EINVAL);
 	if (unit < dc->maxunit && dc->devices[unit])
 		return (EBUSY);
 	err = devclass_delete_device(dc, dev);

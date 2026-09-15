@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,883 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,922 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,117** | **114,208** |
+| | **total** | **41,143** | **21,303,156** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -168,9 +168,9 @@ ten-line ones; these are the entries that need a plan of their own.
 | 4.38.16 | `sbin/ifconfig/ifieee80211.c` | 6,403 | 0 | `TODO-PORT` |
 | 8.615.46 | `sys/dev/ath/if_ath_tx.c` | 6,395 | 0 | `TODO-PORT` |
 | 4.52.3 | `sbin/ipfw/ipfw2.c` | 6,394 | 0 | `TODO-PORT` |
+| 8.1191.113 | `sys/kern/subr_bus.c` | 6,393 | 0 | `TODO-PORT` |
 | 8.960.7 | `sys/dev/qlnx/qlnxr/qlnxr_verbs.c` | 6,391 | 0 | `TODO-PORT` |
 | 8.74.20 | `sys/cam/scsi/scsi_sa.c` | 6,377 | 0 | `TODO-PORT` |
-| 8.1191.113 | `sys/kern/subr_bus.c` | 6,373 | 0 | `TODO-PORT` |
 | 8.1016.1 | `sys/dev/sound/usb/uaudio.c` | 6,265 | 0 | `TODO-PORT` |
 | 8.690.21 | `sys/dev/e1000/e1000_ich8lan.c` | 6,203 | 0 | `TODO-PORT` |
 | 8.1146.10 | `sys/fs/nfsclient/nfs_clstate.c` | 6,075 | 0 | `TODO-PORT` |
@@ -117322,7 +117322,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1191.112** `subr_bufring.c` · 63L · `TODO-PORT` · 2 fn
   - [ ] 8.1191.112.1 `buf_ring_alloc()` · `TODO-FN`
   - [ ] 8.1191.112.2 `buf_ring_free()` · `TODO-FN`
-- [ ] **8.1191.113** `subr_bus.c` · 6,373L gen:16 · `TODO-PORT`
+- [ ] **8.1191.113** `subr_bus.c` · 6,393L gen:16 · `TODO-PORT`
 - [ ] **8.1191.114** `subr_bus_dma.c` · 703L · `TODO-PORT` · 22 fn
   - [ ] 8.1191.114.1 `busdma_lock_mutex()` · `TODO-FN`
   - [ ] 8.1191.114.2 `_busdma_dflt_lock()` · `TODO-FN`
@@ -118376,7 +118376,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.167.13 `stack_ktr()` · `TODO-FN`
   - [ ] 8.1191.167.14 `stack_symbol()` · `TODO-FN`
   - [ ] 8.1191.167.15 `stack_symbol_ddb()` · `TODO-FN`
-- [ ] **8.1191.168** `subr_stats.c` · 3,966L gen:9 · `TODO-PORT` · 54 fn
+- [ ] **8.1191.168** `subr_stats.c` · 3,985L gen:9 · `TODO-PORT` · 54 fn
   - [ ] 8.1191.168.1 `ctd32cmp()` · `TODO-FN`
   - [ ] 8.1191.168.2 `ctd64cmp()` · `TODO-FN`
   - [ ] 8.1191.168.3 `stats_sbinuptime()` · `TODO-FN`

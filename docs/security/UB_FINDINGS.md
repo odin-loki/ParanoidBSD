@@ -27907,3 +27907,173 @@ written as an unsigned comparison the lint does not read.  An
 `assert()` that restates a property already established is not a
 defect, and telling those apart is why this list is read rather than
 counted.
+
+## The rest of the ONESIDED list: netpfil, net80211, kern, libc, fs
+
+`sys/dev` (85) and `usr.sbin/bhyve` (10) are read above.  This is the
+remainder of the tree-wide list by size: `sys/netpfil` 12,
+`sys/net80211` 9, `sys/kern` 12, `lib/libc` 8, `sys/fs` 6.  One defect,
+in a pair.
+
+### `subr_stats.c` — the same file validates it once and not twice
+
+`sys/kern/subr_stats.c` has three exported entry points that take an
+`int32_t voi_id` from their caller and use it as the subscript of
+`sb->vois[]`.  `NVOIS()` casts to `int32_t`:
+
+```c
+#define	NVOIS(sb) ((int32_t)((((struct statsblobv1 *)(sb))->stats_off - \
+    sizeof(struct statsblobv1)) / sizeof(struct voi)))
+```
+
+so `voi_id >= NVOIS(sb)` is a **signed** comparison and a negative
+`voi_id` passes it.
+
+`stats_v1_tpl_add_voistats()` opens with
+
+```c
+	if (voi_id < 0 || voi_dtype == 0 || voi_dtype >= VSD_NUM_DTYPES ||
+	    nvss == 0 || vss == NULL)
+		return (EINVAL);
+```
+
+The other two did not have that first clause.
+
+* `stats_v1_voistat_fetch_dptr()` reads `v->voistatmaxid` and
+  `v->stats_off` from before the array and hands the caller a pointer
+  built from them as `*retvsd`.
+* `stats_v1_voi_update()` is the same bound on the path that **writes**:
+  past the guard it reads `v->dtype`, `v->id` and `v->flags` from before
+  the array and, if those happen to agree, updates a statistic through
+  `BLOB_OFFSET(sb, v->stats_off)` — an offset also read out of bounds.
+  Five other properties of the arguments are checked on that one line;
+  the sign is the one that was missing.
+
+These are not only kernel functions.  `lib/libstats/Makefile` is
+
+```
+LIB=	stats
+SRCS=	subr_stats.c tcp_stats.c
+```
+
+so they are a shared library's exported interface too, and
+`<sys/stats.h>`'s inline family — `stats_voistat_fetch_s64`, `_u64`,
+`_s32`, `_u32`, `stats_voi_update_abs_s32` and its relatives — funnels
+into exactly these two with the application's own `int32_t`.
+
+`tools/verify/probes/stats_voi_id.c`: **OLD 2 of 2 failed, NEW 0 of 2,
+VERIFICATION SUCCESSFUL.**
+
+### `subr_bus.c` — two exported bus helpers and the value `-1` means
+
+`DEVICE_UNIT_ANY` is `(-1)`, and `device_add_child(parent, name,
+DEVICE_UNIT_ANY)` is the idiom every driver writes.  Two exported
+helpers in the same API took an `int unit` and bounded it only above:
+
+```c
+	devclass_find_free_unit(devclass_t dc, int unit)
+	...
+	while (unit < dc->maxunit && dc->devices[unit] != NULL)
+
+	device_set_unit(device_t dev, int unit)
+	...
+	if (unit < dc->maxunit && dc->devices[unit])
+		return (EBUSY);
+```
+
+Both read `dc->devices[-1]` for the one number this API has taught its
+callers to reach for.  `device_set_unit()`'s whole job is to decide
+whether a unit is usable, and it let what it found before the array
+decide `EBUSY`.
+
+Nothing in the tree reaches either: the only caller of
+`devclass_find_free_unit()` passes the literal `2`, and
+`device_set_unit()`'s three callers pass a CPU id from
+`acpi_pcpu_get_id()` and a unit from `xbd_vdevice_to_unit()`, whose
+three return paths are a mask, a table base plus a shift, and `minor >>
+4` — all non-negative.  It is still worth the comparison, for the same
+reason `clknode_init_parent_idx()` was: an exported entry point whose
+guard exists to catch a driver's mistake should not make one.
+`device_set_unit()` returns `EINVAL`, because "any" is not a specific
+unit; `devclass_find_free_unit()` starts the search at `0`, which is
+what its own documentation — *the first free unit at or above* — means
+for "any".
+
+### The 42 that are not defects
+
+**pf writes the bound both ways where the value arrives, and one way
+where it is computed.**  Five sites — `pf_get_kpool`,
+`pf_ioctl_getrules`, `pf_ioctl_addrule`, `pf_killstates_row` and
+`pf_nl.c`'s `pf_handle_getrule` — take `rs_num` from
+`pf_get_ruleset_number()`, which is a `switch` returning only the
+`PF_RULESET_*` enumerators or `PF_RULESET_MAX`, all non-negative.  The
+three functions that take `rs_num` as a *parameter* —
+`pf_begin_rules`, `pf_rollback_rules`, `pf_commit_rules` — all write
+`if (rs_num < 0 || rs_num >= PF_RULESET_MAX)`.  That is not an
+inconsistency, it is the same distinction this lint is built on: where
+the value is produced in view, the floor is visible.
+
+**A mask that is stored as a mask.**  `dn_ht_find()` computes
+`hash(key) & ht->buckets`, which looks like the classic
+`& size` instead of `& (size - 1)` — except `dn_heap.c:323` declares
+`int buckets; /* how many buckets, really buckets - 1 */` and
+`dn_ht_init()` allocates `(buckets + 1)` entries.  It is a mask, and
+`dn_ht_scan()` iterates `for (i = 0; i <= ht->buckets; i++)` to match.
+
+**A 1-based array, so `<=` is right.**  `ipfw_del_table_algo()`'s
+`KASSERT(idx <= tcfg->algo_count)` reads like an off-by-one until
+`ipfw_add_table_algo()` is read: `tcfg->algo[++tcfg->algo_count] =
+ta_new`, so the first algorithm is at index 1 and the search loop is
+`for (i = 1; i <= tcfg->algo_count; i++)`.
+
+**A compound test the lint reads as one comparison.**  `mlmedebug()`'s
+`ops[op]` is in the `else` of `if (!(IEEE80211_MLME_ASSOC <= op && op <=
+IEEE80211_MLME_AUTH))`, which is both ends in one expression.
+
+**An unsigned source, eight times.**  `ieee80211_crypto_newkey()`'s
+`cipher` is `ik.ik_type`, a `uint8_t` from the ioctl.  The two
+`__sccl()`s — the kernel's in `subr_scanf.c` and libc's in
+`vfscanf.c` — take `const u_char *fmt` and do `c = *fmt++`, so `c` is
+0..255 for a 256-byte table; the `u_char *` **is** the bound.
+`radixsort.c`'s `r_sort_a`/`r_sort_b` read `c = tr[(*ak)[i]]` out of a
+`const u_char *` translation table.  `find_table_algo()`'s `atype` is a
+`uint8_t`.  `res_setoptions()`'s `i` is `MIN(strcspn(...), sizeof - 1)`.
+
+**Headroom the checker does not know about.**  `nfsrvd_statstart()` and
+`nfsrvd_statend()` reject on `op > (NFSV42_NOPS + NFSV4OP_FAKENOPS)`,
+which is `>` where an array bound wants `>=` — but `srvrpccnt[]` is
+declared `[NFSV42_NOPS + NFSV4OP_FAKENOPS + 15]`, so the fifteen spare
+entries absorb it.  Their callers bound `op` both ways anyway:
+`nfsrvd_compound()` rejects `op < NFSV4OP_ACCESS || op >= NFSV42_NOPS`
+before the call.
+
+**A server-controlled count, clamped in three places.**
+`nfsv4_freeslot()` does `sep->nfsess_slotseq[slot]--` with no lower
+bound, and `slot` comes from `nfsv4_sequencelookup()`'s
+`for (i = 0; i < sep->nfsess_foreslots; i++)`.  `nfsess_slotseq[]` is
+`[64]` and `nfsess_foreslots` is a `uint16_t` the **server** sends in
+its CREATE_SESSION reply — so the question is whether it can exceed 64.
+It cannot: `nfs_clrpcops.c` clamps the reply with `else if
+(sep->nfsess_foreslots > NFSV4_SLOTS) sep->nfsess_foreslots =
+NFSV4_SLOTS`, `nfs_commonkrpc.c` clamps the sequence reply's
+target-highest the same way, and `nfs_clstate.c`'s CB_RECALL_SLOT only
+ever *lowers* it.  `NFSV4_SLOTS` is 64.
+
+**And the ordinary ones.**  A ternary over two constants
+(`ipf_p_ftp_in`, `pf_find_state`, `pf_killstates_row`); a hash or
+pointer difference (`pfsync_bulk_update`, `nfssvc_iod`); `random() %
+n`; a loop counter (`computematchjumps`, `fd_first_free`,
+`fdlastfile_single`, `runq_findq`, `substsearch`, `_collate_lookup`,
+`nfscl_dofflayoutio`); a module-registration constant
+(`ieee80211_authenticator_*`, `ieee80211_ratectl_*`, `ast_register`,
+`ast_deregister`, `nfscl_reqstart`); an already-fixed site
+(`init_dynamic_kenv_from`, which carries its own PBSD comment); and
+`ieee80211_ioctl_getwmeparam`, read in run 26's round — `i_len & 0x7fff`.
+
+One thing noticed in passing and deliberately not changed:
+`res_setoptions()` parses `ndots:`, `timeout:` and `attempts:` with
+`atoi()` and tests only `i <= RES_MAXNDOTS`, so a negative number in
+`resolv.conf` is stored in `statp->ndots`, `->retrans` and `->retry`.
+None of the three is ever a subscript — they are compared and used as
+counts — so this is a configuration-parsing sloppiness rather than a
+memory-safety defect, and `resolv.conf` is root's to write.
