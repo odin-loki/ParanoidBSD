@@ -247,8 +247,21 @@ def verify_one(task: dict) -> dict:
 # actually reported is the same judgement made from evidence.
 _NO_BODY_RE = re.compile(r"no body for function (\S+)")
 
+# Run 33 measured what the 424 ERROR records actually say. 75 named a
+# CBMC invariant or a compile error; 220 of the rest said
+#
+#     SAT checker ran out of memory        193
+#     Out of memory                         27
+#
+# which is the --mem-mb bound doing its job -- an RLIMIT_AS per solver
+# instance turns what used to kill the RUNNER into one function's
+# ERROR. That is the most common single thing CBMC says in this tree
+# and it was landing in report.py's "(no reason recorded)" bucket,
+# which reads as "we do not know" when we do. Matched here so the
+# why-line carries it to the head of the tail, where report.py looks.
 _WHY_RE = re.compile(
     r"^(?:Reason:.*|Invariant check failed|CONVERSION ERROR.*|"
+    r"\s*(?:SAT checker ran )?[Oo]ut of memory\s*|"
     r".*?\berror:.*|.*?parse error.*)$",
     re.M | re.I)
 

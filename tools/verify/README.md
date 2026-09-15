@@ -612,6 +612,34 @@ Twelve more of the same run's ERRORs are the memory bound biting —
 recorded failure.  Those are the bound working, and they are still
 unchecked functions.
 
+**Run 33 measured the whole shape of it.**  It is the first verify run
+to finish after the `--mem-mb` fix, 5,625 functions over all six
+shards, and its 424 ERROR records say:
+
+| what CBMC said | count |
+|---|---:|
+| `SAT checker ran out of memory` | 185 |
+| (CBMC printed no reason) | 137 |
+| `Reason: lhs.type() == rhs.type()` | 54 |
+| `Out of memory` | 27 |
+| `Reason: number of literals in the literal map shall equal the bitvector width` | 7 |
+| `<builtin-library-_sleep>:4: error: conflicting function declaration` | 6 |
+| the rest | 8 |
+
+So **212 of 424 — half — are the memory bound**, and they were landing
+in the "no reason recorded" bucket, which reads as *we do not know*
+when we do.  Neither out-of-memory line carries a `Reason:`, and in a
+record written before the driver knew the phrase the line sits in the
+middle of the 600-character window rather than at its head.  Both are
+now matched: `cbmc_driver.py`'s `_WHY_RE` hoists them like any other
+why-line, and `report.py` looks for them **over the whole detail**
+rather than its first four lines, which makes every artifact already on
+disk readable.  The unexplained bucket went from 349 to 137 on run 33's
+own data, without re-running anything.
+
+`Reason: lhs.type() == rhs.type()` is a second CBMC internal invariant,
+larger than the literal-map one and not previously named here.
+
 The obvious question is what the bound costs, and the answer, measured
 over the whole 918 both ways on a 4-core 16GB container, is **nothing**:
 

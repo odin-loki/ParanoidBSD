@@ -506,9 +506,28 @@ def main() -> int:
                                       "CONVERSION ERROR"))
                      or "error:" in x.lower()),
                     "")
+            # The single most common thing CBMC says in this tree, and
+            # it carries no "Reason:". Run 33: 193 "SAT checker ran out
+            # of memory" and 27 "Out of memory" out of 424 ERRORs --
+            # the --mem-mb bound converting a runner kill into one
+            # function's non-answer. Counting those as "no reason
+            # recorded" says we do not know when we do.
+            #
+            # Searched over the WHOLE detail rather than its first four
+            # lines, unlike the tests above. Those look for a line the
+            # driver hoisted on purpose; this one is a fact about the
+            # record whoever wrote it, and every record from before
+            # cbmc_driver.py learned the phrase still carries it
+            # somewhere in the 600-character window. Retroactive by
+            # construction, which is the point: run 33's artifact is
+            # what proved the number.
             if not first:
-                first = ("(no reason recorded - written before the driver "
-                         "kept the why-line)")
+                first = next(
+                    (x.strip() for x in d.splitlines()
+                     if "out of memory" in x.lower()),
+                    "")
+            if not first:
+                first = "(CBMC printed no reason)"
             why[first[:72]] += 1
         print(f"\n  what the {len(errs)} ERROR/NOFUNC records say:")
         for k, n in why.most_common(6):
