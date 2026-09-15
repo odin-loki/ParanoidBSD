@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,143 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,169 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,413** | **114,208** |
+| | **total** | **41,143** | **21,303,439** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -132782,7 +132782,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1247.13** `clock.h` · 19L · `TODO-MD`
 - [ ] **8.1247.14** `counter.h` · 165L asm · `TODO-MD`
 - [ ] **8.1247.15** `cpu.h` · 158L asm · `TODO-MD`
-- [ ] **8.1247.16** `cpufunc.h` · 299L asm · `TODO-MD`
+- [ ] **8.1247.16** `cpufunc.h` · 325L asm · `TODO-MD`
 - [ ] **8.1247.17** `db_machdep.h` · 88L · `TODO-MD`
 - [ ] **8.1247.18** `dbdma.h` · 154L · `TODO-MD`
 - [ ] **8.1247.19** `dump.h` · 74L · `TODO-MD`

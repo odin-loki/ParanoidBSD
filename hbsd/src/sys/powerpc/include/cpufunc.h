@@ -166,8 +166,24 @@ mffs(void)
 {
 	uint64_t value;
 
+	/*
+	 * PBSD: the stfd writes through %0, so this needs "memory".
+	 *
+	 * The asm has no output operand and named no clobber, so
+	 * nothing told the compiler that `value' is written -- only
+	 * that its address is an input.  __volatile keeps the
+	 * instruction and its order against other volatile asm; it does
+	 * not stop the compiler assuming the object is unchanged, or
+	 * eliding a local it believes is never assigned.  An asm that
+	 * stores through a pointer operand needs a memory clobber or a
+	 * memory output operand, and this one has neither.  eieio(),
+	 * isync() and mtmsr() three functions down all carry it.
+	 *
+	 * That is also why clang's analyser reports the return as
+	 * undefined: on the model it is.
+	 */
 	__asm __volatile ("mffs 0; stfd 0,0(%0)"
-			:: "b"(&value));
+			:: "b"(&value) : "memory");
 
 	return ((register_t)value);
 }
@@ -176,8 +192,18 @@ static __inline void
 mtfsf(uint64_t value)
 {
 
+	/*
+	 * PBSD: and the lfd READS through %0, which needs it too.
+	 *
+	 * The mirror of mffs() above.  Passing &value forces the
+	 * parameter into a stack slot, but nothing in this asm says the
+	 * asm reads that slot, so the store into it is not ordered
+	 * before the instruction that loads from it.  Same rule, other
+	 * direction: an asm that touches memory through a pointer
+	 * operand declares it.
+	 */
 	__asm __volatile ("lfd 0,0(%0); mtfsf 0xff,0"
-			:: "b"(&value));
+			:: "b"(&value) : "memory");
 }
 
 static __inline void

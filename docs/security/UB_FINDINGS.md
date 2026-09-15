@@ -28893,3 +28893,95 @@ assigned.  `sys/x86/iommu/amd_intrmap.c:264` —
 returns at `if (is_iommu)` before looking at it.  Both are "nobody
 looks" rather than "it cannot happen", which is a weaker guarantee than
 the others here and is why they are written down rather than dropped.
+
+## `unix.MallocSizeof`, the 11 unread: no defects, and two `asm` clobbers found beside them
+
+`unix.MallocSizeof` fires when the type an allocation's result is
+assigned to disagrees with the type in its `sizeof`.  23 findings; 11
+name files this document had never mentioned.  **None of the 11 is a
+defect**, and the reasons divide cleanly:
+
+**A byte or word buffer, on purpose.**
+`sbin/camcontrol/camcontrol.c:2416`
+(`ptr = (uint16_t *)calloc(1, sizeof(struct ata_params))` — an
+`ata_params`-sized buffer read as 16-bit words, which is what
+`ata_do_identify()` does next),
+`usr.sbin/bhyve/amd64/e820.c:132` (`fwcfg_item->data` is `uint8_t *`
+and the item's `size` is set from the same expression on the line
+above), `usr.sbin/rtadvd/control_server.c:181`, `:222` and `:268`
+(`p` is `char *`; `cm_str2bin(p, ifi, sizeof(*ifi))` is a bounded
+`memcpy` of exactly that many bytes — `control.c:466`).
+`usr.sbin/ppp/defs.c:387` is the standard dynamic `fd_set` idiom,
+`malloc(howmany(getdtablesize(), NFDBITS) * sizeof(fd_mask))`.
+
+**Two types that are the same size.**
+`lib/libc/tests/resolv/resolv_test.c:268` and `:271`
+(`calloc(n, sizeof(int))` into an `_Atomic(int) *`; `_Atomic(int)` has
+`int`'s size and alignment on every target this tree builds),
+`lib/libhbsdcontrol/libhbsdcontrol.c:324`
+(`calloc(nres, sizeof(char **))` into a `char **`, so `char *` is
+meant and both are pointers).  The second is the `radixsort.c` row of
+the table above, in different words: right on every supported target,
+and `sizeof(*res)` would say so.
+
+**Right by accident.**  `usr.sbin/cron/lib/entry.c:130` is
+`calloc(sizeof(entry), sizeof(char))` — the arguments in the wrong
+order, which works because the second is 1, so the product is
+`sizeof(entry)` either way.
+
+**An over-allocation of two bytes.**
+`lib/libefivar/efivar-dp-format.c:2572` returns
+`AllocateZeroPool(sizeof(CHAR16))` — `calloc(1, 2)` behind the macro at
+`uefi-dplib.h:491` — from a function whose return type the port
+changed to `char *`.  Two zero bytes where one would do; the first is
+the NUL that makes it the empty string.
+
+### `sys/powerpc/include/cpufunc.h`: two `asm`s that touch memory and do not say so
+
+The two `core.uninitialized.UndefReturn` findings left over from that
+bucket both land in this header, and reading them found something the
+checker was not looking for.
+
+```c
+static __inline register_t
+mffs(void)
+{
+	uint64_t value;
+
+	__asm __volatile ("mffs 0; stfd 0,0(%0)"
+			:: "b"(&value));
+
+	return ((register_t)value);
+}
+```
+
+The `stfd` stores the FPSCR **through** `%0`.  The asm declares no
+output operand and no clobber, so nothing tells the compiler that
+`value` is written — only that its address is an input.  `__volatile`
+keeps the instruction and orders it against other volatile asm; it does
+not make the object observably modified, and it does not stop the
+compiler eliding a local it believes is never assigned.  An asm that
+stores through a pointer operand needs a memory clobber or a memory
+output operand, and this one has neither.  `eieio()`, `isync()` and
+`sync()`, three functions further down the same header, all carry
+`: : : "memory"`.
+
+`mtfsf()` immediately below is the mirror, in the read direction:
+
+```c
+	__asm __volatile ("lfd 0,0(%0); mtfsf 0xff,0"
+			:: "b"(&value));
+```
+
+Passing `&value` forces the parameter into a stack slot, but nothing
+says the asm *reads* that slot, so the store into it is not ordered
+before the instruction that loads from it.  Same rule, other direction.
+
+Both fixed with `: "memory"`.  This is why the analyser reported
+`mffs()`'s return as undefined — on the model, it is; the model is
+right and the asm was wrong.  `sys/powerpc/booke/spe.c:444`, the other
+straggler, is the same shape and is already correct: its `evstdw`
+carries `: "memory"`, so that one really is only a modelling limit.
+
+A grep for the shape — `:: "b"(&`*x*`));`, an address-of input with no
+clobber at all — finds exactly these two in `sys/powerpc`.

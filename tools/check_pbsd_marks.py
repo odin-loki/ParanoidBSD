@@ -4953,6 +4953,27 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/sys/powerpc/include/cpufunc.h": [
+        (
+            "PBSD: the stfd writes through %0, so this needs \"memory\".",
+            "\t__asm __volatile (\"mffs 0; stfd 0,0(%0)\"\n"
+            "\t\t\t:: \"b\"(&value));",
+            "mffs(): the asm stores the FPSCR through its pointer "
+            "operand but declared no output and no clobber, so nothing "
+            "told the compiler `value' is written. __volatile orders "
+            "the instruction; it does not make the object observably "
+            "modified",
+        ),
+        (
+            "PBSD: and the lfd READS through %0, which needs it too.",
+            "\t__asm __volatile (\"lfd 0,0(%0); mtfsf 0xff,0\"\n"
+            "\t\t\t:: \"b\"(&value));",
+            "mtfsf(): the mirror. Passing &value forces the parameter "
+            "into a stack slot, but nothing says the asm reads that "
+            "slot, so the store into it is not ordered before the "
+            "instruction that loads from it",
+        ),
+    ],
     "hbsd/src/sys/dev/cxgb/common/cxgb_t3_hw.c": (
         "PBSD: both subscripts come from the device, and both tables",
         "\tlog2_width = fls(adap->params.pci.width) - 1;\n"
