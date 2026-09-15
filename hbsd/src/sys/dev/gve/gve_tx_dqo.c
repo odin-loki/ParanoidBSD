@@ -712,7 +712,19 @@ gve_tx_copy_mbuf_and_write_pkt_descs(struct gve_tx_ring *tx,
 		pkt->num_qpl_bufs++;
 	}
 
-	tx->dqo.qpl_bufs[buf] = -1;
+	/*
+	 * PBSD: terminate on prev_buf, which `buf' is uninitialised for.
+	 *
+	 * `buf' is written only inside the loop, so a zero-length packet
+	 * -- pkt_len is mbuf->m_pkthdr.len, and nothing on the way here
+	 * requires it to be positive -- left it holding whatever was on
+	 * the stack and used that as a subscript into qpl_bufs[], to
+	 * WRITE through. prev_buf holds the same value on every path
+	 * that entered the loop and -1 on the one that did not, so this
+	 * is the same store for every packet that has any bytes in it.
+	 */
+	if (prev_buf != -1)
+		tx->dqo.qpl_bufs[prev_buf] = -1;
 }
 
 int
@@ -885,6 +897,19 @@ gve_reap_qpl_bufs_dqo(struct gve_tx_ring *tx,
 	int32_t qpl_buf_tail;
 	int32_t old_head;
 	int i;
+
+	/*
+	 * PBSD: no buffers means qpl_buf_tail is never written.
+	 *
+	 * The loop below is the only assignment to qpl_buf_tail, and the
+	 * store after it -- tx->dqo.qpl_bufs[buf] = old_head -- indexes
+	 * on that value. A pending packet with num_qpl_bufs 0 therefore
+	 * wrote through a stack subscript, and then published
+	 * pkt->qpl_buf_head, which is -1 for such a packet, as the head
+	 * of the free list. There is nothing here to reap.
+	 */
+	if (pkt->num_qpl_bufs == 0)
+		return;
 
 	for (i = 0; i < pkt->num_qpl_bufs; i++) {
 		dma = gve_get_page_dma_handle(tx, buf);

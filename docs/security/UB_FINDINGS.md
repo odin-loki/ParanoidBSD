@@ -28205,3 +28205,192 @@ device-tree string.  And `ber_read_element()` in `usr.sbin/ypldap`
 carries an `ssize_t len` from an LDAP server through
 `malloc(len + 1)`; a negative would make that allocation fail rather
 than succeed small, so the store at `be_val[len]` is not reached.
+
+## The four classes nobody had opened: 10 findings, 2 defects
+
+Run 31's analyse shards carry 2,037 findings in fourteen checker
+classes.  Thirteen of them have been read at least once.  Four had not
+been opened at all, and between them they hold ten findings — the
+smallest buckets in the file, and the ones where clang is least often
+wrong:
+
+| checker | findings |
+| --- | --- |
+| `core.StackAddressEscape` | 4 |
+| `core.uninitialized.ArraySubscript` | 4 |
+| `core.VLASize` | 1 |
+| `core.NonNullParamChecker` | 1 |
+
+All ten are below.  Two are defects and both are in one driver.  The
+other eight are written down with the reason each died, because a
+bucket read once and reported as "nothing there" is indistinguishable
+from a bucket never opened.
+
+Each was re-run with `-analyzer-output=text` rather than the sweep's
+`plist-multi-file`, so the note chain — which branch the analyser
+assumed, which extern it could not see into — is part of the evidence
+rather than a reconstruction.  `tools/verify/explain.py` does it, and
+builds its flags by calling `analyze.py`'s own `lang_flags()` and
+`include_flags()` rather than copying them, so a finding it prints is a
+finding the sweep saw:
+
+```
+python3 tools/verify/explain.py sys/dev/gve/gve_tx_dqo.c
+python3 tools/verify/explain.py usr.bin/login/login.c nonnull
+```
+
+### `gve_tx_dqo.c`: two stores through an uninitialised subscript
+
+`sys/dev/gve/gve_tx_dqo.c` is Google's gVNIC driver, the network device
+a FreeBSD guest gets on Google Compute Engine.  In its QPL (queue page
+list) transmit path, two functions index `tx->dqo.qpl_bufs[]` on a
+local that only a loop body assigns, and in both the store happens
+*after* the loop:
+
+```c
+	int32_t prev_buf = -1;
+	int32_t buf;
+
+	while (copy_offset < pkt_len) {
+		buf = gve_tx_alloc_qpl_buf(tx);
+		...
+		prev_buf = buf;
+		pkt->num_qpl_bufs++;
+	}
+
+	tx->dqo.qpl_bufs[buf] = -1;		/* buf, not prev_buf */
+```
+
+`pkt_len` is `mbuf->m_pkthdr.len`.  Nothing between the caller's mbuf
+and this function requires it to be positive — `gve_xmit_dqo_qpl()`
+counts segments and transmit credits, neither of which is a length
+test.  A zero-length packet runs the loop zero times, `buf` holds
+whatever the frame held, and the last line **writes** through it.
+
+`gve_reap_qpl_bufs_dqo()`, one function along, is the same shape:
+
+```c
+	for (i = 0; i < pkt->num_qpl_bufs; i++) {
+		...
+		qpl_buf_tail = buf;
+		buf = tx->dqo.qpl_bufs[buf];
+	}
+	MPASS(buf == -1);
+	buf = qpl_buf_tail;
+
+	while (true) {
+		old_head = atomic_load_32(&tx->dqo.free_qpl_bufs_prd);
+		tx->dqo.qpl_bufs[buf] = old_head;
+```
+
+and the packet that reaches it with `num_qpl_bufs == 0` is exactly the
+packet the first defect produces, so the two are one bug seen twice.
+That path is worse in one respect: it then publishes
+`pkt->qpl_buf_head` — still `-1` for such a packet — as the head of the
+per-ring free list through `atomic_cmpset_rel_32()`, so the damage
+outlives the packet that caused it.
+
+Neither is caught by `INVARIANTS`: `MPASS(buf == -1)` in the reaper is
+checking the *walk* terminated, not that the walk happened.
+
+Fixed by terminating on `prev_buf`, which carries the same value on
+every path that entered the loop and `-1` on the one that did not, and
+by returning early from the reaper when there is nothing to reap.  Both
+are no-ops for every packet with any bytes in it.
+
+Confirmed with `tools/verify/probes/gve_qpl_buf_index.c`:
+
+```
+cbmc -DOLD --unwind 6 --bounds-check --pointer-check   ->  4 of 8 failed
+cbmc       --unwind 6 --bounds-check --pointer-check   ->  0 of 8, SUCCESSFUL
+```
+
+Four rather than two because each written assertion is joined by the
+`array_bounds` pair CBMC generates for the store it guards — the
+assertion names the invariant, the bounds checks say the store itself
+is outside the array.
+
+After the fix `clang --analyze` reports **zero** findings in the file,
+where run 31 had two.
+
+### The eight that died on reading
+
+**`usr.bin/login/login.c:303` — `pam_set_item(pamh, ...)` with `pamh`
+NULL.**  The note chain has `pam_start("login", username, &pamc,
+&pamh)` returning `PAM_SUCCESS` and `pamh` still null afterwards.
+`contrib/openpam/lib/libpam/pam_start.c` writes `*pamh = ph;` on the
+line before `RETURNC(PAM_SUCCESS)`, so the premise is false.
+
+The discriminator is worth keeping: renaming `main` to `notmain` in an
+otherwise byte-identical copy of `login.c` makes the finding vanish.
+It is the analyser's `main()`-entry modelling of internal-linkage
+globals, not anything about PAM, and it will produce the same shape
+anywhere a `static` pointer is filled in by an out-parameter inside
+`main`.
+
+**`sys/kern/kern_prot.c:646` ×2 — `user_setcred()` returns with the
+caller's `struct setcred` holding `&mac` and `smallgroups`, both in the
+dying frame.**  True, and inconsequential: both call sites,
+`sys_setcred()` and `freebsd32_setcred()`, are
+`return (user_setcred(td, uap->flags, &wcred));` — the struct is a
+local of the caller and is never read again.  Worth noting that
+`user_setcred()` does not null either field on the way out, so this is
+"nobody looks" rather than "it cannot happen"; a third caller that kept
+the struct would inherit a dangling pointer with no warning.
+
+**`sys/net/rtsock.c:997` ×2 — `update_rtm_from_rc()` leaves
+`info->rti_info[RTAX_DST]` and `[RTAX_NETMASK]` pointing at `sa_dst`
+and `sa_mask` in its own frame.**  The caller knows.  It carries the
+comment
+
+```c
+		/*
+		 * Note that some sockaddr pointers may have changed to
+		 * point to memory outsize @rtm. Some may be pointing
+		 * to the on-stack variables.
+		 * Given that, any pointer in @info CANNOT BE USED.
+		 */
+```
+
+and the only later reader — the `INET6` scope-recovery loop — is
+guarded by `rti_need_deembed`, which that same block clears
+unconditionally, on the error path as well as the success one.
+
+**`sys/dev/cxgbe/tom/t4_cpl_io.c:583` — `struct sglist_seg segs[n]`
+with `n == 0`.**  The path has the mbuf loop run exactly once with
+`n = sglist_count(...)` returning 0 *and* `plen > max_imm`.  `plen`
+starts at 0 and gains only `m->m_len`, so `plen > max_imm >= 0`
+requires `m_len > 0`, and `sglist_count()` of a non-empty buffer is at
+least 1.  The two assumptions contradict; the analyser takes both
+because `sglist_count()` is an extern whose return it cannot constrain.
+The same extern-driven shape the CBMC reports have.
+
+**`sys/dev/evdev/evdev_mt.c:267` — `r2c[row]` with `row` unset.**
+`row` is assigned in `for (i = 0, p = matrix + col; i < m; i++, ...)`,
+so the read needs `m == 0`.  The one caller,
+`evdev_mt_match_frame()`, returns early on `size == 0` and then sets
+`m` to either `num_touches` (on the branch where `num_touches >= size`,
+so `m >= size >= 1`) or to `size` itself.  `m >= 1` on both.  `n` can
+be zero on the second branch, and that is fine — the `col` loop simply
+does not run and `row` is never read.
+
+**`sys/netgraph/ng_pptpgre.c:645` — `gre->data[gre->hasSeq]` with
+`hasSeq` undefined.**  The note is explicit: `endian.h:139: Returning
+without writing to 'pp->hasSeq'`.  `be32enc(gre, PPTP_INIT_VALUE)`
+eighteen lines earlier stores four bytes over the header, bitfields
+included; the analyser models `be32enc()`'s byte stores as not reaching
+a bitfield member of the struct they land on.  A modelling artifact of
+type-punned initialisation, not a path.
+
+**`sys/contrib/dev/iwlwifi/mvm/sta.c:1034` —
+`tid_to_mac80211_ac[tid]` with `tid == 9`, one past the end of a
+nine-element array.**  `tid = find_first_bit(&tid_bitmap,
+IWL_MAX_TID_COUNT + 1)` returns the size, 9, when no bit below 9 is
+set; the `WARN(!tid_bitmap)` above only establishes the word is
+non-zero, not that a low bit is.  The gap is closed one level out: the
+only assignment to that bitmap in the whole driver is
+`mvm->queue_info[queue].tid_bitmap |= BIT(tid)` at `sta.c:949`, whose
+`tid` is bounded by `IWL_MAX_TID_COUNT`, which is 8.  Bits 9 and above
+are never set, so `find_first_bit()` cannot return 9 with the bitmap
+non-zero.  Left alone rather than guarded: this is vendor Linux code
+kept in sync with upstream iwlwifi, and the invariant is upstream's.

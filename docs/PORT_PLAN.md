@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,959 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,984 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,193** | **114,208** |
+| | **total** | **41,143** | **21,303,218** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -73027,7 +73027,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.729.13.34 `is_vlan_tagged_pkt()` · `TODO-FN`
   - [ ] 8.729.13.35 `gve_xmit_ifp()` · `TODO-FN`
   - [ ] 8.729.13.36 `gve_qflush()` · `TODO-FN`
-- [ ] **8.729.14** `gve_tx_dqo.c` · 1,160L · `TODO-PORT` · 35 fn
+- [ ] **8.729.14** `gve_tx_dqo.c` · 1,185L · `TODO-PORT` · 35 fn
   - [ ] 8.729.14.1 `gve_unmap_packet()` · `TODO-FN`
   - [ ] 8.729.14.2 `gve_clear_qpl_pending_pkt()` · `TODO-FN`
   - [ ] 8.729.14.3 `gve_free_tx_mbufs_dqo()` · `TODO-FN`

@@ -4953,13 +4953,34 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
-    "hbsd/src/sys/dev/gve/gve_tx_dqo.c": (
-        "\t\treturn (EINVAL);\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off + sizeof(struct tcphdr *));",
-        "\t\t    htons(IPPROTO_TCP));\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off",
-        "gve_prep_tso: csum is set on the IPv4 and IPv6 arms only, and "
-        "a frame that is neither wrote two bytes of stack into the "
-        "outgoing header as a TCP checksum",
-    ),
+    "hbsd/src/sys/dev/gve/gve_tx_dqo.c": [
+        (
+            "\t\treturn (EINVAL);\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off + sizeof(struct tcphdr *));",
+            "\t\t    htons(IPPROTO_TCP));\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off",
+            "gve_prep_tso: csum is set on the IPv4 and IPv6 arms only, and "
+            "a frame that is neither wrote two bytes of stack into the "
+            "outgoing header as a TCP checksum",
+        ),
+        (
+            "PBSD: terminate on prev_buf, which `buf' is uninitialised for.",
+            "\tpkt->num_qpl_bufs++;\n\t}\n\n\ttx->dqo.qpl_bufs[buf] = -1;",
+            "gve_tx_copy_mbuf_and_write_pkt_descs: `buf' is assigned only "
+            "inside the copy loop, and the loop runs while copy_offset < "
+            "pkt_len. A packet of length zero skips it entirely and the "
+            "store after it then used an uninitialised `buf' as a "
+            "subscript into tx->dqo.qpl_bufs[] -- a write, not a read. "
+            "prev_buf carries the same value and is initialised to -1",
+        ),
+        (
+            "PBSD: no buffers means qpl_buf_tail is never written.",
+            "\tint i;\n\n\tfor (i = 0; i < pkt->num_qpl_bufs; i++) {",
+            "gve_reap_qpl_bufs_dqo: the same defect one function along. "
+            "qpl_buf_tail is written only in the reap loop, and the "
+            "publish below indexes qpl_bufs[] on it. The packet that "
+            "reaches it with num_qpl_bufs 0 is the one the fix above "
+            "describes, so the two were always the same bug",
+        ),
+    ],
     "hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_main.c": (
         "\t\t\t*idx = MLX4_SINK_COUNTER_INDEX(dev);",
         "\t\t\t*idx = get_param_l(&out_param);\n\n\t\treturn err;",
