@@ -164,8 +164,24 @@ env_archlevel(int *force)
 {
 	size_t i;
 
-	if (environ == NULL)
+	/*
+	 * PBSD: this return owes the caller *force, like the other two.
+	 *
+	 * The comment above says "*force is set to 1 ... and to 0
+	 * otherwise", and archlevel() reads it unconditionally as
+	 * `if (!force)'.  This arm did not write it, so a program with
+	 * a NULL environ -- scrubbing it by assigning environ = NULL is
+	 * an ordinary thing for a daemon to do -- decided libc's SIMD
+	 * dispatch on an uninitialised stack int.  Garbage that is not
+	 * zero skips supported_archlevel() entirely, leaves wantlevel at
+	 * X86_64_UNDEFINED, which is -1, and __archlevel_resolve()'s
+	 * `for (level = -1; level >= 0; level--)' then falls straight
+	 * into __builtin_trap().
+	 */
+	if (environ == NULL) {
+		*force = 0;
 		return (X86_64_UNDEFINED);
+	}
 
 	for (i = 0; environ[i] != NULL; i++) {
 		size_t j;

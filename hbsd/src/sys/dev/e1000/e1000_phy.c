@@ -2364,8 +2364,22 @@ s32 e1000_phy_has_link_generic(struct e1000_hw *hw, u32 iterations,
 
 	DEBUGFUNC("e1000_phy_has_link_generic");
 
-	if (!hw->phy.ops.read_reg)
+	/*
+	 * PBSD: *success is this function's whole answer, and the
+	 * no-read_reg arm returned E1000_SUCCESS without writing it.
+	 *
+	 * All 24 call sites pass the address of an uninitialised
+	 * `bool link' and read it the moment the return is
+	 * E1000_SUCCESS -- e1000_get_phy_info_82577() turns it straight
+	 * into "return -E1000_ERR_CONFIG or carry on", and
+	 * e1000_phy_force_speed_duplex_82577() into a DEBUGOUT.  The
+	 * guard itself says hw->phy.ops.read_reg can be NULL; what it
+	 * did not say is what happened when it was.
+	 */
+	if (!hw->phy.ops.read_reg) {
+		*success = false;
 		return E1000_SUCCESS;
+	}
 
 	for (i = 0; i < iterations; i++) {
 		/* Some PHYs require the PHY_STATUS register to be read

@@ -4953,6 +4953,25 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/sys/dev/e1000/e1000_phy.c": (
+        "PBSD: *success is this function's whole answer, and the",
+        "\tif (!hw->phy.ops.read_reg)\n\t\treturn E1000_SUCCESS;"
+        "\n\n\tfor (i = 0; i < iterations; i++) {",
+        "e1000_phy_has_link_generic(): the no-read_reg arm returned "
+        "E1000_SUCCESS without writing *success, and all 24 call sites "
+        "pass an uninitialised `bool link' and read it as soon as the "
+        "return is E1000_SUCCESS",
+    ),
+    "hbsd/src/lib/libc/amd64/string/amd64_archlevel.c": (
+        "PBSD: this return owes the caller *force, like the other two.",
+        "\tif (environ == NULL)\n\t\treturn (X86_64_UNDEFINED);",
+        "env_archlevel(): the environ == NULL arm returned without "
+        "writing *force, which its own comment promises and which "
+        "archlevel() reads as `if (!force)'. Non-zero garbage skips "
+        "supported_archlevel(), leaves wantlevel at X86_64_UNDEFINED "
+        "(-1), and __archlevel_resolve() falls into __builtin_trap() "
+        "on the first SIMD string function",
+    ),
     "hbsd/src/lib/libc/iconv/citrus_pivot_factory.c": [
         (
             "PBSD: `ret' is 0 here, and 0 is what the caller reads",

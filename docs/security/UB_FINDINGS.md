@@ -28520,3 +28520,139 @@ from bytes the analyser thinks are undefined.**  The bytes are
 with no padding.  `blake2b_init_param()` then reads the same 64 bytes
 through a `uint8_t *`.  The same type-punned-read modelling limit as
 `ng_pptpgre.c`'s `be32enc()` above: written as fields, read as bytes.
+
+## `core.uninitialized.Branch`: the four unread ones, and two defects
+
+25 findings.  21 had already been written up with the shard they came
+in.  Four had not, and two of those are defects — both the same shape:
+a function whose contract is an out-parameter, and an early return that
+skips it.
+
+### `amd64_archlevel.c`: libc's SIMD dispatch, decided by stack garbage
+
+`lib/libc/amd64/string/amd64_archlevel.c` is what decides, once per
+process, which of libc's string-function implementations the ifunc
+resolvers select.  `env_archlevel()` carries its own contract:
+
+```c
+/*
+ * ...
+ * *force is set to 1 if the architecture level is valid and begins with a !
+ * and to 0 otherwise.
+ */
+static int
+env_archlevel(int *force)
+{
+	size_t i;
+
+	if (environ == NULL)
+		return (X86_64_UNDEFINED);
+```
+
+Two of its three returns honour that.  The `environ == NULL` one does
+not.  `archlevel()` reads it unconditionally:
+
+```c
+	wantlevel = env_archlevel(&force);
+	if (!force) {
+		hwlevel = supported_archlevel(feat_edx, feat_ecx, ext_ebx, ext_ecx);
+		if (wantlevel == X86_64_UNDEFINED || wantlevel > hwlevel)
+			wantlevel = hwlevel;
+	}
+```
+
+so garbage that is not zero skips `supported_archlevel()` entirely and
+leaves `wantlevel` at `X86_64_UNDEFINED`, which
+`lib/libc/amd64/amd64_archlevel.h:37` defines as `-1`.  That is stored
+into `amd64_archlevel` by the `atomic_cmpset_int()` below and handed to
+
+```c
+	for (level = archlevel(feat_edx, feat_ecx, ext_ebx, ext_ecx); level >= 0; level--)
+		if (funcs[level] != 0)
+			return (dlfunc_t)((uintptr_t)funcs + (ptrdiff_t)funcs[level]);
+
+	/* no function is present -- what now? */
+	__builtin_trap();
+```
+
+which runs zero iterations and traps.  Assigning `environ = NULL` to
+scrub the environment is an ordinary thing for a daemon to do, and the
+first SIMD string function after it decides libc's dispatch on an
+uninitialised stack `int`.
+
+Fixed by writing `*force = 0` on that return, which is what the
+comment already says happens.  After the fix `clang --analyze` reports
+nothing at all in the file.
+
+### `e1000_phy.c`: the no-`read_reg` arm returns success without an answer
+
+```c
+/**
+ *  @success: pointer to whether polling was successful or not
+ **/
+s32 e1000_phy_has_link_generic(struct e1000_hw *hw, u32 iterations,
+			       u32 usec_interval, bool *success)
+{
+	...
+	if (!hw->phy.ops.read_reg)
+		return E1000_SUCCESS;
+```
+
+`*success` is the function's whole answer, and this arm returns the
+success code without writing it.  All 24 call sites in `sys/dev/e1000`
+pass the address of an uninitialised `bool link` and read it the moment
+the return is `E1000_SUCCESS` —
+`e1000_get_phy_info_82577()` turns it straight into
+"`return -E1000_ERR_CONFIG` or carry on", and
+`e1000_phy_force_speed_duplex_82577()` into a `DEBUGOUT`.  The guard
+itself is the statement that `hw->phy.ops.read_reg` can be NULL; what
+it did not say is what happens when it is.
+
+Fixed in the callee, which covers all 24.  The three other
+`if (!hw->phy.ops.read_reg) return E1000_SUCCESS;` guards in the same
+file — `e1000_set_d3_lplu_state_generic()`, `e1000_wait_autoneg()` and
+`e1000_phy_sw_reset_generic()` — have no out-parameter and are correct
+as they stand.
+
+Both confirmed with `tools/verify/probes/outparam_early_return.c`,
+which states the invariant as one sentence for each:
+
+```
+cbmc -DOLD --unwind 4   ->  2 of 2 failed, FAILED
+cbmc       --unwind 4   ->  0 of 2, SUCCESSFUL
+```
+
+**A note on the marker, because the gate caught a real mistake.**  The
+first `unwanted` anchor recorded for the e1000 fix was the two lines
+
+```c
+	if (!hw->phy.ops.read_reg)
+		return E1000_SUCCESS;
+```
+
+which appear **four** times in `e1000_phy.c` — once in the function that
+was fixed and three times in functions that are correct.
+`check_pbsd_marks.py` reported "bug is back" against a tree where the
+fix was present and correct, because the anchor it was given cannot tell
+the four apart.  The anchor now carries the following
+`for (i = 0; i < iterations; i++) {`, which is unique.  An `unwanted`
+string has to identify the *site*, not the *idiom*.
+
+### The two that are not defects
+
+**`sys/dev/ppbus/ppb_msq.c:310` — `ppb_MS_microseq()` recurses, and the
+recursive call's `EACCES` return leaves `error` unwritten.**  The early
+return is `if (ppb->ppb_owner != dev) return (EACCES);`, and the outer
+call established `ppb->ppb_owner == dev` at its own entry.  Nothing
+between the two changes it: `mode2xfer()` is a table lookup, the
+`PPBUS_WRITE` arm is not on this path, and the only writers of
+`ppb_owner` in the whole subsystem are `ppb_request_bus()` and
+`ppb_release_bus()` in `ppbconf.c`, neither of which is reachable from
+here — with `ppc_lock` held, which the function asserts.  The recursive
+calls do ignore their return value, which is what makes the shape
+visible; the guarantee is one frame up rather than at the call.
+
+**`sys/dev/e1000/e1000_phy.c:3943`** is the second report of the
+`e1000_phy_has_link_generic()` defect above, from
+`e1000_phy_force_speed_duplex_82577()` rather than
+`e1000_get_phy_info_82577()`.  One defect, two findings.
