@@ -612,6 +612,31 @@ Twelve more of the same run's ERRORs are the memory bound biting —
 recorded failure.  Those are the bound working, and they are still
 unchecked functions.
 
+The obvious question is what the bound costs, and the answer, measured
+over the whole 918 both ways on a 4-core 16GB container, is **nothing**:
+
+| | `--jobs 4 --mem-mb 2048` | `--jobs 2 --mem-mb 4096` |
+|---|---:|---:|
+| PROVED | 526 | 524 |
+| FAILED | 246 | 246 |
+| BOUNDED | 24 | 24 |
+| TIMEOUT | 50 | 57 |
+| ERROR | 72 | 67 |
+| peak RSS, all live cbmc | 5.90GB | 6.46GB |
+| peak RSS, one instance | 1.92GB | 3.96GB |
+
+Not one function in 918 goes from `ERROR` or `TIMEOUT` to an answer
+when the cap doubles.  Five `ERROR`s become `TIMEOUT`s — the solver is
+allowed to grow further and then runs out of time instead of address
+space, which is the same non-answer in a different costume — and two
+functions that were `PROVED` at 2048 are `TIMEOUT` at 4096, because the
+wall clock per function is the same sixty seconds on a machine under
+more pressure.
+
+A function that wants more than 2GB of address space for one modular
+check at `--unwind 16` does not want 4GB either.  It wants a different
+question.
+
 ## Two tiers of check, and why
 
 The very first function this was ever run on, `lib/libc/string/ffs.c`,

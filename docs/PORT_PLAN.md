@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,043 | 9,057 |
+| 1 | `lib` | 2,827 | 641,067 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,812 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,883 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,022** | **114,208** |
+| | **total** | **41,143** | **21,303,117** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -4424,7 +4424,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.101.7** `bindresvport.c` · 152L · `TODO-PORT` · 2 fn
   - [ ] 1.101.7.1 `bindresvport()` · `TODO-FN`
   - [ ] 1.101.7.2 `bindresvport_sa()` · `TODO-FN`
-- [ ] **1.101.8** `clnt_bcast.c` · 674L · `TODO-PORT` · 5 fn
+- [ ] **1.101.8** `clnt_bcast.c` · 690L · `TODO-PORT` · 5 fn
   - [ ] 1.101.8.1 `__rpc_getbroadifs()` · `TODO-FN`
   - [ ] 1.101.8.2 `__rpc_freebroadifs()` · `TODO-FN`
   - [ ] 1.101.8.3 `__rpc_broadenable()` · `TODO-FN`
@@ -4586,7 +4586,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.101.28.2 `_getgroups()` · `TODO-FN`
   - [ ] 1.101.28.3 `netname2host()` · `TODO-FN`
   - [ ] 1.101.28.4 `getnetid()` · `TODO-FN`
-- [ ] **1.101.29** `pmap_clnt.c` · 115L · `TODO-PORT` · 2 fn
+- [ ] **1.101.29** `pmap_clnt.c` · 123L · `TODO-PORT` · 2 fn
   - [ ] 1.101.29.1 `pmap_set()` · `TODO-FN`
   - [ ] 1.101.29.2 `pmap_unset()` · `TODO-FN`
 - [ ] **1.101.30** `pmap_getmaps.c` · 94L · `TODO-PORT` · 1 fn
@@ -59174,7 +59174,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.589.25.9 `acpi_pwr_switch_power()` · `TODO-FN`
   - [ ] 8.589.25.10 `acpi_pwr_find_resource()` · `TODO-FN`
   - [ ] 8.589.25.11 `acpi_pwr_find_consumer()` · `TODO-FN`
-- [ ] **8.589.26** `acpi_pxm.c` · 711L · `TODO-PORT` · 19 fn
+- [ ] **8.589.26** `acpi_pxm.c` · 725L · `TODO-PORT` · 19 fn
   - [ ] 8.589.26.1 `slit_parse_table()` · `TODO-FN`
   - [ ] 8.589.26.2 `parse_slit()` · `TODO-FN`
   - [ ] 8.589.26.3 `overlaps_phys_avail()` · `TODO-FN`
@@ -65931,7 +65931,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.660 `sys/dev/clk`
 
-- [ ] **8.660.1** `clk.c` · 1,753L gen:5 · `TODO-PORT` · 62 fn
+- [ ] **8.660.1** `clk.c` · 1,762L gen:5 · `TODO-PORT` · 62 fn
   - [ ] 8.660.1.1 `clknode_method_init()` · `TODO-FN`
   - [ ] 8.660.1.2 `clknode_method_recalc_freq()` · `TODO-FN`
   - [ ] 8.660.1.3 `clknode_method_set_freq()` · `TODO-FN`
@@ -66048,7 +66048,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.661.1.7 `aw_ccu_search_compatible()` · `TODO-FN`
   - [ ] 8.661.1.8 `aw_ccu_probe()` · `TODO-FN`
   - [ ] 8.661.1.9 `aw_ccu_attach()` · `TODO-FN`
-- [ ] **8.661.2** `aw_ccung.c` · 360L gen:1 · `TODO-PORT` · 10 fn
+- [ ] **8.661.2** `aw_ccung.c` · 380L gen:1 · `TODO-PORT` · 10 fn
   - [ ] 8.661.2.1 `aw_ccung_write_4()` · `TODO-FN`
   - [ ] 8.661.2.2 `aw_ccung_read_4()` · `TODO-FN`
   - [ ] 8.661.2.3 `aw_ccung_modify_4()` · `TODO-FN`
@@ -72561,7 +72561,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.727.7.3 `gpiobacklight_probe()` · `TODO-FN`
   - [ ] 8.727.7.4 `gpiobacklight_attach()` · `TODO-FN`
   - [ ] 8.727.7.5 `gpiobacklight_detach()` · `TODO-FN`
-- [ ] **8.727.8** `gpiobus.c` · 1,194L gen:2 · `TODO-PORT` · 54 fn
+- [ ] **8.727.8** `gpiobus.c` · 1,211L gen:2 · `TODO-PORT` · 54 fn
   - [ ] 8.727.8.1 `gpio_alloc_intr_resource()` · `TODO-FN`
   - [ ] 8.727.8.2 `gpio_check_flags()` · `TODO-FN`
   - [ ] 8.727.8.3 `gpio_pin_get_by_bus_pinnum()` · `TODO-FN`
@@ -85898,7 +85898,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.834.10.3 `__mlx5_ib_populate_pas()` · `TODO-FN`
   - [ ] 8.834.10.4 `mlx5_ib_populate_pas()` · `TODO-FN`
   - [ ] 8.834.10.5 `mlx5_ib_get_buf_offset()` · `TODO-FN`
-- [ ] **8.834.11** `mlx5_ib_mr.c` · 1,656L · `TODO-PORT` · 46 fn
+- [ ] **8.834.11** `mlx5_ib_mr.c` · 1,667L · `TODO-PORT` · 46 fn
   - [ ] 8.834.11.1 `mlx5_alloc_priv_descs()` · `TODO-FN`
   - [ ] 8.834.11.2 `mlx5_free_priv_descs()` · `TODO-FN`
   - [ ] 8.834.11.3 `mlx5_ib_sg_to_klms()` · `TODO-FN`

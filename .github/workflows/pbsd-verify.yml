@@ -214,10 +214,29 @@ jobs:
       # machine.
       #
       # Measured on a 4-core 16GB container, the same shape as the
-      # runner: at --jobs 4 --mem-mb 2048 the whole 918 completes, peak
-      # RSS across live cbmc processes 5.90GB, and twelve functions come
-      # back ERROR because the bound bit. At --mem-mb 4096 a SINGLE
-      # instance reaches 3.36GB, so four of those is the machine.
+      # runner, over the whole 918 both ways:
+      #
+      #                       jobs 4          jobs 2
+      #                       mem-mb 2048     mem-mb 4096
+      #     PROVED              526             524
+      #     FAILED              246             246
+      #     BOUNDED              24              24
+      #     TIMEOUT              50              57
+      #     ERROR                72              67
+      #     peak RSS, all      5.90GB          6.46GB
+      #     peak RSS, one      1.92GB          3.96GB
+      #
+      # Doubling the cap gains ZERO verdicts. Not one function in 918
+      # goes from ERROR or TIMEOUT to an answer; five ERRORs become
+      # TIMEOUTs, which is the solver being allowed to grow further and
+      # then running out of time instead of address space - the same
+      # non-answer in a different costume - and TWO functions that were
+      # PROVED at 2048 are TIMEOUT at 4096, because the wall clock per
+      # function is the same 60s on a machine under more pressure.
+      #
+      # So the bound costs nothing and the parallelism is worth keeping.
+      # A single instance at 4096 reaches 3.96GB, which is what four of
+      # them uncapped did to the runner.
       #
       # --jobs 4 --mem-mb 2048 is the same 8GB total budget the pointer
       # step already spends as --jobs 2 --mem-mb 4096, and it keeps the
