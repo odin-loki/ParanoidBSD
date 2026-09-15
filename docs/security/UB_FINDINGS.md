@@ -28394,3 +28394,129 @@ only assignment to that bitmap in the whole driver is
 are never set, so `find_first_bit()` cannot return 9 with the bitmap
 non-zero.  Left alone rather than guarded: this is vendor Linux code
 kept in sync with upstream iwlwifi, and the invariant is upstream's.
+
+## `core.uninitialized.UndefReturn`, all 38: one defect, in `libc`'s iconv
+
+A function returning a value no path assigned.  38 findings across 18
+files.  Most had been read as part of a shard; seven files had not been
+opened at all, and one of those holds a real defect.
+
+### `citrus_pivot_factory.c`: `dump_db()` reported success it had not had
+
+`lib/libc/iconv/citrus_pivot_factory.c` and
+`lib/libc/iconv/citrus_lookup_factory.c` each have a `static dump_db()`
+that allocates a buffer, wraps it in a `struct _region`, and serialises
+a database into it.  The caller then writes that region out:
+
+```c
+	ret = dump_db(&sh, &r);
+	...
+	if (ret)
+		return (ret);
+
+	if (fwrite(_region_head(&r), _region_size(&r), 1, out) != 1)
+		return (errno);
+```
+
+`citrus_lookup_factory.c`'s version returns `errno` when the `malloc`
+fails.  `citrus_pivot_factory.c`'s does not — it has two allocations
+and both do
+
+```c
+		ptr = malloc(size);
+		if (ptr == NULL)
+			goto quit;
+```
+
+and `quit:` is `free(ptr); _db_factory_free(df); return (ret);`.  Every
+path that reaches either `malloc` left `ret` at **0**: either
+`_db_factory_create()` succeeded, or the previous loop iteration's
+`_db_factory_add_by_s()` did.  So a failed allocation returned 0, the
+caller read that as success, and `fwrite(_region_head(&r),
+_region_size(&r), 1, out)` ran on a `struct _region` nothing had
+written — an arbitrary stack address and an arbitrary length, written
+into the output file.
+
+Fixed by setting `ret = errno` at both sites, which is what the sibling
+file does.  `<errno.h>` was already included.
+
+Worth recording how close this came to being triaged away.  The
+not-a-defect table in this document already carries the row
+
+> `citrus_lookup_factory.c` "garbage returned" — `dump_db()` returns
+> `errno` after a failed `malloc`, and the analyser does not model
+> `malloc` setting `ENOMEM`.
+
+which is correct *for that file*.  The pivot finding is the same
+checker, the same inlined header line (`citrus_region.h:54`), the same
+`dump_db` name and the same caller shape — and the row does not apply
+to it, because the premise "returns `errno`" is exactly the thing that
+is false there.  A triage that generalises by shape rather than by
+reading the second file would have lost it.
+
+After the fix, `explain.py` still reports the finding — now on the
+`ret = errno` path, with `errno == 0` — which is the sibling file's
+residual and the same non-defect.  The two files now have the same code
+and the same remaining report, which is the check that the fix was the
+right one.
+
+Confirmed with `tools/verify/probes/citrus_dump_db_ret.c`, which models
+the one invariant the caller depends on — when `dump_db()` returns 0,
+`*r` has been written:
+
+```
+cbmc -DOLD --unwind 6   ->  1 of 1 failed, FAILED
+cbmc       --unwind 6   ->  0 of 1, SUCCESSFUL
+```
+
+### The other seven files, and why each is not a defect
+
+**`sys/dev/etherswitch/infineon/adm6996fc.c:533` — `adm6996fc_setport()`
+returns an unset `err`.**  Every path assigns it: the `DOT1Q` arm sets
+`err = 0`, and the other arm returns `ENXIO` when
+`sc->portphy[p->es_port] == sc->cpuport`, so reaching the tail implies
+the complementary test twelve lines later is true and `err =
+ifmedia_ioctl(...)`.  The analyser takes both tests as independent
+because `sc->portphy` is a `malloc`'d `int *` read through a symbolic
+index — it conjures a fresh symbol per load rather than recognising the
+second read as the first.  True of any pair of complementary tests over
+heap memory; worth knowing as a shape.
+
+**`sys/xen/hvm.h:50` — `hvm_get_parameter()` returns `xhv.value`,
+×2** (from `xen_console.c` and `xenstore.c`).  `xhv` is filled in by
+`HYPERVISOR_hvm_op(HVMOP_get_param, &xhv)`, which is `_hypercall2` —
+an `__asm__ volatile` with a `"memory"` clobber.  The hypervisor writes
+the struct; the analyser does not model the asm as writing it.  Already
+an established class here: `tools/verify/probes/inline_asm_write.c` was
+written for exactly this question and answers it "no, it does not".
+
+**`lib/libc/iconv/citrus_lookup_factory.c`** — the `errno` row above,
+unchanged.
+
+**`lib/libiconv_modules/mapper_646/citrus_mapper_646.c:157` —
+`_memstream_getregion()`'s return is ignored, and `r` is read on the
+next line.**  `getregion` returns NULL without writing `*r` when
+`ms_pos + sz > region_size`, and the caller passes
+`sz = _memstream_remainder(ms)`.  `remainder()` is
+`ms_pos > sz ? 0 : sz - ms_pos`, so the sum is exactly `region_size`
+and never above it; `ms_pos` itself cannot pass `region_size` because
+`getc()` tests `iseof()` first and `seek()` rejects `pos >= sz`.  The
+NULL return is unreachable from this call.  Ignoring the return is
+still ignoring the return — it holds because two inline functions in
+the same header agree exactly, and nothing says so.
+
+**`sys/arm64/arm64/pmap.c:3545` — `reclaim_pv_chunk()` returns `m`
+when `vm_ndomains` is 0.**  `vm_ndomains` is 1 on a non-NUMA machine
+and is never 0.  `sys/amd64/amd64/pmap.c:5402` is the same function
+character for character, so this is upstream's idiom on both
+architectures rather than an arm64 slip.
+
+**`sys/contrib/libb2/blake2-impl.h:43` — `load64()` returns a `w` built
+from bytes the analyser thinks are undefined.**  The bytes are
+`blake2b_param P[1]`, which `blake2b_init_key()` writes field by field:
+`digest_length`, `key_length`, `fanout`, `depth`, `leaf_length`,
+`node_offset`, `node_depth`, `inner_length`, `reserved[14]`,
+`salt[16]`, `personal[16]` — eleven fields tiling offsets 0 through 63
+with no padding.  `blake2b_init_param()` then reads the same 64 bytes
+through a `uint8_t *`.  The same type-punned-read modelling limit as
+`ng_pptpgre.c`'s `be32enc()` above: written as fields, read as bytes.

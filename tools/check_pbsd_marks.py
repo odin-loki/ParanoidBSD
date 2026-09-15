@@ -4953,6 +4953,24 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/lib/libc/iconv/citrus_pivot_factory.c": [
+        (
+            "PBSD: `ret' is 0 here, and 0 is what the caller reads",
+            "\t\tptr = malloc(size);\n\t\tif (ptr == NULL)\n\t\t\tgoto quit;",
+            "dump_db(): both malloc failures fell into quit: with ret "
+            "still 0, so the function reported success and left *r "
+            "unwritten. _citrus_pivot_factory_convert() reads "
+            "_region_head(&r) and _region_size(&r) straight into "
+            "fwrite(). citrus_lookup_factory.c's dump_db() returns "
+            "errno in the same place",
+        ),
+        (
+            "PBSD: the same 0-as-success, on the allocation for *r itself.",
+            "\tptr = malloc(size);\n\tif (ptr == NULL)\n\t\tgoto quit;\n\t_region_init(r, ptr, size);",
+            "dump_db(): the second of the two, the one that allocates "
+            "the region the caller writes out",
+        ),
+    ],
     "hbsd/src/sys/dev/gve/gve_tx_dqo.c": [
         (
             "\t\treturn (EINVAL);\n\t}\n\n\tPULLUP_HDR(mbuf, l4_off + sizeof(struct tcphdr *));",

@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,067 | 9,057 |
+| 1 | `lib` | 2,827 | 641,087 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,218** | **114,208** |
+| | **total** | **41,143** | **21,303,238** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -2743,7 +2743,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.72.46.8 `_citrus_NONE_stdenc_put_state_reset()` · `TODO-FN`
   - [ ] 1.72.46.9 `_citrus_NONE_stdenc_get_state_desc()` · `TODO-FN`
 - [ ] **1.72.47** `citrus_none.h` · 38L · `TODO-HDR`
-- [ ] **1.72.48** `citrus_pivot_factory.c` · 226L gen:1 · `TODO-PORT` · 5 fn
+- [ ] **1.72.48** `citrus_pivot_factory.c` · 246L gen:1 · `TODO-PORT` · 5 fn
   - [ ] 1.72.48.1 `find_src()` · `TODO-FN`
   - [ ] 1.72.48.2 `free_src()` · `TODO-FN`
   - [ ] 1.72.48.3 `convert_line()` · `TODO-FN`

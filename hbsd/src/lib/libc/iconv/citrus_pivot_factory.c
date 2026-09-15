@@ -169,8 +169,25 @@ dump_db(struct src_head *sh, struct _region *r)
 	STAILQ_FOREACH(se, sh, se_entry) {
 		size = _db_factory_calc_size(se->se_df);
 		ptr = malloc(size);
-		if (ptr == NULL)
+		/*
+		 * PBSD: `ret' is 0 here, and 0 is what the caller reads
+		 * as success.
+		 *
+		 * Every path to this point left `ret' at 0 -- either
+		 * _db_factory_create() succeeded or the previous
+		 * iteration's _db_factory_add_by_s() did -- so falling
+		 * into quit: on a failed malloc returned 0 and left *r
+		 * untouched.  _citrus_pivot_factory_convert() then did
+		 * fwrite(_region_head(r), _region_size(r), 1, out) on a
+		 * struct nothing had written: an arbitrary stack
+		 * address and an arbitrary length, into the output
+		 * file.  dump_db() in citrus_lookup_factory.c, the same
+		 * function for the other table, returns errno here.
+		 */
+		if (ptr == NULL) {
+			ret = errno;
 			goto quit;
+		}
 		_region_init(&subr, ptr, size);
 		ret = _db_factory_serialize(se->se_df, _CITRUS_PIVOT_SUB_MAGIC,
 		    &subr);
@@ -183,8 +200,11 @@ dump_db(struct src_head *sh, struct _region *r)
 
 	size = _db_factory_calc_size(df);
 	ptr = malloc(size);
-	if (ptr == NULL)
+	/* PBSD: the same 0-as-success, on the allocation for *r itself. */
+	if (ptr == NULL) {
+		ret = errno;
 		goto quit;
+	}
 	_region_init(r, ptr, size);
 
 	ret = _db_factory_serialize(df, _CITRUS_PIVOT_MAGIC, r);
