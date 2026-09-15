@@ -4953,6 +4953,33 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/usr.sbin/ofwdump/ofwdump.c": (
+        "PBSD: len 0 makes this pbuf[-1], one byte before the",
+        "\t\tif (((char *)pbuf)[len - 1] == '\\0' &&",
+        "ofw_dump_property(): an Open Firmware property may have no "
+        "value, and the zero-termination test read pbuf[len - 1] "
+        "without testing len",
+    ),
+    "hbsd/src/sys/dev/ath/ath_dfs/null/dfs_null.c": (
+        "PBSD: insize and outsize are the caller's numbers; the",
+        "\t\tcase DFS_GET_THRESH:\n\t\t\tmemset(&peout, 0, sizeof(peout));",
+        "ath_ioctl_phyerr(): indata exists only under ATH_DIAG_IN and "
+        "outdata only under ATH_DIAG_DYN, while insize and outsize are "
+        "ad_in_size and ad_out_size whatever the flags say. "
+        "DFS_GET_THRESH wrote through outdata without testing it, and "
+        "outsize becomes sizeof(HAL_PHYERR_PARAM) only after "
+        "malloc(outsize) used the caller's smaller number, so the "
+        "memcpy could run past the allocation",
+    ),
+    "hbsd/src/sys/dev/ath/if_ath_spectral.c": (
+        "PBSD: the same two as ath_ioctl_phyerr() in",
+        "\t\tcase SPECTRAL_CONTROL_GET_PARAMS:\n"
+        "\t\t\tmemset(&peout, 0, sizeof(peout));",
+        "ath_ioctl_spectral(): the twin of dfs_null.c, with the same "
+        "NULL outdata and the same short allocation. "
+        "SPECTRAL_CONTROL_ENABLE_AT_RESET forty lines down tests both "
+        "insize and indata and prints \"indata=NULL\"",
+    ),
     "hbsd/src/usr.bin/systat/iostat.c": (
         "PBSD: both of these are divisors and both can be zero.",
         "#define DRIVESPERLINE\t((getmaxx(wnd) - 1 - INSET) / COLWIDTH)",

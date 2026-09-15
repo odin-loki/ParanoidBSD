@@ -184,7 +184,19 @@ ofw_dump_property(int fd, phandle_t n, int level, const char *prop, bool raw,
 		 * strvis() and print if it looks like it is
 		 * zero-terminated.
 		 */
-		if (((char *)pbuf)[len - 1] == '\0' &&
+		/*
+		 * PBSD: len 0 makes this pbuf[-1], one byte before the
+		 * buffer.
+		 *
+		 * An Open Firmware property is allowed to have no
+		 * value, and ofw_getprop_alloc() returns its length
+		 * unchanged.  The read is what the analyser could not
+		 * see past: with len 0 the second operand is
+		 * strlen(pbuf) == (unsigned)-1, which is false, so the
+		 * NULL visbuf below is unreachable -- but the
+		 * out-of-bounds read has already happened by then.
+		 */
+		if (len > 0 && ((char *)pbuf)[len - 1] == '\0' &&
 		    strlen(pbuf) == (unsigned)len - 1) {
 			if (vblen < (len - 1) * 4 + 1) {
 				if (visbuf != NULL)

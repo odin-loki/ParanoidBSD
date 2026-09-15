@@ -29161,3 +29161,130 @@ is `1 << -1`, and `lats[i]` three lines on is `lats[0]`, so the shift
 is the only problem — `core.BitwiseShift`, which `analyze.py` does not
 select.  Written down rather than fixed, because the class has not been
 read and one finding from it is not a survey.
+
+## `unix.cstring.NullArg`, the 30 unread: two `ath` ioctls, and a read one byte before a buffer
+
+94 findings in the class; 64 arrived with a shard that was read.  The 30
+below name files this document had never mentioned.  Three are defects.
+
+### `ath`'s two diagnostic ioctls: a NULL and a short allocation
+
+`sys/dev/ath/ath_dfs/null/dfs_null.c`'s `ath_ioctl_phyerr()` and
+`sys/dev/ath/if_ath_spectral.c`'s `ath_ioctl_spectral()` are the same
+function twice.  Both open with
+
+```c
+	u_int32_t insize = ad->ad_in_size;
+	u_int32_t outsize = ad->ad_out_size;
+	...
+	if (ad->ad_id & ATH_DIAG_IN) {
+		indata = malloc(insize, M_TEMP, M_NOWAIT);
+		...
+	}
+	if (ad->ad_id & ATH_DIAG_DYN) {
+		/* ... may want to be more defensive. */
+		outdata = malloc(outsize, M_TEMP, M_NOWAIT);
+		...
+	}
+```
+
+The **sizes** come from the caller unconditionally; the **buffers**
+exist only if the caller also set the matching flag.  Two things follow,
+and both are in both files:
+
+* `DFS_GET_THRESH` / `SPECTRAL_CONTROL_GET_PARAMS` do
+  `pe = (HAL_PHYERR_PARAM *)outdata; memcpy(pe, &peout, sizeof(*pe));`
+  without looking at `outdata` at all.  With `ATH_DIAG_DYN` clear that
+  is `memcpy(NULL, ...)`.
+* Worse than the NULL: `outsize` is reassigned to
+  `sizeof(HAL_PHYERR_PARAM)` **after** `malloc(outsize)` has already
+  used the caller's number, so a caller that sets `ATH_DIAG_DYN` and an
+  `ad_out_size` of 1 gets a one-byte allocation and a
+  `sizeof(HAL_PHYERR_PARAM)`-byte `memcpy` into it — a heap overflow.
+* `DFS_SET_THRESH` / `SPECTRAL_CONTROL_SET_PARAMS` test `insize` and
+  not `indata`, so an `ad_in_size` of 64 with `ATH_DIAG_IN` clear hands
+  the HAL a NULL `HAL_PHYERR_PARAM *`.
+
+Forty lines below the last of these,
+`SPECTRAL_CONTROL_ENABLE_AT_RESET` tests `insize` **and** `indata` and
+prints `"indata=NULL"`, so the shape was known in the file.  All four
+sites now check the buffer as well as the size.  `SIOCGATHPHYERR` and
+`SIOCGATHSPECTRAL` are behind `priv_check(curthread, PRIV_DRIVER)`,
+which makes this a privileged crash and a privileged heap overflow
+rather than an unprivileged one.  After the fix both files report zero
+findings.
+
+### `ofwdump(1)`: `pbuf[len - 1]` for a property with no value
+
+```c
+		if (((char *)pbuf)[len - 1] == '\0' &&
+		    strlen(pbuf) == (unsigned)len - 1) {
+```
+
+An Open Firmware property is allowed to have no value and
+`ofw_getprop_alloc()` returns its length unchanged, so `len` 0 reads one
+byte **before** the buffer.  The analyser found this from the other end
+— with `len` 0 the second operand is `strlen(pbuf) == (unsigned)-1`,
+which is false, so the uninitialised `visbuf` three lines on is
+unreachable — and the out-of-bounds read has already happened by the
+time that saves it.  Now `len > 0 &&` first.
+
+### The 27 that are not defects
+
+**A flag and a pointer the analyser does not correlate.**
+`sys/netpfil/ipfw/ip_fw2.c:2236` and `:2244` —
+`memcpy(key.mac, eh->ether_dhost, ...)` in `LOOKUP_DST_MAC` and
+`LOOKUP_SRC_MAC`, each preceded by
+`if ((args->flags & IPFW_ARGS_ETHER) == 0) break;`.  `eh` is assigned
+from `args->mem` or `mtod(m, ...)` under exactly that flag at
+`:1517`/`:1534` and set to NULL at `:1525`/`:1543`.  The guard is the
+same bit as the assignment.
+
+**Two switches on the same value.**  `usr.sbin/ppp/chap.c:941` —
+`strncasecmp(ans, chap->authresponse, 42)` under
+`case CHAP_SUCCESS:` of the second `switch (chap->auth.in.hdr.code)`,
+where the *first* switch on the same expression allocates `ans` in its
+`CHAP_SUCCESS`/`CHAP_FAILURE` arm or returns.  The same shape as
+`bhnd_nvram_value_prf.c`'s `base` in the `DivideZero` section above,
+and `chap.c:858` is its companion.  Third time today.
+
+**The caller's argument.**
+`usr.sbin/bsdinstall/partedit/scripted.c:52` and `:91` (`name`),
+`usr.bin/calendar/parsedata.c:243` (`p1`, which is
+`determinestyle()`'s `date` parameter),
+`usr.bin/ruptime/ruptime.c:217`,
+`usr.sbin/sesutil/sesutil.c:572` (`devnames`; `strsep()` returns NULL
+on the first call only if `*stringp` already was),
+`sys/fs/smbfs/smbfs_node.c:74`, `sys/dev/qlxgbe/ql_hw.c:2665`,
+`sys/dev/qat/qat_common/qat_uclo.c:1852`,
+`sys/dev/smartpqi/smartpqi_discovery.c:1300`,
+`sys/contrib/dev/athk/ath10k/htt_tx.c:1729`,
+`sys/ofed/drivers/infiniband/core/ib_mad.c:966`,
+`sys/contrib/libfdt/fdt_rw.c:301`,
+`sys/dev/firewire/firewire.c:1888`,
+`sys/netpfil/ipfw/ip_fw_table_value.c:593`,
+`sys/crypto/aesni/aesni.c:693`,
+`lib/libc/gen/fts.c:932` and its two compat twins
+`fts-compat.c:829` and `fts-compat11.c:813`,
+`sbin/zfsbootcfg/zfsbootcfg.c:139`,
+`lib/libc/tests/stdlib/clearenv_test.c:149`.
+
+**A guarantee one frame up.**  `sys/netgraph/ng_tag.c:418` and `:442` —
+`bcopy(hp, resp->data, NG_TAG_HOOKIN_SIZE(hp->tag_len))` with `hp` the
+hook private's `in` or `out`.  `ng_tag_newhook()` installs
+`ng_tag_default_in` and `ng_tag_default_out` before it returns success,
+and a hook does not exist until it does.  Noticed while reading it, and
+not a `NullArg`: the two failure paths in `ng_tag_newhook()` do
+`free(hip, M_NETGRAPH_TAG)` without clearing the hook's private, and
+the first of them leaks the `in` structure the previous call allocated.
+Written down here, unfixed, because whether the dangling private is
+ever touched depends on what `ng_add_hook()` does with a hook whose
+constructor failed, and that is a netgraph question rather than a
+`ng_tag` one.
+
+**A string table an object may not have.**
+`usr.sbin/crunch/crunchide/exec_elf32.c:424` —
+`strlen(symname)` where `symname = strtabp + xe32toh(sp->st_name)` and
+`strtabp` is the section the symbol table's `sh_link` points at.  The
+caller establishes both before the loop; an object with a symbol table
+and no string table does not reach here.

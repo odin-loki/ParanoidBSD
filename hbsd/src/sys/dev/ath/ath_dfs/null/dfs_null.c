@@ -252,8 +252,29 @@ ath_ioctl_phyerr(struct ath_softc *sc, struct ath_diag *ad)
 		}
 	}
 	switch (id) {
+		/*
+		 * PBSD: insize and outsize are the caller's numbers; the
+		 * BUFFERS exist only if the caller also set the flags.
+		 *
+		 * indata is allocated under `ad->ad_id & ATH_DIAG_IN'
+		 * and outdata under `& ATH_DIAG_DYN', while insize and
+		 * outsize come from ad_in_size and ad_out_size
+		 * unconditionally.  So an ad_in_size of 64 with
+		 * ATH_DIAG_IN clear passed the size test below with
+		 * indata NULL, and DFS_GET_THRESH wrote through outdata
+		 * without looking at it at all.
+		 *
+		 * The second half is worse than a NULL: outsize is
+		 * reassigned to sizeof(HAL_PHYERR_PARAM) AFTER
+		 * malloc(outsize) has already used the caller's smaller
+		 * number, so `memcpy(pe, &peout, sizeof(*pe))' ran past
+		 * the end of the allocation.  Both are now checked
+		 * before either is used.  The comment above the
+		 * allocation says "may want to be more defensive".
+		 */
 		case DFS_SET_THRESH:
-			if (insize < sizeof(HAL_PHYERR_PARAM)) {
+			if (insize < sizeof(HAL_PHYERR_PARAM) ||
+			    indata == NULL) {
 				error = EINVAL;
 				break;
 			}
@@ -261,6 +282,11 @@ ath_ioctl_phyerr(struct ath_softc *sc, struct ath_diag *ad)
 			ath_hal_enabledfs(sc->sc_ah, pe);
 			break;
 		case DFS_GET_THRESH:
+			if (outsize < sizeof(HAL_PHYERR_PARAM) ||
+			    outdata == NULL) {
+				error = EINVAL;
+				break;
+			}
 			memset(&peout, 0, sizeof(peout));
 			outsize = sizeof(HAL_PHYERR_PARAM);
 			ath_hal_getdfsthresh(sc->sc_ah, &peout);

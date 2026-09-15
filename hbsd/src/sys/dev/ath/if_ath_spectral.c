@@ -215,7 +215,28 @@ ath_ioctl_spectral(struct ath_softc *sc, struct ath_diag *ad)
 		}
 	}
 	switch (id) {
+		/*
+		 * PBSD: the same two as ath_ioctl_phyerr() in
+		 * ath_dfs/null/dfs_null.c -- this file is its twin.
+		 *
+		 * outdata exists only under `ad->ad_id & ATH_DIAG_DYN'
+		 * and indata only under ATH_DIAG_IN, while outsize and
+		 * insize are ad_out_size and ad_in_size whatever the
+		 * flags say.  GET_PARAMS wrote through outdata without
+		 * testing it, and SET_PARAMS tested insize and not
+		 * indata -- while SPECTRAL_CONTROL_ENABLE_AT_RESET,
+		 * forty lines down, tests both and prints
+		 * "indata=NULL".  And outsize becomes
+		 * sizeof(HAL_SPECTRAL_PARAM) only AFTER
+		 * malloc(outsize) used the caller's number, so the
+		 * memcpy could run past the allocation.
+		 */
 		case SPECTRAL_CONTROL_GET_PARAMS:
+			if (outsize < sizeof(HAL_SPECTRAL_PARAM) ||
+			    outdata == NULL) {
+				error = EINVAL;
+				break;
+			}
 			memset(&peout, 0, sizeof(peout));
 			outsize = sizeof(HAL_SPECTRAL_PARAM);
 			ath_hal_spectral_get_config(sc->sc_ah, &peout);
@@ -223,7 +244,8 @@ ath_ioctl_spectral(struct ath_softc *sc, struct ath_diag *ad)
 			memcpy(pe, &peout, sizeof(*pe));
 			break;
 		case SPECTRAL_CONTROL_SET_PARAMS:
-			if (insize < sizeof(HAL_SPECTRAL_PARAM)) {
+			if (insize < sizeof(HAL_SPECTRAL_PARAM) ||
+			    indata == NULL) {
 				error = EINVAL;
 				break;
 			}

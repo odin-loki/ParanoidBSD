@@ -56,9 +56,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,944 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,208 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,256 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,541** | **114,208** |
+| | **total** | **41,143** | **21,303,601** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -33202,7 +33202,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.167.1.13 `ofw_getproplen()` · `TODO-FN`
   - [ ] 6.167.1.14 `ofw_getprop_alloc()` · `TODO-FN`
 - [ ] **6.167.2** `ofw_util.h` · 49L · `TODO-HDR`
-- [ ] **6.167.3** `ofwdump.c` · 250L · `TODO-PORT` · 7 fn
+- [ ] **6.167.3** `ofwdump.c` · 262L · `TODO-PORT` · 7 fn
   - [ ] 6.167.3.1 `usage()` · `TODO-FN`
   - [ ] 6.167.3.2 `main()` · `TODO-FN`
   - [ ] 6.167.3.3 `ofw_indent()` · `TODO-FN`
@@ -61526,7 +61526,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.615.37.19 `ath_edma_dma_rxteardown()` · `TODO-FN`
   - [ ] 8.615.37.20 `ath_recv_setup_edma()` · `TODO-FN`
 - [ ] **8.615.38** `if_ath_rx_edma.h` · 37L · `TODO-HDR`
-- [ ] **8.615.39** `if_ath_spectral.c` · 291L · `TODO-PORT` · 4 fn
+- [ ] **8.615.39** `if_ath_spectral.c` · 313L · `TODO-PORT` · 4 fn
   - [ ] 8.615.39.1 `ath_spectral_attach()` · `TODO-FN`
   - [ ] 8.615.39.2 `ath_spectral_detach()` · `TODO-FN`
   - [ ] 8.615.39.3 `ath_spectral_enable()` · `TODO-FN`
@@ -61608,7 +61608,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.616 `sys/dev/ath/ath_dfs/null`
 
-- [ ] **8.616.1** `dfs_null.c` · 294L · `TODO-PORT` · 9 fn
+- [ ] **8.616.1** `dfs_null.c` · 320L · `TODO-PORT` · 9 fn
   - [ ] 8.616.1.1 `ath_dfs_attach()` · `TODO-FN`
   - [ ] 8.616.1.2 `ath_dfs_detach()` · `TODO-FN`
   - [ ] 8.616.1.3 `ath_dfs_radar_enable()` · `TODO-FN`
