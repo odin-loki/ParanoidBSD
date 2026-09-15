@@ -2913,6 +2913,24 @@ bridge_input(struct ifnet *ifp, struct mbuf *m)
 			return (NULL);
 		}
 		m->m_pkthdr.rcvif = ifp;
+		/*
+		 * PBSD: and bif with it.  This arm is entered exactly
+		 * when bif is NULL or its softc is -- ifp was the
+		 * bridge, which carries no if_bridge -- and it
+		 * recovers sc and ifp without recovering bif.  Every
+		 * use of bif below is then a load off address zero:
+		 * bridge_vfilter_in() reads sbif->bif_sc->sc_flags as
+		 * its first act, and bif_stp, bif_flags, bif_addrmax
+		 * and bridge_forward() follow.  ifp now names the
+		 * member the address was learned on, so its own
+		 * if_bridge is the bif this frame arrived through.
+		 */
+		bif = bridge_lookup_member_if(sc, ifp);
+		if (bif == NULL) {
+			if_inc_counter(sc->sc_ifp, IFCOUNTER_IERRORS, 1);
+			m_freem(m);
+			return (NULL);
+		}
 	}
 	bifp = sc->sc_ifp;
 	if ((bifp->if_drv_flags & IFF_DRV_RUNNING) == 0)

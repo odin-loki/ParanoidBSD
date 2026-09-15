@@ -4834,12 +4834,21 @@ FIXES = {
         ),
     ],
 
-    "hbsd/src/sys/net/if_bridge.c": (
-        "\t\t\tif_inc_counter(ifp, IFCOUNTER_IERRORS, 1);\n\t\t\tm_freem(m);",
-        "m = m_pullup(m, ETHER_HDR_LEN);\n\t\tif (m == NULL) {\n\t\t\tif_inc_counter(sc->sc_ifp",
-        "bridge_input: the m_pullup() failure path counted on sc->sc_ifp "
-        "with sc declared NULL and not assigned until after that block",
-    ),
+    "hbsd/src/sys/net/if_bridge.c": [
+        (
+            "\t\t\tif_inc_counter(ifp, IFCOUNTER_IERRORS, 1);\n\t\t\tm_freem(m);",
+            "m = m_pullup(m, ETHER_HDR_LEN);\n\t\tif (m == NULL) {\n\t\t\tif_inc_counter(sc->sc_ifp",
+            "bridge_input: the m_pullup() failure path counted on sc->sc_ifp "
+            "with sc declared NULL and not assigned until after that block",
+        ),
+        (
+            "bif = bridge_lookup_member_if(sc, ifp);",
+            "m->m_pkthdr.rcvif = ifp;\n\t}\n\tbifp = sc->sc_ifp;",
+            "bridge_input: the arm that recovers sc and ifp for a "
+            "netmap-injected frame left bif NULL, and eight later uses "
+            "dereference it",
+        ),
+    ],
     "hbsd/src/sys/netinet/cc/cc_newreno.c": (
         ("\t\tif (nreno != NULL &&\n\t\t    (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED)) {", 2),
         "\t\tif (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED) {",

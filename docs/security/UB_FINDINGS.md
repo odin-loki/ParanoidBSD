@@ -29680,3 +29680,82 @@ does not own.
   no remaining reachable path.  This is the `cosf` shape: the evidence
   is real but the expression does not name the return, and `report.py`
   declines to guess.
+
+## `core.NullDereference`, the unread 180: a frame the bridge forgot to put back
+
+Run 33's analyser reports 1,516 `core.NullDereference` findings across
+320 files.  366 of them are in 122 files whose basename this document
+had never mentioned; deduplicated across architectures that is **180
+findings**, and this section reads them.
+
+### `bridge_input()` restores `sc` and `ifp` and leaves `bif` behind
+
+`sys/net/if_bridge.c:3304`, `Access to field 'bif_sc' results in a
+dereference of a null pointer (loaded from variable 'sbif')`:
+
+```c
+	bif = ifp->if_bridge;
+	if (bif)
+		sc = bif->bif_sc;
+
+	if (sc == NULL) {
+		/*
+		 * This packet originated from the bridge itself, so it must
+		 * have been transmitted by netmap.  Derive the "source"
+		 * interface from the source address and drop the packet if the
+		 * source address isn't known.
+		 */
+		KASSERT((m->m_flags & M_BRIDGE_INJECT) != 0, ...);
+		sc = if_getsoftc(ifp);
+		ifp = bridge_rtlookup(sc, eh->ether_shost, vlan);
+		if (ifp == NULL) { ... return (NULL); }
+		m->m_pkthdr.rcvif = ifp;
+	}
+	bifp = sc->sc_ifp;
+```
+
+That arm is entered **exactly when `bif` is NULL or its softc is** —
+`ifp` was the bridge's own ifnet, which carries no `if_bridge`, which
+is why `sc` had to be recovered from `if_getsoftc()` in the first
+place.  It recovers `sc`.  It recovers `ifp`.  It does not recover
+`bif`, and `bif` is the one thing the rest of the function is built
+on:
+
+| line | use |
+|---|---|
+| 2937 | `bridge_vfilter_in(bif, m)` → `sbif->bif_sc->sc_flags`, its first act |
+| 2951 | `bstp_input(&bif->bif_stp, ifp, m)` |
+| 2955 | `bif->bif_flags`, `bif->bif_stp.bp_state` |
+| 2971 | `bridge_forward(sc, bif, mc)` |
+| 3009 | `bif->bif_flags`, `bif->bif_stp.bp_state` |
+| 3042 | `bif->bif_flags`, and `bif->bif_addrmax` |
+| 3113 | `bridge_forward(sc, bif, m)` |
+
+Eight dereferences of address zero on the bridge receive path, reached
+by a netmap-injected frame.  `bridge_vfilter_in()` is the first, and it
+does not even wait for VLAN filtering to be switched on — reading
+`sbif->bif_sc->sc_flags` is how it *decides* whether filtering is on.
+
+`ifp` at that point names the member the source address was learned on,
+and `bridge_lookup_member_if(sc, ifp)` is one line, `return
+(ifp->if_bridge)`, so the member's own `bif` is the one this frame
+arrived through.  Recovering it beside `ifp` is the fix, with the same
+count-and-drop the lookup above it uses when the member has gone:
+
+```c
+		bif = bridge_lookup_member_if(sc, ifp);
+		if (bif == NULL) {
+			if_inc_counter(sc->sc_ifp, IFCOUNTER_IERRORS, 1);
+			m_freem(m);
+			return (NULL);
+		}
+```
+
+`tools/verify/probes/bridge_input_bif.c` models the arm: **OLD `1 of 1
+failed, VERIFICATION FAILED`; NEW `0 of 1, VERIFICATION SUCCESSFUL`.**
+
+This is the second defect on this function.  The first, recorded
+earlier in this document, was the `m_pullup()` failure path counting on
+`sc->sc_ifp` before `sc` was assigned.  Both have the same shape: a
+variable that is NULL *by construction* on the path being written, and
+a later line that assumes the ordinary path's value.
