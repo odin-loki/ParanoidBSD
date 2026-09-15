@@ -197,6 +197,15 @@ void
 timer_spkr_setfreq(int freq)
 {
 
+	/*
+	 * PBSD: the divisor comes from a caller's parameter and this
+	 * divides by it unconditionally.  sc_tone() and tone() test it
+	 * first; sysbeep() does not, and sc_bell() can hand sysbeep() a
+	 * zero (see sys/dev/syscons/syscons.c).  Refuse it here, where
+	 * the division is, so no caller can fault the kernel.
+	 */
+	if (freq <= 0)
+		return;
 	freq = i8254_freq / freq;
 	mtx_lock_spin(&clock_lock);
 	outb(TIMER_CNTR2, freq & 0xff);

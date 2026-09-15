@@ -250,13 +250,21 @@ scterm_scan_esc(scr_stat *scp, term_stat *tcp, u_char c)
 	} else if (tcp->esc == 2) {	/* seen ESC [ */
 		if (c >= '0' && c <= '9') {
 			if (tcp->num_param < MAX_ESC_PAR) {
+				/*
+				 * PBSD: a digit run long enough to overflow
+				 * this int is undefined, and one of these
+				 * parameters is the bell pitch.  teken.c stops
+				 * accumulating at UINT_MAX / 100 for exactly
+				 * this reason; the cons25 emulator never did.
+				 */
 				if (tcp->last_param != tcp->num_param) {
 					tcp->last_param = tcp->num_param;
-					tcp->param[tcp->num_param] = 0;
-				} else {
+					tcp->param[tcp->num_param] = c - '0';
+				} else if (tcp->param[tcp->num_param] <
+				    INT_MAX / 100) {
 					tcp->param[tcp->num_param] *= 10;
+					tcp->param[tcp->num_param] += c - '0';
 				}
-				tcp->param[tcp->num_param] += c - '0';
 				return;
 			}
 		}
@@ -536,13 +544,21 @@ scterm_scan_esc(scr_stat *scp, term_stat *tcp, u_char c)
 	} else if (tcp->esc == 3) {	/* seen ESC [0-9]+ = */
 		if (c >= '0' && c <= '9') {
 			if (tcp->num_param < MAX_ESC_PAR) {
+				/*
+				 * PBSD: a digit run long enough to overflow
+				 * this int is undefined, and one of these
+				 * parameters is the bell pitch.  teken.c stops
+				 * accumulating at UINT_MAX / 100 for exactly
+				 * this reason; the cons25 emulator never did.
+				 */
 				if (tcp->last_param != tcp->num_param) {
 					tcp->last_param = tcp->num_param;
-					tcp->param[tcp->num_param] = 0;
-				} else {
+					tcp->param[tcp->num_param] = c - '0';
+				} else if (tcp->param[tcp->num_param] <
+				    INT_MAX / 100) {
 					tcp->param[tcp->num_param] *= 10;
+					tcp->param[tcp->num_param] += c - '0';
 				}
-				tcp->param[tcp->num_param] += c - '0';
 				return;
 			}
 		}

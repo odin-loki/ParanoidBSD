@@ -5604,11 +5604,39 @@ FIXES = {
         "off the stack, and repeats a check made correctly after it",
     ),
 
-    "hbsd/src/sys/dev/syscons/syscons.c": (
-        "if (kbdd_ioctl(sc->kbd, KDGKBSTATE,\n\t\t\t\t    (caddr_t)&f) != 0)",
-        "(void)kbdd_ioctl(\n\t\t\t\t    sc->kbd, KDGKBSTATE, (caddr_t)&f);",
-        "scgetc: the scroll-lock arm read f whether or not KDGKBSTATE "
-        "wrote it, unlike save_kbd_state() and update_kbd_state()",
+    "hbsd/src/sys/dev/syscons/syscons.c": [
+        (
+            "if (kbdd_ioctl(sc->kbd, KDGKBSTATE,\n\t\t\t\t    (caddr_t)&f) != 0)",
+            "(void)kbdd_ioctl(\n\t\t\t\t    sc->kbd, KDGKBSTATE, (caddr_t)&f);",
+            "scgetc: the scroll-lock arm read f whether or not KDGKBSTATE "
+            "wrote it, unlike save_kbd_state() and update_kbd_state()",
+        ),
+        (
+            "if (scp != scp->sc->cur_scp && pitch < 1193182)",
+            "} else if (duration != 0 && pitch != 0) {\n"
+            "\t\tif (scp != scp->sc->cur_scp)\n"
+            "\t\t\tpitch *= 2;",
+            "sc_bell: a pitch above 1193182 made 1193182 / pitch zero, "
+            "and sysbeep() divides by that -- a console escape sequence "
+            "faulting the kernel",
+        ),
+    ],
+
+    "hbsd/src/sys/x86/isa/clock.c": (
+        "if (freq <= 0)\n\t\treturn;\n\tfreq = i8254_freq / freq;",
+        "timer_spkr_setfreq(int freq)\n{\n\n\tfreq = i8254_freq / freq;",
+        "timer_spkr_setfreq: divided by its parameter unconditionally, "
+        "and sysbeep(), one of its three callers, does not test it",
+    ),
+
+    "hbsd/src/sys/dev/syscons/scterm-sc.c": (
+        ("} else if (tcp->param[tcp->num_param] <", 2),
+        "\t\t\t\t} else {\n"
+        "\t\t\t\t\ttcp->param[tcp->num_param] *= 10;\n"
+        "\t\t\t\t}",
+        "scterm_scan_esc: both escape-parameter accumulators multiplied "
+        "a signed int by ten with no bound, where teken.c stops at "
+        "UINT_MAX / 100",
     ),
 
     "hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdioctl.c": (

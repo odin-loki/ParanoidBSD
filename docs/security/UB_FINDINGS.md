@@ -29458,3 +29458,160 @@ function's only failure return is `return (errno)` after a failed
 `etdump.c:168`, `ktrdump.c:278`, `ministat.c:646`, `sdiotool.c:296`,
 `moused.c:984`, `iface.c:421`, `ib_addr.c:291` and `:474`,
 `ib_multicast.c:403`, `ib_cma.c:1029`, `glob2_test.c:78`.
+
+## Run 33's CBMC "EXPORTED, arithmetic" list: the 53 outside `libc`
+
+`report.py` buckets run 33's 2,388 FAILED model-check records and puts
+243 under **EXPORTED, arithmetic — READ THESE**.  136 of those are in
+`lib/libc`, 35 in `lib/libcasper` (all of them the library's own
+`cch_magic`/`s_magic` assertions, handed an unconstrained handle by a
+modular check — the assertion working, not a defect) and 19 in
+`lib/msun`.  This section is the other 53, in `sys` and `libexec`.
+
+### One defect, and it is a console escape sequence that faults the kernel
+
+The finding is `sys/x86/isa/clock.c:200`, **`division by zero in
+i8254_freq / (unsigned int)freq`**:
+
+```c
+void
+timer_spkr_setfreq(int freq)
+{
+
+	freq = i8254_freq / freq;
+```
+
+An exported function that divides by its parameter with nothing in
+front of it.  Three callers in the tree, and **two of them test and one
+does not**:
+
+| caller | test |
+|---|---|
+| `sc_tone()`, `sys/isa/syscons_isa.c:205` | `if (herz)` |
+| `tone()`, `sys/dev/speaker/spkr.c:67` | `if (thz <= 0) return;` |
+| `sysbeep()`, `sys/kern/kern_cons.c:698` | **none** |
+
+So the question is whether anything can reach `sysbeep()` with a zero
+pitch.  `sc_bell()`, `sys/dev/syscons/syscons.c:4295`, is where it
+comes from:
+
+```c
+	} else if (duration != 0 && pitch != 0) {
+		if (scp != scp->sc->cur_scp)
+			pitch *= 2;
+		sysbeep(1193182 / pitch, SBT_1S * duration / hz);
+	}
+```
+
+`pitch` is a frequency in Hz and `1193182 / pitch` is the 8254 divisor.
+The test is `pitch != 0`, which guards *that* division — and it is the
+wrong end of the range.  **A pitch above 1193182 makes the quotient
+zero**, and zero is what `sysbeep()` hands to `timer_spkr_setfreq()`,
+which divides by it.  A negative pitch overflows the `pitch *= 2` on
+the non-current screen on the way.
+
+Two of the three ways into `sc_bell()` bound the pitch already, and
+that is what makes the third one the bug:
+
+* **KDMKTONE**, `syscons.c:1437`, masks: `sc_bell(scp, (*(int *)data)
+  & 0xffff, ...)`.
+* **`scteken`**, the default emulator, packs pitch and duration into
+  one word — `teken_funcs_param(t, TP_SETBELLPD, (pitch << 16) |
+  (duration & 0xffff))` in `sys/teken/teken_subr_compat.h:108` — so
+  `TP_SETBELLPD_PITCH(pd)`, which is `(pd) >> 16`, recovers 16 bits and
+  no more.
+* **`scterm-sc.c`**, the cons25 emulator, does not:
+
+```c
+		case 'B':   /* set bell pitch and duration */
+			if (tcp->num_param == 2) {
+				scp->bell_pitch = tcp->param[0];
+```
+
+straight from an escape parameter into an `int`.  And `tcp->param[]` is
+itself accumulated without a bound, twice in that file:
+
+```c
+				} else {
+					tcp->param[tcp->num_param] *= 10;
+				}
+				tcp->param[tcp->num_param] += c - '0';
+```
+
+`teken.c:452` stops at `UINT_MAX / 100` for exactly this reason; the
+cons25 emulator never did, so a long enough digit run is signed
+overflow on its own before it is ever used as a pitch.
+
+`scterm-sc.c` is built into every `device sc` kernel that does not set
+`SC_NO_TERM_SC` (`sys/conf/files:3227`) and is selected by
+`options SC_DFLT_TERM="sc"`, which `sys/x86/conf/NOTES:208` documents.
+On such a kernel anything that can write to the console — a user's own
+program writing to its own tty — picks the divisor.
+
+Three fixes, one per level, because each is independently wrong:
+
+* `timer_spkr_setfreq()` refuses a non-positive frequency, at the site
+  of the division, so no caller can fault the kernel.
+* `sc_bell()` clamps into the domain the divisor is defined on, and
+  does the doubling inside that domain so it cannot overflow:
+
+```c
+	} else if (duration != 0 && pitch > 0) {
+		if (scp != scp->sc->cur_scp && pitch < 1193182)
+			pitch *= 2;
+		if (pitch > 1193182)
+			pitch = 1193182;
+		sysbeep(1193182 / pitch, SBT_1S * duration / hz);
+	}
+```
+
+* both of `scterm-sc.c`'s escape-parameter accumulators stop at
+  `INT_MAX / 100`, the same shape `teken.c` uses.
+
+`tools/verify/probes/sc_bell_divisor.c` models the three-function chain
+under CBMC: **OLD `3 of 3 failed, VERIFICATION FAILED`; NEW `0 of 3,
+VERIFICATION SUCCESSFUL`.**
+
+### The other 52, and why each is not one
+
+* **A structure invariant the modular check cannot see.**
+  `sys/dev/atkbdc/atkbdc.c:396`, `q->tail + 1`, in six functions.
+  `nextq(i)` is `(((i) + 1) % KBDQ_BUFSIZE)` with `KBDQ_BUFSIZE` 32
+  (`atkbdcreg.h:179`), and `q->tail` is only ever assigned from it, so
+  it is in `[0, 31]` by construction.  CBMC starts the frame with an
+  unconstrained `kqueue`.  Same for `sys/arm/arm/identcpu-v6.c:260`'s
+  `hw_buf_idx + len`, where `hw_buf_idx` is a static global the check
+  leaves unconstrained; `add_cap()`'s own guard keeps it under 79 and
+  every `cap` it is called with is a short literal in that file.
+* **A precondition the constructor enforces.**
+  `libexec/bootpd/hash.c`'s four `hashcode % hashtable->size`.
+  `hash_Init()` is the only way to make one and its whole body is
+  `if (tablesize > 0) { ... } else { hashtblptr = NULL; }` — it
+  *disallows zero-length tables* in so many words.  The three call
+  sites all pass `HASHTABLESIZE`, 257.
+* **The caller's own loop bound.** `sys/dev/ata/ata-all.c:698`,
+  `ATA_ATAPI_MASTER << target`.  `ata_atapi()` has exactly one caller,
+  `ata-ite.c:219` and `:224`, inside a `target == 0` / `else` pair.
+* **A guard that is right there and an unmodelled length.**
+  `sys/dev/firmware/arm/scmi_shmem.c:191`, `index * 4`.  The function
+  tests `index < 0 || index >= len` three lines up; `len` is
+  `return_value_OF_getencprop_alloc_multi`, unconstrained, so CBMC
+  admits an enormous `len` and an `index` below it.
+* **A const table in the tree.** `sys/dev/videomode/pickmode.c:77`,
+  `(dot_clock * 1000) / (htotal * vtotal)`, over `videomode_list[]`.
+* **Counters and clocks that are bounded in practice, not in type.**
+  `libexec/rpc.rstatd/rstat_proc.c:239`'s `hz * (tm.tv_sec -
+  btm.tv_sec)` (uptime since boot), `libexec/tftpd/tftp-transfer.c`'s
+  `ts->rollovers + 1` and `ts->retries + 1`, `sys/i386/i386/machdep.c`
+  and `sys/riscv/riscv/machdep.c`'s `md_spinlock_count - 1` (an
+  invariant `spinlock_enter()` maintains), `libexec/rbootd/rbootd.c`'s
+  `DebugFlg + 1` (one `getopt` flag).
+* **The `return_value_` of an inline.** `sys/x86/x86/delay.c:179`,
+  `return_value___curthread->td_pinned + 1` in `DELAY()` and
+  `cpu_lock_delay()` — `sched_pin()` on a counter, not an absent
+  model.  See the run-33 measurement recorded above.
+* **`vtterm_beep()` is already safe, and worth saying so** because it
+  is the same KDMKTONE path on `vt`.  `sys/dev/vt/vt_core.c:1173`
+  returns early on `(param & 0xffff) == 0`, so `1193182 / (param &
+  0xffff)` has a divisor in `[1, 65535]` and a quotient in
+  `[18, 1193182]` — never the zero that faults `sc`.

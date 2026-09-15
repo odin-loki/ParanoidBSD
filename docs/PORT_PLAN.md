@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,290 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,328 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,649** | **114,208** |
+| | **total** | **41,143** | **21,303,687** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -102091,7 +102091,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1028.4.7 `dumb_fkeystr()` · `TODO-FN`
   - [ ] 8.1028.4.8 `dumb_sync()` · `TODO-FN`
   - [ ] 8.1028.4.9 `dumb_nop()` · `TODO-FN`
-- [ ] **8.1028.5** `scterm-sc.c` · 818L gen:1 · `TODO-PORT` · 13 fn
+- [ ] **8.1028.5** `scterm-sc.c` · 834L gen:1 · `TODO-PORT` · 13 fn
   - [ ] 8.1028.5.1 `scterm_init()` · `TODO-FN`
   - [ ] 8.1028.5.2 `scterm_term()` · `TODO-FN`
   - [ ] 8.1028.5.3 `scterm_scan_esc()` · `TODO-FN`
@@ -102197,7 +102197,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1028.12.15 `sc_vtb_move()` · `TODO-FN`
   - [ ] 8.1028.12.16 `sc_vtb_delete()` · `TODO-FN`
   - [ ] 8.1028.12.17 `sc_vtb_ins()` · `TODO-FN`
-- [ ] **8.1028.13** `syscons.c` · 4,387L gen:8 · `TODO-PORT`
+- [ ] **8.1028.13** `syscons.c` · 4,400L gen:8 · `TODO-PORT`
 - [ ] **8.1028.14** `syscons.h` · 681L · `TODO-HDR`
 - [ ] **8.1028.15** `sysmouse.c` · 339L gen:1 · `TODO-PORT` · 7 fn
   - [ ] 8.1028.15.1 `smdev_evdev_init()` · `TODO-FN`
@@ -139533,7 +139533,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1313.2.26 `atrtc_resume()` · `TODO-FN`
   - [ ] 8.1313.2.27 `atrtc_settime()` · `TODO-FN`
   - [ ] 8.1313.2.28 `atrtc_gettime()` · `TODO-FN`
-- [ ] **8.1313.3** `clock.c` · 653L gen:5 · `TODO-MD` · 19 fn
+- [ ] **8.1313.3** `clock.c` · 662L gen:5 · `TODO-MD` · 19 fn
   - [ ] 8.1313.3.1 `clock_init()` · `TODO-FN`
   - [ ] 8.1313.3.2 `clkintr()` · `TODO-FN`
   - [ ] 8.1313.3.3 `timer_spkr_acquire()` · `TODO-FN`

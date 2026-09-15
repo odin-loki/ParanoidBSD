@@ -4292,9 +4292,22 @@ sc_bell(scr_stat *scp, int pitch, int duration)
 		if (scp != scp->sc->cur_scp)
 			scp->sc->blink_in_progress += 2;
 		blink_screen(scp->sc->cur_scp);
-	} else if (duration != 0 && pitch != 0) {
-		if (scp != scp->sc->cur_scp)
+	} else if (duration != 0 && pitch > 0) {
+		/*
+		 * PBSD: pitch is a Hz value and 1193182 / pitch is the
+		 * 8254 divisor sysbeep() then divides BY.  A pitch above
+		 * 1193182 makes that quotient zero and faults the kernel
+		 * in timer_spkr_setfreq().  KDMKTONE masks its pitch to
+		 * 16 bits and scteken packs its own into 16, but the
+		 * cons25 emulator assigns scp->bell_pitch straight from
+		 * an escape parameter, so clamp to the range the divisor
+		 * is defined on.  The doubling is done in the clamped
+		 * domain so it cannot overflow either.
+		 */
+		if (scp != scp->sc->cur_scp && pitch < 1193182)
 			pitch *= 2;
+		if (pitch > 1193182)
+			pitch = 1193182;
 		sysbeep(1193182 / pitch, SBT_1S * duration / hz);
 	}
 }
