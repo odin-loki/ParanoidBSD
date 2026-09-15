@@ -882,6 +882,22 @@ elf_print_symtab(Elf32_Ehdr *e, void *sh, char *str)
 	entsize = elf_get_size(e, sh, SH_ENTSIZE);
 	size = elf_get_size(e, sh, SH_SIZE);
 	name = elf_get_word(e, sh, SH_NAME);
+	/*
+	 * PBSD: sh_entsize is a number in the file being dumped.
+	 *
+	 * Nothing between the mmap and here constrains it, and all four
+	 * of this program's `size / entsize' are the same shape -- here,
+	 * and the loop bounds in elf_print_dynamic(), elf_print_rela()
+	 * and elf_print_rel().  A section header with sh_entsize 0 in a
+	 * crafted object therefore kills elfdump(1) with SIGFPE, and
+	 * elfdump is a dumper: reading files it has no reason to trust
+	 * is the whole job.  A section with no entry size has no
+	 * entries.
+	 */
+	if (entsize == 0) {
+		warnx("symbol table with zero sh_entsize, skipping");
+		return;
+	}
 	len = size / entsize;
 	fprintf(out, "\nsymbol table (%s):\n", shstrtab + name);
 	for (i = 0; i < len; i++) {
@@ -914,12 +930,23 @@ elf_print_dynamic(Elf32_Ehdr *e, void *sh)
 	u_int64_t val;
 	void *d;
 	int i;
+	u_int64_t nentries;
 
 	offset = elf_get_off(e, sh, SH_OFFSET);
 	entsize = elf_get_size(e, sh, SH_ENTSIZE);
 	size = elf_get_size(e, sh, SH_SIZE);
 	fprintf(out, "\ndynamic:\n");
-	for (i = 0; (u_int64_t)i < size / entsize; i++) {
+	/*
+	 * PBSD: sh_entsize 0, as in elf_print_symtab() above.  The
+	 * count is computed once, after the guard, so the divisor is
+	 * not in the loop condition any more.
+	 */
+	if (entsize == 0) {
+		warnx("section with zero sh_entsize, skipping");
+		return;
+	}
+	nentries = size / entsize;
+	for (i = 0; (u_int64_t)i < nentries; i++) {
 		d = (char *)e + offset + i * entsize;
 		tag = elf_get_size(e, d, D_TAG);
 		ptr = elf_get_size(e, d, D_PTR);
@@ -975,6 +1002,7 @@ elf_print_rela(Elf32_Ehdr *e, void *sh)
 	void *ra;
 	void *v;
 	int i;
+	u_int64_t nentries;
 
 	offset = elf_get_off(e, sh, SH_OFFSET);
 	entsize = elf_get_size(e, sh, SH_ENTSIZE);
@@ -982,7 +1010,17 @@ elf_print_rela(Elf32_Ehdr *e, void *sh)
 	name = elf_get_word(e, sh, SH_NAME);
 	v = (char *)e + offset;
 	fprintf(out, "\nrelocation with addend (%s):\n", shstrtab + name);
-	for (i = 0; (u_int64_t)i < size / entsize; i++) {
+	/*
+	 * PBSD: sh_entsize 0, as in elf_print_symtab() above.  The
+	 * count is computed once, after the guard, so the divisor is
+	 * not in the loop condition any more.
+	 */
+	if (entsize == 0) {
+		warnx("section with zero sh_entsize, skipping");
+		return;
+	}
+	nentries = size / entsize;
+	for (i = 0; (u_int64_t)i < nentries; i++) {
 		ra = (char *)v + i * entsize;
 		offset = elf_get_addr(e, ra, RA_OFFSET);
 		info = elf_get_word(e, ra, RA_INFO);
@@ -1006,6 +1044,7 @@ elf_print_rel(Elf32_Ehdr *e, void *sh)
 	void *r;
 	void *v;
 	int i;
+	u_int64_t nentries;
 
 	offset = elf_get_off(e, sh, SH_OFFSET);
 	entsize = elf_get_size(e, sh, SH_ENTSIZE);
@@ -1013,7 +1052,17 @@ elf_print_rel(Elf32_Ehdr *e, void *sh)
 	name = elf_get_word(e, sh, SH_NAME);
 	v = (char *)e + offset;
 	fprintf(out, "\nrelocation (%s):\n", shstrtab + name);
-	for (i = 0; (u_int64_t)i < size / entsize; i++) {
+	/*
+	 * PBSD: sh_entsize 0, as in elf_print_symtab() above.  The
+	 * count is computed once, after the guard, so the divisor is
+	 * not in the loop condition any more.
+	 */
+	if (entsize == 0) {
+		warnx("section with zero sh_entsize, skipping");
+		return;
+	}
+	nentries = size / entsize;
+	for (i = 0; (u_int64_t)i < nentries; i++) {
 		r = (char *)v + i * entsize;
 		offset = elf_get_addr(e, r, R_OFFSET);
 		info = elf_get_word(e, r, R_INFO);

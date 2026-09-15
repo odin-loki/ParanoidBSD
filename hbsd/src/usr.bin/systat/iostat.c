@@ -183,11 +183,23 @@ numlabels(int row)
 	char tmpstr[32];
 
 #define COLWIDTH	17
-#define DRIVESPERLINE	((getmaxx(wnd) - 1 - INSET) / COLWIDTH)
+/*
+ * PBSD: both of these are divisors and both can be zero.
+ *
+ * DRIVESPERLINE is (getmaxx(wnd) - 1 - INSET) / COLWIDTH, which with
+ * INSET 10 and COLWIDTH 17 is zero in any window narrower than 28
+ * columns -- and howmany(a, b) is ((a) + ((b) - 1)) / (b), so
+ * systat -iostat in a narrow window died of SIGFPE before drawing
+ * anything.  `regions' is then howmany(ndrives, ...), which is zero
+ * when no device is selected, and the next line divides by it.  One
+ * drive per line and one region are the degenerate renderings, and
+ * they are what the loops below already expect.
+ */
+#define DRIVESPERLINE	MAX(1, (getmaxx(wnd) - 1 - INSET) / COLWIDTH)
 	for (ndrives = 0, i = 0; i < num_devices; i++)
 		if (dev_select[i].selected)
 			ndrives++;
-	regions = howmany(ndrives, DRIVESPERLINE);
+	regions = MAX(1, howmany(ndrives, DRIVESPERLINE));
 	/*
 	 * Deduct -regions for blank line after each scrolling region.
 	 */

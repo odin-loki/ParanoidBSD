@@ -156,16 +156,28 @@ pmac_therm_manage_fans(void)
 			average_excess += frac_excess;
 			nsens++;
 		}
-		average_excess /= nsens;
-
-		/* If there are no sensors in this zone, use the average */
-		if (nsens_zone == 0)
-			max_excess_zone = average_excess;
+		/*
+		 * PBSD: the no-sensors case has to come before the
+		 * divide, not five lines after it.
+		 *
+		 * The `if (nsens == 0)' below was already here, with its
+		 * own comment -- but `average_excess /= nsens' ran
+		 * first.  nsens counts the whole sensor list, so a
+		 * machine that attached a fan and no temperature sensor
+		 * at all divided by zero here, in a kernel thread, on
+		 * every pass.  Moving the test above the divide leaves
+		 * every nsens > 0 case bit for bit as it was.
+		 */
 		/* No sensors at all? Use default */
 		if (nsens == 0) {
 			fan->fan->set(fan->fan, fan->fan->default_rpm);
 			continue;
 		}
+		average_excess /= nsens;
+
+		/* If there are no sensors in this zone, use the average */
+		if (nsens_zone == 0)
+			max_excess_zone = average_excess;
 
 		/*
 		 * Scale the fan linearly in the max temperature in its

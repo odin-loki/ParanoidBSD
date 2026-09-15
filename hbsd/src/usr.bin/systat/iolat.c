@@ -386,7 +386,8 @@ labeliolat(void)
 	struct iosched_stat *isp;
 	char tmpstr[32];
 #define COLWIDTH	29
-#define DRIVESPERLINE	((getmaxx(wnd) - 1 - INSET) / COLWIDTH)
+/* PBSD: a window under 40 columns makes this zero; see iostat.c. */
+#define DRIVESPERLINE	MAX(1, (getmaxx(wnd) - 1 - INSET) / COLWIDTH)
 	ndrives = ndevs; // XXX FILTER XXX
 	regions = howmany(ndrives, DRIVESPERLINE);
 	lpr = 2; /* for headers */
@@ -475,7 +476,8 @@ showiolat(void)
 	struct iosched_stat *isp;
 	struct iosched_op_stat *iosp;
 #define COLWIDTH	29
-#define DRIVESPERLINE	((getmaxx(wnd) - 1 - INSET) / COLWIDTH)
+/* PBSD: a window under 40 columns makes this zero; see iostat.c. */
+#define DRIVESPERLINE	MAX(1, (getmaxx(wnd) - 1 - INSET) / COLWIDTH)
 	ndrives = ndevs; // XXX FILTER XXX
 	regions = howmany(ndrives, DRIVESPERLINE);
 	lpr = 2; /* XXX */

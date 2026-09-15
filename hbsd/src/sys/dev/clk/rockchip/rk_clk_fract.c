@@ -207,6 +207,33 @@ rk_clk_fract_set_freq(struct clknode *clk, uint64_t fin, uint64_t *fout,
 	sc = clknode_get_softc(clk);
 
 	clk_compute_fract_div(*fout, fin, 0xFFFF, 0xFFFF, &div_n, &div_d);
+
+	/*
+	 * PBSD: the zero check has to come before the first divide too.
+	 *
+	 * clk_compute_fract_div() initialises its convergents to 0/1
+	 * and 1/0 and only leaves that state inside `while (d_rem != 0
+	 * && ...)'.  With d_input 0 -- that is, a parent frequency of 0,
+	 * which is what an unconfigured PLL reads -- the loop never
+	 * runs, neither convergent exceeds its max, and the function
+	 * hands back n_out 1 and **d_out 0**.  The divide below is then
+	 * a division by zero, twenty lines before the
+	 *
+	 *     if (div_d == 0) {
+	 *             printf("%s: %s divider is zero!\n", ...);
+	 *             return (EINVAL);
+	 *     }
+	 *
+	 * that already exists.  That one catches the other way to reach
+	 * zero -- the `else div_d--' in the rounding block below, from
+	 * div_d 1 -- and is still needed; this is the earlier one.
+	 */
+	if (div_d == 0) {
+		printf("%s: %s parent divider is zero!\n",
+		     clknode_get_name(clk), __func__);
+		return (EINVAL);
+	}
+
 	_fout = fin * div_n;
 	_fout /= div_d;
 

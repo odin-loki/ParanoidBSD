@@ -55,10 +55,10 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,595 | 4,188 |
+| 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,169 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,208 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,439** | **114,208** |
+| | **total** | **41,143** | **21,303,541** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -21189,7 +21189,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.56 `usr.bin/elfdump`
 
-- [ ] **5.56.1** `elfdump.c` · 1,289L · `TODO-PORT` · 24 fn
+- [ ] **5.56.1** `elfdump.c` · 1,338L · `TODO-PORT` · 24 fn
   - [ ] 5.56.1.1 `d_tags()` · `TODO-FN`
   - [ ] 5.56.1.2 `e_machines()` · `TODO-FN`
   - [ ] 5.56.1.3 `sh_types()` · `TODO-FN`
@@ -24841,7 +24841,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.200.12.11 `getifmibdata()` · `TODO-FN`
   - [ ] 5.200.12.12 `cmdifstat()` · `TODO-FN`
   - [ ] 5.200.12.13 `clearifstat()` · `TODO-FN`
-- [ ] **5.200.13** `iolat.c` · 521L · `TODO-PORT` · 20 fn
+- [ ] **5.200.13** `iolat.c` · 523L · `TODO-PORT` · 20 fn
   - [ ] 5.200.13.1 `name2oid()` · `TODO-FN`
   - [ ] 5.200.13.2 `oid2name()` · `TODO-FN`
   - [ ] 5.200.13.3 `oidfmt()` · `TODO-FN`
@@ -24862,7 +24862,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.200.13.18 `fmt()` · `TODO-FN`
   - [ ] 5.200.13.19 `latout()` · `TODO-FN`
   - [ ] 5.200.13.20 `showiolat()` · `TODO-FN`
-- [ ] **5.200.14** `iostat.c` · 385L · `TODO-PORT` · 12 fn
+- [ ] **5.200.14** `iostat.c` · 397L · `TODO-PORT` · 12 fn
   - [ ] 5.200.14.1 `openiostat()` · `TODO-FN`
   - [ ] 5.200.14.2 `closeiostat()` · `TODO-FN`
   - [ ] 5.200.14.3 `initiostat()` · `TODO-FN`
@@ -66203,7 +66203,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.662.10.8 `rk_clk_composite_set_freq()` · `TODO-FN`
   - [ ] 8.662.10.9 `rk_clk_composite_register()` · `TODO-FN`
 - [ ] **8.662.11** `rk_clk_composite.h` · 55L · `TODO-HDR`
-- [ ] **8.662.12** `rk_clk_fract.c` · 278L gen:1 · `TODO-PORT` · 6 fn
+- [ ] **8.662.12** `rk_clk_fract.c` · 305L gen:1 · `TODO-PORT` · 6 fn
   - [ ] 8.662.12.1 `clk_compute_fract_div()` · `TODO-FN`
   - [ ] 8.662.12.2 `rk_clk_fract_init()` · `TODO-FN`
   - [ ] 8.662.12.3 `rk_clk_fract_set_gate()` · `TODO-FN`
@@ -133488,7 +133488,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1252.24.31 `pmu_settime()` · `TODO-FN`
   - [ ] 8.1252.24.32 `pmu_set_speed()` · `TODO-FN`
 - [ ] **8.1252.25** `pmuvar.h` · 179L · `TODO-MD`
-- [ ] **8.1252.26** `powermac_thermal.c` · 217L gen:2 · `TODO-MD` · 4 fn
+- [ ] **8.1252.26** `powermac_thermal.c` · 229L gen:2 · `TODO-MD` · 4 fn
   - [ ] 8.1252.26.1 `fan_management_proc()` · `TODO-FN`
   - [ ] 8.1252.26.2 `pmac_therm_manage_fans()` · `TODO-FN`
   - [ ] 8.1252.26.3 `pmac_thermal_fan_register()` · `TODO-FN`

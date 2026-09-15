@@ -28985,3 +28985,179 @@ carries `: "memory"`, so that one really is only a modelling limit.
 
 A grep for the shape — `:: "b"(&`*x*`));`, an address-of input with no
 clobber at all — finds exactly these two in `sys/powerpc`.
+
+## `core.DivideZero`, the 27 unread: four defects, three of them "the check is there, after the divide"
+
+76 findings in the class; 49 arrived with a shard that was read.  The 27
+that name files this document had never mentioned are below.  Four are
+defects, and three of those four share a shape worth naming: **the
+zero check exists in the function and runs after the division it was
+meant to guard.**
+
+### `rk_clk_fract.c`: a parent frequency of zero
+
+`clk_compute_fract_div()` initialises its convergents to 0/1 and 1/0
+and only leaves that state inside `while (d_rem != 0 && ...)`.  With
+`d_input` zero — a parent clock that has not been configured reads 0 —
+the loop never runs, neither convergent exceeds its max, and the
+function hands back `n_out` 1 and **`d_out` 0**.
+`rk_clk_fract_set_freq()` then does
+
+```c
+	clk_compute_fract_div(*fout, fin, 0xFFFF, 0xFFFF, &div_n, &div_d);
+	_fout = fin * div_n;
+	_fout /= div_d;			/* <- here */
+	...
+	if (div_d == 0) {		/* <- twenty lines later */
+		printf("%s: %s divider is zero!\n", ...);
+		return (EINVAL);
+	}
+```
+
+The later check is not redundant — it catches the *other* way to reach
+zero, the `else div_d--` in the rounding block, from `div_d` 1 — so
+both are now present.  After the fix `clang --analyze` reports nothing
+at all in the file.
+
+### `powermac_thermal.c`: the comment was already there
+
+```c
+		average_excess /= nsens;
+
+		/* If there are no sensors in this zone, use the average */
+		if (nsens_zone == 0)
+			max_excess_zone = average_excess;
+		/* No sensors at all? Use default */
+		if (nsens == 0) {
+			fan->fan->set(fan->fan, fan->fan->default_rpm);
+			continue;
+		}
+```
+
+`nsens` counts the whole sensor list.  A machine that attached a fan
+and no temperature sensor divided by zero five lines before the test
+whose comment says *"No sensors at all?"*, in a kernel thread, on every
+pass.  The fix moves that block above the divide; every `nsens > 0`
+case is bit for bit as it was.
+
+### `elfdump(1)`: `sh_entsize` is a number in the file being dumped
+
+Four sites, one per function: `elf_print_symtab()`'s
+`len = size / entsize` and the `for (i = 0; (u_int64_t)i < size /
+entsize; i++)` loop bounds in `elf_print_dynamic()`,
+`elf_print_rela()` and `elf_print_rel()`.  `entsize` is
+`elf_get_size(e, sh, SH_ENTSIZE)` — straight out of the section header
+of the object being dumped, with nothing between the `mmap` and the
+division constraining it.  A crafted `sh_entsize` of 0 kills
+`elfdump(1)` with SIGFPE, and reading files it has no reason to trust
+is the entire job of a dumper.  A section with no entry size has no
+entries: each site now says so and returns.  The three loops compute
+the count once into `nentries` after the guard, so the divisor is no
+longer in a loop condition.
+
+### `systat(1)`: a narrow window
+
+```c
+#define DRIVESPERLINE	((getmaxx(wnd) - 1 - INSET) / COLWIDTH)
+	...
+	regions = howmany(ndrives, DRIVESPERLINE);
+	linesperregion = (getmaxy(wnd) - 1 - row - regions) / regions;
+```
+
+`howmany(a, b)` is `((a) + ((b) - 1)) / (b)`.  In `iostat.c`, `INSET`
+is 10 and `COLWIDTH` 17, so `DRIVESPERLINE` is **zero in any window
+narrower than 28 columns** and `systat -iostat` dies of SIGFPE before
+drawing anything.  `regions` is then zero when no device is selected,
+and the line after divides by it — a second divide by zero in the same
+five lines, which the analyser never reached because it stopped at the
+first.  `iolat.c` has the same macro twice with `COLWIDTH` 29, so its
+threshold is 40 columns; there `regions` is declared `__unused`, which
+means the division could only ever kill the program and never affect
+the display.  All three now floor at 1, which is the degenerate
+rendering the drawing loops below already expect.
+
+### The 23 that are not defects
+
+**A bound in a table one frame up.**
+`sys/netpfil/ipfilter/netinet/ip_nat.c:8004` and
+`ip_state.c:5205` — `ipf_nat_rehash()` and `ipf_state_rehash()` take
+the new table size from `p->ipftu_int`, an ioctl argument, and use it
+as `%` divisor immediately after storing it.  The bound is in
+`ipf_tuneables[]`: `{ "nat_table_size", 1, 0x7fffffff, ... }` and
+`{ "state_size", 1, 0x7fffffff, ... }`, and `ipf_tune_set()` rejects
+anything below the minimum before the rehash callback runs.  A
+minimum of **1**, not 0, is what makes these safe; the analyser sees
+the callback, not the table.  `ip_nat.c:2732` (`ipf_nat_newmap()`) is
+the same size, by then already in the softc.
+
+**A count that cannot be zero where it is used.**
+`sys/netgraph/ng_ppp.c:2055` — `priv->lastLink++ % priv->numActiveLinks`
+needs `numActiveLinks` 0, which `ng_ppp_mp_xmit()` rejects at its
+fourth line with `ENETDOWN`; the analyser's path reaches the modulo by
+re-conjuring the field after `ng_ppp_addproto()`, and netgraph's
+reader/writer serialisation is what stops `ng_ppp_update()` changing it
+underneath.  (The `numFrags == 0` the notes mention is a different
+variable, zeroed by a packet shorter than `MP_MIN_FRAG_LEN` and
+immediately set to 1.)  `sys/powerpc/aim/slb.c:451` and `:579` —
+`n_slbs` is the CPU's SLB count, set at boot, and the loop above the
+divide iterates on it.  `sys/powerpc/pseries/platform_chrp.c:551` —
+`ncores` counts CPUs for which `pcpu_find(i)` is non-NULL, and
+`pcpu_find(0)` is the BSP.  `sys/powerpc/powernv/xive.c:455` and
+`sys/powerpc/pseries/xics.c:338` — `ncpus` counts the bits of the
+affinity mask the interrupt framework passed, which it builds from
+`all_cpus`.
+
+**A format the layer above has already set.**
+`sys/dev/sound/pci/hda/hdaa.c:2084` — `lcm(HDA_DMA_ALIGNMENT,
+ch->b->align)` is `(a * b) / gcd(a, b)`, zero only if `b->align` is,
+and `b->align` is `AFMT_ALIGN(b->fmt)`, at least 1 for every format the
+mixer can select.  `sys/dev/sound/pci/hdspe-pcm.c:566` and `:580` —
+`n = AFMT_CHANNEL(ch->format)`, same argument, on the play and record
+sides.
+
+**Two switches on the same character.**
+`sys/dev/bhnd/nvram/bhnd_nvram_value_prf.c:685` — `numval % base`
+where the first `switch (*p)` sets `base` for `d i u o x X` and has no
+`default`, so `base` stays 0 for anything else.  The second
+`switch (*p)`, which is what reaches line 685, has exactly those six
+cases.  The analyser does not connect the two.
+
+**Firmware and device numbers.**
+`sys/dev/qlnx/qlnxe/ecore_cxt.c:584` and `:607`
+(`ILT_PAGE_IN_BYTES(p_cli->p_size.val) / CONN_CXT_SIZE(p_hwfn)`),
+`ecore_dev.c:6692` (`min_pf_rate`).
+
+**A test module.**  `sys/tests/fib_lookup/fib_lookup.c:217` and
+`:282` — `total_packets * 1000000000 / total_diff` with `total_diff`
+zero if the measured loop ran no passes, in a module whose entry points
+are root-only sysctls.
+
+**Deliberate.**  `sys/libkern/qdivrem.c:96` and
+`lib/libc/quad/qdivrem.c:95`:
+
+```c
+	if (__predict_false(vq == 0)) {
+		/* divide by zero. */
+		static volatile const unsigned int zero = 0;
+
+		tmp.ul[H] = tmp.ul[L] = 1 / zero;
+```
+
+The 64-bit software divide raising the hardware exception its caller
+asked for.  The checker is right about the arithmetic and wrong about
+the intent.
+
+**`sbin/dhclient/dhclient.c:1606`** — `(arc4random() >> 2) %
+ip->client->interval` is reached only from
+`if (ip->client->interval > ip->client->config->backoff_cutoff)`, so
+`interval` zero there needs a negative `backoff_cutoff`, which the
+config parser does not produce.  `initial-interval 0;` gives
+`interval` 0 and then fails that test.
+
+Noticed while reading, in a checker the sweep does not run:
+`usr.bin/systat/iolat.c:158` is `b1 = baselat * (1 << (i - 1))` after
+`i--`, and the loop above it exits at `i == nlat`.  With `nlat` 1 that
+is `1 << -1`, and `lats[i]` three lines on is `lats[0]`, so the shift
+is the only problem — `core.BitwiseShift`, which `analyze.py` does not
+select.  Written down rather than fixed, because the class has not been
+read and one finding from it is not a survey.

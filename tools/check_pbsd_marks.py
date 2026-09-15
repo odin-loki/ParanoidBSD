@@ -4953,6 +4953,58 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/usr.bin/systat/iostat.c": (
+        "PBSD: both of these are divisors and both can be zero.",
+        "#define DRIVESPERLINE\t((getmaxx(wnd) - 1 - INSET) / COLWIDTH)",
+        "numlabels(): DRIVESPERLINE is zero in any window narrower "
+        "than 28 columns and howmany() divides by it, and `regions' is "
+        "zero when no device is selected and the next line divides by "
+        "that",
+    ),
+    "hbsd/src/usr.bin/systat/iolat.c": (
+        ("PBSD: a window under 40 columns makes this zero; see iostat.c.", 2),
+        "#define DRIVESPERLINE\t((getmaxx(wnd) - 1 - INSET) / COLWIDTH)",
+        "labeliolat() and showiolat(): the same DRIVESPERLINE, with "
+        "COLWIDTH 29, so zero under 40 columns. Here `regions' is "
+        "declared __unused, so the division could only ever kill the "
+        "program",
+    ),
+    "hbsd/src/sys/powerpc/powermac/powermac_thermal.c": (
+        "PBSD: the no-sensors case has to come before the",
+        "\t\t\tmax_excess_zone = average_excess;\n"
+        "\t\t/* No sensors at all? Use default */",
+        "pmac_therm_manage_fans(): `average_excess /= nsens' ran five "
+        "lines before the `if (nsens == 0)' the file already had, "
+        "comment and all. nsens counts the whole sensor list, so a "
+        "machine with a fan and no temperature sensor divided by zero "
+        "in a kernel thread on every pass",
+    ),
+    "hbsd/src/usr.bin/elfdump/elfdump.c": [
+        (
+            "PBSD: sh_entsize is a number in the file being dumped.",
+            "\tname = elf_get_word(e, sh, SH_NAME);\n\tlen = size / entsize;",
+            "elf_print_symtab(): sh_entsize comes straight out of the "
+            "object being dumped and nothing constrains it, so a "
+            "crafted section header with sh_entsize 0 killed "
+            "elfdump(1) with SIGFPE",
+        ),
+        (
+            ("PBSD: sh_entsize 0, as in elf_print_symtab() above.", 3),
+            "\tfor (i = 0; (u_int64_t)i < size / entsize; i++) {",
+            "elf_print_dynamic(), elf_print_rela() and elf_print_rel() "
+            "use the same sh_entsize as a loop-bound divisor",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/rockchip/rk_clk_fract.c": (
+        "PBSD: the zero check has to come before the first divide too.",
+        "\tclk_compute_fract_div(*fout, fin, 0xFFFF, 0xFFFF, &div_n, &div_d);\n"
+        "\t_fout = fin * div_n;",
+        "rk_clk_fract_set_freq(): clk_compute_fract_div() returns "
+        "d_out 0 for a parent frequency of 0 -- its convergents start "
+        "at 1/0 and the loop that leaves that state is `while (d_rem "
+        "!= 0 && ...)'. The divide was twenty lines before the "
+        "`if (div_d == 0)' the file already had",
+    ),
     "hbsd/src/sys/powerpc/include/cpufunc.h": [
         (
             "PBSD: the stfd writes through %0, so this needs \"memory\".",
