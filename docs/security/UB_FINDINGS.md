@@ -27841,3 +27841,69 @@ policy is not self-justifying.  None of these 14 is one:
   are still reported after this morning's `date2idt` bound, because the
   bound is in the caller and `firstweek` is `static`.  Unreachable in
   the tree, and left visible rather than silenced.
+
+## bhyve's ten one-sided indices, read because the input is a guest's
+
+After `sys/dev`, `usr.sbin/bhyve` is the largest remaining ONESIDED
+group at 10, and it is the one where the threat model is sharpest: a
+hypervisor's device models take their numbers from a guest.  All ten
+read.  **None is a defect**, and five of them are only on the list
+because the real bound is a form the lint is documented not to see.
+
+* **`pci_passthru.c:msix_table_read` and `msix_table_write`.**  The
+  reported bound is `assert(index < table_count)`, one-sided, and the
+  guest chooses the offset.  The real bound is the `if` twenty lines
+  above, which returns before this code for anything outside the
+  table:
+
+  ```c
+	if (offset < table_offset ||
+	    offset >= table_offset + table_count * MSIX_TABLE_ENTRY_SIZE) {
+		... non-table path ...
+		return;
+	}
+	offset -= table_offset;
+	index = offset / MSIX_TABLE_ENTRY_SIZE;
+  ```
+
+  `offset` is a `uint64_t`, so `offset < table_offset` is an unsigned
+  comparison and there is no negative to reach the subtraction.  Both
+  ends, in one statement, one screen up from the assert the lint found.
+
+* **`pci_virtio_net.c:pci_vtnet_cfgwrite`.**  `if (offset < (int)sizeof
+  (sc->vsc_config.mac))` really is one-sided, and past it the function
+  *writes* guest data through `&sc->vsc_config.mac[offset]`.  The floor
+  is two frames up, in `vi_pci_write`: `if (offset >=
+  virtio_config_size) { newoff = offset - virtio_config_size; ... }`,
+  so `newoff` is non-negative by construction, and it is a `uint32_t`
+  bounded above by the BAR size bhyve registered the region with — a
+  virtio BAR is 0x100 bytes, not 2GB, so the conversion to the callee's
+  `int` cannot go negative either.
+
+* **`pci_emul.c:pci_generate_msix`.**  `index >= pi->pi_msix.
+  table_count` and nothing below.  Every caller passes an unsigned: the
+  virtio path passes `vq->vq_msix_idx`, a `uint16_t` the guest writes
+  through `VTCFG_R_MSIX_QUEUE`, and nvme passes `cq->intr_vec`, also a
+  `uint16_t`.  Widened to `int` those are 0..65535 and the existing
+  check takes the top.
+
+* **`pci_emul.c:pci_emul_iomem_handler` and `pci_emul_mem_handler`.**
+  `bidx = (int)arg2` is the `long` bhyve itself passed when it
+  registered the region, which is the device's own BAR index.  Not the
+  guest's number at all.
+
+* **`pci_passthru.c:passthru_get_mmio`, `gdb.c:gdb_cpu_add`,
+  `virtio.c:_vq_record`.**  A caller's literal or loop counter, a vCPU
+  id bhyve assigned, and a loop counter that starts at zero.
+
+* **`pci_virtio_console.c:pci_vtcon_port_to_vq`** was read in run 26's
+  round and is already on the record: the guest can *use* a port, not
+  create one.
+
+The pattern worth keeping is the first one.  Twice in ten sites the
+lint pointed at an `assert()` whose one-sidedness is real and whose
+job is not to be the bound — the bound is an early return further up,
+written as an unsigned comparison the lint does not read.  An
+`assert()` that restates a property already established is not a
+defect, and telling those apart is why this list is read rather than
+counted.
