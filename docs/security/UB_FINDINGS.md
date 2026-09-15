@@ -27773,6 +27773,26 @@ clean.**
   evidence is real but the expression does not name the return, so the
   rule declines to guess and these stay here.  Same for `e_jnf`'s
   `ynf`.
+
+  **Run 33 settled a tempting shortcut against itself.**  If
+  `return_value_X` is how CBMC spells an unmodelled return, why keep
+  the `no_body` list at all — why not read the bucket off the spelling?
+  Because that is not what the spelling means.  `remove_returns`
+  rewrites *every* call whose return value is used into a
+  `return_value_X`; a missing body is not what causes the name, it is
+  only one thing that can be behind it.  The measurement: of the 180
+  `return_value_X` names in run 33's FAILED records that also carry a
+  `no_body` list, **94 name an X the list does not**, and those X are
+  inline functions with bodies in this tree — `__curthread`,
+  `get_pcpu`, `_tcb_get`, `_citrus_region_offset`, `__log2`.  CBMC's
+  own `$0`/`$1` suffix, which tells two call sites in one frame apart,
+  is the giveaway: a stub has one nondeterministic return, not a
+  numbered pair.  Deciding on the spelling would have buried those 94,
+  `sys/x86/x86/delay.c`'s `DELAY` among them, where the overflow is
+  `sched_pin()`'s `return_value___curthread->td_pinned + 1` — a real
+  counter on a real structure, which is a finding to read and bound,
+  not an absent model.  `tools/verify/test_report_triage.py` now pins
+  both directions.
 * **The caller's contract, in the standard's own words.**  `abs`,
   `labs`, `llabs`: C17 7.22.6.1p2 is *"If the result cannot be
   represented, the behavior is undefined"* — a constraint on the

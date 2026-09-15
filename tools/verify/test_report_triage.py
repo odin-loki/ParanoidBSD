@@ -139,6 +139,36 @@ check("no no_body field falls back to the name list (out)",
       report.bucket(rec("__gedf2", "line 18 arithmetic overflow on signed "
                                    "- in return_value_x - 1")),
       "EXPORTED, arithmetic - READ THESE")
+# Why the spelling alone is not the evidence, and the no_body list is.
+# CBMC writes `return_value_<f>' for EVERY call whose return is used,
+# whether or not it had a body for <f> - remove_returns rewrites the
+# call, it does not report a missing model. Run 33 measures it: of the
+# 180 `return_value_X' names in FAILED records that also carry a
+# no_body list, 94 name an X the list does not, and they are inlines
+# with bodies right here in the tree - __curthread, get_pcpu,
+# _tcb_get, _citrus_region_offset, __log2. The `$0'/`$1' suffix CBMC
+# appends to tell two call sites in one frame apart is the giveaway:
+# a stub for an unmodelled callee has one nondeterministic return, not
+# a numbered pair.
+#
+# So a rule that read extern-driven off the spelling would have hidden
+# those 94 - DELAY() below among them, where the overflow is
+# sched_pin()'s `td_pinned + 1' on a counter CBMC cannot bound but a
+# person can. That is a finding to read, not an absent model.
+check("return_value_ of an INLINE is not an absent model",
+      report.bucket(rec("DELAY", "line 179 arithmetic overflow on signed + "
+                                 "in return_value___curthread->td_pinned + 1",
+                        ["panic"], f="sys/x86/x86/delay.c")),
+      "EXPORTED, arithmetic - READ THESE")
+# ... and the call-site suffix does not defeat the match when the
+# callee IS unmodelled: `return_value_sprintf$0' contains the name the
+# list contributes.
+check("a no_body callee matches through CBMC's call-site suffix",
+      report.bucket(rec("identify_arm_cpu",
+                        "line 40 arithmetic overflow on signed + in "
+                        "return_value_sprintf$0 + 1",
+                        ["sprintf"], f="sys/arm/arm/identcpu-v6.c")),
+      "extern-driven (an unmodelled return, unconstrained)")
 # static still wins: its callers are all in the file, which is a stronger
 # statement than anything about a callee.
 check("static is decided before extern-driven",
