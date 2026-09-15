@@ -4953,6 +4953,78 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/sys/dev/cxgb/common/cxgb_t3_hw.c": (
+        "PBSD: both subscripts come from the device, and both tables",
+        "\tlog2_width = fls(adap->params.pci.width) - 1;\n"
+        "\tacklat = ack_lat[log2_width][pldsize];",
+        "config_pcie(): ack_lat[] and rpl_tmr[] are [4][6] and both "
+        "subscripts come from the adapter. pldsize is a three-bit PCIe "
+        "Max_Payload_Size field (0..7, 6 and 7 reserved) and "
+        "log2_width is fls(width) - 1 on an unsigned char, so width 0 "
+        "gives UINT_MAX. Either reads past a 48-element .rodata table "
+        "and the value goes on to a PCIe register write",
+    ),
+    "hbsd/src/sys/netpfil/ipfw/ip_fw_table_algo.c": (
+        "PBSD: write all four words, not just the ones the prefix",
+        "\tfor (cp = (uint32_t *)addr6; mask >= 32; mask -= 32)\n"
+        "\t\t*cp++ = 0xFFFFFFFF;\n\tif (mask > 0)",
+        "ipv6_writemask() left every word past the prefix unwritten, "
+        "and all three callers AND a whole 16-byte address against a "
+        "stack mask with APPLY_MASK's four unconditional __u6_addr32 "
+        "ANDs. tei_to_chash_ent() does it on insert and "
+        "hash_ip6_slow() on lookup, from different frames, so an IPv6 "
+        "entry in a cidr:hash table could be stored under one key and "
+        "searched for under another",
+    ),
+    "hbsd/src/sys/riscv/vmm/vmm_aplic.c": (
+        "PBSD: a read of an unimplemented IDC register has to",
+        "\tcase IDC_TOPI(0):\n\t\terror = 0;\n\t\tbreak;",
+        "aplic_handle_idc(): the IDELIVERY, IFORCE, ITHRESHOLD and "
+        "TOPI arms returned 0 without writing *val, and mem_read() "
+        "copies its own uninitialised local to the guest when the "
+        "return is 0. A guest load from any of the four returned eight "
+        "bytes of host kernel stack",
+    ),
+    "hbsd/src/sys/dev/cfe/cfe_api.c": (
+        "PBSD: say so in the iocb as well as in the return value.",
+        "    if (!cfe_dispfunc) return -1;",
+        "cfe_iocb_dispatch(): all 19 callers ignore the return value "
+        "and test xiocb.xiocb_status, which they set to 0 themselves. "
+        "With no dispatch function the 0 stayed, so the caller read "
+        "the call as success and copied an unwritten plist union -- "
+        "cfe_getfwinfo() copies seven of its fields into the caller's "
+        "cfe_fwinfo_t",
+    ),
+    "hbsd/src/sys/arm64/apple/apple_aic.c": (
+        "PBSD: `type' and `irq' come from the map data too.",
+        "\t\tpol = INTR_POLARITY_CONFORM;\n"
+        "\t\ttrig = INTR_TRIGGER_CONFORM;\n\t}",
+        "apple_aic_setup_intr(): the data == NULL arm set only pol and "
+        "trig, so `type' and `irq' were whatever the frame held. "
+        "ai->ai_type = type stored it for every later switch on "
+        "ai_type, and the AIC_TYPE_IRQ arm does bus_write_4(sc->sc_mem, "
+        "AIC_TARGET_CPU(irq), ...) -- an MMIO write at an offset "
+        "nothing computed",
+    ),
+    "hbsd/src/sys/dev/dwc/dwc1000_dma.c": (
+        "PBSD: nsegs == 0 joins the arm that unloads and fails.",
+        "\tif (sc->tx_desccount + nsegs > TX_DESC_COUNT) {",
+        "dma1000_setup_txbuf(): with nsegs 0 the descriptor loop never "
+        "ran and `last' stayed uninitialised, then went into "
+        "txbuf_map[idx].last_desc_idx. dma1000_txfinish_locked() feeds "
+        "that to next_txidx() and walks txdesc_ring[] towards it",
+    ),
+    "hbsd/src/sys/dev/ena/ena_datapath.c": (
+        "PBSD: nsegs == 0 with rc == 0 is a failure too, and",
+        "\t\t    \"dmamap load failed! err: %d nsegs: %d\\n\", rc, nsegs);\n"
+        "\t\tgoto dma_error;",
+        "ena_tx_map_mbuf(): the nsegs == 0 arm reached dma_error: with "
+        "rc still 0 and the label returns rc, so ena_xmit_mbuf() read "
+        "the call as success and used push_hdr and header_len, neither "
+        "of which had been written. ena_com_prepare_tx() copies "
+        "header_len bytes from push_header into device memory in LLQ "
+        "mode",
+    ),
     "hbsd/src/sys/dev/e1000/e1000_phy.c": (
         "PBSD: *success is this function's whole answer, and the",
         "\tif (!hw->phy.ops.read_reg)\n\t\treturn E1000_SUCCESS;"

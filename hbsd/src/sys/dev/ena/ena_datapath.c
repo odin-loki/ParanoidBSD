@@ -879,6 +879,28 @@ ena_tx_map_mbuf(struct ena_ring *tx_ring, struct ena_tx_buffer *tx_info,
 	if (unlikely((rc != 0) || (nsegs == 0))) {
 		ena_log_io(adapter->pdev, WARN,
 		    "dmamap load failed! err: %d nsegs: %d\n", rc, nsegs);
+		/*
+		 * PBSD: nsegs == 0 with rc == 0 is a failure too, and
+		 * dma_error: returns rc.
+		 *
+		 * The condition above is written as an OR precisely
+		 * because bus_dmamap_load_mbuf_sg() can succeed and map
+		 * nothing.  On that arm the label returned 0, and
+		 * ena_xmit_mbuf()'s `if (unlikely(rc != 0))' let it
+		 * through to
+		 *
+		 *     ena_tx_ctx.push_header = push_hdr;
+		 *     ena_tx_ctx.header_len = header_len;
+		 *
+		 * neither of which this function had written -- an
+		 * uninitialised pointer and an uninitialised length,
+		 * which ena_com_prepare_tx() copies into device memory
+		 * in LLQ mode.  tx_info->mbuf has also just been set to
+		 * NULL by the label, so the completion path sees a
+		 * descriptor with no mbuf.
+		 */
+		if (rc == 0)
+			rc = EINVAL;
 		goto dma_error;
 	}
 

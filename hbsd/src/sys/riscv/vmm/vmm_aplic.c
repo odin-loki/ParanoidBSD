@@ -249,6 +249,30 @@ aplic_handle_idc(struct hyp *hyp, struct aplic *aplic, int cpu, int reg,
 	case IDC_IFORCE(0):
 	case IDC_ITHRESHOLD(0):
 	case IDC_TOPI(0):
+		/*
+		 * PBSD: a read of an unimplemented IDC register has to
+		 * produce a value.
+		 *
+		 * These four arms returned 0 -- success -- without
+		 * touching *val, and mem_read()'s
+		 *
+		 *     error = aplic_mmio_access(hyp, aplic, reg, false, &val);
+		 *     if (error == 0)
+		 *             *rval = val;
+		 *
+		 * takes `val' from its own frame.  So a guest load from
+		 * IDC_IDELIVERY, IDC_IFORCE, IDC_ITHRESHOLD or IDC_TOPI
+		 * returned eight bytes of HOST kernel stack, once per
+		 * load, chosen by the guest.  Every other arm reachable
+		 * from aplic_mmio_access() -- sourcecfg, target,
+		 * claimi, the enable words, domaincfg -- writes *val on
+		 * the read path; these four were the omission.
+		 *
+		 * Zero is the right value: the registers are not
+		 * implemented, and a write to them is already dropped.
+		 */
+		if (!write)
+			*val = 0;
 		error = 0;
 		break;
 	case IDC_CLAIMI(0):

@@ -597,12 +597,43 @@ static inline void ipv6_writemask(struct in6_addr *addr6, uint8_t mask);
 static inline void
 ipv6_writemask(struct in6_addr *addr6, uint8_t mask)
 {
-	uint32_t *cp;
+	uint32_t *cp, *end;
 
-	for (cp = (uint32_t *)addr6; mask >= 32; mask -= 32)
+	/*
+	 * PBSD: write all four words, not just the ones the prefix
+	 * covers.
+	 *
+	 * This wrote 0xFFFFFFFF for each whole covered word and then,
+	 * only `if (mask > 0)', one partial word.  Everything past that
+	 * was left alone -- and all three callers hand it a mask that
+	 * lives on the stack and then AND a whole 16-byte address
+	 * against it:
+	 *
+	 *     struct in6_addr mask6;              (uninitialised)
+	 *     ipv6_writemask(&mask6, mlen);
+	 *     memcpy(&ent->a.a6, tei->paddr, sizeof(struct in6_addr));
+	 *     APPLY_MASK(&ent->a.a6, &mask6);
+	 *
+	 * and APPLY_MASK is four __u6_addr32 ANDs, unconditionally.  So
+	 * for any prefix shorter than 128 the low words of the key were
+	 * ANDed with whatever the frame held.  tei_to_chash_ent() does
+	 * it on INSERT and hash_ip6_slow() does it on LOOKUP, with
+	 * different frames, so an IPv6 entry in a `cidr:hash' table
+	 * could be stored under one key and searched for under another
+	 * -- a rule that does not match, without anything being
+	 * reported.
+	 *
+	 * `if (mask > 0)' also skipped the partial word for every
+	 * prefix that is a multiple of 32 below 128, where zero is the
+	 * value that word needs.
+	 */
+	end = (uint32_t *)(addr6 + 1);
+	for (cp = (uint32_t *)addr6; mask >= 32 && cp < end; mask -= 32)
 		*cp++ = 0xFFFFFFFF;
-	if (mask > 0)
-		*cp = htonl(mask ? ~((1 << (32 - mask)) - 1) : 0);
+	if (cp < end)
+		*cp++ = htonl(mask ? ~((1 << (32 - mask)) - 1) : 0);
+	while (cp < end)
+		*cp++ = 0;
 }
 #endif
 

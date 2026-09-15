@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,998 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,143 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,268** | **114,208** |
+| | **total** | **41,143** | **21,303,413** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -45737,7 +45737,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.49 `sys/arm64/apple`
 
-- [ ] **8.49.1** `apple_aic.c` · 781L gen:1 · `TODO-MD` · 18 fn
+- [ ] **8.49.1** `apple_aic.c` · 802L gen:1 · `TODO-MD` · 18 fn
   - [ ] 8.49.1.1 `apple_aic_probe()` · `TODO-FN`
   - [ ] 8.49.1.2 `apple_aic_attach()` · `TODO-FN`
   - [ ] 8.49.1.3 `apple_aic_map_intr_fdt()` · `TODO-FN`
@@ -65816,7 +65816,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.656 `sys/dev/cfe`
 
-- [ ] **8.656.1** `cfe_api.c` · 559L · `TODO-PORT` · 23 fn
+- [ ] **8.656.1** `cfe_api.c` · 574L · `TODO-PORT` · 23 fn
   - [ ] 8.656.1.1 `cfe_init()` · `TODO-FN`
   - [ ] 8.656.1.2 `cfe_iocb_dispatch()` · `TODO-FN`
   - [ ] 8.656.1.3 `cfe_close()` · `TODO-FN`
@@ -66673,7 +66673,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.669.8** `cxgb_regs.h` · 8,386L · `TODO-GEN`
 - [ ] **8.669.9** `cxgb_sge_defs.h` · 289L · `TODO-GEN`
 - [ ] **8.669.10** `cxgb_t3_cpl.h` · 1,613L · `TODO-HDR`
-- [ ] **8.669.11** `cxgb_t3_hw.c` · 4,797L · `TODO-PORT`
+- [ ] **8.669.11** `cxgb_t3_hw.c` · 4,816L · `TODO-PORT`
 - [ ] **8.669.12** `cxgb_tcb.h` · 677L · `TODO-GEN`
 - [ ] **8.669.13** `cxgb_tn1010.c` · 222L · `TODO-PORT` · 8 fn
   - [ ] 8.669.13.1 `tn1010_reset()` · `TODO-FN`
@@ -69348,7 +69348,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.688.1.13 `dwc1000_intr()` · `TODO-FN`
   - [ ] 8.688.1.14 `dwc1000_intr_disable()` · `TODO-FN`
 - [ ] **8.688.2** `dwc1000_core.h` · 47L · `TODO-HDR`
-- [ ] **8.688.3** `dwc1000_dma.c` · 883L · `TODO-PORT` · 19 fn
+- [ ] **8.688.3** `dwc1000_dma.c` · 896L · `TODO-PORT` · 19 fn
   - [ ] 8.688.3.1 `next_txidx()` · `TODO-FN`
   - [ ] 8.688.3.2 `next_rxidx()` · `TODO-FN`
   - [ ] 8.688.3.3 `dwc_get1paddr()` · `TODO-FN`
@@ -70001,7 +70001,7 @@ function; a file with two hundred of them is a project.
 
 - [ ] **8.692.1** `ena.c` · 4,283L gen:7 · `TODO-PORT`
 - [ ] **8.692.2** `ena.h` · 638L gen:1 · `TODO-HDR`
-- [ ] **8.692.3** `ena_datapath.c` · 1,163L · `TODO-PORT` · 15 fn
+- [ ] **8.692.3** `ena_datapath.c` · 1,185L · `TODO-PORT` · 15 fn
   - [ ] 8.692.3.1 `ena_cleanup()` · `TODO-FN`
   - [ ] 8.692.3.2 `ena_deferred_mq_start()` · `TODO-FN`
   - [ ] 8.692.3.3 `ena_mq_start()` · `TODO-FN`
@@ -129508,7 +129508,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1224.32.73 `ipfw_destroy_tables()` · `TODO-FN`
   - [ ] 8.1224.32.74 `ipfw_init_tables()` · `TODO-FN`
 - [ ] **8.1224.33** `ip_fw_table.h` · 221L gen:1 · `TODO-HDR`
-- [ ] **8.1224.34** `ip_fw_table_algo.c` · 4,372L gen:3 · `TODO-PORT`
+- [ ] **8.1224.34** `ip_fw_table_algo.c` · 4,403L gen:3 · `TODO-PORT`
 - [ ] **8.1224.35** `ip_fw_table_value.c` · 771L · `TODO-PORT` · 20 fn
   - [ ] 8.1224.35.1 `hash_table_value()` · `TODO-FN`
   - [ ] 8.1224.35.2 `cmp_table_value()` · `TODO-FN`
@@ -135075,7 +135075,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1266.2.35 `vm_handle_paging()` · `TODO-FN`
   - [ ] 8.1266.2.36 `vm_handle_suspend()` · `TODO-FN`
   - [ ] 8.1266.2.37 `vm_run()` · `TODO-FN`
-- [ ] **8.1266.3** `vmm_aplic.c` · 582L gen:1 · `TODO-MD` · 20 fn
+- [ ] **8.1266.3** `vmm_aplic.c` · 606L gen:1 · `TODO-MD` · 20 fn
   - [ ] 8.1266.3.1 `aplic_handle_sourcecfg()` · `TODO-FN`
   - [ ] 8.1266.3.2 `aplic_set_enabled()` · `TODO-FN`
   - [ ] 8.1266.3.3 `aplic_set_enabled_word()` · `TODO-FN`

@@ -269,7 +269,20 @@ dma1000_setup_txbuf(struct dwc_softc *sc, int idx, struct mbuf **mp)
 	if (error != 0)
 		return (ENOMEM);
 
-	if (sc->tx_desccount + nsegs > TX_DESC_COUNT) {
+	/*
+	 * PBSD: nsegs == 0 joins the arm that unloads and fails.
+	 *
+	 * bus_dmamap_load_mbuf_sg() can return 0 and map nothing, and
+	 * the descriptor loop below is `for (i = 0; i < nsegs; i++)'.
+	 * With no segments it never runs, `last' keeps whatever the
+	 * frame held, and that value is stored as
+	 * txbuf_map[idx].last_desc_idx -- which
+	 * dma1000_txfinish_locked() feeds to next_txidx() and then
+	 * walks txdesc_ring[] towards.  A negative one indexes before
+	 * the ring; any other wrong one walks descriptors that belong
+	 * to another packet.
+	 */
+	if (nsegs == 0 || sc->tx_desccount + nsegs > TX_DESC_COUNT) {
 		bus_dmamap_unload(sc->txbuf_tag, sc->txbuf_map[idx].map);
 		return (ENOMEM);
 	}

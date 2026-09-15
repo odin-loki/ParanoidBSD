@@ -386,6 +386,27 @@ apple_aic_setup_intr(device_t dev, struct intr_irqsrc *isrc,
 	} else {
 		pol = INTR_POLARITY_CONFORM;
 		trig = INTR_TRIGGER_CONFORM;
+		/*
+		 * PBSD: `type' and `irq' come from the map data too.
+		 *
+		 * This arm set only the polarity and the trigger, and
+		 * left `type' and `irq' as whatever the frame held.
+		 * `ai->ai_type = type' below then stored that -- and
+		 * apple_aic_enable_intr(), _disable_intr() and
+		 * _post_filter() all switch on ai_type afterwards -- and
+		 * the AIC_TYPE_IRQ arm of the switch below does
+		 * bus_write_4(sc->sc_mem, AIC_TARGET_CPU(irq), ...),
+		 * an MMIO write at an offset nothing computed.
+		 *
+		 * Taking both from the irqsrc is what the source
+		 * already knows: apple_aic_attach() sets ai_irq = j and
+		 * ai_type = AIC_TYPE_INVAL for every die IRQ, so an
+		 * irqsrc that has never been set up with map data falls
+		 * into the switch's default and returns EINVAL, which
+		 * is the answer.
+		 */
+		type = ai->ai_type;
+		irq = ai->ai_irq;
 	}
 
 	if (isrc->isrc_handlers != 0) {

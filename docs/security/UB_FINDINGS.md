@@ -28656,3 +28656,240 @@ visible; the guarantee is one frame up rather than at the call.
 `e1000_phy_has_link_generic()` defect above, from
 `e1000_phy_force_speed_duplex_82577()` rather than
 `e1000_get_phy_info_82577()`.  One defect, two findings.
+
+## `core.uninitialized.Assign`: the 38 nobody had read, and seven defects
+
+117 findings in the class.  79 arrived with a shard that was read;
+**38 across 32 files** had never been opened.  Seven of those are
+defects, and one of the seven is a firewall that silently stops
+matching.
+
+### `ipv6_writemask()`: an ipfw IPv6 table masked against stack
+
+`sys/netpfil/ipfw/ip_fw_table_algo.c`:
+
+```c
+static inline void
+ipv6_writemask(struct in6_addr *addr6, uint8_t mask)
+{
+	uint32_t *cp;
+
+	for (cp = (uint32_t *)addr6; mask >= 32; mask -= 32)
+		*cp++ = 0xFFFFFFFF;
+	if (mask > 0)
+		*cp = htonl(mask ? ~((1 << (32 - mask)) - 1) : 0);
+}
+```
+
+It writes the words the prefix covers and leaves the rest alone.  All
+three callers then AND a whole 16-byte address against it, and
+`APPLY_MASK` in `sys/netinet/ip_fw.h` is four **unconditional**
+`__u6_addr32` ANDs:
+
+```c
+	struct in6_addr mask6;			/* uninitialised */
+
+	ipv6_writemask(&mask6, mlen);
+	memcpy(&ent->a.a6, tei->paddr, sizeof(struct in6_addr));
+	APPLY_MASK(&ent->a.a6, &mask6);
+```
+
+So for any prefix shorter than 128, the low words of the key are ANDed
+with whatever the frame held.  `if (mask > 0)` also skips the partial
+word for every prefix that is a multiple of 32 below 128 — exactly the
+common cases, `/32`, `/64`, `/96` — where zero is the value that word
+needs.
+
+The two callers that matter are the two halves of one table:
+`tei_to_chash_ent()` masks on **insert** and `hash_ip6_slow()` masks on
+**lookup**, each with its own `mask6` on its own frame.  An IPv6 prefix
+in a `cidr:hash` ipfw table can therefore be stored under one key and
+searched for under another — a rule that does not match, with nothing
+reported.
+
+Fixed in the helper, which covers all three callers: write every word,
+with the end of the array as the bound so `mask == 128` does not walk
+one past it.
+
+```
+cbmc -DOLD --unwind 8 tools/verify/probes/ipv6_writemask.c  ->  2 of 2 failed
+cbmc       --unwind 8 tools/verify/probes/ipv6_writemask.c  ->  0 of 2, SUCCESSFUL
+```
+
+The two assertions are the two halves: every word of the mask is
+written, and two calls with the same prefix length agree.
+
+### `vmm_aplic.c`: a RISC-V guest reads host kernel stack
+
+`sys/riscv/vmm/vmm_aplic.c`, `aplic_handle_idc()`:
+
+```c
+	switch (reg + APLIC_IDC(0)) {
+	case IDC_IDELIVERY(0):
+	case IDC_IFORCE(0):
+	case IDC_ITHRESHOLD(0):
+	case IDC_TOPI(0):
+		error = 0;
+		break;
+```
+
+Four unimplemented registers return success and write nothing to
+`*val`.  `mem_read()` is
+
+```c
+	uint64_t val;
+	...
+	error = aplic_mmio_access(hyp, aplic, reg, false, &val);
+	if (error == 0)
+		*rval = val;
+```
+
+with `val` its own uninitialised local.  A guest load from
+`IDC_IDELIVERY`, `IDC_IFORCE`, `IDC_ITHRESHOLD` or `IDC_TOPI` therefore
+returned **eight bytes of host kernel stack**, once per load, at a
+moment the guest chooses.  Every other arm reachable from
+`aplic_mmio_access()` — `sourcecfg`, `target`, `claimi`, the enable
+words, `domaincfg` — writes `*val` on the read path; these four were
+the omission.  Fixed with `if (!write) *val = 0;`, which is both the
+architectural answer for an unimplemented register and what the
+neighbouring arms already do.
+
+### The rest of the seven
+
+**`sys/dev/ena/ena_datapath.c:1019`.**  `ena_tx_map_mbuf()` tests
+`(rc != 0) || (nsegs == 0)` — written as an OR precisely because
+`bus_dmamap_load_mbuf_sg()` can succeed and map nothing — and then
+`goto dma_error`, whose label is `return (rc)`.  On the `nsegs == 0`
+arm `rc` is 0, so `ena_xmit_mbuf()`'s `if (unlikely(rc != 0))` let it
+through to `ena_tx_ctx.push_header = push_hdr` and
+`ena_tx_ctx.header_len = header_len`, neither of which the callee had
+written.  In LLQ mode `ena_com_prepare_tx()` copies `header_len` bytes
+from `push_header` into device memory.  `tx_info->mbuf` has also just
+been set to NULL by the label, so the completion path sees a descriptor
+with no mbuf.  Fixed with `if (rc == 0) rc = EINVAL;`.  This is the AWS
+ENA driver — the network device a FreeBSD guest gets on EC2.
+
+**`sys/dev/dwc/dwc1000_dma.c:301`.**  The same zero-segment load, one
+driver along and not tested for at all.  `for (i = 0; i < nsegs; i++)`
+never runs, `last` keeps what the frame held, and it is stored as
+`txbuf_map[idx].last_desc_idx`.  `dma1000_txfinish_locked()` feeds that
+to `next_txidx()` and walks `txdesc_ring[]` towards it: a negative one
+indexes before the ring, any other wrong one walks descriptors that
+belong to another packet.  Fixed by putting `nsegs == 0` on the arm
+that already unloads the map and returns `ENOMEM`.
+
+**`sys/arm64/apple/apple_aic.c:403`.**  `apple_aic_setup_intr()`'s
+`data == NULL` arm set the polarity and the trigger and left `type` and
+`irq` alone.  `ai->ai_type = type` then stored that — and
+`apple_aic_enable_intr()`, `_disable_intr()` and `_post_filter()` all
+switch on `ai_type` afterwards — while the `AIC_TYPE_IRQ` arm of the
+switch below does `bus_write_4(sc->sc_mem, AIC_TARGET_CPU(irq), ...)`,
+an MMIO write at an offset nothing computed.  Fixed by taking both from
+the irqsrc, which is what the driver already knows:
+`apple_aic_attach()` sets `ai_irq = j` and `ai_type = AIC_TYPE_INVAL`
+for every die IRQ, so an irqsrc never set up with map data falls into
+the switch's `default` and returns `EINVAL`.
+
+**`sys/dev/cfe/cfe_api.c:329`.**  `cfe_iocb_dispatch()` returns `-1`
+when there is no dispatch function, without touching the iocb.  All 19
+callers in the file ignore the return value and test
+`xiocb.xiocb_status`, which they set to 0 themselves beforehand — so
+the 0 stayed, the caller read success, and `cfe_getfwinfo()` copied
+seven fields of an unwritten `plist` union into the caller's
+`cfe_fwinfo_t`.  Fixed by writing the failure where the callers look,
+one line for all nineteen.  Worth saying plainly: **no kernel
+configuration builds this file** — `sys/dev/cfe` appears in no
+`sys/conf/files*`, the MIPS SiByte support it belonged to is gone.  It
+is still in the tree, the sweep still analyses it, and a defect in code
+nothing builds is still a defect in the tree.
+
+**`sys/dev/cxgb/common/cxgb_t3_hw.c:4109`.**  `config_pcie()` indexes
+two `[4][6]` `.rodata` tables with `ack_lat[log2_width][pldsize]`, and
+both subscripts come from the adapter.  `pldsize` is
+`(val & PCI_EXP_DEVCTL_PAYLOAD) >> 5`, a three-bit PCIe
+Max_Payload_Size field — 0..7, with 6 and 7 reserved by the spec and
+rejected by nothing here.  `log2_width` is
+`fls(adap->params.pci.width) - 1` on an `unsigned char`, so a width of 0
+makes it `UINT_MAX` and a width above 8 makes it 4 or more.  Either
+reads past a 48-element table and the value read goes on to a PCIe
+register write.  Clamped to the last defined row and column.
+
+### The 31 that are not defects, by the reason each died
+
+Five recurring shapes account for all of them.
+
+**The out-parameter an extern fills.**  The analyser cannot see into a
+function it has no body for, so a buffer that function writes reads as
+undefined to everything downstream.  `sys/dev/isp/isp_library.c:542`
+(`ISP_IOXGET_8` from a response-queue entry the HBA DMA'd),
+`sys/dev/e1000/e1000_manage.c:57` (`e1000_calculate_checksum()` over the
+caller's buffer), `sys/dev/mpt/mpt.c:1595` (`params->ExtPageLength`,
+the caller's struct), `sys/dev/mlx4/driver.h:99`
+(`mlx4_mac_to_u64()` over the caller's MAC),
+`sys/dev/qlnx/qlnxe/ecore_dcbx.c:667` and
+`sys/dev/mlx4/mlx4_core/mlx4_fw.c:499` (firmware mailbox reads),
+`sys/dev/xen/xenstore/xenstore_dev.c:99`,
+`sys/dev/ath/if_ath_btcoex_mci.c:358`,
+`sys/arm/nvidia/drm2/tegra_fb.c:102` (the caller's `planes[]`),
+`sys/powerpc/aim/mmu_oea64.c:3785` (the caller's `pvos[]`),
+`sbin/ipf/ipnat/ipnat.c:593` (`ioctl(fd, SIOCGENITER, &obj)`),
+`lib/virtual_oss/bt/sbc_encode.c:543`,
+`lib/libc/gen/glob-compat11.c:536` and `lib/libc/gen/glob.c:351` (the
+caller's pattern buffer; in `glob.c` the path also needs
+`g_strchr(pattern, LBRACE)` to point past the `EOS` it stops at, which
+it cannot).
+
+**Inline assembly that writes through a pointer.**
+`sys/dev/mvs/mvs.c:964` (`ATA_INSW_STRM`, i.e.
+`bus_space_read_multi_2`), `sys/dev/ata/ata-lowlevel.c:848`
+(`buf[1]`, written by `*(uint16_t *)&buf = ATA_IDX_INW_STRM(...)` on
+every path that can set `resid`), `sys/arm/arm/db_interface.c:296`
+(`db_read_bytes(offset, 4, (char *)&ret)`).  The question was settled
+once and has its own probe: `tools/verify/probes/inline_asm_write.c`.
+
+**A write through a differently-typed pointer.**
+`sys/contrib/dev/acpica/components/namespace/nsnames.c:415`
+(`ACPI_MOVE_32_TO_32(Name, &NextNode->Name)`, read back as `Name[i]`),
+and `lib/libc/stdlib/tsearch_path.h:63` and `:73` — four findings, two
+each from `tsearch.c` and `tdelete.c`.  `path_init()` sets only
+`nsteps`; `path_taking_left()` does `|=` and `path_taking_right()` does
+`&=` on a `steps[]` nothing wrote.  Both operations set or clear their
+target bit whatever the surrounding garbage is, and `path_took_left()`
+pops exactly as many bits as were pushed — its loop is
+`for (n = *rootp; n != *leaf;)`, the same walk that pushed them.  Every
+bit that is read was written.
+
+**`M_ZERO`, which the analyser does not model.**
+`sys/compat/linuxkpi/common/src/linux_radix.c:369` and `:473`
+(`node->count++` on a node from
+`malloc(sizeof(*node), M_RADIX, root->gfp_mask | M_ZERO)`),
+`sys/netpfil/ipfw/ip_dn_private.h:486` (`q->count++`).  The class
+already has a row in the table above.
+
+**A guarantee one frame up.**
+`sys/compat/linuxkpi/common/src/linux_radix.c:111` —
+`node_tag_clear()` reads `stack[1]` before testing
+`height <= root->height - 1`, and `radix_tree_delete()` fills `stack`
+only from `root->height - 1` down to 1, so a tree of height 1 leaves it
+unwritten.  The `&&` then short-circuits on `1 <= 0` and the value is
+never dereferenced.  `sys/dev/vmware/vmci/vmci_kernel_if.c:546` —
+`num_pages` is `CEILING(size, PAGE_SIZE) + 1`, so the loop that fills
+`dmas[0]` always runs.  `lib/libc/stdio/freopen.c:196` — the
+`goto finish` at :125 skips `sverrno = errno`, but it also sets
+`f = fp->_file` after `_fcntl(fp->_file, F_GETFL)` succeeded at :84, so
+`f >= 0` and `if (f < 0)` never reads it.
+`sys/dev/etherswitch/infineon/adm6996fc.c` is this shape too, in the
+`Branch` class above.
+
+**Written, and then never read.**
+`sys/arm64/arm64/gicv3_its.c:618` — the `GITS_BASER_TYPE_PP` and
+`_IC` arms set `its_tbl_size` and break without setting `l1_nidents`,
+so `ptab_l1_nidents` gets a stale or unwritten value for those tables.
+Only `sc->sc_its_ptab[sc->sc_dev_table_idx]` is ever consulted, and
+`sc_dev_table_idx` is set only in the `_DEV` arm, where `l1_nidents` is
+assigned.  `sys/x86/iommu/amd_intrmap.c:264` —
+`amdiommu_ir_find()`'s `amdiommu` branch never sets `rid` and
+`*ridp = rid` stores it anyway; the one caller that passes `&rid`
+returns at `if (is_iommu)` before looking at it.  Both are "nobody
+looks" rather than "it cannot happen", which is a weaker guarantee than
+the others here and is why they are written down rather than dropped.

@@ -85,7 +85,22 @@ cfe_init(cfe_xuint_t handle, cfe_xuint_t ept)
 int
 cfe_iocb_dispatch(cfe_xiocb_t *xiocb)
 {
-    if (!cfe_dispfunc) return -1;
+    /*
+     * PBSD: say so in the iocb as well as in the return value.
+     *
+     * All 19 callers in this file ignore the return and test
+     * xiocb.xiocb_status instead, having set it to 0 themselves
+     * beforehand.  With no dispatch function this arm left that 0 in
+     * place, so `if (xiocb.xiocb_status < 0)' was false and the caller
+     * copied a plist union nothing had written -- cfe_getfwinfo()
+     * copies seven fields of it straight into the caller's
+     * cfe_fwinfo_t.  Writing the failure where the callers look costs
+     * one line and fixes all nineteen.
+     */
+    if (!cfe_dispfunc) {
+	xiocb->xiocb_status = -1;
+	return -1;
+    }
     return (*cfe_dispfunc)((intptr_t)cfe_handle, (intptr_t)xiocb);
 }
 #endif /* CFE_API_common || CFE_API_ALL */

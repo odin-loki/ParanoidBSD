@@ -4106,6 +4106,25 @@ static void config_pcie(adapter_t *adap)
 	fst_trn_rx = adap->params.rev == 0 ? fst_trn_tx :
 			G_NUMFSTTRNSEQRX(t3_read_reg(adap, A_PCIE_MODE));
 	log2_width = fls(adap->params.pci.width) - 1;
+	/*
+	 * PBSD: both subscripts come from the device, and both tables
+	 * are [4][6].
+	 *
+	 * pldsize is (val & PCI_EXP_DEVCTL_PAYLOAD) >> 5, a three-bit
+	 * PCIe Max_Payload_Size field, so 0..7 -- encodings 6 and 7 are
+	 * reserved by the spec and nothing here rejects them.
+	 * log2_width is fls(width) - 1 on an unsigned char read from
+	 * the link status: width 0 makes it UINT_MAX and a width above
+	 * 8 makes it 4 or more.  Either indexes past a 48-element
+	 * .rodata table, and the value read goes on to a PCIe register
+	 * write.  Clamping keeps the last defined row and column,
+	 * which is what the adapter wants when it reports something
+	 * this driver was not written for.
+	 */
+	if (log2_width >= nitems(ack_lat))
+		log2_width = nitems(ack_lat) - 1;
+	if (pldsize >= nitems(ack_lat[0]))
+		pldsize = nitems(ack_lat[0]) - 1;
 	acklat = ack_lat[log2_width][pldsize];
 	if (val & 1)                            /* check LOsEnable */
 		acklat += fst_trn_tx * 4;
