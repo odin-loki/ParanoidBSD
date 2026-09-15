@@ -29288,3 +29288,153 @@ constructor failed, and that is a netgraph question rather than a
 `strtabp` is the section the symbol table's `sh_link` points at.  The
 caller establishes both before the loop; an object with a symbol table
 and no string table does not reach here.
+
+## `core.UndefinedBinaryOperatorResult`, the 71 unread: not arithmetic at all
+
+The name suggests signed overflow and bad shifts — the UB CBMC's
+`--signed-overflow-check` reports.  It is not.  **All 71** findings in
+this set say *"The left operand of X is a garbage value"* or *"The right
+operand"*: the checker fires when an operand of a binary operator is
+**undefined**, so this class belongs with `core.uninitialized.*` and
+its findings have the same five shapes those did.
+
+216 findings in the class, 145 already read with a shard.  The 71 below
+span 59 files; three are defects.
+
+### `vrtc.c`: the one call of six that multiplies before it checks
+
+`rtcget()` in `sys/amd64/vmm/io/vrtc.c` converts a BCD byte and
+**returns -1 without touching `*retval`** when the nibbles are not
+valid BCD.  Five of the six calls in `rtc_to_secs()` are written
+
+```c
+	error = rtcget(rtc, rtc->year, &year);
+	if (error || year < 0 || year > 99) {
+```
+
+— the value is used only after `error` is tested.  The sixth is
+
+```c
+	error = rtcget(rtc, rtc->century, &century);
+	ct.year = century * 100 + year;
+	if (error || ct.year < POSIX_BASE_YEAR) {
+```
+
+The guest writes `rtc->century` through the emulated RTC's data port, so
+a non-BCD byte there had bhyve computing with an uninitialised
+automatic.  The `error ||` on the next line does stop the value
+escaping, which is why this is a read and not a wrong clock — but it is
+a guest-triggered read of uninitialised stack in the hypervisor, and it
+is the only one of the six written that way.
+
+### `geom_ctl.c`: an optional parameter that failed the request at random
+
+```c
+void *
+gctl_get_paraml_opt(struct gctl_req *req, const char *param, int len)
+{
+	int i;
+	void *p;
+
+	p = gctl_get_param(req, param, &i);
+	if (i != len) {
+		p = NULL;
+		gctl_error(req, "Wrong length %s argument", param);
+	}
+	return (p);
+}
+```
+
+`gctl_get_param_flags()` writes `*len` **inside** the loop that matches
+the name and `return (NULL)`s at the end without touching it.  So an
+**absent** parameter left `i` holding whatever the frame held — and
+this is the `_opt` variant, whose entire job is to return NULL quietly
+when the parameter is not there.  Garbage that happened not to equal
+`len` called `gctl_error()`, which sets `req->nerror` and fails the
+whole GEOM request.  `gnop create` without `rfailprob`, and
+`g_union`'s optional arguments, took that path or not depending on the
+stack.  `gctl_get_paraml()`, the *required* variant, is built on this
+one, so its "Missing %s argument" path went through the same test.
+
+Now `if (p != NULL && i != len)`.
+
+### `bsnmptools.c`: a `getsubopt(3)` re-implementation that forgot one line
+
+`getsubopt1()` writes `*valp` only in its `*ptr == '='` arm, so a
+suboption with no `=value` — a bare keyword — returns its index with
+`*valp` untouched.  All five callers in the file declare
+`char *val, *option;` with no initialiser and then test
+`if (val == NULL)`, so a bare suboption was decided by whatever the
+frame held, and `parse_flist()` and `snmp_parse_numoid()` were handed
+that pointer when it was not zero.  `getsubopt(3)`, which this function
+replaces, sets `*valuep` to NULL in exactly this case; `*valp = NULL`
+now sits beside the `*optp = NULL` that was already there.
+
+Worth recording what the fix did to the report: the file's two
+`UndefinedBinaryOperatorResult` findings are gone and **one
+`unix.cstring.NullArg` has appeared in their place**, at
+`strlcpy(path, val, len + 1)` in the `INC_PATH` arm.  That path is
+unreachable — `parse_path(NULL)` returns -1 at its first line and the
+caller returns on `< 0` — so the new finding is a modelling limit, not
+a new defect.  Making `val` concretely NULL instead of undefined moved
+the analyser's complaint from one checker to another about the same
+impossible path.  The file is not "clean" after the fix and saying so
+is the point.
+
+### The 68 that are not defects
+
+Every one is an out-parameter or buffer that something the analyser
+cannot see into fills, and they group tightly:
+
+**`g_read_data()` and the GEOM tastes — 10.**  `g_cache.c:686`,
+`g_concat.c:591`, `g_eli_privacy.c:321`, `g_journal.c:2496`,
+`g_label.c:363`, `g_mirror.c:3311`, `g_multipath.c:312` and `:846`,
+`g_part_apm.c:476`.  Each is `md->md_version` or a sibling field of a
+metadata struct filled by a `*_read_metadata()` that ends in
+`g_read_data()`, which returns a buffer from the disk.
+
+**Xen hypercalls — 4.**  `blkback.c:2732`, `netback.c:718`,
+`grant_table.c:460` (`uop->status`, written by
+`HYPERVISOR_grant_table_op`) and `features.c:22` (`arg->submap`,
+written by `HYPERVISOR_xen_version`).  The same
+`tools/verify/probes/inline_asm_write.c` class as `sys/xen/hvm.h`
+above.
+
+**A DNS answer, a disk block, a buffer cache page — 8.**
+`getaddrinfo.c:2908`, `:2964` and `:2988` (`hp->rcode`, the answer
+buffer `res_querydomainN()` fills), `udf_vfsops.c:809`,
+`ffs_alloc.c:695` and `:962`, `ffs_vnops.c:1374`, `null_vnops.c:308`.
+
+**A device register or firmware mailbox — 21.**  `acpi_perf.c:496`,
+`ar5416_reset.c:2499`, `ciss.c:1994`, `sati_unmap.c:171`,
+`isp.c:1727`, `ofw_bus_subr.c:421`, `sndstat.c:739`,
+`usb_hub.c:1473` and `:1477`, `fcu.c:435`, `npx.c:800`,
+`opal_flash.c:273`, `intr_machdep.c:273`, `msi.c:707`,
+`vmm_instruction_emul.c:1912`, `machdep_ptrace.c:179`,
+`ieee80211_ageq.c:233`, `ipsec_offload.c:829`, `krping.c:965`,
+`mlx4_main.c` via `bitmap.h:218`, `mps_cmd.c:438`.
+
+**Two chains on the same predicate — 2.**
+`ar9300_reset.c:990` is `spur_freq_for_jupiter[i]` with `i <
+max_spurcounts`, and the outer `if (HORNET||POSEIDON||WASP||SCORPION)
+... else if (JUPITER) ... else` that sets `max_spurcounts` to 5, 2 or 4
+is repeated verbatim as the inner chain that picks the array.  Each arm
+sets the count its own array wants; the analyser re-evaluates
+`AR_SREV_*(ah)` and crosses them.  The fourth time today: the same
+shape as `bhnd_nvram_value_prf.c`'s `base`, `ppp/chap.c`'s `ans` and
+`ip_fw2.c`'s `eh`.  `bitmap.h:218`'s "garbage value **due to array
+index out of bounds**" is `addr[end]` with `end = BIT_WORD(size)`,
+which is the last word of a `BITS_TO_LONGS(size)` allocation and out of
+bounds only for a caller that declared a shorter array.
+
+**`errno` after a failed call — 1.**  `libpfctl.c:2325` and `:2368`
+reach `state_limit` only when `_pfctl_get_limit()` returned 0, and that
+function's only failure return is `return (errno)` after a failed
+`ioctl`.  The same row as `citrus_lookup_factory.c` in the table above.
+
+**The caller's own buffer — the rest.**  `ftp.c:289` and `:296`,
+`nvmf_host.c:663`, `nvmf_tcp.c:182`, `proto_tcp.c:211` and `:535`,
+`ipfstat.c:1748` and `:1777`, `dirs.c:525`, `C.c:402`,
+`etdump.c:168`, `ktrdump.c:278`, `ministat.c:646`, `sdiotool.c:296`,
+`moused.c:984`, `iface.c:421`, `ib_addr.c:291` and `:474`,
+`ib_multicast.c:403`, `ib_cma.c:1029`, `glob2_test.c:78`.

@@ -422,7 +422,25 @@ gctl_get_paraml_opt(struct gctl_req *req, const char *param, int len)
 	void *p;
 
 	p = gctl_get_param(req, param, &i);
-	if (i != len) {
+	/*
+	 * PBSD: `i' is only written when the parameter was found.
+	 *
+	 * gctl_get_param_flags() writes *len inside the loop that
+	 * matches the name and returns NULL at the end without
+	 * touching it, so an ABSENT parameter left `i' holding
+	 * whatever the frame held -- and this is the _opt variant,
+	 * whose entire job is to return NULL quietly when the
+	 * parameter is not there.  Garbage that happened not to equal
+	 * `len' called gctl_error(), which sets req->nerror and fails
+	 * the whole GEOM request.  `gnop create' without rfailprob,
+	 * and g_union's optional arguments, took that path or not
+	 * depending on the stack.
+	 *
+	 * gctl_get_paraml(), the required variant, is built on this
+	 * one, so its "Missing %s argument" path went through the same
+	 * test.
+	 */
+	if (p != NULL && i != len) {
 		p = NULL;
 		gctl_error(req, "Wrong length %s argument", param);
 	}

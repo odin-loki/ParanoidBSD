@@ -4953,6 +4953,33 @@ FIXES = {
             "and m_pkthdr.flowid",
         ),
     ],
+    "hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmptools.c": (
+        "PBSD: clear *valp too, as getsubopt(3) does.",
+        "\tchar *ptr;\n\n\t*optp = NULL;\n\n\t/* Skip leading junk. */",
+        "getsubopt1(): *valp is written only in the `*ptr == '='' arm, "
+        "so a suboption with no =value returned its index with *valp "
+        "untouched, and all five callers declare `char *val' with no "
+        "initialiser and test it against NULL. getsubopt(3), which "
+        "this replaces, sets *valuep to NULL there",
+    ),
+    "hbsd/src/sys/geom/geom_ctl.c": (
+        "PBSD: `i' is only written when the parameter was found.",
+        "\tp = gctl_get_param(req, param, &i);\n\tif (i != len) {",
+        "gctl_get_paraml_opt(): gctl_get_param_flags() writes *len "
+        "only when it matches the name, so an absent parameter left "
+        "`i' as stack garbage -- and this is the _opt variant, whose "
+        "job is to return NULL quietly. Garbage that did not equal "
+        "`len' called gctl_error() and failed the whole GEOM request",
+    ),
+    "hbsd/src/sys/amd64/vmm/io/vrtc.c": (
+        "PBSD: `century' is only written when rtcget() succeeds.",
+        "\terror = rtcget(rtc, rtc->century, &century);\n"
+        "\tct.year = century * 100 + year;",
+        "rtc_to_secs(): rtcget() returns -1 without writing *retval "
+        "for a byte that is not valid BCD, and the other five calls in "
+        "the function test error before using the value. This one "
+        "multiplied first, on a byte the guest writes",
+    ),
     "hbsd/src/usr.sbin/ofwdump/ofwdump.c": (
         "PBSD: len 0 makes this pbuf[-1], one byte before the",
         "\t\tif (((char *)pbuf)[len - 1] == '\\0' &&",

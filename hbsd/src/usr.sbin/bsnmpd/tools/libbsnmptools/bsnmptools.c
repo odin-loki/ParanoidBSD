@@ -315,7 +315,21 @@ getsubopt1(char **arg, const char *const *options, char **valp, char **optp)
 	u_int i;
 	char *ptr;
 
+	/*
+	 * PBSD: clear *valp too, as getsubopt(3) does.
+	 *
+	 * *valp is written only in the `*ptr == '='' arm below, so a
+	 * suboption with no `=value' returned its index with *valp
+	 * untouched.  All five callers in this file declare
+	 * `char *val, *option;' with no initialiser and then test
+	 * `if (val == NULL)' -- so a bare suboption was decided by
+	 * whatever the frame held, and parse_flist() and
+	 * snmp_parse_numoid() were handed it when it was not zero.
+	 * getsubopt(3), which this function replaces, sets *valuep to
+	 * NULL in exactly this case.
+	 */
 	*optp = NULL;
+	*valp = NULL;
 
 	/* Skip leading junk. */
 	for (ptr = *arg; *ptr != '\0'; ptr++)

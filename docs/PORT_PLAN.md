@@ -56,9 +56,9 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
-| 6 | `usr.sbin` | 1,142 | 657,944 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,256 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,290 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,601** | **114,208** |
+| | **total** | **41,143** | **21,303,649** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -29579,7 +29579,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.52.3.27 `snmp_bits2oct()` · `TODO-FN`
   - [ ] 6.52.3.28 `parse_bits()` · `TODO-FN`
 - [ ] **6.52.4** `bsnmptc.h` · 94L · `TODO-HDR`
-- [ ] **6.52.5** `bsnmptools.c` · 2,126L · `TODO-PORT` · 67 fn
+- [ ] **6.52.5** `bsnmptools.c` · 2,140L · `TODO-PORT` · 67 fn
   - [ ] 6.52.5.1 `snmptool_init()` · `TODO-FN`
   - [ ] 6.52.5.2 `snmp_import_all()` · `TODO-FN`
   - [ ] 6.52.5.3 `add_filename()` · `TODO-FN`
@@ -41515,7 +41515,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.14.16.3 `vpmtmr_handler()` · `TODO-FN`
   - [ ] 8.14.16.4 `vpmtmr_snapshot()` · `TODO-FN`
 - [ ] **8.14.17** `vpmtmr.h` · 47L · `TODO-MD`
-- [ ] **8.14.18** `vrtc.c` · 1,065L gen:5 · `TODO-MD` · 25 fn
+- [ ] **8.14.18** `vrtc.c` · 1,081L gen:5 · `TODO-MD` · 25 fn
   - [ ] 8.14.18.1 `divider_enabled()` · `TODO-FN`
   - [ ] 8.14.18.2 `update_enabled()` · `TODO-FN`
   - [ ] 8.14.18.3 `vrtc_curtime()` · `TODO-FN`
@@ -111738,7 +111738,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1158.3.10 `g_ccd_destroy_geom()` · `TODO-FN`
   - [ ] 8.1158.3.11 `g_ccd_list()` · `TODO-FN`
   - [ ] 8.1158.3.12 `g_ccd_config()` · `TODO-FN`
-- [ ] **8.1158.4** `geom_ctl.c` · 645L gen:2 · `TODO-PORT` · 23 fn
+- [ ] **8.1158.4** `geom_ctl.c` · 663L gen:2 · `TODO-PORT` · 23 fn
   - [ ] 8.1158.4.1 `g_ctl_init()` · `TODO-FN`
   - [ ] 8.1158.4.2 `gctl_error()` · `TODO-FN`
   - [ ] 8.1158.4.3 `gctl_msg()` · `TODO-FN`

@@ -372,7 +372,23 @@ rtc_to_secs(struct vrtc *vrtc)
 	}
 
 	error = rtcget(rtc, rtc->century, &century);
-	ct.year = century * 100 + year;
+	/*
+	 * PBSD: `century' is only written when rtcget() succeeds.
+	 *
+	 * rtcget() returns -1 without touching *retval when the byte is
+	 * not valid BCD, and the other five calls in this function all
+	 * test `error' BEFORE using the value they asked for:
+	 *
+	 *     error = rtcget(rtc, rtc->year, &year);
+	 *     if (error || year < 0 || year > 99) {
+	 *
+	 * This one multiplied first.  The guest writes rtc->century
+	 * through the RTC data port, so a non-BCD byte there had bhyve
+	 * computing with an uninitialised automatic.  The `error ||'
+	 * on the next line does stop the value escaping, which is why
+	 * this is a read and not a wrong clock.
+	 */
+	ct.year = error ? 0 : century * 100 + year;
 	if (error || ct.year < POSIX_BASE_YEAR) {
 		VM_CTR2(vm, "Invalid RTC century %#x/%d", rtc->century,
 		    ct.year);
