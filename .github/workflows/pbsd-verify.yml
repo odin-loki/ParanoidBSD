@@ -184,11 +184,52 @@ jobs:
             --outdir "$RUNNER_TEMP/goto" --out out/${{ matrix.classes }}
           df -h "$RUNNER_TEMP" | tail -1
       # SCALAR and VOID, where an unguarded check is sound.
+      #
+      # THE ONE STEP THAT NEVER GOT THE BOUND. Every other CBMC
+      # invocation in this file passes --mem-mb; this one did not, and
+      # cbmc_driver.py's own help says what that means: "0 (default) is
+      # uncapped, which is right on a workstation and wrong on a 16GB
+      # runner". So this step ran four uncapped solvers at --unwind 16,
+      # the deepest bound in the workflow, on a 4-core 16GB machine.
+      #
+      # It is the only job in the matrix that has ever failed, and it
+      # has failed FIVE TIMES RUNNING. Run 26 is the last green sweep;
+      # runs 27, 28, 29, 30 and 31 all died the same way and only here:
+      #
+      #     ##[error]Process completed with exit code 143.
+      #     ##[error]The runner has received a shutdown signal.
+      #
+      # Every one of them dies twelve to forty seconds after the LAST
+      # function this step reports - tftp-utils.c:settimeouts, which is
+      # the last of the 918 - with output flowing normally until then.
+      # That is the pool draining: --jobs 4, results printed as each
+      # solver returns, so what is still running after the last printed
+      # line is the four slowest, which are the four largest. Four
+      # uncapped solvers, the biggest in the shard, at once.
+      #
+      # The proof that the RUNNER died rather than the STEP is that
+      # `upload-artifact' below is `if: always()' and no model-userland
+      # artifact exists for any of the five runs: a failing step would
+      # still have uploaded. Nothing killed the job; the job killed the
+      # machine.
+      #
+      # Measured on a 4-core 16GB container, the same shape as the
+      # runner: at --jobs 4 --mem-mb 2048 the whole 918 completes, peak
+      # RSS across live cbmc processes 5.90GB, and twelve functions come
+      # back ERROR because the bound bit. At --mem-mb 4096 a SINGLE
+      # instance reaches 3.36GB, so four of those is the machine.
+      #
+      # --jobs 4 --mem-mb 2048 is the same 8GB total budget the pointer
+      # step already spends as --jobs 2 --mem-mb 4096, and it keeps the
+      # parallelism the largest shard needs. --timeout is the driver's
+      # own default of 60 and is written out so the three model-check
+      # steps read alike.
       - name: Model check, unguarded
         if: matrix.name == 'userland'
         run: |
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
-            --classes out/classes.json --jobs 4 --resume --out out/ub.jsonl
+            --classes out/classes.json --jobs 4 \
+            --timeout 60 --mem-mb 2048 --resume --out out/ub.jsonl
       # POINTER, under a stated precondition. --min-null-tree-depth makes
       # CBMC build a tree of allocated objects per pointer parameter and
       # each solver instance can want gigabytes, so this is memory-bound
@@ -534,7 +575,17 @@ jobs:
             echo "::error title=No model-checker output::every model job failed"
             exit 1
           fi
+          # --expect is the whole matrix, so a shard whose job died is
+          # NAMED in the report instead of quietly leaving the totals
+          # smaller. Five runs, 27 through 31, lost the whole userland
+          # model check to an OOMed runner and every one of them still
+          # produced a report that read like a complete one: run 31's
+          # says "1460 checked" over four kernel shards, with no
+          # lib/libc anywhere and nothing on the page to say so.
           python3 tools/verify/report.py "$@" --analyze dl/analyze.jsonl \
+            --expect ub.jsonl --expect ptr.jsonl \
+            --expect ksys-kern.jsonl --expect ksys-fs.jsonl \
+            --expect ksys-dev.jsonl --expect ksys-rest.jsonl \
             | tee REPORT.txt
           {
             echo '### PBSD verify'

@@ -95,6 +95,59 @@ check("it is the nearest path to the left, not the row's first",
 check("...and not the row's opening file",
       report.is_triaged("sys/fs/nfsclient/nfs_clrpcops.c", "5071"), False)
 
+print("\nextern-driven is decided on CBMC's evidence, not on a name list")
+
+
+def rec(fn, desc, no_body=None, linkage="exported", f="lib/libc/x.c"):
+    r = {"file": f, "function": fn, "linkage": linkage,
+         "failures": [{"name": "p", "desc": desc}]}
+    if no_body is not None:
+        r["no_body"] = no_body
+    return r
+
+
+# The case the name list could not reach: __gedf2 is not in EXTERN_DRIVEN
+# and never would be, because the list has to be extended by hand for
+# every new callee CBMC cannot model. CBMC says `no body for function
+# __softfloat_float64_le' and then names that same return in the
+# expression that overflows, which is the whole argument.
+check("a no_body callee named in the expression",
+      report.bucket(rec("__gedf2",
+                        "line 18 arithmetic overflow on signed - in "
+                        "return_value___softfloat_float64_le - 1",
+                        ["__softfloat_float64_le"])),
+      "extern-driven (an unmodelled return, unconstrained)")
+# The direction that matters. An unmodelled callee SOMEWHERE in the
+# function is not evidence about THIS expression - almost every libc
+# function has one - so a failure on a parameter stays where a person
+# will read it. s_cosf's `-n' is exactly this: __kernel_rem_pio2 has no
+# body, but `n' is not spelled as its return and the rule declines to
+# guess.
+check("a no_body callee NOT named in the expression",
+      report.bucket(rec("cosf",
+                        "line 73 arithmetic overflow on signed unary "
+                        "minus in -n",
+                        ["__kernel_rem_pio2"])),
+      "EXPORTED, arithmetic - READ THESE")
+# A record from before the driver recorded no_body carries no evidence
+# either way, so it is judged the old way rather than judged wrongly.
+check("no no_body field falls back to the name list (in)",
+      report.bucket(rec("clock", "line 9 arithmetic overflow on signed - "
+                                 "in return_value_getrusage - 1")),
+      "extern-driven (an unmodelled return, unconstrained)")
+check("no no_body field falls back to the name list (out)",
+      report.bucket(rec("__gedf2", "line 18 arithmetic overflow on signed "
+                                   "- in return_value_x - 1")),
+      "EXPORTED, arithmetic - READ THESE")
+# static still wins: its callers are all in the file, which is a stronger
+# statement than anything about a callee.
+check("static is decided before extern-driven",
+      report.bucket(rec("__gedf2",
+                        "line 18 arithmetic overflow on signed - in "
+                        "return_value___softfloat_float64_le - 1",
+                        ["__softfloat_float64_le"], linkage="static")),
+      "static (callers constrain the domain - deferred)")
+
 print("\nthe table is actually being read")
 n = len(report.triaged())
 check("more than twenty entries parsed", n > 20, True)

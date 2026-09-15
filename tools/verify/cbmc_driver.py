@@ -213,18 +213,85 @@ def verify_one(task: dict) -> dict:
     else:
         status = "PROVED"
 
+    extra = {}
+    if real_failed:
+        # Only where it can change a reading. A PROVED record does not
+        # need the list and every byte of it is written 8,000 times.
+        no_body = sorted(set(_NO_BODY_RE.findall(out)))
+        if no_body:
+            extra["no_body"] = no_body[:40]
+
     return _rec(
         task, status,
         properties=len(props),
         failures=[{"name": p["name"], "desc": p["desc"]} for p in real_failed[:12]],
         unwind_hit=bool(unwind_failed),
         elapsed=elapsed,
+        **extra,
     )
 
 
+# The lines that say WHY, wherever they sit in CBMC's output. An
+# invariant violation puts its Reason ten lines from the end and then a
+# page of hex backtrace, so a plain tail keeps the backtrace and drops
+# the only actionable line.
+# CBMC says so itself, once per unmodelled callee:
+#
+#     **** WARNING: no body for function __ieee754_rem_pio2
+#
+# Its return is then as unconstrained as a pointer parameter, and an
+# `arithmetic overflow' on a value derived from it is the absence of a
+# model rather than a defect. report.py had a hand-kept list of function
+# NAMES for this - it had cosl, sinl and tanl and not cos, sin or tan -
+# which is a list that falls behind by construction. Recording what CBMC
+# actually reported is the same judgement made from evidence.
+_NO_BODY_RE = re.compile(r"no body for function (\S+)")
+
+_WHY_RE = re.compile(
+    r"^(?:Reason:.*|Invariant check failed|CONVERSION ERROR.*|"
+    r".*?\berror:.*|.*?parse error.*)$",
+    re.M | re.I)
+
+
 def _tail(s: str, n: int = 600) -> str:
+    """The part of CBMC's output worth keeping.
+
+    It was the last n characters, which is right for a FAILED - the
+    property list is at the end - and threw away the only useful line of
+    an ERROR. CBMC 5.95.1 aborts on 60 of the 918 functions in one
+    userland run with
+
+        --- begin invariant violation report ---
+        Invariant check failed
+        Reason: number of literals in the literal map shall equal the
+                bitvector width
+        <thirteen lines of hex backtrace>
+        --- end invariant violation report ---
+
+    and thirteen lines of hex is more than 600 characters, so every one
+    of those records held a backtrace and no reason. An unreadable
+    record is the same as no record: it cannot be told from a function
+    nobody checked.
+
+    So the why-lines come first, then the tail. RESULT_VERSION is
+    deliberately NOT bumped - `detail` still means what it meant, the
+    relevant part of CBMC's output, and a --resume over older records
+    loses only a better window on text nobody could act on.
+    """
     s = s.strip()
+    why = []
+    for m in _WHY_RE.finditer(s):
+        line = m.group(0).strip()
+        if line and line not in why:
+            why.append(line)
+        if len(why) == 4:
+            break
+    head = "\n".join(why)
+    if head:
+        room = n - len(head) - 1
+        return head if room <= 0 else head + "\n" + s[-room:]
     return s[-n:]
+
 
 
 # Stamped into every result, and checked by --resume.
@@ -346,6 +413,16 @@ def main() -> int:
 
     out = Path(args.out)
     done: set[tuple[str, str]] = set()
+    if not args.resume and out.is_file():
+        # Results are APPENDED, which is what makes --resume work and is
+        # silently wrong without it: a second run over the same --out
+        # left both generations in the file and report.py counted them
+        # all. Worse when the path held something else - a stale
+        # analyze.py .jsonl and a cbmc run in the same file, and the
+        # report died on a record with no "status" rather than printing
+        # a number over two different instruments. `resume' means
+        # continue; without it this starts.
+        out.write_text("")
     if args.resume and out.is_file():
         stale = 0
         keep = []

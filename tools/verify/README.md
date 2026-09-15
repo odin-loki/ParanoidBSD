@@ -572,7 +572,45 @@ variable it is complaining about.
 | `PROVED` | every property SUCCESS **and** no unwinding assertion failed. The loops closed inside the bound, so this is a proof over all inputs for the checked properties. |
 | `BOUNDED` | every property SUCCESS but an unwinding assertion failed. No counterexample within *K* iterations. Nothing beyond that. |
 | `FAILED` | a real violation, with a counterexample. |
-| `ERROR` / `NOFUNC` / `TIMEOUT` | did not compile / not in this unit / solver did not finish. |
+| `ERROR` / `NOFUNC` / `TIMEOUT` | CBMC declined to answer / not in this unit / solver did not finish. None of the three is a clean result, and `ERROR` is most often CBMC aborting on its own invariant rather than a translation unit that will not build — see below. |
+
+### `ERROR` is CBMC declining to answer, and it is not rare
+
+Sixty of the 918 functions in one `lib/libc` + `lib/msun` + `libexec`
+unguarded run are CBMC 5.95.1 aborting on its own internal invariant:
+
+```
+--- begin invariant violation report ---
+Invariant check failed
+Reason: number of literals in the literal map shall equal the bitvector width
+<thirteen lines of hex backtrace>
+--- end invariant violation report ---
+```
+
+Exit 134, SIGABRT.  Most are `_Complex` arithmetic — all three widths of
+`catrig`, `s_ccosh`, `s_csinh`, `s_ctanh`, `s_cexp`, `s_clog` — so the
+whole complex-number half of `lib/msun` **has never been model-checked
+at all**, and four more are ordinary integer code (`strerror`,
+`strerror_l`, `getty`'s `gendefaults` and `setdefaults`).
+
+This is the same hazard as a translation unit that does not compile,
+wearing the model checker's clothes: a function nobody could check and
+a function that came back clean are the same number in a total.  So:
+
+* `cbmc_driver.py`'s `_tail()` keeps the lines that say *why* — the
+  `Reason:` first, then the tail — rather than the last 600 characters.
+  Thirteen lines of hex is more than 600 characters, so every one of
+  those sixty records used to hold a backtrace and no reason.
+* `report.py` prints the ERROR reasons under the status counts, and says
+  in as many words that those functions are unchecked.  A record from
+  before the driver kept the why-line is bucketed as *"no reason
+  recorded"* rather than having a fragment of its truncation window
+  called a reason.
+
+Twelve more of the same run's ERRORs are the memory bound biting —
+`--mem-mb` turning a solver that would have taken the machine into one
+recorded failure.  Those are the bound working, and they are still
+unchecked functions.
 
 ## Two tiers of check, and why
 

@@ -20,7 +20,12 @@ person rather than the 165 that do not.
                         Deferred, not dismissed.
   extern-driven         an unmodelled extern's return is as unconstrained
                         as a pointer parameter - clock() via getrusage,
-                        s_significand via ilogb.
+                        s_significand via ilogb. Decided from CBMC's own
+                        `no body for function X' and the expression
+                        naming return_value_X, not from a list of names:
+                        the list had cosl, sinl and tanl and not the six
+                        softfloat comparison helpers whose overflowing
+                        operand is spelled return_value___softfloat_*.
   unwinding             a loop wanted more iterations than --unwind gave.
                         BOUNDED, which is a weaker claim, not a failure.
 
@@ -89,6 +94,33 @@ def deciding_failures(rec: dict) -> list:
     return out or rec.get("failures", [])
 
 
+def extern_driven(rec: dict) -> bool:
+    """Is every surviving failure on a value CBMC did not have a model for?
+
+    EXTERN_DRIVEN above is a list of function NAMES, and a list of names
+    falls behind by construction: it carried cosl, sinl and tanl and not
+    cos, sin, cosf, sinf, tanf or the six softfloat comparison helpers,
+    so thirteen records whose overflowing operand is literally spelled
+    `return_value___softfloat_float64_le' were presented as the ones
+    worth a person's time.
+
+    cbmc_driver.py now records `no_body', the callees CBMC itself
+    reported having no model for. A failure whose expression names one
+    of those returns is the absence of a model, not a defect. The name
+    list stays as the fallback for a record written before the driver
+    recorded it - an older record simply does not carry the evidence, so
+    it is judged the old way rather than judged wrongly.
+    """
+    no_body = rec.get("no_body")
+    if not no_body:
+        return rec["function"] in EXTERN_DRIVEN
+    names = {"return_value_" + n for n in no_body}
+    descs = [d.get("desc", "") for d in deciding_failures(rec)]
+    if not descs:
+        return rec["function"] in EXTERN_DRIVEN
+    return all(any(n in d for n in names) for d in descs)
+
+
 def bucket(rec: dict) -> str:
     k = kinds(rec)
     if not k:
@@ -126,7 +158,7 @@ def bucket(rec: dict) -> str:
                     "on it)")
     if rec.get("linkage") == "static":
         return "static (callers constrain the domain - deferred)"
-    if rec["function"] in EXTERN_DRIVEN:
+    if extern_driven(rec):
         return "extern-driven (an unmodelled return, unconstrained)"
     return "EXPORTED, arithmetic - READ THESE"
 
@@ -399,22 +431,94 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("results", nargs="+", help="cbmc_driver.py .jsonl output")
     ap.add_argument("--analyze", help="analyze.py .jsonl output, folded in")
+    ap.add_argument("--expect", action="append", default=[],
+                    help="basename of a model-check shard this report "
+                         "SHOULD have been given (repeatable). One that is "
+                         "not among `results' is named as missing rather "
+                         "than silently left out of the totals.")
     args = ap.parse_args()
 
     recs = []
+    per_input = []
     for p in args.results:
+        n = len(recs)
         for line in Path(p).read_text().splitlines():
             if line.strip():
                 recs.append(json.loads(line))
+        per_input.append((Path(p).name, len(recs) - n))
+
+    # A shard whose job died contributes no verdicts, and every number
+    # below is then over what remains. Five runs, 27 through 31, each
+    # lost the whole userland model check to an OOMed runner and every
+    # one still printed a report that read like a complete one: 1460
+    # checked, no lib/libc anywhere, and nothing on the page to say a
+    # third of the corpus was absent.
+    # The absence of a measurement is not a clean result, and a report
+    # that cannot tell the two apart is the same failure this repository
+    # keeps finding in the code it reads.
+    print("== the model-check shards this report is built from")
+    for name, n in sorted(per_input):
+        print(f"  {n:6d}  {name}")
+    missing = [e for e in args.expect
+               if e not in {name for name, _ in per_input}]
+    if missing:
+        print(f"\n  MISSING, {len(missing)} of "
+              f"{len(args.expect)} expected: {', '.join(sorted(missing))}")
+        print("  Those shards produced no verdicts at all. Every count")
+        print("  below is over the shards that are here, and says NOTHING")
+        print("  about the scopes that are not - not that they are clean.")
+    elif args.expect:
+        print(f"\n  All {len(args.expect)} expected shards are present.")
 
     status = collections.Counter(r["status"] for r in recs)
-    print("== what the model checker concluded")
+    print("\n== what the model checker concluded")
     order = ["PROVED", "PROVED-ASSUMING", "BOUNDED", "FAILED",
              "TIMEOUT", "ERROR", "NOFUNC"]
     for k in order + [k for k in status if k not in order]:
         if status.get(k):
             print(f"  {k:16s} {status[k]}")
     print(f"  {'':16s} {sum(status.values())} checked")
+    # An ERROR is not a clean result and not a finding: it is CBMC
+    # declining to answer. 60 of the 918 functions in one userland run
+    # are CBMC 5.95.1 aborting on its own invariant, mostly on _Complex
+    # arithmetic in lib/msun, which means those functions have never
+    # been checked at all - a state indistinguishable, in a count, from
+    # one that came back clean. So the reasons are named.
+    errs = [r for r in recs if r["status"] in ("ERROR", "NOFUNC")]
+    if errs:
+        why = collections.Counter()
+        for r in errs:
+            d = (r.get("detail") or "").strip()
+            lines = [x.strip() for x in d.splitlines()[:4] if x.strip()]
+            # Only a line the driver put there on purpose counts. A
+            # record written before it did carries an arbitrary
+            # 600-character window, and the fragment at the top of that
+            # window is not a reason - calling it one would be the same
+            # mistake in smaller print.
+            # "Reason:" is the line that says what CBMC could not do;
+            # "Invariant check failed" above it only says that it could
+            # not, so prefer the one that carries information.
+            first = next((x for x in lines if x.startswith("Reason:")), "")
+            if not first:
+                first = next(
+                    (x for x in lines
+                     if x.startswith(("Invariant check failed",
+                                      "CONVERSION ERROR"))
+                     or "error:" in x.lower()),
+                    "")
+            if not first:
+                first = ("(no reason recorded - written before the driver "
+                         "kept the why-line)")
+            why[first[:72]] += 1
+        print(f"\n  what the {len(errs)} ERROR/NOFUNC records say:")
+        for k, n in why.most_common(6):
+            print(f"    {n:4d}  {k}")
+        rest = len(errs) - sum(n for _, n in why.most_common(6))
+        if rest:
+            print(f"    {rest:4d}  (the rest)")
+        print("  An ERROR is CBMC declining to answer. Those functions")
+        print("  are UNCHECKED, which a count cannot tell from clean.")
+
     if status.get("PROVED"):
         print("\n  PROVED means every checked property holds for ALL inputs -")
         print("  the loops closed inside the bound. BOUNDED and")
