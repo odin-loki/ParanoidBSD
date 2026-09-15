@@ -1599,7 +1599,18 @@ mlx5_ib_sg_to_klms(struct mlx5_ib_mr *mr,
 	mr->ndescs = sg_nents;
 
 	for_each_sg(sgl, sg, sg_nents, i) {
-		if (unlikely(i > mr->max_descs))
+		/*
+		 * PBSD: `>=', not `>'.  mr->descs is max_descs * desc_size
+		 * bytes (mlx5_alloc_priv_descs), so max_descs is one past
+		 * the last klms[] this may write, and `i > max_descs' let
+		 * i == max_descs through -- sixteen bytes past the end of
+		 * the descriptor buffer.  mlx5_set_page() twenty lines
+		 * below is the same bound written correctly, as
+		 * `ndescs == max_descs'.  sg_nents comes from the caller's
+		 * scatterlist, which for a user-registered MR is a verbs
+		 * request's length.
+		 */
+		if (unlikely(i >= mr->max_descs))
 			break;
 		klms[i].va = cpu_to_be64(sg_dma_address(sg) + sg_offset);
 		klms[i].bcount = cpu_to_be32(sg_dma_len(sg) - sg_offset);

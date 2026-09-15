@@ -122,7 +122,17 @@ aw_ccung_reset_assert(device_t dev, intptr_t id, bool reset)
 	sc = device_get_softc(dev);
 
 	dprintf("%sassert reset id %ld\n", reset ? "" : "De", id);
-	if (id >= sc->nresets || sc->resets[id].offset == 0)
+	/*
+	 * PBSD: `id < 0' is the other end.  The id is a `resets'
+	 * specifier cell out of the DTB -- hwreset_default_ofw_map()
+	 * does `*id = cells[0]' from a pcell_t into an intptr_t -- and
+	 * on the 32-bit arm this driver also builds for, intptr_t is a
+	 * signed 32-bit, so a cell at or above 0x80000000 arrives here
+	 * negative.  The second clause dereferences resets[id] while the
+	 * first is still deciding whether id is usable, so the guard was
+	 * the out-of-bounds read.
+	 */
+	if (id < 0 || id >= sc->nresets || sc->resets[id].offset == 0)
 		return (0);
 
 	mtx_lock(&sc->mtx);
@@ -147,7 +157,17 @@ aw_ccung_reset_is_asserted(device_t dev, intptr_t id, bool *reset)
 
 	sc = device_get_softc(dev);
 
-	if (id >= sc->nresets || sc->resets[id].offset == 0)
+	/*
+	 * PBSD: `id < 0' is the other end.  The id is a `resets'
+	 * specifier cell out of the DTB -- hwreset_default_ofw_map()
+	 * does `*id = cells[0]' from a pcell_t into an intptr_t -- and
+	 * on the 32-bit arm this driver also builds for, intptr_t is a
+	 * signed 32-bit, so a cell at or above 0x80000000 arrives here
+	 * negative.  The second clause dereferences resets[id] while the
+	 * first is still deciding whether id is usable, so the guard was
+	 * the out-of-bounds read.
+	 */
+	if (id < 0 || id >= sc->nresets || sc->resets[id].offset == 0)
 		return (0);
 
 	mtx_lock(&sc->mtx);

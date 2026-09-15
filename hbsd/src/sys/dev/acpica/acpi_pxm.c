@@ -201,7 +201,12 @@ cpu_find(int cpuid)
 	int i;
 
 	if (cpus_use_indexing) {
-		if (cpuid <= last_cpu && cpus[cpuid].enabled)
+		/*
+		 * PBSD: `cpuid >= 0' is the other end of the bound. The
+		 * ID comes out of the SRAT, whose X2APIC entry carries
+		 * it as a UINT32, and it arrives here through an int.
+		 */
+		if (cpuid >= 0 && cpuid <= last_cpu && cpus[cpuid].enabled)
 			return (&cpus[cpuid]);
 	} else {
 		for (i = 0; i <= last_cpu; i++)
@@ -240,7 +245,16 @@ cpu_add(int cpuid, int domain)
 	struct cpu_info *cpup;
 
 	if (cpus_use_indexing) {
-		if (cpuid >= max_cpus)
+		/*
+		 * PBSD: an ApicId at or above 0x80000000 is a negative
+		 * int here, and `>= max_cpus' alone let it address up
+		 * to two billion entries before the mapping. ACPI
+		 * spells an unused processor UID 0xFFFFFFFF, which is
+		 * -1, so cpus[-1] is a table away rather than an
+		 * attack away. Returning NULL is the path that already
+		 * exists for an ID out of range.
+		 */
+		if (cpuid < 0 || cpuid >= max_cpus)
 			return (NULL);
 		last_cpu = imax(last_cpu, cpuid);
 		cpup = &cpus[cpuid];

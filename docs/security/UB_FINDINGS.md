@@ -27484,3 +27484,217 @@ analyser findings.  `sys/dev/iicbus`: 68 units, 2 ERROR both sides
 markers, each revert-verified; `clk.c` already had an entry and the two
 are merged, which `check_pbsd_marks.py` caught — the third duplicate
 key it has caught today.
+
+## The 63 static sys/dev index sites, read
+
+Task #158's remainder: the ONESIDED sites in `sys/dev` whose enclosing
+function is `static`, so no caller outside the translation unit can
+reach it and the lint's report is a question rather than a claim.  All
+63 read.  Five turned out to be defects; the other 58 are internal
+contracts, and the reasons are below because a reading nobody wrote
+down has to be done again.
+
+Two of the five were not in the 63 at all.  They were found by
+following one of them out of its file, which is the argument for
+reading a lint's output rather than counting it.
+
+### `acpi_pxm.c` — an x2APIC ID out of the SRAT, through an `int`
+
+`cpu_add()` and `cpu_find()` take the APIC ID the firmware's SRAT
+declares and, on every architecture but arm64 (`cpus_use_indexing` is
+`1`), use it directly as the subscript of `cpus[]`:
+
+```c
+	if (cpus_use_indexing) {
+		if (cpuid >= max_cpus)
+			return (NULL);
+		last_cpu = imax(last_cpu, cpuid);
+		cpup = &cpus[cpuid];
+```
+
+The X2APIC affinity entry carries `ApicId` as a `UINT32` and the
+parameter is an `int`.  An ID at or above `0x80000000` arrives negative,
+passes `>= max_cpus`, leaves `last_cpu` alone because `imax()` keeps the
+larger of the two, and addresses up to two billion entries **before**
+the mapping `pmap_mapbios()` returned.  The caller then writes through
+it — `domain`, `id`, `enabled`.
+
+This is not only the adversarial reading.  ACPI spells an unused
+processor UID `0xFFFFFFFF`, which is `(int)-1`, so `cpus[-1]` is one
+firmware table away and not one attack away.  Under a hypervisor the
+guest's ACPI tables are the host's to write.
+
+`cpu_find()` has the mirror, `cpuid <= last_cpu`, which reads rather
+than writes and is reached from the exported
+`acpi_pxm_get_cpu_locality()`.
+
+Both now bound the ID at both ends.  `cpu_add()` returning `NULL` is the
+path that already existed: the caller prints *"Ignoring local APIC ID %u
+(too high)"* and carries on.
+
+`tools/verify/probes/acpi_pxm_cpuid.c`, **OLD 2 of 2 failed, NEW 0 of 2,
+VERIFICATION SUCCESSFUL.**
+
+### `clk.c` — the same defect as yesterday's, on the path that writes
+
+Yesterday `clknode_init_parent_idx()` was fixed: its guard read
+`parent_names[idx]` in a third clause while the first two were still
+deciding, and `CLKNODE_IDX_NONE` being `-1` meant it caught exactly one
+negative value.  `clknode_adjust_parent()`, sixty lines above it in the
+same file, had the identical guard —
+
+```c
+	if ((idx == CLKNODE_IDX_NONE) || (idx >= clknode->parent_cnt))
+		panic(...);
+	if (clknode->parents[idx] == NULL)
+```
+
+— and is the one that **writes**.  Past the guard it does
+`clknode->parent = clknode->parents[idx]` and then
+`TAILQ_INSERT_TAIL(&clknode->parent->children, ...)`, through whatever
+that read returned.  The exported `clknode_set_parent_by_idx()` hands
+its `int` parameter straight in with no bound of its own, so this guard
+was the only one there was.
+
+`idx < 0` subsumes `CLKNODE_IDX_NONE`, so `-1` panics exactly as it did
+and the rollback call `clknode_adjust_parent(clknode, oldidx)` on a node
+whose `parent_idx` was never set behaves as before.
+
+Fixing the sibling and not this one was a miss, and the lint reported it
+both times.
+
+### `aw_ccung.c` — a DTB reset cell, on 32-bit
+
+`aw_ccung_reset_assert()` and `aw_ccung_reset_is_asserted()` take
+`intptr_t id` and test `id >= sc->nresets || sc->resets[id].offset == 0`
+— the second clause dereferencing while the first is still deciding,
+the same shape again.
+
+`hwreset_default_ofw_map()` does `*id = cells[0]` from a `pcell_t` into
+an `intptr_t`.  On arm64 that is a zero-extension into 64 bits and the
+upper bound catches everything.  On the 32-bit arm this driver also
+builds for — `sys/arm/allwinner` exists and `sys/arm/conf/GENERIC` names
+it — `intptr_t` is a signed 32-bit, so a `resets` cell at or above
+`0x80000000` arrives negative.  The DTB is the boot loader's to supply.
+
+### `mlx5_ib_mr.c` — `>` where the line below it says `==`
+
+`mlx5_ib_sg_to_klms()` breaks its scatter-gather loop on
+`i > mr->max_descs`, so `i == max_descs` still writes `klms[max_descs]`
+— one `struct mlx5_klm` past a buffer `mlx5_alloc_priv_descs()` sized at
+`max_descs * desc_size`.  Twenty lines below, `mlx5_set_page()` writes
+the same bound correctly:
+
+```c
+	if (unlikely(mr->ndescs == mr->max_descs))
+		return -ENOMEM;
+```
+
+which is what makes this a slip rather than a convention.  `sg_nents`
+reaches the loop from `ib_map_mr_sg()`, so for a user-registered memory
+region a verbs request chooses it.
+
+### `gpiobus.c` — found by leaving the list
+
+`qcom_tlmm_pin_lookup()` (site 54 of the 63) is `static` with a
+one-sided bound, and its three callers take `uint32_t pin`.  The
+question was whether a `uint32_t` could reach it large enough to be a
+negative `int`, so the bound above it had to be read — and
+`gpiobus_pin_getname()` rejects on `pin > sc->sc_npins`, unsigned, which
+answers the question: no, it cannot.  `qcom_tlmm_pin_lookup()` is not a
+defect.
+
+`gpiobus_pin_getname()` is.  `gpiobus_attach()` does `sc->sc_npins++`
+and *then* allocates `sc_npins` entries, so `sc_npins` is one past the
+last pin, and `>` lets `pin == sc_npins` index one element off the end:
+
+```c
+	if (pin > sc->sc_npins)
+		return (EINVAL);
+	if (sc->sc_pins[pin].name != NULL) {
+		memcpy(name, sc->sc_pins[pin].name, GPIOMAXNAME);
+```
+
+A `char *` read from past the array, and if it comes back non-NULL,
+sixty-four bytes copied through it into a buffer `GPIOGETCONFIG` returns
+to userland.
+
+`gpiobus_pin_setname()` has the same bound and does worse with it: it
+reads `sc_pins[sc_npins].name`, and if that reads as NULL it **stores** a
+freshly `malloc()`ed pointer back there, past the end; if it reads as
+anything else it `strlcpy()`s through it.  `GPIOSETNAME` on
+`/dev/gpiocN` chooses the number.
+
+`gpiobus_acquire_pin()` and `gpiobus_release_pin()` in the same file
+already write it as `pin >= sc->sc_npins`.  Both now match them.
+
+The lint cannot see either: its whole subject is the sign, and `pin` is
+unsigned.  It found them anyway, by being a reason to open the file.
+
+### The 58 that are not defects
+
+* **A mask or a shift.**  `agp_ali_get_aperture()`'s
+  `pci_read_config(...) & 0xf`; `bwi_rf_calibval()`'s `__SHIFTOUT`;
+  `qat_etr_ap_bank_setup_ring()`'s `ETR_RING_AP_BANK_NUMBER`;
+  `mixer_get()`, whose `dev` is `cmd & 0xff` from the OSS ioctl and
+  which the `< SOUND_MIXER_NRDEVICES` test then bounds above.
+* **A ternary over two literals.**  `update_vport_qp_param()`'s
+  `port = (sched_queue & 0x40) ? 2 : 1`; `rt2860_setup_beacon()`'s
+  `ridx`; both `g_audio` isoc callbacks' `nr = (xfer == ...) ? 0 : 1`.
+* **A counter or a loop variable.**  `drm_ctxbitmap_next()`'s
+  `find_first_zero_bit`; `mlx5_fc_bulk_acquire_fc()`'s `find_first_bit`;
+  `rndtest_runs_record()`'s run lengths; `iwx_get_num_sections()`;
+  `nic_handle_mbx_intr()`'s bit index over the mailbox interrupt
+  register.
+* **A literal at every call site.**  `bnxt_register_dev()`,
+  `bnxt_unregister_dev()` and `bnxt_register_async_events()` are reached
+  only through `en_ops` from `bnxt_re`, which passes `BNXT_ROCE_ULP` —
+  `0` — at all twelve of them.  `__mlx4_ib_create_flow()`'s `domain` is
+  `IB_FLOW_DOMAIN_USER` from the uverbs path and a constant from the
+  other.  `exca_io_unmap()`, `mwl_tx_setup()`, `drm_alloc_resource()`,
+  `xae_stat()`, `qat_etr_bank_init()`.
+* **`device_get_unit()`.**  `ocs_pci_attach()` and `agtiapi_probe()`.
+  `ocs_pci_attach()`'s `instance < ARRAY_SIZE(ocs_devices)` compares an
+  `int` against a `size_t`, so a negative would convert to something
+  huge and fail the test — safe, by accident rather than by design.
+* **An unsigned source.**  `get_tx_qp()`'s `qp_index = wr->pkey_index`
+  is a `u16`.  `bwi_rf_calc_rssi_bcm2050()`'s `rssi = hdr->rxh_rssi` is
+  a `uint8_t`, and the branch that could make it negative returns before
+  the table; `bwi_rf_calc_noise_bcm2050()`'s `noise` is a `uint16_t`
+  widened, which is the answer to that function's own
+  `/* XXX check bounds? */`.
+* **An unsigned comparison operand.**  `draw_daemon()` tests
+  `px >= strlen(daemon_pic[y])`, which converts `px` to `size_t`, so a
+  negative `px` is caught by the bound that was written for the other
+  end.
+* **A bound one frame up.**  `ath_compute_num_delims()`'s
+  `peer_mpdudensity` is `_IEEE80211_MASKSHIFT`ed from `ni_htparam` and
+  then `max()`ed with `vap->iv_ampdu_density`, which
+  `IEEE80211_IOC_AMPDU_DENSITY` bounds at **both** ends —
+  `IEEE80211_HTCAP_MPDUDENSITY_NA <= i_val && i_val <= ..._16` — before
+  it is stored.
+* **A switch.**  `mem_intr_handler()`'s `name[idx]` is inside a case arm
+  of `switch (idx)`.
+* **A ring or descriptor index the driver maintains.**  the three `bwi`
+  ring functions, the two `et` ones, `iwm_update_sched()`,
+  `iwn_check_tx_ring()`, `alloc_ctrlq()`, `free_stid()`,
+  `oce_alloc_intr()`, `setmaxtxpow()`, `mwlhal`'s `dumpresult()` (whose
+  `result` is a `le16toh` widened into an `int`).
+
+One reading was wrong on the way and is worth keeping.
+`iwx_ampdu_rx_start()` writes `sc->ni_rx_ba[tid]` three times before its
+`tid >= IWX_MAX_TID_COUNT` test, and `IWX_MAX_TID_COUNT` is 8, which
+looked like a remote out-of-bounds write from an ADDBA request's TID.
+It is not: the array is `ni_rx_ba[WME_NUM_TID]` and `WME_NUM_TID` is
+**16**, which is exactly the range a four-bit `IEEE80211_BAPS_TID`
+spans.  The writes are in bounds and then discarded.  The constant had
+to be read rather than assumed.
+
+### Measured
+
+`sys/dev/acpica` + `sys/dev/clk` + `sys/dev/gpio`: 116 translation
+units, 1 ERROR both sides (`gpiomdio.c`, on the record), **the same 12
+analyser findings before and after, no line moved either way**.  Five
+markers added across four files, each revert-verified with the revert
+itself checked not to be a no-op; `clk.c` already had an entry and the
+new tuple went into the existing list.

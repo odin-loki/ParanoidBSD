@@ -748,7 +748,16 @@ clknode_adjust_parent(struct clknode *clknode, int idx)
 
 	if (clknode->parent_cnt == 0)
 		return;
-	if ((idx == CLKNODE_IDX_NONE) || (idx >= clknode->parent_cnt))
+	/*
+	 * PBSD: the same one-sided bound clknode_init_parent_idx() had,
+	 * on the path that WRITES.  CLKNODE_IDX_NONE is -1, so an idx of
+	 * -2 or below passed both clauses; clknode->parents[idx] was then
+	 * read from before the array and TAILQ_INSERT_TAIL() wrote
+	 * through whatever came back.  clknode_set_parent_by_idx() is
+	 * exported and hands its int parameter straight here with no
+	 * bound of its own, so the guard is the only one there is.
+	 */
+	if ((idx < 0) || (idx >= clknode->parent_cnt))
 		panic("%s: Invalid parent index %d for clock %s",
 		    __func__, idx, clknode->name);
 

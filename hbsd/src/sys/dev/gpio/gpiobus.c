@@ -1102,7 +1102,17 @@ gpiobus_pin_getname(device_t dev, uint32_t pin, char *name)
 	struct gpiobus_softc *sc;
 
 	sc = GPIOBUS_SOFTC(dev);
-	if (pin > sc->sc_npins)
+	/*
+	 * PBSD: `>=', not `>'.  gpiobus_attach() does sc_npins++ and
+	 * then mallocs sc_npins entries, so sc_npins is one past the
+	 * last pin and `pin > sc_npins' let pin == sc_npins index one
+	 * element off the end -- reading a char * from past the array
+	 * and, if it came back non-NULL, memcpy()ing GPIOMAXNAME bytes
+	 * through it into a buffer GPIOGETCONFIG hands back to
+	 * userland.  gpiobus_acquire_pin() and gpiobus_release_pin()
+	 * in this same file write the bound as `pin >= sc->sc_npins'.
+	 */
+	if (pin >= sc->sc_npins)
 		return (EINVAL);
 	/* Did we have a name for this pin ? */
 	if (sc->sc_pins[pin].name != NULL) {
@@ -1120,7 +1130,14 @@ gpiobus_pin_setname(device_t dev, uint32_t pin, const char *name)
 	struct gpiobus_softc *sc;
 
 	sc = GPIOBUS_SOFTC(dev);
-	if (pin > sc->sc_npins)
+	/*
+	 * PBSD: the same off-by-one on the path that WRITES.  At
+	 * pin == sc_npins this read sc_pins[sc_npins].name from past
+	 * the array and then stored a freshly malloc()ed pointer back
+	 * there, or strlcpy()ed through whatever stale value it found.
+	 * GPIOSETNAME on /dev/gpiocN chooses the number.
+	 */
+	if (pin >= sc->sc_npins)
 		return (EINVAL);
 	if (name == NULL)
 		return (EINVAL);

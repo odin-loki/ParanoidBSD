@@ -1612,6 +1612,21 @@ FIXES = {
             "line and dereferenced it here",
         ),
     ],
+    "hbsd/src/sys/dev/mlx5/mlx5_ib/mlx5_ib_mr.c": [
+        (
+            "PBSD: `>=', not `>'.  mr->descs is max_descs * desc_size",
+            "\t\tif (unlikely(i > mr->max_descs))",
+            "mlx5_ib_sg_to_klms() broke its scatter-gather loop on "
+            "`i > mr->max_descs', so i == max_descs still wrote "
+            "klms[max_descs] -- one struct mlx5_klm past a buffer "
+            "mlx5_alloc_priv_descs() sized at max_descs * desc_size. "
+            "mlx5_set_page() twenty lines below writes the same bound "
+            "correctly as `ndescs == max_descs', which is what makes "
+            "this a slip rather than a convention. sg_nents reaches it "
+            "from ib_map_mr_sg(), so a user-registered MR's verbs "
+            "request chooses it",
+        ),
+    ],
     "hbsd/src/sys/dev/mlx5/mlx5_en/mlx5_en_main.c": [
         (
             "PBSD: checked.  mlx5e_get_wqe_sz() returns -ENOMEM",
@@ -1726,6 +1741,28 @@ FIXES = {
             "smaller than the default chunk gives nchunks == 0, "
             "malloc(0, M_ZERO) and a NULL sample pointer - from a "
             "0444 device",
+        ),
+    ],
+    "hbsd/src/sys/dev/acpica/acpi_pxm.c": [
+        (
+            "PBSD: `cpuid >= 0' is the other end of the bound.",
+            "\t\tif (cpuid <= last_cpu && cpus[cpuid].enabled)",
+            "cpu_find() indexed cpus[] on `cpuid <= last_cpu' alone. "
+            "The ID reaches it from the SRAT, whose X2APIC affinity "
+            "entry carries ApicId as a UINT32, through an int "
+            "parameter, and the exported acpi_pxm_get_cpu_locality() "
+            "is the other way in",
+        ),
+        (
+            "PBSD: an ApicId at or above 0x80000000 is a negative",
+            "\t\tif (cpuid >= max_cpus)\n\t\t\treturn (NULL);",
+            "cpu_add() bounded the same ID above and not below, then "
+            "WROTE through &cpus[cpuid] -- domain, id and enabled. "
+            "imax() leaves last_cpu alone for a negative, so nothing "
+            "downstream notices. ACPI spells an unused processor UID "
+            "0xFFFFFFFF, which is (int)-1, so this is a firmware table "
+            "away and not only an attack away. cpus_use_indexing is 1 "
+            "on every architecture but arm64",
         ),
     ],
     "hbsd/src/sys/dev/acpi_support/acpi_asus_wmi.c": [
@@ -1938,6 +1975,60 @@ FIXES = {
             "is the clock framework's exported entry point and the "
             "guard panics by design, because it exists to catch a "
             "driver's mistake",
+        ),
+        (
+            "PBSD: the same one-sided bound clknode_init_parent_idx() had,",
+            "\tif ((idx == CLKNODE_IDX_NONE) || (idx >= clknode->parent_cnt))",
+            "clknode_adjust_parent() is the sibling of the "
+            "clknode_init_parent_idx() fix above and the one that "
+            "WRITES: past the guard it does parents[idx], then "
+            "clknode->parent = parents[idx] and TAILQ_INSERT_TAIL "
+            "through the result. The exported "
+            "clknode_set_parent_by_idx() hands its int parameter "
+            "straight in with no bound of its own, so an idx of -2 or "
+            "below reached the array. `idx < 0' subsumes "
+            "CLKNODE_IDX_NONE, so -1 still panics exactly as it did",
+        ),
+    ],
+    "hbsd/src/sys/dev/gpio/gpiobus.c": [
+        (
+            "PBSD: `>=', not `>'.  gpiobus_attach() does sc_npins++ and",
+            "\tif (pin > sc->sc_npins)\n\t\treturn (EINVAL);\n\t/* Did we have a name for this pin ? */",
+            "gpiobus_pin_getname() bounded the user's pin number with "
+            "`pin > sc_npins'. gpiobus_attach() increments sc_npins "
+            "past the last pin and then mallocs that many entries, so "
+            "pin == sc_npins read sc_pins[sc_npins].name from one "
+            "element off the end and, when that came back non-NULL, "
+            "memcpy()ed GPIOMAXNAME bytes through it into the buffer "
+            "GPIOGETCONFIG returns to userland. Found by following a "
+            "ONESIDED site into this file rather than by the lint, "
+            "which does not report an unsigned index",
+        ),
+        (
+            "PBSD: the same off-by-one on the path that WRITES.",
+            "\tif (pin > sc->sc_npins)\n\t\treturn (EINVAL);\n\tif (name == NULL)",
+            "gpiobus_pin_setname() has the same bound and does worse "
+            "with it: at pin == sc_npins it reads sc_pins[sc_npins].name "
+            "from past the array and then STORES a malloc()ed pointer "
+            "back there, or strlcpy()s through the stale value it found. "
+            "GPIOSETNAME on /dev/gpiocN chooses the number. "
+            "gpiobus_acquire_pin() and gpiobus_release_pin() in the "
+            "same file already write it as `pin >= sc->sc_npins'",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/allwinner/aw_ccung.c": [
+        (
+            "PBSD: `id < 0' is the other end.  The id is a `resets'",
+            "\tif (id >= sc->nresets || sc->resets[id].offset == 0)",
+            "aw_ccung_reset_assert() and aw_ccung_reset_is_asserted() "
+            "bounded the DTB's reset specifier above and not below, and "
+            "the clause that dereferences resets[id] ran while the "
+            "first was still deciding. hwreset_default_ofw_map() does "
+            "`*id = cells[0]' from a pcell_t into an intptr_t, which on "
+            "the 32-bit arm this driver also builds for is a signed "
+            "32-bit, so a cell at or above 0x80000000 arrives negative. "
+            "Both functions carry the same edit, so one marker covers "
+            "the pair",
         ),
     ],
     "hbsd/src/sys/dev/clk/rockchip/rk_clk_composite.c": [
