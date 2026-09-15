@@ -475,6 +475,19 @@ FIXES = {
         "the usermode test that guards every other write to them, and "
         "the kernel-mode caller at :481 passes NULL for both",
     ),
+    "hbsd/src/sys/amd64/vmm/io/ppt.c": [
+        (
+            "PBSD: `idx < 0'.  idx is the `int idx' field of struct",
+            "\tif (idx >= ppt->msix.num_msgs) {\n\t\terror = EINVAL;",
+            "ppt_setup_msix() took idx from the VM_PPTDEV_MSIX ioctl's "
+            "struct vm_pptdev_msix, where it is a plain int, and bounded "
+            "it above only. Everything past the guard WRITES through it: "
+            "ppt_teardown_msix_intr(ppt, idx), ppt->msix.cookie[idx] = "
+            "NULL and ppt->msix.res[idx] = bus_alloc_resource_any(...). "
+            "ppt_setup_msi() in the same file writes its own bound as "
+            "`numvec < 0 || numvec > MAX_MSIMSGS'",
+        ),
+    ],
     "hbsd/src/sys/amd64/vmm/amd/svm.c": (
         "errcode_valid = 0;\n\t\tidtvec = code - 0x40;",
         "reflect = 1;\n\t\tidtvec = code - 0x40;",
@@ -721,6 +734,34 @@ FIXES = {
     ),
     # Four uninitialised returns, three of them reachable, all found by
     # clang's core.uninitialized.UndefReturn. See docs/security/UB_FINDINGS.md.
+    "hbsd/src/sys/net/altq/altq_priq.c": [
+        (
+            "PBSD: `a->priority < 0'.  priority is a plain int in the",
+            "\tif (a->priority >= PRIQ_MAXPRI)\n\t\treturn (EINVAL);",
+            "priq_add_class() bounded the ioctl's `int priority' above "
+            "only, and pif->pif_classes[a->priority] is two tests below "
+            "it, so a negative was read before the array while the "
+            "parameter check was still deciding whether to accept it. "
+            "priq_class_create() then indexes with it again",
+        ),
+    ],
+    "hbsd/src/sys/net/altq/altq_fairq.c": [
+        (
+            "PBSD: `a->priority < 0', as in altq_priq.c and altq_cbq.c.",
+            "\tif (a->priority >= FAIRQ_MAXPRI)\n\t\treturn (EINVAL);",
+            "fairq_add_class() has the same one-sided bound on the same "
+            "ioctl field, with pif->pif_classes[a->priority] four lines "
+            "below and fairq_class_create() indexing with it again",
+        ),
+    ],
+    "hbsd/src/sys/net/altq/altq_cbq.c": [
+        (
+            "PBSD: `a->priority < 0', as in altq_priq.c and altq_fairq.c.",
+            "\tif (a->priority >= CBQ_MAXPRI)\n\t\treturn (EINVAL);",
+            "cbq_add_class() is the third of the same shape; "
+            "rmc_newclass() uses the value as ifd->active_[pri]",
+        ),
+    ],
     "hbsd/src/sys/net/if.c": (
         "\t\terror = 0;\n\t\tCK_STAILQ_FOREACH(ifgl, &ifp->if_groups, ifgl_next) {",
         None,
@@ -2877,6 +2918,20 @@ FIXES = {
         "the call site, in g_eli_create() rather than its two callers, "
         "because the crypto check there is only a KASSERT",
     ),
+    "hbsd/src/sys/cam/ctl/ctl.c": [
+        (
+            "PBSD: `>=' and a lower bound, which is what ctl_add_initiator()",
+            "\tif (iid > CTL_MAX_INIT_PER_PORT) {\n\t\tprintf(\"%s: initiator ID %u > maximum %u!\\n\",",
+            "ctl_remove_initiator() had two things wrong in one "
+            "comparison. `>' let iid == CTL_MAX_INIT_PER_PORT through "
+            "and the next two statements DECREMENT wwpn_iid[iid].in_use "
+            "and write wwpn_iid[iid].last_use, one element off the end. "
+            "And there was no floor, on a value ctl_add_initiator() "
+            "fifteen lines below gives a deliberate meaning to -- it "
+            "reads `iid < 0' as allocate-one-for-me -- and which the "
+            "same sibling bounds as `iid >= CTL_MAX_INIT_PER_PORT'",
+        ),
+    ],
     "hbsd/src/sys/cam/cam_queue.c": [
         (
             "if (new_size > CAM_MAX_DEV_OPENINGS)",

@@ -299,7 +299,11 @@ cbq_add_queue(struct pf_altq *a)
 
 	opts = &a->pq_u.cbq_opts;
 	/* check parameters */
-	if (a->priority >= CBQ_MAXPRI)
+	/*
+	 * PBSD: `a->priority < 0', as in altq_priq.c and altq_fairq.c.
+	 * rmc_newclass() uses it as ifd->active_[pri].
+	 */
+	if (a->priority < 0 || a->priority >= CBQ_MAXPRI)
 		return (EINVAL);
 
 	/* Get pointers to parent and borrow classes.  */

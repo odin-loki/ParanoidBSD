@@ -194,7 +194,12 @@ fairq_add_queue(struct pf_altq *a)
 		return (EINVAL);
 
 	/* check parameters */
-	if (a->priority >= FAIRQ_MAXPRI)
+	/*
+	 * PBSD: `a->priority < 0', as in altq_priq.c and altq_cbq.c.
+	 * pif->pif_classes[a->priority] is four lines below and
+	 * fairq_class_create() indexes with it again.
+	 */
+	if (a->priority < 0 || a->priority >= FAIRQ_MAXPRI)
 		return (EINVAL);
 	if (a->qid == 0)
 		return (EINVAL);

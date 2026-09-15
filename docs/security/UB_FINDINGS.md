@@ -28077,3 +28077,131 @@ One thing noticed in passing and deliberately not changed:
 None of the three is ever a subscript — they are compared and used as
 counts — so this is a configuration-parsing sloppiness rather than a
 memory-safety defect, and `resolv.conf` is root's to write.
+
+## The tail of the ONESIDED list: the other seventy-one
+
+`sys/dev`, `bhyve`, `netpfil`, `net80211`, `kern`, `libc` and `fs` are
+above.  This is everything else — 71 sites across 38 small scopes, none
+of them large enough to be a group.  Five are defects, in three
+places, and all three are a file that writes the same bound correctly
+somewhere else.
+
+### `ppt.c` — an ioctl's `int idx`, and two stores through it
+
+`sys/amd64/vmm/io/ppt.c:ppt_setup_msix()` is reached from
+`VM_PPTDEV_MSIX` on `/dev/vmm/<name>`.  `struct vm_pptdev_msix` carries
+`int idx` and the function bounded it above only:
+
+```c
+	if (idx >= ppt->msix.num_msgs) {
+```
+
+Everything past that guard writes through it —
+`ppt_teardown_msix_intr(ppt, idx)`, `ppt->msix.cookie[idx] = NULL`,
+`ppt->msix.res[idx] = bus_alloc_resource_any(...)` — so a negative
+`idx` stored two pointers before the arrays.  `ppt_setup_msi()` two
+hundred lines up in the same file writes its own bound as
+`if (numvec < 0 || numvec > MAX_MSIMSGS)`.
+
+### `ctl.c` — two things wrong with one comparison
+
+`sys/cam/ctl/ctl.c:ctl_remove_initiator()`:
+
+```c
+	if (iid > CTL_MAX_INIT_PER_PORT) {
+	...
+	last = (--port->wwpn_iid[iid].in_use == 0);
+	port->wwpn_iid[iid].last_use = time_uptime;
+```
+
+`>` rather than `>=`, so `iid == CTL_MAX_INIT_PER_PORT` reached a
+**decrement** and a **store** one element off the end.  And no floor at
+all — on a value its own sibling gives a deliberate meaning to.
+`ctl_add_initiator()`, fifteen lines below, writes
+`if (iid >= CTL_MAX_INIT_PER_PORT)` **and** reads `iid < 0` as
+*allocate one for me*.  A frontend that hands that same sentinel to the
+remove path wrote before the array.
+
+Noted and not acted on: `port->wwpn_iid` is
+`malloc(sizeof(*wwpn_iid) * port->max_initiators)`, so the array is
+`max_initiators` long while both functions bound against the
+`CTL_MAX_INIT_PER_PORT` ceiling.  Making the bound the array's own
+length is a different change with different consequences for the
+frontends, and this one is confined to making `ctl_remove_initiator()`
+agree with `ctl_add_initiator()`.
+
+### `altq` — the same ioctl field, three disciplines
+
+`priq_add_class()`, `fairq_add_class()` and `cbq_add_class()` each take
+`a->priority`, a plain `int` from the ALTQ ioctl, and test only
+`>= PRIQ_MAXPRI` / `>= FAIRQ_MAXPRI` / `>= CBQ_MAXPRI`.  In `priq` and
+`fairq` the very next parameter check is
+`pif->pif_classes[a->priority]`, so a negative was read before the
+array *while the validation was still deciding whether to accept it*;
+`cbq` passes it to `rmc_newclass()`, which uses it as `ifd->active_[pri]`.
+
+The floor goes at the ioctl entry, next to the four checks already
+there, rather than inside `*_class_create()`.  **The lint still reports
+those three**, and correctly: their own `int pri` parameter remains
+unbounded and they are `static`, so they are now genuinely the
+"callers constrain the domain" case rather than an unexamined one.
+That is why the tree-wide count moved by two and not five.
+
+### Measured
+
+`sys/amd64/vmm` 34 units, 1 ERROR both sides, the same 3 findings.
+`sys/cam/ctl` 19 units, 1 ERROR both sides, the same 3 findings.
+`sys/net/altq` 9 units, 0 ERROR, 0 findings both sides — clang's
+checkers report nothing in altq at all, which is worth writing down
+next to the number rather than reading as agreement.  ONESIDED
+tree-wide **209 → 207**.  Five markers across five files, each
+revert-verified.
+
+### The sixty-six that are not defects
+
+* **A mask, a shift or an unsigned source.**  `BP_GET_COMPRESS(bp)` is
+  `BF64_GET(blk_prop, 32, 7)`, a seven-bit field, so the boot loader's
+  `zio_decompress_data()` cannot get a negative `cpfunc` off disk.
+  `LOG_FAC(pri)` is `(pri & LOG_FACMASK) >> 3`, so syslogd's `fac` is
+  0..63 — and `f_pmask[]` is `[LOG_NFACILITIES+1]`, so the `>` there is
+  right too.  ACPI's `spcr->InterfaceType` and `TerminalType` are
+  `UINT8`.  `append_int()` compares against a `sizeof`, which converts
+  its `int` to `size_t`.  `bitmask_free_idx()`'s `idx` is a `uint16_t`.
+* **Both ends, in two statements the lint reads as one.**  arm64's
+  `redist_read()` and `redist_write()` reject
+  `fault_ipa < vgic->redist_start` before dividing by it, so the
+  guest's `vcpuid` cannot be negative.  `xsave_area_offset()`'s loop is
+  `while ((i = ffs(...) - 1) > 0 && i < idx)`.  `match_function()`'s is
+  `for (; pos > last; pos--)`.
+* **A loop counter, a pointer difference or a hash.**  the two SES
+  parsers (`offset = sizeof(struct ses_page_hdr)` then
+  `while (offset < length)`), `routed`'s two `getnet()`s
+  (`i = mname - name` after `strchr`), `bsdiff`'s binary-search
+  midpoint, `intrcnt_add()`'s `atomic_fetchadd_int`, `idr`'s
+  `find_next_bit`, `ufsdirhash`'s `offset / DIRBLKSIZ` on an unsigned
+  `doff_t`, riscv's ISA-string walkers, `unpackd_fill_inodesin()`'s
+  recursion.
+* **`device_get_unit()` or a CPU/domain id.**  `cmn600_pmc_register()`,
+  `cmn600_pmc_getunit()`, `ivhd_probe()`, `its_quirk_cavium_22375()`,
+  `moea64_page_array_startup()`, the two powerpc `smp_next_cpu()`s.
+* **A caller's constant.**  `linux_dmi_get_system_info()`'s `DMI_*`,
+  `bridge_do_pfctl()`'s SNMP leaf, `dep_reset()`'s `DEP_TO`/`DEP_FROM`,
+  `m_get()`'s mbuf type (which is clamped to `MB_UNKNOWN` above),
+  `r_name()`'s protocol id, `pfkey_msgtype_names()`'s loop variable.
+* **Already fixed, with its own PBSD comment.**  `systat`'s
+  `get_tbl_ptr()` — the function the lint was written for.
+* **A build tool reading what it wrote.**  `makefs`'s `winChkName()`
+  computes `i = ((wep->weCnt & WIN_CNT) - 1) * WIN_CHARS`, which would
+  be negative for a sequence number of zero — but `makefs` builds the
+  `winentry` itself.  The kernel's `msdosfs_conv.c`, which does parse
+  hostile images, is a different implementation and does not have this
+  shape.
+
+Two things noticed in passing and not changed.  `sys/riscv`'s
+`parse_ext_x()` writes `while (isa[idx] != '_' && idx < len)` — the
+read happens before the bound is tested — which is an ordering bug on
+the upper end rather than the lower one, on a NUL-terminated
+device-tree string.  And `ber_read_element()` in `usr.sbin/ypldap`
+carries an `ssize_t len` from an LDAP server through
+`malloc(len + 1)`; a negative would make that allocation fail rather
+than succeed small, so the store at `be_val[len]` is not reached.

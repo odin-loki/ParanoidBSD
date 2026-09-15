@@ -795,7 +795,17 @@ ppt_setup_msix(struct vm *vm, int bus, int slot, int func,
 		}
 	}
 
-	if (idx >= ppt->msix.num_msgs) {
+	/*
+	 * PBSD: `idx < 0'.  idx is the `int idx' field of struct
+	 * vm_pptdev_msix, copied in by the VM_PPTDEV_MSIX ioctl, and
+	 * everything below this guard writes through it --
+	 * ppt_teardown_msix_intr(ppt, idx), ppt->msix.cookie[idx] = NULL,
+	 * ppt->msix.res[idx] = bus_alloc_resource_any(...) -- so a
+	 * negative one stored through two pointers before the arrays.
+	 * ppt_setup_msi() two hundred lines up writes the same kind of
+	 * bound as `if (numvec < 0 || numvec > MAX_MSIMSGS)'.
+	 */
+	if (idx < 0 || idx >= ppt->msix.num_msgs) {
 		error = EINVAL;
 		goto out;
 	}

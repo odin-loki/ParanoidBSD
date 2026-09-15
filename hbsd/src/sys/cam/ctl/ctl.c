@@ -2122,9 +2122,20 @@ ctl_remove_initiator(struct ctl_port *port, int iid)
 
 	mtx_assert(&softc->ctl_lock, MA_NOTOWNED);
 
-	if (iid > CTL_MAX_INIT_PER_PORT) {
-		printf("%s: initiator ID %u > maximum %u!\n",
-		       __func__, iid, CTL_MAX_INIT_PER_PORT);
+	/*
+	 * PBSD: `>=' and a lower bound, which is what ctl_add_initiator()
+	 * fifteen lines below already writes.  Two things were wrong with
+	 * one comparison.  `>' let iid == CTL_MAX_INIT_PER_PORT through,
+	 * and the two statements past this guard DECREMENT
+	 * wwpn_iid[iid].in_use and write wwpn_iid[iid].last_use -- one
+	 * element off the end.  And there was no floor at all, on a value
+	 * its sibling gives a deliberate meaning to: ctl_add_initiator()
+	 * reads `iid < 0' as "allocate one for me".  A frontend that hands
+	 * the same sentinel to the remove path wrote before the array.
+	 */
+	if (iid < 0 || iid >= CTL_MAX_INIT_PER_PORT) {
+		printf("%s: initiator ID %u outside 0..%u!\n",
+		       __func__, iid, CTL_MAX_INIT_PER_PORT - 1);
 		return (-1);
 	}
 

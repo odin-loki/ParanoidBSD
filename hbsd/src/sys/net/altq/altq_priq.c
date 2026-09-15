@@ -140,7 +140,14 @@ priq_add_queue(struct pf_altq *a)
 		return (EINVAL);
 
 	/* check parameters */
-	if (a->priority >= PRIQ_MAXPRI)
+	/*
+	 * PBSD: `a->priority < 0'.  priority is a plain int in the
+	 * ioctl's struct and the next test but one is
+	 * pif->pif_classes[a->priority], so a negative read before the
+	 * array while the parameter check was still deciding whether to
+	 * accept it.  The same shape is in altq_fairq.c and altq_cbq.c.
+	 */
+	if (a->priority < 0 || a->priority >= PRIQ_MAXPRI)
 		return (EINVAL);
 	if (a->qid == 0)
 		return (EINVAL);

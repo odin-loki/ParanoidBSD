@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,595 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,932 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,498,922 | 81,388 |
+| 8 | `sys` | 14,951 | 10,498,959 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,156** | **114,208** |
+| | **total** | **41,143** | **21,303,193** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -107,7 +107,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.651.12 | `sys/dev/bxe/bxe_elink.c` | 15,128 | 0 | `TODO-PORT` |
 | 8.1304.7 | `sys/ufs/ffs/ffs_softdep.c` | 15,021 | 0 | `TODO-PORT` |
 | 8.1218.1 | `sys/netinet/tcp_stacks/bbr.c` | 14,870 | 0 | `TODO-PORT` |
-| 8.71.1 | `sys/cam/ctl/ctl.c` | 14,553 | 0 | `TODO-PORT` |
+| 8.71.1 | `sys/cam/ctl/ctl.c` | 14,564 | 0 | `TODO-PORT` |
 | 8.671.15 | `sys/dev/cxgbe/t4_main.c` | 14,284 | 0 | `TODO-PORT` |
 | 8.1213.87 | `sys/netinet/sctp_output.c` | 13,929 | 0 | `TODO-PORT` |
 | 8.897.7 | `sys/dev/pms/RefTisa/sat/src/smsatcb.c` | 13,807 | 0 | `TODO-PORT` |
@@ -41331,7 +41331,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.14.1.23 `iommu_remove_device()` · `TODO-FN`
   - [ ] 8.14.1.24 `iommu_invalidate_tlb()` · `TODO-FN`
 - [ ] **8.14.2** `iommu.h` · 75L · `TODO-MD`
-- [ ] **8.14.3** `ppt.c` · 858L gen:7 · `TODO-MD` · 22 fn
+- [ ] **8.14.3** `ppt.c` · 868L gen:7 · `TODO-MD` · 22 fn
   - [ ] 8.14.3.1 `ppt_probe()` · `TODO-FN`
   - [ ] 8.14.3.2 `ppt_attach()` · `TODO-FN`
   - [ ] 8.14.3.3 `ppt_detach()` · `TODO-FN`
@@ -48138,7 +48138,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.71 `sys/cam/ctl` · 1 module(s) under `pbsd/sys/cam/ctl`
 
-- [ ] **8.71.1** `ctl.c` · 14,553L gen:12 · `TODO-PORT`
+- [ ] **8.71.1** `ctl.c` · 14,564L gen:12 · `TODO-PORT`
 - [ ] **8.71.2** `ctl.h` · 218L gen:2 · `TODO-HDR`
 - [ ] **8.71.3** `ctl_backend.c` · 137L · `TODO-PORT` · 3 fn
   - [ ] 8.71.3.1 `ctl_backend_register()` · `TODO-FN`
@@ -121960,7 +121960,7 @@ function; a file with two hundred of them is a project.
 ### 8.1201 `sys/net/altq`
 
 - [ ] **8.1201.1** `altq.h` · 105L · `TODO-HDR`
-- [ ] **8.1201.2** `altq_cbq.c` · 566L · `TODO-PORT` · 15 fn
+- [ ] **8.1201.2** `altq_cbq.c` · 570L · `TODO-PORT` · 15 fn
   - [ ] 8.1201.2.1 `cbq_class_destroy()` · `TODO-FN`
   - [ ] 8.1201.2.2 `clh_to_clp()` · `TODO-FN`
   - [ ] 8.1201.2.3 `cbq_clear_interface()` · `TODO-FN`
@@ -121996,7 +121996,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1201.6.14 `codel_getq()` · `TODO-FN`
   - [ ] 8.1201.6.15 `codel_getstats()` · `TODO-FN`
 - [ ] **8.1201.7** `altq_codel.h` · 134L · `TODO-HDR`
-- [ ] **8.1201.8** `altq_fairq.c` · 910L · `TODO-PORT` · 20 fn
+- [ ] **8.1201.8** `altq_fairq.c` · 915L · `TODO-PORT` · 20 fn
   - [ ] 8.1201.8.1 `fairq_pfattach()` · `TODO-FN`
   - [ ] 8.1201.8.2 `fairq_add_altq()` · `TODO-FN`
   - [ ] 8.1201.8.3 `fairq_remove_altq()` · `TODO-FN`
@@ -122069,7 +122069,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1201.10.48 `get_class_stats_v1()` · `TODO-FN`
   - [ ] 8.1201.10.49 `clh_to_clp()` · `TODO-FN`
 - [ ] **8.1201.11** `altq_hfsc.h` · 338L · `TODO-HDR`
-- [ ] **8.1201.12** `altq_priq.c` · 643L · `TODO-PORT` · 19 fn
+- [ ] **8.1201.12** `altq_priq.c` · 650L · `TODO-PORT` · 19 fn
   - [ ] 8.1201.12.1 `priq_pfattach()` · `TODO-FN`
   - [ ] 8.1201.12.2 `priq_add_altq()` · `TODO-FN`
   - [ ] 8.1201.12.3 `priq_remove_altq()` · `TODO-FN`
