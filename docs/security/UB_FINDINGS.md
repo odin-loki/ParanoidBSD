@@ -29615,3 +29615,68 @@ VERIFICATION SUCCESSFUL`.**
   returns early on `(param & 0xffff) == 0`, so `1193182 / (param &
   0xffff)` has a divisor in `[1, 65535]` and a quotient in
   `[18, 1193182]` — never the zero that faults `sc`.
+
+### The 155 in `lib/libc` and `lib/msun`: one defect, and six shapes
+
+One fix, `lib/libc/xdr/xdr_array.c:83`:
+
+```c
+	c = *sizep;
+	if ((c > maxsize || UINT_MAX/elsize < c) &&
+	    (xdrs->x_op != XDR_FREE)) {
+```
+
+`elsize` is the caller's element size, an exported function's parameter,
+and this divides by it.  `&&` evaluates left to right, so the division
+happens **before** the `XDR_FREE` test standing beside it — no operation
+escapes it, not even the one that frees.  `rpcgen`-generated stubs pass
+a `sizeof()`, but `xdr_array(3)` is a documented interface and a zero
+element size has no meaning to answer with, least of all a fault.  An
+`if (elsize == 0) return (FALSE);` ahead of it.
+
+The other 154 fall into six shapes, and naming them is the point —
+every one of them is the modular check meeting a value the function
+does not own.
+
+* **A pointer difference across two unrelated objects (about 40).**
+  `q - p`, `end - buf`, `p - line`, `t - p`, `bp - (u_char *)eh`,
+  `fp->_p - p`, `preg->re_endp - pattern`, `cplim - cp`, `u - l`.
+  CBMC gives each pointer its own object, so the difference is
+  unbounded; in the tree both always point into one buffer.  This is
+  `lib/libc/iconv/citrus_lookup.c`, `citrus_memstream.c`,
+  `locale/wcstod.c` and its `f`/`ld` siblings, `net/ip6opt.c`,
+  `net/linkaddr.c`, `nls/msgcat.c`, `regex/regcomp.c`, `stdio/fflush.c`,
+  `fgetln.c`, `fgets.c`.
+* **A `FILE`'s own counters (about 10).** `fp->_r - 1`, `_p->_w - 1`,
+  `fp->_fl_count + 1`, `dirp->dd_len + 1`, `dirp->dd_td->td_loccnt + 1`.
+  A modular check hands the function an unconstrained `FILE` or `DIR`.
+* **The library's own assertions, reported as the bugs they exist to
+  catch (18).**  Every `xprintf_*.c` `__printf_arginfo_*` asserts
+  `n > 0` on the slot count its caller passes; `acl_branding.c` asserts
+  the brand; `svc.c` asserts `dispatch != NULL`;
+  `acl_support_nfs4.c:124` asserts `i < size` on a `size` the caller
+  gives.  For the last one the tables are terminated well inside any
+  real buffer — `a_access_masks[]` stops at `ACL_FULL_SET`, whose
+  letter is `'\0'`, so `format_flags_compact()` writes 14 bytes into a
+  `char buf[MAX_ENTRY_LENGTH + 1]`.
+* **`free()` on a pointer CBMC will not place at offset zero (13).**
+  `__bt_close`, `feature_present`, `__collate_load`, `hesiod_end`,
+  `__nss_common_cache_write`, `sctp_freeladdrs`, `acl_to_text`,
+  `authdes_pk_seccreate`, `endnetpath`.  The same unconstrained-struct
+  premise; `hesiod.c`'s two `double free` records are the same thing
+  with two entries of an unconstrained `char **` aliasing.
+* **The standard's own words about the caller.** `div`, `ldiv`,
+  `lldiv` — C17 7.22.6.2p2 — as recorded earlier in this document.
+  `getloadavg`'s `ldavg[i] / fscale` is the kernel's `fscale`, a
+  compile-time constant.
+* **An unmodelled callee that the expression does not name.**
+  `lib/libc/db/hash/hash.c:405`, `1u << hashp->hdr.bshift`.  `__log2()`
+  lives in `hash_log2.c`, a different translation unit, so CBMC cannot
+  bound what it returned into `int32_t bshift` and admits a negative
+  shift.  It returns a bit count in `[0, 32]`.  The *other* way into
+  that field, the header `_read()` straight off the disk, is already
+  checked — `hashp->BSHIFT < 0 || hashp->BSHIFT >= 32` and eight more
+  conditions, from the earlier pass on this file — so the finding has
+  no remaining reachable path.  This is the `cosf` shape: the evidence
+  is real but the expression does not name the return, and `report.py`
+  declines to guess.

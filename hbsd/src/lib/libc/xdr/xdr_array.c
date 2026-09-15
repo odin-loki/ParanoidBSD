@@ -80,6 +80,17 @@ xdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep, u_int maxsize, u_int elsize, 
 		return (FALSE);
 	}
 	c = *sizep;
+	/*
+	 * PBSD: elsize is the caller's element size and this
+	 * divides by it.  && evaluates left to right, so the
+	 * division happens before the XDR_FREE test beside it and
+	 * no operation escapes it.  Generated stubs pass a
+	 * sizeof(), but xdr_array(3) is a documented interface and
+	 * a zero element size has no meaning to answer with --
+	 * least of all a fault.
+	 */
+	if (elsize == 0)
+		return (FALSE);
 	if ((c > maxsize || UINT_MAX/elsize < c) &&
 	    (xdrs->x_op != XDR_FREE)) {
 		return (FALSE);

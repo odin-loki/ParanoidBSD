@@ -5622,6 +5622,13 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/lib/libc/xdr/xdr_array.c": (
+        "if (elsize == 0)\n\t\treturn (FALSE);",
+        "c = *sizep;\n\tif ((c > maxsize || UINT_MAX/elsize < c) &&",
+        "xdr_array: divided by the caller's element size, and && put "
+        "that division ahead of the XDR_FREE test beside it",
+    ),
+
     "hbsd/src/sys/x86/isa/clock.c": (
         "if (freq <= 0)\n\t\treturn;\n\tfreq = i8254_freq / freq;",
         "timer_spkr_setfreq(int freq)\n{\n\n\tfreq = i8254_freq / freq;",

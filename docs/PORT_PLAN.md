@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,103 | 9,057 |
+| 1 | `lib` | 2,827 | 641,114 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,687** | **114,208** |
+| | **total** | **41,143** | **21,303,698** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -6451,7 +6451,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.135.1.29 `xdr_u_hyper()` · `TODO-FN`
   - [ ] 1.135.1.30 `xdr_longlong_t()` · `TODO-FN`
   - [ ] 1.135.1.31 `xdr_u_longlong_t()` · `TODO-FN`
-- [ ] **1.135.2** `xdr_array.c` · 156L · `TODO-PORT` · 2 fn
+- [ ] **1.135.2** `xdr_array.c` · 167L · `TODO-PORT` · 2 fn
   - [ ] 1.135.2.1 `xdr_array()` · `TODO-FN`
   - [ ] 1.135.2.2 `xdr_vector()` · `TODO-FN`
 - [ ] **1.135.3** `xdr_float.c` · 291L · `TODO-PORT` · 2 fn
