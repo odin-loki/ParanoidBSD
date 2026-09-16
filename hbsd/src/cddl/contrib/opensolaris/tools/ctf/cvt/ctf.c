@@ -74,7 +74,7 @@ struct ctf_buf {
 static int target_requires_swap;
 
 /*PRINTFLIKE1*/
-static void
+static void __attribute__((noreturn))
 parseterminate(const char *fmt, ...)
 {
 	static char msgbuf[1024]; /* sigh */

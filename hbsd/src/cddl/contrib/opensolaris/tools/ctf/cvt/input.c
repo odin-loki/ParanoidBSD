@@ -103,7 +103,8 @@ read_file(Elf *elf, char *file, char *label, read_cb_f *func, void *arg,
 	}
 
 	if ((ctfscn = elf_getscn(elf, ctfscnidx)) == NULL ||
-	    (ctfdata = elf_getdata(ctfscn, NULL)) == NULL)
+	    (ctfdata = elf_getdata(ctfscn, NULL)) == NULL ||
+	    ctfdata->d_buf == NULL)
 		elfterminate(file, "Cannot read CTF section");
 
 	/* Reconstruction of type tree */
@@ -260,6 +261,9 @@ count_archive(int fd, Elf *elf, char *file)
 			warning("Can't process input archive %s\n",
 			    file);
 			err++;
+			cmd = elf_next(melf);
+			(void) elf_end(melf);
+			continue;
 		}
 
 		if (*arh->ar_name != '/')

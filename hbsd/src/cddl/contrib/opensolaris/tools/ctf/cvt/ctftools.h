@@ -432,7 +432,16 @@ char *mktmpname(const char *, const char *);
 void terminate(const char *, ...) __attribute__((noreturn));
 void aborterr(const char *, ...) __attribute__((noreturn));
 void set_terminate_cleanup(void (*)(void));
-void elfterminate(const char *, const char *, ...);
+/*
+ * elfterminate() ends in terminate(), three lines up, which this
+ * header already declares noreturn -- so it never returns either,
+ * and it is VARIADIC, which means an analyser will not inline it
+ * and cannot find that out for itself. Five of the ctfconvert and
+ * ctfmerge findings were callers written as `if (x == NULL)
+ * elfterminate(...); use(x);' read as paths that continue.
+ */
+void elfterminate(const char *, const char *, ...)
+    __attribute__((noreturn));
 void warning(const char *, ...);
 void vadebug(int, const char *, va_list);
 void debug(int, const char *, ...);

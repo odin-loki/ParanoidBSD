@@ -898,7 +898,7 @@ main(int argc, char *argv[])
 	int error = 0;
 	int c, fd, ufd;
 
-	ctf_data_t cd;
+	ctf_data_t cd = { 0 };
 	const ctf_preamble_t *pp;
 	ctf_header_t *hp = NULL;
 	Elf *elf;
@@ -965,7 +965,8 @@ main(int argc, char *argv[])
 		Elf_Scn *symscn;
 		GElf_Shdr ctfshdr;
 
-		if (ctfscn == NULL || (dp = elf_getdata(ctfscn, NULL)) == NULL)
+		if (ctfscn == NULL || (dp = elf_getdata(ctfscn, NULL)) == NULL ||
+		    dp->d_buf == NULL)
 			die("%s does not contain .SUNW_ctf data\n", filename);
 
 		cd.cd_ctfdata = dp->d_buf;

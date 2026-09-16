@@ -39,8 +39,14 @@ extern "C" {
 #define	E_ERROR		1		/* Exit status for error */
 #define	E_USAGE		2		/* Exit status for usage error */
 
-extern void vdie(const char  *, va_list);
-extern void die(const char *, ...);
+/*
+ * Both end in exit(E_ERROR) -- utils.c:42 and, through vdie(),
+ * utils.c:54. die() is variadic, so an analyser will not inline it
+ * and takes every `if (p == NULL) die(...); use(p);' as a path that
+ * continues with p NULL. Four of ctfdump's findings were that.
+ */
+extern void vdie(const char  *, va_list) __attribute__((noreturn));
+extern void die(const char *, ...) __attribute__((noreturn));
 
 #ifdef	__cplusplus
 }

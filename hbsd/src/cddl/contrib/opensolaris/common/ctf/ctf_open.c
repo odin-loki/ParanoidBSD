@@ -825,6 +825,19 @@ ctf_bufopen(const ctf_sect_t *ctfsect, const ctf_sect_t *symsect,
 		ctf_data_protect(base, size + hdrsz);
 
 	} else {
+		/*
+		 * `size' came out of the HEADER, and every check above
+		 * compares the header's offsets against each other and
+		 * against it.  Nothing yet has compared any of them to the
+		 * size of the section the header arrived in.  The compressed
+		 * branch does not need it -- z_uncompress writes into an
+		 * allocation of exactly size + hdrsz and a short inflate is
+		 * rejected -- but here the buffer IS the section, and
+		 * cts_size has only ever been tested against
+		 * sizeof (ctf_header_t).
+		 */
+		if (ctfsect->cts_size < hdrsz + size)
+			return (ctf_set_open_errno(errp, ECTF_CORRUPT));
 		base = (void *)ctfsect->cts_data;
 		buf = (uchar_t *)base + hdrsz;
 	}

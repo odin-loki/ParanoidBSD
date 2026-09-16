@@ -5782,6 +5782,117 @@ FIXES = {
         "match.c:307's strlen(xstrdup(...)) being the one that went",
     ),
 
+    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_open.c": (
+        "if (ctfsect->cts_size < hdrsz + size)",
+        "} else {\n\t\tbase = (void *)ctfsect->cts_data;",
+        "ctf_bufopen computes `size = cth_stroff + cth_strlen' from the "
+        "HEADER at :769 and then checks the header's offsets against "
+        "each other and against that -- never against the size of the "
+        "section the header arrived in. The only cts_size tests in the "
+        "file are `< sizeof (ctf_preamble_t)' and `< sizeof "
+        "(ctf_header_t)'. The compressed branch does not need more: "
+        "z_uncompress writes into an allocation of exactly size + hdrsz "
+        "and a short inflate is rejected at :818. The uncompressed one "
+        "does, because there the buffer IS the section -- and :864 then "
+        "sets cts_strs = buf + cth_stroff and init_types walks buf + "
+        "cth_typeoff to buf + cth_stroff. A .SUNW_ctf section whose "
+        "header declares more than the section holds reads out of "
+        "bounds across the whole type walk. That is ordinary input: "
+        "lib/libproc/proc_sym.c:656 calls ctf_open() on every mapped "
+        "object of a traced process, so truss(1), gcore(1) and dtrace's "
+        "ustack reach it, and cddl/usr.sbin/dtrace and lib/libproc are "
+        "the two LIBADDs of libctf in the tree",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/ctftools.h": (
+        "void elfterminate(const char *, const char *, ...)\n"
+        "    __attribute__((noreturn));",
+        "void elfterminate(const char *, const char *, ...);",
+        "elfterminate() ends in terminate(), three lines up in the same "
+        "header, which IS declared noreturn -- so it never returns "
+        "either, and it is variadic, which is what stops an analyser "
+        "finding that out by inlining it. Five of ctfconvert's and "
+        "ctfmerge's findings were callers written as `if (x == NULL) "
+        "elfterminate(...); use(x);' read as paths that continue",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/common/utils.h": (
+        "extern void die(const char *, ...) __attribute__((noreturn));",
+        "extern void die(const char *, ...);",
+        "die() and vdie() both end in exit(E_ERROR) -- utils.c:42 and, "
+        "through vdie(), :54 -- and die() is variadic. Four of "
+        "ctfdump's findings were that, including two where the value "
+        "read afterwards is the CTF buffer pointer itself",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/ctf.c": (
+        "static void __attribute__((noreturn))\nparseterminate(",
+        "static void\nparseterminate(",
+        "the same, for the static variadic wrapper ctfconvert's CTF "
+        "parser reports through: two findings in resurrect_objects and "
+        "resurrect_functions, both `sym->st_info' after the arm that "
+        "reported there is no symbol",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/input.c": [
+        (
+            "(ctfdata = elf_getdata(ctfscn, NULL)) == NULL ||\n"
+            "\t    ctfdata->d_buf == NULL)",
+            "(ctfdata = elf_getdata(ctfscn, NULL)) == NULL)",
+            "elf_getdata() returning non-NULL is not d_buf != NULL: "
+            "contrib/elftoolchain/libelf/elf_data.c:269 is `d_buf = "
+            "(sh_type == SHT_NOBITS || sh_size == 0) ? NULL : ...', so "
+            "a .SUNW_ctf section declared SHT_NOBITS hands ctf_load a "
+            "NULL buffer with a large d_size, which passes its `bufsz "
+            ">= sizeof (ctf_header_t)' test and dereferences "
+            "h->cth_magic",
+        ),
+        (
+            "\t\t\terr++;\n\t\t\tcmd = elf_next(melf);\n"
+            "\t\t\t(void) elf_end(melf);\n\t\t\tcontinue;",
+            "warning(\"Can't process input archive %s\\n\",\n"
+            "\t\t\t    file);\n\t\t\terr++;\n\t\t}\n\n"
+            "\t\tif (*arh->ar_name != '/')",
+            "count_archive counted the failure and then dereferenced "
+            "the NULL it had just reported. warning() RETURNS -- "
+            "util.c:192 calls terminate() only at debug_level >= 3, and "
+            "the default is 0 -- so `*arh->ar_name' at :265 is a NULL "
+            "dereference. elf_getarhdr() genuinely returns NULL for a "
+            "malformed member header (libelf_ar.c:133, :138, :203), so "
+            "an .a with a non-numeric ar_uid crashes ctfmerge. "
+            "read_archive, 120 lines up, gets the same call right with "
+            "elfterminate",
+        ),
+    ],
+
+    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/dump/dump.c": [
+        (
+            "ctf_data_t cd = { 0 };",
+            "ctf_data_t cd;",
+            "main()'s ctf_data_t is a bare stack struct, and "
+            "cd_symdata, cd_strdata and cd_nsyms are assigned only "
+            "inside the nested `if (symscn != NULL) { if "
+            "(gelf_getshdr(...) != NULL) {'. Three ways out leave them "
+            "indeterminate, and the first is a supported mode: "
+            "`ctfdump foo.ctf' on a raw non-ELF file takes the branch "
+            "at :1000 and never enters that block at all. A stripped "
+            "object is the second. read_data:293 then tests cd_symdata "
+            "against NULL on garbage and, if the slot is non-zero, "
+            "hands it to gelf_getsym() and dereferences "
+            "cd_strdata->d_buf, looping to a garbage cd_nsyms. The "
+            "default flag set is F_ALLMSK, so bare ctfdump reaches it",
+        ),
+        (
+            "(dp = elf_getdata(ctfscn, NULL)) == NULL ||\n"
+            "\t\t    dp->d_buf == NULL)",
+            "(dp = elf_getdata(ctfscn, NULL)) == NULL)",
+            "the same SHT_NOBITS hole as input.c, one file over: "
+            "cd_ctfdata becomes NULL with a large cd_ctflen, the "
+            "cd_ctflen >= sizeof (ctf_preamble_t) test at :1018 passes, "
+            "and pp->ctp_magic at :1024 dereferences NULL",
+        ),
+    ],
+
     "hbsd/src/crypto/openssh/sshconnect.c": (
         "if (ip_status != HOST_NEW && ip_found != NULL)",
         "if (ip_status != HOST_NEW)\n\t\t\t\terror(\"Offending key for "
