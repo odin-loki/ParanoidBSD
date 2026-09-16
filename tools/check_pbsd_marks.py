@@ -5669,6 +5669,13 @@ FIXES = {
         "__kernel_rem_pio2() an nx of 0",
     ),
 
+    "hbsd/src/lib/libc/stdio/fmemopen.c": (
+        "if (offset > 0 || ck->len + offset > ck->len) {",
+        "if (offset > 0 || -offset > ck->len) {",
+        "fmemopen_seek: the SEEK_END arm negated an fpos_t straight off "
+        "fseeko(3), and `offset > 0' does not exclude INT64_MIN",
+    ),
+
     "hbsd/src/lib/libc/gen/sem_new.c": (
         "mode = 0;\n\tvalue = 0;",
         "fd = -1;\n\tvalue = 0;",

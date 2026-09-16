@@ -232,7 +232,17 @@ fmemopen_seek(void *cookie, fpos_t offset, int whence)
 		break;
 
 	case SEEK_END:
-		if (offset > 0 || -offset > ck->len) {
+		/*
+		 * PBSD: do not negate offset.  It is an fpos_t, the
+		 * caller's, straight off fseeko(3), and `offset > 0' does
+		 * not exclude the one value whose negation is undefined --
+		 * INT64_MIN is not positive, so -offset was evaluated for
+		 * it.  Testing the sum instead asks the same question and
+		 * is the idiom SEEK_CUR above already uses: size_t
+		 * arithmetic wraps, so ck->len + offset exceeds ck->len
+		 * exactly when offset reaches back past the start.
+		 */
+		if (offset > 0 || ck->len + offset > ck->len) {
 			errno = EINVAL;
 			return (-1);
 		}

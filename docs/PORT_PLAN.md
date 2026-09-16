@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,194 | 9,057 |
+| 1 | `lib` | 2,827 | 641,204 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,851** | **114,208** |
+| | **total** | **41,143** | **21,303,861** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -5194,7 +5194,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.108.20** `flags.c` · 114L · `TODO-PORT` · 1 fn
   - [ ] 1.108.20.1 `__sflags()` · `TODO-FN`
 - [ ] **1.108.21** `floatio.h` · 54L · `TODO-HDR`
-- [ ] **1.108.22** `fmemopen.c` · 262L · `TODO-PORT` · 5 fn
+- [ ] **1.108.22** `fmemopen.c` · 272L · `TODO-PORT` · 5 fn
   - [ ] 1.108.22.1 `fmemopen()` · `TODO-FN`
   - [ ] 1.108.22.2 `fmemopen_read()` · `TODO-FN`
   - [ ] 1.108.22.3 `fmemopen_write()` · `TODO-FN`

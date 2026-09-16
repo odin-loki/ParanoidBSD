@@ -121,6 +121,66 @@ def extern_driven(rec: dict) -> bool:
     return all(any(n in d for n in names) for d in descs)
 
 
+
+# The tree, for addr_taken() below. The report already reads
+# UB_FINDINGS.md; this reads the sources that document is about.
+_SRC = Path(__file__).resolve().parents[2] / "hbsd" / "src"
+_ADDR_CACHE: dict = {}
+
+
+def _decomment(txt: str) -> str:
+    """Source with comments and string literals blanked.
+
+    A function's own name appears in the comment above it more often
+    than anywhere else, and `tone' and `rest' in sys/dev/speaker/spkr.c
+    appear in English prose. Counting those as an address reference put
+    eleven functions in the wrong bucket the first time this was
+    measured: 69 before blanking, 55 after.
+    """
+    txt = re.sub(r"/\*.*?\*/", " ", txt, flags=re.S)
+    txt = re.sub(r"//[^\n]*", " ", txt)
+    return re.sub(r'"(\\.|[^"\\])*"', '""', txt)
+
+
+def addr_taken(rec: dict) -> bool:
+    """Is this static function's address stored somewhere?
+
+    The `static' bucket defers on one claim: that the callers are all
+    in the same file, so they narrow the domain CBMC explores. For a
+    function whose address is taken that claim is false -- the callers
+    are whoever holds the pointer. lib/libc/locale/utf8.c's
+    _UTF8_mbrtowc is `l->__mbrtowc', reached from mbrtowc(3) with an
+    application's bytes; lib/libc/posix1e/acl_support.c's
+    _posix1e_acl_entry_compare is a qsort comparator;
+    libexec/rtld-elf/rtld_lock.c's def_lock_create is a slot in a
+    vtable a program may replace.
+
+    Measured over run 33: 55 of the 254 records in this bucket, 22%,
+    are one of these, and the bucket's stated reason does not hold for
+    any of them.
+
+    A name is an ADDRESS reference when what follows it is a value
+    position -- a comma, semicolon, close bracket, assignment or end of
+    line -- rather than the `(' of a call. If the file cannot be read
+    the answer is False: absence of evidence is not evidence, and the
+    old bucket is the conservative one.
+    """
+    key = (rec.get("file"), rec.get("function"))
+    if key in _ADDR_CACHE:
+        return _ADDR_CACHE[key]
+    fn = rec.get("function")
+    ans = False
+    if fn:
+        try:
+            txt = _decomment((_SRC / rec["file"]).read_text(errors="replace"))
+        except OSError:
+            txt = None
+        if txt is not None:
+            ans = re.search(r"(?<![\w>.&])&?" + re.escape(fn) +
+                            r"\s*[,;)}\]=\n]", txt) is not None
+    _ADDR_CACHE[key] = ans
+    return ans
+
 def bucket(rec: dict) -> str:
     k = kinds(rec)
     if not k:
@@ -157,6 +217,8 @@ def bucket(rec: dict) -> str:
             return ("float div-by-zero (IEEE-754 defines it; msun depends "
                     "on it)")
     if rec.get("linkage") == "static":
+        if addr_taken(rec):
+            return "STATIC but its address is taken - READ THESE"
         return "static (callers constrain the domain - deferred)"
     if extern_driven(rec):
         return "extern-driven (an unmodelled return, unconstrained)"

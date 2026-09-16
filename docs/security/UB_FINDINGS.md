@@ -30504,3 +30504,114 @@ None of the 26 is a finding this document has not answered.  The number
 that remains is a property of the census's unit, not of the tree, and
 recording it that way is the point: a count that says "unread" has to
 say what it is counting before it means anything.
+
+## The `static` bucket's claim, checked: 22% of it does not hold
+
+`report.py` puts 254 of run 33's FAILED model-check records in
+
+    static (callers constrain the domain - deferred)
+
+on one claim: a static function's callers are all in the same file, so
+they narrow the domain CBMC explores.  That claim had never been
+checked.  Checking it, over all 254:
+
+| | records |
+|---|---:|
+| two or more callers in the file | 112 |
+| exactly one caller in the file | 81 |
+| **the function's address is taken** | **55** |
+| no call site in the file at all | 6 |
+
+**For the 55 the claim is simply false.**  Their callers are not in the
+file; they are whoever holds the pointer:
+
+* `lib/libc/locale/utf8.c`'s `_UTF8_mbrtowc` is `l->__mbrtowc`, reached
+  from `mbrtowc(3)` with an application's bytes.  So are the four
+  `_EUC_*_mbrtowc` in `euc.c`.
+* `lib/libc/posix1e/acl_support.c`'s `_posix1e_acl_entry_compare` is a
+  `qsort` comparator.
+* `libexec/rtld-elf/rtld_lock.c`'s `def_lock_create`, `def_lock_destroy`,
+  `def_lock_release`, `def_rlock_acquire` and `def_wlock_acquire` are a
+  vtable a program may replace with `_rtld_thread_init()`.
+* `lib/libc/locale/collate.c`'s `destruct_collate` and its four siblings
+  are `header.destructor` slots.
+* `lib/libc/stdio/fmemopen.c`'s `fmemopen_seek` and `fmemopen_close`,
+  `open_memstream.c`'s `memstream_seek`, `open_wmemstream.c`'s two —
+  `funopen(3)` cookie hooks, called by the whole of `stdio`.
+
+So `report.py` now checks rather than assumes.  A static whose name
+appears in a **value position** — followed by a comma, semicolon, close
+bracket, assignment or end of line, rather than the `(` of a call —
+goes to a bucket of its own, `STATIC but its address is taken - READ
+THESE`, and the other 199 keep the deferral.  Comments and string
+literals are blanked first: the first measurement said 69 because a
+function's own name appears in the comment above it, and `tone` and
+`rest` in `sys/dev/speaker/spkr.c` appear in English prose.  A file
+`report.py` cannot read stays deferred — absence of evidence is not
+evidence.  `test_report_triage.py` pins all three directions.
+
+### What the bucket was holding: `fmemopen_seek()` negates `INT64_MIN`
+
+`lib/libc/stdio/fmemopen.c:235`, `arithmetic overflow on signed unary
+minus in -offset`:
+
+```c
+	case SEEK_END:
+		if (offset > 0 || -offset > ck->len) {
+			errno = EINVAL;
+			return (-1);
+		}
+		ck->off = ck->len + offset;
+```
+
+`offset` is an `fpos_t` — the caller's, straight off `fseeko(3)` — and
+`offset > 0` does not exclude the one value whose negation is
+undefined.  `INT64_MIN` is not positive, so `-offset` is evaluated for
+it.
+
+Testing the **sum** asks the same question with no negation, and it is
+the idiom the `SEEK_CUR` arm above already uses: `ck->len` is a
+`size_t`, so the addition wraps, and `ck->len + offset` exceeds
+`ck->len` exactly when `offset` reaches back past the start of the
+buffer.
+
+```c
+		if (offset > 0 || ck->len + offset > ck->len) {
+```
+
+`tools/verify/probes/fmemopen_seek_end.c`: **OLD `1 of 2 failed,
+VERIFICATION FAILED`; NEW `0 of 2, VERIFICATION SUCCESSFUL`.**  One of
+the two, not both — the arm that was there *does* keep an accepted seek
+inside the buffer, on every offset except the one it cannot evaluate.
+The bug is the evaluation, not the bound.
+
+### The other 54, read
+
+* **Four `_EUC_*_mbrtowc` and two `_UTF8_*` on `wch <<= 6`.**  Safe, and
+  by a hair: `utf8.c`'s lead-byte decoder stops at `mask = 0x07, want =
+  4`, so a full sequence is 3 + 18 = 21 bits and the last shift cannot
+  overflow.  What the analyser sees is the *resumed* path —
+  `wch = us->ch` with `us->ch` unconstrained — and `us->ch` is written
+  only by this function.
+* **`ck->unit * 2` and `ch->unit << 1`** in `ata-intel.c`, `ata-nvidia.c`
+  and `mvs_soc.c`: a channel unit number from `device_get_unit()`.
+  **`rcc_gpio_pin_set`'s `1 << rcc_pins[pin].pin`**: `pin` is bounded by
+  the caller's `GPIO_PIN_MAX` check, one frame up.
+  **`fortuna.c`'s `(sbintime_t)_bt.sec << 32`** is `bintime2sbintime`,
+  where `sec` is a `time_t` past the year 2262 before it overflows.
+* **The `free argument has offset zero` and `double free` records** —
+  `destruct_collate`, `destruct_messages`, `destruct_monetary`,
+  `destruct_numeric`, `destruct_ctype`, `destruct_time`,
+  `authdes_destroy`, `authunix_destroy`, `xdrrec_destroy`,
+  `fmemopen_close`, `def_lock_create`, `free_host`, `ns_dbt_free`,
+  `l_getname`, `l_getparams` — are the unconstrained-struct premise
+  already documented for `unix.Malloc` above: CBMC will not place a
+  pointer in a freed object's field at offset zero.
+* **The assertions are the library's own**: `open_memstream.c`'s
+  `pos >= 0`, `xprintf.c`'s `n >= 1`, `acl_support.c`'s brand check, and
+  `rtld_lock.c`'s `(fsigblock & ~SIGFASTBLOCK_FLAGS) >=
+  SIGFASTBLOCK_INC`.
+* **The pointer differences** — `q - p`, `fp->_p - p`,
+  `rstrm->out_finger - rstrm->out_base`, `lastaddr - newaddr` — are the
+  shape named for `lib/libc` above, in a function reached through a
+  pointer rather than by name.

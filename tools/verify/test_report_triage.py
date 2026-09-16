@@ -178,6 +178,35 @@ check("static is decided before extern-driven",
                         ["__softfloat_float64_le"], linkage="static")),
       "static (callers constrain the domain - deferred)")
 
+print("\nthe static bucket's claim is checked, not assumed")
+# The `static' bucket defers on one claim: the callers are all in this
+# file, so they narrow the domain. For a function whose ADDRESS is taken
+# that claim is false -- the callers are whoever holds the pointer.
+# _UTF8_mbrtowc is `l->__mbrtowc' in lib/libc/locale/utf8.c, reached
+# from mbrtowc(3) with an application's bytes, which is the opposite of
+# constrained. Run 33: 55 of the 254 records in this bucket are one of
+# these, 22%.
+check("an address-taken static is not deferred",
+      report.bucket(rec("_UTF8_mbrtowc",
+                        "line 179 arithmetic overflow on signed shl in "
+                        "wch << 6",
+                        linkage="static", f="lib/libc/locale/utf8.c")),
+      "STATIC but its address is taken - READ THESE")
+# ...and one whose name never appears in a value position still is.
+check("a static with only call sites stays deferred",
+      report.bucket(rec("acpi_pci_link_search_irq",
+                        "line 9 arithmetic overflow on signed + in x + 1",
+                        linkage="static",
+                        f="sys/dev/acpica/acpi_pci_link.c")),
+      "static (callers constrain the domain - deferred)")
+# A file the report cannot read is absence of evidence, not evidence:
+# the old, conservative bucket.
+check("an unreadable file falls back to deferred",
+      report.bucket(rec("nosuchfn",
+                        "line 9 arithmetic overflow on signed + in x + 1",
+                        linkage="static", f="lib/libc/no/such/file.c")),
+      "static (callers constrain the domain - deferred)")
+
 print("\nthe table is actually being read")
 n = len(report.triaged())
 check("more than twenty entries parsed", n > 20, True)
