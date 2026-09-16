@@ -5767,6 +5767,52 @@ FIXES = {
         "already knows how to report a malformed pragma",
     ),
 
+    "hbsd/src/crypto/openssh/sshconnect.c": (
+        "if (ip_status != HOST_NEW && ip_found != NULL)",
+        "if (ip_status != HOST_NEW)\n\t\t\t\terror(\"Offending key for "
+        "IP in %s:%lu\",",
+        "check_host_key's DNS-spoofing warning prints ip_found->file "
+        "under `ip_status != HOST_NEW', and hostfile.c:400-402 sets "
+        "*found = NULL for HOST_REVOKED, which is not HOST_NEW. So a "
+        "known_hosts carrying a @revoked line that matches the server's "
+        "IP, against a host whose key has changed, crashes ssh(1) in "
+        "the middle of telling the user their host key changed -- the "
+        "one message that must survive. The same function already "
+        "guards the same pointer this way at :1088 and :1123",
+    ),
+
+    "hbsd/src/crypto/openssh/audit-bsm.c": [
+        (
+            "if (uid == (uid_t)-1) {",
+            "if (uid < 0) {",
+            "bsm_audit_record sets `uid_t uid = -1' and leaves it there "
+            "for an event with no authenticated user, and selected() "
+            "tests for that sentinel with `uid < 0' -- on a uid_t, "
+            "which is unsigned, so the test is always false and the "
+            "non-attributable branch is dead. Every pre-auth audit "
+            "event is preselected against the USER's audit mask "
+            "(au_user_mask) instead of the system's naflags, which is "
+            "the wrong policy for exactly the events an auditor cares "
+            "about: failed logins for a user that does not exist, and "
+            "abandoned connections. Not dead code either -- config.h "
+            "has USE_BSM_AUDIT undefined, but "
+            "secure/libexec/sshd-auth/Makefile:30 and sshd-session's "
+            ":28 both put -DUSE_BSM_AUDIT=1 on the command line",
+        ),
+        (
+            "sel = selected(the_authctxt != NULL ? the_authctxt->user : NULL,",
+            "sel = selected(the_authctxt->user, uid, event_no, rc);",
+            "...and three lines after testing `the_authctxt != NULL' at "
+            ":263, the same function dereferences it unguarded. The "
+            "file guards it at :263, :304 and :399, so the guard is the "
+            "intent and this line is the outlier. No event reaches it "
+            "with NULL today -- SSH_CONNECTION_ABANDON, the one that "
+            "runs before sshd-session.c:1294 assigns it, lands on the "
+            "switch's default arm -- but that is one new audit event "
+            "away from a pre-authentication crash in sshd",
+        ),
+    ],
+
     "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/dtrace.c": [
         (
             "static void __attribute__((noreturn))\nfatal(const char *fmt, "

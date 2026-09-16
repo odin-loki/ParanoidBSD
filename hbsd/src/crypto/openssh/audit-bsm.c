@@ -239,7 +239,7 @@ selected(char *username, uid_t uid, au_event_t event, int sf)
 	struct au_mask mask;
 
 	mask.am_success = mask.am_failure = 0;
-	if (uid < 0) {
+	if (uid == (uid_t)-1) {
 		/* get flags for non-attributable (to a real user) events */
 		rc = getacna(naflags, sizeof(naflags));
 		if (rc == 0)
@@ -266,7 +266,8 @@ bsm_audit_record(int typ, char *string, au_event_t event_no)
 	}
 
 	rc = (typ == 0) ? 0 : -1;
-	sel = selected(the_authctxt->user, uid, event_no, rc);
+	sel = selected(the_authctxt != NULL ? the_authctxt->user : NULL,
+	    uid, event_no, rc);
 	debug3("BSM audit: typ %d rc %d \"%s\"", typ, rc, string);
 	if (!sel)
 		return;	/* audit event does not match mask, do not write */

@@ -1316,7 +1316,7 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 			error("%s. This could either mean that", key_msg);
 			error("DNS SPOOFING is happening or the IP address for the host");
 			error("and its host key have changed at the same time.");
-			if (ip_status != HOST_NEW)
+			if (ip_status != HOST_NEW && ip_found != NULL)
 				error("Offending key for IP in %s:%lu",
 				    ip_found->file, ip_found->line);
 		}
