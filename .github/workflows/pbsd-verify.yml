@@ -243,11 +243,44 @@ jobs:
       # parallelism the largest shard needs. --timeout is the driver's
       # own default of 60 and is written out so the three model-check
       # steps read alike.
+      # --object-bits 12, measured rather than guessed.
+      #
+      # CBMC's default is 8, which is 256 distinct addressed objects,
+      # and it ABORTS rather than answering when a function needs more.
+      # Run 33: 135 of 424 ERRORs, 32% of every non-answer in the run.
+      # The driver never passed the flag, so nobody had chosen 8; it
+      # was simply the default.
+      #
+      # A/B on three files, everything else held identical:
+      #
+      #                          verdicts  non-answers  solver time
+      #   lib/libc/db/hash/hash.c
+      #     object-bits 8            10        10           287s
+      #     object-bits 12           19         1           340s
+      #   lib/libc/gen/fts-compat.c
+      #     object-bits 8             6        13           531s
+      #     object-bits 12           14         5           646s
+      #   libexec/rtld-elf/amd64/reloc.c
+      #     object-bits 8             4         9           318s
+      #     object-bits 12            4         9           324s
+      #
+      # So it buys a lot in lib/libc -- every one of hash.c's nine
+      # ERRORs became a verdict, and four of fts-compat.c's eight came
+      # back PROVED-ASSUMING, which is verification recovered rather
+      # than findings added -- for about 1.2x the solver time.
+      #
+      # And NOT in rtld-elf, which is the other 44 of the 135. At 12 it
+      # still reports the ceiling, now `2^n=4096 (with n=12)'. At 16 it
+      # stops reporting the ceiling and reports `SAT checker ran out of
+      # memory' instead: widening the pointer encoding grows the
+      # formula, so past some point one non-answer is traded for
+      # another. 12 is where lib/libc converts and rtld-elf is no
+      # worse, so 12 is the number.
       - name: Model check, unguarded
         if: matrix.name == 'userland'
         run: |
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
-            --classes out/classes.json --jobs 4 \
+            --classes out/classes.json --jobs 4 --object-bits 12 \
             --timeout 60 --mem-mb 2048 --resume --out out/ub.jsonl
       # POINTER, under a stated precondition. --min-null-tree-depth makes
       # CBMC build a tree of allocated objects per pointer parameter and
@@ -258,7 +291,8 @@ jobs:
         run: |
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
             --classes out/classes.json --allow POINTER --null-depth 3 \
-            --jobs 2 --timeout 30 --unwind 6 --mem-mb 4096 --resume \
+            --jobs 2 --timeout 30 --unwind 6 --mem-mb 4096 \
+            --object-bits 12 --resume \
             --out out/ptr.jsonl
       # --mem-mb, which is the bound that was actually missing.
       #
@@ -283,7 +317,7 @@ jobs:
         run: |
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
             --classes out/${{ matrix.classes }} --jobs ${{ matrix.jobs }} \
-            --timeout 60 --mem-mb 4096 --resume \
+            --timeout 60 --mem-mb 4096 --object-bits 12 --resume \
             --out out/ksys-${{ matrix.name }}.jsonl
       - uses: actions/upload-artifact@v4
         if: always()

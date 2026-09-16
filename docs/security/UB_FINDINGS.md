@@ -30732,3 +30732,100 @@ VERIFICATION FAILED`; NEW `0 of 1, VERIFICATION SUCCESSFUL`.**
   number, so never below 1), `ns_parse`'s `msg->_sections[sect]` and
   `__libc_interposing_slot`'s `interposno` — all a parameter whose range
   the caller establishes.
+
+## What the run did NOT check, and two experiments on why
+
+Every finding above is something the instruments *said*.  This section
+is the other half: the functions they said nothing about.  Run 33
+checked 5,625 (translation unit, function) pairs and returned **no
+verdict at all for 1,018 of them — 18.1%.**
+
+    PROVED           1206
+    PROVED-ASSUMING   836
+    BOUNDED           177
+    FAILED           2388
+    TIMEOUT           594   <- no verdict
+    ERROR             424   <- no verdict
+
+A TIMEOUT is not a clean result and neither is an ERROR.  Both are
+indistinguishable, *in a count*, from a function that came back clean,
+which is why the reasons are named.
+
+### The 424 ERRORs, every one with a reason
+
+    185  SAT checker ran out of memory
+    134  too many addressed objects: 2^n=256 (with n=8)
+     54  Reason: lhs.type() == rhs.type()
+     27  Out of memory
+      7  Reason: number of literals in the literal map shall equal
+         the bitvector width
+      6  conflicting function declaration (<builtin-library-_sleep>)
+     11  the rest
+
+Before this pass, 137 of them read "(CBMC printed no reason)".  Now
+three do.
+
+**The 54 are the complex half of libm, and nothing else.**  All 54 are
+`lib/msun`, in 30 files: `catrig.c`, `catrigf.c` and `catrigl.c` seven
+each, then `s_ccosh`, `s_cexp`, `s_clog`, `s_conj`, `s_cpow`,
+`s_cproj`, `s_csinh`, `s_csqrt` and `s_ctanh` in their three
+precisions, plus `k_exp` and `k_expf`.  CBMC 5.95.1 aborts on its own
+invariant when it meets `_Complex` arithmetic, so **`cacos`, `casin`,
+`catan`, `ccosh`, `csinh`, `ctanh`, `cexp`, `clog`, `cpow` and `csqrt`
+have never been model-checked at all**, in any precision.
+
+### Experiment 1: a longer timeout buys nothing
+
+Every one of the 594 TIMEOUTs has `unwind_hit: false` — not one of them
+reached the unwind bound — and every `elapsed` is exactly the budget,
+30s or 60s.  So the wall clock is the binding constraint, and the
+obvious question is whether it is the *only* one.
+
+Four sampled TIMEOUT functions, re-run locally at **600 seconds**, ten
+times the budget they died at:
+
+| function | run 33 | at 600s |
+|---|---|---|
+| `regulator_set_voltage` | TIMEOUT 60s | **TIMEOUT** |
+| `regulator_check_voltage` | TIMEOUT 60s | **TIMEOUT** |
+| `__split_page` (`hash_page.c`) | TIMEOUT 30s | **TIMEOUT** |
+| `real_part_reciprocal` (`catrigl.c`) | TIMEOUT 30s | **TIMEOUT** |
+
+Four for four.  This is the same answer the `--mem-mb` experiment gave
+when doubling the cap bought zero verdicts: a function that wants more
+than sixty seconds of this question does not want six hundred either.
+It wants a different question — a smaller unwind, a stated
+precondition, or to be split.
+
+### Experiment 2: `--object-bits` buys a great deal, up to a point
+
+The second-largest reason names its own remedy, and the driver was
+never passing the flag, so nobody had *chosen* 8 — it was the default.
+A/B on three files, everything else held identical:
+
+| file | | verdicts | non-answers | solver time |
+|---|---|---:|---:|---:|
+| `lib/libc/db/hash/hash.c` | `-bits 8` | 10 | 10 | 287s |
+| | `-bits 12` | **19** | **1** | 340s |
+| `lib/libc/gen/fts-compat.c` | `-bits 8` | 6 | 13 | 531s |
+| | `-bits 12` | **14** | **5** | 646s |
+| `libexec/rtld-elf/amd64/reloc.c` | `-bits 8` | 4 | 9 | 318s |
+| | `-bits 12` | 4 | 9 | 324s |
+
+In `lib/libc` it converts almost everything, for about **1.2× the
+solver time** — and not merely into findings: four of `fts-compat.c`'s
+eight recovered functions came back **PROVED-ASSUMING**, which is
+verification recovered rather than work added.  `hash.c`'s nine became
+eight FAILED and one BOUNDED, and all nine land in buckets the triage
+above already answers (`sshift` is validated by the header check from
+the earlier pass on that file).
+
+**And it does nothing for `rtld-elf`**, which is 44 of the 135.  At 12
+that file still reports the ceiling, now `2^n=4096 (with n=12)`.  At
+**16** it stops reporting the ceiling and reports `SAT checker ran out
+of memory` instead — widening the pointer encoding grows the formula,
+so past some point one non-answer is simply traded for another.
+
+12 is where `lib/libc` converts and `rtld-elf` is no worse, so 12 is
+the number, and it is now in the three model-check steps of
+`.github/workflows/pbsd-verify.yml` with this measurement beside it.
