@@ -5631,6 +5631,28 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/lib/libc/powerpc/gen/makecontext.c": (
+        "if (ucp == NULL)\n\t\treturn;\n\tif ((argc < 0)",
+        "if ((ucp == NULL) || (argc < 0)",
+        "__makecontext: the NULL test shared a condition whose body "
+        "writes ucp->uc_mcontext.mc_len to invalidate the context",
+    ),
+
+    "hbsd/src/lib/libc/powerpc64/gen/makecontext.c": (
+        "if (ucp == NULL)\n\t\treturn;\n\tif ((argc < 0)",
+        "if ((ucp == NULL) || (argc < 0)",
+        "__makecontext: the NULL test shared a condition whose body "
+        "writes ucp->uc_mcontext.mc_len to invalidate the context",
+    ),
+
+    "hbsd/src/lib/libc/arm/gen/makecontext.c": (
+        "if (ucp == NULL)\n\t\treturn;\n\tif (argc < 0)",
+        "{\n\t__greg_t *gr = ucp->uc_mcontext.__gregs;",
+        "__makecontext: arm was the one architecture with no sanity "
+        "check -- gr's initialiser dereferenced ucp, and a negative "
+        "argc moves the stack pointer up",
+    ),
+
     "hbsd/src/lib/libc/xdr/xdr_array.c": (
         "if (elsize == 0)\n\t\treturn (FALSE);",
         "c = *sizep;\n\tif ((c > maxsize || UINT_MAX/elsize < c) &&",

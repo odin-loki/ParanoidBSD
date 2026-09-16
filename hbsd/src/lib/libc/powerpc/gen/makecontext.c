@@ -62,8 +62,19 @@ __makecontext(ucontext_t *ucp, void (*start)(void), int argc, ...)
 	va_list ap;
 	int i, regargs, stackargs;
 
-	/* Sanity checks */
-	if ((ucp == NULL) || (argc < 0)
+	/*
+	 * PBSD: the NULL test cannot share a condition whose body
+	 * writes through ucp.  Invalidating the context IS a store
+	 * at ucp->uc_mcontext.mc_len, so makecontext(NULL, ...)
+	 * wrote to address zero -- the one argument the check was
+	 * there to reject.  amd64 and i386 split it exactly this
+	 * way, and aarch64 and riscv return on NULL before
+	 * touching anything; only the two powerpc copies merged
+	 * the two.
+	 */
+	if (ucp == NULL)
+		return;
+	if ((argc < 0)
 	    || (ucp->uc_stack.ss_sp == NULL)
 	    || (ucp->uc_stack.ss_size < MINSIGSTKSZ)) {
 		/* invalidate context */

@@ -29759,3 +29759,55 @@ earlier in this document, was the `m_pullup()` failure path counting on
 `sc->sc_ifp` before `sc` was assigned.  Both have the same shape: a
 variable that is NULL *by construction* on the path being written, and
 a later line that assumes the ordinary path's value.
+
+### `makecontext(NULL, ...)` writes to address zero on three architectures
+
+`lib/libc/powerpc/gen/makecontext.c:70` and `powerpc64`'s identical
+copy, `Dereference of null pointer`, with the analyser's own note at
+line 66: *`Assuming 'ucp' is equal to NULL`*.
+
+```c
+	/* Sanity checks */
+	if ((ucp == NULL) || (argc < 0)
+	    || (ucp->uc_stack.ss_sp == NULL)
+	    || (ucp->uc_stack.ss_size < MINSIGSTKSZ)) {
+		/* invalidate context */
+		ucp->uc_mcontext.mc_len = 0;
+		return;
+	}
+```
+
+The condition is fine — `||` short-circuits, so the `ss_sp` read never
+happens on the NULL arm.  The **body** is the bug: invalidating the
+context *is* a store, at `ucp->uc_mcontext.mc_len`, so the one argument
+the check exists to reject is the one it writes through.  One shared
+body for two different situations: "this context is not usable" and
+"this context is not there."
+
+The tree already knows the answer, in four places:
+
+| architecture | what it does with a NULL `ucp` |
+|---|---|
+| `amd64` | `if ((ucp == NULL) \|\| ...mc_len != sizeof(mcontext_t)) return; else if (<stack is bad>) { invalidate; }` |
+| `i386` | `if (ucp == NULL) return; else if (<stack is bad>) { invalidate; }` |
+| `aarch64` | `if (ucp == NULL) return;` |
+| `riscv` | `if (ucp == NULL) return;` |
+| `powerpc`, `powerpc64` | **writes through it** |
+| `arm` | **no check at all** |
+
+So the two powerpc copies get i386's split, and `arm` — which
+dereferenced `ucp` in the *declaration* of `gr`, before anything had
+looked at it — gets the `ucp == NULL` and `argc < 0` tests that its own
+body needs.  `argc < 0` matters on arm specifically: `sp -= argc - 4`
+under `if (argc > 4)` is skipped for a negative `argc`, but
+`for (i = 0; i < argc && i < 4; i++)` and the stack write below it are
+not, and aarch64 and riscv reject it for the same reason.
+
+**Their `argc > 8` ceiling is not imported.**  Eight is the number of
+argument registers aarch64 and riscv have; arm passes four in `r0`-`r3`
+and spills the rest onto the stack it just made room for, so the same
+ceiling on arm would reject calls that work today.  A check copied
+across architectures has to be re-derived from the body it is guarding.
+
+`tools/verify/probes/makecontext_null_ucp.c`: **OLD `1 of 1 failed,
+VERIFICATION FAILED`; NEW `0 of 1, VERIFICATION SUCCESSFUL`.**

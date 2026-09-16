@@ -57,10 +57,29 @@ __weak_reference(__makecontext, makecontext);
 void
 __makecontext(ucontext_t *ucp, void (*func)(void), int argc, ...)
 {
-	__greg_t *gr = ucp->uc_mcontext.__gregs;
+	__greg_t *gr;
 	int i;
 	unsigned int *sp;
 	va_list ap;
+
+	/*
+	 * PBSD: arm was the one architecture with no sanity check at
+	 * all -- gr's initialiser dereferenced ucp before anything
+	 * had looked at it, and a negative argc runs `sp -= argc - 4'
+	 * the wrong way, moving the stack pointer UP.  aarch64 and
+	 * riscv, whose bodies have the same two sensitivities, reject
+	 * both.
+	 *
+	 * Their `argc > 8' ceiling is NOT imported: it is the number
+	 * of argument registers those two have, and arm passes four
+	 * and spills the rest onto the stack it just made room for.
+	 */
+	if (ucp == NULL)
+		return;
+	if (argc < 0)
+		return;
+
+	gr = ucp->uc_mcontext.__gregs;
 
 	/* Compute and align stack pointer. */
 	sp = (unsigned int *)

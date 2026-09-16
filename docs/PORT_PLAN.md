@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,114 | 9,057 |
+| 1 | `lib` | 2,827 | 641,155 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,716** | **114,208** |
+| | **total** | **41,143** | **21,303,757** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -1339,7 +1339,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.50.17.3 `__fillcontextx()` · `TODO-FN`
   - [ ] 1.50.17.4 `__getcontextx()` · `TODO-FN`
 - [ ] **1.50.18** `infinity.c` · 24L · `TODO-MD`
-- [ ] **1.50.19** `makecontext.c` · 89L · `TODO-MD` · 2 fn
+- [ ] **1.50.19** `makecontext.c` · 108L · `TODO-MD` · 2 fn
   - [ ] 1.50.19.1 `ctx_done()` · `TODO-FN`
   - [ ] 1.50.19.2 `__makecontext()` · `TODO-FN`
 - [ ] **1.50.20** `setjmp.S` · 143L asm gen:2 · `TODO-ASM`
@@ -3929,7 +3929,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.83.10** `fpsetround.c` · 52L asm · `TODO-MD` · 1 fn
   - [ ] 1.83.10.1 `fpsetround()` · `TODO-FN`
 - [ ] **1.83.11** `infinity.c` · 29L gen:1 · `TODO-MD`
-- [ ] **1.83.12** `makecontext.c` · 120L · `TODO-MD` · 2 fn
+- [ ] **1.83.12** `makecontext.c` · 131L · `TODO-MD` · 2 fn
   - [ ] 1.83.12.1 `_ctx_done()` · `TODO-FN`
   - [ ] 1.83.12.2 `__makecontext()` · `TODO-FN`
 - [ ] **1.83.13** `setjmp.S` · 133L asm gen:2 · `TODO-ASM`
@@ -3971,7 +3971,7 @@ function; a file with two hundred of them is a project.
 - [ ] **1.86.9** `fpsetround.c` · 52L asm · `TODO-MD` · 1 fn
   - [ ] 1.86.9.1 `fpsetround()` · `TODO-FN`
 - [ ] **1.86.10** `infinity.c` · 29L gen:1 · `TODO-MD`
-- [ ] **1.86.11** `makecontext.c` · 128L · `TODO-MD` · 2 fn
+- [ ] **1.86.11** `makecontext.c` · 139L · `TODO-MD` · 2 fn
   - [ ] 1.86.11.1 `_ctx_done()` · `TODO-FN`
   - [ ] 1.86.11.2 `__makecontext()` · `TODO-FN`
 - [ ] **1.86.12** `setjmp.S` · 175L asm gen:2 · `TODO-ASM`
