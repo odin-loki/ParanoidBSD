@@ -31430,4 +31430,54 @@ across the type pun; the second is `screen_buffer` allocated in
 another function, which a per-TU checker cannot follow.  Both are
 recorded rather than chased.
 
-The other 27 are the next pass.
+#### `check_acpi_spcr()`: an SPCR that names half a PCI id
+
+`stand/efi/loader/main.c:869`
+
+    io = -1;
+    pv = spcr->PciVendorId;
+    pd = spcr->PciDeviceId;
+    if (pv == 0xffff && pd == 0xffff) {
+        if (spcr->SerialPort.SpaceId == 1)
+            io = spcr->SerialPort.Address;
+        else {
+            mm = spcr->SerialPort.Address;
+            rs = ffs(spcr->SerialPort.BitWidth) - 4;
+            rw = acpi_uart_regionwidth(spcr->SerialPort.AccessWidth);
+        }
+    } else {
+        /* XXX todo: bus:device:function + flags and segment */
+    }
+    ...
+    if (io != -1)                            asprintf(... io ...)
+    else if (pv != 0xffff && pd != 0xffff)   asprintf(... pv, pd ...)
+    else                                     asprintf(... mm, rs, rw ...)
+
+The memory-mapped arm needs `pv` and `pd` **both** `0xffff`; the PCI
+arm needs them **both** not.  An SPCR that names one and not the other
+satisfies neither, falls to the third `asprintf()`, and prints this
+frame's stack into `hw.uart.console` — which is where the kernel then
+goes looking for the UART.  The SPCR is an ACPI fixed table: firmware
+data, not the loader's.  It now says so and returns 0.
+Probe: `tools/verify/probes/spcr_half_pci_id.c`.
+
+#### Three more in the EFI loader's startup
+
+`main()`'s `is_last` is set only when `BootOrder` came back, or when
+u-boot's faked one did; with neither it was the uninitialised local it
+was declared as, and `find_currdev()` takes it as an argument.  The
+line that sets it also indexes `boot_order[(sz / sizeof(...)) - 1]`,
+which is `boot_order[-1]` for a variable that comes back `EFI_SUCCESS`
+with length 0.
+
+`parse_uefi_con_out()` sets `sz = sizeof(buf)` once and then makes up
+to three `efi_global_getenv()` calls with it.  `sz` is in-out — the
+callee sets it to what it wrote, or to what it would have needed — so
+the second and third calls were handed whatever the first left, which
+is neither `sizeof(buf)` nor a bound on what `buf` can hold.
+
+`efi_find_framebuffer()` copies `efifb` into `gfx_state` after a
+`switch` whose two arms both report failure through `rv`, and `rv` was
+not tested.  On failure `efifb` has not been filled.
+
+The other 24 are the next pass.

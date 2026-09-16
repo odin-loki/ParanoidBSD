@@ -884,6 +884,17 @@ check_acpi_spcr(void)
 
 	/* I/O vs Memory mapped vs PCI device */
 	io = -1;
+	/*
+	 * mm, rs and rw are set only in the memory-mapped arm below, and
+	 * the third asprintf() at the end formats all three. That arm is
+	 * reached when pv and pd are BOTH 0xffff; the second asprintf()
+	 * is chosen when they are BOTH not. An SPCR that names one and
+	 * not the other satisfies neither, so the third one used to
+	 * print this frame's stack into hw.uart.console - which is where
+	 * the kernel then looks for the UART.
+	 */
+	mm = 0;
+	rs = rw = 0;
 	pv = spcr->PciVendorId;
 	pd = spcr->PciDeviceId;
 	if (pv == 0xffff && pd == 0xffff) {
@@ -929,9 +940,13 @@ check_acpi_spcr(void)
 	} else if (pv != 0xffff && pd != 0xffff) {
 		asprintf(&val, "db:%d,dt:%s,pv:%#x,pd:%#x,pa:%s,br:%d,xo=%d",
 		    db, dt, pv, pd, pa, br, xo);
-	} else {
+	} else if (mm != 0) {
 		asprintf(&val, "db:%d,dt:%s,mm:%#jx,rs:%d,rw:%d,pa:%s,br:%d,xo=%d",
 		    db, dt, mm, rs, rw, pa, br, xo);
+	} else {
+		printf("SPCR: no I/O port, no memory mapping and only half a "
+		    "PCI id\n");
+		return (0);
 	}
 	env_setenv("hw.uart.console", EV_VOLATILE, val, NULL, NULL);
 	free(val);
@@ -966,12 +981,24 @@ parse_uefi_con_out(void)
 	 * is present, we return RB_SERIAL and will use it for the kernel.
 	 */
 	how = check_acpi_spcr();
+	/*
+	 * sz is in-out: the callee sets it to what it wrote, or to what
+	 * it would have needed. Setting it once and making three calls
+	 * hands the second and third whatever the first left, which is
+	 * neither sizeof(buf) nor a bound on what buf can hold.
+	 */
 	sz = sizeof(buf);
 	rv = efi_global_getenv("ConOut", buf, &sz);
-	if (rv != EFI_SUCCESS)
+	if (rv != EFI_SUCCESS) {
+		sz = sizeof(buf);
 		rv = efi_global_getenv("ConOutDev", buf, &sz);
-	if (rv != EFI_SUCCESS)
+	}
+	if (rv != EFI_SUCCESS) {
+		sz = sizeof(buf);
 		rv = efi_global_getenv("ConIn", buf, &sz);
+	}
+	if (rv == EFI_SUCCESS && sz > sizeof(buf))
+		rv = EFI_BUFFER_TOO_SMALL;
 	if (rv != EFI_SUCCESS) {
 		/*
 		 * If we don't have any Con* variable use both. If we have GOP
@@ -1205,7 +1232,13 @@ EFI_STATUS
 main(int argc, CHAR16 *argv[])
 {
 	int howto, i, uhowto;
-	bool has_kbd, is_last;
+	/*
+	 * is_last is set only when BootOrder came back, or when u-boot's
+	 * faked one did. With neither - no BootOrder variable and no boot
+	 * manager - it stayed the uninitialised local it was declared as,
+	 * and find_currdev() below takes it as an argument.
+	 */
+	bool has_kbd, is_last = false;
 	char *s;
 	const char *env_console;
 	EFI_DEVICE_PATH *imgpath;
@@ -1411,7 +1444,10 @@ main(int argc, CHAR16 *argv[])
 				printf(" %04x%s", boot_order[i],
 				    boot_order[i] == boot_current ? "[*]" : "");
 			printf("\n");
-			is_last = boot_order[(sz / sizeof(boot_order[0])) - 1] == boot_current;
+			/* sz == 0 would index boot_order[-1]. */
+			if (sz >= sizeof(boot_order[0]))
+				is_last = boot_order[(sz /
+				    sizeof(boot_order[0])) - 1] == boot_current;
 			bosz = sz;
 		} else if (uefi_boot_mgr) {
 			/*

@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,653 | 2,433 |
+| 7 | `stand` | 484 | 135,697 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,123** | **114,208** |
+| | **total** | **41,143** | **21,304,167** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37729,7 +37729,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.15.5.3 `arg_skipsep()` · `TODO-FN`
   - [ ] 7.15.5.4 `arg_skipword()` · `TODO-FN`
   - [ ] 7.15.5.5 `efi_main()` · `TODO-FN`
-- [ ] **7.15.6** `framebuffer.c` · 1,016L gen:3 · `TODO-PORT` · 20 fn
+- [ ] **7.15.6** `framebuffer.c` · 1,024L gen:3 · `TODO-PORT` · 20 fn
   - [ ] 7.15.6.1 `efifb_color_depth()` · `TODO-FN`
   - [ ] 7.15.6.2 `efifb_mask_from_pixfmt()` · `TODO-FN`
   - [ ] 7.15.6.3 `efifb_from_gop()` · `TODO-FN`
@@ -37752,7 +37752,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.15.6.20 `command_uga()` · `TODO-FN`
 - [ ] **7.15.7** `framebuffer.h` · 38L · `TODO-HDR`
 - [ ] **7.15.8** `loader_efi.h` · 71L · `TODO-HDR`
-- [ ] **7.15.9** `main.c` · 2,029L gen:11 · `TODO-PORT` · 40 fn
+- [ ] **7.15.9** `main.c` · 2,065L gen:11 · `TODO-PORT` · 40 fn
   - [ ] 7.15.9.1 `has_keyboard()` · `TODO-FN`
   - [ ] 7.15.9.2 `set_currdev_devdesc()` · `TODO-FN`
   - [ ] 7.15.9.3 `set_currdev_devsw()` · `TODO-FN`

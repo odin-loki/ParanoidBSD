@@ -675,6 +675,14 @@ efi_find_framebuffer(teken_gfx_t *gfx_state)
 		return (1);
 	}
 
+	/*
+	 * efifb_from_gop() and efifb_from_uga() both report failure, and
+	 * on failure they have not filled efifb - which was copied out
+	 * regardless.
+	 */
+	if (rv != 0)
+		return (1);
+
 	gfx_state->tg_fb.fb_addr = efifb.fb_addr;
 	gfx_state->tg_fb.fb_size = efifb.fb_size;
 	gfx_state->tg_fb.fb_height = efifb.fb_height;

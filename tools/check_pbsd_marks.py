@@ -5821,12 +5821,22 @@ FIXES = {
         "for the block-device handles",
     ),
 
-    "hbsd/src/stand/efi/loader/framebuffer.c": (
-        "if (hlist == NULL)\n\t\t\treturn (1);",
-        "\t} else {\n\t\tnhandles = hsize / sizeof(*hlist);",
-        "efi_find_framebuffer: the same shape again, for the graphics "
-        "output handles",
-    ),
+    "hbsd/src/stand/efi/loader/framebuffer.c": [
+        (
+            "if (hlist == NULL)\n\t\t\treturn (1);",
+            "\t} else {\n\t\tnhandles = hsize / sizeof(*hlist);",
+            "efi_find_framebuffer: the same shape again, for the "
+            "graphics output handles",
+        ),
+        (
+            "if (rv != 0)\n\t\treturn (1);\n\n\tgfx_state->tg_fb.fb_addr",
+            "\tdefault:\n\t\treturn (1);\n\t}\n\n\tgfx_state->tg_fb.fb_addr",
+            "efi_find_framebuffer: efifb_from_gop() and "
+            "efifb_from_uga() both report failure, and on failure they "
+            "have not filled efifb - which was copied into gfx_state "
+            "regardless",
+        ),
+    ],
 
     "hbsd/src/stand/efi/loader/copy.c": (
         "if (map == NULL || dsz == 0)\n\t\tgoto out;",
@@ -5853,13 +5863,48 @@ FIXES = {
         "four other copies did not",
     ),
 
-    "hbsd/src/stand/efi/loader/main.c": (
-        "env_console = getenv(\"console\");\n\tif (env_console != NULL "
-        "&& strcmp(env_console, \"efi\") == 0) {",
-        "if (strcmp(getenv(\"console\"), \"efi\") == 0) {",
-        "the same unchecked getenv(\"console\"), in the EFI loader's "
-        "console reconciliation",
-    ),
+    "hbsd/src/stand/efi/loader/main.c": [
+        (
+            "env_console = getenv(\"console\");\n\tif (env_console != "
+            "NULL && strcmp(env_console, \"efi\") == 0) {",
+            "if (strcmp(getenv(\"console\"), \"efi\") == 0) {",
+            "the same unchecked getenv(\"console\"), in the EFI "
+            "loader's console reconciliation",
+        ),
+        (
+            "bool has_kbd, is_last = false;",
+            "\tbool has_kbd, is_last;\n",
+            "is_last is set only when BootOrder came back or u-boot's "
+            "faked one did, and find_currdev() takes it as an argument",
+        ),
+        (
+            "if (sz >= sizeof(boot_order[0]))",
+            "\t\t\tis_last = boot_order[(sz / sizeof(boot_order[0])) "
+            "- 1] == boot_current;",
+            "a BootOrder that comes back EFI_SUCCESS with length 0 "
+            "indexes boot_order[-1]",
+        ),
+        (
+            "\t\tsz = sizeof(buf);\n\t\trv = efi_global_getenv"
+            "(\"ConOutDev\", buf, &sz);",
+            "rv = efi_global_getenv(\"ConOut\", buf, &sz);\n\tif (rv "
+            "!= EFI_SUCCESS)\n\t\trv = efi_global_getenv"
+            "(\"ConOutDev\", buf, &sz);",
+            "parse_uefi_con_out: sz is in-out, and setting it once for "
+            "three calls hands the second and third whatever the first "
+            "left - neither sizeof(buf) nor a bound on it",
+        ),
+        (
+            "mm = 0;\n\trs = rw = 0;",
+            "\t/* I/O vs Memory mapped vs PCI device */\n\tio = -1;"
+            "\n\tpv = spcr->PciVendorId;",
+            "check_acpi_spcr: mm, rs and rw are set only in the "
+            "memory-mapped arm, which needs pv and pd BOTH 0xffff, "
+            "while the PCI asprintf() needs them BOTH not - an SPCR "
+            "naming one and not the other satisfied neither and "
+            "printed this frame's stack into hw.uart.console",
+        ),
+    ],
 
     "hbsd/src/stand/i386/libi386/bootinfo.c": (
         "string = next = (string != NULL) ? strdup(string) : NULL;",
