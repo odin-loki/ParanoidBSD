@@ -768,7 +768,7 @@ dt_print_prepare(dtrace_hdl_t *dtp, const char *typename, caddr_t addr,
 	if (dmp->dm_pid != 0) {
 		libid = atoi(s + 1);
 		s = strchr(s + 1, '`');
-		if (s == NULL || libid > dmp->dm_nctflibs)
+		if (s == NULL || libid >= dmp->dm_nctflibs)
 			return (CTF_ERR);
 		ctfp = dmp->dm_libctfp[libid];
 	} else {
@@ -832,8 +832,10 @@ dtrace_format_print(dtrace_hdl_t *dtp, FILE *fp, const char *typename,
 	if (id == CTF_ERR)
 		return (0);
 
-	if (ctf_type_name(pa.pa_ctfp, id, toplevel, sizeof(toplevel)) < 0)
+	if (ctf_type_name(pa.pa_ctfp, id, toplevel, sizeof(toplevel)) < 0) {
+		dt_free(dtp, (void *)pa.pa_object);
 		return (0);
+	}
 
 	xo_open_list("type");
 	(void) ctf_type_visit(pa.pa_ctfp, id, dt_format_member, &pa);

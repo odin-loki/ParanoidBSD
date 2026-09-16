@@ -5767,6 +5767,95 @@ FIXES = {
         "already knows how to report a malformed pragma",
     ),
 
+    "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/dtrace.c": [
+        (
+            "static void __attribute__((noreturn))\nfatal(const char *fmt, "
+            "...)",
+            "static void\nfatal(const char *fmt, ...)",
+            "fatal() ends in exit(E_ERROR) and never returns, but it is "
+            "VARIADIC, and the analyser does not inline a variadic "
+            "function - so it cannot see the exit() and treats every "
+            "`if (x == NULL) fatal(...)' as a path that continues with x "
+            "NULL. Three of dtrace.c's five findings were that",
+        ),
+        (
+            "static void __attribute__((noreturn))\ndfatal(const char *fmt, "
+            "...)",
+            "static void\ndfatal(const char *fmt, ...)",
+            "the same, for the half of dtrace(1)'s error paths that go "
+            "through libdtrace's errno rather than the C library's",
+        ),
+        (
+            "int err, i, c, new_argc, libxo_specified = 0;",
+            "int err, i, c, new_argc, libxo_specified;",
+            "main() sets libxo_specified only inside `if (new_argc != "
+            "argc)' at :1354, and xo_parse_args() returns argc unchanged "
+            "when the command line carries no libxo option - which is "
+            "every ordinary run of dtrace(1). :1555 then branches on it "
+            "to decide whether to call dtrace_oformat_configure(), so "
+            "whether dtrace(1) switches its whole output format is read "
+            "off an uninitialised stack slot",
+        ),
+        (
+            "dcp != NULL ? dcp->dc_name : \"the anonymous enabling\"",
+            "dfatal(\"failed to create DOF image for '%s'\", dcp->dc_name);",
+            "anon_prog()'s dof == NULL arm reports the failure by "
+            "dereferencing dcp, and main() calls it as anon_prog(NULL, "
+            "dtrace_geterr_dof(g_dtp), i++) at :1861 and with "
+            "dtrace_getopt_dof() at :1862. Both getters return NULL - "
+            "dt_dof.c:975 whenever dt_errprog is unset, dt_dof.c:933 on "
+            "allocation failure, which dt_work.c:204 already tests for - "
+            "so `dtrace -A' segfaults on exactly the path written to "
+            "print why it could not build the DOF",
+        ),
+    ],
+
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_aggregate.c": (
+        "free(percpu);\n\t\t\t\t\tfree(aggdata->dtada_data);",
+        "free(percpu[j]);\n\n\t\t\t\t\tfree(aggdata->dtada_data);",
+        "dt_aggregate_snap_one: the per-CPU cleanup frees every element "
+        "of percpu[] and then the aggregation data and the hash entry, "
+        "but never the array those elements lived in. malloc() failing "
+        "for one CPU leaks maxcpu pointers' worth on the way out",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_pid.c": (
+        "bzero(&pp, sizeof (pp));",
+        "int ret = 0;\n\n\tpp.dpp_dtp = dtp;",
+        "dt_pid_create_pid_probes fills four of dt_pid_probe_t's "
+        "fifteen fields and passes &pp to callbacks that read three "
+        "more before anything writes them. dpp_nmatches is never "
+        "assigned anywhere -- its only write is the `+=' in "
+        "dt_pid_per_sym -- and dt_pid_per_mod reads it at :383 to "
+        "decide whether the PR_SYMTAB pass matched, i.e. whether to "
+        "fall back to PR_DYNSYM. dpp_last_taken is read at :244 to "
+        "decide whether a symbol repeats the last one taken, and "
+        "dpp_lmid is passed to dt_pid_objname at :154 on the "
+        "non-globbed path, which never reaches its assignment. A "
+        "wildcard function on any pid provider reaches the first",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_print.c": [
+        (
+            "if (s == NULL || libid >= dmp->dm_nctflibs)",
+            "if (s == NULL || libid > dmp->dm_nctflibs)",
+            "dt_print_prepare bounds the `module`lib`id' library index "
+            "with > against a count, and dm_libctfp is calloc'd with "
+            "exactly dm_nctflibs entries. libid == dm_nctflibs reads "
+            "one ctf_file_t * past the end and hands whatever is there "
+            "to ctf_type_kind(). The type name comes off the wire in "
+            "the USDT case, where the traced process supplies the DOF",
+        ),
+        (
+            "dt_free(dtp, (void *)pa.pa_object);\n\t\treturn (0);\n\t}",
+            "sizeof(toplevel)) < 0)\n\t\treturn (0);",
+            "dtrace_format_print's ctf_type_name failure arm returns "
+            "without the dt_free(pa.pa_object) that both its other "
+            "exits do. pa_object is strdup'd by dt_print_prepare, so "
+            "every type whose name does not fit 1024 bytes leaks it",
+        ),
+    ],
+
     "hbsd/src/libexec/tftpd/tftp-options.c": (
         "if (isupper((unsigned char)*c))\n"
         "\t\t\t\t*c = tolower((unsigned char)*c);",

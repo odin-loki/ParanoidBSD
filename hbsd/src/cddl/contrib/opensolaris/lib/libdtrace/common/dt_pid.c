@@ -490,6 +490,7 @@ dt_pid_create_pid_probes(dtrace_probedesc_t *pdp, dtrace_hdl_t *dtp,
 	dt_pid_probe_t pp;
 	int ret = 0;
 
+	bzero(&pp, sizeof (pp));
 	pp.dpp_dtp = dtp;
 	pp.dpp_dpr = dpr;
 	pp.dpp_pr = dpr->dpr_proc;

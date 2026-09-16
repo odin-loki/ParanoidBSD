@@ -201,7 +201,7 @@ verror(const char *fmt, va_list ap)
 }
 
 /*PRINTFLIKE1*/
-static void
+static void __attribute__((noreturn))
 fatal(const char *fmt, ...)
 {
 	va_list ap;
@@ -221,7 +221,7 @@ fatal(const char *fmt, ...)
 }
 
 /*PRINTFLIKE1*/
-static void
+static void __attribute__((noreturn))
 dfatal(const char *fmt, ...)
 {
 #if !defined(illumos) && defined(NEED_ERRLOC)
@@ -684,8 +684,10 @@ anon_prog(const dtrace_cmd_t *dcp, dof_hdr_t *dof, int n)
 {
 	const uchar_t *p, *q;
 
-	if (dof == NULL)
-		dfatal("failed to create DOF image for '%s'", dcp->dc_name);
+	if (dof == NULL) {
+		dfatal("failed to create DOF image for '%s'",
+		    dcp != NULL ? dcp->dc_name : "the anonymous enabling");
+	}
 
 	p = (uchar_t *)dof;
 	q = p + dof->dofh_filesz;
@@ -1323,7 +1325,7 @@ main(int argc, char *argv[])
 
 	g_ofp = stdout;
 	int done = 0, mode = 0;
-	int err, i, c, new_argc, libxo_specified;
+	int err, i, c, new_argc, libxo_specified = 0;
 	int print_upon_exit = 0;
 	char *p, **v;
 	struct ps_prochandle *P;

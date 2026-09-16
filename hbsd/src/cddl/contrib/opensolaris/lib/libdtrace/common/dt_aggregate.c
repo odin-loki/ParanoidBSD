@@ -653,6 +653,7 @@ hashnext:
 					while (--j >= 0)
 						free(percpu[j]);
 
+					free(percpu);
 					free(aggdata->dtada_data);
 					free(h);
 					return (dt_set_errno(dtp, EDT_NOMEM));
