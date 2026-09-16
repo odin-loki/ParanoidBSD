@@ -32146,3 +32146,313 @@ analyser is reporting the `NDEBUG` build. Recorded.
 The other seventeen are **not read**. Saying so is the point: an
 unread finding counted as clean is the thing this document exists to
 prevent.
+
+---
+
+## dtrace(1) had never compiled, and the reason was in the instrument
+
+`cddl/contrib/opensolaris/cmd/dtrace/dtrace.c` is dtrace(1). Every sweep
+that has ever run over this tree reported it as contributing no findings,
+which is exactly what a clean file reports. It was an ERROR:
+
+    trace.c:1470:14: error: call to undeclared function 'open64'
+
+`cddl/compat/opensolaris/include/fcntl.h` is an `#include_next` wrapper
+whose entire content is
+
+	#define open64(...)	open(__VA_ARGS__)
+	#define openat64(...)	openat(__VA_ARGS__)
+
+and it was on the include path, at flag 15. The shim standing in for the
+INSTALLED header tree — `machine/`, `x86/`, the LHDRS out of `sys/sys`,
+`float.h`, `math.h` — was at flag 6, because it was passed as a plain
+`-I`. The real build reaches those through `${WORLDTMP}/usr/include`,
+which every `-I` on the command line is searched *before*. So the
+wrapper was shadowed by the installed copy of `<fcntl.h>` and never
+opened.
+
+It is `-isystem` now, which is where the build puts it and what makes
+`#include_next` resolve the way the wrapper was written to expect.
+
+The ordering is global, so it was measured before it was taken. Over
+4,894 translation units in `sys/kern`, `sys/netinet`, `sys/dev/usb`,
+`lib`, `bin`, `sbin`, `usr.bin`, `usr.sbin`, `stand`, `secure`,
+`kerberos5` and `share`: **4,727 OK and 167 ERROR both before and
+after, and not one file changed status in either direction.** The `-I`
+ordering was doing nothing anywhere the tree does not wrap an installed
+header, and cddl is the only place in this tree that does.
+
+### The five findings dtrace(1) had been hiding
+
+Three of the five were one missing attribute. `fatal()` and `dfatal()`
+both end in `exit(E_ERROR)`, and both are **variadic** — and the
+analyser does not inline a variadic function, so it cannot see the
+`exit()` and treats every `if (x == NULL) fatal(...)` as a path that
+continues with `x` NULL. Declaring them `noreturn` removed all three.
+Same shape as `dnerror`/`xyerror`/`yyerror` in libdtrace, one section
+up, and the same lesson: the attribute is not decoration, it is the
+only way a fact about control flow crosses into the analyser.
+
+The two underneath are defects.
+
+**`main()` decides its output format on an uninitialised stack slot.**
+
+	int err, i, c, new_argc, libxo_specified;
+	...
+	new_argc = xo_parse_args(argc, argv);
+	if (new_argc < 0)
+		return (usage(stderr));
+	if (new_argc != argc)
+		libxo_specified = 1;
+	...
+	if (libxo_specified)
+		dtrace_oformat_configure(g_dtp);
+
+`xo_parse_args()` returns `argc` unchanged when the command line carries
+no libxo option, which is every ordinary run of dtrace(1). The
+assignment does not happen, and `:1555` branches on whatever the frame
+held. Whether the tracer switches its entire output format was
+undefined. `= 0` at the declaration.
+
+**`dtrace -A` segfaults on the path written to explain the failure.**
+
+	static void
+	anon_prog(const dtrace_cmd_t *dcp, dof_hdr_t *dof, int n)
+	{
+		if (dof == NULL)
+			dfatal("failed to create DOF image for '%s'",
+			    dcp->dc_name);
+
+and `main()` calls it as `anon_prog(NULL, dtrace_geterr_dof(g_dtp), i++)`
+at :1861 and with `dtrace_getopt_dof()` at :1862. Both getters return
+NULL — `dt_dof.c:975` whenever `dt_errprog` is unset, `dt_dof.c:933` on
+allocation failure, which `dt_work.c:204` already tests for. The
+message now tolerates a NULL `dcp`.
+
+Five findings before, none after.
+
+### Four more in libdtrace, three of them one un-zeroed struct
+
+`dt_pid_create_pid_probes` fills four of `dt_pid_probe_t`'s fifteen
+fields and hands `&pp` to callbacks that read three more before anything
+writes them.
+
+- `dpp_nmatches` is never assigned **anywhere** — its only write is the
+  `+=` in `dt_pid_per_sym` — and `dt_pid_per_mod` reads it at `:383` to
+  decide whether the `PR_SYMTAB` pass matched, i.e. whether to fall back
+  to `PR_DYNSYM`. A wildcard function on any pid provider reaches it.
+  Behaviour is correct in practice only because `&pp` escapes into
+  `Psymbol_iter_by_addr`, so the compiler must reload the same slot; a
+  compiler free to materialise the indeterminate value differently at
+  `:383` and `:389` makes libdtrace silently lose probes.
+- `dpp_last_taken` is read at `:244` to decide whether a symbol repeats
+  the last one taken.
+- `dpp_lmid` is passed to `dt_pid_objname` at `:154` on the non-globbed
+  path, which never reaches its assignment at `:415`.
+
+One `bzero` closes all three.
+
+`dt_aggregate_snap_one`'s per-CPU cleanup frees every element of
+`percpu[]` and then the aggregation data and the hash entry, but never
+the array those elements lived in — `malloc()` failing for one CPU leaks
+`maxcpu` pointers' worth on the way out.
+
+`dt_print_prepare` bounds the `module`lib`id` library index with `>`
+against a count, and `dm_libctfp` is `calloc`'d with exactly
+`dm_nctflibs` entries, so `libid == dm_nctflibs` reads one
+`ctf_file_t *` past the end and hands whatever is there to
+`ctf_type_kind()`. The type name comes off the wire in the USDT case,
+where the traced process supplies the DOF.
+
+`dtrace_format_print`'s `ctf_type_name` failure arm returns without the
+`dt_free(pa.pa_object)` that both its other exits do.
+
+### The twenty-four in libdtrace that are not defects
+
+Worth recording because the same shapes will come back. Eight are the
+`dt_set_errno()` blind spot: it is `return (-1)` unconditionally in
+`dt_error.c`, a different translation unit, so the analyser must allow
+it to return 0 and invents a success path through a half-filled struct.
+Four are prototype arity the parser already enforces —
+`dt_idcook_sign()` `xyerror()`s on `argc < dis_varargs` before codegen
+runs, so `printa()` with no arguments does not reach `dt_cc.c:506`.
+Three are `assert()`-guarded and vanish under `NDEBUG`. The rest are
+cross-TU invariants the analyser cannot see through: `ctf_getspecific`,
+`dt_module_hasctf`, `dtrace_lookup_by_type`.
+
+---
+
+## crypto/openssh, which the exclusion had been covering
+
+`crypto/` carried the same sentence cddl did — "third-party source PBSD
+does not maintain" — and `crypto/openssh` is the ssh client and the sshd
+this system ships.
+
+Getting to it took a second instrument fix. `_component_dir()` answers
+"which directory would bmake be run in to build this source", and it
+checked the source's top-level directory against a tuple that did not
+list `contrib` or `crypto`. With it `None`, `ask_cflags()` is never
+called and those files get **no CFLAGS from the build at all** — about
+seven `-I` against the twenty the build passes. Neither tree is reached
+differently from the rest of userland: a Makefile elsewhere names the
+source through a `.PATH`, and `userland_names.builders()` already
+resolves exactly that for 8,035 contrib sources and 2,194 crypto ones.
+
+    crypto              372 / 3,890   ->   1,608 / 3,890
+      crypto/openssl    158 / 1,663   ->   1,252 / 1,663
+      crypto/libecc       0 /   109   ->      82 /   109
+      crypto/openssh    163 /   297   ->     180 /   297
+
+...and nothing outside those two trees moves: the same 4,894-unit set
+comes back 4,727 / 167 either way.
+
+### ssh(1) crashes while printing the host-key-changed warning
+
+	if (ip_status != HOST_NEW)
+		error("Offending key for IP in %s:%lu",
+		    ip_found->file, ip_found->line);
+
+`hostfile.c:399-403` sets `*found = NULL` for `HOST_REVOKED`, and
+`HOST_REVOKED` is not `HOST_NEW`. Reaching it takes `CheckHostIP` on —
+`readconf.c:2839` defaults it off — a `known_hosts` carrying a
+`@revoked` line that matches the server's IP, and a changed host key for
+the hostname. The consequence is what makes it worth fixing at that
+likelihood: ssh(1) dies in the middle of telling the user their host key
+changed, which is the one message that has to survive. The same function
+already guards the same pointer this way at `:1088` and `:1123`.
+
+The analyser did not report this line. It reported the three where
+`host_found` IS proved non-null. This was found by reading why those
+three were false positives.
+
+### Every pre-authentication audit event goes through the wrong BSM mask
+
+`bsm_audit_record` sets `uid_t uid = -1` as the sentinel for an event
+with no authenticated user, and `selected()` tests for it with
+
+	if (uid < 0) {
+		/* get flags for non-attributable (to a real user) events */
+
+on a `uid_t`, which is unsigned. The test is always false. The
+non-attributable branch — `getacna()`, the system's `naflags` — is dead
+code, and every event with no authenticated user is preselected against
+`au_user_mask(username)`, the mask of a user who by construction is not
+there. That is the wrong policy for exactly the events an auditor cares
+about: a failed login for a user that does not exist, and an abandoned
+connection.
+
+Not a dead file, either. `config.h:1957` has `USE_BSM_AUDIT` undefined,
+so grepping the config says this file is out — but
+`secure/libexec/sshd-auth/Makefile:30` and sshd-session's `:28` both put
+`-DUSE_BSM_AUDIT=1` on the command line. Anyone excusing this file from
+`config.h` alone is excusing shipped code.
+
+Three lines below a `the_authctxt != NULL` test, the same function
+passes `the_authctxt->user` unguarded. No event reaches it with NULL
+today — `SSH_CONNECTION_ABANDON`, the one that runs before
+`sshd-session.c:1294` assigns the global, lands on the switch's
+`default:` arm — but it is one new audit event away from a
+pre-authentication crash in sshd.
+
+### xmalloc and friends never return NULL, and now say so
+
+`xmalloc.h`'s header comment has said it since 1995 — "never return
+failure (they call fatal if they encounter an error)" — and it is true
+of all five. It was also invisible: a caller sees the declaration, not
+the comment, so NULL stayed in range and every
+`p = xmalloc(n); p->field = ...` was a null dereference to the analyser.
+`__returns_nonnull__` says it in the form the compiler reads. Measured:
+16 findings to 15.
+
+Only one, because the two that look like the same class are not.
+`sshd-auth.c:664` and `sshd-session.c:1064` dereference `pmonitor` and
+`privsep_pw`, which are **file-scope globals** initialised to NULL
+(`sshd-auth.c:144`, `sshd-session.c:179`), not locals. The allocation is
+visible; what is not is that `set_log_handler()`, `ssh_packet_set_*()`
+and `freezero()` — all in other translation units — cannot write the
+global back to NULL. The checker invalidates the binding across each of
+them, which is why the report lands after the last one rather than at
+the assignment. No attribute on the allocator reaches that.
+
+### The fourteen that remain, and why each survives
+
+Not suppressed. `TAILQ_REMOVE`'s indirect store through `tqe_prev`
+(`openbsd-compat/sys-queue.h:602`) leaves a drain loop resolving a freed
+element on its next iteration — four findings, in `packet.c`,
+`ssh_api.c` twice and `sshconnect2.c`. An out-parameter whose
+non-nullness is correlated with the return value, which no prototype can
+express — three, all `hostfile.c`'s `check_key_in_hostkeys`.
+`freezero()` not modelled as a deallocator — one. And correlated-value
+reasoning the checker lacks, over parallel array fields, a repeated
+`strcmp` on one symbolic buffer, a widened loop, and a static it
+declined to inline — six.
+
+`openbsd-compat/glob.c` is shipped code despite appearances:
+`config.h:176` undefines `GLOB_HAS_GL_STATV`, which FreeBSD's `glob(3)`
+does not provide, so the guard at `glob.c:78-81` is true and OpenSSH's
+own glob replaces the system one in ssh and sftp. Two of the fourteen
+are in it.
+
+Checked separately, because it is what hid four defects in dtrace(1):
+`crypto/openssh` has **no** variadic function that exits without being
+declared noreturn. `fatal()` is a macro for `sshfatal()`, declared
+noreturn at `log.h:78-80`, and `noreturn_check.py --guards` over the 297
+files returns nothing.
+
+---
+
+## `crypt(3)`'s DES, and a static whose one caller constrains it
+
+`secure/` went into the same shard. Its five translation units all
+compile and it reported one finding:
+
+	static int
+	des_cipher(const char *in, char *out, u_long salt, int count)
+	{
+		...
+		retval = do_des(rawl, rawr, &l_out, &r_out, count);
+		trans.c = out;
+		*trans.ui32++ = htonl(l_out);
+
+`do_des` returns 1 at `crypt-des.c:456` when `count == 0` **without
+writing `*l_out` or `*r_out`**, and `des_cipher` writes both to `out`
+before its caller ever sees `retval`. Eight bytes of uninitialised stack
+into the caller's buffer.
+
+Not a defect, and the reason is worth writing down rather than asserting.
+`des_cipher` is `static` and has exactly **one** call site — `crypt_des`
+at `:627` — which passes `count = 1`. The analyser reports it because a
+static is also analysed as a top-level entry with unconstrained
+parameters. This is the deferral this document has tested before.
+
+The contrast three lines apart is the useful part. `crypt_des` calls
+`do_des` again at `:664` with a `count` it derived from the setting
+string — attacker-controlled, and zero for a crafted extended-format
+setting — and there it **does** check:
+
+	if (do_des(0L, 0L, &r0, &r1, (int)count))
+		return (-1);
+
+so `r0` and `r1` are never read on that path. One call site checks the
+return before using the out-parameters and the other does not; today
+only the checking one can be reached with the failing argument.
+Recorded, not fixed: a second `des_cipher` call site with a different
+count would make the write happen before the check.
+
+---
+
+## What the vendor shard found that is still unread
+
+The `cddl` + `secure` shard's first pass reported 66 findings across its
+140 translation units. 35 are read above — five defects fixed, thirty
+rejected with their reasons. **33 are not read**: libctf's
+`ctf_create.c`, `ctf_types.c`, `ctf_labels.c`, `ctf_lookup.c` and
+`ctf_lib.c`; ctfconvert's `ctf.c`, `input.c`, `output.c` and `util.c`;
+ctfdump's `dump.c`; and lockstat's `sym.c`.
+
+That set deserves attention beyond its size. libctf and ctfdump parse a
+**CTF section read out of an ELF object**, so a malformed or truncated
+one is an ordinary input for them the moment anyone runs `ctfdump` or
+`dtrace(1)` over a file they did not produce. Saying they are unread is
+the point: an unread finding counted as clean is the thing this document
+exists to prevent.
