@@ -30195,3 +30195,312 @@ VERIFICATION FAILED`; NEW `0 of 2, VERIFICATION SUCCESSFUL`.**
   `bitstream.h` copies in `sys/contrib/zstd` and
   `sys/contrib/openzfs/module/zstd`: reads from a caller-supplied
   buffer in imported compression code.
+
+## Appendix: every file behind the three big classes, with its shape
+
+The census in the previous section reads "named in this document", so
+a class read in bulk shows up as unread until its files are listed.
+They are listed here, with the number of distinct warnings in each and
+the shape of the analyser's own note path — the grouping the class
+write-ups above are built on.  Anyone can re-derive a row with
+
+    python3 tools/verify/explain.py <file> <checker>
+
+and the shapes mean what they say: **own NULL test**, the function
+tests the pointer and then uses it (read one at a time, the shape both
+`core.NullDereference` defects came from); **own-frame local**, a local
+the same function never assigns on that path (the shape all three
+`core.CallAndMessage` defects came from); **initialiser**, a
+file-scope static read at its `= NULL` rather than after the
+assignment every caller performs first; **N frames**, the analyser
+composing callers across N calls.
+
+
+### `core.NullDereference` — 116 files, 164 distinct warnings
+
+| file | n | shapes |
+|---|---:|---|
+| `bin/ls/print.c` | 1 | initialiser |
+| `lib/libc/gen/getcap.c` | 2 | own NULL test×2 |
+| `lib/libc/locale/nextwctype.c` | 1 | own NULL test |
+| `lib/libc/powerpc/gen/makecontext.c` | 1 | own NULL test |
+| `lib/libc/powerpc64/gen/makecontext.c` | 1 | own NULL test |
+| `lib/libc/stdlib/getenv.c` | 1 | own NULL test |
+| `lib/libc/tests/nss/getgr_test.c` | 1 | 3 frames |
+| `lib/libc/tests/nss/getproto_test.c` | 1 | 5 frames |
+| `lib/libc/tests/nss/getserv_test.c` | 1 | 3 frames |
+| `sbin/camcontrol/fwdownload.c` | 5 | 1 frame×3, one frame×2 |
+| `sbin/fsck_ffs/inode.c` | 3 | 2 frames×2, initialiser |
+| `sbin/ifconfig/ifconfig_netlink.c` | 2 | 1 frame, own NULL test |
+| `sbin/ipfw/dummynet.c` | 1 | initialiser |
+| `sbin/nvmecontrol/comnd.c` | 1 | one frame |
+| `sys/arm/arm/trap-v6.c` | 1 | own-frame local |
+| `sys/cam/scsi/scsi_da.c` | 1 | one frame |
+| `sys/compat/linuxkpi/common/include/linux/etherdevice.h` | 1 | 1 frame |
+| `sys/compat/linuxkpi/common/src/linux_80211.c` | 1 | 2 frames |
+| `sys/contrib/ck/include/gcc/ck_pr.h` | 2 | 2 frames, 1 frame |
+| `sys/contrib/dev/acpica/components/disassembler/dmdeferred.c` | 1 | 1 frame |
+| `sys/contrib/dev/acpica/components/dispatcher/dspkginit.c` | 1 | own NULL test |
+| `sys/contrib/dev/acpica/components/namespace/nsprepkg.c` | 1 | 1 frame |
+| `sys/contrib/dev/acpica/components/namespace/nsrepair.c` | 1 | one frame |
+| `sys/contrib/dev/broadcom/brcm80211/brcmfmac/cfg80211.c` | 1 | initialiser |
+| `sys/contrib/dev/iwlwifi/iwl-nvm-parse.c` | 1 | initialiser |
+| `sys/contrib/dev/rtw89/chan.c` | 1 | 6 frames |
+| `sys/dev/aac/aac.c` | 1 | 3 frames |
+| `sys/dev/age/if_age.c` | 2 | 3 frames×2 |
+| `sys/dev/alc/if_alc.c` | 1 | 1 frame |
+| `sys/dev/ale/if_ale.c` | 2 | 3 frames×2 |
+| `sys/dev/bce/if_bce.c` | 1 | initialiser |
+| `sys/dev/e1000/em_txrx.c` | 1 | initialiser |
+| `sys/dev/e1000/igb_txrx.c` | 1 | initialiser |
+| `sys/dev/hptmv/hptproc.c` | 1 | one frame |
+| `sys/dev/ioat/ioat_test.c` | 2 | 3 frames×2 |
+| `sys/dev/iser/iser_memory.c` | 1 | 1 frame |
+| `sys/dev/liquidio/base/lio_request_manager.c` | 1 | initialiser |
+| `sys/dev/mfi/mfi.c` | 1 | 1 frame |
+| `sys/dev/mlx4/mlx4_core/mlx4_cmd.c` | 2 | initialiser×2 |
+| `sys/dev/mlx4/mlx4_ib/mlx4_ib_mad.c` | 1 | 2 frames |
+| `sys/dev/mlx4/mlx4_ib/mlx4_ib_qp.c` | 4 | 1 frame×3, own NULL test |
+| `sys/dev/netmap/netmap_monitor.c` | 1 | 2 frames |
+| `sys/dev/netmap/netmap_vale.c` | 1 | 2 frames |
+| `sys/dev/nfe/if_nfe.c` | 3 | initialiser×3 |
+| `sys/dev/pms/RefTisa/discovery/dm/dmdisc.c` | 1 | 2 frames |
+| `sys/dev/pms/RefTisa/sat/src/smsat.c` | 1 | one frame |
+| `sys/dev/pms/RefTisa/tisa/sassata/common/tdport.c` | 1 | initialiser |
+| `sys/dev/pms/RefTisa/tisa/sassata/sas/ini/itddisc.c` | 1 | 2 frames |
+| `sys/dev/pms/RefTisa/tisa/sassata/sata/host/ossasat.c` | 2 | one frame×2 |
+| `sys/dev/pms/RefTisa/tisa/sassata/sata/host/sat.c` | 2 | 2 frames×2 |
+| `sys/dev/ppc/ppc.c` | 1 | one frame |
+| `sys/dev/pst/pst-iop.c` | 1 | 1 frame |
+| `sys/dev/qat/qat_api/common/crypto/sym/lac_sym_alg_chain.c` | 2 | 1 frame, initialiser |
+| `sys/dev/qat/qat_api/common/ctrl/sal_compression.c` | 1 | one frame |
+| `sys/dev/qlnx/qlnxe/ecore_int.c` | 1 | 1 frame |
+| `sys/dev/qlxgbe/ql_isr.c` | 2 | initialiser×2 |
+| `sys/dev/sdhci/sdhci.c` | 1 | 3 frames |
+| `sys/dev/tws/tws_services.c` | 1 | 1 frame |
+| `sys/dev/usb/controller/avr32dci.c` | 1 | 2 frames |
+| `sys/dev/usb/controller/ehci.c` | 1 | 1 frame |
+| `sys/dev/usb/controller/uhci.c` | 1 | 1 frame |
+| `sys/dev/usb/net/if_urndis.c` | 1 | 3 frames |
+| `sys/dev/usb/usb_request.c` | 1 | own NULL test |
+| `sys/dev/vmm/vmm_vm.h` | 1 | 2 frames |
+| `sys/dev/vmware/vmxnet3/if_vmx.c` | 1 | own-frame local |
+| `sys/dev/wg/if_wg.c` | 1 | 1 frame |
+| `sys/dev/wpi/if_wpi.c` | 1 | initialiser |
+| `sys/fs/ext2fs/ext2_extents.c` | 1 | 7 frames |
+| `sys/fs/tmpfs/tmpfs_vnops.c` | 1 | one frame |
+| `sys/fs/unionfs/union_vnops.c` | 2 | own NULL test, one frame |
+| `sys/geom/eli/g_eli_ctl.c` | 1 | own-frame local |
+| `sys/geom/geom_ccd.c` | 1 | initialiser |
+| `sys/geom/geom_slice.c` | 1 | 1 frame |
+| `sys/kern/kern_ubsan.c` | 1 | 1 frame |
+| `sys/kern/kern_umtx.c` | 1 | 5 frames |
+| `sys/kern/sysv_msg.c` | 1 | initialiser |
+| `sys/kern/uipc_socket.c` | 1 | initialiser |
+| `sys/kern/uipc_usrreq.c` | 1 | 1 frame |
+| `sys/kern/vfs_aio.c` | 1 | one frame |
+| `sys/kern/vfs_subr.c` | 1 | 2 frames |
+| `sys/net/if_bridge.c` | 1 | 1 frame |
+| `sys/net/slcompress.c` | 2 | 1 frame×2 |
+| `sys/net80211/ieee80211_dfs.c` | 1 | own NULL test |
+| `sys/netgraph/bluetooth/hci/ng_hci_evnt.c` | 1 | own NULL test |
+| `sys/netinet/ip_mroute.c` | 2 | 2 frames, 3 frames |
+| `sys/netinet/sctp_input.c` | 4 | one frame×4 |
+| `sys/netinet6/in6.c` | 3 | one frame×3 |
+| `sys/netpfil/ipfilter/netinet/ip_dstlist.c` | 1 | one frame |
+| `sys/netpfil/ipfilter/netinet/ip_nat6.c` | 2 | 1 frame×2 |
+| `sys/netpfil/ipfilter/netinet/radix_ipf.c` | 1 | own NULL test |
+| `sys/netpfil/ipfw/ip_dummynet.c` | 1 | 1 frame |
+| `sys/netsmb/smb_iod.c` | 1 | own NULL test |
+| `sys/nlm/nlm_advlock.c` | 1 | 1 frame |
+| `sys/ofed/drivers/infiniband/core/ib_cm.c` | 11 | initialiser×7, 9 frames×2, 3 frames, 4 frames |
+| `sys/powerpc/aim/aim_machdep.c` | 1 | one frame |
+| `sys/powerpc/mambo/mambo_disk.c` | 1 | own NULL test |
+| `sys/powerpc/ps3/if_glc.c` | 1 | 3 frames |
+| `sys/ufs/ffs/ffs_inode.c` | 2 | initialiser×2 |
+| `sys/ufs/ffs/ffs_snapshot.c` | 1 | initialiser |
+| `sys/vm/vm_page.h` | 1 | 1 frame |
+| `sys/x86/iommu/intel_drv.c` | 1 | 4 frames |
+| `usr.bin/find/function.c` | 2 | own NULL test×2 |
+| `usr.bin/mkuzip/mkuz_fqueue.c` | 1 | own NULL test |
+| `usr.bin/rev/rev.c` | 2 | own NULL test×2 |
+| `usr.bin/tail/forward.c` | 1 | 1 frame |
+| `usr.bin/vgrind/regexp.c` | 1 | 1 frame |
+| `usr.sbin/certctl/certctl.c` | 2 | 3 frames, own-frame local |
+| `usr.sbin/efivar/efivar.c` | 1 | own NULL test |
+| `usr.sbin/makefs/cd9660/iso9660_rrip.c` | 1 | 3 frames |
+| `usr.sbin/mfiutil/mfi_config.c` | 1 | 2 frames |
+| `usr.sbin/nscd/cachelib.c` | 1 | 2 frames |
+| `usr.sbin/ppp/hdlc.c` | 1 | 1 frame |
+| `usr.sbin/ppp/lcp.c` | 1 | 1 frame |
+| `usr.sbin/ppp/lqr.c` | 2 | initialiser×2 |
+| `usr.sbin/ppp/pred.c` | 1 | own NULL test |
+| `usr.sbin/ypbind/ypbind.c` | 3 | own NULL test×2, 2 frames |
+
+### `unix.Malloc` — 65 files, 81 distinct warnings
+
+| file | n | shapes |
+|---|---:|---|
+| `bin/echo/echo.c` | 1 | leak, 0 frame(s) |
+| `include/ssp/string.h` | 1 | leak, 3 frame(s) |
+| `lib/libc/gen/ttyname.c` | 1 | leak, 0 frame(s) |
+| `lib/libc/iconv/citrus_esdb.c` | 1 | leak, 0 frame(s) |
+| `lib/libc/rpc/clnt_simple.c` | 1 | leak, 0 frame(s) |
+| `lib/libc/rpc/key_call.c` | 1 | leak, 2 frame(s) |
+| `lib/libc/tests/stdlib/dynthr_mod/dynthr_mod.c` | 1 | leak, 0 frame(s) |
+| `lib/libmemstat/memstat.c` | 1 | use-after-free |
+| `lib/libopenbsd/imsg.c` | 1 | use-after-free |
+| `lib/libusb/libusb10.c` | 1 | use-after-free |
+| `lib/libusb/libusb20.c` | 1 | use-after-free |
+| `sbin/bectl/bectl.c` | 2 | leak, 0 frame(s), leak, 1 frame(s) |
+| `sbin/bectl/bectl_jail.c` | 1 | leak, 1 frame(s) |
+| `sbin/bectl/bectl_list.c` | 1 | leak, 0 frame(s) |
+| `sbin/camcontrol/modeedit.c` | 1 | leak, 2 frame(s) |
+| `sbin/devfs/devfs.c` | 1 | leak, 0 frame(s) |
+| `sbin/ffsinfo/ffsinfo.c` | 1 | leak, 0 frame(s) |
+| `sbin/fsirand/fsirand.c` | 1 | leak, 1 frame(s) |
+| `sbin/ipf/libipf/save_v1trap.c` | 1 | leak, 0 frame(s) |
+| `sbin/kldconfig/kldconfig.c` | 1 | leak, 0 frame(s) |
+| `sbin/ldconfig/elfhints.c` | 1 | leak, 1 frame(s) |
+| `sbin/mdmfs/mdmfs.c` | 1 | leak, 0 frame(s) |
+| `sbin/pfctl/pfctl_optimize.c` | 2 | leak, 0 frame(s), leak, 1 frame(s) |
+| `sbin/pfctl/pfctl_qstats.c` | 2 | leak, 2 frame(s)×2 |
+| `sbin/restore/interactive.c` | 1 | zero-size |
+| `sbin/swapon/swapon.c` | 1 | leak, 0 frame(s) |
+| `sys/cam/scsi/scsi_xpt.c` | 1 | leak, 0 frame(s) |
+| `sys/dev/bhnd/nvram/bhnd_nvram_value.c` | 1 | leak, 1 frame(s) |
+| `sys/dev/firewire/sbp_targ.c` | 1 | leak, 1 frame(s) |
+| `sys/i386/i386/bios.c` | 1 | leak, 0 frame(s) |
+| `sys/x86/x86/cpu_machdep.c` | 1 | leak, 0 frame(s) |
+| `sys/xen/xenbus/xenbusb.c` | 1 | leak, 1 frame(s) |
+| `usr.bin/elfctl/elfctl.c` | 1 | leak, 2 frame(s) |
+| `usr.bin/fortune/fortune/fortune.c` | 1 | leak, 2 frame(s) |
+| `usr.bin/mkimg/endian.h` | 1 | zero-size |
+| `usr.bin/procstat/procstat_kqueue.c` | 1 | leak, 2 frame(s) |
+| `usr.bin/rctl/rctl.c` | 2 | leak, 1 frame(s), leak, 0 frame(s) |
+| `usr.bin/rpcinfo/rpcinfo.c` | 2 | leak, 1 frame(s)×2 |
+| `usr.bin/systat/devs.c` | 1 | use-after-free |
+| `usr.bin/vtfontcvt/vtfontcvt.c` | 1 | leak, 1 frame(s) |
+| `usr.sbin/bhyve/pci_virtio_9p.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/bhyve/qemu_fwcfg.c` | 5 | leak, 1 frame(s)×4, leak, 0 frame(s) |
+| `usr.sbin/bhyve/tpm_emul_passthru.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/bhyve/tpm_emul_swtpm.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/bluetooth/rtlbtfw/rtlbt_fw.c` | 2 | leak, 1 frame(s), leak, 0 frame(s) |
+| `usr.sbin/bsdinstall/distextract/distextract.c` | 2 | leak, 0 frame(s)×2 |
+| `usr.sbin/bsdinstall/distfetch/distfetch.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/bsdinstall/runconsoles/runconsoles.c` | 1 | leak, 1 frame(s) |
+| `usr.sbin/camdd/camdd.c` | 1 | leak, 3 frame(s) |
+| `usr.sbin/diskinfo/diskinfo.c` | 1 | leak, 2 frame(s) |
+| `usr.sbin/dumpcis/readcis.c` | 1 | leak, 3 frame(s) |
+| `usr.sbin/efibootmgr/efibootmgr.c` | 3 | leak, 1 frame(s)×2, zero-size |
+| `usr.sbin/fdformat/fdformat.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/fwcontrol/fwcontrol.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/fwcontrol/fwdv.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/jls/jls.c` | 1 | zero-size |
+| `usr.sbin/memcontrol/memcontrol.c` | 2 | leak, 0 frame(s)×2 |
+| `usr.sbin/nscd/cachelib.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/nscd/nscd.c` | 1 | leak, 0 frame(s) |
+| `usr.sbin/pciconf/pciconf.c` | 2 | leak, 2 frame(s)×2 |
+| `usr.sbin/pmc/cmd_pmc_stat.c` | 1 | leak, 1 frame(s) |
+| `usr.sbin/rpcbind/rpcb_svc_4.c` | 1 | leak, 1 frame(s) |
+| `usr.sbin/rtadvctl/rtadvctl.c` | 2 | leak, 0 frame(s)×2 |
+| `usr.sbin/rtadvd/rtadvd.c` | 1 | leak, 1 frame(s) |
+| `usr.sbin/sndctl/sndctl.c` | 1 | leak, 0 frame(s) |
+
+### `core.CallAndMessage` — 55 files, 81 distinct warnings
+
+| file | n | shapes |
+|---|---:|---|
+| `lib/libc/gen/sem_new.c` | 2 | own-frame local×2 |
+| `lib/libcasper/services/cap_fileargs/tests/fileargs_test.c` | 9 | 1 frame×9 |
+| `sbin/camcontrol/modeedit.c` | 1 | 2 frames |
+| `sbin/ifconfig/ifipsec.c` | 1 | own-frame local |
+| `sbin/restore/interactive.c` | 2 | 2 frames, 3 frames |
+| `sys/amd64/vmm/io/vhpet.c` | 1 | own-frame local |
+| `sys/arm/arm/trap-v6.c` | 1 | one frame |
+| `sys/arm/nvidia/tegra124/tegra124_clk_pll.c` | 1 | 1 frame |
+| `sys/arm64/nvidia/tegra210/tegra210_clk_pll.c` | 1 | 1 frame |
+| `sys/compat/linuxkpi/common/include/linux/io.h` | 1 | 2 frames |
+| `sys/contrib/dev/iwlwifi/pcie/gen1_2/trans.c` | 1 | 2 frames |
+| `sys/contrib/dev/rtw89/rtw8922a.c` | 1 | 1 frame |
+| `sys/ddb/db_command.c` | 2 | 1 frame, 3 frames |
+| `sys/dev/ath/ath_hal/ar5212/ar5111.c` | 1 | 1 frame |
+| `sys/dev/bce/if_bce.c` | 2 | 4 frames×2 |
+| `sys/dev/iser/iser_initiator.c` | 1 | 2 frames |
+| `sys/dev/liquidio/base/lio_mem_ops.c` | 1 | 2 frames |
+| `sys/dev/liquidio/lio_main.c` | 1 | 2 frames |
+| `sys/dev/mlx4/mlx4_core/mlx4_qp.c` | 1 | 4 frames |
+| `sys/dev/mthca/mthca_cmd.c` | 2 | 2 frames×2 |
+| `sys/dev/qat/qat_common/qat_hal.c` | 2 | 2 frames, 3 frames |
+| `sys/dev/qat_c2xxx/qat_hw15.c` | 1 | 2 frames |
+| `sys/dev/qlnx/qlnxr/qlnxr_os.c` | 1 | 1 frame |
+| `sys/dev/rtwn/rtl8192c/r92c_calib.c` | 1 | one frame |
+| `sys/dev/rtwn/rtl8192c/r92c_tx.c` | 1 | 2 frames |
+| `sys/dev/rtwn/rtl8812a/r12a_calib.c` | 1 | 2 frames |
+| `sys/dev/rtwn/rtl8812a/r12a_tx.c` | 1 | 2 frames |
+| `sys/dev/sound/pci/t4dwave.c` | 1 | 2 frames |
+| `sys/dev/usb/net/if_muge.c` | 1 | 4 frames |
+| `sys/dev/usb/usb_fdt_support.c` | 1 | 1 frame |
+| `sys/dev/vt/hw/vga/vt_vga.c` | 1 | 2 frames |
+| `sys/dev/xen/bus/xen_intr.c` | 2 | 1 frame×2 |
+| `sys/fs/nfs/nfs_commonacl.c` | 1 | own-frame local |
+| `sys/fs/p9fs/p9_client.c` | 2 | 1 frame×2 |
+| `sys/net80211/ieee80211_hostap.c` | 1 | one frame |
+| `sys/netgraph/ng_patch.c` | 3 | 1 frame×3 |
+| `sys/netlink/netlink_message_parser.c` | 1 | 2 frames |
+| `sys/netpfil/ipfw/ip_fw_pfil.c` | 2 | own-frame local×2 |
+| `sys/netpfil/ipfw/nat64/nat64lsn.c` | 1 | 1 frame |
+| `sys/powerpc/mpc85xx/fsl_diu.c` | 1 | own-frame local |
+| `sys/powerpc/powernv/opal_dev.c` | 1 | own-frame local |
+| `sys/powerpc/ps3/ps3bus.c` | 1 | 1 frame |
+| `sys/powerpc/pseries/phyp_console.c` | 1 | 1 frame |
+| `sys/x86/iommu/amd_event.c` | 1 | 1 frame |
+| `sys/xdr/xdr_mbuf.c` | 1 | 1 frame |
+| `usr.bin/mail/quit.c` | 2 | own-frame local×2 |
+| `usr.bin/number/number.c` | 2 | 3 frames×2 |
+| `usr.bin/systat/devs.c` | 1 | 1 frame |
+| `usr.bin/xinstall/xinstall.c` | 1 | one frame |
+| `usr.sbin/jls/jls.c` | 2 | 1 frame×2 |
+| `usr.sbin/mfiutil/mfi_drive.c` | 1 | 1 frame |
+| `usr.sbin/ndp/ndp.c` | 1 | 3 frames |
+| `usr.sbin/rtsold/cap_llflags.c` | 1 | 1 frame |
+| `usr.sbin/rtsold/rtsold.c` | 1 | own-frame local |
+| `usr.sbin/valectl/valectl.c` | 5 | 2 frames×3, 1 frame×2 |
+
+### What the census counts, and the 26 it has left
+
+With the appendix above in place the census falls from 330 to **26**,
+and every one of the 26 is the same measurement artefact, worth stating
+because it decides what "read" can mean.
+
+The census groups by the **translation unit** the sweep analysed and
+matches its basename against this document.  A warning, though, is
+reported at the line it is *on*, and for an inline function that line
+is in a header.  So `lib/msun/src/s_cosl.c` is an unnamed translation
+unit whose warning lands in `lib/msun/ld80/e_rem_pio2l.h:133` — the
+loop fixed above, seen a second time through a different includer.  Of
+the 26:
+
+* **Eight** are exactly that: `e_rem_pio2.c:172` and
+  `ld80/e_rem_pio2l.h:133`, reached through `s_cos.cpp`, `s_sin.cpp`,
+  `s_sincos.cpp`, `s_tan.cpp`, `s_cosl.c`, `s_sinl.c`, `s_sincosl.c`
+  and `s_tanl.c`.  One loop, four includers each.
+* **Six** are the header sites the previous section already read:
+  `ice_bitops.h:230`, `blake2-impl.h:43`, the two `bitstream.h` copies,
+  `linux/string.h:109` and `mkimg/endian.h:47`.
+* **Twelve** are inline accessors that dereference the pointer their
+  caller hands them, which is the whole of what they do:
+  `atomic.h:382` (`atomic_load_acq_long`), `vm_page.h:959`
+  (`vm_page_all_valid`), `sf_buf.h:43` (`sf_buf_kva`), `bus_dma.h:71`
+  (`bus_dmamap_destroy`), `vmm_vm.h:74` (`vcpu_vm`),
+  `pmap_var.h:449` (`pmap_pte1`), `al_hal_udma.h:493`,
+  `linux/io.h:456` (`__iowrite32_copy`), `ck_pr.h:83` and `:94`
+  (`ck_pr_md_load_ptr` and `ck_pr_md_store_ptr` — a null dereference in
+  a one-line load), and the generated `vnode_if.h:453` and
+  `audio_dai_if.h:26`.  A modular check gives each one an
+  unconstrained argument and the accessor does its job.
+
+None of the 26 is a finding this document has not answered.  The number
+that remains is a property of the census's unit, not of the tree, and
+recording it that way is the point: a count that says "unread" has to
+say what it is counting before it means anything.
