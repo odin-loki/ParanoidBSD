@@ -47,19 +47,37 @@ SYS = SRC / "sys"
 # Top-level directories that are deliberately NOT in a shard, and why.
 # A directory here is a decision on the record; a directory in neither
 # this table nor a shard fails the gate.
+# Five of these said "third-party source PBSD does not maintain", which
+# was one sentence covering five different situations and false for two
+# of them. cddl and secure ship dtrace(1), libdtrace, libctf, the ZFS
+# userland tools and libcrypt's DES and Blowfish - all of it maintained
+# here, and none of it read by any sweep until the `vendor' shard. The
+# reason each of the rest is out is now the reason it is actually out,
+# checked against the Makefile that decides it.
 UNANALYSED = {
     "contrib":    "third-party source PBSD does not maintain",
     "crypto":     "third-party source PBSD does not maintain",
-    "cddl":       "third-party source PBSD does not maintain",
-    "gnu":        "third-party source PBSD does not maintain",
-    "kerberos5":  "third-party source PBSD does not maintain",
-    "krb5":       "third-party source PBSD does not maintain",
-    "secure":     "third-party source PBSD does not maintain",
+    "gnu":        "no C at all - two Makefiles and a usr.bin wrapper",
+    "kerberos5":  "Heimdal, and this tree builds MIT. MITKRB5 is in "
+                  "src.opts.mk's __DEFAULT_YES_OPTIONS and "
+                  "Makefile.inc1:436-442 is `.if ${MK_MITKRB5} != \"no\" / "
+                  "SUBDIR+=krb5 / .else / SUBDIR+=kerberos5', so a default "
+                  "build never enters it. Nor can it be read: "
+                  "src.libnames.mk:952 stops bmake dead in "
+                  "lib/libgssapi_krb5 because _DP_gssapi_krb5 is defined "
+                  "to MIT's dependency list under the same option",
+    "krb5":       "MIT krb5, and every one of its 992 sources is under "
+                  "crypto/krb5 - this directory is Makefiles and .PATH, "
+                  "with no C of its own",
     "sys":        "checked directory-by-directory above, not as a whole",
     "tests":      "not yet - exercises the tree rather than being it",
     "tools":      "build tooling, not shipped code",
     "release":    "build tooling, not shipped code",
-    "share":      "makefiles and data, no C worth checking",
+    "share":      "73 C files, every one an example: share/examples, "
+                  "share/doc/psd and one screenmap generator. "
+                  "share/examples/Makefile installs them with FILESDIR, "
+                  "it does not compile them, so nothing here is in a "
+                  "shipped binary",
     "targets":    "build tooling, not shipped code",
     "etc":        "configuration, not C",
     "include":    "headers only; they are checked through their users",
@@ -87,6 +105,8 @@ UNCHECKED = {
     "sbin":       "analysed since sweep 18; not model-checked yet",
     "usr.bin":    "analysed since sweep 18; not model-checked yet",
     "usr.sbin":   "analysed since sweep 18; not model-checked yet",
+    "cddl":       "analysed by the vendor shard; not model-checked yet",
+    "secure":     "analysed by the vendor shard; not model-checked yet",
 }
 
 # Analyse shards deliberately run WITHOUT --check-errors, and why. A

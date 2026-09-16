@@ -365,6 +365,23 @@ jobs:
           # expected_errors.py with the line of the Makefile that
           # explains each one.
           - { name: stand,  scopes: '--scope stand', check: '--check-errors' }
+          # cddl and secure. Both were excused from every shard as
+          # "third-party source PBSD does not maintain", and that was
+          # wrong about both: cddl is dtrace(1), libdtrace, libctf and
+          # the ZFS userland tools, and secure is libcrypt's DES and
+          # Blowfish. All of it ships, all of it is maintained here,
+          # and until this shard existed not one of its 140 translation
+          # units had ever been read by anything.
+          #
+          # The first reading found four defects in libdtrace alone -
+          # an un-zeroed dt_pid_probe_t whose dpp_nmatches steers the
+          # PR_SYMTAB -> PR_DYNSYM fallback, a leaked percpu[] array, a
+          # leaked pa_object, and a `>' that should be `>=' indexing
+          # dm_libctfp[] - plus the reason dtrace.c had never compiled:
+          # the installed-header shim was a -I rather than an -isystem,
+          # so cddl's own <fcntl.h> wrapper was shadowed and open64()
+          # was undeclared in the one translation unit that IS dtrace.
+          - { name: vendor, scopes: '--scope cddl --scope secure', check: '--check-errors' }
           # bin, sbin, usr.bin and usr.sbin. This shard ran WITHOUT
           # --check-errors while its hole was being filled: 133 of its
           # 1,862 translation units did not compile, in seven named

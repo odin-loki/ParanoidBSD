@@ -242,6 +242,87 @@ check("and does not read commented lines",
                                 "Makefile"),
       "the reader is taking `# SUBDIR+= ipftest' as an assignment")
 
+print("\n== and the NOT_TESTS_SUBDIR files really are not descended into")
+# A fifth shape, forced by the dtrace test corpus. Its sources live
+# under cddl/contrib/opensolaris/cmd/dtrace/test/tst/<group>/<dir>, and
+# the Makefile that compiles them is somewhere else entirely:
+# cddl/usr.sbin/dtrace/tests/<group>/<dir>, which reaches them through
+# dtrace.test.mk:27
+#
+#   TESTSRC= ${TESTBASE}/${TESTGROUP}
+#   .PATH:   ${TESTSRC}
+#
+# So NOT_NAMED is false - bmake in the build directory does name the
+# file - and NOT_SUBDIR cannot be checked where the sources are, since
+# the directory above them holds no Makefile at all and the reader
+# would return the empty set and pass every claim for nothing. The
+# exclusion is real and one line of a Makefile says it:
+#
+#   # We exclude several subdirectories: nfs and sysevent do not
+#   # compile on FreeBSD, ...
+#
+# ...but the word is TESTS_SUBDIRS, which bsd.test.mk turns into SUBDIR
+# and _subdirs() above does not read. Both halves are checked here: the
+# build directory really does list the file, and its parent really does
+# leave the build directory out.
+_TESTSRC = "cddl/contrib/opensolaris/cmd/dtrace/test/tst/"
+_TESTBUILD = "cddl/usr.sbin/dtrace/tests/"
+
+
+def _tests_subdirs(makefile: Path) -> set[str]:
+    """The TESTS_SUBDIRS words a Makefile assigns, comments excluded."""
+    out: set[str] = set()
+    if not makefile.is_file():
+        return out
+    cont = False
+    for line in makefile.read_text().splitlines():
+        if not cont:
+            if line.lstrip().startswith("#"):
+                continue
+            m = re.match(r"\s*TESTS_SUBDIRS\s*\+?=\s*(.*)$", line)
+            if not m:
+                continue
+            rest = m.group(1)
+        else:
+            if line.lstrip().startswith("#"):
+                cont = line.rstrip().endswith("\\")
+                continue
+            rest = line
+        cont = rest.rstrip().endswith("\\")
+        out.update(w for w in rest.rstrip().rstrip("\\").split()
+                   if not w.startswith(".") and not w.startswith("$"))
+    return out
+
+
+_ts = [f for f, why in EXPECTED.items() if why.endswith("NOT_TESTS_SUBDIR")]
+check("some file makes the NOT_TESTS_SUBDIR claim", bool(_ts))
+# The sentinel first: a reader that returns nothing passes every claim.
+_parent_mk = (ROOT / "hbsd" / "src" / _TESTBUILD / "common" / "Makefile")
+check("the TESTS_SUBDIRS reader can say `yes'",
+      "usdt" in _tests_subdirs(_parent_mk),
+      "if this fails every NOT_TESTS_SUBDIR check passes for the wrong "
+      "reason")
+for _f in _ts:
+    check(f"{_f} exists", (ROOT / "hbsd" / "src" / _f).is_file())
+    check(f"{_f} is under the dtrace test corpus", _f.startswith(_TESTSRC),
+          "the claim only means anything for a source dtrace.test.mk "
+          "reaches through its .PATH")
+    _group = Path(_f[len(_TESTSRC):]).parent          # e.g. common/nfs
+    _bd = ROOT / "hbsd" / "src" / _TESTBUILD / _group
+    check(f"{_f}: {_TESTBUILD}{_group}/Makefile exists",
+          (_bd / "Makefile").is_file(),
+          "no build directory means the file is unreachable for a "
+          "different reason than this claim states")
+    check(f"{_f}: that Makefile names it",
+          Path(_f).name in (_bd / "Makefile").read_text(),
+          "if the build directory does not name the file, NOT_NAMED is "
+          "the honest claim and this one is hiding behind a Makefile "
+          "that says nothing about it")
+    check(f"{_f}: no parent TESTS_SUBDIRS reaches it",
+          _bd.name not in _tests_subdirs(_bd.parent / "Makefile"),
+          f"{_bd.parent.name}/Makefile lists {_bd.name}, so the build "
+          f"DOES descend into it and this entry hides a real failure")
+
 print("\n== the DEFAULT_OFF entries name an option that really is off")
 # A third shape, which neither NOT_NAMED nor NOT_SUBDIR can express: the
 # file IS named -- bmake in its directory says so -- and the DIRECTORY
