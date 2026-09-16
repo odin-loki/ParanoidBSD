@@ -71,10 +71,10 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 18 | `include` | 167 | 21,049 | 0 |
 | 19 | `tools` | 641 | 138,549 | 2,675 |
 | 20 | `cddl` | 227 | 82,397 | 0 |
-| 21 | `crypto` | 5,294 | 2,766,721 | 0 |
+| 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,430** | **114,209** |
+| | **total** | **41,143** | **21,304,441** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -145533,7 +145533,7 @@ function; a file with two hundred of them is a project.
 - [ ] **21.204** `crypto/libecc/src/tests` · 17 files, 41,330L · `SKIP-VENDOR`
 - [ ] **21.205** `crypto/libecc/src/utils` · 8 files, 557L · `SKIP-VENDOR`
 - [ ] **21.206** `crypto/libecc/src/wycheproof_tests` · 3 files, 729,063L · `SKIP-VENDOR`
-- [ ] **21.207** `crypto/openssh` · 251 files, 145,163L · `SKIP-VENDOR`
+- [ ] **21.207** `crypto/openssh` · 251 files, 145,174L · `SKIP-VENDOR`
 - [ ] **21.208** `crypto/openssh/contrib` · 3 files, 818L · `SKIP-VENDOR`
 - [ ] **21.209** `crypto/openssh/openbsd-compat` · 116 files, 21,050L · `SKIP-VENDOR`
 - [ ] **21.210** `crypto/openssh/openbsd-compat/regress` · 6 files, 474L · `SKIP-VENDOR`

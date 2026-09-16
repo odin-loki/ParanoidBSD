@@ -5767,6 +5767,21 @@ FIXES = {
         "already knows how to report a malformed pragma",
     ),
 
+    "hbsd/src/crypto/openssh/xmalloc.h": (
+        "void\t*xmalloc(size_t) __attribute__((__returns_nonnull__));",
+        "void\t*xmalloc(size_t);\nvoid\t*xcalloc(size_t, size_t);",
+        "the header's own comment says these \"never return failure "
+        "(they call fatal if they encounter an error)\", and the five "
+        "bodies in xmalloc.c:33-95 agree: every failure each one can "
+        "have ends in fatal(), which log.h:78 declares noreturn, and "
+        "xstrdup returns memcpy()'s first argument, which is xmalloc's. "
+        "A static analyser reading a caller sees the declaration and "
+        "not the comment, so without the attribute NULL is in range and "
+        "every `p = xmalloc(n); p->field = ...' is a null dereference. "
+        "Measured over crypto/openssh: 16 findings to 15, "
+        "match.c:307's strlen(xstrdup(...)) being the one that went",
+    ),
+
     "hbsd/src/crypto/openssh/sshconnect.c": (
         "if (ip_status != HOST_NEW && ip_found != NULL)",
         "if (ip_status != HOST_NEW)\n\t\t\t\terror(\"Offending key for "

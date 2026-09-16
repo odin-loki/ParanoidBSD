@@ -16,11 +16,22 @@
  * called by a name other than "ssh" or "Secure Shell".
  */
 
-void	*xmalloc(size_t);
-void	*xcalloc(size_t, size_t);
-void	*xreallocarray(void *, size_t, size_t);
-void	*xrecallocarray(void *, size_t, size_t, size_t);
-char	*xstrdup(const char *);
+/*
+ * The comment above is a guarantee, and this says it in the form a
+ * compiler reads. Each of the five calls fatal() -- noreturn, log.h:78
+ * -- on every failure it can have, so none of them can hand back NULL;
+ * xstrdup returns memcpy()'s first argument, which is xmalloc's. A
+ * static analyser reading a caller sees only these declarations, so
+ * without the attribute it must assume NULL is in range and every
+ * `p = xmalloc(n); p->field = ...' is a null dereference to it.
+ */
+void	*xmalloc(size_t) __attribute__((__returns_nonnull__));
+void	*xcalloc(size_t, size_t) __attribute__((__returns_nonnull__));
+void	*xreallocarray(void *, size_t, size_t)
+    __attribute__((__returns_nonnull__));
+void	*xrecallocarray(void *, size_t, size_t, size_t)
+    __attribute__((__returns_nonnull__));
+char	*xstrdup(const char *) __attribute__((__returns_nonnull__));
 int	 xasprintf(char **, const char *, ...)
     __attribute__((__format__ (printf, 2, 3))) __attribute__((__nonnull__ (2)));
 int	 xvasprintf(char **, const char *, va_list)
