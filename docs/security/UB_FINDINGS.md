@@ -31891,3 +31891,99 @@ Two fixes, because the race has two halves:
 that `_write_atomic()` replaces in place and leaves no temp file
 beside the cache.
 
+## A zero channel mask shifts by `ffs(0) - 1`, twice
+
+Both framebuffer consoles derive a channel's bit offset the same way:
+
+    roff = ffs(gfx_state.tg_fb.fb_mask_red) - 1;
+    ...
+    rmask = gfx_state.tg_fb.fb_mask_red >> roff;
+
+`ffs(0)` is 0, so a channel whose mask is zero gives `roff == -1` and
+the shift is undefined.  `stand/common/gfx_fb.c:gfx_fb_color_map()` is
+one; `stand/efi/libefi/efi_console.c:efi_cons_init()` is the other,
+and it passes the same three offsets on into
+`generate_cons_palette()`.
+
+The masks are not the loader's.
+`stand/efi/loader/framebuffer.c:efifb_mask_from_pixfmt()` fills them
+from the GOP, and the `PixelBitMask` arm takes firmware's numbers
+verbatim:
+
+    case PixelBitMask:
+            efifb->fb_mask_red = pixinfo->RedMask;
+            efifb->fb_mask_green = pixinfo->GreenMask;
+            efifb->fb_mask_blue = pixinfo->BlueMask;
+
+Nothing between there and the shift rejects a zero.  UEFI 2.10 does
+require at least one bit per channel under `PixelBitMask`, so a zero
+is firmware out of spec rather than a legal mode — which is exactly
+the case a boot loader has to survive rather than assume away.  The
+consequence is not a crash: on x86 a shift count is masked to five
+bits, so `mask >> -1` is `mask >> 31`, and the loader paints its
+console from a silently wrong palette.  That is a worse failure than
+a trap, because nothing reports it.
+
+Both are clamped: a negative offset becomes 0, which leaves a zero
+mask a zero mask instead of `mask >> 31`.
+Probe: `tools/verify/probes/gfx_zero_channel_mask.c`.
+
+A word on what the evidence is, because CBMC's half of it is weaker
+than it looks.  It reported `shift distance is negative` and
+`shift distance too large` on `efi_console.c:931-933` — but `ffs()`
+has no CBMC model, so `return_value_ffs` is unconstrained, and an
+unconstrained return makes *every* use of it fail.  That is the
+extern-driven bucket, and on its own it proves nothing.  What makes
+this a defect is that the specification and the unmodelled callee
+agree: `ffs(0)` really is 0, so `roff` really can be -1, and the
+mask that reaches it really is firmware's with nothing in between
+that rejects a zero.  The same shape as `ppc64_cas` and
+`OF_getprop`: the missing model surfaced the site, the specification
+decided it.
+
+The contrast is `bcache_allocate()` twenty findings away, which has
+the identical shape — `i = fls(disks) - 1` and then `1 << i` — and is
+**not** a defect: `disks` is the number of block devices the loader
+enumerated, `fls` of it is at most a handful, and no firmware or
+media supplies the value.  There the unmodelled return is the whole
+of the report.
+
+`rgb_color_map()`'s own twelve shift failures at `gfx_fb.c:307` and
+`326-328` are **not** this: it is static, its `roffset`, `goffset`
+and `boffset` parameters are 16, 8 and 0 at its only call site, and
+the failures are CBMC checking it as an entry point with those
+parameters unconstrained.  Counted in the precondition bucket, not
+fixed.
+
+## `rpc_port` counts down from 0x400 and is never reset
+
+`stand/libsa/rpc.c:99` is one line:
+
+    int rpc_port = 0x400;	/* predecrement */
+
+and every user writes the predecrement itself:
+
+    d->myport = htons(--rpc_port);		bootparam.c:155
+    d->myport = htons(--rpc_port);		bootparam.c:269
+    desc->myport = htons(--rpc_port);	nfs.c:504
+
+Nothing resets it.  After 1023 RPC calls it is 1, after 1024 it is 0,
+and after that it is negative — `htons()` of a negative `int` is a
+source port no server will answer, and the decrement itself is
+undefined once it reaches `INT_MIN`.
+
+1024 is not far away in a netboot.  Every `lookup`, every `readlink`
+and every `read` of every module is an RPC call, and a slow or
+flapping server multiplies all of them by the retry count.  The
+symptom would be a diskless boot that works and then, some minutes
+in, silently stops getting replies.
+
+`rpc_nextport()` now owns the counter and wraps it at the bottom, so
+it stays in 1..1023 — which is the privileged range the predecrement
+was reaching for to begin with.  The three call sites ask for a port
+instead of open-coding the decrement.
+Probe: `tools/verify/probes/rpc_port_walks_off.c`.
+
+This one is not in the extern-driven bucket: `rpc_port` is a file-scope
+`int` with an initialiser the checker can see, and the failing path is
+arithmetic on it alone.

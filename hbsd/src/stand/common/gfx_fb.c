@@ -358,6 +358,21 @@ gfx_fb_color_map(uint8_t index)
 	roff = ffs(gfx_state.tg_fb.fb_mask_red) - 1;
         goff = ffs(gfx_state.tg_fb.fb_mask_green) - 1;
         boff = ffs(gfx_state.tg_fb.fb_mask_blue) - 1;
+	/*
+	 * ffs(0) is 0, so a channel whose mask is zero gives an offset
+	 * of -1 and the shifts below are undefined.  The masks are
+	 * firmware's: the PixelBitMask case in
+	 * stand/efi/loader/framebuffer.c copies them verbatim off the
+	 * GOP, and nothing between there and here rejects a zero.
+	 * Clamped to 0, so a zero mask stays a zero mask instead of
+	 * becoming `mask >> 31'.
+	 */
+	if (roff < 0)
+		roff = 0;
+	if (goff < 0)
+		goff = 0;
+	if (boff < 0)
+		boff = 0;
 	bpp = roundup2(gfx_state.tg_fb.fb_bpp, 8) >> 3;
 
 	if (bpp == 2)

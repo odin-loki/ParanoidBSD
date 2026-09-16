@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,864 | 2,433 |
+| 7 | `stand` | 484 | 135,915 | 2,434 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,334** | **114,208** |
+| | **total** | **41,143** | **21,304,385** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -37085,7 +37085,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.2.9.10 `disk_fmtdev()` · `TODO-FN`
   - [ ] 7.2.9.11 `disk_parsedev()` · `TODO-FN`
 - [ ] **7.2.10** `disk.h` · 117L · `TODO-HDR`
-- [ ] **7.2.11** `gfx_fb.c` · 3,161L gen:2 · `TODO-PORT` · 62 fn
+- [ ] **7.2.11** `gfx_fb.c` · 3,176L gen:2 · `TODO-PORT` · 62 fn
   - [ ] 7.2.11.1 `gfx_framework_init()` · `TODO-FN`
   - [ ] 7.2.11.2 `gfx_get_fb_address()` · `TODO-FN`
   - [ ] 7.2.11.3 `gfx_parse_mode_str()` · `TODO-FN`
@@ -37509,7 +37509,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.14.3.26 `efi_devpath_length()` · `TODO-FN`
   - [ ] 7.14.3.27 `efi_devpath_to_handle()` · `TODO-FN`
   - [ ] 7.14.3.28 `efi_devpath_free()` · `TODO-FN`
-- [ ] **7.14.4** `efi_console.c` · 1,414L · `TODO-PORT` · 39 fn
+- [ ] **7.14.4** `efi_console.c` · 1,427L · `TODO-PORT` · 39 fn
   - [ ] 7.14.4.1 `term_image_display()` · `TODO-FN`
   - [ ] 7.14.4.2 `efi_cons_bell()` · `TODO-FN`
   - [ ] 7.14.4.3 `efi_text_cursor()` · `TODO-FN`
@@ -39499,14 +39499,15 @@ function; a file with two hundred of them is a project.
   - [ ] 7.60.55.1 `read()` · `TODO-FN`
 - [ ] **7.60.56** `readdir.c` · 50L · `TODO-PORT` · 1 fn
   - [ ] 7.60.56.1 `readdirfd()` · `TODO-FN`
-- [ ] **7.60.57** `rpc.c` · 430L · `TODO-PORT` · 6 fn
-  - [ ] 7.60.57.1 `rpc_call()` · `TODO-FN`
-  - [ ] 7.60.57.2 `recvrpc()` · `TODO-FN`
-  - [ ] 7.60.57.3 `rpc_fromaddr()` · `TODO-FN`
-  - [ ] 7.60.57.4 `rpc_pmap_getcache()` · `TODO-FN`
-  - [ ] 7.60.57.5 `rpc_pmap_putcache()` · `TODO-FN`
-  - [ ] 7.60.57.6 `rpc_getport()` · `TODO-FN`
-- [ ] **7.60.58** `rpc.h` · 65L · `TODO-HDR`
+- [ ] **7.60.57** `rpc.c` · 452L · `TODO-PORT` · 7 fn
+  - [ ] 7.60.57.1 `rpc_nextport()` · `TODO-FN`
+  - [ ] 7.60.57.2 `rpc_call()` · `TODO-FN`
+  - [ ] 7.60.57.3 `recvrpc()` · `TODO-FN`
+  - [ ] 7.60.57.4 `rpc_fromaddr()` · `TODO-FN`
+  - [ ] 7.60.57.5 `rpc_pmap_getcache()` · `TODO-FN`
+  - [ ] 7.60.57.6 `rpc_pmap_putcache()` · `TODO-FN`
+  - [ ] 7.60.57.7 `rpc_getport()` · `TODO-FN`
+- [ ] **7.60.58** `rpc.h` · 66L · `TODO-HDR`
 - [ ] **7.60.59** `rpcv2.h` · 84L · `TODO-HDR`
 - [ ] **7.60.60** `saioctl.h` · 47L · `TODO-HDR`
 - [ ] **7.60.61** `sbrk.c` · 65L · `TODO-PORT` · 2 fn

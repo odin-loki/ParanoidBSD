@@ -5744,15 +5744,47 @@ FIXES = {
         "argc moves the stack pointer up",
     ),
 
-    "hbsd/src/stand/libsa/rpc.c": (
-        "if (cc < 0 || (size_t)cc < sizeof(*res)) {",
-        "(void **)&res, &pkt);\n\tif (cc < sizeof(*res)) {",
-        "rpc_getport: ssize_t cc against sizeof() is an UNSIGNED "
-        "comparison, so rpc_call()'s -1 read as enormous and the "
-        "failure arm was never taken. rpc_call() leaves res untouched "
-        "on every failure path, so res->port was an uninitialised "
-        "stack pointer - reachable from the network during a "
-        "diskless boot",
+    "hbsd/src/stand/libsa/rpc.c": [
+        (
+            "if (cc < 0 || (size_t)cc < sizeof(*res)) {",
+            "(void **)&res, &pkt);\n\tif (cc < sizeof(*res)) {",
+            "rpc_getport: ssize_t cc against sizeof() is an UNSIGNED "
+            "comparison, so rpc_call()'s -1 read as enormous and the "
+            "failure arm was never taken. rpc_call() leaves res "
+            "untouched on every failure path, so res->port was an "
+            "uninitialised stack pointer - reachable from the network "
+            "during a diskless boot",
+        ),
+        (
+            "rpc_nextport(void)\n{\n\n\tif (--rpc_port < 1)\n"
+            "\t\trpc_port = 0x400 - 1;",
+            "int rpc_port = 0x400;\t/* predecrement */\n\n/*\n"
+            " * Make a rpc call; return length of answer",
+            "rpc_port starts at 0x400, is predecremented at every call "
+            "site and is never reset: after 1024 RPC calls it is 0 and "
+            "after that negative, which is a source port no server "
+            "answers and a decrement that is undefined at INT_MIN",
+        ),
+    ],
+
+    "hbsd/src/stand/libsa/rpc.h": (
+        "int\trpc_nextport(void);",
+        "extern int rpc_port;\t/* decrement before bind */\n\n/*\n"
+        " * How much space to leave in front of RPC requests.",
+        "the declaration for rpc.c's wrapping port allocator",
+    ),
+
+    "hbsd/src/stand/libsa/bootparam.c": (
+        ("htons(rpc_nextport())", 2),
+        "htons(--rpc_port)",
+        "bp_whoami and bp_getfile take their source port straight off "
+        "the never-reset counter",
+    ),
+
+    "hbsd/src/stand/libsa/nfs.c": (
+        "desc->myport = htons(rpc_nextport());",
+        "desc->myport = htons(--rpc_port);",
+        "and so does the NFS mount",
     ),
 
     "hbsd/src/stand/fdt/fdt_loader_cmd.c": [
@@ -5775,14 +5807,26 @@ FIXES = {
         ),
     ],
 
-    "hbsd/src/stand/common/gfx_fb.c": (
-        "splash = NULL;\n\tif (type == SPLASH_STARTUP)",
-        "panic(\"can't find kernel file\");\n\n\tif (type == "
-        "SPLASH_STARTUP)",
-        "build_splash_module: splash is read by `if (splash == NULL)' "
-        "whether or not either arm ran, and a type that is neither "
-        "SPLASH_STARTUP nor SPLASH_SHUTDOWN left it indeterminate",
-    ),
+    "hbsd/src/stand/common/gfx_fb.c": [
+        (
+            "splash = NULL;\n\tif (type == SPLASH_STARTUP)",
+            "panic(\"can't find kernel file\");\n\n\tif (type == "
+            "SPLASH_STARTUP)",
+            "build_splash_module: splash is read by `if (splash == "
+            "NULL)' whether or not either arm ran, and a type that is "
+            "neither SPLASH_STARTUP nor SPLASH_SHUTDOWN left it "
+            "indeterminate",
+        ),
+        (
+            "\tif (roff < 0)\n\t\troff = 0;",
+            "boff = ffs(gfx_state.tg_fb.fb_mask_blue) - 1;\n"
+            "\tbpp = roundup2(gfx_state.tg_fb.fb_bpp, 8) >> 3;",
+            "gfx_fb_color_map: ffs(0) is 0, so a channel mask of zero "
+            "gives an offset of -1 and `mask >> roff' is undefined. "
+            "The masks are firmware's - framebuffer.c's PixelBitMask "
+            "case copies them straight off the GOP",
+        ),
+    ],
 
     "hbsd/src/stand/efi/loader/arch/i386/elf64_freebsd.c": (
         "\tdefault:\n\t\t/*\n\t\t * type is BS->AllocatePages()",
@@ -5910,13 +5954,25 @@ FIXES = {
         "indexed CumulativeDays[lyear][-1]",
     ),
 
-    "hbsd/src/stand/efi/libefi/efi_console.c": (
-        "screen_buffer = calloc(rows * cols, sizeof(*screen_buffer));",
-        "screen_buffer = malloc(rows * cols * sizeof(*screen_buffer));",
-        "efi_text_copy_line() reads screen_buffer[] to decide whether "
-        "a cell changed, and whether every cell is painted before the "
-        "first scroll depends on the order teken calls its callbacks",
-    ),
+    "hbsd/src/stand/efi/libefi/efi_console.c": [
+        (
+            "screen_buffer = calloc(rows * cols, "
+            "sizeof(*screen_buffer));",
+            "screen_buffer = malloc(rows * cols * "
+            "sizeof(*screen_buffer));",
+            "efi_text_copy_line() reads screen_buffer[] to decide "
+            "whether a cell changed, and whether every cell is painted "
+            "before the first scroll depends on the order teken calls "
+            "its callbacks",
+        ),
+        (
+            "\t\tif (roff < 0)\n\t\t\troff = 0;",
+            "boff = ffs(gfx_state.tg_fb.fb_mask_blue) - 1;\n\n"
+            "\t\t(void) generate_cons_palette(",
+            "efi_cons_init: the same zero channel mask, shifted by "
+            "ffs(0) - 1 into generate_cons_palette()",
+        ),
+    ],
 
     "hbsd/src/stand/i386/libi386/vidconsole.c": (
         "screen_buffer = calloc(gfx_state.tg_tp.tp_row * "

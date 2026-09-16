@@ -99,6 +99,28 @@ int rpc_xid;
 int rpc_port = 0x400;	/* predecrement */
 
 /*
+ * The next source port to bind, from the reserved range.
+ *
+ * Every caller used to write `htons(--rpc_port)' directly.  rpc_port
+ * starts at 0x400 and is never reset, so after 1023 RPC calls it is 1,
+ * after 1024 it is 0, and after that it is negative: htons() of a
+ * negative int is a nonsense source port, and the decrement itself is
+ * undefined once it reaches INT_MIN.  A netboot that retries enough --
+ * a slow or flapping server, a big module list -- gets there.
+ *
+ * Wrapping keeps it in 1..1023, which is the privileged range the
+ * predecrement was reaching for in the first place.
+ */
+int
+rpc_nextport(void)
+{
+
+	if (--rpc_port < 1)
+		rpc_port = 0x400 - 1;
+	return (rpc_port);
+}
+
+/*
  * Make a rpc call; return length of answer
  * Note: Caller must leave room for headers.
  */

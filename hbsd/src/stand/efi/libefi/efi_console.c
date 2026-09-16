@@ -927,6 +927,19 @@ cons_update_mode(bool use_gfx_mode)
 		goff = ffs(gfx_state.tg_fb.fb_mask_green) - 1;
 		boff = ffs(gfx_state.tg_fb.fb_mask_blue) - 1;
 
+		/*
+		 * ffs(0) is 0, so a zero mask shifts by -1 below, which
+		 * is undefined.  These masks come straight off the GOP
+		 * (efifb_mask_from_pixfmt(), PixelBitMask), so a zero
+		 * is firmware out of spec rather than an impossibility.
+		 */
+		if (roff < 0)
+			roff = 0;
+		if (goff < 0)
+			goff = 0;
+		if (boff < 0)
+			boff = 0;
+
 		(void) generate_cons_palette(cmap, COLOR_FORMAT_RGB,
 		    gfx_state.tg_fb.fb_mask_red >> roff, roff,
 		    gfx_state.tg_fb.fb_mask_green >> goff, goff,
