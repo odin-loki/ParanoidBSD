@@ -4355,6 +4355,37 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
              "-U__linux__", "-U__gnu_linux__", "-D__FreeBSD__=15",
              "-DHARDENEDBSD"]
 
+    # __seg_gs / __seg_fs are x86 NAMED ADDRESS SPACE qualifiers, and
+    # goto-cc's C parser does not know them.  sys/amd64/include/pcpu.h
+    # spells get_pcpu() as
+    #
+    #     static struct pcpu __seg_gs *__pc = 0;
+    #
+    # so `struct pcpu __seg_gs *' reads to that parser as two
+    # identifiers and a star, and the whole translation unit dies with
+    #
+    #     machine/counter.h:91:1: error: syntax error before '*'
+    #     PARSING ERROR
+    #
+    # pointing at a KASSERT four headers deep.  Every kernel translation
+    # unit that reaches counter.h, zpcpu.h or pcpu.h through any path
+    # fails, and every one of them fails on THIS, so the error is one
+    # line wearing 245 different file names: that is the whole of
+    # OpenZFS's TU-ERROR set, 245 of 248, and it is not OpenZFS's.
+    #
+    # clang compiles all of them with the identical flags, which is why
+    # the ANALYSE side has read this code for weeks while the model
+    # checker reported nothing about it.
+    #
+    # Defining them away is sound for this purpose and not merely
+    # convenient: the qualifier selects a segment register for the
+    # access and changes no type, no size and no value.  CBMC has no
+    # notion of segment-relative addressing to lose, and the pointer it
+    # then sees -- `struct pcpu *' -- is the one the model wants.  Only
+    # goto-cc gets this; clang parses the real qualifier.
+    if cc == "goto-cc":
+        flags += ["-D__seg_gs=", "-D__seg_fs="]
+
     # A .cpp gets the C++ standard library first - see libcxx_shim().
     # The thirteen driver stubs under usr.bin/clang cannot compile
     # without it. The 123 .cpp under lib/ are landed ports - a pure

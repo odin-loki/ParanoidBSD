@@ -33243,3 +33243,63 @@ line to add here.
 The remaining two FAILED, `ZSTD_createCCtx` and `ZSTD_createCCtxParams`,
 are the unmodelled-allocator bucket: they dereference a `malloc` result
 CBMC models as possibly NULL.
+
+## `__seg_gs`: one line, 245 file names, and the model checker's kernel corpus
+
+The OpenZFS run above reported 248 of its 283 translation units as
+`TU-ERROR`. **245 of the 248 were the same error**, and it is not
+OpenZFS's:
+
+```
+/tmp/pbsd_inc_amd64_.../machine/counter.h:91:1: error: syntax error before '*'
+ 	KASSERT(IS_BSP() || c != EARLY_COUNTER, ("EARLY_COUNTER used on AP"));
+PARSING ERROR
+```
+
+A `KASSERT` four headers deep, in a header the file never names. Reading
+the preprocessed text is what finds it — `gcc -E` with the same flags
+puts this inside `get_pcpu()`:
+
+```c
+	static struct pcpu __seg_gs *__pc = 0;
+```
+
+`__seg_gs` and `__seg_fs` are **x86 named address-space qualifiers**, a
+GCC and clang extension `sys/amd64/include/pcpu.h` uses to make per-CPU
+access segment-relative. **goto-cc's C parser does not know them**, so
+`struct pcpu __seg_gs *` reads to it as two identifiers and a star. Every
+kernel translation unit that reaches `counter.h`, `zpcpu.h` or `pcpu.h`
+through any path dies, and every one dies on this.
+
+clang compiles all of them with the *identical* flags. That is why the
+analyse side has read this code for weeks — 50 findings in
+`module/zfs` alone — while the model checker reported nothing about it
+and looked like a scope with nothing to say.
+
+### Defining them away is sound, not merely convenient
+
+The qualifier selects a segment register for the access. It changes no
+type, no size and no value. CBMC has no notion of segment-relative
+addressing to lose, and the pointer it then sees — `struct pcpu *` — is
+the one the model wants. Only `goto-cc` gets the two `-D`; clang parses
+the real qualifier, so the analyse side is untouched.
+
+### Measured
+
+| scope | translation units modelled, before → after |
+|---|---|
+| `sys/contrib/openzfs` | **35 → 276** of 283 (`TU-ERROR` 248 → 7) |
+| `sys/kern` | **86 → 184** of 225 (`TU-ERROR` 139 → 41) |
+| `sys/fs` | **119 → 119** of 119 |
+| `sys/dev` | **2,419** of 2,612 (`TU-ERROR` 193) |
+
+OpenZFS's modellable function count goes from 147 to **2,453**.
+
+The analyse side is unchanged, checked rather than assumed: the vendor
+shard reports 19 findings across 140 translation units, 8 ERROR, before
+and after.
+
+This is the same shape as the interface-header fix that took `sys/` from
+a few hundred usable translation units to thousands, and the same shape
+as `-isystem` earlier today: the instrument was reporting on a fraction
+of what its scope named, and the fraction looked like the whole.
