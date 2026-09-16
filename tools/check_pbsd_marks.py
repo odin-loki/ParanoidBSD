@@ -5755,6 +5755,55 @@ FIXES = {
         "diskless boot",
     ),
 
+    "hbsd/src/stand/efi/libefi/time.c": (
+        "efi_time->Month = 1;\n\t\twhile (efi_time->Month < 12 &&",
+        "efi_time->Month = 0;\n                while (time >\n\t\t    "
+        "CumulativeDays[lyear][month] * SECSPERDAY) {",
+        "to_efi_time: the month loop advanced efi_time->Month without "
+        "advancing anything its own condition read, so it never ran, "
+        "Month stayed 0, and `month = efi_time->Month - 1' below it "
+        "indexed CumulativeDays[lyear][-1]",
+    ),
+
+    "hbsd/src/stand/efi/libefi/efi_console.c": (
+        "screen_buffer = calloc(rows * cols, sizeof(*screen_buffer));",
+        "screen_buffer = malloc(rows * cols * sizeof(*screen_buffer));",
+        "efi_text_copy_line() reads screen_buffer[] to decide whether "
+        "a cell changed, and whether every cell is painted before the "
+        "first scroll depends on the order teken calls its callbacks",
+    ),
+
+    "hbsd/src/stand/i386/libi386/vidconsole.c": (
+        "screen_buffer = calloc(gfx_state.tg_tp.tp_row * "
+        "gfx_state.tg_tp.tp_col,",
+        "screen_buffer = malloc(gfx_state.tg_tp.tp_row * "
+        "gfx_state.tg_tp.tp_col *",
+        "the same allocation, for the BIOS loader's console",
+    ),
+
+    "hbsd/src/stand/i386/libi386/biospnp.c": (
+        "uint32_t	args[4] = { 0, 0, 0, 0 };",
+        "uint32_t	args[4];\n    uint32_t	i;",
+        "biospnp_call passes all four words to v86bios() however few "
+        "the format string fills, and biospnp_init read icfg after a "
+        "BIOS call that may not have written it",
+    ),
+
+    "hbsd/src/stand/i386/libi386/biossmap.c": (
+        "struct smap_buf		buf = { 0 };",
+        "	struct smap_buf		buf;\n",
+        "bios_getsmap copies buf out on the strength of the length the "
+        "int 0x15 e820 call returns, without the call having been "
+        "required to write it",
+    ),
+
+    "hbsd/src/stand/i386/libi386/vbe.c": (
+        ("biosvbe_get_mode_info() fills this via int 0x10", 3),
+        "\tstruct modeinfoblock mi;\n\tint bpp",
+        "three modeinfoblock locals read after a BIOS call that "
+        "reports success and need not have written them",
+    ),
+
     "hbsd/src/stand/efi/libefi/efinet.c": (
         "if (handles == NULL)\n\t\treturn (0);",
         "return (efi_status_to_errno(status));\n\thandles2 = "

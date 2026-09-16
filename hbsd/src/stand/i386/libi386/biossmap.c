@@ -53,7 +53,11 @@ static u_int			smaplen;
 void
 bios_getsmap(void)
 {
-	struct smap_buf		buf;
+	/*
+	 * The int 0x15 e820 call below fills this, and the code copies
+	 * it out on the strength of the returned length alone.
+	 */
+	struct smap_buf		buf = { 0 };
 	STAILQ_HEAD(smap_head, smap_buf) head =
 	    STAILQ_HEAD_INITIALIZER(head);
 	struct smap_buf		*cur, *next;

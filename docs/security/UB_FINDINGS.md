@@ -31373,4 +31373,61 @@ came back exit=1 reverted, exit=0 restored.  Recorded because a
 verification step that reports the wrong number is worse than one that
 is missing.
 
-The other 32 are the next pass.
+#### `to_efi_time()`: a loop that advances nothing it reads
+
+`stand/efi/libefi/time.c:122`
+
+    month = 13;
+    seconds = CumulativeDays[lyear][month] * SECSPERDAY;
+    while (time > seconds) { ... }          /* brings time under a year */
+
+    efi_time->Month = 0;
+    while (time > CumulativeDays[lyear][month] * SECSPERDAY) {
+        efi_time->Month++;
+    }
+    month = efi_time->Month - 1;
+    time -= CumulativeDays[lyear][month] * SECSPERDAY;
+
+`month` is still 13 — the whole year — and the loop above already
+brought `time` under that, so the second loop **never runs**, `Month`
+stays 0, and the subscript is `CumulativeDays[lyear][-1]`: one
+`time_t` before the array.  Had the condition ever been true the loop
+would not terminate either, because its body changes nothing it reads.
+
+Nothing in the tree calls `to_efi_time()` — an exported function of
+`libefi` with no caller, which is why nobody noticed.  It is fixed
+anyway, because "exported and wrong" is a defect waiting for its first
+user, and the day-of-month loop beside it started at 0 where
+`EFI_TIME.Day` is 1-31 and compared with `>` where the boundary wants
+`>=`.
+Probe: `tools/verify/probes/efi_to_efi_time_month.c`.
+
+#### The buffers the firmware fills, and the ones it might not
+
+Four locals were read after a BIOS or UEFI call that reports success
+and is not required to have written them:
+
+    i386/libi386/biospnp.c:109   struct pnp_isaConfiguration icfg;
+    i386/libi386/biospnp.c:257   uint32_t args[4];
+    i386/libi386/biossmap.c:56   struct smap_buf buf;
+    i386/libi386/vbe.c:668,773,956  struct modeinfoblock mi;   (three)
+
+All are now zero-initialised.  `args[4]` is the same shape as
+`ficlCcall()` above: `biospnp_call()` fills it as far as its format
+string says and then passes **all four words** to `v86bios()`, so the
+rest of this frame's stack went into the BIOS's registers.
+
+`screen_buffer` in both consoles was `malloc`, and
+`efi_text_copy_line()` and `gfx_fb_copy_line()` read it to decide
+whether a cell changed.  Whether every cell has been painted before
+the first scroll depends on the order teken calls its callbacks in,
+which is not a thing to depend on for a read.  Both are `calloc` now.
+
+The analyser still reports `biospnp.c:294` and `efi_console.c:281`.
+The first is `args` written through a `uint8_t *` that aliases it, so
+the initialiser is there but clang's memory model does not carry it
+across the type pun; the second is `screen_buffer` allocated in
+another function, which a per-TU checker cannot follow.  Both are
+recorded rather than chased.
+
+The other 27 are the next pass.

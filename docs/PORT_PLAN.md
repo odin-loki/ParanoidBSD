@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,613 | 2,433 |
+| 7 | `stand` | 484 | 135,653 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,083** | **114,208** |
+| | **total** | **41,143** | **21,304,123** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37509,7 +37509,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.14.3.26 `efi_devpath_length()` · `TODO-FN`
   - [ ] 7.14.3.27 `efi_devpath_to_handle()` · `TODO-FN`
   - [ ] 7.14.3.28 `efi_devpath_free()` · `TODO-FN`
-- [ ] **7.14.4** `efi_console.c` · 1,407L · `TODO-PORT` · 39 fn
+- [ ] **7.14.4** `efi_console.c` · 1,414L · `TODO-PORT` · 39 fn
   - [ ] 7.14.4.1 `term_image_display()` · `TODO-FN`
   - [ ] 7.14.4.2 `efi_cons_bell()` · `TODO-FN`
   - [ ] 7.14.4.3 `efi_text_cursor()` · `TODO-FN`
@@ -37674,7 +37674,7 @@ function; a file with two hundred of them is a project.
 - [ ] **7.14.16** `libefi.c` · 57L · `TODO-PORT` · 2 fn
   - [ ] 7.14.16.1 `efi_get_table()` · `TODO-FN`
   - [ ] 7.14.16.2 `OpenProtocolByHandle()` · `TODO-FN`
-- [ ] **7.14.17** `time.c` · 281L · `TODO-PORT` · 7 fn
+- [ ] **7.14.17** `time.c` · 294L · `TODO-PORT` · 7 fn
   - [ ] 7.14.17.1 `efi_time_init()` · `TODO-FN`
   - [ ] 7.14.17.2 `efi_time_fini()` · `TODO-FN`
   - [ ] 7.14.17.3 `to_efi_time()` · `TODO-FN`
@@ -38458,12 +38458,12 @@ function; a file with two hundred of them is a project.
   - [ ] 7.40.7.6 `biospci_write_config()` · `TODO-FN`
   - [ ] 7.40.7.7 `biospci_read_config()` · `TODO-FN`
   - [ ] 7.40.7.8 `biospci_locator()` · `TODO-FN`
-- [ ] **7.40.8** `biospnp.c` · 291L · `TODO-MD` · 4 fn
+- [ ] **7.40.8** `biospnp.c` · 297L · `TODO-MD` · 4 fn
   - [ ] 7.40.8.1 `biospnp_init()` · `TODO-FN`
   - [ ] 7.40.8.2 `biospnp_enumerate()` · `TODO-FN`
   - [ ] 7.40.8.3 `biospnp_scanresdata()` · `TODO-FN`
   - [ ] 7.40.8.4 `biospnp_call()` · `TODO-FN`
-- [ ] **7.40.9** `biossmap.c` · 157L gen:1 · `TODO-MD` · 3 fn
+- [ ] **7.40.9** `biossmap.c` · 161L gen:1 · `TODO-MD` · 3 fn
   - [ ] 7.40.9.1 `bios_getsmap()` · `TODO-FN`
   - [ ] 7.40.9.2 `bios_addsmapdata()` · `TODO-FN`
   - [ ] 7.40.9.3 `command_smap()` · `TODO-FN`
@@ -38570,7 +38570,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.40.31.2 `time()` · `TODO-FN`
   - [ ] 7.40.31.3 `getsecs()` · `TODO-FN`
   - [ ] 7.40.31.4 `delay()` · `TODO-FN`
-- [ ] **7.40.32** `vbe.c` · 1,275L gen:1 · `TODO-MD` · 44 fn
+- [ ] **7.40.32** `vbe.c` · 1,284L gen:1 · `TODO-MD` · 44 fn
   - [ ] 7.40.32.1 `vbe_resolution_compare()` · `TODO-FN`
   - [ ] 7.40.32.2 `vbe_get_max_resolution()` · `TODO-FN`
   - [ ] 7.40.32.3 `vga_get_reg()` · `TODO-FN`
@@ -38616,7 +38616,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.40.32.43 `vbe_default_mode()` · `TODO-FN`
   - [ ] 7.40.32.44 `command_vesa()` · `TODO-FN`
 - [ ] **7.40.33** `vbe.h` · 165L · `TODO-MD`
-- [ ] **7.40.34** `vidconsole.c` · 1,230L · `TODO-MD` · 29 fn
+- [ ] **7.40.34** `vidconsole.c` · 1,231L · `TODO-MD` · 29 fn
   - [ ] 7.40.34.1 `term_image_display()` · `TODO-FN`
   - [ ] 7.40.34.2 `vidc_text_set_cursor()` · `TODO-FN`
   - [ ] 7.40.34.3 `vidc_text_get_cursor()` · `TODO-FN`

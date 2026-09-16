@@ -119,22 +119,35 @@ to_efi_time(EFI_TIME *efi_time, time_t time)
 			seconds = CumulativeDays[lyear][month] * SECSPERDAY;
 		}
 
-		efi_time->Month = 0;
-                while (time >
-		    CumulativeDays[lyear][month] * SECSPERDAY) {
+		/*
+		 * This loop used to advance efi_time->Month without
+		 * advancing anything its own condition reads - month was
+		 * still 13, the whole year, and the first loop above had
+		 * already brought time under that - so it never ran, Month
+		 * stayed 0, and the `month = efi_time->Month - 1' below it
+		 * indexed CumulativeDays[lyear][-1].
+		 *
+		 * CumulativeDays[][m] is the days before month m for m in
+		 * 1..12, so the month is the largest m whose cumulative
+		 * days still fit in what is left of the year.
+		 */
+		efi_time->Month = 1;
+		while (efi_time->Month < 12 &&
+		    time >= CumulativeDays[lyear][efi_time->Month + 1] *
+		    SECSPERDAY)
 			efi_time->Month++;
-		}
 
-		month = efi_time->Month - 1;
+		month = efi_time->Month;
 		time -= CumulativeDays[lyear][month] * SECSPERDAY;
 
-		for (efi_time->Day = 0; time > SECSPERDAY; efi_time->Day++)
+		/* EFI_TIME.Day is 1-31; the rest are 0-based. */
+		for (efi_time->Day = 1; time >= SECSPERDAY; efi_time->Day++)
 			time -= SECSPERDAY;
 
-		for (efi_time->Hour = 0; time > SECSPERHOUR; efi_time->Hour++)
+		for (efi_time->Hour = 0; time >= SECSPERHOUR; efi_time->Hour++)
 			time -= SECSPERHOUR;
 
-		for (efi_time->Minute = 0; time > 60; efi_time->Minute++)
+		for (efi_time->Minute = 0; time >= 60; efi_time->Minute++)
 			time -= 60;
 
 		efi_time->Second = time;

@@ -929,7 +929,8 @@ cons_update_mode(bool use_gfx_mode)
 	}
 
 	free(screen_buffer);
-	screen_buffer = malloc(gfx_state.tg_tp.tp_row * gfx_state.tg_tp.tp_col *
+	/* calloc - see the same allocation in efi/libefi/efi_console.c. */
+	screen_buffer = calloc(gfx_state.tg_tp.tp_row * gfx_state.tg_tp.tp_col,
 	    sizeof(*screen_buffer));
 	if (screen_buffer == NULL)
 		return (false);

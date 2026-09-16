@@ -106,7 +106,8 @@ v86bios_t	*v86bios = (v86bios_t *)v86int;
 static int
 biospnp_init(void)
 {
-    struct pnp_isaConfiguration	icfg;
+    /* The BIOS fills this; it is read whatever the BIOS did. */
+    struct pnp_isaConfiguration	icfg = { 0 };
     char			*sigptr;
     int				result;
     
@@ -248,7 +249,12 @@ biospnp_call(int func, const char *fmt, ...)
     va_list	ap;
     const char	*p;
     uint8_t	*argp;
-    uint32_t	args[4];
+    /*
+     * All four words are passed to v86bios() below however few the
+     * format string fills, so the rest used to be this frame's stack
+     * going into the BIOS's registers.
+     */
+    uint32_t	args[4] = { 0, 0, 0, 0 };
     uint32_t	i;
 
     /* function number first */

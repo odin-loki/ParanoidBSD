@@ -665,7 +665,10 @@ vbe_get_mode(void)
 int
 vbe_set_mode(int modenum)
 {
-	struct modeinfoblock mi;
+	/* biosvbe_get_mode_info() fills this via int 0x10; zero it so a
+	 * BIOS that reports success and writes nothing is not read.
+	 */
+	struct modeinfoblock mi = { 0 };
 	int bpp, ret;
 
 	if (!vbe_check())
@@ -770,7 +773,10 @@ vbe_set_mode(int modenum)
 static int
 vbe_find_mode_xydm(int x, int y, int depth, int m)
 {
-	struct modeinfoblock mi;
+	/* biosvbe_get_mode_info() fills this via int 0x10; zero it so a
+	 * BIOS that reports success and writes nothing is not read.
+	 */
+	struct modeinfoblock mi = { 0 };
 	uint16_t *farptr;
 	uint16_t mode;
 	int idx, nentries, i;
@@ -953,7 +959,10 @@ vbe_print_vbe_info(struct vbeinfoblock *vbep)
 void
 vbe_modelist(int depth)
 {
-	struct modeinfoblock mi;
+	/* biosvbe_get_mode_info() fills this via int 0x10; zero it so a
+	 * BIOS that reports success and writes nothing is not read.
+	 */
+	struct modeinfoblock mi = { 0 };
 	uint16_t mode;
 	int nmodes, idx, nentries;
 	int ddc_caps;

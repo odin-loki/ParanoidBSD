@@ -1034,7 +1034,14 @@ cons_update_mode(bool use_gfx_mode)
 		    &gfx_state);
 
 		free(screen_buffer);
-		screen_buffer = malloc(rows * cols * sizeof(*screen_buffer));
+		/*
+		 * calloc, not malloc: efi_text_copy_line() and
+		 * gfx_fb_copy_line() read screen_buffer[] to decide
+		 * whether a cell changed, and whether every cell has
+		 * been painted before the first scroll depends on the
+		 * order teken calls its callbacks in.
+		 */
+		screen_buffer = calloc(rows * cols, sizeof(*screen_buffer));
 		if (screen_buffer != NULL) {
 			teken_set_winsize(&gfx_state.tg_teken,
 			    &gfx_state.tg_tp);
