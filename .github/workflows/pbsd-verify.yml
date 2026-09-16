@@ -382,6 +382,21 @@ jobs:
           # so cddl's own <fcntl.h> wrapper was shadowed and open64()
           # was undeclared in the one translation unit that IS dtrace.
           - { name: vendor, scopes: '--scope cddl --scope secure', check: '--check-errors' }
+          # crypto/openssh: the ssh client and the sshd this system
+          # ships, inside a top-level directory excused from every
+          # shard as "third-party source PBSD does not maintain". 181
+          # of its 297 translation units compile and the other 116 are
+          # named by nothing in the build -- one reason, checked
+          # per-file against the build's own authority rather than
+          # asserted over a directory.
+          #
+          # The first reading found a NULL dereference in ssh(1)'s
+          # host-key-changed warning and a dead unsigned comparison
+          # that sends every pre-authentication audit event through the
+          # wrong BSM mask. The rest of crypto/ is still out: openssl
+          # is 1,252 of 1,663 and krb5 90 of 1,010, and an inventory of
+          # what is left in either is not viable yet.
+          - { name: openssh, scopes: '--scope crypto/openssh', check: '--check-errors' }
           # bin, sbin, usr.bin and usr.sbin. This shard ran WITHOUT
           # --check-errors while its hole was being filled: 133 of its
           # 1,862 translation units did not compile, in seven named

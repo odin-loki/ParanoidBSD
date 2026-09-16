@@ -55,8 +55,33 @@ SYS = SRC / "sys"
 # reason each of the rest is out is now the reason it is actually out,
 # checked against the Makefile that decides it.
 UNANALYSED = {
-    "contrib":    "third-party source PBSD does not maintain",
-    "crypto":     "third-party source PBSD does not maintain",
+    "contrib":    "third-party source PBSD does not maintain. 11,635 "
+                  "translation units, and 4,366 of them are not in this "
+                  "repository at all -- .gitignore:150-162 excludes "
+                  "contrib/llvm-project's llvm/, lldb/ and most of "
+                  "clang/, with the re-fetch recipe in the comment. A "
+                  "shard over it would glob a different file set on CI "
+                  "than on a developer machine that ran the re-fetch. "
+                  "One thing under it is NOT third-party and is named "
+                  "here so the sentence above is not read as covering "
+                  "it: contrib/hardenedbsd/liblattzfs is HardenedBSD's "
+                  "own, and nothing in the tree builds it -- it has a "
+                  "Makefile of its own and no parent SUBDIR reaches it, "
+                  "because contrib/ has no Makefile at all",
+    "crypto":     "measured, and not viable as a whole yet: 1,608 of "
+                  "3,890 translation units compile. crypto/openssh is "
+                  "in a shard of its own -- see `whole' below, which is "
+                  "why naming a subdirectory does not make this entry a "
+                  "lie. The rest is openssl at 1,252 of 1,663, MIT krb5 "
+                  "at 90 of 1,010, libecc at 82 of 109, and heimdal at "
+                  "4 of 811. heimdal is the Kerberos this tree does NOT "
+                  "build -- kerberos5/Makefile.inc is the only thing in "
+                  "the tree that references it, and MK_MITKRB5 keeps "
+                  "the build out of kerberos5 -- so its 811 are dead "
+                  "weight rather than an unread scope. What stops the "
+                  "other three is the inventory: most of their ERROR "
+                  "set is code the build NAMES, which no entry in "
+                  "expected_errors.py can honestly excuse",
     "gnu":        "no C at all - two Makefiles and a usr.bin wrapper",
     "kerberos5":  "Heimdal, and this tree builds MIT. MITKRB5 is in "
                   "src.opts.mk's __DEFAULT_YES_OPTIONS and "

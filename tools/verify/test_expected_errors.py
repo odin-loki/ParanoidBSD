@@ -148,10 +148,17 @@ for built in ("sys/dev/pci/pci.c", "sys/kern/kern_exec.c",
 
 _claimed = [pre for pre, why in NOT_BUILT.items() if why.endswith("NOT_NAMED")]
 check("some prefix makes the NOT_NAMED claim", bool(_claimed))
+# rglob, not glob. not_built() matches by string prefix, so a prefix
+# over crypto/openssh/regress covers its 43 sources in eleven
+# subdirectories, and a check that looked only at the five .c sitting
+# directly in it would have verified a twelfth of the claim. Nothing
+# fails on the stricter reading today; it is here so that a file added
+# under one of these prefixes, in a directory the build DOES name, is a
+# gate failure rather than a silent exemption.
 for pre in _claimed:
     d = ROOT / "hbsd" / "src" / pre.rstrip("/")
     srcs = sorted(q.relative_to(ROOT / "hbsd" / "src").as_posix()
-                  for q in d.glob("*.c")) if d.is_dir() else []
+                  for q in d.rglob("*.c")) if d.is_dir() else []
     named_here = [s for s in srcs if sweep_report.names_it(s)]
     check(f"{pre} is named by nothing", not named_here,
           f"the build names {named_here[:3]}, so this prefix is absorbing "
@@ -241,6 +248,36 @@ check("and does not read commented lines",
       "ipftest" not in _subdirs(ROOT / "hbsd" / "src" / "sbin" / "ipf" /
                                 "Makefile"),
       "the reader is taking `# SUBDIR+= ipftest' as an assignment")
+
+print("\n== and the NOT_NAMED_UNDER prefixes excuse only what nothing names")
+# A prefix whose reason ends in NOT_NAMED_UNDER is conditional: it
+# excuses a file beneath it only while sweep_report.names_it() says the
+# build names nothing by that name. That makes it strictly safer than a
+# plain prefix -- it cannot swallow a file that IS built -- but it is
+# only honest if the directory really is mixed. A directory where the
+# build names NOTHING should carry a plain NOT_NAMED prefix instead,
+# because there the condition is doing no work and is hiding the fact
+# that the whole directory is unbuilt. Both halves are checked.
+_cond = [pre for pre, why in NOT_BUILT.items()
+         if why.endswith("NOT_NAMED_UNDER")]
+check("some prefix makes the NOT_NAMED_UNDER claim", bool(_cond))
+for pre in _cond:
+    d = ROOT / "hbsd" / "src" / pre.rstrip("/")
+    check(f"{pre} is a directory", d.is_dir())
+    srcs = sorted(q.relative_to(ROOT / "hbsd" / "src").as_posix()
+                  for q in d.rglob("*.c")) if d.is_dir() else []
+    check(f"{pre} has sources at all", bool(srcs),
+          "an empty prefix absorbs nothing and hides its own staleness")
+    named = [f for f in srcs if sweep_report.names_it(f)]
+    check(f"{pre} is a mixed directory", bool(named),
+          "the build names nothing under this prefix, so the condition "
+          "is doing no work - a plain NOT_NAMED prefix says the true "
+          "thing and this one hides that the whole directory is unbuilt")
+    # The safety property, checked rather than trusted: no file the
+    # build names is excused by this prefix.
+    swallowed = [f for f in named if not_built(f) == pre]
+    check(f"{pre} swallows nothing the build names", not swallowed,
+          f"it excuses {swallowed[:3]}, which the build DOES compile")
 
 print("\n== and the NOT_TESTS_SUBDIR files really are not descended into")
 # A fifth shape, forced by the dtrace test corpus. Its sources live
