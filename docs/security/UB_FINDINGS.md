@@ -32811,3 +32811,66 @@ record. What moved it:
 Two of the three defects in that list were found **by** the inlining,
 which is the argument for it: the twelve and the ten it cleared were
 modelling gaps, and clearing them is what made the two real ones legible.
+
+### The pattern is exhausted at two
+
+Worth saying, because the next reader will ask. The tree was swept for
+the same shape — a small out-of-line helper that always returns one
+constant, which a caller tests. `libelf` already spells it as a macro
+(`LIBELF_SET_ERROR`, `_libelf.h:65`), so the analyser has always seen
+through it. `libarchive`'s `archive_set_error()` returns `void`. The
+only two functions of this kind in the tree were the two above.
+
+A broader syntactic scan — every externally-linked function of 2–6
+statements, no control flow, whose every `return` is the same literal —
+returns 225 candidates across `lib`, `libexec`, `bin`, `sbin`, `usr.bin`,
+`usr.sbin`, `cddl` and `contrib`. Almost none is this pattern: most
+return `0` for success and their callers ignore it, so inlining them
+would move no finding. The property that matters is not syntactic. It is
+that the constant is a **sentinel the caller tests before reading
+something the callee was supposed to set**, and that is what these two
+had.
+
+## The last two in libdtrace, and the thirteen that stay
+
+**`dt_vopen` sized a bucket array with the wrong type.**
+`dt_open.c:1204`:
+
+```c
+	dtp->dt_kmods = calloc(dtp->dt_modbuckets, sizeof (dt_module_t *));
+```
+
+`dt_kmods` is `dt_kmodule_t **` (`dt_impl.h:256`). Both are pointers, so
+the allocation is the right size on every platform this builds for and
+nothing was ever wrong at run time — but the line said the wrong thing,
+and a reader checking an allocation against its type had to work that out
+before dismissing it. One word.
+
+**`dt_print_prepare` returned an id it took from `atoi()`.** It splits a
+`module`id` string and does `id = atoi(s + 1)`, then `return (id)` after
+`pa->pa_object = strdup(object)`. A CTF type id is an index and is never
+negative; `atoi()` of a string this function did not choose can be. The
+only thing between `module`-1` and a `return (id)` that hands the caller
+`CTF_ERR` — with `pa_object` allocated, and both callers' `CTF_ERR` arms
+returning without freeing it — is `ctf_type_kind()` rejecting `-1`, which
+is true and is in another library, so nothing here can see it. The string
+comes off the trace record. `if (id < 0) return (CTF_ERR);`, before the
+allocation.
+
+The other thirteen stay, and each is a modelling gap with a name:
+
+- **`dt_cc.c:2437`, `pcb.pcb_sflagv`** — `dt_pcb_pop()` frees it
+  (`dt_pcb.c`, last lines), and that is another translation unit.
+- **`dt_decl.c:932` and `:1030`, `dmp->dm_ctfp`** — `dmp` is
+  `yypcb->pcb_idepth ? dtp->dt_cdefs : dtp->dt_ddefs`, and `dt_vopen`
+  returns `set_open_errno(dtp, errp, EDT_NOMEM)` if either
+  `dt_module_create()` came back NULL (`dt_open.c:1383`, `:1449`). A
+  handle that reaches the parser has both. The invariant is established
+  in `dtrace_open()` and cannot be carried across it.
+- **`dt_cc.c` ×4, `dt_cg.c`, `dt_ident.c`, `dt_program.c`,
+  `dt_aggregate.c`, `dt_module.c`, `dt_printf.c`** — list and hash walks
+  whose termination the checker cannot establish, and correlated-value
+  reasoning over parse-tree node kinds.
+
+These are modelling gaps, not facts the source is hiding, and there is
+nothing true to add to the code for them.

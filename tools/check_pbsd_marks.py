@@ -5893,6 +5893,19 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_open.c": (
+        "sizeof (dt_kmodule_t *));",
+        "dtp->dt_kmods = calloc(dtp->dt_modbuckets, "
+        "sizeof (dt_module_t *));",
+        "dt_kmods is `dt_kmodule_t **' (dt_impl.h:256) and the bucket "
+        "array was sized with sizeof (dt_module_t *). Both are "
+        "pointers, so the allocation is the right size on every "
+        "platform this builds for and nothing was ever wrong at run "
+        "time -- but the line said the wrong thing, and a reader "
+        "checking the allocation against the type had to know that to "
+        "clear it. One word",
+    ),
+
     "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_impl.h": (
         "static inline int\n_dt_set_errno(dtrace_hdl_t *dtp, int err,",
         "int _dt_set_errno(dtrace_hdl_t *, int, const char *, int);",
@@ -6193,6 +6206,21 @@ FIXES = {
             "without the dt_free(pa.pa_object) that both its other "
             "exits do. pa_object is strdup'd by dt_print_prepare, so "
             "every type whose name does not fit 1024 bytes leaks it",
+        ),
+        (
+            "\tif (id < 0)\n\t\treturn (CTF_ERR);",
+            "\tid = atoi(s + 1);\n\n\t/*\n\t * Try to get the CTF kind",
+            "dt_print_prepare() takes the type id out of a `module`id' "
+            "string with atoi() and returns it. A CTF type id is an "
+            "index and is never negative; atoi() of a string this "
+            "function did not choose can be. Without this, the only "
+            "thing between `module`-1' and a `return (id)' that hands "
+            "the caller CTF_ERR -- with pa_object already strdup()ed, "
+            "and both callers' CTF_ERR arms returning without freeing "
+            "it -- is ctf_type_kind() rejecting -1, which is true and "
+            "is in another library, so nothing here can see it. The "
+            "string comes off the trace record, which is the kind of "
+            "input this library should not take on trust",
         ),
     ],
 

@@ -778,6 +778,18 @@ dt_print_prepare(dtrace_hdl_t *dtp, const char *typename, caddr_t addr,
 	id = atoi(s + 1);
 
 	/*
+	 * A CTF type id is an index and is never negative, and atoi() of a
+	 * string this function did not choose can be.  Without this, the
+	 * only thing standing between `module`-1' and a `return (id)' that
+	 * hands the caller CTF_ERR -- with pa_object already strdup()ed and
+	 * the caller's CTF_ERR arm returning without freeing it -- is
+	 * ctf_type_kind() rejecting -1, which is true and is in another
+	 * library.
+	 */
+	if (id < 0)
+		return (CTF_ERR);
+
+	/*
 	 * Try to get the CTF kind for this id.  If something has gone horribly
 	 * wrong and we can't resolve the ID, bail out and let trace() do the
 	 * work.

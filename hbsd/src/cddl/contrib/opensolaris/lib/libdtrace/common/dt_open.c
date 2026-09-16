@@ -1201,7 +1201,8 @@ alloc:
 	dtp->dt_modbuckets = _dtrace_strbuckets;
 	dtp->dt_mods = calloc(dtp->dt_modbuckets, sizeof (dt_module_t *));
 #ifdef __FreeBSD__
-	dtp->dt_kmods = calloc(dtp->dt_modbuckets, sizeof (dt_module_t *));
+	/* dt_kmods is dt_kmodule_t **, not dt_module_t **. */
+	dtp->dt_kmods = calloc(dtp->dt_modbuckets, sizeof (dt_kmodule_t *));
 #endif
 	dtp->dt_provbuckets = _dtrace_strbuckets;
 	dtp->dt_provs = calloc(dtp->dt_provbuckets, sizeof (dt_provider_t *));
