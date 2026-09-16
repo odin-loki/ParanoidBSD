@@ -464,6 +464,251 @@ def llvm_shim(rel: str) -> tuple[str, ...]:
 
 
 @functools.lru_cache(maxsize=None)
+def stand_shim() -> str:
+    """The loader's libc, as stand/libsa/Makefile says to build it.
+
+    stand/ is a THIRD header universe, and neither of the two the
+    sweep already models fits it. The loader is compiled -nostdinc
+    -D_STANDALONE against stand/libsa as its libc and ${SYSDIR} for
+    kernel headers, and stand/defs.mk even poisons the floating-point
+    keywords -- `-Ddouble=jagged-little-pill -Dfloat=floaty-mcfloatface'
+    -- so that a loader that used them would not compile.
+
+    Most of that libc is not in the tree. stand/libsa/Makefile's
+    `beforedepend' rule builds it into the object directory as a set of
+    symlinks, and names every one:
+
+        FAKE_DIRS=xlocale arpa ssp
+        SAFE_INCS=a.out.h assert.h elf.h limits.h nlist.h setjmp.h
+                  stddef.h stdbool.h string.h strings.h time.h uuid.h
+        STAND_H_INC=ctype.h fcntl.h signal.h stdio.h stdlib.h unistd.h
+        OTHER_INC=stdarg.h errno.h stdint.h
+
+    SAFE_INCS come from ${SRCTOP}/include unchanged -- they are the
+    ones that are safe standalone. STAND_H_INC are each a symlink to
+    stand.h, so <stdio.h> in the loader IS stand.h and nothing else.
+    OTHER_INC come from ${SYSDIR}/sys. The three xlocale files are
+    deliberately EMPTY.
+
+    Reproduced here rather than guessed, for the reason incs_shim()
+    gives: -I on stand/libsa puts every private header on the path and
+    still does not supply string.h, which 228 of the 300 files need.
+    Measured: without this, 8 of 300 compile.
+    """
+    root = Path(tempfile.mkdtemp(prefix="pbsd_stand_"))
+
+    def link(name: str, target: Path) -> None:
+        dst = root / name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if target.is_file() and not dst.exists():
+            dst.symlink_to(target)
+
+    inc = SRC / "include"
+    sysdir = SRC / "sys"
+    for h in ("a.out.h", "assert.h", "elf.h", "limits.h", "nlist.h",
+              "setjmp.h", "stddef.h", "stdbool.h", "string.h",
+              "strings.h", "time.h", "uuid.h"):
+        link(h, inc / h)
+    for h in ("ctype.h", "fcntl.h", "signal.h", "stdio.h", "stdlib.h",
+              "unistd.h"):
+        link(h, SRC / "stand/libsa/stand.h")
+    link("errno.h", sysdir / "sys/errno.h")
+    link("stdarg.h", sysdir / "sys/stdarg.h")
+    link("stdint.h", sysdir / "sys/stdint.h")
+    link("arpa/inet.h", inc / "arpa/inet.h")
+    link("arpa/tftp.h", inc / "arpa/tftp.h")
+    link("ssp/ssp.h", inc / "ssp/ssp.h")
+    # Deliberately empty, as the Makefile's `:> xlocale/$$i' makes them.
+    (root / "xlocale").mkdir(parents=True, exist_ok=True)
+    for h in ("_time.h", "_strings.h", "_string.h"):
+        (root / "xlocale" / h).touch()
+    return root.as_posix()
+
+
+# stand/defs.mk:91-137 and the per-subtree Makefiles, as flags. The
+# loader is the only part of the tree with no <sys/param.h> universe
+# and no <stdio.h> universe: -nostdinc, stand/libsa as its libc,
+# ${SYSDIR} for the kernel's headers, and every driver, filesystem and
+# protocol it can reach behind a -DLOADER_*_SUPPORT that loader.mk
+# turns on. Compiled without those -D, the loader analysed is a loader
+# that reads no disk and speaks no protocol - which is most of the
+# attack surface gone.
+#
+# ${MACHINE} and ${MACHINE_ARCH} are different words here and the tree
+# uses both: efi/loader/Makefile:13 keys its arch directory on
+# ${MACHINE} (amd64 arm arm64 i386 riscv) and kboot/Makefile.inc:4 on
+# ${MACHINE_ARCH} (aarch64 amd64 powerpc64). Getting them the wrong way
+# round is a missing <efibind.h> or <host_syscall.h>, not a wrong
+# answer, so it is visible - but only if they are both spelled out.
+_STAND_MACHINE = {"amd64": "amd64", "i386": "i386", "arm64": "arm64",
+                  "armv6": "arm", "armv7": "arm", "arm": "arm",
+                  "riscv64": "riscv", "riscv": "riscv",
+                  "powerpc": "powerpc", "powerpc64": "powerpc",
+                  "powerpc64le": "powerpc", "powerpcspe": "powerpc"}
+_STAND_MARCH = {"arm64": "aarch64"}
+# stand/ficl/<cpuarch>, which is ${MACHINE_CPUARCH} - a fourth spelling.
+_STAND_FICL = {"amd64": "amd64", "i386": "i386", "arm64": "aarch64",
+               "armv6": "arm", "armv7": "arm", "arm": "arm",
+               "riscv64": "riscv", "riscv": "riscv",
+               "powerpc": "powerpc", "powerpc64": "powerpc",
+               "powerpc64le": "powerpc", "powerpcspe": "powerpc"}
+
+
+def stand_flags(rel: str, arch: str = "amd64") -> list[str]:
+    """What the loader is compiled with, by subtree.
+
+    Measured over the 300 .c files under stand/: 8 of 300 compile with
+    the userland flags, 129 with stand_shim() alone, 233 once the
+    per-subtree -I are added and 265 (88%) with the rest of this. The
+    35 that still do not are recorded in expected_errors.py with the
+    reason, which is a generated header, a -D only one program's
+    Makefile sets, or an architecture whose loader that file is not.
+    """
+    s = str(SRC)
+    mach = _STAND_MACHINE.get(arch, "amd64")
+    march = _STAND_MARCH.get(arch, arch)
+    ficl = _STAND_FICL.get(arch, "amd64")
+    # defs.mk:91-104 - the standalone universe itself.
+    f = ["-D_STANDALONE", "-ffreestanding",
+         f"-I{stand_shim()}",
+         f"-I{s}/stand/libsa",
+         f"-I{s}/sys",
+         f"-I{machine_shim(arch)}",
+         f"-I{s}/stand/common",
+         # defs.mk:128, behind MK_LOADER_GELI, which defaults yes.
+         "-DLOADER_GELI_SUPPORT", f"-I{s}/stand/libsa/geli",
+         # loader.mk:106-197 and fdt.mk:6, ficl.mk:15, veriexec.mk:5.
+         # These are not decoration: each one is a filesystem, a
+         # protocol or a partition scheme whose parser is compiled out
+         # without it.
+         "-DLOADER_DISK_SUPPORT", "-DLOADER_CD9660_SUPPORT",
+         "-DLOADER_EXT2FS_SUPPORT", "-DLOADER_MSDOS_SUPPORT",
+         "-DLOADER_UFS_SUPPORT", "-DLOADER_GZIP_SUPPORT",
+         "-DLOADER_BZIP2_SUPPORT", "-DLOADER_NET_SUPPORT",
+         "-DLOADER_NFS_SUPPORT", "-DLOADER_TFTP_SUPPORT",
+         "-DLOADER_GPT_SUPPORT", "-DLOADER_MBR_SUPPORT",
+         "-DLOADER_ZFS_SUPPORT", "-DLOADER_FDT_SUPPORT",
+         "-DLOADER_VERIEXEC", "-DBF_DICTSIZE=30000",
+         '-DHELP_FILENAME="loader.help"',
+         # ...and where those parsers live. ficl.mk:14, fdt.mk:14,
+         # liblua/Makefile:37, libsa/zfs/Makefile.inc:44-64,
+         # veriexec.mk:5, i386/libi386/Makefile:55-58 (the gfx files
+         # in stand/common reach ../libi386/vbe.h).
+         f"-I{s}/stand/ficl", f"-I{s}/stand/ficl/{ficl}",
+         f"-I{s}/stand/fdt", f"-I{s}/sys/contrib/libfdt",
+         f"-I{s}/stand/liblua", f"-I{s}/contrib/lua/src",
+         f"-I{s}/sys/teken", f"-I{s}/contrib/pnglite",
+         f"-I{s}/sys/cddl/contrib/opensolaris/common/lz4",
+         f"-I{s}/sys/contrib/zlib",
+         f"-I{s}/stand/libsa/zfs", f"-I{s}/sys/cddl/boot/zfs",
+         f"-I{s}/sys/contrib/openzfs/include",
+         f"-I{s}/sys/contrib/openzfs/include/os/freebsd/zfs",
+         f"-I{s}/sys/contrib/dev/acpica/include",
+         f"-I{s}/lib/libsecureboot/h",
+         f"-I{s}/stand/i386/libi386",
+         # libsa/zfs/Makefile.inc:55-66: the loader's ZFS reader takes
+         # <sys/list.h> and its friends from the OpenSolaris uts tree,
+         # not from sys/sys. Without it the three files that parse a
+         # ZFS label off an untrusted disk do not compile at all.
+         f"-I{s}/sys/cddl/contrib/opensolaris/uts/common",
+         f"-I{s}/sys/crypto/skein", "-DHAS_ZSTD_ZFS",
+         # arm64/libarm64/cache.h is reached by name from the EFI
+         # loader's arm64 exec.c.
+         f"-I{s}/stand/arm64/libarm64",
+         # i386/gptboot/Makefile:20 and gptzfsboot/Makefile:17. drv.h
+         # declares drvwrite() only under one of these, and gpt.c calls
+         # it unconditionally.
+         "-DGPT",
+         # Every boot block prints its own name, from its Makefile:
+         # i386/gptboot/Makefile:21 is -DBOOTPROG=\"gptboot\". The
+         # STRING is a banner and nothing branches on it; being
+         # DEFINED is what four translation units need, and the
+         # directory is where the Makefile that defines it lives.
+         f'-DBOOTPROG="{Path(rel).parent.name}"',
+         # ...and the serial console the same blocks are built for.
+         # i386/gptboot/Makefile:9-10, and every other i386 boot
+         # Makefile beside it, all say the same two numbers.
+         "-DSIOSPD=115200", "-DSIOFMT=0x3", "-DSIOPRT=0x3f8",
+         # liblua/Makefile:34-35. Without LUA_PATH the loader's Lua
+         # interpreter - the thing that reads /boot/lua on every boot -
+         # does not compile, and lfs.h and lhash.h are flua's, shared
+         # with libexec/flua.
+         '-DLUA_PATH="/boot/lua"', '-DLUA_PATH_DEFAULT="/boot/lua/?.lua"',
+         "-DLUA_USE_POSIX",
+         f"-I{s}/libexec/flua/lfs", f"-I{s}/libexec/flua/libhash",
+         # libsa/Makefile:164. bzlib.h declares BZ2_bzReadOpen(FILE *)
+         # unless BZ_NO_STDIO, and the loader has no FILE.
+         f"-I{s}/contrib/bzip2", "-DBZ_NO_STDIO", "-DBZ_NO_COMPRESS"]
+    # libsa/zfs/Makefile.inc:33-46 - CFLAGS_EARLY, which goes ahead of
+    # everything above, plus a force-included header. OpenZFS is built
+    # here unaltered, in an environment that is neither kernel nor
+    # userland, and the four `nested' include directories are how the
+    # tree bridges that. Without them <sys/list.h> resolves to the wrong
+    # list.h and ECKSUM, NBBY and boolean_t are simply undefined, which
+    # is the whole ZFS label reader not compiling.
+    if (rel.startswith("stand/libsa/zfs/")
+            or rel == "stand/efi/boot1/zfs_module.c"):
+        zfs = f"{s}/sys/contrib/openzfs/include/os/freebsd"
+        f[:0] = [f"-I{s}/stand/libsa/zfs/spl", f"-I{zfs}",
+                 f"-I{zfs}/spl", f"-I{zfs}/zfs",
+                 "-include", f"{zfs}/spl/sys/ccompile.h",
+                 "-DNEED_SOLARIS_BOOLEAN"]
+    sub = rel.split("/")[1] if rel.count("/") > 0 else ""
+    if sub == "efi":
+        # efi/boot1/Makefile:8 and :44 - boot1 is the tiny EFI program
+        # that finds a root filesystem, and its two filesystem readers
+        # are each declared behind the -D its Makefile sets.
+        # efi/loader/Makefile:74. bootstrap.h:243 puts
+        # f_kernphys_relocatable behind `__amd64__ || (__i386__ && EFI)'
+        # and efi/loader/bootinfo.c:41 picks <efi.h> over kboot.h on
+        # it, so without -DEFI the EFI loader is read as the kboot one.
+        f += ["-DEFI", "-DEFI_BOOT1", "-DEFI_ZFS_BOOT", "-DEFI_UFS_BOOT",
+              f"-I{s}/stand/efi/include", f"-I{s}/stand/efi/include/{mach}",
+              f"-I{s}/stand/efi/libefi", f"-I{s}/stand/efi/loader",
+              f"-I{s}/stand/efi/loader/arch/{mach}",
+              f"-I{s}/stand/efi/boot1"]
+    elif sub in ("i386", "libofw"):
+        f += [f"-I{s}/stand/i386", f"-I{s}/stand/i386/common",
+              # BEFORE the efi/gptboot copy the tail adds: there are two
+              # drv.h in the tree, and they disagree about struct dsk.
+              # The EFI one has a `devinfo' member the BIOS one does
+              # not, so an i386 boot block reading the EFI header is a
+              # different program.
+              f"-I{s}/stand/i386/btx/lib", f"-I{s}/stand/i386/boot2",
+              f"-I{s}/stand/libofw"]
+    elif sub == "userboot":
+        f += [f"-I{s}/stand/userboot"]
+    elif sub == "kboot":
+        f += [f"-I{s}/stand/kboot/include",
+              f"-I{s}/stand/kboot/include/arch/{march}",
+              f"-I{s}/stand/kboot/libkboot",
+              f"-I{s}/stand/kboot/libkboot/arch/{march}",
+              f"-I{s}/stand/kboot/kboot",
+              f"-I{s}/stand/kboot/kboot/arch/{march}",
+              f"-I{s}/stand/arm64/libarm64"]
+    elif sub == "uboot":
+        f += [f"-I{s}/stand/uboot", f"-I{s}/stand/uboot/lib"]
+    elif sub in ("usb", "kshim"):
+        # The USB loader is a kernel driver behind a shim, so it asks
+        # for the kernel's generated option headers the same way a
+        # driver does. opt_shim() is where those live.
+        f += [f"-I{s}/stand/usb", f"-I{s}/stand/usb/storage",
+              f"-I{s}/stand/kshim", f"-I{opt_shim(arch)}"]
+    elif sub in ("arm64", "powerpc"):
+        # powerpc/ofw/Makefile:44-45 - where Open Firmware puts the
+        # loader, which conf.c reads as a compile-time constant.
+        f += [f"-I{s}/stand/{sub}/lib{sub}", f"-I{s}/stand/libofw",
+              "-DRELOC=0x1C00000"]
+    # efi/gptboot/Makefile:15 names libsa/gpt.c in its own SRCS, and
+    # its drv.h is the one that file is compiled against. Last, so the
+    # i386 branch above still wins for an i386 boot block.
+    f.append(f"-I{s}/stand/efi/gptboot")
+    # The source's own directory, then the installed headers - last,
+    # for the reason include_flags() gives at the same point.
+    f += [f"-I{(SRC / rel).parent}", f"-I{incs_shim(arch)}"]
+    return f
+
+
 def machine_shim(arch: str = "amd64") -> str:
     """A directory laid out the way the installed header tree is.
 
@@ -4219,6 +4464,19 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
         if "-DPBSD_WANTS_STDINC" in flags:
             flags = [f for f in flags
                      if f not in ("-nostdinc", "-DPBSD_WANTS_STDINC")]
+        return _dedupe_defines(flags)
+
+    # ...and stand/ is a THIRD universe, which is why it took a branch
+    # of its own rather than a few more -I on the userland one. The
+    # loader has no <stdio.h> and no <sys/param.h>: stand/libsa/stand.h
+    # IS its stdio.h, by symlink, and a userland <stdio.h> ahead of it
+    # compiles a file that declares FILE and then uses libsa's
+    # incompatible one. 300 .c files that no sweep had ever opened, in
+    # the code that parses an ELF image, a ZFS label and a DHCP reply
+    # before the kernel - and therefore before every HardenedBSD
+    # mitigation - exists.
+    if rel.startswith("stand/"):
+        flags.extend(stand_flags(rel, arch))
         return _dedupe_defines(flags)
 
     # Any header this directory's Makefile GENERATES. bin/sh's nodes.h,

@@ -345,6 +345,15 @@ jobs:
       matrix:
         include:
           - { name: libs,   scopes: '--scope lib --scope libexec', check: '--check-errors' }
+          # stand/ - the boot loader, and the last part of the tree no
+          # analyse shard had ever opened. It parses an ELF kernel
+          # image, a GPT, a FAT/UFS/ISO9660/ZFS label and a DHCP, TFTP
+          # or NFS reply BEFORE the kernel exists, so before any of
+          # HardenedBSD's mitigations do. 282 of its 300 translation
+          # units compile; the other eighteen are in
+          # expected_errors.py with the line of the Makefile that
+          # explains each one.
+          - { name: stand,  scopes: '--scope stand', check: '--check-errors' }
           # bin, sbin, usr.bin and usr.sbin. This shard ran WITHOUT
           # --check-errors while its hole was being filled: 133 of its
           # 1,862 translation units did not compile, in seven named

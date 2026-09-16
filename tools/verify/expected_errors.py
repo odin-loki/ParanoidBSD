@@ -1007,6 +1007,94 @@ EXPECTED = {
     # because they sit inside trees that ARE built.
     "sys/contrib/dev/ath/ath_hal/ar9300/ar9300_sim.c":
         "not built: the ar9300 HAL's simulator, in no files* or SRCS",
+
+    # --- stand/, the boot loader -------------------------------------
+    #
+    # 282 of its 300 translation units compile; these eighteen are the
+    # rest, and each one is a decision rather than a gap. See
+    # includes.stand_flags() for what the other 282 are compiled with.
+
+    # Sources another source #includes. Their code IS analysed - through
+    # the file that includes them - and compiling them alone is asking
+    # for a program the tree does not build.
+    "stand/libsa/ufsread.c":
+        "not a translation unit: #included by i386/boot2/boot2.c, "
+        "i386/gptboot/gptboot.c, powerpc/boot1.chrp/boot1.c and "
+        "efi/boot1/ufs_module.c",
+    "stand/libsa/cd9660read.c":
+        "not a translation unit: #included by i386/isoboot/isoboot.c",
+    "stand/libsa/zfs/zfsimpl.c":
+        "not a translation unit: #included by libsa/zfs/zfs.c and "
+        "efi/boot1/zfs_module.c",
+    "stand/ficl/x86/sysdep.c":
+        "not a translation unit: ficl/amd64/sysdep.c:19 and "
+        "ficl/i386/sysdep.c:19 both #include \"../x86/sysdep.c\", and "
+        "ficl.mk:5-9 never makes FICL_CPUARCH `x86'",
+
+    # A header the build generates, the way device_if.h is.
+    "stand/i386/boot2/boot2.c":
+        "i386/boot2/Makefile:85 GENERATES boot2.h from boot1.out - it "
+        "is the first-stage block's size and entry point, and does not "
+        "exist in a source tree",
+
+    # A -D only one program's own Makefile sets, where the file says so.
+    "stand/common/md.c":
+        "md.c:37-38 is `#error Must be compiled with MD_IMAGE_SIZE "
+        "defined'. Only a loader with an embedded memory disk builds "
+        "it, and the size is that image's",
+
+    # Architecture. The path names none, so the sweep reads them as
+    # amd64, and they are each one other architecture's clock.
+    "stand/efi/libefi/time_arm64.c":
+        "efi/libefi/Makefile:31-32 builds it only for aarch64",
+    "stand/efi/libefi/time_event.c":
+        "efi/libefi/Makefile:29-30 builds it only for arm and riscv",
+
+    # ficl's own upstream host harness, behind `.ifmake testmain'.
+    "stand/ficl/testmain.c":
+        "ficl/Makefile:20-24 builds it only under `.ifmake testmain'",
+    "stand/ficl/unix.c":
+        "ficl's upstream Unix host build, in no SRCS in this tree",
+
+    # Named by no Makefile anywhere under stand/.
+    "stand/i386/libi386/pread.c":
+        "named by no SRCS: a NetBSD 1997 file (pread.c:2) the i386 "
+        "loader carries and does not build. NOT_NAMED",
+    "stand/userboot/test/test.c":
+        "userboot/test is the bhyve loader's TEST harness, built "
+        "against the host's <dirent.h> rather than libsa's",
+
+    # stand/Makefile's SUBDIR list names ficl, forth, liblua, lua,
+    # defaults, fonts, images, man, efi, kboot, uboot, libofw, fdt and
+    # ${MACHINE}. It does not name usb, so nothing descends into the
+    # USB loader or the kernel shim it is built on.
+    "stand/usb/usb_busdma_loader.c":
+        "not descended into: stand/Makefile's SUBDIR never names usb",
+    "stand/usb/storage/umass_common.c":
+        "not descended into: stand/Makefile's SUBDIR never names usb",
+    "stand/usb/storage/umass_loader.c":
+        "not descended into: stand/Makefile's SUBDIR never names usb",
+    "stand/usb/tools/sysinit.c":
+        "not descended into: stand/Makefile's SUBDIR never names usb, "
+        "and this is a host tool besides - it wants <err.h>",
+    "stand/kshim/bsd_kernel.c":
+        "not descended into: the kernel shim stand/usb is built on, "
+        "and stand/Makefile's SUBDIR never names either",
+
+    # The one file the sweep's own flags cost, and it is worth saying
+    # which way the trade went. i386/libi386/Makefile ends at
+    # bsd.lib.mk, NOT loader.mk, so libi386 is compiled WITHOUT
+    # -DLOADER_ZFS_SUPPORT and libi386.h:29-31 never opens libzfs.h.
+    # stand_flags() defines it tree-wide, because without it the
+    # loader's ZFS, UFS, NFS, TFTP and GPT readers are compiled out and
+    # the sweep reads a loader that mounts nothing. libzfs.h:30 then
+    # pulls in sys/cddl/boot/zfs/zfsimpl.h, whose boolean_t is an enum
+    # where sys/vm/vm.h:121 has already made it an int.
+    "stand/i386/libi386/elf64_freebsd.c":
+        "boolean_t is `enum' in cddl/boot/zfs/zfsimpl.h:80 and `int' "
+        "in sys/vm/vm.h:121, and the tree-wide -DLOADER_ZFS_SUPPORT "
+        "that opens every other loader filesystem reader puts both in "
+        "this one file",
 }
 
 

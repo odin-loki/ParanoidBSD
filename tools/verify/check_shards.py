@@ -56,7 +56,6 @@ UNANALYSED = {
     "krb5":       "third-party source PBSD does not maintain",
     "secure":     "third-party source PBSD does not maintain",
     "sys":        "checked directory-by-directory above, not as a whole",
-    "stand":      "not yet - the loader is its own header universe",
     "tests":      "not yet - exercises the tree rather than being it",
     "tools":      "build tooling, not shipped code",
     "release":    "build tooling, not shipped code",
@@ -88,6 +87,9 @@ UNCHECKED = {
     "sbin":       "analysed since sweep 18; not model-checked yet",
     "usr.bin":    "analysed since sweep 18; not model-checked yet",
     "usr.sbin":   "analysed since sweep 18; not model-checked yet",
+    "stand":      "analysed since the loader got its own header "
+                  "universe (includes.stand_flags); not model-checked "
+                  "yet",
 }
 
 # Analyse shards deliberately run WITHOUT --check-errors, and why. A
