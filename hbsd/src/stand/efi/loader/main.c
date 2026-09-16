@@ -1308,7 +1308,9 @@ main(int argc, CHAR16 *argv[])
 #define	VID_SER_BOTH	RB_MULTIPLE
 #define	SER_VID_BOTH	(RB_SERIAL | RB_MULTIPLE)
 #define	CON_MASK	(RB_SERIAL | RB_MULTIPLE)
-	if (strcmp(getenv("console"), "efi") == 0) {
+	/* getenv() is NULL for a variable nobody set - see metadata.c. */
+	if (getenv("console") != NULL &&
+	    strcmp(getenv("console"), "efi") == 0) {
 		if ((howto & CON_MASK) == 0) {
 			/* No override, uhowto is controlling and efi cons is perfect */
 			howto = howto | (uhowto & CON_MASK);

@@ -31261,4 +31261,63 @@ divides by it directly.  On x86 that is `#DE` in an environment with
 no handler.  Both guarded.
 Probe: `tools/verify/probes/boot1_media_blocksize.c`.
 
-The other 44 are the next pass.
+#### Four of the five `getboothowto()` copies trust `getenv("console")`
+
+    common/metadata.c:58        if (!strcmp(getenv("console"), "comconsole"))
+    common/metadata.c:60        if (!strcmp(getenv("console"), "nullconsole"))
+    efi/loader/main.c:1311      if (strcmp(getenv("console"), "efi") == 0) {
+    i386/libi386/bootinfo.c:49  string = next = strdup(getenv("console"));
+    userboot/userboot/bootinfo.c:47   the same line
+
+`getenv()` returns NULL for a variable that is not set, and `unset
+console` at the loader prompt is a thing a person can type — as is a
+`loader.conf` or an EFI `NextLoaderEnv` that never sets it.  libsa's
+`strdup()` is `malloc` plus `strlen`, so the last two are the same
+dereference one call deeper, and the result is then handed to
+`strcmp()` whether the `strdup` succeeded or not.
+
+The fifth copy, `efi/loader/bootinfo.c:82`, already reads
+
+    console = getenv("console");
+    if (console != NULL) {
+
+which is the shape the other four now have.  This is what five
+hand-copied versions of one function look like after twenty years:
+one of them was fixed and the fix did not travel.
+Probe: `tools/verify/probes/loader_console_unset.c`.
+
+#### `uboot_parsedev()`: `cp` is read on the path that never sets it
+
+`stand/uboot/devicename.c:122`
+
+    char *cp;
+    const char *np;
+    ...
+    case DEVT_NET:
+        unit = 0;
+        if (*np && (*np != ':')) {
+            unit = strtol(np, &cp, 0);
+            ...
+        }
+        if (*cp && (*cp != ':')) {
+
+`net` and `net:` both leave `np` pointing at `'\0'` or `':'`, so the
+`strtol` is skipped and `cp` is still the uninitialised local it was
+declared as when the next line dereferences it.  A device name is
+something a person types at the loader prompt and something
+`loader.conf` sets, so both spellings arrive.  `cp` now starts where
+that `strtol` would have left it for an empty number — and the
+`malloc()` four lines above, which was unchecked, is checked.
+Probe: `tools/verify/probes/uboot_parsedev_cp.c`.
+
+#### `setmultipath()`: a premise that holds across two loops
+
+`stand/common/install.c:58` reports `strlen(val)` with `val` NULL,
+reached from `setmultipath()`'s fill loop where `val = s` and `s` is a
+`strchr` that can return NULL.  It cannot: the counting loop above it
+walks the same commas in the same buffer, so `count` is exactly the
+number of segments and the iteration that sets `val = NULL` is the
+last one.  The analyser cannot correlate two loops over one string.
+Checked, not fixed.
+
+The other 39 are the next pass.

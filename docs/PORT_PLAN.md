@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,525 | 2,433 |
+| 7 | `stand` | 484 | 135,559 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,995** | **114,208** |
+| | **total** | **41,143** | **21,304,029** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37226,7 +37226,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.2.29.3 `md_open()` · `TODO-FN`
   - [ ] 7.2.29.4 `md_close()` · `TODO-FN`
   - [ ] 7.2.29.5 `md_print()` · `TODO-FN`
-- [ ] **7.2.30** `metadata.c` · 228L · `TODO-PORT` · 4 fn
+- [ ] **7.2.30** `metadata.c` · 239L · `TODO-PORT` · 4 fn
   - [ ] 7.2.30.1 `md_getboothowto()` · `TODO-FN`
   - [ ] 7.2.30.2 `md_load_dual()` · `TODO-FN`
   - [ ] 7.2.30.3 `md_load()` · `TODO-FN`
@@ -37752,7 +37752,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.15.6.20 `command_uga()` · `TODO-FN`
 - [ ] **7.15.7** `framebuffer.h` · 38L · `TODO-HDR`
 - [ ] **7.15.8** `loader_efi.h` · 71L · `TODO-HDR`
-- [ ] **7.15.9** `main.c` · 2,026L gen:11 · `TODO-PORT` · 40 fn
+- [ ] **7.15.9** `main.c` · 2,028L gen:11 · `TODO-PORT` · 40 fn
   - [ ] 7.15.9.1 `has_keyboard()` · `TODO-FN`
   - [ ] 7.15.9.2 `set_currdev_devdesc()` · `TODO-FN`
   - [ ] 7.15.9.3 `set_currdev_devsw()` · `TODO-FN`
@@ -38467,7 +38467,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.40.9.1 `bios_getsmap()` · `TODO-FN`
   - [ ] 7.40.9.2 `bios_addsmapdata()` · `TODO-FN`
   - [ ] 7.40.9.3 `command_smap()` · `TODO-FN`
-- [ ] **7.40.10** `bootinfo.c` · 84L · `TODO-MD` · 2 fn
+- [ ] **7.40.10** `bootinfo.c` · 90L · `TODO-MD` · 2 fn
   - [ ] 7.40.10.1 `bi_getboothowto()` · `TODO-FN`
   - [ ] 7.40.10.2 `bi_setboothowto()` · `TODO-FN`
 - [ ] **7.40.11** `bootinfo32.c` · 190L · `TODO-MD` · 1 fn
@@ -39875,7 +39875,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.70.2.2 `uboot_copyin()` · `TODO-FN`
   - [ ] 7.70.2.3 `uboot_copyout()` · `TODO-FN`
   - [ ] 7.70.2.4 `uboot_readin()` · `TODO-FN`
-- [ ] **7.70.3** `devicename.c` · 180L · `TODO-PORT` · 3 fn
+- [ ] **7.70.3** `devicename.c` · 189L · `TODO-PORT` · 3 fn
   - [ ] 7.70.3.1 `uboot_getdev()` · `TODO-FN`
   - [ ] 7.70.3.2 `uboot_parsedev()` · `TODO-FN`
   - [ ] 7.70.3.3 `uboot_setcurrdev()` · `TODO-FN`
@@ -40087,7 +40087,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.79.1.1 `userboot_autoload()` · `TODO-FN`
 - [ ] **7.79.2** `biossmap.c` · 72L · `TODO-PORT` · 1 fn
   - [ ] 7.79.2.1 `bios_addsmapdata()` · `TODO-FN`
-- [ ] **7.79.3** `bootinfo.c` · 83L · `TODO-PORT` · 2 fn
+- [ ] **7.79.3** `bootinfo.c` · 89L · `TODO-PORT` · 2 fn
   - [ ] 7.79.3.1 `bi_getboothowto()` · `TODO-FN`
   - [ ] 7.79.3.2 `bi_setboothowto()` · `TODO-FN`
 - [ ] **7.79.4** `bootinfo32.c` · 175L · `TODO-PORT` · 1 fn

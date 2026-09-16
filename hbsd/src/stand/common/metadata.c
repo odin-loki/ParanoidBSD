@@ -52,13 +52,24 @@ md_getboothowto(char *kargs)
 {
     int		howto;
 
+    const char	*console;
+
     /* Parse kargs */
     howto = boot_parse_cmdline(kargs);
     howto |= boot_env_to_howto();
-    if (!strcmp(getenv("console"), "comconsole"))
-	howto |= RB_SERIAL;
-    if (!strcmp(getenv("console"), "nullconsole"))
-	howto |= RB_MUTE;
+    /*
+     * getenv() returns NULL for a variable that is not set, and
+     * `unset console' at the loader prompt is a thing a person can
+     * type. efi/loader/bootinfo.c:82 already tests this; the four
+     * other copies of this function did not.
+     */
+    console = getenv("console");
+    if (console != NULL) {
+	if (!strcmp(console, "comconsole"))
+	    howto |= RB_SERIAL;
+	if (!strcmp(console, "nullconsole"))
+	    howto |= RB_MUTE;
+    }
     return(howto);
 }
 

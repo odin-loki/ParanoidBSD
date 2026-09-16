@@ -103,8 +103,17 @@ uboot_parsedev(struct uboot_devdesc **dev, const char *devspec,
 	if (dv == NULL)
 		return(ENOENT);
 	idev = malloc(sizeof(struct uboot_devdesc));
+	if (idev == NULL)
+		return (ENOMEM);
 	err = 0;
 	np = (devspec + strlen(dv->dv_name));
+	/*
+	 * The DEVT_NET arm below reads *cp whether or not the strtol()
+	 * that sets it ran, and it does not run for a devspec with no
+	 * unit number - `net' or `net:'. Point it where that strtol()
+	 * would have left it for an empty number.
+	 */
+	cp = __DECONST(char *, np);
 
 	switch(dv->dv_type) {
 	case DEVT_NONE:

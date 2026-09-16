@@ -45,8 +45,14 @@ bi_getboothowto(char *kargs)
     howto = boot_parse_cmdline(kargs);
     howto |= boot_env_to_howto();
 
-    /* Enable selected consoles */
-    string = next = strdup(getenv("console"));
+    /*
+     * Enable selected consoles.  getenv() is NULL for a variable
+     * nobody set, and strdup() of that is strlen(NULL) in libsa;
+     * strdup() itself can also fail.  efi/loader/bootinfo.c:82 tests
+     * the first of those and this copy did not test either.
+     */
+    string = getenv("console");
+    string = next = (string != NULL) ? strdup(string) : NULL;
     vidconsole = 0;
     while (next != NULL) {
 	curpos = strsep(&next, " ,");
@@ -67,7 +73,7 @@ bi_getboothowto(char *kargs)
      * XXX: Note that until the kernel is ready to respect multiple consoles
      * for the boot messages, the first named console is the primary console
      */
-    if (!strcmp(string, "vidconsole"))
+    if (string != NULL && !strcmp(string, "vidconsole"))
 	howto &= ~RB_SERIAL;
 
     free(string);

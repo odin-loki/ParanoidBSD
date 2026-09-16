@@ -5755,6 +5755,45 @@ FIXES = {
         "diskless boot",
     ),
 
+    "hbsd/src/stand/common/metadata.c": (
+        "console = getenv(\"console\");\n    if (console != NULL) {",
+        "if (!strcmp(getenv(\"console\"), \"comconsole\"))",
+        "md_getboothowto: getenv() is NULL for a variable nobody set, "
+        "and `unset console' at the loader prompt is a thing a person "
+        "can type. efi/loader/bootinfo.c:82 already tested this; the "
+        "four other copies did not",
+    ),
+
+    "hbsd/src/stand/efi/loader/main.c": (
+        "if (getenv(\"console\") != NULL &&\n\t    strcmp(getenv"
+        "(\"console\"), \"efi\") == 0) {",
+        "if (strcmp(getenv(\"console\"), \"efi\") == 0) {",
+        "the same unchecked getenv(\"console\"), in the EFI loader's "
+        "console reconciliation",
+    ),
+
+    "hbsd/src/stand/i386/libi386/bootinfo.c": (
+        "string = next = (string != NULL) ? strdup(string) : NULL;",
+        "string = next = strdup(getenv(\"console\"));",
+        "bi_getboothowto: strdup() of an unset getenv() is "
+        "strlen(NULL) in libsa, and strdup() can fail besides - the "
+        "result was then handed to strcmp() unchecked",
+    ),
+
+    "hbsd/src/stand/userboot/userboot/bootinfo.c": (
+        "string = next = (string != NULL) ? strdup(string) : NULL;",
+        "string = next = strdup(getenv(\"console\"));",
+        "bi_getboothowto: the bhyve loader's copy of the same",
+    ),
+
+    "hbsd/src/stand/uboot/devicename.c": (
+        "cp = __DECONST(char *, np);",
+        "idev = malloc(sizeof(struct uboot_devdesc));\n\terr = 0;",
+        "uboot_parsedev: the DEVT_NET arm reads *cp whether or not the "
+        "strtol() that sets it ran, and it does not run for `net' or "
+        "`net:' - and the malloc above it was unchecked",
+    ),
+
     "hbsd/src/stand/libsa/zfs/zfsimpl.c": (
         "static blkptr_t dnode_cache_bp0;",
         "static uint64_t dnode_cache_bn;\nstatic char *dnode_cache_buf;\n\n"
