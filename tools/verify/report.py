@@ -647,6 +647,24 @@ def main() -> int:
                     (x.strip() for x in d.splitlines()
                      if "out of memory" in x.lower()),
                     "")
+            # And the second most common, for the same reason and in
+            # the same retroactive way. cbmc_driver.py now hoists this
+            # line, but every record written before it did still
+            # carries the sentence somewhere in its window:
+            #
+            #   too many addressed objects: maximum number of objects
+            #   is set to 2^n=256 (with n=8); use the `--object-bits n'
+            #   option to increase the maximum number
+            #
+            # Run 33: 135 of 424, 32%, and unlike the memory bound this
+            # one names a knob. Counting it as "no reason recorded"
+            # says we do not know when we do, and hides the fact that a
+            # third of the non-answers have a remedy.
+            if not first:
+                first = next(
+                    (x.strip() for x in d.splitlines()
+                     if "too many addressed objects" in x.lower()),
+                    "")
             if not first:
                 first = "(CBMC printed no reason)"
             why[first[:72]] += 1
