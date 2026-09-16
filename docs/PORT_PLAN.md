@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,467 | 2,433 |
+| 7 | `stand` | 484 | 135,525 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,937** | **114,208** |
+| | **total** | **41,143** | **21,303,995** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37366,14 +37366,14 @@ function; a file with two hundred of them is a project.
   - [ ] 7.3.3.2 `load_loader()` · `TODO-FN`
   - [ ] 7.3.3.3 `choice_protocol()` · `TODO-FN`
 - [ ] **7.3.4** `proto.h` · 28L · `TODO-HDR`
-- [ ] **7.3.5** `ufs_module.c` · 227L · `TODO-PORT` · 6 fn
+- [ ] **7.3.5** `ufs_module.c` · 237L · `TODO-PORT` · 6 fn
   - [ ] 7.3.5.1 `dskread()` · `TODO-FN`
   - [ ] 7.3.5.2 `init_dev()` · `TODO-FN`
   - [ ] 7.3.5.3 `probe()` · `TODO-FN`
   - [ ] 7.3.5.4 `load()` · `TODO-FN`
   - [ ] 7.3.5.5 `status()` · `TODO-FN`
   - [ ] 7.3.5.6 `_devices()` · `TODO-FN`
-- [ ] **7.3.6** `zfs_module.c` · 299L · `TODO-PORT` · 8 fn
+- [ ] **7.3.6** `zfs_module.c` · 302L · `TODO-PORT` · 8 fn
   - [ ] 7.3.6.1 `ldi_get_size()` · `TODO-FN`
   - [ ] 7.3.6.2 `vdev_read()` · `TODO-FN`
   - [ ] 7.3.6.3 `probe()` · `TODO-FN`
@@ -37960,7 +37960,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.22.2.19 `ficlSetStackSize()` · `TODO-FN`
   - [ ] 7.22.2.20 `ficlTermSystem()` · `TODO-FN`
   - [ ] 7.22.2.21 `ficlSetVersionEnv()` · `TODO-FN`
-- [ ] **7.22.3** `ficl.h` · 1,168L gen:1 · `TODO-HDR`
+- [ ] **7.22.3** `ficl.h` · 1,182L gen:1 · `TODO-HDR`
 - [ ] **7.22.4** `fileaccess.c` · 432L · `TODO-PORT` · 21 fn
   - [ ] 7.22.4.1 `pushIor()` · `TODO-FN`
   - [ ] 7.22.4.2 `ficlFopen()` · `TODO-FN`
@@ -38042,7 +38042,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.22.6.7 `ficl_term_drawrect()` · `TODO-FN`
   - [ ] 7.22.6.8 `gfx_interp_ref()` · `TODO-FN`
   - [ ] 7.22.6.9 `ficlCompileGfx()` · `TODO-FN`
-- [ ] **7.22.7** `loader.c` · 884L · `TODO-PORT` · 30 fn
+- [ ] **7.22.7** `loader.c` · 898L · `TODO-PORT` · 30 fn
   - [ ] 7.22.7.1 `ficlSetenv()` · `TODO-FN`
   - [ ] 7.22.7.2 `ficlSetenvq()` · `TODO-FN`
   - [ ] 7.22.7.3 `ficlGetenv()` · `TODO-FN`
@@ -39792,7 +39792,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.66.4.44 `zfs_bootenv()` · `TODO-FN`
   - [ ] 7.66.4.45 `zfs_belist_add()` · `TODO-FN`
   - [ ] 7.66.4.46 `zfs_set_env()` · `TODO-FN`
-- [ ] **7.66.5** `zfsimpl.c` · 4,063L · `TODO-PORT`
+- [ ] **7.66.5** `zfsimpl.c` · 4,080L · `TODO-PORT`
 
 ### 7.67 `stand/libsa/zfs/spl/sys`
 

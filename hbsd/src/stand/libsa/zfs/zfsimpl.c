@@ -137,9 +137,23 @@ static const char *features_for_read[] = {
  */
 static spa_list_t zfs_pools;
 
+/*
+ * The block cache below is keyed on the ADDRESS of the caller's
+ * dnode_phys_t, and most callers put that on their stack - zfs.c's
+ * zfs_lookup() and efi/boot1/zfs_module.c's load() among them. The
+ * pointer outlives the frame, so the next caller at the same depth
+ * lands its own dnode at the same address and the cache HITS on the
+ * previous file's block. Nothing crashes; the wrong bytes come back.
+ *
+ * dnode_cache_bp0 is the cached dnode's own first block pointer, and
+ * it has to match too. Two dnodes with the same dn_blkptr[0] address
+ * the same data, so a hit is then a hit on the right object whatever
+ * the stack did with the address.
+ */
 static const dnode_phys_t *dnode_cache_obj;
 static uint64_t dnode_cache_bn;
 static char *dnode_cache_buf;
+static blkptr_t dnode_cache_bp0;
 
 static int zio_read(const spa_t *spa, const blkptr_t *bp, void *buf);
 static int zio_read_impl(const spa_t *spa, const blkptr_t *bp, void *buf,
@@ -2491,7 +2505,9 @@ dnode_read(const spa_t *spa, const dnode_phys_t *dnode, off_t offset,
 		if (bn > dnode->dn_maxblkid)
 			return (EIO);
 
-		if (dnode == dnode_cache_obj && bn == dnode_cache_bn)
+		if (dnode == dnode_cache_obj && bn == dnode_cache_bn &&
+		    memcmp(&dnode_cache_bp0, &dnode->dn_blkptr[0],
+		    sizeof(dnode_cache_bp0)) == 0)
 			goto cached;
 
 		indbp = dnode->dn_blkptr;
@@ -2515,6 +2531,7 @@ dnode_read(const spa_t *spa, const dnode_phys_t *dnode, off_t offset,
 		}
 		dnode_cache_obj = dnode;
 		dnode_cache_bn = bn;
+		dnode_cache_bp0 = dnode->dn_blkptr[0];
 	cached:
 
 		/*

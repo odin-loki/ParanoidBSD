@@ -315,7 +315,11 @@ void
 ficlCcall(FICL_VM *pVM)
 {
 	int (*func)(int, ...);
-	int result, p[10];
+	/*
+	 * Zeroed because all ten are passed below whatever nparam says,
+	 * so a `2 ccall' used to hand the callee eight stack words.
+	 */
+	int result, p[10] = { 0 };
 	int nparam, i;
 
 #if FICL_ROBUST > 1
@@ -324,6 +328,16 @@ ficlCcall(FICL_VM *pVM)
 
 	func = stackPopPtr(pVM->pStack);
 	nparam = stackPopINT(pVM->pStack);
+
+	/*
+	 * nparam is a word off the Forth stack and the loop below had no
+	 * bound against the size of p, so a larger one wrote past it -
+	 * with values also taken from that stack. ccall is a trusted
+	 * word either way, but an array is still the size it is.
+	 */
+	if (nparam < 0 || nparam > (int)(sizeof(p) / sizeof(p[0])))
+		vmThrowErr(pVM, "Error: ccall takes 0 to %d parameters",
+		    (int)(sizeof(p) / sizeof(p[0])));
 
 #if FICL_ROBUST > 1
 	vmCheckStack(pVM, nparam, 1);

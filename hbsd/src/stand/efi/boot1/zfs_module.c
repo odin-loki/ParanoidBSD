@@ -59,6 +59,9 @@ vdev_read(vdev_t *vdev, void *priv, off_t off, void *buf, size_t bytes)
 	EFI_STATUS status;
 
 	devinfo = (dev_info_t *)priv;
+	/* See ufs_module.c's dskread(): boot1 validates no media field. */
+	if (devinfo->dev->Media->BlockSize == 0)
+		return (-1);
 	lba = off / devinfo->dev->Media->BlockSize;
 	remainder = off % devinfo->dev->Media->BlockSize;
 

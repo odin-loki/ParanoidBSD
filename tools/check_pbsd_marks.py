@@ -5755,6 +5755,59 @@ FIXES = {
         "diskless boot",
     ),
 
+    "hbsd/src/stand/libsa/zfs/zfsimpl.c": (
+        "static blkptr_t dnode_cache_bp0;",
+        "static uint64_t dnode_cache_bn;\nstatic char *dnode_cache_buf;\n\n"
+        "static int zio_read",
+        "dnode_read's block cache is keyed on the ADDRESS of the "
+        "caller's dnode_phys_t, and zfs.c's zfs_lookup() and "
+        "efi/boot1/zfs_module.c's load() both put that on the stack - "
+        "so the next caller at the same depth hits on the previous "
+        "file's block and the wrong bytes come back",
+    ),
+
+    "hbsd/src/stand/efi/boot1/ufs_module.c": (
+        "if (devinfo->dev->Media->BlockSize < DEV_BSIZE)\n\t\treturn (-1);",
+        "int size;\n\tEFI_STATUS status;\n\n\tlba += devinfo->partoff;",
+        "dskread: BlockSize is an EFI_BLOCK_IO_MEDIA field boot1 "
+        "validates nowhere, and under DEV_BSIZE the inner division is "
+        "zero - efipart.c:250 does validate it, but that is the loader "
+        "this program runs before",
+    ),
+
+    "hbsd/src/stand/efi/boot1/zfs_module.c": (
+        "if (devinfo->dev->Media->BlockSize == 0)\n\t\treturn (-1);",
+        "devinfo = (dev_info_t *)priv;\n\tlba = off / devinfo->dev->"
+        "Media->BlockSize;",
+        "vdev_read: the same unvalidated BlockSize, divided by and "
+        "taken modulo directly",
+    ),
+
+    "hbsd/src/stand/ficl/ficl.h": (
+        "_Noreturn void vmThrowErr (FICL_VM *pVM, char *fmt, ...);",
+        "void        vmThrowErr     (FICL_VM *pVM, char *fmt, ...);",
+        "vmThrowErr() ends in an unconditional longjmp() and every "
+        "caller is written as `if (!p) vmThrowErr(...); strncpy(p,...)' "
+        "- ten sites in loader.c, gfx_loader.c and words.c reached a "
+        "string function with NULL because nothing said it does not "
+        "return",
+    ),
+
+    "hbsd/src/stand/ficl/vm.c": (
+        "_Noreturn void vmThrowErr(FICL_VM *pVM, char *fmt, ...)",
+        "\nvoid vmThrowErr(FICL_VM *pVM, char *fmt, ...)",
+        "the definition matches the declaration ficl.h now carries",
+    ),
+
+    "hbsd/src/stand/ficl/loader.c": (
+        "if (nparam < 0 || nparam > (int)(sizeof(p) / sizeof(p[0])))",
+        "nparam = stackPopINT(pVM->pStack);\n\n#if FICL_ROBUST > 1\n"
+        "\tvmCheckStack(pVM, nparam, 1);",
+        "ficlCcall: nparam is a word off the Forth stack and the loop "
+        "filling int p[10] had no bound against it; all ten were also "
+        "passed to the callee however few were popped",
+    ),
+
     "hbsd/src/stand/i386/libi386/pxe.c": [
         (
             "if (isr->BufferLength > size - rsize) {\n\t\t\tfree(buf);\n"

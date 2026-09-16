@@ -51,6 +51,16 @@ dskread(void *buf, uint64_t lba, int nblk)
 	int size;
 	EFI_STATUS status;
 
+	/*
+	 * BlockSize comes from the EFI_BLOCK_IO_MEDIA of whatever was
+	 * plugged in, and boot1 validates none of it - efipart.c:250
+	 * does (>= 512, <= 65536, a power of two) but that is the
+	 * LOADER, which this program runs before. Under 512 the inner
+	 * division is zero and the outer one is a #DE with no handler.
+	 */
+	if (devinfo->dev->Media->BlockSize < DEV_BSIZE)
+		return (-1);
+
 	lba += devinfo->partoff;
 	lba = lba / (devinfo->dev->Media->BlockSize / DEV_BSIZE);
 	size = nblk * DEV_BSIZE;

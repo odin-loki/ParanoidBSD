@@ -589,7 +589,21 @@ void        vmSetTextOut   (FICL_VM *pVM, OUTFUNC textOut);
 void        vmTextOut      (FICL_VM *pVM, char *text, int fNewline);
 void        vmTextOut      (FICL_VM *pVM, char *text, int fNewline);
 void        vmThrow        (FICL_VM *pVM, int except);
-void        vmThrowErr     (FICL_VM *pVM, char *fmt, ...);
+/*
+ * vmThrowErr() ends in an unconditional longjmp(), so it does not
+ * return - and every caller is written that way, as
+ *
+ *	name = (char *)ficlMalloc(names + 1);
+ *	if (!name)
+ *		vmThrowErr(pVM, "Error: out of memory");
+ *	strncpy(name, namep, names);
+ *
+ * where the strncpy is reached with a NULL name unless the compiler
+ * is told. Ten such sites in loader.c, gfx_loader.c and words.c.
+ * vmThrow() above is NOT noreturn: it returns when pVM->pState is
+ * NULL.
+ */
+_Noreturn void vmThrowErr (FICL_VM *pVM, char *fmt, ...);
 
 #define vmGetRunningWord(pVM) ((pVM)->runningWord)
 

@@ -31184,4 +31184,81 @@ therefore before every mitigation HardenedBSD has.  A fragment that
 does not fit the length its frame gave for itself is now `ENXIO`.
 Probe: `tools/verify/probes/pxe_frame_fragments.c`.
 
-The other 60 are the next pass.
+#### `vmThrowErr()` is not declared noreturn, and ten sites depend on it
+
+`stand/ficl/vm.c` ends that function in an unconditional `longjmp()`,
+and every caller in the interpreter is written accordingly:
+
+    name = (char *)ficlMalloc(names + 1);
+    if (!name)
+        vmThrowErr(pVM, "Error: out of memory");
+    strncpy(name, namep, names);
+
+Without the declaration the `strncpy` is reachable with `name` NULL.
+Ten such sites across `loader.c`, `gfx_loader.c` and `words.c` — the
+whole `ficl` scope went from twelve findings to zero on one `_Noreturn`
+plus the one below.  `vmThrow()` beside it is **not** noreturn: it
+returns when `pVM->pState` is NULL, and that distinction is why this is
+a per-function attribute rather than a blanket one.
+
+#### `ficlCcall()`: the parameter count is a word off the Forth stack
+
+    int result, p[10];
+    ...
+    nparam = stackPopINT(pVM->pStack);
+    for (i = 0; i < nparam; i++)
+        p[i] = stackPopINT(pVM->pStack);
+    result = func(p[0], p[1], ... p[9]);
+
+No bound against 10, in either direction, and all ten are passed
+however few were popped.  `ccall` calls an arbitrary C function by
+address, so it is a trusted word and this is not a privilege boundary
+— but an array is still the size it is, and `2 ccall` handed the
+callee eight stack words.  Bounded, and `p` is zeroed.
+Probe: `tools/verify/probes/ficl_ccall_nparam.c`.
+
+#### `dnode_read()`: a block cache keyed on a stack address
+
+`stand/libsa/zfs/zfsimpl.c:140`
+
+    static const dnode_phys_t *dnode_cache_obj;
+    static uint64_t dnode_cache_bn;
+    static char *dnode_cache_buf;
+    ...
+    if (dnode == dnode_cache_obj && bn == dnode_cache_bn)
+        goto cached;
+
+`zfs.c`'s `zfs_lookup()` and `efi/boot1/zfs_module.c`'s `load()` both
+declare `dnode_phys_t dn;` and pass `&dn`.  The pointer outlives the
+frame, so the next caller **at the same call depth** gets the same
+address for a different object, the key matches, and
+`dnode_cache_buf` still holds the previous file's block.  Nothing
+crashes and nothing is reported; the loader reads the wrong bytes, and
+on this path those bytes are the kernel or a module.
+
+The analyser saw one end of it — `core.StackAddressEscape` on `load()`
+— and the other end is in a different file, which is what makes this
+the kind of thing a per-TU checker reports as half a bug.
+
+The cache now also stores the cached dnode's own `dn_blkptr[0]` and
+requires it to match.  Two dnodes with the same first block pointer
+address the same data, so a hit is a hit on the right object whatever
+the stack did with the address.
+Probe: `tools/verify/probes/zfs_dnode_cache_key.c`.
+
+#### boot1 divides by a number the medium supplies
+
+    ufs_module.c:55  lba = lba / (devinfo->dev->Media->BlockSize / DEV_BSIZE);
+    zfs_module.c:62  lba = off / devinfo->dev->Media->BlockSize;
+                     remainder = off % devinfo->dev->Media->BlockSize;
+
+`efipart.c:250-252` validates `BlockSize` — at least 512, at most
+65536, a power of two — but that is the **loader**, and `boot1` is the
+program that runs before it, finds a root filesystem and loads it.
+`boot1` validates no field of `EFI_BLOCK_IO_MEDIA` at all.  Under 512
+the UFS reader's inner division is zero; at zero the ZFS reader
+divides by it directly.  On x86 that is `#DE` in an environment with
+no handler.  Both guarded.
+Probe: `tools/verify/probes/boot1_media_blocksize.c`.
+
+The other 44 are the next pass.

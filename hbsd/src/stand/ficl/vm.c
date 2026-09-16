@@ -568,7 +568,7 @@ void vmThrow(FICL_VM *pVM, int except)
 }
 
 
-void vmThrowErr(FICL_VM *pVM, char *fmt, ...)
+_Noreturn void vmThrowErr(FICL_VM *pVM, char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
