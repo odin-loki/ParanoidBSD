@@ -5744,6 +5744,29 @@ FIXES = {
         "argc moves the stack pointer up",
     ),
 
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_parser.h": (
+        "extern void xyerror(dt_errtag_t, const char *, ...)\n"
+        "    __attribute__((noreturn));",
+        "extern void xyerror(dt_errtag_t, const char *, ...);",
+        "dnerror(), xyerror() and yyerror() all end in longjmp() and "
+        "never return, but were declared plain void. Every caller is "
+        "written as if the call ends the path, so an analyser that "
+        "believes control continues sees a dereference of every "
+        "pointer the error arm was rejecting: 24 of libdtrace's 43 "
+        "findings were that, and they hid the rest",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_pragma.c": (
+        "if (dnp->dn_list == NULL || dnp->dn_list->dn_list == NULL) {",
+        "if (strcmp(name, \"provider\") == 0) {\n\t\tdnp = "
+        "dnp->dn_list;",
+        "dt_pragma_attributes checks ONE link of the dn_list chain and "
+        "then walks three. `#pragma D attributes <attrs> provider' with "
+        "the name and part missing reaches the second link NULL, which "
+        "is a segfault in dtrace(1) where the function three lines up "
+        "already knows how to report a malformed pragma",
+    ),
+
     "hbsd/src/libexec/tftpd/tftp-options.c": (
         "if (isupper((unsigned char)*c))\n"
         "\t\t\t\t*c = tolower((unsigned char)*c);",

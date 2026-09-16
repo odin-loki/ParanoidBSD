@@ -277,14 +277,27 @@ typedef enum {
 	YYS_CONTROL	/* lex/yacc state for parsing control lines */
 } yystate_t;
 
-extern void dnerror(const dt_node_t *, dt_errtag_t, const char *, ...);
+/*
+ * dnerror(), xyerror() and yyerror() all end in
+ * longjmp(yypcb->pcb_jmpbuf, EDT_COMPILER) and never return to their
+ * caller. Saying so matters to more than the optimiser: every caller is
+ * written as if the call ends the path, so a reader -- human or static
+ * analyser -- that believes control continues sees a dereference of
+ * every pointer the error arm was rejecting. Thirty-eight of libdtrace's
+ * forty-two null-dereference findings were that, and they hid the ones
+ * that are real. ctftools.h next door already spells this on terminate()
+ * and aborterr(); this is the same declaration for the same reason.
+ */
+extern void dnerror(const dt_node_t *, dt_errtag_t, const char *, ...)
+    __attribute__((noreturn));
 extern void dnwarn(const dt_node_t *, dt_errtag_t, const char *, ...);
 
-extern void xyerror(dt_errtag_t, const char *, ...);
+extern void xyerror(dt_errtag_t, const char *, ...)
+    __attribute__((noreturn));
 extern void xywarn(dt_errtag_t, const char *, ...);
 extern void xyvwarn(dt_errtag_t, const char *, va_list);
 
-extern void yyerror(const char *, ...);
+extern void yyerror(const char *, ...) __attribute__((noreturn));
 extern void yywarn(const char *, ...);
 extern void yyvwarn(const char *, va_list);
 

@@ -70,11 +70,11 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 17 | `targets` | 0 | 0 | 0 |
 | 18 | `include` | 167 | 21,049 | 0 |
 | 19 | `tools` | 641 | 138,549 | 2,675 |
-| 20 | `cddl` | 227 | 82,361 | 0 |
+| 20 | `cddl` | 227 | 82,391 | 0 |
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,393** | **114,209** |
+| | **total** | **41,143** | **21,304,423** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -145305,7 +145305,7 @@ function; a file with two hundred of them is a project.
 - [ ] **20.35** `cddl/contrib/opensolaris/lib/libctf/common` · 3 files, 673L · `SKIP-VENDOR`
 - [ ] **20.36** `cddl/contrib/opensolaris/lib/libdtrace/aarch64` · 1 files, 139L · `SKIP-VENDOR`
 - [ ] **20.37** `cddl/contrib/opensolaris/lib/libdtrace/arm` · 1 files, 188L · `SKIP-VENDOR`
-- [ ] **20.38** `cddl/contrib/opensolaris/lib/libdtrace/common` · 61 files, 43,166L · `SKIP-VENDOR`
+- [ ] **20.38** `cddl/contrib/opensolaris/lib/libdtrace/common` · 61 files, 43,196L · `SKIP-VENDOR`
 - [ ] **20.39** `cddl/contrib/opensolaris/lib/libdtrace/i386` · 1 files, 520L · `SKIP-VENDOR`
 - [ ] **20.40** `cddl/contrib/opensolaris/lib/libdtrace/powerpc` · 1 files, 197L · `SKIP-VENDOR`
 - [ ] **20.41** `cddl/contrib/opensolaris/lib/libdtrace/riscv` · 1 files, 139L · `SKIP-VENDOR`

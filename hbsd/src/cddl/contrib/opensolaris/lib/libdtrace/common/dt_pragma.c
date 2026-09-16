@@ -102,6 +102,23 @@ dt_pragma_attributes(const char *prname, dt_node_t *dnp)
 	name = dnp->dn_string;
 
 	if (strcmp(name, "provider") == 0) {
+		/*
+		 * The check at the top of this function looked at ONE
+		 * dn_list. This arm walks two more, so
+		 *
+		 *   #pragma D attributes Evolving/Evolving/Common provider
+		 *
+		 * with the provider name and the part missing arrives here
+		 * with dn_list NULL and dereferences it. A malformed pragma
+		 * in a .d script should be the error this function already
+		 * knows how to report, not a crash in dtrace(1).
+		 */
+		if (dnp->dn_list == NULL || dnp->dn_list->dn_list == NULL) {
+			xyerror(D_PRAGMA_MALFORM, "malformed #pragma %s "
+			    "<attributes> provider <provider> <part>\n",
+			    prname);
+		}
+
 		dnp = dnp->dn_list;
 		name = dnp->dn_string;
 

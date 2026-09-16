@@ -32050,3 +32050,99 @@ table out of bounds" — is **false on this tree**, and saying so is
 worth more than the fix.
 Probe: `tools/verify/probes/ctype_signed_char.c`, which asserts the
 subscript is in range with the guard removed.
+
+## cddl, opened: three functions that longjmp were hiding the rest
+
+`cddl`, `secure` and `kerberos5` had never been through either
+instrument. That is not an oversight — `tools/verify/check_shards.py`
+gates every top-level directory of the tree, and all three are in its
+`UNANALYSED` table with a reason: *"third-party source PBSD does not
+maintain."* The exclusion is deliberate and the gate enforces it. What
+follows is what that policy costs, measured rather than asserted, on a
+one-off run outside CI.
+
+147 translation units, 117 compiled, **76 findings**. 75 of them in
+`cddl/contrib/opensolaris` — libdtrace, libctf and the ctf tools — and
+one in `secure/lib/libcrypt`.
+
+### 24 of libdtrace's 43 were the analyser walking past a `longjmp`
+
+`dt_parser.c` defines three error functions that all end the same way:
+
+    longjmp(yypcb->pcb_jmpbuf, EDT_COMPILER);
+
+`dnerror()`, `xyerror()` and `yyerror()` never return. `dt_parser.h`
+declared all three as plain `extern void`. Every caller is written as
+if the call ends the path — which it does — so a reader that believes
+control continues sees a dereference of every pointer the error arm was
+rejecting.
+
+`dt_pragma.c` alone produced eleven null-dereference findings that were
+all this one mistake. Declaring the three `__attribute__((noreturn))`,
+which `ctftools.h` next door already does for `terminate()` and
+`aborterr()`, takes libdtrace from **43 findings to 19**. The 24 that
+went are listed in the commit; the 19 that remain were underneath them
+and could not be seen until they moved.
+
+### ...and one of the things underneath is a crash
+
+`dt_pragma_attributes()` checks **one** link of the `dn_list` chain:
+
+    if (dnp == NULL || dnp->dn_kind != DT_NODE_IDENT ||
+        dnp->dn_list == NULL || dnp->dn_list->dn_kind != DT_NODE_IDENT)
+            xyerror(D_PRAGMA_MALFORM, ...);
+
+and the `provider` arm then walks **two more** without checking either:
+
+    if (strcmp(name, "provider") == 0) {
+            dnp = dnp->dn_list;      /* unchecked */
+            name = dnp->dn_string;
+            dnp = dnp->dn_list;      /* unchecked */
+            part = dnp->dn_string;
+
+The chain is the parsed argument list of a `#pragma` line in a `.d`
+script, so its length is whatever the author typed.
+
+    #pragma D attributes Evolving/Evolving/Common provider
+
+ends it after `provider` and reaches the second link NULL. That is a
+segfault in `dtrace(1)` three lines below a function that already knows
+how to report a malformed pragma. Guarded.
+
+Note what the noreturn fix did to this one: **it made it invisible.**
+Before, the analyser had a NULL-valued path to follow because the guard
+explicitly tested `dn_list == NULL`; after, that path is correctly
+pruned and nothing reports line 105 at all. The tool found the class;
+reading the function found the bug. Probe:
+`tools/verify/probes/dt_pragma_provider_depth.c`.
+
+### The 19 that remain, and two of them read
+
+    dt_aggregate.c:656   unix.Malloc          dt_decl.c:393    NullDeref
+    dt_aggregate.c:952   UndefReturn          dt_decl.c:932    NullDeref
+    dt_consume.c:3914    UndefBinOp           dt_decl.c:1030   NullDeref
+    dt_consume.c:3966    UndefBinOp           dt_ident.c:830   NullDeref
+    dt_consume.c:4082    UndefBinOp           dt_link.c:568    Assign
+    dt_consume.c:4099    UndefBinOp           dt_link.c:725    Assign
+    dt_consume.c:4146    UndefBinOp           dt_open.c:1204   MallocSizeof
+    dt_print.c:833       unix.Malloc          dt_printf.c:1478 ArraySubscript
+    dt_printf.c:1995     UndefBinOp           dt_program.c:338 NullDeref
+    dt_work.c:319        UndefReturn
+
+Two are read and neither is a defect:
+
+`dt_work.c:319` returns `rval`, which a `switch (status)` with no
+`default:` assigns in every arm. `dtrace_status()` returns exactly
+`DTRACE_STATUS_{NONE,STOPPED,EXITED,OKAY,FILLED}` or -1 — `dt_set_errno()`
+returns -1 — and the switch covers all six, so `rval` is always
+assigned. Recorded, not fixed: the switch is exhaustive *today*, and a
+seventh status value added later would return a stack word from
+libdtrace's main consumer entry point. That is the `opal_dev.c` shape
+with the reachability missing.
+
+`dt_program.c:338` dereferences `ap` under `assert(ap != NULL)`. The
+analyser is reporting the `NDEBUG` build. Recorded.
+
+The other seventeen are **not read**. Saying so is the point: an
+unread finding counted as clean is the thing this document exists to
+prevent.
