@@ -33165,3 +33165,81 @@ vendor-tree churn, and the rule this document set for itself when it
 spent a sweep on the `noreturn` candidate list is that the measurement
 decides. It is written down here instead, which costs nothing and is
 where the next reader will look.
+
+## CBMC over OpenZFS, the first time anything model-checked it
+
+The corpus fix above made `sys/contrib` visible, and OpenZFS is 534 of
+it. The `rest` shard has **named** `--scope sys/contrib` since it was
+written; it had never been given a translation unit from it.
+
+283 translation units reach the classifier. **35 of them build as a
+standalone goto-binary**; the other 248 come back `TU-ERROR`, which is
+the documented "did not compile as a standalone translation unit —
+usually a missing FreeBSD header on a Linux host" bucket, and is its own
+piece of work rather than a finding. Of the 35:
+
+| verdict | n |
+|---|---:|
+| **PROVED** | 19 |
+| FAILED | 15 |
+| TIMEOUT | 2 |
+| BOUNDED | 1 |
+| ERROR | 1 |
+
+Nineteen functions proved over all inputs for the checked properties, in
+a tree no model checker had opened.
+
+### All fifteen failures are in zstd, and they are three one-sided bounds
+
+Every FAILED verdict is in `module/zstd/lib/compress`, the compressor
+vendored into OpenZFS and reached by `zfs set compression=zstd-N`.
+
+**`-compressionLevel` on `INT_MIN`.** `zstd_compress.c:4243`, eight of
+the fifteen:
+
+```c
+	if (compressionLevel > ZSTD_MAX_CLEVEL) row = ZSTD_MAX_CLEVEL;
+	{   ZSTD_compressionParameters cp = ZSTD_defaultCParameters[tableID][row];
+	    if (compressionLevel < 0) cp.targetLength = (unsigned)(-compressionLevel);
+```
+
+The three lines above clamp `row`. Nothing clamps the negation, and
+`compressionLevel < 0` admits `INT_MIN`, whose negation is undefined.
+
+**`__builtin_clz(0)`.** `FSE_minTableLog` opens with
+`BIT_highbit32((U32)srcSize) + 1`, and `BIT_highbit32` is a count-leading-
+zeros intrinsic, undefined at zero. A zero-length source reaches it.
+
+**`1 << (tableLog - 1)` with `tableLog == 0`.** `FSE_createCTable` clamps
+`tableLog` from **above** — `if (tableLog > FSE_TABLELOG_ABSOLUTE_MAX)` —
+and `FSE_CTABLE_SIZE_U32` then shifts by `tableLog - 1`, which at zero is
+`1 << 0xFFFFFFFF`.
+
+Three guards, each bounding one end of a range whose other end is the
+one that matters. That is the class `tools/verify/onesided_index.py` was
+written for, in a library nothing in this tree had ever checked.
+
+### Recorded, not fixed, and why
+
+**None of the three is reachable from this tree**, and the reason is the
+same in each case: the bound that makes them safe lives in ZFS and not in
+zstd.
+
+`zfs_zstd.c:178` carries the level as `int16_t zstd_level`, and
+`zstd_enum_to_level()` at `:426` draws it from the fixed
+`zstd_levels[]` table and returns failure for anything outside it. So
+`compressionLevel` arrives in `[-1000, 19]` and `INT_MIN` is not in the
+domain. The table logs and source sizes are derived inside zstd from ZFS
+block sizes, which are never zero.
+
+So these are unguarded **exported entry points of a vendored library**,
+safe only because the one caller in this tree happens to bound them — and
+that is worth writing down precisely because the caller could change and
+the library would not notice. Fixing them means editing vendored zstd
+inside vendored OpenZFS, where upstream may already have moved; that is a
+separate piece of work with an upstream question in front of it, not a
+line to add here.
+
+The remaining two FAILED, `ZSTD_createCCtx` and `ZSTD_createCCtxParams`,
+are the unmodelled-allocator bucket: they dereference a `malloc` result
+CBMC models as possibly NULL.
