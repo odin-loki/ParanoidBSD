@@ -179,7 +179,7 @@ bi_load_efi_data(struct preloaded_file *kfp, bool exit_bs)
 	UINTN efi_mapkey;
 	UINTN dsz, pages, retry, sz;
 	UINT32 mmver;
-	struct efi_map_header *efihdr;
+	struct efi_map_header *efihdr = NULL;
 	bool do_vmap;
 
 #ifdef MODINFOMD_EFI_FB
@@ -301,6 +301,22 @@ bi_load_efi_data(struct preloaded_file *kfp, bool exit_bs)
 	if (retry == 0) {
 		BS->FreePages(addr, pages);
 		printf("ExitBootServices error %lu\n", EFI_ERROR_CODE(status));
+		return (EINVAL);
+	}
+
+	/*
+	 * mm and efihdr are set only on the EFI_BUFFER_TOO_SMALL path
+	 * through the loop above - which the specification says a NULL
+	 * buffer always takes, but the status and the size it reports
+	 * are both the firmware's and nothing here checks that they
+	 * agree. Without this, efi_do_vmap() walks a NULL map and the
+	 * memory_size store below writes through an uninitialised
+	 * pointer.
+	 */
+	if (efihdr == NULL || mm == NULL || dsz == 0) {
+		printf("%s: GetMemoryMap returned no map\n", __func__);
+		if (addr != 0)
+			BS->FreePages(addr, pages);
 		return (EINVAL);
 	}
 

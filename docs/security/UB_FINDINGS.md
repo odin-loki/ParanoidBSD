@@ -31320,4 +31320,57 @@ number of segments and the iteration that sets `val = NULL` is the
 last one.  The analyser cannot correlate two loops over one string.
 Checked, not fixed.
 
-The other 39 are the next pass.
+#### Five EFI sizing calls whose NULL buffer is used anyway
+
+    libefi/efinet.c:388      hlist  LocateHandle    the loop indexes it
+    libefi/efipart.c:385     hin    LocateHandle    the loop indexes it
+    loader/framebuffer.c:625 hlist  LocateHandle    the loop indexes it
+    loader/copy.c:129        map    GetMemoryMap    also the divisor
+    loader/bootinfo.c:320    efihdr GetMemoryMap    written through
+
+The shape is the same in all five:
+
+    hlist = NULL;
+    status = BS->LocateHandle(ByProtocol, &gop_guid, NULL, &hsize, hlist);
+    if (status == EFI_BUFFER_TOO_SMALL) {
+        hlist = malloc(hsize);
+        ...
+    }
+    ...
+    nhandles = hsize / sizeof(*hlist);
+    for (i = 0; i < nhandles; i++)
+        ... hlist[i] ...
+
+The UEFI specification says a NULL buffer cannot come back
+`EFI_SUCCESS` with a non-zero size, so the second call always happens
+— but the status and the size are **both the firmware's**, and the
+code checks neither against the other.  It is boot1's unvalidated
+`Media->BlockSize` one layer up: the loader does not distrust the
+firmware, and the firmware is a blob.
+
+`copy.c` is the sharper one, because `dsz` is a divisor as well as a
+stride, and `bootinfo.c` is sharper still: `efihdr` is an
+uninitialised local written only on that path, and
+`efihdr->memory_size = sz` writes through it.  All five now check.
+Probe: `tools/verify/probes/efi_sizing_call_null.c`.
+
+`efi/loader/main.c:1311` also needed a second pass.  The guard added in
+the previous commit called `getenv("console")` twice — once to test and
+once to compare — and nothing says the two calls agree.  Hoisted to a
+local.
+
+#### A note on how these were verified
+
+Two of this session's revert-verify loops printed a meaningless
+`restored=`.  The shell was
+
+    echo "$(basename $f) reverted=$r restored=$?"
+
+and `$?` there is `basename`'s exit status, not the gate's, because
+the command substitution runs first.  The affected markers were
+re-verified against their parent commits with `git show` and all ten
+came back exit=1 reverted, exit=0 restored.  Recorded because a
+verification step that reports the wrong number is worse than one that
+is missing.
+
+The other 32 are the next pass.

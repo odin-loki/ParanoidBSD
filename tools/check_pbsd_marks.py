@@ -5755,6 +5755,46 @@ FIXES = {
         "diskless boot",
     ),
 
+    "hbsd/src/stand/efi/libefi/efinet.c": (
+        "if (handles == NULL)\n\t\treturn (0);",
+        "return (efi_status_to_errno(status));\n\thandles2 = "
+        "(EFI_HANDLE *)malloc(sz);",
+        "efinet_dev_init: the sizing LocateHandle() is called with a "
+        "NULL buffer, and the loop that follows indexes it on a count "
+        "the firmware also supplies - so SUCCESS with a non-zero size "
+        "walks a NULL array",
+    ),
+
+    "hbsd/src/stand/efi/libefi/efipart.c": (
+        "if (hin == NULL)\n\t\treturn (0);",
+        "return (efi_status_to_errno(status));\n\n\tnin = sz / sizeof(*hin);",
+        "efipart_inithandles: the same sizing LocateHandle() shape, "
+        "for the block-device handles",
+    ),
+
+    "hbsd/src/stand/efi/loader/framebuffer.c": (
+        "if (hlist == NULL)\n\t\t\treturn (1);",
+        "\t} else {\n\t\tnhandles = hsize / sizeof(*hlist);",
+        "efi_find_framebuffer: the same shape again, for the graphics "
+        "output handles",
+    ),
+
+    "hbsd/src/stand/efi/loader/copy.c": (
+        "if (map == NULL || dsz == 0)\n\t\tgoto out;",
+        "\t\t}\n\t}\n\n\tndesc = sz / dsz;",
+        "efi_verify_staging_size: GetMemoryMap()'s sizing call leaves "
+        "map NULL and dsz 0, and the loop divides by the one and "
+        "walks the other",
+    ),
+
+    "hbsd/src/stand/efi/loader/bootinfo.c": (
+        "if (efihdr == NULL || mm == NULL || dsz == 0) {",
+        "\tstruct efi_map_header *efihdr;\n\tbool do_vmap;",
+        "bi_load_efi_data: efihdr was an uninitialised local set only "
+        "on the EFI_BUFFER_TOO_SMALL path, and the memory_size store "
+        "after the loop writes through it",
+    ),
+
     "hbsd/src/stand/common/metadata.c": (
         "console = getenv(\"console\");\n    if (console != NULL) {",
         "if (!strcmp(getenv(\"console\"), \"comconsole\"))",
@@ -5765,8 +5805,8 @@ FIXES = {
     ),
 
     "hbsd/src/stand/efi/loader/main.c": (
-        "if (getenv(\"console\") != NULL &&\n\t    strcmp(getenv"
-        "(\"console\"), \"efi\") == 0) {",
+        "env_console = getenv(\"console\");\n\tif (env_console != NULL "
+        "&& strcmp(env_console, \"efi\") == 0) {",
         "if (strcmp(getenv(\"console\"), \"efi\") == 0) {",
         "the same unchecked getenv(\"console\"), in the EFI loader's "
         "console reconciliation",

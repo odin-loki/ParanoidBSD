@@ -378,6 +378,15 @@ efinet_dev_init(void)
 	}
 	if (EFI_ERROR(status))
 		return (efi_status_to_errno(status));
+	/*
+	 * A NULL here means LocateHandle() answered EFI_SUCCESS to the
+	 * sizing call, whose buffer was NULL. The UEFI specification
+	 * says that cannot happen with a non-zero size, so the loop
+	 * below would run zero times - but the size and the status are
+	 * both the firmware's, and nothing here checks that they agree.
+	 */
+	if (handles == NULL)
+		return (0);
 	handles2 = (EFI_HANDLE *)malloc(sz);
 	if (handles2 == NULL) {
 		free(handles);

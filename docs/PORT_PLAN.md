@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,559 | 2,433 |
+| 7 | `stand` | 484 | 135,613 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,029** | **114,208** |
+| | **total** | **41,143** | **21,304,083** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37596,7 +37596,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.14.9.13 `efihttp_fs_seek()` · `TODO-FN`
   - [ ] 7.14.9.14 `efihttp_fs_stat()` · `TODO-FN`
   - [ ] 7.14.9.15 `efihttp_fs_readdir()` · `TODO-FN`
-- [ ] **7.14.10** `efinet.c` · 467L · `TODO-PORT` · 10 fn
+- [ ] **7.14.10** `efinet.c` · 476L · `TODO-PORT` · 10 fn
   - [ ] 7.14.10.1 `dump_mode()` · `TODO-FN`
   - [ ] 7.14.10.2 `efinet_match()` · `TODO-FN`
   - [ ] 7.14.10.3 `efinet_probe()` · `TODO-FN`
@@ -37607,7 +37607,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.14.10.8 `efinet_end()` · `TODO-FN`
   - [ ] 7.14.10.9 `efinet_dev_init()` · `TODO-FN`
   - [ ] 7.14.10.10 `efinet_dev_print()` · `TODO-FN`
-- [ ] **7.14.11** `efipart.c` · 1,252L · `TODO-PORT` · 32 fn
+- [ ] **7.14.11** `efipart.c` · 1,261L · `TODO-PORT` · 32 fn
   - [ ] 7.14.11.1 `efiblk_get_pdinfo_list()` · `TODO-FN`
   - [ ] 7.14.11.2 `efiblk_get_pdinfo()` · `TODO-FN`
   - [ ] 7.14.11.3 `efiblk_get_pdinfo_by_device_path()` · `TODO-FN`
@@ -37702,13 +37702,13 @@ function; a file with two hundred of them is a project.
 
 - [ ] **7.15.1** `autoload.c` · 55L · `TODO-PORT` · 1 fn
   - [ ] 7.15.1.1 `efi_autoload()` · `TODO-FN`
-- [ ] **7.15.2** `bootinfo.c` · 513L · `TODO-PORT` · 4 fn
+- [ ] **7.15.2** `bootinfo.c` · 529L · `TODO-PORT` · 4 fn
   - [ ] 7.15.2.1 `bi_getboothowto()` · `TODO-FN`
   - [ ] 7.15.2.2 `efi_do_vmap()` · `TODO-FN`
   - [ ] 7.15.2.3 `bi_load_efi_data()` · `TODO-FN`
   - [ ] 7.15.2.4 `bi_load()` · `TODO-FN`
 - [ ] **7.15.3** `conf.c` · 104L · `TODO-PORT`
-- [ ] **7.15.4** `copy.c` · 539L gen:2 · `TODO-PORT` · 14 fn
+- [ ] **7.15.4** `copy.c` · 549L gen:2 · `TODO-PORT` · 14 fn
   - [ ] 7.15.4.1 `running_on_hyperv()` · `TODO-FN`
   - [ ] 7.15.4.2 `efi_verify_staging_size()` · `TODO-FN`
   - [ ] 7.15.4.3 `efi_copy_free()` · `TODO-FN`
@@ -37729,7 +37729,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.15.5.3 `arg_skipsep()` · `TODO-FN`
   - [ ] 7.15.5.4 `arg_skipword()` · `TODO-FN`
   - [ ] 7.15.5.5 `efi_main()` · `TODO-FN`
-- [ ] **7.15.6** `framebuffer.c` · 1,007L gen:3 · `TODO-PORT` · 20 fn
+- [ ] **7.15.6** `framebuffer.c` · 1,016L gen:3 · `TODO-PORT` · 20 fn
   - [ ] 7.15.6.1 `efifb_color_depth()` · `TODO-FN`
   - [ ] 7.15.6.2 `efifb_mask_from_pixfmt()` · `TODO-FN`
   - [ ] 7.15.6.3 `efifb_from_gop()` · `TODO-FN`
@@ -37752,7 +37752,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.15.6.20 `command_uga()` · `TODO-FN`
 - [ ] **7.15.7** `framebuffer.h` · 38L · `TODO-HDR`
 - [ ] **7.15.8** `loader_efi.h` · 71L · `TODO-HDR`
-- [ ] **7.15.9** `main.c` · 2,028L gen:11 · `TODO-PORT` · 40 fn
+- [ ] **7.15.9** `main.c` · 2,029L gen:11 · `TODO-PORT` · 40 fn
   - [ ] 7.15.9.1 `has_keyboard()` · `TODO-FN`
   - [ ] 7.15.9.2 `set_currdev_devdesc()` · `TODO-FN`
   - [ ] 7.15.9.3 `set_currdev_devsw()` · `TODO-FN`

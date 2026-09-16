@@ -123,6 +123,16 @@ efi_verify_staging_size(unsigned long *nr_pages)
 		}
 	}
 
+	/*
+	 * map is NULL and dsz is 0 unless GetMemoryMap() took the
+	 * EFI_BUFFER_TOO_SMALL path at least once. The specification
+	 * says a NULL buffer cannot come back EFI_SUCCESS, so the loop
+	 * above always does - but the status is the firmware's and
+	 * nothing here checks that it agrees with the size it also set.
+	 */
+	if (map == NULL || dsz == 0)
+		goto out;
+
 	ndesc = sz / dsz;
 	for (i = 0, p = map; i < ndesc;
 	     i++, p = NextMemoryDescriptor(p, dsz)) {

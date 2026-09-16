@@ -1207,6 +1207,7 @@ main(int argc, CHAR16 *argv[])
 	int howto, i, uhowto;
 	bool has_kbd, is_last;
 	char *s;
+	const char *env_console;
 	EFI_DEVICE_PATH *imgpath;
 	CHAR16 *text;
 	EFI_STATUS rv;
@@ -1309,8 +1310,8 @@ main(int argc, CHAR16 *argv[])
 #define	SER_VID_BOTH	(RB_SERIAL | RB_MULTIPLE)
 #define	CON_MASK	(RB_SERIAL | RB_MULTIPLE)
 	/* getenv() is NULL for a variable nobody set - see metadata.c. */
-	if (getenv("console") != NULL &&
-	    strcmp(getenv("console"), "efi") == 0) {
+	env_console = getenv("console");
+	if (env_console != NULL && strcmp(env_console, "efi") == 0) {
 		if ((howto & CON_MASK) == 0) {
 			/* No override, uhowto is controlling and efi cons is perfect */
 			howto = howto | (uhowto & CON_MASK);

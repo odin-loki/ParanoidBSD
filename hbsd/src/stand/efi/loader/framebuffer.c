@@ -612,6 +612,15 @@ efi_find_framebuffer(teken_gfx_t *gfx_state)
 			return (1);
 		}
 	} else {
+		/*
+		 * A NULL here means LocateHandle() answered EFI_SUCCESS to the
+		 * sizing call, whose buffer was NULL. The UEFI specification
+		 * says that cannot happen with a non-zero size, so the loop
+		 * below would run zero times - but the size and the status are
+		 * both the firmware's, and nothing here checks that they agree.
+		 */
+		if (hlist == NULL)
+			return (1);
 		nhandles = hsize / sizeof(*hlist);
 
 		/*
