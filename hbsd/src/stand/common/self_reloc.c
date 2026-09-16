@@ -75,6 +75,7 @@ self_reloc(Elf_Addr baseaddr, ElfW_Dyn *dynamic)
 	 */
 	relsz = 0;
 	relent = 0;
+	rel = NULL;
 	for (dynp = dynamic; dynp->d_tag != DT_NULL; dynp++) {
 		switch (dynp->d_tag) {
 		case DT_REL:
@@ -99,6 +100,15 @@ self_reloc(Elf_Addr baseaddr, ElfW_Dyn *dynamic)
 	 * linked at 0, so that the difference between the load and link
 	 * address is the same as the load address.
 	 */
+	/*
+	 * A dynamic section carrying DT_RELSZ and no DT_REL or DT_RELA
+	 * left rel the uninitialised local it was declared as, and the
+	 * loop below both reads through it and writes through what it
+	 * finds. relent of 0 would also never terminate.
+	 */
+	if (rel == NULL || relent == 0)
+		return;
+
 	for (; relsz > 0; relsz -= relent) {
 		switch (ELFW_R_TYPE(rel->r_info)) {
 		case RELOC_TYPE_NONE:

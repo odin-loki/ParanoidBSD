@@ -205,6 +205,8 @@ readipv4(struct iodesc *d, void **pkt, void **payload, ssize_t n)
 	struct ip_queue *ipq, *last;
 	bool morefrag, isfrag;
 	uint16_t fragoffset;
+	uint16_t ip_id;
+	struct in_addr ip_src, ip_dst;
 
 	if (n < sizeof(*ip)) {
 		free(ptr);
@@ -379,14 +381,26 @@ readipv4(struct iodesc *d, void **pkt, void **payload, ssize_t n)
 	ipr->ip_pkt = NULL;	/* Avoid free from ip_reasm_free() */
 	*payload = ptr;
 
+	/*
+	 * ip points INTO one of the queued packets - the caller's ptr was
+	 * stored as an ipq_pkt - and the loop below frees every one of
+	 * them. Take what the trace wants while the header is still
+	 * there. (ip_reasm_add() can also free ptr before we get here,
+	 * on a duplicate fragment offset, so this is two ways to read a
+	 * freed header rather than one.)
+	 */
+	ip_id = ip->ip_id;
+	ip_src = ip->ip_src;
+	ip_dst = ip->ip_dst;
+
 	/* Clean up the reassembly list */
 	while ((ipr = STAILQ_FIRST(&ire_list)) != NULL) {
 		STAILQ_REMOVE_HEAD(&ire_list, ip_next);
 		ip_reasm_free(ipr);
 	}
 	DEBUG_PRINTF(1, ("%s: completed fragments ID=%d %s -> %s\n",
-	    __func__, ntohs(ip->ip_id), inet_ntoa(ip->ip_src),
-	    inet_ntoa(ip->ip_dst)));
+	    __func__, ntohs(ip_id), inet_ntoa(ip_src),
+	    inet_ntoa(ip_dst)));
 	return (n);
 }
 

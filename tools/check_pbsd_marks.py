@@ -5755,6 +5755,41 @@ FIXES = {
         "diskless boot",
     ),
 
+    "hbsd/src/stand/powerpc/boot1.chrp/boot1.c": (
+        "if (len > 0 && bootpath_full[len-1] != ':') {",
+        "if (bootpath_full[len-1] != ':') {",
+        "an empty bootpath from Open Firmware read "
+        "bootpath_full[-1]",
+    ),
+
+    "hbsd/src/stand/userboot/userboot/bootinfo32.c": (
+        "if (kernelname == NULL)\n\treturn (EINVAL);",
+        "kernelname = getenv(\"kernelname\");\n    userboot_getdev"
+        "(NULL, kernelname, &kernelpath);",
+        "bi_load32: getenv(\"kernelname\") is NULL for a variable "
+        "nobody set, and the name is strlen()'d and copied into the "
+        "guest",
+    ),
+
+    "hbsd/src/stand/common/self_reloc.c": (
+        "if (rel == NULL || relent == 0)\n\t\treturn;",
+        "the load address.\n\t */\n\tfor (; relsz > 0; relsz -= relent) {",
+        "self_reloc: a dynamic section carrying DT_RELSZ and no DT_REL "
+        "or DT_RELA left rel uninitialised, and the loop reads through "
+        "it and writes through what it finds; relent of 0 would never "
+        "terminate",
+    ),
+
+    "hbsd/src/stand/libsa/ip.c": (
+        "ip_id = ip->ip_id;\n\tip_src = ip->ip_src;",
+        "ip_reasm_free(ipr);\n\t}\n\tDEBUG_PRINTF(1, (\"%s: completed "
+        "fragments ID=%d %s -> %s\\n\",\n\t    __func__, ntohs(ip->ip_id)",
+        "readipv4: ip points INTO one of the queued packets and the "
+        "cleanup loop frees every one of them, so the completion trace "
+        "read a freed IP header - and ip_reasm_add() can free it "
+        "earlier still, on a duplicate fragment offset",
+    ),
+
     "hbsd/src/stand/efi/libefi/time.c": (
         "efi_time->Month = 1;\n\t\twhile (efi_time->Month < 12 &&",
         "efi_time->Month = 0;\n                while (time >\n\t\t    "

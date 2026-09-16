@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,697 | 2,433 |
+| 7 | `stand` | 484 | 135,731 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,167** | **114,208** |
+| | **total** | **41,143** | **21,304,201** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37329,7 +37329,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.2.42.1 `__elfN()` · `TODO-FN`
 - [ ] **7.2.43** `reloc_elf32.c` · 3L · `TODO-PORT`
 - [ ] **7.2.44** `reloc_elf64.c` · 3L · `TODO-PORT`
-- [ ] **7.2.45** `self_reloc.c` · 125L · `TODO-PORT` · 1 fn
+- [ ] **7.2.45** `self_reloc.c` · 135L · `TODO-PORT` · 1 fn
   - [ ] 7.2.45.1 `self_reloc()` · `TODO-FN`
 - [ ] **7.2.46** `tslog.c` · 79L · `TODO-PORT` · 2 fn
   - [ ] 7.2.46.1 `tslog_init()` · `TODO-FN`
@@ -39375,7 +39375,7 @@ function; a file with two hundred of them is a project.
 - [ ] **7.60.33** `ioctl.c` · 82L · `TODO-PORT` · 1 fn
   - [ ] 7.60.33.1 `ioctl()` · `TODO-FN`
 - [ ] **7.60.34** `iodesc.h` · 53L · `TODO-HDR`
-- [ ] **7.60.35** `ip.c` · 465L gen:1 · `TODO-PORT` · 5 fn
+- [ ] **7.60.35** `ip.c` · 479L gen:1 · `TODO-PORT` · 5 fn
   - [ ] 7.60.35.1 `sendip()` · `TODO-FN`
   - [ ] 7.60.35.2 `ip_reasm_free()` · `TODO-FN`
   - [ ] 7.60.35.3 `ip_reasm_add()` · `TODO-FN`
@@ -39801,7 +39801,7 @@ function; a file with two hundred of them is a project.
 
 ### 7.68 `stand/powerpc/boot1.chrp`
 
-- [ ] **7.68.1** `boot1.c` · 867L asm · `TODO-MD` · 33 fn
+- [ ] **7.68.1** `boot1.c` · 871L asm · `TODO-MD` · 33 fn
   - [ ] 7.68.1.1 `__attribute__()` · `TODO-FN`
   - [ ] 7.68.1.2 `call_ofw()` · `TODO-FN`
   - [ ] 7.68.1.3 `ofw_init()` · `TODO-FN`
@@ -40090,7 +40090,7 @@ function; a file with two hundred of them is a project.
 - [ ] **7.79.3** `bootinfo.c` · 89L · `TODO-PORT` · 2 fn
   - [ ] 7.79.3.1 `bi_getboothowto()` · `TODO-FN`
   - [ ] 7.79.3.2 `bi_setboothowto()` · `TODO-FN`
-- [ ] **7.79.4** `bootinfo32.c` · 175L · `TODO-PORT` · 1 fn
+- [ ] **7.79.4** `bootinfo32.c` · 181L · `TODO-PORT` · 1 fn
   - [ ] 7.79.4.1 `bi_load32()` · `TODO-FN`
 - [ ] **7.79.5** `bootinfo64.c` · 167L · `TODO-PORT` · 2 fn
   - [ ] 7.79.5.1 `bi_checkcpu()` · `TODO-FN`

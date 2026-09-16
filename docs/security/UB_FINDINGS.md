@@ -31480,4 +31480,70 @@ is neither `sizeof(buf)` nor a bound on what `buf` can hold.
 `switch` whose two arms both report failure through `rv`, and `rv` was
 not tested.  On failure `efifb` has not been filled.
 
-The other 24 are the next pass.
+#### `self_reloc()`: the loader relocating itself through a stack word
+
+`stand/common/self_reloc.c:101`
+
+    ElfW_Rel *rel;
+    ...
+    relsz = 0;
+    relent = 0;
+    for (dynp = dynamic; dynp->d_tag != DT_NULL; dynp++) {
+        case DT_REL: case DT_RELA:   rel = ...; break;
+        case DT_RELSZ: case DT_RELASZ:   relsz = ...; break;
+        case DT_RELENT: case DT_RELAENT: relent = ...; break;
+    }
+    for (; relsz > 0; relsz -= relent) {
+        switch (ELFW_R_TYPE(rel->r_info)) {
+        case RELOC_TYPE_RELATIVE:
+            newaddr = (Elf_Addr *)(rel->r_offset + baseaddr);
+            *newaddr += baseaddr;
+
+`relsz`, `relent` and `rel` come from three independent `DT_` entries
+and nothing requires them to arrive together.  Two of the three are
+given a starting value; `rel` is not.  And `relent == 0` with
+`relsz > 0` is a loop that never decreases.
+
+This is the loader relocating **itself**, before anything else runs,
+so the input is its own ELF image rather than an attacker's — but a
+truncated or half-written boot binary is an ordinary failure, and the
+answer to it should not be writing through a stack word.
+Probe: `tools/verify/probes/self_reloc_no_dt_rel.c`.
+
+#### `readipv4()`: the completion trace reads a freed IP header
+
+Found by reading `stand/libsa/ip.c` for the `last == NULL` report,
+which turns out to be guarded by an invariant that holds.  The line
+after it is not:
+
+    *pkt = ipr->ip_pkt;
+    ...
+    while ((ipr = STAILQ_FIRST(&ire_list)) != NULL) {
+        STAILQ_REMOVE_HEAD(&ire_list, ip_next);
+        ip_reasm_free(ipr);             /* frees every queued packet */
+    }
+    DEBUG_PRINTF(1, ("%s: completed fragments ID=%d %s -> %s\n",
+        __func__, ntohs(ip->ip_id), inet_ntoa(ip->ip_src),
+        inet_ntoa(ip->ip_dst)));
+
+`ip` points **into** one of those queued packets — the caller's `ptr`
+was stored as an `ipq_pkt` — so the trace reads a header the loop just
+freed.  There are two ways in, not one: `ip_reasm_add()` frees `pkt`
+and returns `true` on a duplicate fragment offset, which frees the
+same header earlier still while `readipv4()` goes on using it.
+
+It is a read on a debug path — `DEBUG_PRINTF` is empty unless
+`_DEBUG_LEVEL_VAR` is set — so the severity is low and the shape is
+not.  The three fields are captured before the free now.
+
+#### Two smaller ones
+
+`powerpc/boot1.chrp/boot1.c:513` reads `bootpath_full[len - 1]` with
+`len` the length of the bootpath Open Firmware handed it; an empty one
+is `bootpath_full[-1]`.
+
+`userboot/userboot/bootinfo32.c:166` `strlen()`s
+`getenv("kernelname")` and copies it into the guest.  Same class as
+the four `console` sites above, in the bhyve loader.
+
+The other 21 are the next pass.

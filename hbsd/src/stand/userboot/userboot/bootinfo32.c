@@ -145,6 +145,12 @@ bi_load32(char *args, int *howtop, int *bootdevp, vm_offset_t *bip, vm_offset_t 
 
     /* legacy bootinfo structure */
     kernelname = getenv("kernelname");
+    /*
+     * getenv() is NULL for a variable nobody set, and this name is
+     * strlen()'d and copied into the guest below.
+     */
+    if (kernelname == NULL)
+	return (EINVAL);
     userboot_getdev(NULL, kernelname, &kernelpath);
     bi.bi_version = BOOTINFO_VERSION;
     bi.bi_size = sizeof(bi);

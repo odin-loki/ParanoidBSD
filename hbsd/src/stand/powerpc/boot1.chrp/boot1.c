@@ -510,7 +510,11 @@ main(int ac, char **av)
 
 	memcpy(bootpath_full,bootpath,len+1);
 
-	if (bootpath_full[len-1] != ':') {
+	/*
+	 * len is the length of the bootpath Open Firmware handed us, and
+	 * an empty one made this read bootpath_full[-1].
+	 */
+	if (len > 0 && bootpath_full[len-1] != ':') {
 		/* First try full volume */
 		if (domount(bootpath_full,1) == 0)
 			goto out;
