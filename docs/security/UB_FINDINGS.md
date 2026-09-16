@@ -31643,3 +31643,118 @@ and judged not worth a vendor-tree marker (`gfx_fb.c`'s 23-byte
 `read_list()`).
 
 Nothing in `stand/` is now unread.
+
+---
+
+## stand/ model-checked: the loader CBMC had never opened
+
+`stand/` was in `check_shards.py`'s `UNCHECKED` as "analysed since the
+loader got its own header universe; not model-checked yet".  Both
+`classify.py` and `cbmc_driver.py` take their flags from
+`includes.include_flags()`, which now knows the third universe, so the
+loader is model-checkable the moment it is analysable.
+
+    280 translation units to model
+    259 modelled          GLOBALPTR 123  OTHER 266  POINTER 5804
+                          SCALAR 376  VOID 906  TU-ERROR 21
+
+    317 (file, function) pairs checked
+      skipped: no-model 367, class 1595, not-in-model 154
+
+    PROVED   201
+    FAILED    79
+    BOUNDED   18
+    ERROR     13
+    TIMEOUT    6
+
+Five minutes of solver for the whole shard, so it is in the workflow's
+sweep matrix now and out of `UNCHECKED`.
+
+The 79 FAILED, counted once per function per property class:
+
+     51  pointer_dereference
+     21  pointer_arithmetic
+     12  overflow
+      5  division-by-zero
+      4  undefined-shift
+      4  precondition_instance
+      3  array_bounds
+      2  pointer
+      1  assertion
+
+The 72 pointer records are the bucket this document has already
+measured: an unconstrained pointer parameter is a missing
+precondition, not a defect.  The interesting rows are the small ones,
+and the `no_body` evidence sorts most of them:
+
+| function | verdict |
+|---|---|
+| `bcache_allocate` | `fls` has no model — extern-driven |
+| `efi_cons_init` | `ffs` has no model — extern-driven |
+| `stackCreate` | `ficlMalloc` has no model — its own `FICL_ASSERT` |
+| `cons.c:getc` | `__v86int` has no model — extern-driven |
+| `rgb_color_map` | static; the offsets are file statics the framebuffer sets |
+| **`ppc64_cas`** | **`OF_getprop` has no model — and neither is it bounded in reality** |
+| **`digit_to_char`** | **exported, and the caller's bound is a Forth variable** |
+
+### `OF_getprop()` returns the property's length, not what it copied
+
+`libofw/openfirm.c:253` is
+
+    if (openfirmware(&args) == -1)
+        return (-1);
+    return (OUT(args.size));
+
+and IEEE 1275's `getprop` returns the property's **actual** length
+while copying at most `buflen` of it.  Four callers used the return
+value as a bound on the buffer they passed:
+
+    powerpc/ofw/cas.c:206    uint8_t buf[16]; for (i = 0; i < len; i += 2)
+                                 idx = buf[i]; val = buf[i + 1];
+    libofw/ofw_memory.c:64   nmapping /= sizeof(...); mapptr[i] for i < nmapping
+    libofw/ofw_net.c:202     strchr(path, ':') on 64 bytes it may not have ended
+    powerpc/ofw/main.c:192   the same, and then *strchr(...) with no NULL test
+
+`cas.c` is the sharpest: the overshoot is chosen by the device tree,
+and the loop reads two bytes per step past a sixteen-byte buffer.
+`main.c` is the simplest: a bootpath with no `:` stored through a NULL
+`ch`.
+
+CBMC surfaced `cas.c` as `array 'buf' upper bound` on the strength of
+`OF_getprop` having no model — which is the **extern-driven** bucket,
+and would normally be a deferral.  It is not one here, and that is the
+point worth keeping: the return really is unconstrained by the buffer,
+so the unmodelled callee and the specification agree.  The bucket is a
+default, not an answer.
+Probe: `tools/verify/probes/ofw_getprop_length.c`.
+
+### `digit_to_char()`: a subscript bounded by a Forth variable
+
+    static char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    ...
+    char digit_to_char(int value)
+    {
+        return digits[value];
+    }
+
+`value` is a remainder modulo `pVM->base`, and `BASE` is a Forth
+variable whose address `base()` pushes with no validation, so
+`100 BASE !` then `.` indexes `digits[]` with 99.  The loader prompt
+is already the machine — anyone there can `ccall` an arbitrary
+function — so this is robustness rather than a boundary, and it is one
+line.
+
+**Both went FAILED → PROVED** on a re-classify and re-check of the
+same two scopes.  That is the strongest evidence this instrument
+offers: not "the report went away" but "the property now holds".
+
+### One recorded rather than fixed
+
+`ficlLongDiv()` divides by its parameter, in six per-architecture
+copies.  Its callers are `m64SymmetricDivI()`, `m64UMod()` and
+`m64FlooredDivI()`, whose divisor is either a Forth stack value (`/`,
+`MOD`, `*/`) or `pVM->base`.  So `0 /` at the loader prompt is a
+machine fault where Forth wants a `THROW`.  It is read and left: the
+divisor is the operator's own input at a prompt that already has
+`ccall`, and guarding it properly means a `THROW` at seven word
+implementations rather than a sentinel in six vendor files.

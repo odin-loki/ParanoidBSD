@@ -68,6 +68,15 @@ ofw_memmap(int acells)
 		return;
 	}
 
+	/*
+	 * That is the PROPERTY's length, not what was copied, and the
+	 * loops below divide it into entries and index mappings[] by
+	 * the result. A translations property with more than 256
+	 * entries walked past the buffer.
+	 */
+	if (nmapping > (int)sizeof(mappings))
+		nmapping = (int)sizeof(mappings);
+
 	pager_open();
 	if (acells == 1) {
 		nmapping /= sizeof(struct ofw_mapping);

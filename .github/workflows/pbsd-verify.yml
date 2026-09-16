@@ -161,6 +161,17 @@ jobs:
             scopes: '--scope sys/dev'
             classes: classes_sys_dev.json
             jobs: 2
+          # stand/ - the loader. 259 of its 280 modelled translation
+          # units classify, and 317 of their functions are SCALAR or
+          # VOID, so the whole shard is about five minutes of solver.
+          # It went in the same week the ANALYSE shard did, and the
+          # first local run turned two FAILED into PROVED once the two
+          # defects it found were fixed: ppc64_cas()'s property length
+          # and digit_to_char()'s subscript.
+          - name: stand
+            scopes: '--scope stand'
+            classes: classes_stand.json
+            jobs: 4
           - name: rest
             scopes: '--scope sys/arm64 --scope sys/amd64 --scope sys/arm --scope sys/i386 --scope sys/riscv --scope sys/powerpc --scope sys/x86 --scope sys/compat --scope sys/contrib --scope sys/crypto --scope sys/opencrypto --scope sys/ddb --scope sys/isa --scope sys/nfs --scope sys/netgraph --scope sys/netlink --scope sys/rpc --scope sys/kgssapi --scope sys/libkern --scope sys/modules --scope sys/nlm --scope sys/teken --scope sys/tests --scope sys/xen --scope sys/dts --scope sys/gnu --scope sys/sys --scope sys/hardenedbsd --scope sys/netipsec --scope sys/netpfil --scope sys/net80211 --scope sys/netsmb --scope sys/nfsclient --scope sys/nfsserver --scope sys/ofed --scope sys/bsm --scope sys/conf --scope sys/gdb --scope sys/mips --scope sys/tools --scope sys/xdr'
             classes: classes_sys_rest.json
@@ -656,6 +667,7 @@ jobs:
             --expect ub.jsonl --expect ptr.jsonl \
             --expect ksys-kern.jsonl --expect ksys-fs.jsonl \
             --expect ksys-dev.jsonl --expect ksys-rest.jsonl \
+            --expect ksys-stand.jsonl \
             | tee REPORT.txt
           {
             echo '### PBSD verify'

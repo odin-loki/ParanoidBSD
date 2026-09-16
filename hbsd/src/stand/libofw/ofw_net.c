@@ -199,7 +199,16 @@ ofwn_init(struct iodesc *desc, void *machdep_hint)
 	char		*ch;
 	int		pathlen;
 
-	pathlen = OF_getprop(chosen, "bootpath", path, 64);
+	/*
+	 * OF_getprop() returns the property's length, which may exceed
+	 * the buffer, and need not have NUL-terminated what it copied.
+	 * pathlen was taken and never used.
+	 */
+	path[0] = '\0';
+	pathlen = OF_getprop(chosen, "bootpath", path, sizeof(path) - 1);
+	if (pathlen < 0 || pathlen >= (int)sizeof(path))
+		pathlen = (int)sizeof(path) - 1;
+	path[pathlen] = '\0';
 	if ((ch = strchr(path, ':')) != NULL)
 		*ch = '\0';
 	netdev = OF_finddevice(path);

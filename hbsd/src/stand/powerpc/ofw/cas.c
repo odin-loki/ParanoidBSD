@@ -209,6 +209,17 @@ ppc64_cas(void)
 		/* CAS not supported */
 		return (0);
 
+	/*
+	 * OF_getprop() returns the PROPERTY's length, and IEEE 1275 lets
+	 * that exceed the buffer it was handed: the copy is truncated,
+	 * the return value is not. The loop below indexes buf[i] and
+	 * buf[i + 1] up to len, so bound it to whole pairs of what buf
+	 * actually holds.
+	 */
+	if (len > (int)sizeof(buf))
+		len = (int)sizeof(buf);
+	len &= ~1;
+
 	radix_mmu = 0;
 	ov5 = ibm_arch_vec.vec5.data;
 	for (i = 0; i < len; i += 2) {

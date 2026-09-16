@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,777 | 2,433 |
+| 7 | `stand` | 484 | 135,823 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,247** | **114,208** |
+| | **total** | **41,143** | **21,304,293** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -38181,7 +38181,7 @@ function; a file with two hundred of them is a project.
 - [ ] **7.22.15** `unix.c` · 23L · `TODO-PORT` · 2 fn
   - [ ] 7.22.15.1 `ficlNtohl()` · `TODO-FN`
   - [ ] 7.22.15.2 `ficlCompilePlatform()` · `TODO-FN`
-- [ ] **7.22.16** `vm.c` · 805L · `TODO-PORT` · 34 fn
+- [ ] **7.22.16** `vm.c` · 812L · `TODO-PORT` · 34 fn
   - [ ] 7.22.16.1 `vmBranchRelative()` · `TODO-FN`
   - [ ] 7.22.16.2 `vmCreate()` · `TODO-FN`
   - [ ] 7.22.16.3 `vmDelete()` · `TODO-FN`
@@ -39148,11 +39148,11 @@ function; a file with two hundred of them is a project.
   - [ ] 7.59.5.7 `ofwd_match()` · `TODO-FN`
   - [ ] 7.59.5.8 `ofwd_fmtdev()` · `TODO-FN`
   - [ ] 7.59.5.9 `ofwd_parsedev()` · `TODO-FN`
-- [ ] **7.59.6** `ofw_memory.c` · 112L · `TODO-PORT` · 1 fn
+- [ ] **7.59.6** `ofw_memory.c` · 121L · `TODO-PORT` · 1 fn
   - [ ] 7.59.6.1 `ofw_memmap()` · `TODO-FN`
 - [ ] **7.59.7** `ofw_module.c` · 47L · `TODO-PORT` · 1 fn
   - [ ] 7.59.7.1 `ofw_autoload()` · `TODO-FN`
-- [ ] **7.59.8** `ofw_net.c` · 326L · `TODO-PORT` · 11 fn
+- [ ] **7.59.8** `ofw_net.c` · 335L · `TODO-PORT` · 11 fn
   - [ ] 7.59.8.1 `ofwn_match()` · `TODO-FN`
   - [ ] 7.59.8.2 `ofwn_probe()` · `TODO-FN`
   - [ ] 7.59.8.3 `ofwn_put()` · `TODO-FN`
@@ -39838,12 +39838,12 @@ function; a file with two hundred of them is a project.
 
 ### 7.69 `stand/powerpc/ofw`
 
-- [ ] **7.69.1** `cas.c` · 271L · `TODO-MD` · 1 fn
+- [ ] **7.69.1** `cas.c` · 282L · `TODO-MD` · 1 fn
   - [ ] 7.69.1.1 `ppc64_cas()` · `TODO-FN`
 - [ ] **7.69.2** `conf.c` · 126L · `TODO-MD`
 - [ ] **7.69.3** `elf_freebsd.c` · 105L · `TODO-MD` · 1 fn
   - [ ] 7.69.3.1 `__elfN()` · `TODO-FN`
-- [ ] **7.69.4** `main.c` · 251L asm gen:2 · `TODO-MD` · 8 fn
+- [ ] **7.69.4** `main.c` · 261L asm gen:2 · `TODO-MD` · 8 fn
   - [ ] 7.69.4.1 `mfmsr()` · `TODO-FN`
   - [ ] 7.69.4.2 `init_heap()` · `TODO-FN`
   - [ ] 7.69.4.3 `memsize()` · `TODO-FN`

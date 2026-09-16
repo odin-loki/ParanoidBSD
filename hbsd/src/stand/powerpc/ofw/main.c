@@ -189,9 +189,17 @@ main(int (*openfirm)(void *))
 	printf("\n%s", bootprog_info);
 	printf("Memory: %lldKB\n", memsize() / 1024);
 
-	OF_getprop(chosen, "bootpath", bootpath, 64);
+	/*
+	 * OF_getprop() returns the property's length and need not have
+	 * NUL-terminated what it copied - and a bootpath with no ':'
+	 * left strchr() returning NULL for the store below.
+	 */
+	bootpath[0] = '\0';
+	OF_getprop(chosen, "bootpath", bootpath, sizeof(bootpath) - 1);
+	bootpath[sizeof(bootpath) - 1] = '\0';
 	ch = strchr(bootpath, ':');
-	*ch = '\0';
+	if (ch != NULL)
+		*ch = '\0';
 	printf("Booted from: %s\n", bootpath);
 
 	printf("\n");
@@ -200,7 +208,9 @@ main(int (*openfirm)(void *))
 	 * Only parse the first bootarg if present. It should
 	 * be simple to handle extra arguments
 	 */
-	OF_getprop(chosen, "bootargs", bootargs, sizeof(bootargs));
+	bootargs[0] = '\0';
+	OF_getprop(chosen, "bootargs", bootargs, sizeof(bootargs) - 1);
+	bootargs[sizeof(bootargs) - 1] = '\0';
 	bargc = 0;
 	parse(&bargc, &bargv, bootargs);
 	if (bargc == 1)

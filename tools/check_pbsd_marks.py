@@ -5792,6 +5792,42 @@ FIXES = {
         "every path below - the uninitialised local it was declared as",
     ),
 
+    "hbsd/src/stand/powerpc/ofw/cas.c": (
+        "if (len > (int)sizeof(buf))\n\t\tlen = (int)sizeof(buf);\n\tlen &= ~1;",
+        "/* CAS not supported */\n\t\treturn (0);\n\n\tradix_mmu = 0;",
+        "ppc64_cas: OF_getprop() returns the PROPERTY's length, which "
+        "IEEE 1275 lets exceed the buffer it was handed - the copy is "
+        "truncated, the return is not - and the loop indexes buf[i] "
+        "and buf[i + 1] up to it",
+    ),
+
+    "hbsd/src/stand/libofw/ofw_memory.c": (
+        "if (nmapping > (int)sizeof(mappings))\n\t\tnmapping = "
+        "(int)sizeof(mappings);",
+        "return;\n\t}\n\n\tpager_open();",
+        "ofw_get_memory: the same property length, divided into "
+        "entries and used to index mappings[] - a translations "
+        "property with more than 256 entries walked past the buffer",
+    ),
+
+    "hbsd/src/stand/libofw/ofw_net.c": (
+        "path[pathlen] = '\\0';\n\tif ((ch = strchr(path, ':')) != NULL)",
+        "pathlen = OF_getprop(chosen, \"bootpath\", path, 64);\n\tif "
+        "((ch = strchr(path, ':')) != NULL)",
+        "ofwn_init: OF_getprop() need not NUL-terminate what it "
+        "copied, and strchr() was called on the result; pathlen was "
+        "taken and never used",
+    ),
+
+    "hbsd/src/stand/powerpc/ofw/main.c": (
+        "\tch = strchr(bootpath, ':');\n\tif (ch != NULL)\n\t\t*ch = '\\0';",
+        "OF_getprop(chosen, \"bootpath\", bootpath, 64);\n\tch = "
+        "strchr(bootpath, ':');\n\t*ch = '\\0';",
+        "the Open Firmware loader's bootpath: unterminated by "
+        "OF_getprop(), and a path with no ':' left strchr() returning "
+        "NULL for the store",
+    ),
+
     "hbsd/src/stand/powerpc/boot1.chrp/boot1.c": (
         "if (len > 0 && bootpath_full[len-1] != ':') {",
         "if (bootpath_full[len-1] != ':') {",
@@ -6055,11 +6091,20 @@ FIXES = {
         "return",
     ),
 
-    "hbsd/src/stand/ficl/vm.c": (
-        "_Noreturn void vmThrowErr(FICL_VM *pVM, char *fmt, ...)",
-        "\nvoid vmThrowErr(FICL_VM *pVM, char *fmt, ...)",
-        "the definition matches the declaration ficl.h now carries",
-    ),
+    "hbsd/src/stand/ficl/vm.c": [
+        (
+            "_Noreturn void vmThrowErr(FICL_VM *pVM, char *fmt, ...)",
+            "\nvoid vmThrowErr(FICL_VM *pVM, char *fmt, ...)",
+            "the definition matches the declaration ficl.h now carries",
+        ),
+        (
+            "if (value < 0 || value >= (int)(sizeof (digits) - 1))",
+            "char digit_to_char(int value)\n{\n    return digits[value];",
+            "digit_to_char: value is a remainder modulo pVM->base, and "
+            "BASE is a Forth variable - `100 BASE !' then `.' indexed "
+            "digits[], which holds 36 characters, with 99",
+        ),
+    ],
 
     "hbsd/src/stand/ficl/loader.c": (
         "if (nparam < 0 || nparam > (int)(sizeof(p) / sizeof(p[0])))",

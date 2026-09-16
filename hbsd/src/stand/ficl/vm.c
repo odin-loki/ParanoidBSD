@@ -631,6 +631,13 @@ char *strrev( char *string )
 **************************************************************************/
 char digit_to_char(int value)
 {
+    /*
+     * value is a remainder modulo pVM->base, and BASE is a Forth
+     * variable: `100 BASE !' then `.' indexed digits[] with 99.
+     * digits[] holds 36 characters and a terminator.
+     */
+    if (value < 0 || value >= (int)(sizeof (digits) - 1))
+        return ('?');
     return digits[value];
 }
 

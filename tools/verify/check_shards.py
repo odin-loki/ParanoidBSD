@@ -87,9 +87,6 @@ UNCHECKED = {
     "sbin":       "analysed since sweep 18; not model-checked yet",
     "usr.bin":    "analysed since sweep 18; not model-checked yet",
     "usr.sbin":   "analysed since sweep 18; not model-checked yet",
-    "stand":      "analysed since the loader got its own header "
-                  "universe (includes.stand_flags); not model-checked "
-                  "yet",
 }
 
 # Analyse shards deliberately run WITHOUT --check-errors, and why. A
