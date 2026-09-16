@@ -221,16 +221,35 @@ smbios_sigsearch(const caddr_t addr, const uint32_t len)
 static const char*
 smbios_getstring(caddr_t addr, const int offset)
 {
-	caddr_t		cp;
+	caddr_t		cp, ep, sp;
 	int		i, idx;
 
 	idx = SMBIOS_GET8(addr, offset);
-	if (idx != 0) {
-		cp = SMBIOS_GETSTR(addr);
-		for (i = 1; i < idx; i++)
-			cp += strlen(cp) + 1;
-		return cp;
+	if (idx == 0 || smbios.addr == NULL)
+		return (NULL);
+
+	/*
+	 * idx is a byte of the structure - 1 to 255 - and the strings
+	 * it selects are NUL-terminated with no count, so the walk
+	 * needs the table's own end as its bound. Without one, a
+	 * structure naming string 255 walks past the SMBIOS region and
+	 * the caller setenv()s whatever it lands on: adjacent physical
+	 * memory published as smbios.bios.vendor and friends, which
+	 * kenv(1) then hands to any user.
+	 */
+	ep = smbios.addr + smbios.length;
+	cp = SMBIOS_GETSTR(addr);
+	for (i = 1; i < idx; i++) {
+		while (cp < ep && *cp != '\0')
+			cp++;
+		if (cp >= ep)
+			return (NULL);
+		cp++;			/* past the terminator */
 	}
+	/* ...and the string it selected must itself end inside it. */
+	for (sp = cp; sp < ep; sp++)
+		if (*sp == '\0')
+			return (cp);
 	return (NULL);
 }
 
@@ -407,7 +426,7 @@ smbios_parse_chassis_type(caddr_t addr)
 static caddr_t
 smbios_parse_table(const caddr_t addr)
 {
-	caddr_t		cp;
+	caddr_t		cp, ep;
 	int		proc, size, osize, type;
 	uint8_t		bios_minor, bios_major;
 	char		buf[16];
@@ -529,10 +548,20 @@ smbios_parse_table(const caddr_t addr)
 		break;
 	}
 
-	/* Find structure terminator. */
+	/*
+	 * Find structure terminator. SMBIOS_GETSTR() is addr plus the
+	 * structure's own length byte and the scan below looks for a
+	 * double NUL, neither of which the table is obliged to supply -
+	 * so the walk is bounded by the region the entry point
+	 * declared. smbios_find_struct() below already does this; this
+	 * copy did not.
+	 */
+	ep = smbios.addr + smbios.length;
 	cp = SMBIOS_GETSTR(addr);
-	while (SMBIOS_GET16(cp, 0) != 0)
+	while (cp + 1 < ep && SMBIOS_GET16(cp, 0) != 0)
 		cp++;
+	if (cp + 2 > ep)
+		return (NULL);
 
 	return (cp + 2);
 }
@@ -559,7 +588,12 @@ smbios_find_struct(int type)
 			break;
 		/* Find structure terminator. */
 		dmi = SMBIOS_GETSTR(dmi);
-		while (SMBIOS_GET16(dmi, 0) != 0 && dmi < ep)
+		/*
+		 * dmi first, then the read: SMBIOS_GETSTR() above can
+		 * already have put it past ep, and && evaluates left to
+		 * right.
+		 */
+		while (dmi + 1 < ep && SMBIOS_GET16(dmi, 0) != 0)
 			dmi++;
 		/* Skip it. */
 		dmi += 2;

@@ -5792,6 +5792,43 @@ FIXES = {
         "every path below - the uninitialised local it was declared as",
     ),
 
+    "hbsd/src/stand/libsa/smbios.c": [
+        (
+            "\tep = smbios.addr + smbios.length;\n\tcp = SMBIOS_GETSTR(addr);",
+            "/* Find structure terminator. */\n\tcp = SMBIOS_GETSTR(addr);"
+            "\n\twhile (SMBIOS_GET16(cp, 0) != 0)",
+            "smbios_parse_table: SMBIOS_GETSTR() is addr plus the "
+            "structure's own length byte, and the scan for a double "
+            "NUL had no bound - a table without one reads past the "
+            "region the entry point declared. smbios_find_struct() "
+            "already bounded its copy",
+        ),
+        (
+            "while (cp < ep && *cp != '\\0')\n\t\t\tcp++;",
+            "cp = SMBIOS_GETSTR(addr);\n\t\tfor (i = 1; i < idx; i++)\n"
+            "\t\t\tcp += strlen(cp) + 1;",
+            "smbios_getstring: idx is a byte of the structure, 1 to "
+            "255, and the walk over that many NUL-terminated strings "
+            "had no bound - a structure naming string 255 walks past "
+            "the SMBIOS region and the caller setenv()s what it lands "
+            "on, which kenv(1) then hands to any user",
+        ),
+        (
+            "while (dmi + 1 < ep && SMBIOS_GET16(dmi, 0) != 0)",
+            "while (SMBIOS_GET16(dmi, 0) != 0 && dmi < ep)",
+            "smbios_find_struct: && is left to right, and "
+            "SMBIOS_GETSTR() above can already have put dmi past ep",
+        ),
+    ],
+
+    "hbsd/src/stand/libsa/pager.c": (
+        "if (nlines < 2)\n\tnlines = 2;\n    p_maxlines = nlines - 1;",
+        "\tnlines = strtol(cp, &lp, 0);\n    }\n\n    p_maxlines = nlines - 1;",
+        "pager_open: LINES is a loader variable, so `nlines - 1' at "
+        "INT_MIN is undefined before the clamp below gets to look at "
+        "the result",
+    ),
+
     "hbsd/src/stand/powerpc/ofw/cas.c": (
         "if (len > (int)sizeof(buf))\n\t\tlen = (int)sizeof(buf);\n\tlen &= ~1;",
         "/* CAS not supported */\n\t\treturn (0);\n\n\tradix_mmu = 0;",

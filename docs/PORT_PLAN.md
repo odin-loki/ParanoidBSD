@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,823 | 2,433 |
+| 7 | `stand` | 484 | 135,864 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,293** | **114,208** |
+| | **total** | **41,143** | **21,304,334** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -39447,7 +39447,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.60.47.2 `o_gethandle()` · `TODO-FN`
   - [ ] 7.60.47.3 `o_rainit()` · `TODO-FN`
   - [ ] 7.60.47.4 `open()` · `TODO-FN`
-- [ ] **7.60.48** `pager.c` · 159L · `TODO-PORT` · 4 fn
+- [ ] **7.60.48** `pager.c` · 166L · `TODO-PORT` · 4 fn
   - [ ] 7.60.48.1 `pager_open()` · `TODO-FN`
   - [ ] 7.60.48.2 `pager_close()` · `TODO-FN`
   - [ ] 7.60.48.3 `pager_output()` · `TODO-FN`
@@ -39512,7 +39512,7 @@ function; a file with two hundred of them is a project.
 - [ ] **7.60.61** `sbrk.c` · 65L · `TODO-PORT` · 2 fn
   - [ ] 7.60.61.1 `setheap()` · `TODO-FN`
   - [ ] 7.60.61.2 `sbrk()` · `TODO-FN`
-- [ ] **7.60.62** `smbios.c` · 707L gen:4 · `TODO-PORT` · 16 fn
+- [ ] **7.60.62** `smbios.c` · 741L gen:4 · `TODO-PORT` · 16 fn
   - [ ] 7.60.62.1 `SMBIOS_GET8()` · `TODO-FN`
   - [ ] 7.60.62.2 `SMBIOS_GET16()` · `TODO-FN`
   - [ ] 7.60.62.3 `SMBIOS_GET32()` · `TODO-FN`

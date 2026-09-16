@@ -31758,3 +31758,61 @@ machine fault where Forth wants a `THROW`.  It is read and left: the
 divisor is the operator's own input at a prompt that already has
 `ccall`, and guarding it properly means a `THROW` at seven word
 implementations rather than a sentinel in six vendor files.
+
+### The SMBIOS parser walks off the table
+
+CBMC's `memcpy source region readable` on `SMBIOS_GET16/32/64` is the
+static-helper bucket — `base` and `off` are parameters and the callers
+are in the file — so the question it asks is whether the callers bound
+them.  Two of them do not.
+
+`smbios_getstring()`:
+
+    idx = SMBIOS_GET8(addr, offset);
+    if (idx != 0) {
+        cp = SMBIOS_GETSTR(addr);
+        for (i = 1; i < idx; i++)
+            cp += strlen(cp) + 1;
+        return cp;
+    }
+
+`idx` is one byte of the structure, so 1 to 255, and `SMBIOS_GETSTR()`
+is `addr + SMBIOS_GET8(addr, 0x01)` — the structure's own length byte.
+Both come off the SMBIOS table, which is firmware data the loader maps
+and reads.  A structure naming string 255 walks that many terminators
+past the region the entry point declared.
+
+The consequence is not a crash.  `smbios_parse_table()` hands the
+result to `smbios_setenv()`, so it is **adjacent physical memory
+published as `smbios.bios.vendor`, `smbios.system.product` and
+friends** — loader variables the kernel inherits and `kenv(1)` hands
+to any user.
+
+`smbios_parse_table()`'s own terminator scan is unbounded in the same
+way:
+
+    cp = SMBIOS_GETSTR(addr);
+    while (SMBIOS_GET16(cp, 0) != 0)
+        cp++;
+    return (cp + 2);
+
+`smbios_find_struct()` twenty lines below **does** bound its copy —
+`while (SMBIOS_GET16(dmi, 0) != 0 && dmi < ep)` — which is the third
+time this week one copy of a loop carried a guard its twin did not.
+That copy has its own smaller problem: `&&` is left to right, and
+`SMBIOS_GETSTR()` above it can already have put `dmi` past `ep`, so
+the read happens before the bound is tested.  All three are fixed.
+Probe: `tools/verify/probes/smbios_string_walk.c`.
+
+A note on that probe.  The first version modelled the string section
+as a byte array scanned in a `while` loop, and **both sides passed**:
+without `--unwinding-assertions` CBMC truncates an unbounded scan, and
+the failing path simply stops existing.  A probe that cannot fail on
+the old code is not evidence of anything, so the model is now the
+offsets of the successive terminators rather than the bytes between
+them.
+
+`pager_open()` is the small one in the same batch: `nlines` is
+`strtol()` of the `LINES` loader variable, and `nlines - 1` at
+`INT_MIN` is undefined before the `if (p_maxlines < 1)` below it gets
+to look at the result.

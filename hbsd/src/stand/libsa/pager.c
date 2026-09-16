@@ -50,6 +50,13 @@ pager_open(void)
 	nlines = strtol(cp, &lp, 0);
     }
 
+    /*
+     * LINES is a loader variable, so nlines is whatever strtol() made
+     * of it - and `nlines - 1' at INT_MIN is undefined before the
+     * clamp below gets to look at the result.
+     */
+    if (nlines < 2)
+	nlines = 2;
     p_maxlines = nlines - 1;
     if (p_maxlines < 1)
 	p_maxlines = 1;
