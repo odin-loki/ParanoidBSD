@@ -331,6 +331,29 @@ ctf_fdopen(int fd, int *errp)
 		if (shstrndx >= shnum)
 			return (ctf_set_open_errno(errp, ECTF_CORRUPT));
 
+		/*
+		 * shnum comes out of the file: e_shnum, which is 16 bits, or
+		 * -- on the SHN_XINDEX path above -- section 0's sh_size,
+		 * which is Elf64_Xword.  `sizeof (GElf_Shdr) * shnum' is done
+		 * in size_t and wraps, and nbytes is an ssize_t, so a shnum
+		 * near 2^58 gives a small or negative byte count, a malloc()
+		 * that succeeds, and a `sp[shstrndx]' that the test above
+		 * still passes because it bounds shstrndx by shnum and not by
+		 * the allocation.
+		 *
+		 * The array has to be IN the file, and st is already here
+		 * from the fstat64() at the top, so bound it by that: it is
+		 * the true constraint and strictly tighter than SIZE_MAX.
+		 * The divisor is the SMALLER of the two on-disk header sizes,
+		 * so this never rejects a legitimate object of either class,
+		 * and it caps shnum low enough that the GElf_Shdr
+		 * multiplication below cannot overflow for any file that
+		 * exists.
+		 */
+		if (st.st_size < 0 ||
+		    shnum > (size_t)st.st_size / sizeof (Elf32_Shdr))
+			return (ctf_set_open_errno(errp, ECTF_CORRUPT));
+
 		nbytes = sizeof (GElf_Shdr) * shnum;
 
 		if ((sp = malloc(nbytes)) == NULL)

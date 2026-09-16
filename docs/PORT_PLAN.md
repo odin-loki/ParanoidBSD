@@ -70,11 +70,11 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 17 | `targets` | 0 | 0 | 0 |
 | 18 | `include` | 167 | 21,049 | 0 |
 | 19 | `tools` | 641 | 138,549 | 2,675 |
-| 20 | `cddl` | 227 | 82,675 | 0 |
+| 20 | `cddl` | 227 | 82,698 | 0 |
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,719** | **114,209** |
+| | **total** | **41,143** | **21,304,742** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -145302,7 +145302,7 @@ function; a file with two hundred of them is a project.
 - [ ] **20.32** `cddl/contrib/opensolaris/head` · 9 files, 900L · `SKIP-VENDOR`
 - [ ] **20.33** `cddl/contrib/opensolaris/lib/libcmdutils` · 1 files, 235L · `SKIP-VENDOR`
 - [ ] **20.34** `cddl/contrib/opensolaris/lib/libcmdutils/common` · 1 files, 130L · `SKIP-VENDOR`
-- [ ] **20.35** `cddl/contrib/opensolaris/lib/libctf/common` · 3 files, 673L · `SKIP-VENDOR`
+- [ ] **20.35** `cddl/contrib/opensolaris/lib/libctf/common` · 3 files, 696L · `SKIP-VENDOR`
 - [ ] **20.36** `cddl/contrib/opensolaris/lib/libdtrace/aarch64` · 1 files, 139L · `SKIP-VENDOR`
 - [ ] **20.37** `cddl/contrib/opensolaris/lib/libdtrace/arm` · 1 files, 188L · `SKIP-VENDOR`
 - [ ] **20.38** `cddl/contrib/opensolaris/lib/libdtrace/common` · 61 files, 43,224L · `SKIP-VENDOR`

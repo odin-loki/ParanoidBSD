@@ -5893,6 +5893,31 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/cddl/contrib/opensolaris/lib/libctf/common/ctf_lib.c": (
+        "shnum > (size_t)st.st_size / sizeof (Elf32_Shdr))",
+        "if (shstrndx >= shnum)\n\t\t\treturn "
+        "(ctf_set_open_errno(errp, ECTF_CORRUPT));\n\n"
+        "\t\tnbytes = sizeof (GElf_Shdr) * shnum;",
+        "ctf_fdopen's section-header array is sized `sizeof "
+        "(GElf_Shdr) * shnum' with shnum straight out of the file: "
+        "e_shnum, which is 16 bits, or -- on the SHN_XINDEX path -- "
+        "section 0's sh_size, which is Elf64_Xword. The multiplication "
+        "is done in size_t and wraps, and nbytes is an ssize_t, so a "
+        "shnum near 2^58 gives a small or negative byte count, a "
+        "malloc() that succeeds, and an `sp[shstrndx]' that the "
+        "existing test still passes because it bounds shstrndx by "
+        "shnum and not by the allocation. This is not a hypothetical "
+        "reader: lib/libproc/proc_sym.c:656 calls ctf_open() -- which "
+        "is ctf_fdopen() -- on every mapped object of a traced "
+        "process, so truss(1), gcore(1), lockstat(1) and dtrace's "
+        "ustack all reach it with a file they did not produce. The "
+        "array has to be IN the file and st is already here from the "
+        "fstat64() at the top, so the bound is the file size, which is "
+        "the true constraint and strictly tighter than SIZE_MAX; the "
+        "divisor is the SMALLER of the two on-disk header sizes, so it "
+        "never rejects a legitimate object of either class",
+    ),
+
     "hbsd/src/cddl/contrib/opensolaris/cmd/lockstat/sym.c": (
         "if ((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {",
         "\telf = elf_begin(fd, ELF_C_READ, NULL);",

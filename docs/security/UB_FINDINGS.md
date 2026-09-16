@@ -32929,3 +32929,46 @@ handle is ended now too, which nothing did on any path, and the
 descriptor is closed on the failure paths as well as the success one.
 
 `cmd/lockstat` reports **0 findings across 2 translation units**.
+
+## `ctf_fdopen` sizes the section-header array with a number that wraps
+
+This one was not a finding. The two reports left in `ctf_lib.c` are
+`ctf_fdopen` reading `sp[shstrndx]` after a conversion loop the checker
+unrolls a bounded number of times — a false positive, and `shstrndx` is
+in fact bounded three lines earlier. Reading the function to say that
+turned up something the checker did not see:
+
+```c
+		if (shstrndx >= shnum)
+			return (ctf_set_open_errno(errp, ECTF_CORRUPT));
+
+		nbytes = sizeof (GElf_Shdr) * shnum;
+
+		if ((sp = malloc(nbytes)) == NULL)
+			return (ctf_set_open_errno(errp, errno));
+```
+
+`shnum` comes out of the file. On the ordinary path it is `e_shnum`,
+which is 16 bits and harmless. On the `SHN_XINDEX` path — taken when
+`e_shstrndx == SHN_XINDEX` **or `e_shnum == 0`**, both of which the file
+chooses — it is section 0's `sh_size`, which is `Elf64_Xword`.
+
+The multiplication is done in `size_t` and wraps; `nbytes` is an
+`ssize_t`, so it can also go negative. A `shnum` near 2^58 gives a small
+byte count, a `malloc()` that succeeds, and an `sp[shstrndx]` that the
+test above **still passes**, because it bounds `shstrndx` by `shnum` and
+not by the allocation. The guard that looks like it covers this is
+checking the wrong pair.
+
+This is not a hypothetical reader. `lib/libproc/proc_sym.c:656` calls
+`ctf_open()` — which is `ctf_fdopen()` — on every mapped object of a
+traced process, so truss(1), gcore(1), lockstat(1) and dtrace's `ustack`
+all reach it with a file they did not produce.
+
+The array has to be **in the file**, and `st` is already there from the
+`fstat64()` at the top of the function, so that is the bound: the true
+constraint, and strictly tighter than `SIZE_MAX`. The divisor is the
+*smaller* of the two on-disk header sizes (`Elf32_Shdr`, 40 bytes,
+against `GElf_Shdr`'s 64), so it never rejects a legitimate object of
+either class, and it caps `shnum` low enough that the `GElf_Shdr`
+multiplication below cannot overflow for any file that exists.
