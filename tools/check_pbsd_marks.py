@@ -5893,6 +5893,30 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/cddl/contrib/opensolaris/cmd/lockstat/sym.c": (
+        "if ((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {",
+        "\telf = elf_begin(fd, ELF_C_READ, NULL);",
+        "symtab_init() reads section headers and section data out of "
+        "/dev/ksyms and checked none of it. symtab and strtab are "
+        "locals; a ksyms image with no SHT_SYMTAB -- a kernel built "
+        "without symbols, or one libelf rejects for its class or "
+        "version, which makes elf_begin() return NULL and both loops "
+        "run zero times -- left both indeterminate, and `lastsym = "
+        "symtab + nsyms' then walked from one garbage pointer to "
+        "another handing symp->st_name + strtab to add_symbol(). Four "
+        "things were unchecked: elf_begin() returning NULL; "
+        "gelf_getshdr() failing and leaving shdr indeterminate, so "
+        "sh_type, sh_size and sh_entsize are all garbage; "
+        "elf_getdata() returning NULL and being dereferenced for "
+        "->d_buf; and d_buf itself being NULL, which libelf sets for a "
+        "section declared SHT_NOBITS (elf_data.c:269). sh_entsize is "
+        "also the divisor of sh_size and was not tested for zero. The "
+        "caller's contract already covers every one of them: "
+        "lockstat.c:1147 is `if (symtab_init() == -1) fail(1, \"can't "
+        "load kernel symbols\")'. The Elf handle is also ended now, "
+        "which nothing did on any path",
+    ),
+
     "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_open.c": (
         "sizeof (dt_kmodule_t *));",
         "dtp->dt_kmods = calloc(dtp->dt_modbuckets, "

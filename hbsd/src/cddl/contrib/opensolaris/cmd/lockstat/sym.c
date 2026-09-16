@@ -169,8 +169,8 @@ symtab_init(void)
 {
 	Elf		*elf;
 	Elf_Scn		*scn = NULL;
-	GElf_Sym	*symtab, *symp, *lastsym;
-	char		*strtab;
+	GElf_Sym	*symtab = NULL, *symp, *lastsym;
+	char		*strtab = NULL;
 	uint_t		cnt;
 	int		fd;
 	int		i;
@@ -192,20 +192,71 @@ symtab_init(void)
 
 	(void) elf_version(EV_CURRENT);
 
-	elf = elf_begin(fd, ELF_C_READ, NULL);
-	for (cnt = 1; (scn = elf_nextscn(elf, scn)) != NULL; cnt++) {
-		GElf_Shdr shdr;
-		(void) gelf_getshdr(scn, &shdr);
-		if (shdr.sh_type == SHT_SYMTAB) {
-			symtab = (GElf_Sym *)elf_getdata(scn, NULL)->d_buf;
-			nsyms = shdr.sh_size / shdr.sh_entsize;
-			strindex = shdr.sh_link;
-		}
+	/*
+	 * Everything below reads a section header and a section's data out
+	 * of /dev/ksyms, and every one of those reads could fail without
+	 * this saying so.  symtab and strtab are locals; a ksyms image with
+	 * no SHT_SYMTAB -- a kernel built without symbols, or an image
+	 * libelf rejects for its class or version, which makes elf_begin()
+	 * return NULL and both loops run zero times -- left both
+	 * indeterminate, and `symtab + nsyms' below walked from one garbage
+	 * pointer to another handing symp->st_name + strtab to
+	 * add_symbol().
+	 *
+	 * Four separate things were unchecked: elf_begin() returning NULL,
+	 * gelf_getshdr() failing and leaving shdr indeterminate (so
+	 * sh_type, sh_size and sh_entsize are all garbage),
+	 * elf_getdata() returning NULL and being dereferenced for ->d_buf,
+	 * and d_buf itself being NULL, which libelf sets for a section
+	 * declared SHT_NOBITS (contrib/elftoolchain/libelf/elf_data.c:269).
+	 * sh_entsize is also the divisor of sh_size and was not tested for
+	 * zero.
+	 *
+	 * The caller's contract already covers all of it: lockstat.c:1147
+	 * is `if (symtab_init() == -1) fail(1, "can't load kernel
+	 * symbols")'.
+	 */
+	if ((elf = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
+		(void) close(fd);
+		return (-1);
 	}
 
 	for (cnt = 1; (scn = elf_nextscn(elf, scn)) != NULL; cnt++) {
-		if (cnt == strindex)
-			strtab = (char *)elf_getdata(scn, NULL)->d_buf;
+		GElf_Shdr shdr;
+		Elf_Data *data;
+
+		if (gelf_getshdr(scn, &shdr) == NULL)
+			continue;
+		if (shdr.sh_type != SHT_SYMTAB || shdr.sh_entsize == 0)
+			continue;
+		if ((data = elf_getdata(scn, NULL)) == NULL ||
+		    data->d_buf == NULL)
+			continue;
+
+		symtab = (GElf_Sym *)data->d_buf;
+		nsyms = shdr.sh_size / shdr.sh_entsize;
+		strindex = shdr.sh_link;
+	}
+
+	if (symtab == NULL || strindex < 0) {
+		(void) elf_end(elf);
+		(void) close(fd);
+		return (-1);
+	}
+
+	for (cnt = 1; (scn = elf_nextscn(elf, scn)) != NULL; cnt++) {
+		Elf_Data *data;
+
+		if (cnt != (uint_t)strindex)
+			continue;
+		if ((data = elf_getdata(scn, NULL)) != NULL)
+			strtab = (char *)data->d_buf;
+	}
+
+	if (strtab == NULL) {
+		(void) elf_end(elf);
+		(void) close(fd);
+		return (-1);
 	}
 
 	lastsym = symtab + nsyms;
@@ -239,6 +290,7 @@ symtab_init(void)
 	symbol_table[0].addr = 0;
 	symbol_table[0].size = 1;
 
+	(void) elf_end(elf);
 	close(fd);
 	return (0);
 }

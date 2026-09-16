@@ -32874,3 +32874,58 @@ The other thirteen stay, and each is a modelling gap with a name:
 
 These are modelling gaps, not facts the source is hiding, and there is
 nothing true to add to the code for them.
+
+## lockstat(1) walks two uninitialised pointers over a ksyms image
+
+The last two findings outside libdtrace, and they were one function.
+`cmd/lockstat/sym.c`'s `symtab_init()` reads section headers and section
+data out of `/dev/ksyms` and checked **none** of it:
+
+```c
+	elf = elf_begin(fd, ELF_C_READ, NULL);
+	for (cnt = 1; (scn = elf_nextscn(elf, scn)) != NULL; cnt++) {
+		GElf_Shdr shdr;
+		(void) gelf_getshdr(scn, &shdr);
+		if (shdr.sh_type == SHT_SYMTAB) {
+			symtab = (GElf_Sym *)elf_getdata(scn, NULL)->d_buf;
+			nsyms = shdr.sh_size / shdr.sh_entsize;
+			strindex = shdr.sh_link;
+		}
+	}
+	...
+	lastsym = symtab + nsyms;
+```
+
+`symtab` and `strtab` are **locals with no initialiser**. A ksyms image
+with no `SHT_SYMTAB` — a kernel built without symbols, or one libelf
+rejects for its class or version, which makes `elf_begin()` return NULL
+and *both* loops run zero times — leaves both indeterminate, and
+`symtab + nsyms` then walks from one garbage pointer to another handing
+`symp->st_name + strtab` to `add_symbol()`.
+
+Four separate things were unchecked, and each is its own way in:
+
+- `elf_begin()` returning NULL.
+- `gelf_getshdr()` failing and leaving `shdr` indeterminate — so
+  `sh_type`, `sh_size` and `sh_entsize` are all garbage, and the
+  `SHT_SYMTAB` test is being made on a garbage value.
+- `elf_getdata()` returning NULL and being dereferenced for `->d_buf`.
+- `d_buf` itself being NULL, which libelf sets for a section declared
+  `SHT_NOBITS` (`contrib/elftoolchain/libelf/elf_data.c:269`) — the
+  third time today that line has been the answer.
+
+`sh_entsize` is also the divisor of `sh_size` and was not tested for
+zero.
+
+Nothing here needed a new contract. `lockstat.c:1147` is already
+
+```c
+	if (symtab_init() == -1)
+		fail(1, "can't load kernel symbols");
+```
+
+so every one of these becomes a `return (-1)` and a diagnosis. The `Elf`
+handle is ended now too, which nothing did on any path, and the
+descriptor is closed on the failure paths as well as the success one.
+
+`cmd/lockstat` reports **0 findings across 2 translation units**.
