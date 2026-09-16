@@ -3118,6 +3118,11 @@ build_splash_module(vm_offset_t addr, int type)
 	if (fp == NULL)
 		panic("can't find kernel file");
 
+	/*
+	 * splash was read by the test below whether or not either arm
+	 * ran, and a `type' that is neither left it indeterminate.
+	 */
+	splash = NULL;
 	if (type == SPLASH_STARTUP)
 		splash = getenv("splash");
 	if (type == SPLASH_SHUTDOWN)

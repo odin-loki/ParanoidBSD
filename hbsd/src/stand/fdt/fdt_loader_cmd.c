@@ -1546,6 +1546,17 @@ fdt_modprop(int nodeoff, char *propname, void *value, char mode)
 	rv = 0;
 	buf = value;
 
+	/*
+	 * fdt_cmd_mkprop() passes NULL when the command named no value,
+	 * and `switch (*buf)' read it. A property with no value is a
+	 * legal empty property, which is what the device tree calls a
+	 * boolean.
+	 */
+	if (buf == NULL) {
+		rv = fdt_setprop(fdtp, nodeoff, propname, NULL, 0);
+		goto done;
+	}
+
 	switch (*buf) {
 	case '&':
 		/* phandles */
@@ -1573,6 +1584,7 @@ fdt_modprop(int nodeoff, char *propname, void *value, char mode)
 		break;
 	}
 
+done:
 	if (rv != 0) {
 		if (rv == -FDT_ERR_NOSPACE)
 			sprintf(command_errbuf,
@@ -1758,6 +1770,14 @@ fdt_cmd_mkprop(int argc, char *argv[])
 			return (CMD_ERROR);
 	} else
 		value = NULL;
+
+	/*
+	 * fdt_cmd_prop() twenty lines above does this and this one did
+	 * not, so `fdt mkprop' with fewer than three words reached
+	 * fdt_extract_nameloc() with a NULL path and strrchr() with it.
+	 */
+	if (path == NULL)
+		path = cwd;
 
 	if (fdt_extract_nameloc(&path, &propname, &o) != 0)
 		return (CMD_ERROR);

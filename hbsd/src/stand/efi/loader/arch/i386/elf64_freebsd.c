@@ -111,6 +111,14 @@ elf64_exec(struct preloaded_file *fp)
 		type = fp->f_kernphys_relocatable ?
 		    AllocateAnyPages : AllocateMaxAddress;
 		break;
+	default:
+		/*
+		 * type is BS->AllocatePages()'s first argument on every
+		 * path below, and without this arm a copy_staging the
+		 * enum does not name passes it this frame's stack.
+		 */
+		printf("Unknown copy_staging %d\n", (int)copy_staging);
+		return (EINVAL);
 	}
 
 	if ((md = file_findmetadata(fp, MODINFOMD_ELFHDR)) == NULL)

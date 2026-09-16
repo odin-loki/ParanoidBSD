@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,731 | 2,433 |
+| 7 | `stand` | 484 | 135,764 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,201** | **114,208** |
+| | **total** | **41,143** | **21,304,234** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37085,7 +37085,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.2.9.10 `disk_fmtdev()` · `TODO-FN`
   - [ ] 7.2.9.11 `disk_parsedev()` · `TODO-FN`
 - [ ] **7.2.10** `disk.h` · 117L · `TODO-HDR`
-- [ ] **7.2.11** `gfx_fb.c` · 3,156L gen:2 · `TODO-PORT` · 62 fn
+- [ ] **7.2.11** `gfx_fb.c` · 3,161L gen:2 · `TODO-PORT` · 62 fn
   - [ ] 7.2.11.1 `gfx_framework_init()` · `TODO-FN`
   - [ ] 7.2.11.2 `gfx_get_fb_address()` · `TODO-FN`
   - [ ] 7.2.11.3 `gfx_parse_mode_str()` · `TODO-FN`
@@ -37839,7 +37839,7 @@ function; a file with two hundred of them is a project.
 ### 7.19 `stand/efi/loader/arch/i386`
 
 - [ ] **7.19.1** `amd64_tramp.S` · 101L asm · `TODO-ASM`
-- [ ] **7.19.2** `elf64_freebsd.c` · 280L · `TODO-MD` · 2 fn
+- [ ] **7.19.2** `elf64_freebsd.c` · 288L · `TODO-MD` · 2 fn
   - [ ] 7.19.2.1 `elf64_exec()` · `TODO-FN`
   - [ ] 7.19.2.2 `elf64_obj_exec()` · `TODO-FN`
 - [ ] **7.19.3** `setup.c` · 52L · `TODO-MD` · 1 fn
@@ -37855,7 +37855,7 @@ function; a file with two hundred of them is a project.
 
 ### 7.21 `stand/fdt`
 
-- [ ] **7.21.1** `fdt_loader_cmd.c` · 1,947L · `TODO-PORT` · 43 fn
+- [ ] **7.21.1** `fdt_loader_cmd.c` · 1,967L · `TODO-PORT` · 43 fn
   - [ ] 7.21.1.1 `fdt_find_static_dtb()` · `TODO-FN`
   - [ ] 7.21.1.2 `fdt_load_dtb()` · `TODO-FN`
   - [ ] 7.21.1.3 `fdt_load_dtb_addr()` · `TODO-FN`

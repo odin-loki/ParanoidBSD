@@ -5755,6 +5755,43 @@ FIXES = {
         "diskless boot",
     ),
 
+    "hbsd/src/stand/fdt/fdt_loader_cmd.c": [
+        (
+            "if (path == NULL)\n\t\tpath = cwd;\n\n\tif "
+            "(fdt_extract_nameloc(&path, &propname, &o) != 0)",
+            "\t} else\n\t\tvalue = NULL;\n\n\tif "
+            "(fdt_extract_nameloc(&path, &propname, &o) != 0)",
+            "fdt_cmd_mkprop: fdt_cmd_prop() twenty lines above defaults "
+            "a NULL path to cwd and this one did not, so `fdt mkprop' "
+            "with fewer than three words reached strrchr(NULL)",
+        ),
+        (
+            "if (buf == NULL) {\n\t\trv = fdt_setprop(fdtp, nodeoff, "
+            "propname, NULL, 0);",
+            "\trv = 0;\n\tbuf = value;\n\n\tswitch (*buf) {",
+            "fdt_modprop: fdt_cmd_mkprop() passes NULL when the command "
+            "named no value, and `switch (*buf)' read it - a property "
+            "with no value is the device tree's boolean",
+        ),
+    ],
+
+    "hbsd/src/stand/common/gfx_fb.c": (
+        "splash = NULL;\n\tif (type == SPLASH_STARTUP)",
+        "panic(\"can't find kernel file\");\n\n\tif (type == "
+        "SPLASH_STARTUP)",
+        "build_splash_module: splash is read by `if (splash == NULL)' "
+        "whether or not either arm ran, and a type that is neither "
+        "SPLASH_STARTUP nor SPLASH_SHUTDOWN left it indeterminate",
+    ),
+
+    "hbsd/src/stand/efi/loader/arch/i386/elf64_freebsd.c": (
+        "\tdefault:\n\t\t/*\n\t\t * type is BS->AllocatePages()",
+        "AllocateAnyPages : AllocateMaxAddress;\n\t\tbreak;\n\t}",
+        "elf64_exec: a switch on copy_staging with three arms and no "
+        "default left type - BS->AllocatePages()'s first argument on "
+        "every path below - the uninitialised local it was declared as",
+    ),
+
     "hbsd/src/stand/powerpc/boot1.chrp/boot1.c": (
         "if (len > 0 && bootpath_full[len-1] != ':') {",
         "if (bootpath_full[len-1] != ':') {",

@@ -31546,4 +31546,57 @@ is `bootpath_full[-1]`.
 `getenv("kernelname")` and copies it into the guest.  Same class as
 the four `console` sites above, in the bhyve loader.
 
-The other 21 are the next pass.
+#### `fdt mkprop` with too few words
+
+`stand/fdt/fdt_loader_cmd.c:1746`
+
+    path = (argc > 2) ? argv[2] : NULL;
+    value = NULL;
+    if (argc > 3) { ... } else
+        value = NULL;
+    if (fdt_extract_nameloc(&path, &propname, &o) != 0)
+        return (CMD_ERROR);
+    if (fdt_modprop(o, propname, value, 1))
+
+`fdt_cmd_prop()` twenty lines above does `if (path == NULL) path = cwd;`
+and this one did not, so `fdt mkprop` with fewer than three words
+reached `strrchr(NULL, '/')`.  `fdt_modprop()` then does `buf = value;
+switch (*buf)` on a `value` this caller sets to NULL whenever the
+command named none.
+
+Neither is a privilege boundary — the `fdt` commands run at the loader
+prompt, which is already the machine — but the loader has no fault
+handler, so a typo at that prompt is a wedged board where an error
+message belongs.  A property with no value is also a legal empty
+property, which is what a device tree calls a boolean, so that is what
+it makes now.
+
+Two copies of one function again: one had the guard, the other did
+not.
+
+#### Two more switches with no default
+
+`common/gfx_fb.c:3105`'s `splash` is read by `if (splash == NULL)`
+whether or not either of the two `if (type == ...)` arms ran.
+
+`efi/loader/arch/i386/elf64_freebsd.c:103` switches on `copy_staging`
+with three arms and no `default`, and `type` is
+`BS->AllocatePages()`'s first argument on every path below it.  That
+is the third instance of this exact shape today, after
+`geli_dev_strategy()` and `opal_dev.c`'s shutdown handler yesterday.
+
+### Where `stand/` stands
+
+    68  the first reading
+    16  now
+
+Of the sixteen, eight are recorded premises that hold
+(`load_elf.c` ×2, `install.c`, `ip.c`, `nfs.c`, `dosfs.c`,
+`zfs.c` ×2), five are analyser limits this document names
+(`biospnp.c` ×2 through a type pun, `efi_console.c` ×2 across
+translation units, `zfs_module.c`'s escape, whose consequence is
+fixed), and three are unread: `gfx_fb.c:1261`, `gfx_fb.c:2601` — the
+23-byte `read_list()` leak, read and judged — and
+`efi/loader/main.c:1023`.
+
+The other 16 are the next pass.
