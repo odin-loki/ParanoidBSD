@@ -31816,3 +31816,78 @@ them.
 `strtol()` of the `LINES` loader variable, and `nlines - 1` at
 `INT_MIN` is undefined before the `if (p_maxlines < 1)` below it gets
 to look at the result.
+
+## Verify run 35's libs shard: the instrument's own cache, read half-written
+
+Run 35 came back green everywhere except one job, and the message was
+the one this file opens with:
+
+    FAIL  lib/csu/common/crtbegin.c does not compile and is not in EXPECTED
+          1  missing header: crt.h
+
+No commit in that run touched `lib/csu`, and the same scope analysed
+clean in this container.  It is not a source change and it is not a
+gap in `tools/verify/expected_errors.py`.  It is a race in the
+instrument, and the shape of it is worth writing down because the
+failure it produces is exactly the failure this whole document is
+about: **a translation unit that does not compile contributes no
+findings and says so nowhere.**
+
+`crt.h` is not one header.  There are seven of them —
+`lib/csu/{aarch64,amd64,arm,i386,powerpc,powerpc64,riscv}/crt.h` —
+and `lib/csu/common/crtbegin.c` is built once per architecture, by
+each of those directories, through
+
+    .PATH:      ${.CURDIR:H}/common
+    CFLAGS+=    -I${.CURDIR}
+
+So the question "which directory would bmake build this file in" is
+the question of whether `crt.h` resolves at all.  `includes.py` asks
+`userland_names.builders()`, which answers with every directory whose
+`SRCS` or `OBJS` names the source; `_component_dir()` prefers the one
+whose name matches the file's architecture, and falls back to the
+nearest ancestor with a Makefile when nothing names it.
+
+`builders()` is a 1.1MB JSON cache, and it was written with
+`Path.write_text()`.  That is not atomic.  With a **cold** cache and
+four analyse workers — which is CI, and is not this container, where
+the cache has been warm since September — each worker ran the whole
+bmake walk independently and wrote its 1.1MB over the top of the
+others, and a sibling read a prefix of one.  A prefix is not JSON,
+`json.loads` raised, the `except (ValueError, OSError)` swallowed it,
+and `builders()` returned `{}`.
+
+`{}` is the problem.  It is indistinguishable from the true answer
+"no directory in this tree names that source", so nothing anywhere
+reported a failure.  `_component_dir()` simply fell back — from
+`lib/csu/amd64`, which carries `-I${.CURDIR}`, to `lib/csu`, whose
+Makefile is `SUBDIR` and carries no flags at all.  `#include "crt.h"`
+stopped resolving, the translation unit went `ERROR`, and the
+`--check-errors` gate did its job and failed the shard.
+
+That gate is the only reason this was ever seen.  Without it the run
+is green and one file out of 2,272 is silently unanalysed, which is
+the `rtld.c` story again.
+
+Two fixes, because the race has two halves:
+
+  * `userland_names._write_atomic()` writes to a temp file in the
+    same directory and `os.replace()`s it into place.  Same
+    filesystem, so the rename is atomic: a reader sees the old file
+    or the new one and never a prefix of either.  All three caches
+    (names, builders, installed headers) now go through it.
+  * `analyze.py` and `classify.py` call `userland_names.warm()` in
+    the parent, beside the `incs_shim()` call that was already there,
+    before the process pool exists.  The walk then happens once
+    instead of once per worker, and every worker's read is a plain
+    file read.  This is strictly less work than the workers doing it:
+    the module docstring has said "REBUILD THE CACHES IN ONE PROCESS
+    BEFORE A SWEEP" since the day a libs shard went from twenty
+    minutes to a projected five hours, and nothing was doing it.
+
+`tools/verify/test_userland_names.py` gates both: that
+`lib/csu/amd64`'s `SRCS` names `crtbegin.c` and that
+`_component_dir()` lands on the directory holding its `crt.h`, and
+that `_write_atomic()` replaces in place and leaves no temp file
+beside the cache.
+

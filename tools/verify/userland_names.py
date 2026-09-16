@@ -666,7 +666,7 @@ def installed_headers(arch: str = "amd64",
             pass
     out = build_incs(arch)
     try:
-        p.write_text(json.dumps(out, indent=0, sort_keys=True))
+        _write_atomic(p, json.dumps(out, indent=0, sort_keys=True))
     except OSError:
         pass
     return out
@@ -790,6 +790,66 @@ def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
     return out, path, obj_rels
 
 
+def _write_atomic(p: Path, text: str) -> None:
+    """Write a cache file so no other process can ever read half of it.
+
+    The builder cache is 1.1MB and `p.write_text()' is not atomic: a
+    reader that opens it while it is being written gets a truncated
+    prefix, which is not JSON, so `json.loads' raises and the caller
+    falls back. That fallback is the bug. builders() answers
+    "which directories' SRCS name this source", and its empty answer is
+    not "nothing" -- it is the same shape as "nothing", so
+    includes._component_dir() silently drops to the nearest ancestor
+    with a Makefile.
+
+    lib/csu/common/crtbegin.c is the file that showed it. Seven
+    directories name it -- lib/csu/{aarch64,amd64,arm,i386,powerpc,
+    powerpc64,riscv}, each `.PATH: ${.CURDIR:H}/common' plus
+    `-I${.CURDIR}' -- and with the cache torn, the answer became
+    lib/csu, whose Makefile is SUBDIR and carries no -I at all. So
+    `#include "crt.h"' did not resolve, and a translation unit that
+    does not compile contributes no findings and says so nowhere.
+    It cost verify run 35 its libs shard, and only that shard: the
+    race needs a COLD cache and four workers, which is CI and is not
+    this container, where the cache has been warm since September.
+
+    Same directory, so os.replace() is a rename within one filesystem,
+    which is atomic. A reader sees the old file or the new one.
+    """
+    tmp = p.with_name(p.name + f".{os.getpid()}.tmp")
+    try:
+        tmp.write_text(text)
+        os.replace(tmp, p)
+    except OSError:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        raise
+
+
+def warm(arches: tuple[str, ...] = tuple(MACHINE_OF)) -> None:
+    """Fill the caches IN THIS PROCESS, before anything forks.
+
+    Every consumer of this module runs a ProcessPoolExecutor. A cold
+    cache makes each worker run the whole bmake walk independently and
+    then write the result over the top of the others -- the cost the
+    module docstring warns about, and the torn read _write_atomic()
+    describes. Calling this in the parent makes the walk happen once,
+    finish before the pool exists, and be a plain file read in every
+    worker.
+
+    A failure here is not fatal: the workers can still do it the slow
+    way, which is what they did before this existed.
+    """
+    for a in arches:
+        try:
+            for_arch(a)
+            builders(a)
+        except Exception:
+            pass
+
+
 def cache_path(arch: str) -> Path:
     return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
         f"pbsd_userland_names_{arch}_{compiler_key()}.json"
@@ -818,7 +878,13 @@ def builders(arch: str) -> dict[str, list[str]]:
     try:
         return json.loads(p.read_text())
     except (ValueError, OSError):
-        return {}
+        # The refresh ran and the cache still will not read: the write
+        # failed (a full disk, a read-only PBSD_CACHE) or something
+        # else is writing it. Returning {} here is the silent wrong
+        # answer _write_atomic() is about -- empty and "nothing names
+        # this source" are the same value -- so pay for the walk again
+        # and answer from it directly.
+        return build(arch)[2]
 
 
 @functools.lru_cache(maxsize=None)
@@ -831,8 +897,9 @@ def for_arch(arch: str, refresh: bool = False) -> frozenset[str]:
             pass
     named, _, builder = build(arch)
     try:
-        p.write_text(json.dumps(sorted(named)))
-        builder_cache_path(arch).write_text(json.dumps(builder, sort_keys=True))
+        _write_atomic(p, json.dumps(sorted(named)))
+        _write_atomic(builder_cache_path(arch),
+                      json.dumps(builder, sort_keys=True))
     except OSError:
         pass
     return frozenset(named)
@@ -869,8 +936,9 @@ def main() -> int:
     for a in arches:
         if args.refresh:
             named, failed, builder = build(a, jobs=args.jobs)
-            cache_path(a).write_text(json.dumps(sorted(named)))
-            builder_cache_path(a).write_text(
+            _write_atomic(cache_path(a), json.dumps(sorted(named)))
+            _write_atomic(
+                builder_cache_path(a),
                 json.dumps(builder, sort_keys=True))
             refused |= set(failed)
             print(f"{a:10s} {len(named):6d} sources named"

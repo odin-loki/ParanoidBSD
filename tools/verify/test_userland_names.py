@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -281,6 +282,43 @@ def main() -> int:
           f"program's own flags, and no more (got {prog})")
     check(any(f.endswith("sbin/dhclient") for f in withprog),
           "...and still returns the program's -I after the fold")
+
+    # The cache is written where another process can read it, and the
+    # answer it carries is one whose EMPTY form is indistinguishable
+    # from a real "nothing names this". verify run 35's libs shard
+    # failed on exactly that: a cold cache, four analyse workers each
+    # running the whole bmake walk, and a 1.1MB `write_text' that a
+    # sibling read half of. json.loads raised, builders() returned {},
+    # and lib/csu/common/crtbegin.c stopped being a file that
+    # lib/csu/amd64 builds -- so it lost `-I${.CURDIR}', so
+    # `#include "crt.h"' did not resolve, so the translation unit
+    # reported nothing at all.
+    import includes as inc  # noqa: E402
+    csu = "lib/csu/common/crtbegin.c"
+    named = u.builders("amd64").get(csu) or []
+    check(any(Path(d).name == "amd64" for d in named),
+          f"lib/csu/amd64's SRCS names {csu} (got {named or 'nothing'})")
+    d = inc._component_dir(csu)
+    check(d is not None and (d / "crt.h").is_file(),
+          "...and the directory bmake would build it in is the one "
+          f"holding its crt.h (got {d})")
+
+    # os.replace() within one directory is the atomicity, so the temp
+    # file has to be in that same directory and has to be gone after.
+    tmpd = Path(tempfile.mkdtemp(prefix="pbsd_test_atomic_"))
+    try:
+        target = tmpd / "cache.json"
+        u._write_atomic(target, '{"a": 1}')
+        check(target.read_text() == '{"a": 1}',
+              "_write_atomic writes what it was given")
+        check(list(tmpd.iterdir()) == [target],
+              "...and leaves no temp file beside it "
+              f"(found {[f.name for f in tmpd.iterdir()]})")
+        u._write_atomic(target, '{"b": 2}')
+        check(target.read_text() == '{"b": 2}',
+              "...and replaces an existing cache in place")
+    finally:
+        shutil.rmtree(tmpd, ignore_errors=True)
 
     print(f"\n{'FAILED' if FAIL else 'all checks passed'}"
           f"{f' ({FAIL})' if FAIL else ''}")

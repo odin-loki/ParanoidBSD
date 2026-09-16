@@ -55,7 +55,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import userland_names  # noqa: E402
 from includes import include_flags, is_kernel_tu, lang_flags  # noqa: E402
+from includes import USERLAND_TOP  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
@@ -312,6 +314,14 @@ def main() -> int:
                 counts[c] = counts.get(c, 0) + 1
         else:
             counts["TU-ERROR"] = counts.get("TU-ERROR", 0) + 1
+    # The same cold-cache race analyze.py warms against: builders() is
+    # 1.1MB of JSON and every forked worker would build it independently
+    # and write it over the top of the others. Warmed here, in the
+    # parent, it is a plain file read in each of them -- and only when
+    # this scope has userland in it, because a kernel-only shard never
+    # asks builders() anything.
+    if any(j["rel"].split("/")[0] in USERLAND_TOP for j in jobs):
+        userland_names.warm((args.arch,))
     t0 = time.time()
     done = 0
     # Submitted in bounded batches rather than all at once. Handing an

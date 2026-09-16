@@ -44,6 +44,8 @@ from includes import (include_flags, is_kernel_tu, lang_flags,  # noqa: E402
                       files_option_alternatives, files_cpu_alternatives,
                       SRC)
 from includes import arch_of, files_opt_arch_index, incs_shim  # noqa: E402
+from includes import USERLAND_TOP  # noqa: E402
+import userland_names  # noqa: E402
 from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
@@ -339,8 +341,28 @@ def main() -> int:
     # environment, so the workers inherit this one instead of each
     # building -- and leaving behind -- its own.  It is strictly less
     # work than the workers doing it: the same set, built once.
+    # ...and the userland name and builder caches with it, for the same
+    # reason and one more. A cold builder cache makes every worker run
+    # the whole bmake walk, and the 1.1MB result was written
+    # non-atomically over the top of the others, so a worker could read
+    # half of it. Half is not JSON, the read fails, and builders()
+    # returns {} -- which is indistinguishable from "no directory names
+    # this source". That dropped lib/csu/common/crtbegin.c from
+    # lib/csu/amd64 (which carries `-I${.CURDIR}', hence crt.h) to
+    # lib/csu (SUBDIR, no flags), and cost verify run 35 its libs shard
+    # on one ERROR out of 2,272. Warming here makes the walk happen
+    # once, before the pool exists.
+    #
+    # Per ARCHITECTURE, and only for an architecture that has userland
+    # work in this run: a kernel-only shard never asks builders()
+    # anything, and the walk is two minutes it would spend for no
+    # answer.
+    want_warm = {j.get("arch") or arch_of(j["rel"]) for j in jobs
+                 if j["rel"].split("/")[0] in USERLAND_TOP}
     for _a in sorted({j.get("arch") or arch_of(j["rel"]) for j in jobs}):
         incs_shim(_a)
+        if _a in want_warm:
+            userland_names.warm((_a,))
 
     counts, nfind, t0 = {}, 0, time.time()
     with open(args.out, "w") as fh, ProcessPoolExecutor(args.jobs) as ex:
