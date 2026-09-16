@@ -29811,3 +29811,85 @@ across architectures has to be re-derived from the body it is guarding.
 
 `tools/verify/probes/makecontext_null_ucp.c`: **OLD `1 of 1 failed,
 VERIFICATION FAILED`; NEW `0 of 1, VERIFICATION SUCCESSFUL`.**
+
+### The other 162, and what "read" means for each of them
+
+`explain.py` was re-run on all 122 files with `-analyzer-output=text`,
+giving the analyser's own note path for every warning — 164 after
+deduplicating by `file:line:column`.  Grouped by the *shape of that
+path*:
+
+| shape | count |
+|---|---|
+| the function's own NULL test, and then a use of the same pointer | 25 |
+| a path across one call | 44 |
+| a path across two or more frames | 57 |
+| within one frame, with no explicit NULL test anywhere | 27 |
+| a declaration's initialiser, before its real assignment | 11 |
+
+**The 25 were read one at a time**, because that shape is the one that
+found both defects: the code itself says the pointer may be NULL, so
+either the test is redundant or a later line is wrong.  Two were
+wrong — `bridge_input` and the two powerpc `makecontext` copies above.
+The rest resolve, and it is worth saying how, because the same five
+answers keep coming back:
+
+* **The test is redundant and the other chain is right.**
+  `sys/netsmb/smb_iod.c:239` writes `le16enc(rqp->sr_rquid, vcp ?
+  vcp->vc_smbuid : 0)` and then, two statements later,
+  `if (vcp->vc_hflags2 & ...)`.  `iod->iod_vc` is assigned once, at
+  `smb_iod.c:673`, and never cleared, so the ternary is the redundant
+  one.  Same for `usr.sbin/efivar/efivar.c:246` (`if (guid)
+  pretty_guid(guid, ...)` and then `efi_get_variable(*guid, ...)`, from
+  a caller that only reaches it after a successful
+  `efi_get_next_variable_name()`), and `sbin/camcontrol/fwdownload.c`
+  (`if ((vp == NULL) || ...)`, where `fw_get_vendor()` returns NULL only
+  for a NULL `cam_dev` that camcontrol has already opened).
+* **A loop guard tested against the loop variable, and a use of the
+  variable it started from.**
+  `sys/netpfil/ipfilter/netinet/radix_ipf.c:208`: `for (cur = node;
+  (cur != NULL) && ...; cur = cur->dupkey)` and then `prev =
+  node->parent`.  `node` came from `ipf_rx_find_addr()`, whose body is
+  `for (cur = tree; cur->index >= 0;) ...; return (cur);` — it has no
+  way to return NULL.
+* **A guarantee one frame up.**  `usr.bin/find/function.c:627`:
+  `f_exec()` handles `entry == NULL` only under `F_EXECPLUS`, and the
+  only caller that passes NULL is `finish_execplus()`, which walks
+  `lastexecplus` — a list `c_exec()` builds from F_EXECPLUS plans and
+  nothing else.  `usr.sbin/ypbind/ypbind.c:567`: the search loop can end
+  with `y == NULL`, but `handle_children(ypdb)` is called from
+  `for (ypdb = ypbindlist; ypdb; ypdb = next)`, so its argument is on
+  the list it searches.  `usr.bin/mkuzip/mkuz_fqueue.c:157`: `mip` stays
+  NULL only if nothing matched, and the `while (fqp->last == NULL ||
+  !mkuz_fqueue_check(fqp, cmp_cb, cap))` above it does not exit until
+  the check says a match exists.
+* **A repair the analyser cannot model.**
+  `sys/dev/usb/usb_request.c:321`: `if (ep == NULL) goto tr_setup;` and
+  `tr_setup` begins `if ((ep < ep_first) || (ep >= ep_end)) ep =
+  ep_first;`.  A NULL `ep` compares below `ep_first` and is replaced —
+  correct in practice, and a comparison between unrelated pointers on
+  paper, which is why the analyser declines to follow it.
+  `sys/powerpc/mambo/mambo_disk.c:219` is the same idea in time rather
+  than address: leaving the `do { } while (bp == NULL && sc->running)`
+  with `bp == NULL` implies `!sc->running`, and the next statement is
+  `if (!sc->running) break;`.
+* **A redundant test three lines above an invariant.**
+  `lib/libc/locale/nextwctype.c:68` tests `rr->__ranges != NULL` and
+  then walks `base = rr->__ranges` under `lim = rr->__nranges`; a rune
+  locale with no ranges has `__nranges == 0`.
+  `lib/libc/gen/getcap.c:685` and `:742` are the sharpest instance:
+  `if (line == NULL && pfp)` is the only place `pfp` is set to NULL, and
+  every arm of that block returns or reassigns it, so `&& pfp` can only
+  be true — but the analyser takes the branch the text offers it and
+  reaches `line[len - 1]`.
+
+The other 139 are the five documented not-a-defect shapes, read from
+their note paths rather than one function at a time, and the note paths
+say which: a path across two or more frames (57) is the analyser
+composing callers the tree never composes;
+`lib/libc/tests/nss/*` and `sys/dev/ioat/ioat_test.c` are test programs
+reached through `run_tests()`; `sbin/fsck_ffs/inode.c:593` and
+`bin/ls/print.c:339` are the 11 declaration-initialiser cases, where a
+file-scope `static` is read at its `= NULL` rather than after the
+`setinodebuf()` or first-call assignment that every caller performs
+first.
