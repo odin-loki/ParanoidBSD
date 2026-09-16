@@ -32661,3 +32661,74 @@ is the length to search for the terminator.
 
 All three cost nothing: `cddl` stands at 45 findings across 135
 translation units, 8 ERROR, all on the record, unchanged by the fixes.
+
+## `ctf_set_errno` returns `CTF_ERR`, and now says so where it is read
+
+Twelve of those 45 were one blind spot, and `ctf_util.c`'s own comment
+had already written it down:
+
+> Store the specified error code into the CTF container, and then return
+> `CTF_ERR` for the benefit of the caller.
+
+Out of line, that is invisible. Every failure arm in `common/ctf` is
+`return (ctf_set_errno(fp, ...))`, and the function lives in another
+translation unit — so a caller written the way every one of them is
+written:
+
+```c
+	if ((type = ctf_add_generic(fp, flag, name, &dtd)) == CTF_ERR)
+		return (CTF_ERR);	/* errno is set for us */
+	dtd->dtd_data.ctt_info = ...;
+```
+
+is read as one where `ctf_add_generic()` may return something **other**
+than `CTF_ERR` off a path that never wrote `*rp`. Same shape as
+`xmalloc`'s 1995 comment in the OpenSSH section above: a true statement
+in the one form the analyser cannot read.
+
+`ctf_set_errno()` and `ctf_set_open_errno()` are two lines each and do
+nothing but store a code and return a constant. They are `static inline`
+in `ctf_impl.h` now, where the constant is visible to the caller that
+tests it. Measured over `cddl`: **45 findings to 33**, and the twelve are
+
+| file | functions |
+|---|---|
+| `ctf_create.c` | all six `ctf_add_*` entry points — `ctf_add_encoded`, `ctf_add_reftype`, `ctf_add_array`, `ctf_add_function`, `ctf_add_forward`, `ctf_add_typedef` |
+| `ctf_types.c` | `ctf_type_size`, `ctf_type_align`, `ctf_type_compat` |
+| `ctf_labels.c` | `ctf_label_topmost`, `ctf_label_iter` |
+| `ctf_lookup.c` | `ctf_func_args` |
+
+Checked rather than assumed, because a linkage change is the kind of edit
+that fails at link time and not at compile time: nothing outside
+`common/ctf` and `lib/libctf` ever named either symbol; every caller of
+either already includes `ctf_impl.h`; all eleven of libctf's objects
+compile, archive, and leave **no undefined reference** to either name;
+and the warning counts under `-Wall -Wextra -Wmissing-prototypes` are
+identical to the baseline, file for file.
+
+### ...and the inlining immediately found one
+
+Making the body visible cost one new finding, in `ctf_types.c`, which is
+what the change is for:
+
+```c
+	if (fp == NULL && type == CTF_ERR)
+		return (-1); /* simplify caller code by permitting CTF_ERR */
+```
+
+`ctf_type_qlname()` **anticipates a NULL container** — that guard is
+what it is for — but `&&` narrowed it to the one case where the type is
+`CTF_ERR` as well. With any other type it falls through to
+`ctf_decl_push()`, whose first act is `ctf_lookup_by_id(&fp, type)`, and
+then to `ctf_set_errno(fp, cd.cd_err)`.
+
+Not reachable from anything in this tree, and said plainly rather than
+dressed up: every caller of `ctf_type_name()`, `ctf_type_lname()` and
+`ctf_type_qname()` — dtrace(1), `dt_cg.c`, `dt_decl.c`, `dt_dof.c`,
+`dt_parser.c`, `dt_pid.c` — has already had `fp` dereferenced by a
+`ctf_func_info()` or a lookup on the same container. The guard is
+widened to `if (fp == NULL)`, which is the case it was written for;
+every `fp != NULL` path is untouched.
+
+The vendor shard's `cddl` half now stands at **33 findings across 135
+translation units**, 8 ERROR, all on the record.

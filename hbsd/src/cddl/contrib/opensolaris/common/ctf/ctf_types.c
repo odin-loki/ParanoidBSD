@@ -328,7 +328,21 @@ ctf_type_qlname(ctf_file_t *fp, ctf_id_t type, char *buf, size_t len,
 	int ptr, arr;
 	uint_t k;
 
-	if (fp == NULL && type == CTF_ERR)
+	/*
+	 * A NULL container is anticipated here -- that is what this guard
+	 * is for -- but `&&' narrowed it to the one case where the type is
+	 * CTF_ERR as well.  With any other type the function falls through
+	 * to ctf_decl_push(), whose first act is
+	 * `ctf_lookup_by_id(&fp, type)', and then to
+	 * `ctf_set_errno(fp, cd.cd_err)'.
+	 *
+	 * Nothing in this tree reaches it: every caller of ctf_type_name(),
+	 * ctf_type_lname() and ctf_type_qname() has already had fp
+	 * dereferenced by a ctf_func_info() or a lookup on the same
+	 * container.  This widens the guard to the case it was already
+	 * written for; every fp != NULL path is untouched.
+	 */
+	if (fp == NULL)
 		return (-1); /* simplify caller code by permitting CTF_ERR */
 
 	ctf_decl_init(&cd, buf, len);

@@ -129,24 +129,7 @@ ctf_strdup(const char *s1)
 }
 
 /*
- * Store the specified error code into errp if it is non-NULL, and then
- * return NULL for the benefit of the caller.
+ * ctf_set_open_errno() and ctf_set_errno() are static inline in
+ * ctf_impl.h, so that the constant each of them returns is visible to
+ * the caller that tests it.  See the comment there.
  */
-ctf_file_t *
-ctf_set_open_errno(int *errp, int error)
-{
-	if (errp != NULL)
-		*errp = error;
-	return (NULL);
-}
-
-/*
- * Store the specified error code into the CTF container, and then return
- * CTF_ERR for the benefit of the caller.
- */
-long
-ctf_set_errno(ctf_file_t *fp, int err)
-{
-	fp->ctf_errno = err;
-	return (CTF_ERR);
-}

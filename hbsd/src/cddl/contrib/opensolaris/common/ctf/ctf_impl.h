@@ -341,8 +341,43 @@ extern void ctf_decl_sprintf(ctf_decl_t *, const char *, ...);
 extern const char *ctf_strraw(const ctf_file_t *, uint_t);
 extern const char *ctf_strptr(const ctf_file_t *, uint_t);
 
-extern ctf_file_t *ctf_set_open_errno(int *, int);
-extern long ctf_set_errno(ctf_file_t *, int);
+/*
+ * Both of these exist to store an error code and return a constant, and
+ * ctf_util.c's comment on the second says exactly that: "Store the
+ * specified error code into the CTF container, and then return CTF_ERR
+ * for the benefit of the caller."
+ *
+ * Out of line that fact is invisible.  A caller written as
+ *
+ *	if ((type = ctf_add_generic(fp, flag, name, &dtd)) == CTF_ERR)
+ *		return (CTF_ERR);
+ *	dtd->dtd_data.ctt_info = ...;
+ *
+ * is read as one where ctf_add_generic() may return something OTHER than
+ * CTF_ERR off a path that never wrote *rp -- because every one of those
+ * paths ends in `return (ctf_set_errno(fp, ...))', whose value comes
+ * from another translation unit.  Every ctf_add_* entry point in
+ * ctf_create.c has that shape, and so do ctf_func_args(),
+ * ctf_type_size(), ctf_type_align(), ctf_type_compat(),
+ * ctf_label_topmost() and ctf_label_iter().
+ *
+ * Here they are what the comment says they are.  The definitions move
+ * from ctf_util.c; nothing outside common/ctf ever named either symbol.
+ */
+static inline ctf_file_t *
+ctf_set_open_errno(int *errp, int error)
+{
+	if (errp != NULL)
+		*errp = error;
+	return (NULL);
+}
+
+static inline long
+ctf_set_errno(ctf_file_t *fp, int err)
+{
+	fp->ctf_errno = err;
+	return (CTF_ERR);
+}
 
 extern const void *ctf_sect_mmap(ctf_sect_t *, int);
 extern void ctf_sect_munmap(const ctf_sect_t *);

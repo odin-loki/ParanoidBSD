@@ -5873,6 +5873,51 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_impl.h": (
+        "static inline long\nctf_set_errno(ctf_file_t *fp, int err)",
+        "extern long ctf_set_errno(ctf_file_t *, int);",
+        "ctf_util.c's comment on ctf_set_errno said exactly what it does "
+        "-- \"Store the specified error code into the CTF container, and "
+        "then return CTF_ERR for the benefit of the caller\" -- and out "
+        "of line that was invisible. Every failure arm in common/ctf "
+        "ends in `return (ctf_set_errno(fp, ...))', so a caller written "
+        "as `if (f(...) == CTF_ERR) return (CTF_ERR); use(out);' was "
+        "read as one where f() may return something OTHER than CTF_ERR "
+        "off a path that never wrote `out'. Measured over cddl: 45 "
+        "findings to 33. The twelve are all six ctf_add_* entry points "
+        "in ctf_create.c, ctf_func_args, ctf_type_size, ctf_type_align, "
+        "ctf_type_compat, ctf_label_topmost and ctf_label_iter. Both "
+        "setters move here from ctf_util.c; nothing outside common/ctf "
+        "and lib/libctf ever named either symbol, every caller already "
+        "includes this header, and all eleven libctf objects compile, "
+        "archive and leave no undefined reference",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_util.c": (
+        "ctf_set_open_errno() and ctf_set_errno() are static inline in",
+        "long\nctf_set_errno(ctf_file_t *fp, int err)\n{\n"
+        "\tfp->ctf_errno = err;",
+        "the other half of the same edit: the two out-of-line "
+        "definitions move to ctf_impl.h so the constant each returns is "
+        "visible to the caller that tests it",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_types.c": (
+        "\tif (fp == NULL)\n\t\treturn (-1); /* simplify caller code",
+        "if (fp == NULL && type == CTF_ERR)",
+        "found by the inlining above, which is the point of it. "
+        "ctf_type_qlname anticipates a NULL container -- that is what "
+        "the guard is for -- but `&&' narrowed it to the one case where "
+        "the type is CTF_ERR as well. With any other type it falls "
+        "through to ctf_decl_push(), whose first act is "
+        "ctf_lookup_by_id(&fp, type), and then to ctf_set_errno(fp, "
+        "cd.cd_err). Nothing in this tree reaches it: every caller of "
+        "ctf_type_name, ctf_type_lname and ctf_type_qname has already "
+        "had fp dereferenced by a ctf_func_info or a lookup on the same "
+        "container. This widens the guard to the case it was written "
+        "for; every fp != NULL path is untouched",
+    ),
+
     "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_lookup.c": (
         "sizeof (uint_t) * ((size_t)n + 2) >",
         "if (kind != CTF_K_FUNCTION)\n"
