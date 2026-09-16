@@ -5782,7 +5782,8 @@ FIXES = {
         "match.c:307's strlen(xstrdup(...)) being the one that went",
     ),
 
-    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_open.c": (
+    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_open.c": [
+        (
         "if (ctfsect->cts_size < hdrsz + size)",
         "} else {\n\t\tbase = (void *)ctfsect->cts_data;",
         "ctf_bufopen computes `size = cth_stroff + cth_strlen' from the "
@@ -5802,7 +5803,26 @@ FIXES = {
         "object of a traced process, so truss(1), gcore(1) and dtrace's "
         "ustack reach it, and cddl/usr.sbin/dtrace and lib/libproc are "
         "the two LIBADDs of libctf in the tree",
-    ),
+        ),
+        (
+            "\tif (fp == NULL)\n\t\treturn (CTF_ERR);",
+            "if (fp == NULL || fp == pfp || (pfp != NULL && "
+            "pfp->ctf_refcnt == 0))",
+            "the second thing the ctf_set_errno inlining found, and this "
+            "one needs no path at all to read: ctf_import() TESTED "
+            "`fp == NULL' and then, in the same statement, handed fp to "
+            "ctf_set_errno(), whose whole body is `fp->ctf_errno = err'. "
+            "The check and the action contradicted each other on one "
+            "line, so the check was dead. ctf_import() is a public "
+            "libctf entry point; both in-tree callers "
+            "(dt_module.c:907, dt_open.c:1463) pass a container that a "
+            "ctf_setmodel() on the line above has already "
+            "dereferenced, so nothing here reaches it. There is nowhere "
+            "to record EINVAL when there is no container, and a caller "
+            "that passed NULL has nowhere to read it from, so the "
+            "return value carries the error alone",
+        ),
+    ],
 
     "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/ctftools.h": (
         "void elfterminate(const char *, const char *, ...)\n"

@@ -32730,5 +32730,30 @@ dressed up: every caller of `ctf_type_name()`, `ctf_type_lname()` and
 widened to `if (fp == NULL)`, which is the case it was written for;
 every `fp != NULL` path is untouched.
 
-The vendor shard's `cddl` half now stands at **33 findings across 135
-translation units**, 8 ERROR, all on the record.
+### ...and then a second one, which needs no path to read
+
+```c
+	if (fp == NULL || fp == pfp || (pfp != NULL && pfp->ctf_refcnt == 0))
+		return (ctf_set_errno(fp, EINVAL));
+```
+
+`ctf_import()` **tested** `fp == NULL` and then, in the same statement,
+handed `fp` to `ctf_set_errno()`, whose whole body is
+`fp->ctf_errno = err`. The check and the action contradict each other on
+one line, so the check was dead: recognising a NULL container and
+dereferencing it were the same expression.
+
+It stayed invisible for the same reason the twelve did. Out of line,
+`ctf_set_errno` was an opaque call and there was nothing to see. Inline,
+the contradiction is one hop.
+
+`ctf_import()` is a public libctf entry point, and again nothing in this
+tree reaches it: both in-tree callers — `dt_module.c:907` and
+`dt_open.c:1463` — pass a container that a `ctf_setmodel()` on the line
+above has already dereferenced. There is nowhere to record `EINVAL` when
+there is no container, and a caller that passed NULL has nowhere to read
+it from either, so the return value carries the error alone.
+
+The vendor shard's `cddl` half now stands at **32 findings across 135
+translation units**, 8 ERROR, all on the record — down from 45, with two
+defects found by making a true statement the analyser could read.

@@ -1160,7 +1160,19 @@ ctf_parent_name(ctf_file_t *fp)
 int
 ctf_import(ctf_file_t *fp, ctf_file_t *pfp)
 {
-	if (fp == NULL || fp == pfp || (pfp != NULL && pfp->ctf_refcnt == 0))
+	/*
+	 * `fp == NULL' was tested here and then handed to ctf_set_errno(),
+	 * whose whole body is `fp->ctf_errno = err'.  The check and the
+	 * action contradicted each other in one statement: a NULL
+	 * container was recognised and then dereferenced.  There is
+	 * nowhere to record EINVAL when there is no container, and a
+	 * caller that passed NULL has nowhere to read it from either, so
+	 * the error code is the return value alone.
+	 */
+	if (fp == NULL)
+		return (CTF_ERR);
+
+	if (fp == pfp || (pfp != NULL && pfp->ctf_refcnt == 0))
 		return (ctf_set_errno(fp, EINVAL));
 
 	if (pfp != NULL && pfp->ctf_dmodel != fp->ctf_dmodel)
