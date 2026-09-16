@@ -191,6 +191,18 @@ geli_dev_strategy(void *devdata, int rw, daddr_t blk, size_t size, char *buf,
 			goto out;
 		rc = gdesc->hdesc->dd.d_dev->dv_strategy(gdesc->hdesc,
 		    rw, alnstart / DEV_BSIZE, alnsize, iobuf, NULL);
+		break;
+
+	default:
+		/*
+		 * Neither a read nor a write, so nothing was done - and
+		 * without this arm rc is still the uninitialised local it
+		 * was declared as, which the caller reads as an errno.
+		 * Zero there is "success, buffer filled" for a buffer
+		 * nothing has touched.
+		 */
+		rc = EINVAL;
+		break;
 	}
 out:
 	if (iobuf != buf)

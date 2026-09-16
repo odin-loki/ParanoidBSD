@@ -136,7 +136,13 @@ xdr_short(xdr_t *xdr, short *ip)
 	int i;
 	bool rv;
 
-	i = *ip;
+	/*
+	 * Only an ENCODE has anything to read here. On a DECODE *ip is
+	 * the caller's OUTPUT and may be indeterminate - nvlist_print()
+	 * passes a bare `short', and reading it is undefined before the
+	 * decode writes it.
+	 */
+	i = (xdr->xdr_op == XDR_OP_ENCODE) ? *ip : 0;
 	if ((rv = xdr_int(xdr, &i))) {
 		if (xdr->xdr_op == XDR_OP_DECODE)
 			*ip = i;
@@ -150,7 +156,8 @@ xdr_u_short(xdr_t *xdr, unsigned short *ip)
 	unsigned u;
 	bool rv;
 
-	u = *ip;
+	/* See xdr_short(): *ip is the caller's output on a DECODE. */
+	u = (xdr->xdr_op == XDR_OP_ENCODE) ? *ip : 0;
 	if ((rv = xdr_u_int(xdr, &u))) {
 		if (xdr->xdr_op == XDR_OP_DECODE)
 			*ip = u;
@@ -284,7 +291,8 @@ xdr_char(xdr_t *xdr, char *cp)
 	int i;
 	bool rv = false;
 
-	i = *cp;
+	/* See xdr_short(): *cp is the caller's output on a DECODE. */
+	i = (xdr->xdr_op == XDR_OP_ENCODE) ? *cp : 0;
 	if ((rv = xdr_int(xdr, &i))) {
 		if (xdr->xdr_op == XDR_OP_DECODE)
 			*cp = i;

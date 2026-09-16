@@ -567,7 +567,16 @@ dos_readdir(struct open_file *fd, struct dirent *d)
 		err = dos_read(fd, &dd, sizeof(dd), &res);
 		if (err)
 			return (err);
-		if (res == sizeof(dd))
+		/*
+		 * res is the RESIDUAL - what dos_read() could not read.
+		 * Any residual at all means a partial 32-byte entry, and
+		 * this tested only for the whole of one, so a directory
+		 * whose length is not a multiple of sizeof(dd) - which is
+		 * a number in its own directory entry, on the medium -
+		 * got the tail of dd left as stack garbage and then read
+		 * dd.de.attr, dd.xde.seq and dd.xde.chk out of it.
+		 */
+		if (res != 0)
 			return (ENOENT);
 		if (dd.de.name[0] == 0)
 			return (ENOENT);

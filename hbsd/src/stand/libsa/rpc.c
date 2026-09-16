@@ -406,9 +406,10 @@ rpc_getport(struct iodesc *d, n_long prog, n_long vers)
 	args->port = 0;
 	pkt = NULL;
 
+	res = NULL;
 	cc = rpc_call(d, PMAPPROG, PMAPVERS, PMAPPROC_GETPORT,
 	    args, sizeof(*args), (void **)&res, &pkt);
-	if (cc < sizeof(*res)) {
+	if (cc < 0 || (size_t)cc < sizeof(*res)) {
 		printf("getport: %s", strerror(errno));
 		errno = EBADRPC;
 		free(pkt);

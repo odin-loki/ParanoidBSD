@@ -5744,6 +5744,75 @@ FIXES = {
         "argc moves the stack pointer up",
     ),
 
+    "hbsd/src/stand/libsa/rpc.c": (
+        "if (cc < 0 || (size_t)cc < sizeof(*res)) {",
+        "(void **)&res, &pkt);\n\tif (cc < sizeof(*res)) {",
+        "rpc_getport: ssize_t cc against sizeof() is an UNSIGNED "
+        "comparison, so rpc_call()'s -1 read as enormous and the "
+        "failure arm was never taken. rpc_call() leaves res untouched "
+        "on every failure path, so res->port was an uninitialised "
+        "stack pointer - reachable from the network during a "
+        "diskless boot",
+    ),
+
+    "hbsd/src/stand/i386/libi386/pxe.c": [
+        (
+            "if (isr->BufferLength > size - rsize) {\n\t\t\tfree(buf);\n"
+            "\t\t\treturn (ENXIO);\n\t\t}",
+            "frame += isr->Frame.offset;\n\t\tbcopy(PTOV(frame), ptr, "
+            "isr->BufferLength);",
+            "pxe_netif_receive_isr: buf is sized by the FIRST UNDI "
+            "buffer's FrameLength and every later BufferLength is a "
+            "separate number from the same source, with the `rsize >= "
+            "size' test AFTER the bcopy - a fragmented frame declaring "
+            "less than its fragments carry wrote past the allocation",
+        ),
+        (
+            "\tptr = NULL;\n\twhile ((getsecs() - t) < timeout) {",
+            "size = 0;\n\twhile ((getsecs() - t) < timeout) {",
+            "pxe_netif_get: pxe_netif_receive() returns ENOMEM and "
+            "ENXIO without writing *pkt, and neither is -1, so the "
+            "caller got this function's uninitialised local and "
+            "readether() free()d it",
+        ),
+    ],
+
+    "hbsd/src/stand/libsa/zfs/zfs.c": (
+        "\tif (split_devname(beroot, poolname, sizeof(poolname), "
+        "&dsname) != 0)\n\t\tgoto out;",
+        "&dsname) != 0)\n\t\treturn;\n\n\tspa = spa_find_by_name",
+        "init_zfs_boot_options: two returns after strdup(currdev_in) "
+        "leaked it - the split_devname() failure and the pool that is "
+        "not imported",
+    ),
+
+    "hbsd/src/stand/libsa/zfs/nvlist.c": (
+        "i = (xdr->xdr_op == XDR_OP_ENCODE) ? *ip : 0;",
+        "xdr_short(xdr_t *xdr, short *ip)\n{\n\tint i;\n\tbool rv;\n\n\ti = *ip;",
+        "xdr_short, xdr_u_short and xdr_char each read *ip before "
+        "deciding whether this is an encode, and on a DECODE that is "
+        "the caller's OUTPUT - nvlist_print() passes a bare `char' and "
+        "a bare `unsigned short', so the read is of an indeterminate "
+        "value",
+    ),
+
+    "hbsd/src/stand/libsa/dosfs.c": (
+        "if (res != 0)\n\t\t\treturn (ENOENT);",
+        "err = dos_read(fd, &dd, sizeof(dd), &res);\n\t\tif (err)\n"
+        "\t\t\treturn (err);\n\t\tif (res == sizeof(dd))",
+        "dos_readdir: tested only for a WHOLE unread entry, so a FAT "
+        "directory whose length is not a multiple of 32 left the tail "
+        "of dd as stack garbage and parsed attr, seq and chk out of it",
+    ),
+
+    "hbsd/src/stand/libsa/geli/gelidev.c": (
+        "\tdefault:\n\t\t/*\n\t\t * Neither a read nor a write",
+        "alnstart / DEV_BSIZE, alnsize, iobuf, NULL);\n\t}\nout:",
+        "geli_dev_strategy: a switch on rw & F_MASK with arms for "
+        "F_READ and F_WRITE and no default fell through to `return "
+        "(rc)' with rc the uninitialised local it was declared as",
+    ),
+
     "hbsd/src/lib/libc/xdr/xdr_array.c": (
         "if (elsize == 0)\n\t\treturn (FALSE);",
         "c = *sizep;\n\tif ((c > maxsize || UINT_MAX/elsize < c) &&",

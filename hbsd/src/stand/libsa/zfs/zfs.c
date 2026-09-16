@@ -1784,16 +1784,23 @@ init_zfs_boot_options(const char *currdev_in)
 	beroot = strchr(currdev, ':') + 1;
 	setenv("zfs_be_root", beroot, 1);
 
+	/*
+	 * Every exit past the strdup() above owes it a free(), and these
+	 * two used to return straight out - the split_devname() one on a
+	 * pool name the medium supplies, and the spa_find_by_name() one
+	 * on a pool that is not imported.
+	 */
 	if (split_devname(beroot, poolname, sizeof(poolname), &dsname) != 0)
-		return;
+		goto out;
 
 	spa = spa_find_by_name(poolname);
 	if (spa == NULL)
-		return;
+		goto out;
 
 	zfs_bootenv_initial("bootenvs", spa, beroot, dsname, 0);
 	zfs_checkpoints_initial(spa, beroot, dsname);
 
+out:
 	free(currdev);
 }
 

@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,408 | 2,433 |
+| 7 | `stand` | 484 | 135,467 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,878** | **114,208** |
+| | **total** | **41,143** | **21,303,937** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -38518,7 +38518,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.40.23.4 `nullc_getchar()` · `TODO-FN`
   - [ ] 7.40.23.5 `nullc_ischar()` · `TODO-FN`
 - [ ] **7.40.24** `pread.c` · 78L · `TODO-MD`
-- [ ] **7.40.25** `pxe.c` · 629L · `TODO-MD` · 15 fn
+- [ ] **7.40.25** `pxe.c` · 651L · `TODO-MD` · 15 fn
   - [ ] 7.40.25.1 `pxe_enable()` · `TODO-FN`
   - [ ] 7.40.25.2 `pxe_init()` · `TODO-FN`
   - [ ] 7.40.25.3 `pxe_print()` · `TODO-FN`
@@ -39285,7 +39285,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.60.16.6 `devparse()` · `TODO-FN`
   - [ ] 7.60.16.7 `devinit()` · `TODO-FN`
   - [ ] 7.60.16.8 `dev_cleanup()` · `TODO-FN`
-- [ ] **7.60.17** `dosfs.c` · 1,037L · `TODO-PORT` · 23 fn
+- [ ] **7.60.17** `dosfs.c` · 1,046L · `TODO-PORT` · 23 fn
   - [ ] 7.60.17.1 `dos_read_fatblk()` · `TODO-FN`
   - [ ] 7.60.17.2 `dos_mount_impl()` · `TODO-FN`
   - [ ] 7.60.17.3 `dos_mount()` · `TODO-FN`
@@ -39499,7 +39499,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.60.55.1 `read()` · `TODO-FN`
 - [ ] **7.60.56** `readdir.c` · 50L · `TODO-PORT` · 1 fn
   - [ ] 7.60.56.1 `readdirfd()` · `TODO-FN`
-- [ ] **7.60.57** `rpc.c` · 429L · `TODO-PORT` · 6 fn
+- [ ] **7.60.57** `rpc.c` · 430L · `TODO-PORT` · 6 fn
   - [ ] 7.60.57.1 `rpc_call()` · `TODO-FN`
   - [ ] 7.60.57.2 `recvrpc()` · `TODO-FN`
   - [ ] 7.60.57.3 `rpc_fromaddr()` · `TODO-FN`
@@ -39649,7 +39649,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.62.4.3 `g_eli_crypto_encrypt()` · `TODO-FN`
   - [ ] 7.62.4.4 `g_eli_crypto_decrypt()` · `TODO-FN`
 - [ ] **7.62.5** `geliboot_internal.h` · 70L · `TODO-HDR`
-- [ ] **7.62.6** `gelidev.c` · 353L · `TODO-PORT` · 9 fn
+- [ ] **7.62.6** `gelidev.c` · 365L · `TODO-PORT` · 9 fn
   - [ ] 7.62.6.1 `diskdev_read()` · `TODO-FN`
   - [ ] 7.62.6.2 `geli_dev_init()` · `TODO-FN`
   - [ ] 7.62.6.3 `geli_dev_strategy()` · `TODO-FN`
@@ -39681,7 +39681,7 @@ function; a file with two hundred of them is a project.
 ### 7.66 `stand/libsa/zfs`
 
 - [ ] **7.66.1** `libzfs.h` · 70L · `TODO-HDR`
-- [ ] **7.66.2** `nvlist.c` · 1,699L · `TODO-PORT` · 62 fn
+- [ ] **7.66.2** `nvlist.c` · 1,707L · `TODO-PORT` · 62 fn
   - [ ] 7.66.2.1 `_getint()` · `TODO-FN`
   - [ ] 7.66.2.2 `_putint()` · `TODO-FN`
   - [ ] 7.66.2.3 `_getuint()` · `TODO-FN`
@@ -39745,7 +39745,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.66.2.61 `nvpair_print()` · `TODO-FN`
   - [ ] 7.66.2.62 `nvlist_print()` · `TODO-FN`
 - [ ] **7.66.3** `nvlist.h` · 165L · `TODO-HDR`
-- [ ] **7.66.4** `zfs.c` · 2,022L gen:1 · `TODO-PORT` · 46 fn
+- [ ] **7.66.4** `zfs.c` · 2,029L gen:1 · `TODO-PORT` · 46 fn
   - [ ] 7.66.4.1 `zfs_open()` · `TODO-FN`
   - [ ] 7.66.4.2 `zfs_close()` · `TODO-FN`
   - [ ] 7.66.4.3 `zfs_read()` · `TODO-FN`

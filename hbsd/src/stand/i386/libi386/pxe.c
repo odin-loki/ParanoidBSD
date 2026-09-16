@@ -507,6 +507,19 @@ pxe_netif_receive_isr(t_PXENV_UNDI_ISR *isr, void **pkt, ssize_t *retsize)
 
 		frame = (char *)((uintptr_t)isr->Frame.segment << 4);
 		frame += isr->Frame.offset;
+		/*
+		 * buf holds size == the FrameLength the FIRST buffer
+		 * declared, and every BufferLength after it is a separate
+		 * number from the same source. The `rsize >= size' test
+		 * below runs AFTER the copy, so a frame whose fragments
+		 * add up to more than it declared wrote past the end of
+		 * the allocation. A frame that does not fit the length it
+		 * gave for itself is not one to reassemble.
+		 */
+		if (isr->BufferLength > size - rsize) {
+			free(buf);
+			return (ENXIO);
+		}
 		bcopy(PTOV(frame), ptr, isr->BufferLength);
 		ptr += isr->BufferLength;
 		rsize += isr->BufferLength;
@@ -581,10 +594,19 @@ pxe_netif_get(struct iodesc *desc, void **pkt, time_t timeout)
 
 	t = getsecs();
 	size = 0;
+	/*
+	 * NULL, and published only on success. pxe_netif_receive()
+	 * returns ENOMEM and ENXIO - neither of them -1 - without ever
+	 * writing *pkt, and this used to hand the caller its own
+	 * uninitialised local for those. readether() at
+	 * stand/libsa/ether.c:70 then free()s what it gets back.
+	 */
+	ptr = NULL;
 	while ((getsecs() - t) < timeout) {
 		ret = pxe_netif_receive(&ptr, &size);
 		if (ret != -1) {
-			*pkt = ptr;
+			if (ret == 0)
+				*pkt = ptr;
 			break;
 		}
 	}

@@ -30841,3 +30841,347 @@ verdicts at every setting.
 12 is where `lib/libc` converts and `rtld-elf` is no worse, so 12 is
 the number, and it is now in the three model-check steps of
 `.github/workflows/pbsd-verify.yml` with this measurement beside it.
+
+---
+
+## stand/ — the boot loader, opened to the analyser for the first time
+
+No analyse shard had ever compiled a file under `stand/`.  That is 300
+translation units and 104,001 lines, and it is not ordinary code: it
+parses an ELF kernel image, a GPT, a FAT, UFS, ISO9660 or ZFS label and
+a DHCP, TFTP or NFS reply **before the kernel exists**, so before a
+single one of HardenedBSD's mitigations does.  There is no PaX, no
+ASLR, no W^X and no stack guard in the loader; there is also no
+process boundary, because it is the only thing running.
+
+It was left out because it is a **third header universe**.  The sweep
+models two — userland (`include/`, no `-D_KERNEL`) and the kernel
+(`-D_KERNEL`, `<sys/foo.h>` inside `sys/`) — and the loader is neither.
+`stand/defs.mk:91-104` is `-nostdinc`, `-I${SASRC} -D_STANDALONE`,
+`-I${SYSDIR}`, and then
+
+    CFLAGS+=  -Ddouble=jagged-little-pill -Dfloat=floaty-mcfloatface
+
+so that a loader using floating point would not compile.  Most of its
+libc does not exist in the tree at all: `stand/libsa/Makefile:203-228`
+builds it into the object directory as symlinks, and **names every
+one** — twelve headers taken from `include/` unchanged, six that are
+each a symlink to `stand.h` (so `<stdio.h>` in the loader IS
+`stand.h`), three from `${SYSDIR}/sys`, and three deliberately empty
+`xlocale/_*.h`.  `includes.stand_shim()` reproduces that rule rather
+than guessing at it.
+
+### What each layer bought
+
+| flags | compile |
+|---|---:|
+| the userland flags | 8 / 300 (2%) |
+| `stand_shim()` alone | 129 / 300 (43%) |
+| + the per-subtree `-I` the Makefiles name | 233 / 300 (77%) |
+| + the `-D` they name | **282 / 300 (94%)** |
+
+The `-D` are the interesting half.  Each `LOADER_*_SUPPORT` from
+`loader.mk:106-155` is a filesystem, a protocol or a partition scheme
+whose parser is `#ifdef`'d out without it, so a sweep that omits them
+reads a loader that mounts nothing and speaks nothing — it would have
+come back clean for the best possible reason and the worst possible
+one.  `${MACHINE}` and `${MACHINE_ARCH}` are different words in this
+directory and the tree uses both (`efi/loader/Makefile:13` keys on the
+first, `kboot/Makefile.inc:4` on the second), so both are spelled out.
+
+The remaining 18 are in `tools/verify/expected_errors.py` with the line
+of the Makefile that explains each: four sources another source
+`#include`s, one generated header, one `#error` that wants a
+memory-disk size, two other architectures' clocks, two ficl host
+harnesses, one file named by no `SRCS`, `stand/usb` and the kernel shim
+it is built on — `stand/Makefile`'s `SUBDIR` never names `usb` — and
+one file that the tree-wide `-DLOADER_ZFS_SUPPORT` costs, whose entry
+says which way that trade went.
+
+`check_shards.py` failed twice while this landed: once on a directory
+that was in a shard **and** excused from it, once on one analysed but
+not model-checked.  Both were the gate doing exactly what it was
+written to do.
+
+### 68 findings, and the first three read
+
+    23  unix.cstring.NullArg
+    13  core.NullDereference
+     9  core.UndefinedBinaryOperatorResult
+     9  core.CallAndMessage
+     5  core.uninitialized.Assign
+     2  unix.Malloc
+     1  core.uninitialized.Branch
+     1  core.uninitialized.UndefReturn
+
+#### `rpc_getport()`: a signed comparison that is not signed
+
+`stand/libsa/rpc.c:411`
+
+    ssize_t cc;
+    ...
+    cc = rpc_call(d, PMAPPROG, PMAPVERS, PMAPPROC_GETPORT,
+        args, sizeof(*args), (void **)&res, &pkt);
+    if (cc < sizeof(*res)) {
+        ...
+        return (-1);
+    }
+    port = (int)ntohl(res->port);
+
+`sizeof` is `size_t`, so the usual arithmetic conversions make this an
+**unsigned** comparison and `rpc_call()`'s `-1` reads as
+`0xffffffffffffffff`.  The failure arm is never taken.  `rpc_call()`
+returns `-1` from eleven places and writes neither `*rdata` nor `*pkt`
+on any of them — its very first statement is a call to `rpc_getport()`
+itself, which can fail before anything is assigned — so `res` is still
+the uninitialised local it was declared as when `res->port` is read.
+
+This is reachable from the network.  A diskless boot calls
+`rpc_getport()` for mountd and for nfsd, and any host that can drop,
+truncate or reject the portmapper reply makes `rpc_call()` fail.
+
+`ether.c:70`, `ether.c:98` and `udp.c:119` in the same library all
+write `n == -1 || n < sizeof(...)`.  This was the one site that left
+the first half out.  Now `cc < 0 || (size_t)cc < sizeof(*res)`.
+Probe: `tools/verify/probes/rpc_getport_signed.c`.
+
+#### `dos_readdir()`: a partial directory entry parsed as a whole one
+
+`stand/libsa/dosfs.c:570`
+
+    err = dos_read(fd, &dd, sizeof(dd), &res);
+    if (err)
+        return (err);
+    if (res == sizeof(dd))
+        return (ENOENT);
+    if (dd.de.name[0] == 0)
+
+`res` is the **residual** — `dos_read()`'s `*resid = nbyte - nb + cnt`,
+the bytes it could not read.  The test catches only a wholly unread
+entry.  `dos_read()` clamps its transfer to `size - f->offset`, and
+`size` is `fsize()`, whose first line is
+
+    if (!(size = cv4(de->size)) && de->attr & FA_DIR) {
+
+so the cluster-chain length is used **only when the entry's own size
+field is zero**.  A directory entry with `FA_DIR` set and a non-zero
+size takes that field verbatim: four arbitrary bytes off the medium,
+under no constraint to be a multiple of 32.  When `size - f->offset`
+lands between 1 and 31, `res` is neither 0 nor `sizeof(dd)`, both tests
+pass, and the tail of `dd` is whatever the stack held.
+
+`dd` is a union, and the code goes on to branch on `dd.de.attr`,
+`dd.xde.seq` and `dd.xde.chk` and to `bcopy` `dd.xde.name1/2/3` into
+the `dirent` it returns.  So the length field of a directory on a USB
+stick picks how many bytes of the loader's stack are parsed as a
+filename and handed back to whatever listed the directory.
+
+Now `if (res != 0) return (ENOENT);` — strictly stronger, and still the
+right answer at end-of-directory, where `res == sizeof(dd)`.
+Probe: `tools/verify/probes/dosfs_partial_dirent.c`.
+
+#### `geli_dev_strategy()`: a switch with no default returns an uninitialised errno
+
+`stand/libsa/geli/gelidev.c:147-199`
+
+    int rc;
+    ...
+    switch (rw & F_MASK) {
+    case F_READ:  ...
+    case F_WRITE: ...
+    }
+    out:
+        if (iobuf != buf)
+            free(iobuf);
+        return (rc);
+
+`F_MASK` is `0xFFFF` (`stand.h:223`), not a two-way choice: `F_READ` is
+`0x0001`, `F_WRITE` `0x0002`, `F_RAW` `0x0004`, `F_NODEV` `0x0008`, and
+`F_READ|F_WRITE` alone already misses both arms.  Whatever arrives that
+is neither falls straight to `return (rc)` with `rc` never assigned.
+
+Zero is success to every caller of a `dv_strategy` hook, and success
+here means "the buffer is filled" for a buffer nothing has written.  On
+a GELI-encrypted root that buffer is the one the loader reads the
+kernel into.  A `default:` arm now returns `EINVAL`.
+Probe: `tools/verify/probes/geli_strategy_default.c`.
+
+#### A premise checked rather than fixed: `dosfs.c`'s garbage report survives
+
+The analyser still reports `dd.de.name[0]` as garbage after the
+residual fix, on a path through `ioread()` that returns 0 having
+written nothing.  That path needs `secbyt(fs, 1)` to be degenerate —
+and `parsebs()` at `dosfs.c:645-663` validates both numbers it is made
+of before any read happens:
+
+    switch (cv2(bs->bpb.secsiz)) {
+    case 512: case 1024: case 2048: case 4096:
+        fs->sshift = ffs(cv2(bs->bpb.secsiz)) - 1;
+        break;
+    default:
+        return (EINVAL);
+    }
+    if (!(fs->spc = bs->bpb.spc) || fs->spc & (fs->spc - 1))
+        return (EINVAL);
+
+So the sector size is at least 512, `nbyte` here is 32, and `ioread()`'s
+final `memcpy` always runs.  The premise is checked; the report stands
+as one the analyser cannot see through, not as a defect.
+
+#### The XDR primitives read the caller's output before writing it
+
+`stand/libsa/zfs/nvlist.c:134`, `:148`, `:282`
+
+    static bool
+    xdr_char(xdr_t *xdr, char *cp)
+    {
+        int i;
+        bool rv = false;
+
+        i = *cp;
+        if ((rv = xdr_int(xdr, &i))) {
+            if (xdr->xdr_op == XDR_OP_DECODE)
+                *cp = i;
+        }
+        return (rv);
+    }
+
+`*cp` is the caller's **output** on a decode, and `nvlist_print()` at
+`:1588-1601` declares `char c;` and `unsigned short u;` and passes each
+straight in.  So `i = *cp` is a read of an indeterminate value.  The
+value is discarded on the decode path anyway; reading it only when
+encoding costs nothing and says what the code means.
+
+`xdr_short()` has the identical shape and no caller reaches it with an
+indeterminate object today; it is fixed too, because an identical
+latent bug left beside a fixed one is the next report.
+Probe: `tools/verify/probes/nvlist_xdr_indeterminate.c`.
+
+#### `vdev_read()`: a premise that holds
+
+`stand/libsa/zfs/zfs.c:552` and `:652` are `memcpy` with `bouncebuf`,
+which is allocated only under
+
+    if ((head > 0) || do_tail_read || bytes < secsz)
+
+and used under `if (full_sec_size > 0) { if (bytes < full_sec_size)`.
+For that use to be reached with `bouncebuf` NULL needs `head == 0`,
+`!do_tail_read` and `bytes >= secsz` — and with `head == 0`,
+`total_size` is `roundup2(bytes, secsz)`, so `tail > 0` and
+`bytes > secsz` would make `do_tail_read` true, while `tail == 0` makes
+`full_sec_size == bytes` and the inner test false.  There is no third
+case.  Checked, not fixed.
+
+#### `init_zfs_boot_options()`: two returns that skip the free
+
+`stand/libsa/zfs/zfs.c:1786`
+
+    currdev = strdup(currdev_in);
+    ...
+    if (split_devname(beroot, poolname, sizeof(poolname), &dsname) != 0)
+        return;
+    spa = spa_find_by_name(poolname);
+    if (spa == NULL)
+        return;
+    ...
+    free(currdev);
+
+Both bare returns leak.  The first is taken on a pool name the medium
+supplies; the second whenever the pool is not imported — so a disk that
+says `zfs:` and then fails to be one leaks on every loader that walks
+it (`i386/loader/main.c:386`, `efi/loader/main.c:286`,
+`kboot/kboot/hostdisk.c:584`, `userboot/userboot/main.c:247`).  Both
+now `goto out`.
+
+#### Two more premises that hold
+
+`stand/common/load_elf.c:391` and `:1001` both dereference `ef.ehdr`
+after `__elfN(load_elf_header)()` returned 0.  That function's only
+`return (0)` is below `ehdr = ef->ehdr = (Elf_Ehdr *)ef->firstpage;`
+with `firstpage` a checked `malloc`, so a zero return does imply a
+non-NULL `ehdr`.  Checked, not fixed — though its `error:` path frees
+`firstpage` and nulls it while leaving `ef->ehdr` dangling, which is
+the shape this becomes a defect in later.
+
+`stand/common/gfx_fb.c:2601` is a real leak of `read_list()`'s
+`strdup(fonts)` on all five exits, and it is 23 bytes once, from the
+single call site `read_list("/boot/fonts/INDEX.fonts")`.  Read and
+judged not worth a vendor-tree marker.  The `ptr = strrchr(dir, '/');
+*ptr = '\0';` two lines above it is unchecked and would be a NULL
+dereference for a `fonts` with no `/` — the one caller passes a literal
+that has three.
+
+#### `pxe_netif_get()`: the caller free()s a pointer nobody wrote
+
+`stand/i386/libi386/pxe.c:574`
+
+    static ssize_t
+    pxe_netif_get(struct iodesc *desc, void **pkt, time_t timeout)
+    {
+        void *ptr;
+        int ret = -1;
+        ...
+            ret = pxe_netif_receive(&ptr, &size);
+            if (ret != -1) {
+                *pkt = ptr;
+                break;
+            }
+        ...
+        return (ret == 0 ? size : -1);
+    }
+
+`pxe_netif_receive()` returns `ENOMEM` when `bio_alloc()` fails and
+`ENXIO` when the UNDI ISR reports a status — **neither of which is
+`-1`** — and writes `*pkt` on neither.  So the `!= -1` arm publishes
+this function's own uninitialised local, and then the `ret == 0` test
+turns the whole thing into `-1` anyway.  `readether()` at
+`stand/libsa/ether.c:70` is
+
+    ptr = NULL;
+    n = netif_get(d, &ptr, tleft);
+    if (n == -1 || n < sizeof(*eh)) {
+        free(ptr);
+        return (-1);
+    }
+
+so the `-1` leads straight to `free()` of whatever was on
+`pxe_netif_get()`'s stack.  A NIC or firmware that sets a non-zero
+`isr->Status` reaches it.  Now `ptr = NULL` and it is published only
+under `ret == 0`.
+
+#### `pxe_netif_receive_isr()`: the fragments need not add up to the frame
+
+Found by reading the function above, not by a checker, and it is the
+worse of the two.
+
+    if (buf == NULL) {
+        size = isr->FrameLength;
+        buf = malloc(size + ETHER_ALIGN);
+        ...
+        ptr = buf + ETHER_ALIGN;
+    }
+    ...
+    bcopy(PTOV(frame), ptr, isr->BufferLength);
+    ptr += isr->BufferLength;
+    rsize += isr->BufferLength;
+    if (rsize >= size) {
+        data_pending = true;
+        break;
+    }
+
+The allocation is sized by the **first** buffer's `FrameLength`.  Every
+following `BufferLength` is a separate field of the
+`t_PXENV_UNDI_ISR` the firmware refills on each
+`PXENV_UNDI_ISR_IN_GET_NEXT`, and nothing requires the fragments to add
+up to what the first one declared.  The bound test runs **after** the
+`bcopy`, so it cannot prevent anything — and the very first
+`BufferLength` can already exceed `FrameLength`, including the case
+where `FrameLength` is 0 and the allocation is two bytes.
+
+This is the loader's PXE receive path: the DHCP reply, the TFTP blocks
+and the NFS traffic of a diskless boot, running before the kernel and
+therefore before every mitigation HardenedBSD has.  A fragment that
+does not fit the length its frame gave for itself is now `ENXIO`.
+Probe: `tools/verify/probes/pxe_frame_fragments.c`.
+
+The other 60 are the next pass.
