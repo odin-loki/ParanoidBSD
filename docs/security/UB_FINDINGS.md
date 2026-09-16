@@ -30131,3 +30131,67 @@ need it.
   `if (!fflag)`.  `fflag` is never cleared anywhere in the program, so
   this holds — on an invariant three hundred lines away from the
   declaration it protects.
+
+## The sixteen findings no class write-up had reached
+
+With the three big classes read, a census over run 33's whole analyser
+output — every checker, every file, deduplicated by
+`file:line:function:message` — leaves sixteen findings in files this
+document has never named.  Two of the sixteen are an artefact of the
+census itself: `elfdump.c:885` and `ofwdump.c:201` **were** read and
+fixed earlier today, but the write-ups call them `elfdump(1)` and
+`ofwdump(8)`, and the census matches on basename.  That is worth
+knowing about the measurement, not about the code.
+
+### `__ieee754_rem_pio2`'s skip-zero-term loop has no floor
+
+Eight of the remaining fourteen are one line, written three times:
+
+```c
+	tx[2] = z;
+	nx = 3;
+	while(tx[nx-1]==zero) nx--;	/* skip zero term */
+	n  =  __kernel_rem_pio2(tx,ty,e0,nx,1);
+```
+
+`lib/msun/src/e_rem_pio2.c:172` (`double`, `tx[3]`),
+`lib/msun/ld80/e_rem_pio2l.h:133` (`tx[3]`) and
+`lib/msun/ld128/e_rem_pio2l.h:124` (`tx[5]`).  The analyser's words are
+*"The left operand of '==' is a garbage value due to array index out of
+bounds"*: with every term zero the loop walks past the bottom, reads
+`tx[-1]`, and then hands `__kernel_rem_pio2()` an `nx` of 0.
+
+What keeps that from happening today is the exponent arithmetic above
+it, not the loop.  `z` is `scalbn(|x|, ilogb(x) - 23)`, which puts it
+in `[2^23, 2^24)`, so `tx[0] = (double)(int32_t)z` is at least `2^23`
+and the loop stops at `nx == 1` on its own.  That is a property of the
+**caller's exponent**, re-derived independently in each of the three
+copies, and the loop should be true of its own array instead.  `nx > 1
+&&` costs one comparison and cannot change the result on any input the
+invariant covers.
+
+This is the one-sided index bound `tools/verify/onesided_index.py` was
+written for, in the most delicate function in libm.
+
+`tools/verify/probes/rem_pio2_nx_floor.c`: **OLD `2 of 2 failed,
+VERIFICATION FAILED`; NEW `0 of 2, VERIFICATION SUCCESSFUL`.**
+
+### The other six are the caller's buffer, in vendor code
+
+* `sys/dev/ice/ice_bitops.h:230`, `ice_and_bitmap()`.  The last-chunk
+  line is `dst[i] = (dst[i] & ~mask) | ((bmp1[i] & bmp2[i]) & mask);`
+  and reading the old `dst[i]` is the *point* — the comment above it
+  says so: *"we won't directly assign the last bitmap, but instead use
+  a bitmask to ensure we only modify bits which are within the size,
+  and leave any bits above the size value alone."*  A caller that
+  passes an uninitialised `dst` gets uninitialised bits back above
+  `size`, by design.
+* `sys/dev/mlx4/driver.h:99`, `mlx4_mac_to_u64()`: `mac |= addr[i]`
+  over the caller's six bytes.
+* `sys/compat/linuxkpi/common/include/linux/string.h:109`, `kmemdup()`:
+  `memcpy(dst, src, len)` with the caller's `src`, exactly as Linux's
+  own `kmemdup` does.
+* `sys/contrib/libb2/blake2-impl.h:43`, `load64()`, and the two
+  `bitstream.h` copies in `sys/contrib/zstd` and
+  `sys/contrib/openzfs/module/zstd`: reads from a caller-supplied
+  buffer in imported compression code.

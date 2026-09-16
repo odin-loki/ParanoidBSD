@@ -5645,6 +5645,30 @@ FIXES = {
         "writes ucp->uc_mcontext.mc_len to invalidate the context",
     ),
 
+    "hbsd/src/lib/msun/src/e_rem_pio2.c": (
+        "while(nx>1&&tx[nx-1]==zero) nx--;",
+        "\twhile(tx[nx-1]==zero) nx--;",
+        "__ieee754_rem_pio2: the skip-zero-term loop walked down with "
+        "no floor, so an all-zero tx reads tx[-1] and hands "
+        "__kernel_rem_pio2() an nx of 0",
+    ),
+
+    "hbsd/src/lib/msun/ld80/e_rem_pio2l.h": (
+        "while(nx>1&&tx[nx-1]==zero) nx--;",
+        "\twhile(tx[nx-1]==zero) nx--;",
+        "__ieee754_rem_pio2: the skip-zero-term loop walked down with "
+        "no floor, so an all-zero tx reads tx[-1] and hands "
+        "__kernel_rem_pio2() an nx of 0",
+    ),
+
+    "hbsd/src/lib/msun/ld128/e_rem_pio2l.h": (
+        "while(nx>1&&tx[nx-1]==zero) nx--;",
+        "\twhile(tx[nx-1]==zero) nx--;",
+        "__ieee754_rem_pio2: the skip-zero-term loop walked down with "
+        "no floor, so an all-zero tx reads tx[-1] and hands "
+        "__kernel_rem_pio2() an nx of 0",
+    ),
+
     "hbsd/src/lib/libc/gen/sem_new.c": (
         "mode = 0;\n\tvalue = 0;",
         "fd = -1;\n\tvalue = 0;",

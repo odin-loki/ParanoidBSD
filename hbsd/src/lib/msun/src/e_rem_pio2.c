@@ -169,7 +169,17 @@ medium:
 	}
 	tx[2] = z;
 	nx = 3;
-	while(tx[nx-1]==zero) nx--;	/* skip zero term */
+	/*
+	 * PBSD: nx > 1.  This walks DOWN with no floor, so it reads
+	 * tx[-1] if every term is zero, and hands __kernel_rem_pio2()
+	 * an nx of 0.  What keeps that from happening today is the
+	 * exponent arithmetic above: z is scaled into [2^23, 2^24),
+	 * so tx[0] = (double)(int32_t)z is at least 2^23 and the
+	 * loop stops at nx == 1 on its own.  The guard costs one
+	 * comparison and makes the loop true of its own array rather
+	 * than of a property of the caller's exponent.
+	 */
+	while(nx>1&&tx[nx-1]==zero) nx--;	/* skip zero term */
 	n  =  __kernel_rem_pio2(tx,ty,e0,nx,1);
 	if(hx<0) {y[0] = -ty[0]; y[1] = -ty[1]; return -n;}
 	y[0] = ty[0]; y[1] = ty[1]; return n;

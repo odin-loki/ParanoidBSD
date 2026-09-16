@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,164 | 9,057 |
+| 1 | `lib` | 2,827 | 641,194 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,821** | **114,208** |
+| | **total** | **41,143** | **21,303,851** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -12829,7 +12829,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.345.2.2 `lgammal_r()` · `TODO-FN`
 - [ ] **1.345.3** `e_powl.c` · 441L · `TODO-PORT` · 1 fn
   - [ ] 1.345.3.1 `powl()` · `TODO-FN`
-- [ ] **1.345.4** `e_rem_pio2l.h` · 132L · `TODO-HDR`
+- [ ] **1.345.4** `e_rem_pio2l.h` · 142L · `TODO-HDR`
 - [ ] **1.345.5** `invtrig.c` · 100L · `TODO-PORT`
 - [ ] **1.345.6** `invtrig.h` · 114L · `TODO-HDR`
 - [ ] **1.345.7** `k_cosl.c` · 56L · `TODO-PORT` · 1 fn
@@ -12888,7 +12888,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.346.5.3 `powl()` · `TODO-FN`
   - [ ] 1.346.5.4 `reducl()` · `TODO-FN`
   - [ ] 1.346.5.5 `powil()` · `TODO-FN`
-- [ ] **1.346.6** `e_rem_pio2l.h` · 140L · `TODO-HDR`
+- [ ] **1.346.6** `e_rem_pio2l.h` · 150L · `TODO-HDR`
 - [ ] **1.346.7** `invtrig.c` · 82L · `TODO-PORT`
 - [ ] **1.346.8** `invtrig.h` · 115L · `TODO-HDR`
 - [ ] **1.346.9** `k_cosl.c` · 75L · `TODO-GEN` · 1 fn
@@ -13089,7 +13089,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.349.51.1 `pow()` · `TODO-FN`
 - [ ] **1.349.52** `e_powf.cpp` · 254L · `TODO-PORT` · 1 fn
   - [ ] 1.349.52.1 `powf()` · `TODO-FN`
-- [ ] **1.349.53** `e_rem_pio2.c` · 177L · `TODO-PORT` · 1 fn
+- [ ] **1.349.53** `e_rem_pio2.c` · 187L · `TODO-PORT` · 1 fn
   - [ ] 1.349.53.1 `__ieee754_rem_pio2()` · `TODO-FN`
 - [ ] **1.349.54** `e_rem_pio2f.c` · 76L · `TODO-PORT` · 1 fn
   - [ ] 1.349.54.1 `__ieee754_rem_pio2f()` · `TODO-FN`
