@@ -284,6 +284,27 @@ ctf_func_info(ctf_file_t *fp, ulong_t symidx, ctf_funcinfo_t *fip)
 	if (kind != CTF_K_FUNCTION)
 		return (ctf_set_errno(fp, ECTF_CORRUPT));
 
+	/*
+	 * `n' is a vlen read out of the CTF buffer, and up to this point it
+	 * is bounded by nothing: CTF_V3_MAX_VLEN is 0xffffff.  init_symtab()
+	 * bounded where this record STARTS -- it refuses to record an sxlate
+	 * at or past cth_typeoff, which is where the function region ends --
+	 * but not how far the record RUNS.  This function then reads
+	 * dp[n - 1] below, and ctf_func_args() reads dp[2] through dp[n + 1];
+	 * both walk out of the function region and off the end of the
+	 * section on a vlen the file chose.
+	 *
+	 * The record is the info word, the return type and n argument ids,
+	 * all read here as uint_t, so that is the extent to hold against
+	 * cth_typeoff.  ctf_base carries the header in both of ctf_bufopen's
+	 * branches, which is what makes the end of the region reachable from
+	 * here at all.
+	 */
+	if ((size_t)fp->ctf_sxlate[symidx] +
+	    sizeof (uint_t) * ((size_t)n + 2) >
+	    ((const ctf_header_t *)fp->ctf_base)->cth_typeoff)
+		return (ctf_set_errno(fp, ECTF_CORRUPT));
+
 	fip->ctc_return = *dp++;
 	fip->ctc_argc = n;
 	fip->ctc_flags = 0;

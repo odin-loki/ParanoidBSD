@@ -5825,13 +5825,71 @@ FIXES = {
         "read afterwards is the CTF buffer pointer itself",
     ),
 
-    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/ctf.c": (
-        "static void __attribute__((noreturn))\nparseterminate(",
-        "static void\nparseterminate(",
-        "the same, for the static variadic wrapper ctfconvert's CTF "
-        "parser reports through: two findings in resurrect_objects and "
-        "resurrect_functions, both `sym->st_info' after the arm that "
-        "reported there is no symbol",
+    "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/ctf.c": [
+        (
+            "static void __attribute__((noreturn))\nparseterminate(",
+            "static void\nparseterminate(",
+            "the same, for the static variadic wrapper ctfconvert's CTF "
+            "parser reports through: two findings in resurrect_objects "
+            "and resurrect_functions, both `sym->st_info' after the arm "
+            "that reported there is no symbol",
+        ),
+        (
+            "static void\nctf_check_header(const ctf_header_t *h)",
+            "\tctfdatasz = h->cth_stroff + h->cth_strlen;",
+            "ctf_parse() is handed the CTF buffer and no length, and "
+            "every region inside it is delimited by a pair of uint32_t "
+            "header fields the file chose: `cth_objtoff - cth_lbloff' "
+            "at :894, `cth_funcoff - cth_objtoff' at :939, "
+            "`cth_typeoff - cth_funcoff' at :986, `cth_stroff - "
+            "cth_typeoff' at :1061, each into a size_t. Out of order, "
+            "the subtraction underflows and the region is 2^64 bytes "
+            "long. The sum `cth_stroff + cth_strlen' is done in 32-bit "
+            "arithmetic and wraps before it reaches the size_t "
+            "ctf_load() inflates into. The uncompressed branch then "
+            "took `ctfdatasz = bufsz' and walked the header's offsets "
+            "over it anyway. ctf_check_header() establishes the "
+            "ordering and the overflow, and ctf_load()'s uncompressed "
+            "arm holds the header against the one number it did not "
+            "supply -- the section's own length. Probe: "
+            "tools/verify/probes/ctf_parse_unbounded.c, 8 of 12 failed "
+            "with -DOLD, 0 of 14 without",
+        ),
+        (
+            "static const char *\nstrptr(const ctf_header_t *h,",
+            "\t\tchar *label = sbuf + ctl->ctl_label;",
+            "a string-table offset arrives out of the CTF section "
+            "bounded by nothing -- ctl_label, ctt_name, ctm_name, "
+            "ctlm_name, cte_name and the header's own cth_parlabel are "
+            "each a 32-bit number the file chose, and every one was "
+            "added to `ctfdata + cth_stroff' and handed to xstrdup() or "
+            "streq(). Two things have to be true for that to be a "
+            "string: it has to start inside the table, or the read "
+            "begins past the end of the section, and it has to be "
+            "terminated inside the table, or xstrdup() walks off the "
+            "end looking for the NUL. The second survives a bound on "
+            "the offset alone, which is why strptr() checks both. Seven "
+            "call sites",
+        ),
+    ],
+
+    "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_lookup.c": (
+        "sizeof (uint_t) * ((size_t)n + 2) >",
+        "if (kind != CTF_K_FUNCTION)\n"
+        "\t\treturn (ctf_set_errno(fp, ECTF_CORRUPT));\n\n"
+        "\tfip->ctc_return = *dp++;",
+        "ctf_func_info() reads a vlen out of the CTF buffer -- up to "
+        "CTF_V3_MAX_VLEN, 0xffffff -- and bounded it by nothing. "
+        "init_symtab() bounded where the record STARTS: ctf_open.c:302 "
+        "refuses to record an sxlate at or past cth_typeoff, which is "
+        "where the function region ends. It did not bound how far the "
+        "record RUNS. `dp[n - 1]' in ctf_func_info() and dp[2] through "
+        "dp[n + 1] in ctf_func_args() then walk out of the function "
+        "region and off the end of the section. The record is the info "
+        "word, the return type and n argument ids, all read as uint_t, "
+        "so that is the extent held against cth_typeoff; ctf_base "
+        "carries the header in both of ctf_bufopen's branches, which is "
+        "what makes the end of the region reachable from here",
     ),
 
     "hbsd/src/cddl/contrib/opensolaris/tools/ctf/cvt/input.c": [
@@ -5890,6 +5948,21 @@ FIXES = {
             "cd_ctfdata becomes NULL with a large cd_ctflen, the "
             "cd_ctflen >= sizeof (ctf_preamble_t) test at :1018 passes, "
             "and pp->ctp_magic at :1024 dereferences NULL",
+        ),
+        (
+            "if (memchr(s, '\\0', avail) == NULL)",
+            "return (\"<< ??? - file truncated >>\");\n\n"
+            "\tif (s[0] == '\\0')",
+            "ref_to_str's two tests bound where the string STARTS -- "
+            "`offset >= cth_strlen' and `cth_stroff + offset >= "
+            "cd_ctflen'. Nothing bounded where it ENDS, and all "
+            "forty-odd callers hand the result straight to printf "
+            "\"%s\", which walks to a NUL: past the string table and "
+            "past the end of the mapping if the section does not hold "
+            "one. The string may run to the end of the table or to the "
+            "end of the file, whichever comes first, and both are past "
+            "the start by the two existing tests, so neither "
+            "subtraction can underflow",
         ),
     ],
 

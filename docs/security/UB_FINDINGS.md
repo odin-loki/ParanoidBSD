@@ -32566,20 +32566,98 @@ returns NULL for a malformed member header (`libelf_ar.c:133`, `:138`,
 `read_archive`, 120 lines up, gets the identical call right with
 `elfterminate`.
 
-### Three recorded and not fixed
+### The three bounds models, derived
 
-Each is a **bounds model** rather than a missing check, and writing a
-number into one of them without deriving it would be guessing:
+Three more were recorded rather than fixed alongside the section-size
+check, because each was a **bounds model** rather than a missing line,
+and writing a number into one of them without deriving it would have
+been guessing. They are derived now.
 
-- **`ctf_parse` (ctfconvert)** is never given the buffer length at all,
-  and `xstrdup()`s from two attacker-chosen 32-bit header fields.
-- **`ctf_func_args`** reads an unbounded `vlen` out of the CTF buffer,
-  bounded in practice only because its one caller passes `argc = 32`
-  against a 32-element array.
-- **ctfdump's `ref_to_str`** returns a string it has not proved is
-  NUL-terminated inside the section.
+#### `ctf_parse` was never given a length at all
 
-All three want the same thing libctf's reader has never had: the section
-length carried alongside the buffer, so a bound can be checked rather
-than assumed. That is a change to the reader's shape, not a line, and it
-is on the list rather than in this commit.
+ctfconvert's reader is the one that had nothing. `ctf_load()` tests the
+magic, the version and `bufsz >= sizeof (ctf_header_t)`, and hands the
+rest to `ctf_parse()`, which takes `(ctf_header_t *h, caddr_t buf, ...)`
+and no size. Two things follow from that.
+
+**Every region size is a difference of two header fields.**
+`cth_objtoff - cth_lbloff` at `:894`, `cth_funcoff - cth_objtoff` at
+`:939`, `cth_typeoff - cth_funcoff` at `:986`, `cth_stroff -
+cth_typeoff` at `:1061` — each computed into a `size_t`. Out of order,
+the subtraction underflows and the region is 2^64 bytes long. libctf
+checks this ordering at `ctf_open.c:780-781`; ctfconvert never did.
+
+**The sum wraps.** All eight fields are `uint32_t`, so
+`h->cth_stroff + h->cth_strlen` is 32-bit arithmetic and wraps *before*
+it reaches the `size_t` `ctf_load()` inflates into. And the uncompressed
+branch then discarded the header's number entirely —
+`ctfdata = buf; ctfdatasz = bufsz;` — and walked the header's offsets
+over the section anyway.
+
+`ctf_check_header()` establishes the ordering and the overflow; the
+uncompressed arm of `ctf_load()` holds the header against the one number
+it did not supply, the section's own length, the same shape as the
+libctf fix above. Together they are the bounds model the four
+`resurrect_` functions rest on.
+
+The string table needed its own accessor. A string-table offset —
+`ctl_label`, `ctt_name`, `ctm_name`, `ctlm_name`, `cte_name` and the
+header's own `cth_parlabel` — is a 32-bit number the file chose, and
+every one of the seven call sites added it to `ctfdata + cth_stroff` and
+handed the result to `xstrdup()` or `streq()`. Two things have to hold
+for that to be a string: it has to *start* inside the table, or the read
+begins past the end of the section, and it has to be *terminated* inside
+the table, or `xstrdup()` walks off the end looking for the NUL. The
+second survives a bound on the offset alone, so `strptr()` checks both.
+
+Probe: `tools/verify/probes/ctf_parse_unbounded.c`, with the buffer
+fixed and the header fields unconstrained — which is exactly what the
+section gives `ctf_parse()`:
+
+```
+cbmc --bounds-check --unsigned-overflow-check --unwind 70 \
+     --unwinding-assertions -DOLD   -> 8 of 12 failed, FAILED
+cbmc --bounds-check --unsigned-overflow-check --unwind 70 \
+     --unwinding-assertions          -> 0 of 14, SUCCESSFUL
+```
+
+#### `ctf_func_args` reads a vlen the file chose
+
+`ctf_func_info()` reads `n = LCTF_INFO_VLEN(fp, info)` out of the CTF
+buffer — up to `CTF_V3_MAX_VLEN`, 0xffffff — and bounded it by nothing.
+
+What `init_symtab()` bounds is where the record **starts**:
+`ctf_open.c:302` refuses to record an `sxlate` at or past `cth_typeoff`,
+which is where the function region ends. It does not bound how far the
+record **runs**. `dp[n - 1]` in `ctf_func_info()` and `dp[2]` through
+`dp[n + 1]` in `ctf_func_args()` then walk out of the function region and
+off the end of the section — up to 64 MB past it.
+
+The earlier note said this was "bounded in practice only because its one
+caller passes `argc = 32` against a 32-element array". That is true of
+`ctf_func_args()`'s *writes* and says nothing about its reads, and it is
+not true at all of `dp[n - 1]` in `ctf_func_info()`, which runs before
+any caller's `argc` is consulted.
+
+The record is the info word, the return type and `n` argument ids, all
+read as `uint_t`, so that is the extent to hold against `cth_typeoff`.
+`fp->ctf_base` carries the header in both of `ctf_bufopen`'s branches
+(`:804` copies it for the compressed case, `:885` records it), which is
+what makes the end of the region reachable from `ctf_lookup.c` at all.
+
+#### `ref_to_str` bounded the start and not the end
+
+ctfdump's accessor already had two tests — `offset >= hp->cth_strlen` and
+`hp->cth_stroff + offset >= cd->cd_ctflen`. Both bound where the string
+**starts**. Nothing bounded where it **ends**, and all forty-odd callers
+hand the result straight to `printf("%s")`, which walks to a NUL: past
+the string table and past the end of the mapping if the section does not
+hold one.
+
+The string may run to the end of the table or to the end of the file,
+whichever comes first, and both are past the start by the two existing
+tests — so neither subtraction can underflow, and the smaller of the two
+is the length to search for the terminator.
+
+All three cost nothing: `cddl` stands at 45 findings across 135
+translation units, 8 ERROR, all on the record, unchanged by the fixes.

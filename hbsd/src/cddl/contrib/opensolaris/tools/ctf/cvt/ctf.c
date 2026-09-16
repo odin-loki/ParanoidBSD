@@ -87,6 +87,79 @@ parseterminate(const char *fmt, ...)
 	terminate("%s: %s\n", curfile, msgbuf);
 }
 
+/*
+ * Every region of a CTF section is delimited by a pair of header fields,
+ * and every size below is computed as a difference of two of them into a
+ * size_t: `cth_objtoff - cth_lbloff', `cth_funcoff - cth_objtoff', and so
+ * on.  Out of order, that subtraction underflows and the region is 2^64
+ * bytes long.  The fields are uint32_t, so `cth_stroff + cth_strlen' is
+ * done in 32-bit arithmetic and wraps -- and ctf_load() assigns that sum
+ * to the size_t it inflates into.
+ *
+ * None of this is checked anywhere else.  ctf_load() tests the magic, the
+ * version and `bufsz >= sizeof (ctf_header_t)' and hands the rest of the
+ * header to ctf_parse(), which is not given a length at all.
+ *
+ * This establishes the bounds model the four resurrect_ functions and
+ * strptr() below all rest on:
+ *
+ *	lbloff <= objtoff <= funcoff <= typeoff <= stroff
+ *	stroff + strlen does not overflow
+ *	the buffer really holds stroff + strlen bytes
+ *
+ * The last is checked by the caller, because it differs between the two
+ * branches: compressed inflates into an allocation of exactly that size
+ * and rejects a short inflate, so it holds by construction; uncompressed
+ * IS the section, whose length is the only number here the header did not
+ * supply.
+ */
+static void
+ctf_check_header(const ctf_header_t *h)
+{
+	if (h->cth_lbloff > h->cth_objtoff ||
+	    h->cth_objtoff > h->cth_funcoff ||
+	    h->cth_funcoff > h->cth_typeoff ||
+	    h->cth_typeoff > h->cth_stroff)
+		parseterminate("Corrupt CTF - section offsets out of order "
+		    "(lbl %u obj %u func %u type %u str %u)",
+		    h->cth_lbloff, h->cth_objtoff, h->cth_funcoff,
+		    h->cth_typeoff, h->cth_stroff);
+
+	if (h->cth_strlen > UINT32_MAX - h->cth_stroff)
+		parseterminate("Corrupt CTF - string table at %u for %u "
+		    "bytes overflows", h->cth_stroff, h->cth_strlen);
+}
+
+/*
+ * A string-table offset arrives out of the CTF section and is bounded by
+ * nothing: a label's ctl_label, a type's ctt_name, a member's ctm_name, an
+ * enumerator's cte_name and the header's own cth_parlabel are each a
+ * 32-bit number the file chose.  Every one of them was added to
+ * `ctfdata + cth_stroff' and handed to xstrdup() or streq().
+ *
+ * Two things have to be true for that to be a string, and neither was
+ * checked.  It has to start inside the table, or the read begins past the
+ * end of the section; and it has to be terminated inside the table, or
+ * xstrdup() walks off the end looking for the NUL.  The second is the one
+ * that survives a bounds check on the offset alone, which is why both are
+ * here.
+ */
+static const char *
+strptr(const ctf_header_t *h, caddr_t ctfdata, uint_t off)
+{
+	const char *strtab = (const char *)ctfdata + h->cth_stroff;
+
+	if (off >= h->cth_strlen)
+		parseterminate("Corrupt CTF - string offset %u is past the "
+		    "%u-byte string table", off, h->cth_strlen);
+
+	if (memchr(strtab + off, '\0', h->cth_strlen - off) == NULL)
+		parseterminate("Corrupt CTF - string at offset %u runs off "
+		    "the end of the string table", off);
+
+	return (strtab + off);
+}
+
 static void
 ctf_buf_grow(ctf_buf_t *b)
 {
@@ -890,7 +963,6 @@ static int
 resurrect_labels(ctf_header_t *h, tdata_t *td, caddr_t ctfdata, char *matchlbl)
 {
 	caddr_t buf = ctfdata + h->cth_lbloff;
-	caddr_t sbuf = ctfdata + h->cth_stroff;
 	size_t bufsz = h->cth_objtoff - h->cth_lbloff;
 	int lastidx = 0, baseidx = -1;
 	char *baselabel = NULL;
@@ -898,17 +970,17 @@ resurrect_labels(ctf_header_t *h, tdata_t *td, caddr_t ctfdata, char *matchlbl)
 	void *v = (void *) buf;
 
 	for (ctl = v; (caddr_t)ctl < buf + bufsz; ctl++) {
-		char *label = sbuf + ctl->ctl_label;
+		const char *label = strptr(h, ctfdata, ctl->ctl_label);
 
 		lastidx = ctl->ctl_typeidx;
 
 		debug(3, "Resurrected label %s type idx %d\n", label, lastidx);
 
-		tdata_label_add(td, label, lastidx);
+		tdata_label_add(td, (char *)label, lastidx);
 
 		if (baseidx == -1) {
 			baseidx = lastidx;
-			baselabel = label;
+			baselabel = (char *)label;
 			if (matchlbl != NULL && streq(matchlbl, "BASE"))
 				return (lastidx);
 		}
@@ -1059,7 +1131,6 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 {
 	caddr_t buf = ctfdata + h->cth_typeoff;
 	size_t bufsz = h->cth_stroff - h->cth_typeoff;
-	caddr_t sbuf = ctfdata + h->cth_stroff;
 	caddr_t dptr = buf;
 	tdesc_t *tdp;
 	uint_t data;
@@ -1119,7 +1190,8 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 			parseterminate(
 			    "Unable to cope with non-zero strtab id");
 		if (CTF_NAME_OFFSET(name) != 0) {
-			tdp->t_name = xstrdup(sbuf + CTF_NAME_OFFSET(name));
+			tdp->t_name = xstrdup(strptr(h, ctfdata,
+			    CTF_NAME_OFFSET(name)));
 		} else
 			tdp->t_name = NULL;
 
@@ -1213,8 +1285,8 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 						dptr += sizeof (struct ctf_member_v2);
 
 						*mpp = xmalloc(sizeof (mlist_t));
-						(*mpp)->ml_name = xstrdup(sbuf +
-						    ctm->ctm_name);
+						(*mpp)->ml_name = xstrdup(strptr(h,
+						    ctfdata, ctm->ctm_name));
 						(*mpp)->ml_type = tdarr[ctm->ctm_type];
 						(*mpp)->ml_offset = ctm->ctm_offset;
 						(*mpp)->ml_size = 0;
@@ -1227,8 +1299,8 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 						dptr += sizeof (struct ctf_lmember_v2);
 
 						*mpp = xmalloc(sizeof (mlist_t));
-						(*mpp)->ml_name = xstrdup(sbuf +
-						    ctlm->ctlm_name);
+						(*mpp)->ml_name = xstrdup(strptr(h,
+						    ctfdata, ctlm->ctlm_name));
 						(*mpp)->ml_type =
 						    tdarr[ctlm->ctlm_type];
 						(*mpp)->ml_offset =
@@ -1245,8 +1317,8 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 						dptr += sizeof (struct ctf_member_v3);
 
 						*mpp = xmalloc(sizeof (mlist_t));
-						(*mpp)->ml_name = xstrdup(sbuf +
-						    ctm->ctm_name);
+						(*mpp)->ml_name = xstrdup(strptr(h,
+						    ctfdata, ctm->ctm_name));
 						(*mpp)->ml_type = tdarr[ctm->ctm_type];
 						(*mpp)->ml_offset = ctm->ctm_offset;
 						(*mpp)->ml_size = 0;
@@ -1259,8 +1331,8 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 						dptr += sizeof (struct ctf_lmember_v3);
 
 						*mpp = xmalloc(sizeof (mlist_t));
-						(*mpp)->ml_name = xstrdup(sbuf +
-						    ctlm->ctlm_name);
+						(*mpp)->ml_name = xstrdup(strptr(h,
+						    ctfdata, ctlm->ctlm_name));
 						(*mpp)->ml_type =
 						    tdarr[ctlm->ctlm_type];
 						(*mpp)->ml_offset =
@@ -1285,7 +1357,8 @@ resurrect_types(ctf_header_t *h, tdata_t *td, tdesc_t **tdarr, int tdsize,
 				dptr += sizeof (ctf_enum_t);
 
 				*epp = xmalloc(sizeof (elist_t));
-				(*epp)->el_name = xstrdup(sbuf + cte->cte_name);
+				(*epp)->el_name = xstrdup(strptr(h, ctfdata,
+				    cte->cte_name));
 				(*epp)->el_number = cte->cte_value;
 			}
 			*epp = NULL;
@@ -1390,7 +1463,7 @@ ctf_parse(ctf_header_t *h, caddr_t buf, symit_data_t *si, char *label)
 		tdarr[i]->t_id = i;
 	}
 
-	td->td_parlabel = xstrdup(buf + h->cth_stroff + h->cth_parlabel);
+	td->td_parlabel = xstrdup(strptr(h, buf, h->cth_parlabel));
 
 	/* we have the technology - we can rebuild them */
 	idx = resurrect_labels(h, td, buf, label);
@@ -1465,7 +1538,10 @@ ctf_load(char *file, caddr_t buf, size_t bufsz, symit_data_t *si, char *label)
 	if (h->cth_version != CTF_VERSION_2 && h->cth_version != CTF_VERSION_3)
 		parseterminate("Unknown CTF version %d", h->cth_version);
 
-	ctfdatasz = h->cth_stroff + h->cth_strlen;
+	ctf_check_header(h);
+
+	/* Both fields are uint32_t, so the sum is not done in a size_t. */
+	ctfdatasz = (size_t)h->cth_stroff + h->cth_strlen;
 	if (h->cth_flags & CTF_F_COMPRESS) {
 		size_t actual;
 
@@ -1476,8 +1552,17 @@ ctf_load(char *file, caddr_t buf, size_t bufsz, symit_data_t *si, char *label)
 			    "(was %d, expecting %d)", actual, ctfdatasz);
 		}
 	} else {
+		/*
+		 * The buffer IS the section here, so this is the one place
+		 * the header can be held against a number it did not supply.
+		 * The compressed branch above got the same guarantee from
+		 * the allocation and the short-inflate test.
+		 */
+		if (bufsz < ctfdatasz) {
+			parseterminate("Corrupt CTF - header describes %zu "
+			    "bytes, section holds %zu", ctfdatasz, bufsz);
+		}
 		ctfdata = buf;
-		ctfdatasz = bufsz;
 	}
 
 	td = ctf_parse(h, ctfdata, si, label);

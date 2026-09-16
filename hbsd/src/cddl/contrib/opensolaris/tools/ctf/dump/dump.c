@@ -30,6 +30,7 @@
 #include <sys/mman.h>
 
 #include <err.h>
+#include <string.h>
 #include <strings.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -113,6 +114,7 @@ ref_to_str(uint_t name, const ctf_header_t *hp, const ctf_data_t *cd)
 {
 	size_t offset = CTF_NAME_OFFSET(name);
 	const char *s = cd->cd_ctfdata + hp->cth_stroff + offset;
+	size_t avail;
 
 	if (CTF_NAME_STID(name) != CTF_STRTAB_0)
 		return ("<< ??? - name in external strtab >>");
@@ -122,6 +124,23 @@ ref_to_str(uint_t name, const ctf_header_t *hp, const ctf_data_t *cd)
 
 	if (hp->cth_stroff + offset >= cd->cd_ctflen)
 		return ("<< ??? - file truncated >>");
+
+	/*
+	 * Both tests above bound where the string STARTS.  Nothing bounded
+	 * where it ENDS, and every caller hands the result straight to
+	 * printf("%s"), which walks to a NUL -- past the string table, past
+	 * the end of the mapping, if the section does not hold one.
+	 *
+	 * The string may run to the end of the string table or to the end of
+	 * the file, whichever comes first; both are past the start by the
+	 * two tests above, so neither subtraction can underflow.
+	 */
+	avail = hp->cth_strlen - offset;
+	if (cd->cd_ctflen - hp->cth_stroff - offset < avail)
+		avail = cd->cd_ctflen - hp->cth_stroff - offset;
+
+	if (memchr(s, '\0', avail) == NULL)
+		return ("<< ??? - name is not terminated in the strtab >>");
 
 	if (s[0] == '\0')
 		return ("(anon)");
