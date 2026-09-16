@@ -622,10 +622,32 @@ extern char *dt_cpp_add_arg(dtrace_hdl_t *, const char *);
 extern char *dt_cpp_pop_arg(dtrace_hdl_t *);
 extern int dt_cpu_maxid(dtrace_hdl_t *);
 
+/*
+ * Every failure arm in this library is `return (dt_set_errno(dtp,
+ * EDT_...))', and the whole body of the function is three stores and a
+ * constant.  Out of line that constant is invisible, so a caller written
+ * as `if (f(...) == -1) return (-1); use(out);' is read as one where f()
+ * may return something OTHER than -1 off a path that never wrote `out'.
+ * Same statement, same form, as ctf_set_errno() in libctf's ctf_impl.h.
+ *
+ * dt_get_errloc() stays out of line: dtrace.c:249 calls it by name.
+ */
 #ifdef illumos
-extern int dt_set_errno(dtrace_hdl_t *, int);
+static inline int
+dt_set_errno(dtrace_hdl_t *dtp, int err)
+{
+	dtp->dt_errno = err;
+	return (-1);
+}
 #else
-int _dt_set_errno(dtrace_hdl_t *, int, const char *, int);
+static inline int
+_dt_set_errno(dtrace_hdl_t *dtp, int err, const char *errfile, int errline)
+{
+	dtp->dt_errno = err;
+	dtp->dt_errfile = errfile;
+	dtp->dt_errline = errline;
+	return (-1);
+}
 void dt_get_errloc(dtrace_hdl_t *, const char **, int *);
 #define dt_set_errno(_a,_b)	_dt_set_errno(_a,_b,__FILE__,__LINE__)
 #endif

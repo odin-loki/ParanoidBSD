@@ -32754,6 +32754,60 @@ above has already dereferenced. There is nowhere to record `EINVAL` when
 there is no container, and a caller that passed NULL has nowhere to read
 it from either, so the return value carries the error alone.
 
-The vendor shard's `cddl` half now stands at **32 findings across 135
-translation units**, 8 ERROR, all on the record — down from 45, with two
-defects found by making a true statement the analyser could read.
+### The same statement, one library over
+
+`dt_set_errno()` is libdtrace's version of the identical thing, and the
+document's earlier sections named it as a cross-TU blind spot without
+acting on it. `dt_error.c`:
+
+```c
+int
+_dt_set_errno(dtrace_hdl_t *dtp, int err, const char *errfile, int errline)
+{
+	dtp->dt_errno = err;
+	dtp->dt_errfile = errfile;
+	dtp->dt_errline = errline;
+	return (-1);
+}
+```
+
+Three stores and a constant, behind a macro that adds `__FILE__` and
+`__LINE__`. Every failure arm in the library is
+`return (dt_set_errno(dtp, EDT_...))`.
+
+`static inline` in `dt_impl.h`, same as the other two. **27 findings to
+17**, and no new finding anywhere:
+
+| file | function |
+|---|---|
+| `dt_consume.c` | `dt_consume_begin` ×2, `dtrace_consume` ×3 |
+| `dt_link.c` | `dump_elf32`, `dump_elf64` |
+| `dt_parser.c` | `dt_cook_op2` |
+| `dt_printf.c` | `dt_fprinta` |
+| `dt_work.c` | `dtrace_work` |
+
+`dt_get_errloc()` stays out of line, because `cmd/dtrace/dtrace.c:249`
+calls it by name — the one thing in `dt_error.c`'s `#ifndef illumos`
+block that a consumer outside the library reaches. All 37 of libdtrace's
+objects compile, archive, and leave no undefined reference to either
+name, with `dt_get_errloc` still a `T`.
+
+### The day's arithmetic
+
+`cddl` opened at **66 findings** when the vendor shard was first run, and
+stands at **22 across 135 translation units**, 8 ERROR, all on the
+record. What moved it:
+
+| | findings |
+|---|---:|
+| vendor shard, first pass | 66 |
+| six dtrace(1) and libdtrace defects, four `noreturn` attributes | 46 |
+| four ctf-tools defects, four more `noreturn` attributes | 46 → 45 (cddl half) |
+| `ctf_set_errno` and `ctf_set_open_errno` inline | 33 |
+| `ctf_type_qlname`'s half-covered guard | 33 |
+| `ctf_import`'s dead NULL check | 32 |
+| `dt_set_errno` inline | **22** |
+
+Two of the three defects in that list were found **by** the inlining,
+which is the argument for it: the twelve and the ten it cleared were
+modelling gaps, and clearing them is what made the two real ones legible.

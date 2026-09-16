@@ -145,23 +145,12 @@ dtrace_errno(dtrace_hdl_t *dtp)
 	return (dtp->dt_errno);
 }
 
-#ifdef illumos
-int
-dt_set_errno(dtrace_hdl_t *dtp, int err)
-{
-	dtp->dt_errno = err;
-	return (-1);
-}
-#else
-int
-_dt_set_errno(dtrace_hdl_t *dtp, int err, const char *errfile, int errline)
-{
-	dtp->dt_errno = err;
-	dtp->dt_errfile = errfile;
-	dtp->dt_errline = errline;
-	return (-1);
-}
-
+/*
+ * dt_set_errno() -- _dt_set_errno() here -- is static inline in
+ * dt_impl.h, so that the -1 it returns is visible to the caller that
+ * tests it.  See the comment there.
+ */
+#ifndef illumos
 void dt_get_errloc(dtrace_hdl_t *dtp, const char **p_errfile, int *p_errline)
 {
 	*p_errfile = dtp->dt_errfile;

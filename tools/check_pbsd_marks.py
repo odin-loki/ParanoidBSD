@@ -5893,6 +5893,36 @@ FIXES = {
         ),
     ],
 
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_impl.h": (
+        "static inline int\n_dt_set_errno(dtrace_hdl_t *dtp, int err,",
+        "int _dt_set_errno(dtrace_hdl_t *, int, const char *, int);",
+        "the same statement as ctf_set_errno() in libctf's ctf_impl.h, "
+        "one library over. Every failure arm in libdtrace is `return "
+        "(dt_set_errno(dtp, EDT_...))', and the whole body is three "
+        "stores and a constant -- so a caller written as `if (f(...) == "
+        "-1) return (-1); use(out);' was read as one where f() may "
+        "return something OTHER than -1 off a path that never wrote "
+        "`out'. Measured over the library: 27 findings to 17, and the "
+        "ten are five in dt_consume.c (dt_consume_begin and "
+        "dtrace_consume), dump_elf32 and dump_elf64 in dt_link.c, "
+        "dt_cook_op2, dt_fprinta and dtrace_work. No new finding "
+        "anywhere. dt_get_errloc() stays out of line because "
+        "cmd/dtrace/dtrace.c:249 calls it by name; all 37 objects "
+        "compile, archive, and leave no undefined reference to either "
+        "name, with dt_get_errloc still a T",
+    ),
+
+    "hbsd/src/cddl/contrib/opensolaris/lib/libdtrace/common/dt_error.c": (
+        "dt_set_errno() -- _dt_set_errno() here -- is static inline in",
+        "_dt_set_errno(dtrace_hdl_t *dtp, int err, const char *errfile,"
+        " int errline)\n{\n\tdtp->dt_errno = err;",
+        "the other half of that edit: the out-of-line definition moves "
+        "to dt_impl.h so the -1 it returns is visible to the caller "
+        "that tests it. The `#ifdef illumos / #else' around what is "
+        "left becomes `#ifndef illumos', because the illumos arm is "
+        "now empty",
+    ),
+
     "hbsd/src/cddl/contrib/opensolaris/common/ctf/ctf_impl.h": (
         "static inline long\nctf_set_errno(ctf_file_t *fp, int err)",
         "extern long ctf_set_errno(ctf_file_t *, int);",
