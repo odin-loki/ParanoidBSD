@@ -151,6 +151,11 @@ def verify_one(task: dict) -> dict:
     fn = task["function"]
     unwind = task["unwind"]
     timeout = task["timeout"]
+    # CBMC's default is 8, which is 256 distinct addressed objects, and
+    # it aborts rather than answering when a function needs more. 0
+    # means "do not pass the flag", so the default stays CBMC's until a
+    # measurement says otherwise.
+    object_bits = task.get("object_bits") or 0
     checks = ADVISORY_CHECKS if task["tier"] == "advisory" else UB_CHECKS
 
     cmd = [
@@ -158,6 +163,7 @@ def verify_one(task: dict) -> dict:
         *checks,
         "--unwind", str(unwind),
         "--unwinding-assertions",
+        *(["--object-bits", str(object_bits)] if object_bits else []),
         *task.get("extra", []),
     ]
     # A POINTER function is checked under an explicit, stated precondition:
@@ -259,9 +265,20 @@ _NO_BODY_RE = re.compile(r"no body for function (\S+)")
 # and it was landing in report.py's "(no reason recorded)" bucket,
 # which reads as "we do not know" when we do. Matched here so the
 # why-line carries it to the head of the tail, where report.py looks.
+# The THIRD thing CBMC says instead of answering, and unlike the other
+# two it names its own remedy:
+#
+#     too many addressed objects: maximum number of objects is set to
+#     2^n=256 (with n=8); use the `--object-bits n' option to increase
+#     the maximum number
+#
+# Run 33: 135 of 424 ERRORs, 32%, and it was landing in "(CBMC printed
+# no reason)" beside the ones that really carry none -- of which, once
+# this and the memory line are matched, there are three.
 _WHY_RE = re.compile(
     r"^(?:Reason:.*|Invariant check failed|CONVERSION ERROR.*|"
     r"\s*(?:SAT checker ran )?[Oo]ut of memory\s*|"
+    r".*?too many addressed objects.*|"
     r".*?\berror:.*|.*?parse error.*)$",
     re.M | re.I)
 
@@ -342,6 +359,7 @@ def _rec(task: dict, status: str, **kw) -> dict:
 
 
 def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
+               object_bits: int,
                tier: str, classes: Path, allow: set[str],
                null_depth: int = 0, mem_mb: int = 0) -> list[dict]:
     """One task per (translation unit, function the ledger says it defines).
@@ -383,6 +401,7 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
                 "class": fns[fn],
                 "linkage": c.get("linkage", {}).get(fn, "?"),
                 "unwind": unwind, "timeout": timeout, "tier": tier,
+                "object_bits": object_bits,
                 "null_depth": null_depth, "mem_mb": mem_mb,
             })
     print("  skipped: " + "  ".join(f"{k}={v}" for k, v in skipped.items()),
@@ -397,6 +416,13 @@ def main() -> int:
     ap.add_argument("--scope", action="append", default=[],
                     help="restrict to paths starting with this (repeatable)")
     ap.add_argument("--unwind", type=int, default=16)
+    ap.add_argument("--object-bits", type=int, default=0,
+                    help="CBMC --object-bits. 0 (default) does not pass "
+                         "the flag, so CBMC's own default of 8 -- 256 "
+                         "distinct addressed objects -- applies. Raising "
+                         "it costs pointer-encoding width on every "
+                         "dereference, so the value belongs to a "
+                         "measurement, not a guess.")
     ap.add_argument("--timeout", type=int, default=60, help="seconds per function")
     ap.add_argument("--mem-mb", type=int, default=0,
                     help="RLIMIT_AS per CBMC instance, MB. 0 (default) is "
@@ -420,7 +446,8 @@ def main() -> int:
     args = ap.parse_args()
 
     tasks = load_tasks(Path(args.plan), args.scope, args.unwind,
-                       args.timeout, args.tier, Path(args.classes),
+                       args.timeout, args.object_bits, args.tier,
+                       Path(args.classes),
                        set(args.allow.split(",")), args.null_depth,
                        args.mem_mb)
 
