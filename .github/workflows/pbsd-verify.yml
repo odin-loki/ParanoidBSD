@@ -495,6 +495,14 @@ jobs:
       # A scope nobody analyses reports zero findings and looks exactly
       # like one that is clean. The first shard list here missed fourteen
       # directories, sys/hardenedbsd among them.
+      # check_shards.py's third check needs the ledger, because the
+      # model-check corpus IS the ledger: classify.py skips any record
+      # with no `functions' list. docs/port_plan.json is generated
+      # rather than committed, and this job does not depend on `plan',
+      # so without this step the check reads `n/a' and the gate that
+      # exists to catch a silent corpus gap has one of its own.
+      - name: The ledger the model-check corpus comes from
+        run: python3 tools/port_plan.py
       - name: Every directory under sys/ is in an analyse shard
         run: python3 tools/verify/check_shards.py
       # Three boot runs of forty minutes each were spent discovering,

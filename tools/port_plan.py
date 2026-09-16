@@ -452,14 +452,38 @@ def main() -> int:
                 if gen:
                     flags += f"gen:{gen} "
 
+                # Two different questions were reading one answer.
+                #
+                # This LEDGER asks "do we plan to rewrite this?", and for
+                # a SKIP-VENDOR or SKIP-TESTS file, or one too big to
+                # list, the answer is no and there is nothing to print.
+                #
+                # The verification pipeline asks "what is there to
+                # check?", and it reads this file: classify.py skips any
+                # record without a `functions' list, and cbmc_driver.py
+                # and fusebmc.py take their work from what classify.py
+                # produced. So a tag that means "not ours to port"
+                # silently meant "not ours to model-check" as well --
+                # 2,465 of the six sweep shards' 8,721 translation units,
+                # 1,879 of them on the tag alone, including 534 of
+                # OpenZFS and 868 of sys/contrib/dev. The shard NAMES the
+                # scope, the scope reports zero units, and the run is
+                # green.
+                #
+                # The function list is data. It is computed for every C
+                # file now, and the two filters move to the LISTING,
+                # which is where the porting question belongs. What the
+                # markdown prints, and every count in it, is unchanged.
                 fns: list[str] = []
-                if (p.suffix in (".c", ".cc", ".cpp", ".cxx")
-                        and lines <= args.max_func_lines and tag not in
-                        ("SKIP-VENDOR", "SKIP-TESTS")):
+                if p.suffix in (".c", ".cc", ".cpp", ".cxx"):
                     fns = functions(text)
-                a_funcs += len(fns)
+
+                listed = (lines <= args.max_func_lines and tag not in
+                          ("SKIP-VENDOR", "SKIP-TESTS"))
+                shown = fns if listed else []
+                a_funcs += len(shown)
                 if (tag == "TODO-PORT" and p.suffix == ".c"
-                        and looks_like_data(text, len(fns), lines)):
+                        and looks_like_data(text, len(shown), lines)):
                     tag = "TODO-DATA"
                     a_tags["TODO-PORT"] -= 1
                     totals["TODO-PORT"] -= 1
@@ -468,14 +492,18 @@ def main() -> int:
 
                 num = f"{a_no}.{d_no}.{f_no}"
                 w(f"- [ ] **{num}** `{p.name}` · {flags.strip()} · "
-                  f"`{tag}`" + (f" · {len(fns)} fn" if fns else ""))
-                for n_no, fn in enumerate(fns, start=1):
+                  f"`{tag}`" + (f" · {len(shown)} fn" if shown else ""))
+                for n_no, fn in enumerate(shown, start=1):
                     w(f"  - [ ] {num}.{n_no} `{fn}()` · `TODO-FN`")
 
                 records.append({
                     "n": num, "path": rel, "lines": lines, "tag": tag,
                     "asm": bool(asm), "generators": gen,
                     "functions": fns,
+                    # What the LEDGER lists, which is the porting
+                    # question.  `functions' above is what is there, and
+                    # the verification pipeline reads that.
+                    "listed": listed,
                 })
             w()
 
@@ -508,6 +536,10 @@ def main() -> int:
     summary += [""]
 
     # ---- indexes: the same ledger, sorted the ways it gets used ----------
+    def listed_fns(r):
+        """The ledger's view: empty for anything it does not list."""
+        return (r.get("functions") or []) if r.get("listed") else []
+
     have_fns = [r for r in records if r.get("functions") is not None]
 
     def table(title, rows, note=""):
@@ -521,7 +553,7 @@ def main() -> int:
         for r in rows:
             summary.append(
                 f"| {r['n']} | `{r['path']}` | {r['lines']:,} | "
-                f"{len(r.get('functions') or []):,} | `{r['tag']}` |")
+                f"{len(listed_fns(r)):,} | `{r['tag']}` |")
         summary.append("")
 
     summary.append("## Indexes")
@@ -567,11 +599,11 @@ def main() -> int:
         for r in gen:
             summary.append(
                 f"| {r['n']} | `{r['path']}` | {r['lines']:,} | "
-                f"{len(r.get('functions') or []):,} | {r['generators']:,} |")
+                f"{len(listed_fns(r)):,} | {r['generators']:,} |")
         summary.append("")
 
-    big = sorted((r for r in have_fns if r.get("functions")),
-                 key=lambda r: -len(r["functions"]))[:60]
+    big = sorted((r for r in have_fns if listed_fns(r)),
+                 key=lambda r: -len(listed_fns(r)))[:60]
     table("The sixty files with the most functions", big,
           "Each of these is a ledger of its own. `TODO-FN` lines below are "
           "one per\nfunction; a file with two hundred of them is a project.")

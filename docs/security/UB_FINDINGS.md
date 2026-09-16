@@ -32972,3 +32972,106 @@ constraint, and strictly tighter than `SIZE_MAX`. The divisor is the
 against `GElf_Shdr`'s 64), so it never rejects a legitimate object of
 either class, and it caps `shnum` low enough that the `GElf_Shdr`
 multiplication below cannot overflow for any file that exists.
+
+## The model checker could not see a quarter of what its shards named
+
+Not a finding, and the largest thing found today. `cddl` is in an analyse
+shard and not a model-check one, which is on the record in
+`check_shards.py`'s `UNCHECKED` table — so the next step was to run CBMC
+over it by hand. It reported:
+
+```
+0 translation units to model
+```
+
+`classify.py` reads `docs/port_plan.json` and skips any record with no
+`functions` list. `cbmc_driver.py` and `fusebmc.py` take their work from
+what `classify.py` produced. So the corpus of **all three** engines is
+whatever the port ledger chose to list — and `port_plan.py` was choosing
+it like this:
+
+```python
+                fns: list[str] = []
+                if (p.suffix in (".c", ".cc", ".cpp", ".cxx")
+                        and lines <= args.max_func_lines and tag not in
+                        ("SKIP-VENDOR", "SKIP-TESTS")):
+                    fns = functions(text)
+```
+
+Those two filters answer **"do we plan to rewrite this?"**. The
+verification pipeline is asking **"what is there to check?"**. One answer
+was serving both questions, and nothing anywhere said so.
+
+### What it cost
+
+**2,465 of the six model-check shards' 8,721 translation units**, by four
+distinct causes:
+
+| units | cause |
+|---:|---|
+| 1,879 | `tag` is `SKIP-VENDOR` |
+| 204 | `tag` is `SKIP-TESTS` |
+| 203 | the function reader genuinely finds nothing (data tables, `#include`d fragments) |
+| 179 | over `--max-func-lines`, default 4,000 |
+
+The last is the perverse one: a file is excluded from verification
+*because it is big*.
+
+Where they were:
+
+| units | directory |
+|---:|---|
+| 868 | `sys/contrib/dev` |
+| 534 | `sys/contrib/openzfs` |
+| 177 | `sys/contrib/libsodium` |
+| 165 | `lib/libc/tests` |
+| 58 | `sys/contrib/zstd` |
+
+OpenZFS is the filesystem. The analyse side has read it — 50 findings in
+`module/zfs` alone, in this document above. No model checker has ever
+opened one line of it, and the `rest` shard, which **names**
+`--scope sys/contrib`, reported success every time.
+
+### Why neither existing gate saw it
+
+`check_shards.py` has two checks, and both compare the shard list against
+the **directory tree**: every directory under `sys/` is in a shard, and
+every top-level directory is in a shard or on the `UNANALYSED` record.
+`sys/contrib` passed both. It was in the `rest` shard the whole time. The
+gap was between the shard and the *corpus*, which nothing looked at.
+
+That is the same shape as the bug `check_shards.py` itself was written
+for — "a scope nobody checks reports zero findings and looks exactly like
+one that is clean" — one level down.
+
+### The fix, and the gate
+
+The function list is **data**, computed for every C file now. The two
+filters move to the *listing*, which is where the porting question
+belongs. `docs/PORT_PLAN.md` is **byte-identical** — same 41,143 files,
+same 114,209 functions, same sixty-largest table — because the three
+markdown readers take a `listed_fns()` view of the record. The JSON grew
+6.8 MB to 9.1 MB, and it is generated rather than committed.
+
+**2,465 invisible becomes 336**, and every one of the 336 is the same
+reason: the function reader finds nothing in the file.
+
+The gate is exact rather than a floor. A file in a model-check scope may
+be absent from the corpus for **one** reason, that the reader finds no
+function in it, and `check_shards.py` recomputes that for every absent
+file rather than trusting the record:
+
+```
+ok    the model-check corpus covers its shards' scopes (8,385 of 8,721
+      translation units; the rest have no function the reader can see)
+```
+
+Verified by putting the old filter back: **2,111 files named, exit 1**.
+Any second filter re-introduced anywhere between the gate and
+`port_plan.py` fails it and prints what it swallowed.
+
+One more thing was needed to make the gate real. It runs in the `lints`
+job, which does not depend on `plan`, and `docs/port_plan.json` is
+generated rather than committed — so the check would have read `n/a` and
+the gate against a silent corpus gap would have had one of its own. The
+`lints` job builds the ledger itself now.
