@@ -31987,3 +31987,66 @@ Probe: `tools/verify/probes/rpc_port_walks_off.c`.
 This one is not in the extern-driven bucket: `rpc_port` is a file-scope
 `int` with an initialiser the checker can see, and the failing path is
 arithmetic on it alone.
+
+## `is*()` on a plain `char`: 910 sites, and why none of them is a bug here
+
+Run 35's userland pointer sweep reported, in `tftpd`:
+
+    FAILED libexec/tftpd/tftp-options.c:parse_options
+      line 107 array.__runetype dynamic object upper bound in
+               return_value___getCurrentRuneLocale->__runetype[_c]
+      line 107 dereference failure: pointer NULL in
+               return_value___getCurrentRuneLocale->__runetype
+
+The line behind it is `parse_options()` lowercasing the option name a
+client sent:
+
+    char	*c, *cp, *option, *value;
+    ...
+    for (c = option; *c; c++)
+            if (isupper(*c))
+                    *c = tolower(*c);
+
+`option` is a field `get_field()` carves out of the received packet, so
+`*c` is any byte a client cares to send.  `is*()` and `to*()` are
+defined only for a value representable as `unsigned char` or `EOF`;
+plain `char` is signed on amd64 and i386, so a byte >= 0x80 arrives as
+a negative `int`.  That is the classic remotely-reachable
+out-of-bounds read — and **it is not one here.**
+
+`include/_ctype.h:97` guards the subscript:
+
+    static __inline int
+    __maskrune(__ct_rune_t _c, unsigned long _f)
+    {
+            return ((_c < 0 || _c >= _CACHED_RUNES) ? ___runetype(_c) :
+                _CurrentRuneLocale->__runetype[_c]) & _f;
+    }
+
+and `lib/libc/locale/runetype.c:___runetype_l()` opens with
+`if (c < 0 || c == EOF) return (0L);`.  So a negative argument takes
+the out-of-line path and comes back 0.  Nothing is read out of bounds
+on this libc, on any architecture.  CBMC reports it because it models
+the table access without the guard's protection being a promise.
+
+The class is bigger than the one site.  Over the whole tree —
+
+    grep -rE '\b(isalpha|isupper|...|tolower|toupper)\s*\(\s*\*[A-Za-z_]\w*\s*\)' \
+        --include='*.c' --include='*.h' .
+
+— there are **910 sites in 360 files**.  Every one of them has the
+same answer, for the same two reasons, which is why this is written up
+as a class and not swept: on this libc the domain violation is caught,
+and the observable difference is only that a byte in 0x80..0xFF is
+never "upper" and so is not folded.  For a TFTP option name that is a
+behaviour difference and not a memory-safety one.
+
+`tftp-options.c` is fixed anyway, because `tftpd.c:484` four files
+away already writes `tolower((unsigned char)*cp)` and the two copies
+disagreeing is how the next reader learns the wrong lesson.  It is
+recorded here as hygiene, not as a defect: the severity claim this
+document would otherwise have made — "a client can read libc's rune
+table out of bounds" — is **false on this tree**, and saying so is
+worth more than the fix.
+Probe: `tools/verify/probes/ctype_signed_char.c`, which asserts the
+subscript is in range with the guard removed.

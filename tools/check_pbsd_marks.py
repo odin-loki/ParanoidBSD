@@ -5744,6 +5744,19 @@ FIXES = {
         "argc moves the stack pointer up",
     ),
 
+    "hbsd/src/libexec/tftpd/tftp-options.c": (
+        "if (isupper((unsigned char)*c))\n"
+        "\t\t\t\t*c = tolower((unsigned char)*c);",
+        "for (c = option; *c; c++)\n\t\t\tif (isupper(*c))\n"
+        "\t\t\t\t*c = tolower(*c);",
+        "parse_options lowercases the option name a client sent with "
+        "is*()/to*() on a plain char. Those are defined only for a "
+        "value representable as unsigned char or EOF, and char is "
+        "signed on amd64 and i386, so a byte >= 0x80 off the wire "
+        "indexes the rune table below zero. tftpd.c:484 already "
+        "spells the cast",
+    ),
+
     "hbsd/src/stand/libsa/rpc.c": [
         (
             "if (cc < 0 || (size_t)cc < sizeof(*res)) {",

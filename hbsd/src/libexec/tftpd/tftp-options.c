@@ -436,9 +436,17 @@ parse_options(int peer, char *buffer, uint16_t size)
 			tftp_log(LOG_DEBUG,
 			    "option: '%s' value: '%s'", option, value);
 
+		/*
+		 * option is a field out of the received packet, so *c is
+		 * any byte a client cares to send.  is*()/to*() are
+		 * defined only for a value representable as unsigned char
+		 * or EOF, and plain char is signed here, so a byte >= 0x80
+		 * indexes the rune table at a negative subscript.
+		 * tftpd.c:484 already spells the cast; this copy did not.
+		 */
 		for (c = option; *c; c++)
-			if (isupper(*c))
-				*c = tolower(*c);
+			if (isupper((unsigned char)*c))
+				*c = tolower((unsigned char)*c);
 		for (i = 0; options[i].o_type != NULL; i++) {
 			if (strcmp(option, options[i].o_type) == 0) {
 				if (!acting_as_client)

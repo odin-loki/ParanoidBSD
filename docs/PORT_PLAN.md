@@ -52,7 +52,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
 | 1 | `lib` | 2,827 | 641,204 | 9,057 |
-| 2 | `libexec` | 170 | 48,092 | 623 |
+| 2 | `libexec` | 170 | 48,100 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,385** | **114,209** |
+| | **total** | **41,143** | **21,304,393** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -14538,7 +14538,7 @@ function; a file with two hundred of them is a project.
   - [ ] 2.44.3.8 `send_data()` · `TODO-FN`
   - [ ] 2.44.3.9 `receive_packet()` · `TODO-FN`
 - [ ] **2.44.4** `tftp-io.h` · 47L · `TODO-HDR`
-- [ ] **2.44.5** `tftp-options.c` · 478L · `TODO-PORT` · 12 fn
+- [ ] **2.44.5** `tftp-options.c` · 486L · `TODO-PORT` · 12 fn
   - [ ] 2.44.5.1 `options_set_request()` · `TODO-FN`
   - [ ] 2.44.5.2 `options_set_reply()` · `TODO-FN`
   - [ ] 2.44.5.3 `options_set_reply_equal_request()` · `TODO-FN`
