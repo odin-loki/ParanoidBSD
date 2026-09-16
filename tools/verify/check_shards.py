@@ -130,8 +130,6 @@ UNCHECKED = {
     "sbin":       "analysed since sweep 18; not model-checked yet",
     "usr.bin":    "analysed since sweep 18; not model-checked yet",
     "usr.sbin":   "analysed since sweep 18; not model-checked yet",
-    "cddl":       "analysed by the vendor shard; not model-checked yet",
-    "secure":     "analysed by the vendor shard; not model-checked yet",
 }
 
 # Analyse shards deliberately run WITHOUT --check-errors, and why. A

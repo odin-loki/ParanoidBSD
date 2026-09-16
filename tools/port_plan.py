@@ -420,6 +420,40 @@ def main() -> int:
                 records.append({"n": f"{a_no}.{d_no}", "path": d,
                                 "lines": nl, "tag": default_tag,
                                 "files": len(files)})
+
+                # The directory line above is the LEDGER's view, and the
+                # comment on it is right about that: 25,000 entries
+                # saying "do not touch this" is ballast.
+                #
+                # The verification pipeline reads the same records, and
+                # for it a directory line is not a summary, it is an
+                # absence: classify.py wants a path that is a FILE and a
+                # `functions' list, so an area summarised this way had no
+                # translation units at all. `--scope cddl' reported "0
+                # translation units to model" -- not that cddl is clean,
+                # that CBMC was never given anything.
+                #
+                # So the files go in the records and nothing goes in the
+                # markdown. area_rows below still carries 0 functions for
+                # the area, and every count in PORT_PLAN.md is unchanged.
+                for f_no, q in enumerate(sorted(files, key=lambda x: x.name),
+                                         start=1):
+                    if q.suffix not in (".c", ".cc", ".cpp", ".cxx"):
+                        continue
+                    try:
+                        qtext = q.read_text(errors="replace")
+                    except OSError:
+                        continue
+                    records.append({
+                        "n": f"{a_no}.{d_no}.{f_no}",
+                        "path": q.relative_to(SRC).as_posix(),
+                        "lines": qtext.count("\n") + 1,
+                        "tag": default_tag,
+                        "asm": "__asm" in qtext,
+                        "generators": 0,
+                        "functions": functions(qtext),
+                        "listed": False,
+                    })
             w()
             area_rows.append((a_no, prefix, a_files, a_lines, 0,
                               dict(sorted(a_tags.items()))))

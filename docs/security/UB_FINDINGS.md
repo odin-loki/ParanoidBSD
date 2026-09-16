@@ -33075,3 +33075,93 @@ job, which does not depend on `plan`, and `docs/port_plan.json` is
 generated rather than committed — so the check would have read `n/a` and
 the gate against a silent corpus gap would have had one of its own. The
 `lints` job builds the ledger itself now.
+
+### The second mechanism, and what CBMC then found in cddl
+
+Fixing the tag filter was not enough. `--scope cddl` still reported
+`0 translation units to model`, because `port_plan.py` has a **second**
+rule for the same question:
+
+```python
+        # An area PBSD does not own gets one line per directory instead of
+        # one per file. contrib alone is 25,000 files and a ledger entry for
+        # each would be 25,000 lines saying "do not touch this", which is
+        # not a plan, it is ballast.
+        summarise = default_tag.startswith("SKIP")
+```
+
+That comment is right about the *ledger*. For the verification pipeline a
+directory line is not a summary, it is an absence: `classify.py` wants a
+path that is a **file** and a `functions` list. So `cddl`, `crypto`,
+`contrib` and `tests` had **no translation units at all** — 51 directory
+records for cddl and not one source file.
+
+Same fix, same shape: the files go in the records and nothing goes in the
+markdown. `PORT_PLAN.md` is byte-identical again. The corpus gains
+**cddl 138, crypto 3,802, contrib 6,671, tests 290**, and the JSON goes
+9.1 MB to 14.5 MB — generated, not committed.
+
+`cddl` classifies now: 5,930 functions, **813 SCALAR and 428 VOID** that
+can be model-checked with no precondition.
+
+### CBMC over cddl, the first time
+
+103 translation units, two minutes:
+
+| verdict | n |
+|---|---:|
+| **PROVED** | 55 |
+| BOUNDED | 29 |
+| FAILED | 17 |
+| ERROR | 1 |
+| TIMEOUT | 1 |
+
+Fifty-five functions proved over all inputs for the checked properties —
+the loops closed inside the bound, so those are proofs and not the weaker
+BOUNDED result.
+
+**Eight of the seventeen FAILED are the dtrace test corpus and os-tests**
+— `tst.spin.c`'s `a + 1` in a deliberately unbounded spin loop, a
+`siglongjmp`, a function-pointer equality. Not shipped code.
+
+The other nine are all in three buckets this document already has, and
+none is a defect:
+
+- **The allocator that cannot fail, unmodelled.** `tdata_new` and
+  `ctf_buf_new` dereference `xcalloc()`'s result; the ctf tools' `xmalloc`
+  family all end in `memory_bailout()`, which is
+  `fprintf(stderr, ...); exit(1)` at `memory.c:40-45`, so none of them
+  ever returns NULL. CBMC models the callee as an uninterpreted function
+  and the pointer is unconstrained.
+- **The `longjmp` the checker cannot follow.** `dt_decl_ptr` passes
+  `dt_decl_alloc()`'s result straight to `dt_decl_push()`, and
+  `dt_decl_alloc` does `if (ddp == NULL) longjmp(yypcb->pcb_jmpbuf,
+  EDT_NOMEM);`. The same mechanism as libdtrace's twenty-four analyser
+  findings above, in the other engine.
+- **A leak property asked at the wrong place.** `dt_sugar_new_error_var`,
+  `dt_sugar_new_condition_var` and `dt_sugar_makeerrorclause` fail only
+  `dynamically allocated memory never freed`. They are constructors. The
+  caller frees.
+
+`umem_alloc`, `umem_zalloc` and `z_strerror` are the extern-driven
+bucket: `stderr` and `zlib.z_error` are file-scope externs with no model,
+so every use of them fails.
+
+### A measured zero, recorded
+
+The first bucket looked like the `xmalloc` statement that paid three
+times today, so it was tried: `__returns_nonnull__` on the ctf tools'
+five allocators and `noreturn` on `memory_bailout()`. Both are true.
+
+**It cleared nothing.** The analyse side of `cddl/.../tools/ctf` was
+already at 0 findings — the four `noreturn` declarations and four defect
+fixes earlier today took it there — so there was nothing left for the
+attribute to clear, and CBMC does not honour `__returns_nonnull__` at
+all: `ctf_buf_new` fails identically with it in place. The vendor shard
+stayed at 19 findings across 140 translation units either way.
+
+So it was reverted. A true statement with a measured gain of zero is
+vendor-tree churn, and the rule this document set for itself when it
+spent a sweep on the `noreturn` candidate list is that the measurement
+decides. It is written down here instead, which costs nothing and is
+where the next reader will look.

@@ -172,6 +172,16 @@ jobs:
             scopes: '--scope stand'
             classes: classes_stand.json
             jobs: 4
+          # cddl could not be model-checked until the ledger carried it.
+          # port_plan.py summarised a SKIP area one line per DIRECTORY,
+          # which for the ledger is right and for classify.py is an
+          # absence -- `--scope cddl' reported "0 translation units to
+          # model", which is not "clean", it is "CBMC was never given
+          # anything". 103 translation units, two minutes, 55 PROVED.
+          - name: vendor
+            scopes: '--scope cddl --scope secure'
+            classes: classes_cddl.json
+            jobs: 4
           - name: rest
             scopes: '--scope sys/arm64 --scope sys/amd64 --scope sys/arm --scope sys/i386 --scope sys/riscv --scope sys/powerpc --scope sys/x86 --scope sys/compat --scope sys/contrib --scope sys/crypto --scope sys/opencrypto --scope sys/ddb --scope sys/isa --scope sys/nfs --scope sys/netgraph --scope sys/netlink --scope sys/rpc --scope sys/kgssapi --scope sys/libkern --scope sys/modules --scope sys/nlm --scope sys/teken --scope sys/tests --scope sys/xen --scope sys/dts --scope sys/gnu --scope sys/sys --scope sys/hardenedbsd --scope sys/netipsec --scope sys/netpfil --scope sys/net80211 --scope sys/netsmb --scope sys/nfsclient --scope sys/nfsserver --scope sys/ofed --scope sys/bsm --scope sys/conf --scope sys/gdb --scope sys/mips --scope sys/tools --scope sys/xdr'
             classes: classes_sys_rest.json
