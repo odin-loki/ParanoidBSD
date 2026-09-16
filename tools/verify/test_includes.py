@@ -1107,15 +1107,42 @@ check("nothing else in the tree takes the rule",
 check("...nor a near miss on the prefix",
       includes.llvm_shim("lib/libclang_rt/foo.c"), ())
 
-# The header CI could not find has to resolve from these flags ALONE.
-_probe = Path(tempfile.mkdtemp(prefix="pbsd_llvmshim_")) / "p.cpp"
-_probe.write_text("#include <llvm/Support/LLVMDriver.h>\nint main(){return 0;}\n")
-_p = subprocess.run(
-    ["clang++", "-fsyntax-only", "-nostdinc", "-std=c++17", *_drv, str(_probe)],
-    capture_output=True, text=True, timeout=300)
-check_that("llvm/Support/LLVMDriver.h resolves with no bmake at all",
-           "LLVMDriver.h' file not found" not in _p.stderr,
-           _p.stderr.split("\n")[0] if _p.stderr else "")
+# The header CI could not find has to resolve from these flags ALONE --
+# and it can only be asked to where the header IS. .gitignore:150-162
+# excludes contrib/llvm-project/llvm from the repository, so a CI
+# checkout does not have it, and this probe reported
+#
+#   FAIL llvm/Support/LLVMDriver.h resolves with no bmake at all
+#        fatal error: 'llvm/Support/LLVMDriver.h' file not found
+#
+# on every CI run from the day it landed. The check written to catch
+# "CI and this container disagreed about the flags" was itself a case
+# of CI and this container disagreeing -- about the FILE SET, which is
+# the one difference between them that is deliberate and documented.
+#
+# The precondition is now stated, the same way _llvm_h states it for
+# the C++ probe three hundred lines up, and it reuses that same path.
+# The four checks ABOVE are unconditional and stay that way: they read
+# llvm_shim()'s answer as a list of strings, which needs no headers, so
+# the part of the original bug that was about the flags is still gated
+# everywhere. Only the compile is skipped, and only where there is
+# nothing to compile against.
+if not _llvm_h.is_file():
+    print("  n/a  llvm/Support/LLVMDriver.h resolves with no bmake at all"
+          "  (contrib/llvm-project/llvm is not in this checkout - "
+          ".gitignore excludes it; the four flag checks above still "
+          "ran)")
+else:
+    _probe2 = Path(tempfile.mkdtemp(prefix="pbsd_llvmshim_")) / "p.cpp"
+    _probe2.write_text(
+        "#include <llvm/Support/LLVMDriver.h>\nint main(){return 0;}\n")
+    _p = subprocess.run(
+        ["clang++", "-fsyntax-only", "-nostdinc", "-std=c++17", *_drv,
+         str(_probe2)],
+        capture_output=True, text=True, timeout=300)
+    check_that("llvm/Support/LLVMDriver.h resolves with no bmake at all",
+               "LLVMDriver.h' file not found" not in _p.stderr,
+               _p.stderr.split("\n")[0] if _p.stderr else "")
 
 print()
 if fails:
