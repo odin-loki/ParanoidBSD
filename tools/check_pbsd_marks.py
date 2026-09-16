@@ -5645,6 +5645,28 @@ FIXES = {
         "writes ucp->uc_mcontext.mc_len to invalidate the context",
     ),
 
+    "hbsd/src/sys/netpfil/ipfilter/netinet/ip_htable.c": (
+        ("KFREE(iph);\n\t\tIPFERROR(3002", 2),
+        "ipf_htable_size_max)) {\n\t\tIPFERROR(30027);",
+        "ipf_htable_create: two EINVAL returns between the KMALLOC of "
+        "iph and its only other reference dropped it, where the "
+        "KMALLOCS failure path beside them frees it",
+    ),
+
+    "hbsd/src/sys/amd64/amd64/bpf_jit_machdep.c": (
+        "if (fjmp)\n\t\t\t\t\tfree(stream.refs, M_BPFJIT);\n\t\t\t\treturn (NULL);",
+        "default:\n#ifdef _KERNEL\n\t\t\t\treturn (NULL);",
+        "bpf_jit_compile: an opcode the JIT does not know returned "
+        "between the reference table's allocation and its free",
+    ),
+
+    "hbsd/src/sys/i386/i386/bpf_jit_machdep.c": (
+        "if (fjmp)\n\t\t\t\t\tfree(stream.refs, M_BPFJIT);\n\t\t\t\treturn (NULL);",
+        "default:\n#ifdef _KERNEL\n\t\t\t\treturn (NULL);",
+        "bpf_jit_compile: an opcode the JIT does not know returned "
+        "between the reference table's allocation and its free",
+    ),
+
     "hbsd/src/lib/libc/arm/gen/makecontext.c": (
         "if (ucp == NULL)\n\t\treturn;\n\tif (argc < 0)",
         "{\n\t__greg_t *gr = ucp->uc_mcontext.__gregs;",

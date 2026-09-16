@@ -29893,3 +29893,111 @@ reached through `run_tests()`; `sbin/fsck_ffs/inode.c:593` and
 file-scope `static` is read at its `= NULL` rather than after the
 `setinodebuf()` or first-call assignment that every caller performs
 first.
+
+## `unix.Malloc`, the unread 95: three kernel leaks on error paths
+
+Run 33 reports 760 `unix.Malloc` findings, 368 after deduplicating by
+`file:line:function:message`, in 170 files.  95 of those, in 67 files,
+are in files this document had not named.  Nine are not leaks at all —
+five `Use of memory after it is freed` and four `Use of memory
+allocated with size zero` — and the rest are `Potential leak`.
+
+### `ipf_htable_create()` leaks the table on two of its four exits
+
+`sys/netpfil/ipfilter/netinet/ip_htable.c:366`.  The function
+`KMALLOC`s an `iphtable_t` and does not put it on
+`softh->ipf_htables[]` until its last statement, so until then `iph` is
+the only reference to it.  Four exits sit in between, and the one at
+the bottom does the right thing:
+
+```c
+	if (iph->iph_table == NULL) {
+		KFREE(iph);
+		softh->ipht_nomem[unit + 1]++;
+		IPFERROR(30006);
+		return (ENOMEM);
+	}
+```
+
+The two immediately above it did not:
+
+```c
+	if ((iph->iph_size == 0) ||
+	    (iph->iph_size > softh->ipf_htable_size_max)) {
+		IPFERROR(30027);
+		return (EINVAL);
+	}
+	if (iph->iph_size > ( SIZE_MAX / sizeof(*iph->iph_table))) {
+		IPFERROR(30028);
+		return (EINVAL);
+	}
+```
+
+Both rest on `iph_size`, a `size_t` `COPYIN`'d as part of the caller's
+`iphtable_t`, so a caller holding the ipfilter ioctl leaks one table
+per oversized request, without bound.  (The `iph_size == 0` half is
+dead — `htab.iph_size < 1` is rejected before the allocation — but
+`iph_size > ipf_htable_size_max` is not.)  `KFREE(iph)` on both.
+
+`tools/verify/probes/htable_create_leak.c`: **OLD `SUMMARY:
+AddressSanitizer: 32 byte(s) leaked in 2 allocation(s).`; NEW clean.**
+
+### The BPF JIT leaks its reference table on an opcode it does not know
+
+`sys/amd64/amd64/bpf_jit_machdep.c:221` and `sys/i386`'s copy.
+`bpf_jit_compile()` allocates the jump reference table before the
+translation loop:
+
+```c
+	if (fjmp) {
+		stream.refs = malloc((nins + 1) * sizeof(u_int), M_BPFJIT,
+		    M_NOWAIT | M_ZERO);
+		...
+	}
+```
+
+and frees it after, under the same `if (fjmp)`.  Between the two there
+was exactly one exit:
+
+```c
+			switch (ins->code) {
+			default:
+#ifdef _KERNEL
+				return (NULL);
+#else
+				abort();
+#endif
+```
+
+so an opcode the JIT does not recognise leaks `(nins + 1) *
+sizeof(u_int)` of `M_BPFJIT`.  The userland arm `abort()`s and does not
+care; the kernel arm now frees under the same `if (fjmp)` that
+allocated.
+
+### The other 92
+
+* **The five `Use of memory after it is freed` are all list macros.**
+  `_memstat_mtl_empty()` frees `mt_percpu_alloc` and `mt_percpu_cache`
+  and then `LIST_REMOVE`s through `mt_list`, which it did not free;
+  `imsg_get_fd()` reads `ifd->fd` *before* `TAILQ_REMOVE` and frees
+  last; `libusb_free_device_list()` unrefs the devices, not the array;
+  `libusb20_be_device_foreach()` reads `TAILQ_NEXT` of a `pdev` its
+  caller owns; `systat`'s `dsmatchselect()` sets `matches = NULL`
+  immediately after `free(matches)` and reallocates through
+  `devstat_buildmatch()`.
+* **The four `size zero` are counts that can be zero and loops that
+  then do not run.**  `efibootmgr`'s `make_next_boot_var_name()`
+  `malloc`s `sizeof(uint16_t) * cnt` for a list it just counted, and
+  every use of `vals` is under a `< cnt` bound.
+* **The leaks in `bin`, `sbin`, `usr.bin`, `usr.sbin` are one-shot
+  programs exiting.**  `pciconf`, `kldconfig`, `mdmfs`, `rctl`,
+  `diskinfo`, `memcontrol`, `fwcontrol`, `bectl`, `rpcinfo`,
+  `distextract`.
+* **The remaining kernel and library ones resolve.**
+  `nmi_register_handler()` links `hp` onto `nmi_handlers_head` with a
+  `fcmpset` loop the analyser will not follow; `xenbusb_add_device()`
+  has `if (error != 0) xenbusb_free_child_ivars(ivars)` at its `out:`
+  label and hands `ivars` to `device_set_ivars()` otherwise;
+  `bhnd_nvram_val_copy()` calls `bhnd_nvram_val_new()`, whose own error
+  path is `bhnd_nvram_val_release(*value)` with the comment *"Will also
+  free() the value allocation"*.

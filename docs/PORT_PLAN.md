@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,346 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,377 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,757** | **114,208** |
+| | **total** | **41,143** | **21,303,788** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -40185,7 +40185,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.2.2** `atpic_vector.S` · 70L asm · `TODO-ASM`
 - [ ] **8.2.3** `bios.c` · 95L · `TODO-MD` · 1 fn
   - [ ] 8.2.3.1 `bios_sigsearch()` · `TODO-FN`
-- [ ] **8.2.4** `bpf_jit_machdep.c` · 652L · `TODO-MD` · 4 fn
+- [ ] **8.2.4** `bpf_jit_machdep.c` · 662L · `TODO-MD` · 4 fn
   - [ ] 8.2.4.1 `emit_length()` · `TODO-FN`
   - [ ] 8.2.4.2 `emit_code()` · `TODO-FN`
   - [ ] 8.2.4.3 `bpf_jit_optimize()` · `TODO-FN`
@@ -113575,7 +113575,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1184.3.7 `pnpbios_set_config()` · `TODO-FN`
   - [ ] 8.1184.3.8 `pnpbios_identify()` · `TODO-FN`
 - [ ] **8.1184.4** `bioscall.S` · 159L asm gen:3 · `TODO-ASM`
-- [ ] **8.1184.5** `bpf_jit_machdep.c` · 682L · `TODO-MD` · 4 fn
+- [ ] **8.1184.5** `bpf_jit_machdep.c` · 692L · `TODO-MD` · 4 fn
   - [ ] 8.1184.5.1 `emit_length()` · `TODO-FN`
   - [ ] 8.1184.5.2 `emit_code()` · `TODO-FN`
   - [ ] 8.1184.5.3 `bpf_jit_optimize()` · `TODO-FN`
@@ -128516,7 +128516,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1223.12.22 `ipf_p_ftp_eprt4()` · `TODO-FN`
   - [ ] 8.1223.12.23 `ipf_p_ftp_epsv()` · `TODO-FN`
   - [ ] 8.1223.12.24 `ipf_p_ftp_eprt6()` · `TODO-FN`
-- [ ] **8.1223.13** `ip_htable.c` · 1,418L · `TODO-PORT` · 31 fn
+- [ ] **8.1223.13** `ip_htable.c` · 1,429L · `TODO-PORT` · 31 fn
   - [ ] 8.1223.13.1 `ipf_htable_soft_create()` · `TODO-FN`
   - [ ] 8.1223.13.2 `ipf_htable_soft_destroy()` · `TODO-FN`
   - [ ] 8.1223.13.3 `ipf_htable_soft_init()` · `TODO-FN`

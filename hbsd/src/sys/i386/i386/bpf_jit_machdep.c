@@ -223,6 +223,16 @@ bpf_jit_compile(struct bpf_insn *prog, u_int nins, size_t *size)
 			switch (ins->code) {
 			default:
 #ifdef _KERNEL
+				/*
+				 * PBSD: the reference table is allocated
+				 * before this loop and freed after it, and
+				 * this was the one exit between the two --
+				 * an opcode the JIT does not know leaked
+				 * (nins + 1) * sizeof(u_int) of M_BPFJIT.
+				 * The `if (fjmp)' matches its allocation.
+				 */
+				if (fjmp)
+					free(stream.refs, M_BPFJIT);
 				return (NULL);
 #else
 				abort();

@@ -361,12 +361,23 @@ ipf_htable_create(ipf_main_softc_t *softc, void *arg, iplookupop_t *op)
 		iph->iph_name[sizeof(iph->iph_name) - 1] = '\0';
 	}
 
+	/*
+	 * PBSD: KFREE(iph) on both.  iph was KMALLOC'd above and is
+	 * not on softh->ipf_htables[] until the end of this
+	 * function, so these two returns drop the only reference to
+	 * it.  The KMALLOCS failure path immediately below frees it,
+	 * which is what these two owe as well.  iph_size is a size_t
+	 * COPYIN'd as part of the iphtable_t, so a caller with the
+	 * ipfilter ioctl leaks one table per oversized request.
+	 */
 	if ((iph->iph_size == 0) ||
 	    (iph->iph_size > softh->ipf_htable_size_max)) {
+		KFREE(iph);
 		IPFERROR(30027);
 		return (EINVAL);
 	}
 	if (iph->iph_size > ( SIZE_MAX / sizeof(*iph->iph_table))) {
+		KFREE(iph);
 		IPFERROR(30028);
 		return (EINVAL);
 	}
