@@ -973,7 +973,8 @@ parse_uefi_con_out(void)
 	EFI_DEVICE_PATH *node;
 	ACPI_HID_DEVICE_PATH  *acpi;
 	UART_DEVICE_PATH  *uart;
-	bool pci_pending;
+	/* Read on the first iteration if the first node is an end node. */
+	bool pci_pending = false;
 
 	/*
 	 * A SPCR in the ACPI fixed tables documents a serial port used for the
@@ -1018,7 +1019,19 @@ parse_uefi_con_out(void)
 	}
 	ep = buf + sz;
 	node = (EFI_DEVICE_PATH *)buf;
-	while ((char *)node < ep) {
+	/*
+	 * The walk tested that a node BEGINS inside the buffer and then
+	 * read its type, its subtype and - for an ACPI or UART node -
+	 * fields well past those, and advanced by a Length the same
+	 * buffer supplies. A Length of 0 never advances at all, and one
+	 * that reaches just under ep leaves the body outside it. Both
+	 * numbers come from the firmware's ConOut variable.
+	 */
+	while ((char *)node + sizeof(*node) <= ep) {
+		size_t nlen = DevicePathNodeLength(node);
+
+		if (nlen < sizeof(*node) || (char *)node + nlen > ep)
+			break;
 		if (IsDevicePathEndType(node)) {
 			if (pci_pending && vid_seen == 0)
 				vid_seen = ++seen;
@@ -1054,7 +1067,7 @@ parse_uefi_con_out(void)
 			 */
 			pci_pending = true;
 		}
-		node = NextDevicePathNode(node);
+		node = (EFI_DEVICE_PATH *)((char *)node + nlen);
 	}
 
 	/*

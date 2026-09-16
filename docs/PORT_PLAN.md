@@ -57,7 +57,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
-| 7 | `stand` | 484 | 135,764 | 2,433 |
+| 7 | `stand` | 484 | 135,777 | 2,433 |
 | 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,234** | **114,208** |
+| | **total** | **41,143** | **21,304,247** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -37752,7 +37752,7 @@ function; a file with two hundred of them is a project.
   - [ ] 7.15.6.20 `command_uga()` · `TODO-FN`
 - [ ] **7.15.7** `framebuffer.h` · 38L · `TODO-HDR`
 - [ ] **7.15.8** `loader_efi.h` · 71L · `TODO-HDR`
-- [ ] **7.15.9** `main.c` · 2,065L gen:11 · `TODO-PORT` · 40 fn
+- [ ] **7.15.9** `main.c` · 2,078L gen:11 · `TODO-PORT` · 40 fn
   - [ ] 7.15.9.1 `has_keyboard()` · `TODO-FN`
   - [ ] 7.15.9.2 `set_currdev_devdesc()` · `TODO-FN`
   - [ ] 7.15.9.3 `set_currdev_devsw()` · `TODO-FN`

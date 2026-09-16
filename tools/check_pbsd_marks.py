@@ -5967,6 +5967,23 @@ FIXES = {
             "left - neither sizeof(buf) nor a bound on it",
         ),
         (
+            "while ((char *)node + sizeof(*node) <= ep) {\n\t\tsize_t "
+            "nlen = DevicePathNodeLength(node);",
+            "\twhile ((char *)node < ep) {\n\t\tif "
+            "(IsDevicePathEndType(node)) {",
+            "parse_uefi_con_out: the device-path walk tested that a "
+            "node BEGINS inside the buffer and then read fields well "
+            "past its header, and advanced by a Length the same buffer "
+            "supplies - a Length of 0 never advances at all. Both "
+            "numbers come from the firmware's ConOut variable",
+        ),
+        (
+            "\tbool pci_pending = false;",
+            "\tbool pci_pending;\n",
+            "parse_uefi_con_out: pci_pending is read on the first "
+            "iteration if the first node is an end node",
+        ),
+        (
             "mm = 0;\n\trs = rw = 0;",
             "\t/* I/O vs Memory mapped vs PCI device */\n\tio = -1;"
             "\n\tpv = spcr->PciVendorId;",

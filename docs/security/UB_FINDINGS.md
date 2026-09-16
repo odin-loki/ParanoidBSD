@@ -31599,4 +31599,47 @@ fixed), and three are unread: `gfx_fb.c:1261`, `gfx_fb.c:2601` — the
 23-byte `read_list()` leak, read and judged — and
 `efi/loader/main.c:1023`.
 
-The other 16 are the next pass.
+#### `parse_uefi_con_out()`: a device-path walk bounded on the wrong end
+
+`stand/efi/loader/main.c:1029`
+
+    ep = buf + sz;
+    node = (EFI_DEVICE_PATH *)buf;
+    while ((char *)node < ep) {
+        ...
+        if (DevicePathType(node) == ACPI_DEVICE_PATH && ...) {
+            acpi = (void *)node;
+            if (EISA_ID_TO_NUM(acpi->HID) == 0x501) {
+                setenv_int("efi_8250_uid", acpi->UID);
+    ...
+        node = NextDevicePathNode(node);
+    }
+
+`NextDevicePathNode()` is `(UINT8 *)a + DevicePathNodeLength(a)`, and
+`DevicePathNodeLength()` reads the node's own two `Length` bytes.  A
+`Length` of 0 never advances, so the loop does not terminate.  A node
+beginning one byte under `ep` has its type, its subtype and — for an
+ACPI or UART node — a dozen further bytes read past the end of what
+the variable actually held.  `ConOut` is a UEFI global variable:
+firmware data, read before the kernel exists.
+
+The loop now requires a whole header inside the buffer, a `Length`
+that is at least a header, and a node that ends inside the buffer.
+`pci_pending` beside it was also read on the first iteration — if the
+first node is an end node — before anything had written it.
+Probe: `tools/verify/probes/uefi_devpath_walk.c`.
+
+### Where `stand/` stands
+
+    68  the first reading
+    15  now
+
+The fifteen are eight premises this document records as holding
+(`load_elf.c` ×2, `install.c`, `ip.c`, `nfs.c`, `dosfs.c`, `zfs.c` ×2),
+five analyser limits it names (`biospnp.c` ×2 through a type pun,
+`efi_console.c` ×2 and `gfx_fb.c` ×1 across translation units), one
+escape whose consequence is fixed (`zfs_module.c`), and one leak read
+and judged not worth a vendor-tree marker (`gfx_fb.c`'s 23-byte
+`read_list()`).
+
+Nothing in `stand/` is now unread.
