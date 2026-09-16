@@ -269,13 +269,21 @@ jobs:
       # back PROVED-ASSUMING, which is verification recovered rather
       # than findings added -- for about 1.2x the solver time.
       #
-      # And NOT in rtld-elf, which is the other 44 of the 135. At 12 it
-      # still reports the ceiling, now `2^n=4096 (with n=12)'. At 16 it
-      # stops reporting the ceiling and reports `SAT checker ran out of
-      # memory' instead: widening the pointer encoding grows the
-      # formula, so past some point one non-answer is traded for
-      # another. 12 is where lib/libc converts and rtld-elf is no
-      # worse, so 12 is the number.
+      # And NOT in rtld-elf, which is the other 44 of the 135. That one
+      # file, taken up through four values, never moves off four
+      # verdicts:
+      #
+      #     bits 8    4 verdicts, 9 non-answers, 6 object ceiling  318s
+      #     bits 12   4 verdicts, 9 non-answers, 6 object ceiling  324s
+      #     bits 16   4 verdicts, 9 non-answers, 6 OUT OF MEMORY   326s
+      #     bits 20   4 verdicts, 9 non-answers, 6 OUT OF MEMORY   362s
+      #
+      # At 12 the ceiling is still reported, now `2^n=4096 (with
+      # n=12)'. At 16 and 20 the same six stop hitting the ceiling and
+      # start hitting the --mem-mb bound: widening the pointer encoding
+      # grows the formula, so past some point one non-answer is simply
+      # exchanged for another at rising cost. 12 is where lib/libc
+      # converts and rtld-elf is no worse, so 12 is the number.
       - name: Model check, unguarded
         if: matrix.name == 'userland'
         run: |

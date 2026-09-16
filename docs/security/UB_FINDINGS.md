@@ -30820,11 +30820,23 @@ eight FAILED and one BOUNDED, and all nine land in buckets the triage
 above already answers (`sshift` is validated by the header check from
 the earlier pass on that file).
 
-**And it does nothing for `rtld-elf`**, which is 44 of the 135.  At 12
-that file still reports the ceiling, now `2^n=4096 (with n=12)`.  At
-**16** it stops reporting the ceiling and reports `SAT checker ran out
-of memory` instead — widening the pointer encoding grows the formula,
-so past some point one non-answer is simply traded for another.
+**And it does nothing for `rtld-elf`**, which is 44 of the 135.  Taking
+that one file up through four values shows why, and the verdict count
+never moves:
+
+| `libexec/rtld-elf/amd64/reloc.c` | verdicts | non-answers | what the errors say | time |
+|---|---:|---:|---|---:|
+| `-bits 8` | 4 | 9 | 6 object ceiling, 3 other | 318s |
+| `-bits 12` | 4 | 9 | 6 object ceiling, 3 other | 324s |
+| `-bits 16` | 4 | 9 | **6 out of memory**, 3 other | 326s |
+| `-bits 20` | 4 | 9 | **6 out of memory**, 3 other | 362s |
+
+At 12 the ceiling is still reported, now as `2^n=4096 (with n=12)`.  At
+16 and 20 the same six functions stop hitting the ceiling and start
+hitting `SAT checker ran out of memory` under the same `--mem-mb`:
+widening the pointer encoding grows the formula, so past some point one
+non-answer is simply exchanged for another, at rising cost.  Four
+verdicts at every setting.
 
 12 is where `lib/libc` converts and `rtld-elf` is no worse, so 12 is
 the number, and it is now in the three model-check steps of
