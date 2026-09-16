@@ -32441,18 +32441,145 @@ count would make the write happen before the check.
 
 ---
 
-## What the vendor shard found that is still unread
+## The vendor shard's last 33, read: libctf believes a header over a section
 
 The `cddl` + `secure` shard's first pass reported 66 findings across its
-140 translation units. 35 are read above — five defects fixed, thirty
-rejected with their reasons. **33 are not read**: libctf's
-`ctf_create.c`, `ctf_types.c`, `ctf_labels.c`, `ctf_lookup.c` and
-`ctf_lib.c`; ctfconvert's `ctf.c`, `input.c`, `output.c` and `util.c`;
-ctfdump's `dump.c`; and lockstat's `sym.c`.
+140 translation units. 35 were read in the sections above — five defects
+fixed, thirty rejected with their reasons. The remaining 33 were libctf's
+`ctf_create.c`, `ctf_types.c`, `ctf_labels.c`, `ctf_lookup.c`, `ctf_lib.c`
+and `ctf_open.c`; ctfconvert's `ctf.c`, `input.c`, `output.c` and
+`util.c`; ctfdump's `dump.c`; and lockstat's `sym.c`.
 
-That set deserves attention beyond its size. libctf and ctfdump parse a
-**CTF section read out of an ELF object**, so a malformed or truncated
-one is an ordinary input for them the moment anyone runs `ctfdump` or
-`dtrace(1)` over a file they did not produce. Saying they are unread is
-the point: an unread finding counted as clean is the thing this document
-exists to prevent.
+They are read now. Four defects, four missing attributes, and the
+attributes account for twelve of the thirty-three. The shard stands at
+**46 findings**, with all 8 ERROR translation units still on the record.
+
+### A correction to what these files are
+
+libctf is **not** linked into ctfdump or ctfconvert. Both carry their own
+independent CTF readers, and their Makefiles `LIBADD` only `elf z` and
+`spl dwarf elf z pthread`. libctf's consumers are `cddl/usr.sbin/dtrace`
+and `lib/libproc` — and `lib/libproc/Makefile:19` is `LIBADD+= ctf`, with
+`lib/libproc/proc_sym.c:656` calling `ctf_open()` on **every mapped object
+of a traced process**.
+
+So libctf's reader ships in dtrace(1), lockstat(1), and — through libproc
+— in truss(1), gcore(1) and dtrace's `ustack`. That makes it the most
+exposed of the three readers, not the least. Three separate parsers for
+one format, and the one nothing obviously links is the one on the widest
+attack surface.
+
+### `ctf_bufopen` believes the header over the section it came in
+
+`ctf_open.c:769` computes
+
+```c
+	size = hp.cth_stroff + hp.cth_strlen;
+```
+
+entirely from the header, and `:773-786` then check the header's offsets
+against each other and against that `size`. The only tests against the
+size of the **section** the header arrived in are
+`cts_size < sizeof (ctf_preamble_t)` and `< sizeof (ctf_header_t)`.
+
+The compressed branch does not need more: `z_uncompress` writes into an
+allocation of exactly `size + hdrsz`, and a short inflate is rejected at
+`:818`. The uncompressed branch does, because there the buffer **is** the
+section — and `:864` then sets
+
+```c
+	fp->ctf_str[CTF_STRTAB_0].cts_strs = (const char *)buf + hp.cth_stroff;
+```
+
+while `init_types` walks `buf + cth_typeoff` to `buf + cth_stroff`. A
+`.SUNW_ctf` section whose header declares more than the section holds
+reads out of bounds across the whole type walk and the string table. For
+anything using libproc that is an ordinary input: the object is whatever
+the traced process has mapped.
+
+One check, in the branch that lacked it:
+
+```c
+	} else {
+		if (ctfsect->cts_size < hdrsz + size)
+			return (ctf_set_open_errno(errp, ECTF_CORRUPT));
+		base = (void *)ctfsect->cts_data;
+		buf = (uchar_t *)base + hdrsz;
+	}
+```
+
+### The four missing attributes
+
+Same class as dtrace(1)'s `fatal()` in the section above, and the reason
+is the same: the function is **variadic**, so the analyser will not inline
+it and cannot see the `exit()`.
+
+| function | where it ends | findings |
+|---|---|---|
+| `elfterminate()` | `terminate()`, three lines above it in `ctftools.h`, which **is** declared noreturn | 5, in ctfconvert and ctfmerge |
+| `die()` / `vdie()` | `exit(E_ERROR)`, `utils.c:42` and `:54` | 4 in ctfdump, two where the value read afterwards is the CTF buffer pointer itself |
+| `parseterminate()` | static wrapper for `terminate()` | 2 in ctfconvert |
+| `fatal()` in the baddof test probe | — | **not fixed**: no Makefile in the tree names that file, and it opens the Solaris path `/devices/pseudo/dtrace@0:dtrace` anyway |
+
+### Three defects the attributes left behind
+
+**ctfdump's `main()` declares `ctf_data_t cd;`** and assigns `cd_symdata`,
+`cd_strdata` and `cd_nsyms` only inside a nested
+`if (symscn != NULL) { if (gelf_getshdr(...) != NULL) {`. Three ways out
+leave them indeterminate, and the first is a **supported mode**:
+`ctfdump foo.ctf` on a raw non-ELF file takes the branch at `:1000` and
+never enters that block. A stripped object is the second. `read_data:293`
+then tests `cd_symdata` against NULL on garbage and, if the slot is
+non-zero, hands it to `gelf_getsym()` and dereferences `cd_strdata->d_buf`,
+looping to a garbage `cd_nsyms`. The default flag set is `F_ALLMSK`, so
+bare `ctfdump` reaches it. Now `ctf_data_t cd = { 0 };`.
+
+**`elf_getdata()` returning non-NULL is not `d_buf != NULL`.**
+`contrib/elftoolchain/libelf/elf_data.c:269` is
+
+```c
+	d->d_data.d_buf = (sh_type == SHT_NOBITS || sh_size == 0) ? NULL : ...
+```
+
+so a `.SUNW_ctf` section declared `SHT_NOBITS` with a large `sh_size` gives
+a **NULL buffer with a large length**. ctfdump's `:1018` size test passes
+and `:1024` dereferences it; ctfconvert hands it to `ctf_load`, which
+passes its own `bufsz >= sizeof (ctf_header_t)` test and dereferences
+`h->cth_magic`. Both call sites now test `d_buf`.
+
+**`count_archive` counted the failure and then dereferenced the NULL it
+had just reported:**
+
+```c
+	if ((arh = elf_getarhdr(melf)) == NULL) {
+		warning("Can't process input archive %s\n", file);
+		err++;
+	}
+
+	if (*arh->ar_name != '/')
+```
+
+`warning()` **returns** — `util.c:192` calls `terminate()` only at
+`debug_level >= 3` and the default is 0 — and `elf_getarhdr()` genuinely
+returns NULL for a malformed member header (`libelf_ar.c:133`, `:138`,
+`:203`), so an `.a` with a non-numeric `ar_uid` crashes ctfmerge.
+`read_archive`, 120 lines up, gets the identical call right with
+`elfterminate`.
+
+### Three recorded and not fixed
+
+Each is a **bounds model** rather than a missing check, and writing a
+number into one of them without deriving it would be guessing:
+
+- **`ctf_parse` (ctfconvert)** is never given the buffer length at all,
+  and `xstrdup()`s from two attacker-chosen 32-bit header fields.
+- **`ctf_func_args`** reads an unbounded `vlen` out of the CTF buffer,
+  bounded in practice only because its one caller passes `argc = 32`
+  against a 32-element array.
+- **ctfdump's `ref_to_str`** returns a string it has not proved is
+  NUL-terminated inside the section.
+
+All three want the same thing libctf's reader has never had: the section
+length carried alongside the buffer, so a bound can be checked rather
+than assumed. That is a change to the reader's shape, not a line, and it
+is on the list rather than in this commit.
