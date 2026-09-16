@@ -623,6 +623,15 @@ nfsrv_buildposixacl(struct nfsrv_descript *nd, NFSACL_T *aclp,
 		case ACL_GROUP_OBJ:
 		case ACL_OTHER:
 		case ACL_MASK:
+			/*
+			 * PBSD: name too.  These four tags carry no name,
+			 * and nfsrv_buildposixace() reads the pointer only
+			 * under `namelen > 0' -- but it is still passed an
+			 * indeterminate pointer value on every one of these
+			 * four paths, which is undefined before the callee
+			 * gets to decide not to read it.
+			 */
+			name = NULL;
 			namelen = 0;
 			break;
 		case ACL_USER:

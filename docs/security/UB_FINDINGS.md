@@ -30001,3 +30001,133 @@ allocated.
   `bhnd_nvram_val_copy()` calls `bhnd_nvram_val_new()`, whose own error
   path is `bhnd_nvram_val_release(*value)` with the comment *"Will also
   free() the value allocation"*.
+
+## `core.CallAndMessage`, the unread 83: an OPAL message that reboots on a stack word
+
+Run 33 reports 600 `core.CallAndMessage` findings — "*Nth function call
+argument is an uninitialized value*" — 300 after deduplicating by
+`file:line:function:message`, in 149 files.  83 of those, in 55 files,
+are in files this document had not named.  Re-run through
+`explain.py`, 81 distinct `file:line:column` warnings, grouped by where
+the uninitialised value was declared:
+
+| shape | count |
+|---|---|
+| a local the same function never assigns on that path | 12 |
+| a local, reached across one or more calls | 34 |
+| a structure field an extern was to fill | 7 |
+| other | 28 |
+
+The **12** are the ones worth a person's time, and three of them were
+defects.
+
+### `opal_handle_shutdown_message()` reboots on whatever the frame held
+
+`sys/powerpc/powernv/opal_dev.c:370`:
+
+```c
+	int howto;
+
+	switch (be64toh(msg->params[0])) {
+	case OPAL_SOFT_OFF:
+		howto = RB_POWEROFF;
+		break;
+	case OPAL_SOFT_REBOOT:
+		howto = RB_REROOT;
+		break;
+	}
+	shutdown_nice(howto);
+```
+
+**No `default`.**  A shutdown message carrying anything else in
+`params[0]` reaches `shutdown_nice()` with a stack word for its reboot
+flags — any combination of `RB_HALT`, `RB_DUMP`, `RB_POWERCYCLE`,
+`RB_NOSYNC` and the rest, chosen by whatever the frame happened to
+hold.  `params[0]` comes from firmware, so the only safe answer to a
+code this kernel does not know is to do nothing: a `default` that
+prints the type and returns.
+
+### `nfsrv_buildacl()` hands `nfsrv_buildposixace()` an indeterminate pointer
+
+`sys/fs/nfs/nfs_commonacl.c:645`.  Four of the six tags carry no name:
+
+```c
+		case ACL_USER_OBJ:
+		case ACL_GROUP_OBJ:
+		case ACL_OTHER:
+		case ACL_MASK:
+			namelen = 0;
+			break;
+```
+
+`name` is a `u_char *` declared with no initialiser, and the two tags
+that *do* have a name (`ACL_USER`, `ACL_GROUP`) set it.  The call below
+the switch passes both:
+
+```c
+		retlen += nfsrv_buildposixace(nd, name, namelen,
+		    &aclp->acl_entry[i]);
+```
+
+The callee reads the pointer only under `if (namelen > 0)`, so nothing
+is copied out and there is no information leak — but the indeterminate
+pointer is passed on all four paths, which is undefined before the
+callee gets to decide not to read it.  `name = NULL;` beside
+`namelen = 0;`.
+
+### `_sem_open()`'s `mode`, where `value` beside it was already initialised
+
+`lib/libc/gen/sem_new.c:179` and `:211`.  Both `mode` and `value` are
+read from the varargs only under `O_CREAT`:
+
+```c
+	int errsave, fd, len, mode, value;
+
+	ni = NULL;
+	sem = NULL;
+	fd = -1;
+	value = 0;
+	...
+	if ((flags & O_CREAT) != 0) {
+		va_start(ap, flags);
+		mode = va_arg(ap, int);
+		value = va_arg(ap, int);
+		va_end(ap);
+	}
+```
+
+`value` is used at `:217` under its own `flags & O_CREAT`, and it is
+initialised.  `mode` is the third argument of **both** `_open()` calls,
+on every path, and it is not.  `open(2)` ignores it without `O_CREAT`,
+so the value does not matter; reading the indeterminate one does.  The
+asymmetry is the evidence: someone initialised the one that did not
+need it.
+
+### The other nine of the twelve
+
+* **Two chains on the same predicate, three times.**
+  `sys/netpfil/ipfw/ip_fw_pfil.c:205` and `:213`: `len` and `psa` are
+  set under `args.flags & (IPFW_ARGS_NH4 | IPFW_ARGS_NH4PTR)` and
+  `... NH6 | NH6PTR`, and a third test on the same word,
+  `(args.flags & (all four)) == 0`, `break`s before them — the analyser
+  evaluates all three independently and finds a combination the bitmask
+  cannot produce.  `sys/amd64/vmm/io/vhpet.c:536` needs two steps:
+  `nowptr = vhpet_counter_enabled(vhpet) ? &now : NULL` runs before the
+  config write, and the `else` that uses `now` runs after it under
+  `(oldval ^ vhpet->config) & HPET_CNF_ENABLE` — bit changed *and* now
+  disabled means it was enabled, so `now` was written.
+  `usr.bin/mail/quit.c:244` and `:282` call `value("append")` twice,
+  once as `== NULL` and once as `!= NULL`, and `obuf` is assigned in
+  whichever arm runs; caching the answer would make it obvious.
+* **An out-parameter an extern fills.** `sbin/ifconfig/ifipsec.c:58`,
+  where `reqid` is reached through `ifr.ifr_data` and the
+  `IPSECGREQID` ioctl; `sys/powerpc/mpc85xx/fsl_diu.c:378`, where
+  `vm_name` is set only when `OF_getprop_alloc()` found no EDID, and
+  read only when `edid_cells` is NULL — the same condition, twice.
+* **Safety that rests on a different variable.**
+  `usr.sbin/rtsold/rtsold.c:217`: the `rtsold` arm sets
+  `pidfilepath = NULL` and the `rtsol` arm does not, but the `rtsol`
+  arm sets `fflag = 1`, and `pidfile_open(pidfilepath, ...)` is under
+  `if (!fflag)`.  `fflag` is never cleared anywhere in the program, so
+  this holds — on an invariant three hundred lines away from the
+  declaration it protects.

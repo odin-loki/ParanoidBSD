@@ -148,6 +148,15 @@ _sem_open(const char *name, int flags, ...)
 	ni = NULL;
 	sem = NULL;
 	fd = -1;
+	/*
+	 * PBSD: mode belongs beside value.  Both are read from the
+	 * varargs only under O_CREAT, and both are used outside that
+	 * test -- value at :217 under its own `flags & O_CREAT', but
+	 * mode as the third argument of both _open() calls, on every
+	 * path.  open(2) ignores it without O_CREAT, so the value
+	 * does not matter; reading the indeterminate one does.
+	 */
+	mode = 0;
 	value = 0;
 
 	if (name[0] != '/') {

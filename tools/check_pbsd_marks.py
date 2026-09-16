@@ -5645,6 +5645,30 @@ FIXES = {
         "writes ucp->uc_mcontext.mc_len to invalidate the context",
     ),
 
+    "hbsd/src/lib/libc/gen/sem_new.c": (
+        "mode = 0;\n\tvalue = 0;",
+        "fd = -1;\n\tvalue = 0;",
+        "_sem_open: mode is read from the varargs only under O_CREAT "
+        "and passed to both _open() calls on every path, where value "
+        "beside it was already initialised",
+    ),
+
+    "hbsd/src/sys/powerpc/powernv/opal_dev.c": (
+        "unknown shutdown message type",
+        "howto = RB_REROOT;\n\t\tbreak;\n\t}\n\tshutdown_nice(howto);",
+        "opal_handle_shutdown_message: the switch had no default, so a "
+        "message type this kernel does not know reached "
+        "shutdown_nice() with a stack word for its reboot flags",
+    ),
+
+    "hbsd/src/sys/fs/nfs/nfs_commonacl.c": (
+        "name = NULL;\n\t\t\tnamelen = 0;",
+        "case ACL_MASK:\n\t\t\tnamelen = 0;",
+        "nfsrv_buildacl: the four tags that carry no name set namelen "
+        "but not name, and passed an indeterminate pointer to "
+        "nfsrv_buildposixace()",
+    ),
+
     "hbsd/src/sys/netpfil/ipfilter/netinet/ip_htable.c": (
         ("KFREE(iph);\n\t\tIPFERROR(3002", 2),
         "ipf_htable_size_max)) {\n\t\tIPFERROR(30027);",

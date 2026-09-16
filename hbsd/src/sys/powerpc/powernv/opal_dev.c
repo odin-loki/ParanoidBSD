@@ -366,6 +366,21 @@ opal_handle_shutdown_message(void *unused, struct opal_msg *msg)
 	case OPAL_SOFT_REBOOT:
 		howto = RB_REROOT;
 		break;
+	default:
+		/*
+		 * PBSD: there was no default, and howto is a local
+		 * with no initialiser.  A shutdown message carrying
+		 * anything else in params[0] therefore reached
+		 * shutdown_nice() with a stack word for its reboot
+		 * flags -- any combination of RB_HALT, RB_DUMP,
+		 * RB_POWERCYCLE and the rest, chosen by whatever the
+		 * frame happened to hold.  params[0] comes from
+		 * firmware, so the only safe answer to a code this
+		 * kernel does not know is to do nothing.
+		 */
+		printf("%s: unknown shutdown message type %#lx\n",
+		    __func__, (u_long)be64toh(msg->params[0]));
+		return;
 	}
 	shutdown_nice(howto);
 }

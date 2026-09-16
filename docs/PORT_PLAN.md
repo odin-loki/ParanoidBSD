@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 641,155 | 9,057 |
+| 1 | `lib` | 2,827 | 641,164 | 9,057 |
 | 2 | `libexec` | 170 | 48,084 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,377 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,401 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,788** | **114,208** |
+| | **total** | **41,143** | **21,303,821** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -2344,7 +2344,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.135.14 `_libc_sem_trywait_compat()` · `TODO-FN`
   - [ ] 1.68.135.15 `_libc_sem_post_compat()` · `TODO-FN`
   - [ ] 1.68.135.16 `_libc_sem_getvalue_compat()` · `TODO-FN`
-- [ ] **1.68.136** `sem_new.c` · 471L · `TODO-PORT` · 18 fn
+- [ ] **1.68.136** `sem_new.c` · 480L · `TODO-PORT` · 18 fn
   - [ ] 1.68.136.1 `sem_prefork()` · `TODO-FN`
   - [ ] 1.68.136.2 `sem_postfork()` · `TODO-FN`
   - [ ] 1.68.136.3 `sem_child_postfork()` · `TODO-FN`
@@ -110626,7 +110626,7 @@ function; a file with two hundred of them is a project.
 ### 8.1145 `sys/fs/nfs`
 
 - [ ] **8.1145.1** `nfs.h` · 860L gen:1 · `TODO-HDR`
-- [ ] **8.1145.2** `nfs_commonacl.c` · 689L · `TODO-PORT` · 9 fn
+- [ ] **8.1145.2** `nfs_commonacl.c` · 698L · `TODO-PORT` · 9 fn
   - [ ] 8.1145.2.1 `nfsrv_dissectace()` · `TODO-FN`
   - [ ] 8.1145.2.2 `nfsrv_dissectposixace()` · `TODO-FN`
   - [ ] 8.1145.2.3 `nfsrv_acemasktoperm()` · `TODO-FN`
@@ -133619,7 +133619,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1253.5.3 `uart_opal_dbg_term()` · `TODO-FN`
   - [ ] 8.1253.5.4 `uart_opal_dbg_getc()` · `TODO-FN`
   - [ ] 8.1253.5.5 `uart_opal_dbg_putc()` · `TODO-FN`
-- [ ] **8.1253.6** `opal_dev.c` · 436L gen:8 · `TODO-MD` · 12 fn
+- [ ] **8.1253.6** `opal_dev.c` · 451L gen:8 · `TODO-MD` · 12 fn
   - [ ] 8.1253.6.1 `opal_heartbeat()` · `TODO-FN`
   - [ ] 8.1253.6.2 `opaldev_probe()` · `TODO-FN`
   - [ ] 8.1253.6.3 `opaldev_attach()` · `TODO-FN`
