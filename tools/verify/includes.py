@@ -4139,6 +4139,147 @@ def _reroot_installed(flag: str, arch: str) -> str:
     return f"-I{incs_shim(arch)}{m.group(1) or ''}"
 
 
+@functools.lru_cache(maxsize=None)
+def dtrace_shim() -> str:
+    """dt_grammar.h, generated the way cddl/lib/libdtrace/Makefile does.
+
+    dt_grammar.y is in SRCS; the build runs yacc over it and five of
+    libdtrace's core translation units -- dt_cc.c, dt_cg.c, dt_parser.c,
+    dt_sugar.c, dt_xlator.c -- `#include <dt_grammar.h>' and will not
+    compile without it. That is the dtrace compiler's parser and code
+    generator: the part of libdtrace worth reading most, unreadable
+    until this exists.
+
+    Same rule as iface_shim() and gen_headers(): run the tree's own
+    generator on the tree's own input rather than stub the header, so
+    the token numbers are the ones the parser really uses.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_dtrace_"))
+    _own_tempdir(d)
+    y = (SRC / "cddl/contrib/opensolaris/lib/libdtrace/common/dt_grammar.y")
+    if not y.is_file():
+        return d.as_posix()
+    try:
+        subprocess.run(["yacc", "-d", "-o", "dt_grammar.c", str(y)],
+                       cwd=d, check=True, capture_output=True, timeout=120)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return d.as_posix()
+
+
+def cddl_flags(rel: str, arch: str) -> list[str]:
+    """cddl/lib/libdtrace/Makefile's own -I set, and cddl/Makefile.inc's -D.
+
+    Read off the makefiles rather than guessed:
+
+        OPENSOLARIS_USR_DISTDIR = cddl/contrib/opensolaris
+        OPENSOLARIS_SYS_DISTDIR = sys/cddl/contrib/opensolaris
+        CFLAGS+= -DNEED_SOLARIS_BOOLEAN -DHAVE_STRLCAT -DHAVE_STRLCPY
+        CFLAGS+= -I${.OBJDIR} -I${.CURDIR} \
+                 -I${SRCTOP}/sys/cddl/dev/dtrace/${MACHINE_ARCH} \
+                 -I${SRCTOP}/sys/cddl/compat/opensolaris \
+                 -I${SRCTOP}/cddl/compat/opensolaris/include \
+                 -I${OPENSOLARIS_USR_DISTDIR}/head \
+                 -I${OPENSOLARIS_USR_DISTDIR}/lib/libctf/common \
+                 -I${OPENSOLARIS_USR_DISTDIR}/lib/libdtrace/common \
+                 -I${OPENSOLARIS_SYS_DISTDIR}/uts/common
+
+    ${.OBJDIR} is where yacc's dt_grammar.h lands, which is what
+    dtrace_shim() stands in for. The libdtrace/common entry is why the
+    four per-architecture dt_isadep.c compile at all: each lives in
+    lib/libdtrace/<arch>/ and includes <dt_impl.h> from common.
+    """
+    s = str(SRC)
+    usr = f"{s}/cddl/contrib/opensolaris"
+    sysd = f"{s}/sys/cddl/contrib/opensolaris"
+    zfs = f"{s}/sys/contrib/openzfs"
+    # ORDER MATTERS, and the Makefile's order is the one to copy:
+    #
+    #     CFLAGS+= -I${.OBJDIR} -I${.CURDIR} \
+    #              -I${SRCTOP}/sys/cddl/dev/dtrace/${MACHINE_ARCH} ...
+    #
+    # .OBJDIR and .CURDIR come FIRST. cddl/compat/opensolaris/lib/libumem
+    # is what proves it: umem.c says `#include <umem.h>' with angle
+    # brackets and defines `struct umem_cache' itself, while openzfs
+    # ships a libspl/include/umem.h that declares the same struct opaque.
+    # With the OpenSolaris and ZFS directories ahead of the source's own,
+    # umem.c gets openzfs's header and fails on `no member named
+    # destructor' -- an error invented entirely by the flag order.
+    f = [
+        "-DNEED_SOLARIS_BOOLEAN", "-DHAVE_STRLCAT", "-DHAVE_STRLCPY",
+        "-DHAVE_ISSETUGID", "-DIN_BASE",
+        f"-I{dtrace_shim()}",
+        f"-I{(SRC / rel).parent}",
+        # cddl/compat/opensolaris/include holds #include_next wrappers --
+        # its fcntl.h is `#include_next <fcntl.h>' and then
+        # `#define open64(...) open(__VA_ARGS__)'. A wrapper only works
+        # from a directory that precedes the real header's, which is why
+        # this sits here rather than with the rest of the OpenSolaris
+        # block: dtrace(1) calls open64() and nothing else defines it.
+        f"-I{s}/cddl/compat/opensolaris/include",
+        f"-I{usr}/head",
+        f"-I{usr}/lib/libctf/common",
+        f"-I{usr}/lib/libdtrace/common",
+        f"-I{usr}/lib/libuutil/common",
+        f"-I{usr}/lib/libnvpair",
+        f"-I{usr}/lib/libcmdutils",
+        f"-I{usr}/cmd/stat/common",
+        f"-I{sysd}/uts/common",
+        f"-I{s}/sys/cddl/compat/opensolaris",
+        f"-I{s}/cddl/compat/opensolaris/include",
+        f"-I{s}/sys/cddl/dev/dtrace/{SYS_ARCH.get(arch, arch)}",
+        f"-I{s}/sys/cddl/dev/kinst",
+        f"-I{zfs}/include",
+        f"-I{zfs}/lib/libspl/include",
+        f"-I{zfs}/lib/libspl/include/os/freebsd",
+        f"-I{s}/sys",
+    ]
+    # x86 gets the disassembler's headers and -DDIS_MEM; aarch64 its own
+    # uts directory. Both are straight out of the Makefile's .if blocks.
+    if arch in ("amd64", "i386"):
+        f += [f"-I{s}/sys/cddl/dev/dtrace/x86", f"-I{sysd}/uts/intel",
+              "-DDIS_MEM"]
+    elif arch == "aarch64":
+        f.append(f"-I{sysd}/uts/aarch64")
+    # -I${.CURDIR} is the MAKEFILE's directory, not the source's, and
+    # under cddl those are rarely the same: cddl/lib/libdtrace/Makefile
+    # reaches into cddl/contrib/opensolaris/lib/libdtrace/common through
+    # .PATH. libproc_compat.h lives beside the Makefile, and the four
+    # per-architecture dt_isadep.c include it -- so the source's own
+    # directory alone leaves all four not compiling.
+    md = _component_dir(rel)
+    if md is not None:
+        f.insert(1, f"-I{md}")
+    # ...and _component_dir() cannot find it for the per-architecture
+    # sources. It asks userland_names.builders("amd64"), and cddl's
+    # walk descends into ONE architecture, so
+    # lib/libdtrace/aarch64/dt_isadep.c is named by nothing on an amd64
+    # walk and lands on cddl/ itself. One Makefile owns all four of
+    # them whichever architecture is configured, so name it.
+    if "/lib/libdtrace/" in rel:
+        f.append(f"-I{s}/cddl/lib/libdtrace")
+        # ...and the per-architecture source wants ITS OWN architecture's
+        # sys/fasttrap_isa.h, not the sweep's. The directory name under
+        # lib/libdtrace IS the architecture, and sys/cddl/dev/dtrace has
+        # a directory of the same name for each -- aarch64, arm, i386,
+        # powerpc, riscv. Without this, three of the four dt_isadep.c
+        # sit in the ERROR inventory for no better reason than that the
+        # sweep runs amd64.
+        own = rel.split("/lib/libdtrace/")[1].split("/")[0]
+        if (SRC / "sys/cddl/dev/dtrace" / own).is_dir():
+            f.append(f"-I{s}/sys/cddl/dev/dtrace/{own}")
+        # sys/fasttrap_isa.h is the one that matters, and it lives under
+        # the OpenSolaris uts tree rather than sys/cddl/dev -- which is
+        # the directory the Makefile's own .if block names for aarch64
+        # (-I${OPENSOLARIS_SYS_DISTDIR}/uts/aarch64), generalised to
+        # whichever architecture the source belongs to.
+        if (SRC / "sys/cddl/contrib/opensolaris/uts" / own).is_dir():
+            f.append(f"-I{sysd}/uts/{own}")
+    f.append(f"-I{(SRC / rel).parent}")
+    return f
+
+
+
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
                   opts: tuple[str, ...] | None = None,
                   cpu: tuple[str, ...] | None = None) -> list[str]:
@@ -4225,7 +4366,31 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     # See llvm_shim().
     flags.extend(llvm_shim(rel))
 
-    flags.append(f"-I{machine_shim(arch)}")
+    # -isystem, not -I. machine_shim() is this sweep's stand-in for the
+    # INSTALLED header tree -- machine/, x86/, the LHDRS out of sys/sys,
+    # float.h, math.h -- and the real build reaches those through
+    # ${WORLDTMP}/usr/include, which every -I on the command line is
+    # searched BEFORE. As a plain -I it went first instead, so any
+    # header a component wraps was shadowed by the installed copy.
+    #
+    # cddl is where that showed: cddl/compat/opensolaris/include/fcntl.h
+    # is an #include_next wrapper that defines open64() and openat64(),
+    # and dtrace.c:1470 calls open64(). The wrapper was on the path, at
+    # flag 15 against the shim's 6, and never reached -- `call to
+    # undeclared function open64', in the one translation unit that IS
+    # dtrace(1). -isystem puts the shim where the build puts it: after
+    # every -I, which is also what makes #include_next resolve the way
+    # the wrapper was written to expect.
+    #
+    # The ordering is global, so it was measured before it was taken.
+    # Over 4,894 translation units in sys/kern, sys/netinet,
+    # sys/dev/usb, lib, bin, sbin, usr.bin, usr.sbin, stand, secure,
+    # kerberos5 and share: 4,727 OK and 167 ERROR both before and
+    # after, and NOT ONE FILE changed status in either direction. The
+    # -I ordering was doing nothing anywhere the tree does not wrap an
+    # installed header, and cddl is the only place in this tree that
+    # does. dtrace.c went ERROR -> OK and nothing else moved.
+    flags.append(f"-isystem{machine_shim(arch)}")
 
     # The kernel is a different header universe from userland: no
     # include/, -D_KERNEL, and <sys/foo.h> resolving inside sys/. Mixing
@@ -4478,6 +4643,30 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     if rel.startswith("stand/"):
         flags.extend(stand_flags(rel, arch))
         return _dedupe_defines(flags)
+
+    # cddl/ was excluded from every shard as "third-party source PBSD
+    # does not maintain", which is a decision that has been reversed: it
+    # ships dtrace(1), libdtrace, libctf and the ZFS userland tools, and
+    # it is maintained here. Its Makefiles want a different -I set from
+    # the rest of userland -- an OpenSolaris compatibility layer, a
+    # generated parser header, and a per-architecture dtrace directory.
+    #
+    # NOT an early return, unlike stand/ above. stand is -nostdinc with
+    # its own libc; cddl is ordinary userland that additionally wants
+    # the OpenSolaris layer, so its flags are ADDED to the userland set
+    # rather than replacing it. Returning here instead took the tree
+    # from 30 translation units that would not compile to 129.
+    #
+    # ...and not for cddl/contrib/opensolaris/tests, whose three files
+    # are built by tests/oclo/Makefile through a .PATH, so the cddl
+    # Makefiles never see them and nor do their flags. It is not
+    # cosmetic: the OpenSolaris layer puts libspl's <sys/stdtypes.h> on
+    # the path, whose `enum boolean_t' collides with the `typedef int
+    # boolean_t' in sys/vm/vm.h that <sys/user.h> drags in, and
+    # ocloexec_verify.c does not compile at all.
+    if rel.startswith("cddl/") and not rel.startswith(
+            "cddl/contrib/opensolaris/tests/"):
+        flags.extend(cddl_flags(rel, arch))
 
     # Any header this directory's Makefile GENERATES. bin/sh's nodes.h,
     # syntax.h and token.h do not exist in a source tree, the same way
