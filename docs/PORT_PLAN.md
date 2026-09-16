@@ -52,13 +52,13 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
 | 1 | `lib` | 2,827 | 641,204 | 9,057 |
-| 2 | `libexec` | 170 | 48,084 | 623 |
+| 2 | `libexec` | 170 | 48,092 | 623 |
 | 3 | `bin` | 162 | 58,123 | 1,063 |
 | 4 | `sbin` | 533 | 228,708 | 3,567 |
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,499,401 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,303,861** | **114,208** |
+| | **total** | **41,143** | **21,303,878** | **114,208** |
 
 | tag | files |
 |---|---:|
@@ -14494,7 +14494,7 @@ function; a file with two hundred of them is a project.
   - [ ] 2.43.1.1 `announce()` · `TODO-FN`
   - [ ] 2.43.1.2 `print_mesg()` · `TODO-FN`
 - [ ] **2.43.2** `extern.h` · 44L · `TODO-HDR`
-- [ ] **2.43.3** `print.c` · 84L · `TODO-PORT` · 2 fn
+- [ ] **2.43.3** `print.c` · 92L · `TODO-PORT` · 2 fn
   - [ ] 2.43.3.1 `print_request()` · `TODO-FN`
   - [ ] 2.43.3.2 `print_response()` · `TODO-FN`
 - [ ] **2.43.4** `process.c` · 216L · `TODO-PORT` · 3 fn
@@ -113694,7 +113694,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1184.18.9 `geode_attach()` · `TODO-FN`
 - [ ] **8.1184.19** `in_cksum_machdep.c` · 295L asm · `TODO-MD` · 1 fn
   - [ ] 8.1184.19.1 `in_cksum_skip()` · `TODO-FN`
-- [ ] **8.1184.20** `initcpu.c` · 1,000L gen:2 · `TODO-MD` · 21 fn
+- [ ] **8.1184.20** `initcpu.c` · 1,009L gen:2 · `TODO-MD` · 21 fn
   - [ ] 8.1184.20.1 `init_bluelightning()` · `TODO-FN`
   - [ ] 8.1184.20.2 `init_486dlc()` · `TODO-FN`
   - [ ] 8.1184.20.3 `init_cy486dx()` · `TODO-FN`

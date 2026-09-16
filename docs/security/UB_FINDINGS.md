@@ -30615,3 +30615,120 @@ The bug is the evaluation, not the bound.
   `rstrm->out_finger - rstrm->out_base`, `lastaddr - newaddr` — are the
   shape named for `lib/libc` above, in a function reached through a
   pointer rather than by name.
+
+## The pointer/memory bucket's 1,781, split: `regs[0]` and three `>` that want `>=`
+
+`bucket()` carried its own admission about the largest bucket:
+
+> An array bound is memory safety and does not belong in a bucket
+> labelled "a missing precondition"; it is only here because
+> `PTR_WORDS` has to contain `"array "` and `"object"` for CBMC's
+> spelling of the pointer checks.
+
+Splitting run 33's 1,781 on what actually failed:
+
+| | records |
+|---|---:|
+| a pointer-shaped bound **and** a null (the null explains the subscript) | 986 |
+| a pointer-shaped bound only | 542 |
+| `region readable`/`writeable`, leaks | 206 |
+| **an index, on an object CBMC has** | **36** |
+| null/invalid only | 11 |
+
+The first guess — that "bounds" meant memory safety — was wrong, and the
+data said so.  **An unconstrained pointer is modelled as pointing at a
+zero-size object**, so any arithmetic on it is `pointer outside object
+bounds`: `strcat`'s `s + len`, `fts_open`'s `argv + 1l`, `__bt_defcmp`'s
+`p1 + 1l`.  That is the same missing precondition as `pointer NULL`, in
+a different spelling, and 542 + 986 of the bucket are it.
+
+The **36** are different: CBMC names the array
+(`array 'linux_errtbl' lower bound`, `array.linp dynamic object upper
+bound`), which it only does for an object it has, with a subscript it
+does not like.  Eight of the 36 are `__CPROVER_pipes[fildes].data[...]`
+— CBMC's own model of `pipe(2)`, not the tree's array — and 11 carry a
+pointer-shaped bound as well, so **17** reach the new bucket.  Two of
+the 17 are defects.
+
+### `init_transmeta()` declares `u_int regs[0]` and CPUID writes four
+
+`sys/i386/i386/initcpu.c:623`, `array 'regs' upper bound in regs[3]` —
+a **constant** subscript failing, which is what made it worth opening:
+
+```c
+static void
+init_transmeta(void)
+{
+	u_int regs[0];
+
+	/* Expose all hidden features. */
+	wrmsr(0x80860004, rdmsr(0x80860004) | ~0UL);
+	do_cpuid(1, regs);
+	cpu_feature = regs[3];
+}
+```
+
+`do_cpuid()` in `sys/i386/include/cpufunc.h` is
+
+```c
+	__asm __volatile("cpuid"
+	    : "=a" (p[0]), "=b" (p[1]), "=c" (p[2]), "=d" (p[3])
+	    :  "0" (ax));
+```
+
+— four `u_int` outputs, sixteen bytes, into a **zero-length array**.
+Every Transmeta CPU smashed sixteen bytes of that frame at boot and
+then read the fourth word back out of whatever now occupied it, and
+`cpu_feature` — the word the whole kernel tests for CPU capabilities —
+is what it assigned.  The five other `do_cpuid()` call sites in the
+same file all declare `u_int regs[4]`.
+
+### `talkd(8)` reads one past a table of four, on a byte off the wire
+
+`libexec/talkd/print.c:61` and `:76`, `array 'types' upper bound`:
+
+```c
+static	const char *types[] =
+    { "leave_invite", "look_up", "delete", "announce" };
+#define	NTYPES	(sizeof (types) / sizeof (types[0]))
+...
+	if (mp->type > NTYPES) {
+		(void)snprintf(tbuf, sizeof(tbuf), "type %d", mp->type);
+		tp = tbuf;
+	} else
+		tp = types[mp->type];
+```
+
+`NTYPES` is 4 and the last valid subscript is 3, so `> NTYPES` lets **4**
+through and `types[4]` is one pointer past the end.  `mp->type` is an
+`unsigned char` in the `CTL_MSG` that `talkd(8)` reads from a UDP
+socket, so a remote sender picks the subscript, and the `const char *`
+that comes back — whatever the next object in `.data` holds — goes
+straight to `syslog(3)` as a `%s`.
+
+`print_response()` has the same test twice more: on `types[rp->type]`
+and on `answers[rp->answer]`, where `NANSWERS` is 9.  Three sites, one
+character each.
+
+`tools/verify/probes/talkd_print_types.c`: **OLD `1 of 1 failed,
+VERIFICATION FAILED`; NEW `0 of 1, VERIFICATION SUCCESSFUL`.**
+
+### The other 15
+
+* **`sys/compat/linux/linux_errno.c:17`**, `linux_errtbl[error]`.  The
+  bound is a `KASSERT(error >= 0 && error <= ELAST)`, which is the
+  stated contract and compiles out without `INVARIANTS`.  Every in-tree
+  caller passes a real errno.
+* **`sys/dev/evdev/evdev_utils.c:223`**, `evdev_hid2key(int scancode)`
+  indexing `evdev_usb_scancodes[256]` with no check at all.  Both
+  in-tree callers are safe and for different reasons: `ukbd.c:453` and
+  `hkbd.c:402` pass `KEY_INDEX(key)`, which is `((c) & 0xFF)`, and the
+  support loops are `for (i = 0x00; i <= 0xFF; i++)`.  The function is
+  exported in `evdev.h` with no bound of its own.
+* **`libexec/tftpd/tftp-options.c:81` and `:104`**, `options[opt]` with
+  `opt` an `enum opt_enum`; every caller passes a named constant.
+* **The hwpmc and cmn600 unit numbers**, `db_put_value`'s `data[i]`,
+  `arm64_reg`'s `w_reg[num]`, `readpassphrase`'s `signo[s]` (a signal
+  number, so never below 1), `ns_parse`'s `msg->_sections[sect]` and
+  `__libc_interposing_slot`'s `interposno` — all a parameter whose range
+  the caller establishes.

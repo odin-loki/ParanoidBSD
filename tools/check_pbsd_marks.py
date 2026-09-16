@@ -5669,6 +5669,20 @@ FIXES = {
         "__kernel_rem_pio2() an nx of 0",
     ),
 
+    "hbsd/src/sys/i386/i386/initcpu.c": (
+        "u_int regs[4];\n\n\t/* Expose all hidden features. */",
+        "u_int regs[0];",
+        "init_transmeta: do_cpuid() writes p[0] through p[3] and the "
+        "array declared to receive them had zero elements",
+    ),
+
+    "hbsd/src/libexec/talkd/print.c": (
+        ("if (mp->type >= NTYPES)", 1),
+        "if (mp->type > NTYPES) {",
+        "print_request and print_response: three bound tests used > "
+        "where the array wants >=, on a type byte off the UDP packet",
+    ),
+
     "hbsd/src/lib/libc/stdio/fmemopen.c": (
         "if (offset > 0 || ck->len + offset > ck->len) {",
         "if (offset > 0 || -offset > ck->len) {",

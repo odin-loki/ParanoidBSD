@@ -54,7 +54,15 @@ print_request(const char *cp, CTL_MSG *mp)
 	const char *tp;
 	char tbuf[80];
 
-	if (mp->type > NTYPES) {
+	/*
+	 * PBSD: >=.  types[] has NTYPES entries, so NTYPES is one
+	 * past the last, and mp->type is an unsigned char straight
+	 * off the UDP packet -- a remote sender picking exactly
+	 * NTYPES read the pointer after the array and syslog(3)
+	 * printed whatever .data holds there as %s.  The same
+	 * off-by-one is in print_response() twice below.
+	 */
+	if (mp->type >= NTYPES) {
 		(void)snprintf(tbuf, sizeof(tbuf), "type %d", mp->type);
 		tp = tbuf;
 	} else
@@ -69,12 +77,12 @@ print_response(const char *cp, CTL_RESPONSE *rp)
 	const char *tp, *ap;
 	char tbuf[80], abuf[80];
 
-	if (rp->type > NTYPES) {
+	if (rp->type >= NTYPES) {
 		(void)snprintf(tbuf, sizeof(tbuf), "type %d", rp->type);
 		tp = tbuf;
 	} else
 		tp = types[rp->type];
-	if (rp->answer > NANSWERS) {
+	if (rp->answer >= NANSWERS) {
 		(void)snprintf(abuf, sizeof(abuf), "answer %d", rp->answer);
 		ap = abuf;
 	} else

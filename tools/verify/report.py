@@ -181,6 +181,63 @@ def addr_taken(rec: dict) -> bool:
     _ADDR_CACHE[key] = ans
     return ans
 
+# CBMC's own model of pipe(2). `__CPROVER_pipes[fildes].data[...]' is
+# the library's array, not the tree's, and a descriptor it will not
+# constrain is the same missing precondition as an unconstrained
+# pointer -- 8 of the 36 index-shaped records in run 33 are this.
+_CPROVER_ARRAY = re.compile(r"__CPROVER_\w+")
+
+# CBMC names the array in an index check and does not in a pointer one:
+#
+#   array 'linux_errtbl' lower bound in linux_errtbl[(signed long int)error]
+#   array.linp dynamic object upper bound in h->linp[(signed long int)nxt]
+#
+# against
+#
+#   dereference failure: pointer outside object bounds in s + len
+#   pointer arithmetic: pointer outside object bounds in argv + 1l
+#
+# which is the distinction that matters. An unconstrained POINTER is
+# modelled as pointing at a zero-size object, so any arithmetic on it
+# is "outside object bounds" -- the same missing precondition as NULL,
+# in a different spelling. An INDEX check fires on an object CBMC
+# does have, with a subscript it does not.
+_INDEX_BOUND = re.compile(r"array[ .'\w]* (?:upper|lower) bound")
+_PTR_BOUND = "outside object bounds"
+_NULLISH = ("pointer NULL", "pointer invalid", "deallocated dynamic object",
+            "dead object", "invalid integer address", "pointer uninitialized")
+
+
+def index_bound(rec: dict) -> bool:
+    """Is an ARRAY SUBSCRIPT, not a pointer, what failed?
+
+    Run 33 put 1,781 records in "pointer/memory (a missing precondition,
+    not a bug)" and bucket()'s own comment admitted an array bound does
+    not belong there. Splitting them:
+
+        986  a pointer-shaped bound AND a null (the null explains it)
+        542  a pointer-shaped bound only -- the same precondition
+        206  region readable/writeable, leaks
+         36  AN INDEX, on an object CBMC has
+         11  null/invalid only
+
+    Only the 36 are a different question, and reading them found
+    libexec/talkd/print.c's three `> NTYPES' where the array wants
+    `>=' -- a remote byte reaching one past a table of four.
+
+    A record that also carries a null or a pointer-shaped bound is not
+    one of them: there the unconstrained pointer explains the subscript
+    too, and the answer is the precondition.
+    """
+    descs = [d.get("desc", "") for d in rec.get("failures", [])]
+    if any(w in d for d in descs for w in _NULLISH):
+        return False
+    if any(_PTR_BOUND in d for d in descs):
+        return False
+    return any(_INDEX_BOUND.search(d) and not _CPROVER_ARRAY.search(d)
+               for d in descs)
+
+
 def bucket(rec: dict) -> str:
     k = kinds(rec)
     if not k:
@@ -205,6 +262,8 @@ def bucket(rec: dict) -> str:
     # of the pointer checks.
     k = {x for x in k if not any(w in x for w in PTR_WORDS)}
     if not k:
+        if index_bound(rec):
+            return "an INDEX out of its array's range - READ THESE"
         return "pointer/memory (a missing precondition, not a bug)"
     # Strip the IEEE-defined case BEFORE deciding, rather than only
     # recognising a record that has nothing else. lib/msun/ld128's cospil,

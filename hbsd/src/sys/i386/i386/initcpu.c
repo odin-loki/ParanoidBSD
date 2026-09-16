@@ -615,7 +615,16 @@ init_via(void)
 static void
 init_transmeta(void)
 {
-	u_int regs[0];
+	/*
+	 * PBSD: regs[4], not regs[0].  do_cpuid() writes p[0]
+	 * through p[3] -- sixteen bytes -- and this declared a
+	 * zero-length array to receive them, so every Transmeta CPU
+	 * smashed sixteen bytes of this frame at boot and then read
+	 * the fourth word back out of whatever now occupied it.
+	 * The five other do_cpuid() call sites in this file all say
+	 * regs[4].
+	 */
+	u_int regs[4];
 
 	/* Expose all hidden features. */
 	wrmsr(0x80860004, rdmsr(0x80860004) | ~0UL);

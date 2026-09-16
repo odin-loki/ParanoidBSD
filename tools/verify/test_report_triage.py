@@ -207,6 +207,48 @@ check("an unreadable file falls back to deferred",
                         linkage="static", f="lib/libc/no/such/file.c")),
       "static (callers constrain the domain - deferred)")
 
+print("\nan index out of range is not a missing precondition")
+# bucket()'s own comment said an array bound does not belong in a bucket
+# labelled "a missing precondition"; it was there because PTR_WORDS has
+# to contain "array " and "object" for CBMC's pointer checks. Splitting
+# run 33's 1,781: 986 have a pointer-shaped bound AND a null, 542 a
+# pointer-shaped bound only, 206 region/leak, 11 null only -- and 36 an
+# INDEX. Reading those found talkd's three `> NTYPES'.
+check("an array subscript out of range is read, not deferred",
+      report.bucket(rec("print_request",
+                        "line 61 array 'types' upper bound in "
+                        "types[(signed long int)mp->type]",
+                        f="libexec/talkd/print.c")),
+      "an INDEX out of its array's range - READ THESE")
+# An unconstrained POINTER is modelled as pointing at a zero-size
+# object, so any arithmetic on it is "outside object bounds" -- the
+# same missing precondition as NULL, differently spelled.
+check("a pointer-shaped bound is still a precondition",
+      report.bucket(rec("strcat",
+                        "line 18 pointer arithmetic: pointer outside "
+                        "object bounds in s + (signed long int)len",
+                        f="lib/libc/aarch64/string/strcat.c")),
+      "pointer/memory (a missing precondition, not a bug)")
+# ...and a record carrying both: the null explains the subscript too.
+both = {"file": "x/y.c", "function": "f", "linkage": "exported",
+        "failures": [
+            {"name": "a",
+             "desc": "line 3 dereference failure: pointer NULL in p->q"},
+            {"name": "b",
+             "desc": "line 3 array 'tbl' upper bound in "
+                     "tbl[(signed long int)i]"}]}
+check("a null beside the subscript decides it",
+      report.bucket(both),
+      "pointer/memory (a missing precondition, not a bug)")
+# CBMC's own model of pipe(2) is not the tree's array.
+check("__CPROVER_pipes is the library's array, not the tree's",
+      report.bucket(rec("__sread",
+                        "line 74 array '__CPROVER_pipes'[].data upper "
+                        "bound in __CPROVER_pipes[(signed long int)"
+                        "fildes].data[(signed long int)i]",
+                        f="lib/libc/stdio/stdio.c")),
+      "pointer/memory (a missing precondition, not a bug)")
+
 print("\nthe table is actually being read")
 n = len(report.triaged())
 check("more than twenty entries parsed", n > 20, True)
