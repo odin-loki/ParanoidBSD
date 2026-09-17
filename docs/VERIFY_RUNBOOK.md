@@ -57,10 +57,39 @@ pkg install qt6-base qt6-declarative kf6-extra-cmake-modules cmake ninja
 ### Debian / Ubuntu
 
 ```sh
-apt install cbmc clang clang-tidy cppcheck coccinelle gcc python3
+apt install cbmc clang clang-tidy gcc python3
+apt install cppcheck coccinelle          # see the warning below
 # KDE C++ tier:
 apt install qt6-base-dev extra-cmake-modules cmake ninja-build
 ```
+
+> **If apt refuses cppcheck or coccinelle**, it is almost certainly a
+> broken `libz3-dev` pin, and **`apt --fix-broken install` would remove
+> `libz3-dev`, which `cbmc` needs.** Do not run it. This works instead:
+>
+> ```sh
+> cd /tmp
+> apt-get download cppcheck libtinyxml2-10
+> dpkg -i --force-depends ./libtinyxml2-10_*.deb ./cppcheck_*.deb
+>
+> apt-get download coccinelle libparmap-ocaml ocaml-findlib \
+>                  ocaml-base ocaml-base-nox libpcre-ocaml
+> dpkg -i --force-depends ./coccinelle_*.deb ./libparmap-ocaml_*.deb \
+>         ./ocaml-findlib_*.deb ./ocaml-base_*.deb \
+>         ./ocaml-base-nox_*.deb ./libpcre-ocaml_*.deb
+> ```
+>
+> `cppcheck` ends up "unconfigured" over `python3-pygments` and `spatch`
+> has unsatisfied OCaml library deps. Both binaries work; `spatch` is
+> native and does not need them at runtime.
+
+### The KDE tier needs newer Qt than Debian stable ships
+
+`kdecoration`, `kwayland` and `kwin` declare **`QT_MIN_VERSION 6.10.0`**
+and **`KF6_MIN_VERSION 6.22.0`**. If your distribution is older than
+that, the C++ tier will report every KDE translation unit as `ERROR` and
+tell you so — which is correct, and is not a bug to work around.
+FreeBSD ports is the better host for this half.
 
 ### The two that have no package
 
@@ -86,6 +115,19 @@ that as the single `GAP`. No driver for it exists in this tree yet.
 
 ---
 
+## 1a. The very first command, on a fresh clone
+
+`docs/port_plan.json` is **generated and gitignored** — the markdown is
+what is committed. Nothing works without it, so build it first:
+
+```sh
+python3 tools/port_plan.py          # ~1 minute, writes docs/port_plan.json
+```
+
+Every tool refuses with that exact instruction if you skip it. None of
+them degrades into a number: an empty ledger would make every coverage
+fraction read 1.00 and every time estimate read 0.00 h.
+
 ## 2. Profile first, on something small
 
 Never start a tree-wide run without a measured rate, because an estimate
@@ -97,16 +139,26 @@ python3 tools/verify/sweep_all.py \
     --out ~/pbsd-sweep --jobs $(nproc) --profile
 ```
 
-That is 54 translation units and writes `~/pbsd-sweep/rates.json`.
-Measured here at 8 jobs:
+That is 54 translation units and writes `~/pbsd-sweep/rates.json`,
+which **takes precedence over the reference profile shipped in
+`tools/verify/rates-reference.json`**. That reference exists so a first
+run gets a number instead of nothing; every line it produces is marked
+`*** SHIPPED REFERENCE, measured on another machine ***`, because an
+estimate from the wrong hardware with no provenance is worse than none.
+
+The reference, all eleven stages, 54 units at 8 jobs on a 4-core box:
 
 | stage | seconds per translation unit |
 |---|---:|
-| `classify` | 0.135 |
-| `cbmc` | 3.763 |
-| `fusebmc` | 0.500 |
-| `analyze` | 0.896 |
-| `universe` | 11.4 s **fixed**, not per unit |
+| `cbmc` | 2.411 |
+| `coccinelle` | 0.352 |
+| `analyze` | 0.291 |
+| `tidy` | 0.246 |
+| `fusebmc` | 0.224 |
+| `cppcheck` | 0.170 |
+| `classify` | 0.146 |
+| `warnings` | 0.107 |
+| `universe` | 11.9 s **fixed**, not per unit |
 
 Then ask what the real thing costs:
 
@@ -122,10 +174,10 @@ python3 tools/verify/sweep_all.py \
 
 | jobs | estimated total |
 |---:|---:|
-| 8 | 33.6 h |
-| 16 | 16.8 h |
-| 32 | 8.4 h |
-| 64 | 4.2 h |
+| 8 | 25.1 h |
+| 16 | 12.5 h |
+| 32 | 6.3 h |
+| 64 | 3.1 h |
 
 Three things about those numbers, all of which the tool prints too:
 
@@ -160,6 +212,36 @@ rather than from the top:
 ```sh
 python3 tools/verify/sweep_all.py ... --resume
 ```
+
+### The C and C++ halves take different scopes
+
+This trips people and the tool now says so rather than failing:
+
+- the **C** stages take paths relative to `hbsd/src` — `sys/kern`,
+  `lib/libc`, `usr.bin`;
+- the **C++** stages take those *and* repo-root-relative paths, which is
+  how you reach `kde/frameworks/kcoreaddons`.
+
+A stage whose kind is absent from the scope is **`skipped`**, not
+`failed` — "there is nothing here of that kind" is a stronger answer
+than "its input failed", and a failure list with noise in it is one you
+learn to skim. The report counts those separately and says they are not
+a coverage gap.
+
+So the two halves are two runs:
+
+```sh
+# the C tree
+python3 tools/verify/sweep_all.py --scope sys --scope lib ... --out ~/c-sweep
+
+# the C++ tree
+python3 tools/verify/sweep_all.py --scope kde --out ~/cxx-sweep --kind cxx
+```
+
+The port ledger names **no `kde/` path at all** (0 records of 35,050),
+so a KDE scope's unit count comes from the filesystem instead, and the
+tool prints which source it used. A disk count and a ledger count do not
+mean the same thing.
 
 Useful narrowings:
 
@@ -240,6 +322,39 @@ of those it is.
 ```sh
 python3 tools/verify/confidence.py --scope sys/kern
 ```
+
+### What only a person or a model can decide
+
+Some work is not waiting on a better checker. A counterexample an engine
+produced but cannot judge — because judging it means reading the
+callers, the comments and the intent — is a *reading* job, and it is now
+a named disposition rather than a residue.
+
+```sh
+python3 tools/verify/taxonomy.py --available --needs-model   # which CLASSES
+python3 tools/verify/matrix.py --matrix ... --needs-model    # which FUNCTIONS
+python3 tools/verify/report.py  ...                          # which FINDINGS
+```
+
+On the last full run that was **463 findings** an engine produced and
+could not decide. The class list is seven in scope — taint from a trust
+boundary, a contract enforced nowhere, lock order, the padding leak, and
+three more.
+
+Three rules the tooling enforces, and you should hold to as well:
+
+1. **Every model finding is a hypothesis until it is checked against the
+   source.** During this harness's own construction a model reported
+   that adding `core.BitwiseShift` to the analyser would cover the
+   `1 << 31` class. Half of that was true. A three-line test showed the
+   other half was not — the checker reports zero on 151 units, and only
+   cppcheck sees `1 << 31`.
+2. **A model saying nothing about a function means nothing.** Its silence
+   is not evidence, which is why a read is recorded as `REVIEWED` beside
+   the shallow scans and never beside a proof.
+3. **`never-attempted` is not a model's job — it is a run's.** Point an
+   engine at it first. The expensive instrument goes last, and where the
+   proof is not.
 
 ---
 

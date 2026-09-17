@@ -216,9 +216,27 @@ def save_state(d: Path, st: dict):
     (d / "state.json").write_text(json.dumps(st, indent=1))
 
 
+REFERENCE_RATES = Path(__file__).resolve().parent / "rates-reference.json"
+
+
 def load_rates(d: Path) -> dict:
+    """This run's own profile if there is one, else the shipped reference.
+
+    The reference is measured on somebody ELSE'S machine and is marked
+    as such in every line it produces, because an unlabelled estimate
+    from the wrong hardware is worse than no estimate: it is a number
+    with a provenance a reader will not think to ask about.
+    """
     f = d / "rates.json"
-    return json.loads(f.read_text()) if f.exists() else {}
+    if f.exists():
+        r = json.loads(f.read_text())
+        r["_source"] = "this machine"
+        return r
+    if REFERENCE_RATES.is_file():
+        r = json.loads(REFERENCE_RATES.read_text())
+        r["_source"] = "reference"
+        return r
+    return {}
 
 
 # --------------------------------------------------------------------- run
@@ -230,15 +248,46 @@ LEDGER_HINT = (
     "  regenerate it with: python3 tools/port_plan.py")
 
 
-def count_units(scopes) -> int:
-    """Translation units under the scopes, from the ledger. The unit the
-    rate is per, so it must be counted the same way both times.
+C_EXT = (".c",)
+CXX_EXT = (".cpp", ".cc", ".cxx", ".C")
 
-    A missing ledger returns -1 rather than 0. Zero would make every
-    per-unit estimate read 0.00 h and the whole plan look free.
+
+def scope_files(scopes, exts) -> int:
+    """Sources of these extensions under these scopes.
+
+    A scope is resolved under hbsd/src first, then under the repo root,
+    because the C drivers take hbsd/src-relative paths and the C++ ones
+    also take repo-root-relative ones (kde/ lives there).
+    """
+    n = 0
+    for s in scopes:
+        for base in (ROOT / "hbsd" / "src" / s, ROOT / s):
+            if not base.is_dir():
+                continue
+            for e in exts:
+                n += sum(1 for _ in base.rglob("*" + e))
+            break
+    return n
+
+
+def count_units(scopes) -> tuple[int, str]:
+    """(translation units, where the count came from).
+
+    The ledger first, because that is what the C drivers take their
+    corpus from and the rate has to be per the same unit both times.
+
+    But the ledger names NOTHING under kde/ - 0 of 35,050 records - so a
+    KDE scope counted that way is zero, every per-unit estimate reads
+    0.00 h, and a three-hour job prints as free. That is the same lie as
+    a missing ledger, one level in. So a scope the ledger does not name
+    falls back to counting sources on disk, and the SOURCE of the count
+    is returned with it and printed, because a disk count and a ledger
+    count do not mean the same thing.
+
+    A missing ledger is still -1 and still refuses.
     """
     if not LEDGER.is_file():
-        return -1
+        return (-1, "none")
     plan = json.loads(LEDGER.read_text())
     n = 0
     for rec in plan["records"]:
@@ -246,13 +295,28 @@ def count_units(scopes) -> int:
         if any(p.startswith(s) for s in scopes) and p.endswith(
                 (".c", ".cpp", ".cc", ".cxx")):
             n += 1
-    return n
+    if n:
+        return (n, "ledger")
+    on_disk = scope_files(scopes, C_EXT + CXX_EXT)
+    return (on_disk, "disk" if on_disk else "nothing")
 
 
 def run_stage(st: Stage, ctx, state, dry) -> dict:
     avail, why = st.availability()
     if avail != "ok":
         return {"status": avail, "why": why}
+    # A C scope handed to a C++ stage is not a failure of the stage. The
+    # C++ drivers correctly refuse a scope that matches no files - "NOT
+    # RUN, and not a clean scope" - but the refusal is sweep_all's fault
+    # for asking, and a `failed' line that means nothing is worse than
+    # useless: it teaches a reader to skim the failure list, which is the
+    # one part of this output that has to stay trustworthy.
+    if st.kind in ("c", "cxx"):
+        exts = C_EXT if st.kind == "c" else CXX_EXT
+        if scope_files(ctx["scopes"], exts) == 0:
+            return {"status": "skipped", "kind_mismatch": True,
+                    "why": f"no {st.kind} sources under these scopes; "
+                           f"there is nothing here for it to cover"}
     satisfied = {"ok", "would-run"} if dry else {"ok"}
     for dep in st.feeds:
         if state["stages"].get(dep, {}).get("status") not in satisfied:
@@ -290,8 +354,14 @@ def do_report(d: Path, state, scopes, units, rates):
     missing = [n for n, r in state["stages"].items()
                if r.get("status") in ("NOTRUN", "missing", "blocked",
                                       "failed")]
+    mism = [n for n, r in state["stages"].items() if r.get("kind_mismatch")]
     print(f"\n  {len(missing)} of {len(state['stages'])} instruments "
           "produced NO data for this scope.")
+    if mism:
+        print(f"  ({len(mism)} more were skipped because this scope holds "
+              f"no source of their kind:")
+        print(f"   {' '.join(sorted(mism))} - that is not a coverage gap,")
+        print("   there was nothing there for them to cover.)")
     if missing:
         print("  Every function they would have covered is UNTOUCHED, not")
         print("  clean. Run `python3 tools/verify/taxonomy.py --missing'")
@@ -374,7 +444,7 @@ def main(argv=None):
     state = load_state(d) if args.resume else {"stages": {},
                                                "started": time.time()}
     rates = load_rates(d)
-    units = count_units(args.scope)
+    units, unit_src = count_units(args.scope)
     ctx = {"dir": d, "scopes": args.scope, "jobs": args.jobs,
            "timeout": args.timeout, "resume": args.resume}
 
@@ -385,16 +455,37 @@ def main(argv=None):
         print("  denominator. Refusing rather than reporting zero units.",
               file=sys.stderr)
         return 2
-    print(f"== scope {' '.join(args.scope)}   {units} translation units   "
-          f"{args.jobs} jobs")
+    if units == 0:
+        print(f"sweep_all: no source found under {' '.join(args.scope)}.",
+              file=sys.stderr)
+        print("  Neither the ledger nor the filesystem names a .c or .cpp",
+              file=sys.stderr)
+        print("  there. An empty scope is NOT RUN, not a clean one.",
+              file=sys.stderr)
+        return 2
+    print(f"== scope {' '.join(args.scope)}   {units} translation units "
+          f"(counted from the {unit_src})   {args.jobs} jobs")
+    if unit_src == "disk":
+        print("   the port ledger names nothing under this scope, so the "
+              "count is a")
+        print("   file count rather than a corpus count - the C engines "
+              "take their")
+        print("   work from the ledger and will find less than this.")
     scale = 1.0
     if args.dry_run:
         pu = rates.get("per_unit", {})
         if pu:
             pjobs = rates.get("jobs", args.jobs) or args.jobs
             scale = pjobs / args.jobs
+            where = rates.get("_source", "?")
             print(f"   estimates extrapolated from a profile of "
                   f"{rates.get('units')} units at {pjobs} jobs")
+            if where == "reference":
+                print("   *** that profile is the SHIPPED REFERENCE, "
+                      "measured on another")
+                print(f"   *** machine ({rates.get('_host', 'unknown')}). "
+                      "It is not yours.")
+                print("   *** Run --profile on a small scope to replace it.")
             if args.jobs != pjobs:
                 print(f"   scaled x{scale:.2f} for {args.jobs} jobs, "
                       "assuming perfect parallelism - so these are a "

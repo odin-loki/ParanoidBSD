@@ -71,7 +71,10 @@ class Dependencies(unittest.TestCase):
 
     def test_a_stage_whose_input_failed_is_blocked_and_says_which(self):
         st = S.STAGE_BY_NAME["cbmc"]
-        ctx = {"dir": Path("/tmp"), "scopes": ["x"], "jobs": 1,
+        # A real C scope: the kind check runs BEFORE the dependency
+        # check, deliberately, because "nothing here is of that kind"
+        # is a stronger and more useful answer than "its input failed".
+        ctx = {"dir": Path("/tmp"), "scopes": ["sys/geom/uzip"], "jobs": 1,
                "timeout": 1, "resume": False}
         r = S.run_stage(st, ctx, self._state(classify="failed"), dry=True)
         self.assertEqual(r["status"], "blocked")
@@ -82,14 +85,20 @@ class Dependencies(unittest.TestCase):
         machine where everything IS installed, and the estimate is wrong
         for the stage that dominates it."""
         st = S.STAGE_BY_NAME["cbmc"]
-        ctx = {"dir": Path("/tmp"), "scopes": ["x"], "jobs": 1,
+        # A real C scope: the kind check runs BEFORE the dependency
+        # check, deliberately, because "nothing here is of that kind"
+        # is a stronger and more useful answer than "its input failed".
+        ctx = {"dir": Path("/tmp"), "scopes": ["sys/geom/uzip"], "jobs": 1,
                "timeout": 1, "resume": False}
         r = S.run_stage(st, ctx, self._state(classify="would-run"), dry=True)
         self.assertEqual(r["status"], "would-run")
 
     def test_outside_a_dry_run_would_run_does_not_satisfy_anything(self):
         st = S.STAGE_BY_NAME["cbmc"]
-        ctx = {"dir": Path("/tmp"), "scopes": ["x"], "jobs": 1,
+        # A real C scope: the kind check runs BEFORE the dependency
+        # check, deliberately, because "nothing here is of that kind"
+        # is a stronger and more useful answer than "its input failed".
+        ctx = {"dir": Path("/tmp"), "scopes": ["sys/geom/uzip"], "jobs": 1,
                "timeout": 1, "resume": False}
         r = S.run_stage(st, ctx, self._state(classify="would-run"), dry=False)
         self.assertEqual(r["status"], "blocked")
@@ -122,7 +131,7 @@ class MissingLedger(unittest.TestCase):
         real = S.LEDGER
         try:
             S.LEDGER = Path("/nonexistent/port_plan.json")
-            self.assertEqual(S.count_units(["sys"]), -1)
+            self.assertEqual(S.count_units(["sys"]), (-1, "none"))
         finally:
             S.LEDGER = real
 
@@ -139,6 +148,99 @@ class MissingLedger(unittest.TestCase):
 
     def test_the_hint_names_the_command_that_fixes_it(self):
         self.assertIn("tools/port_plan.py", S.LEDGER_HINT)
+
+
+class KindRouting(unittest.TestCase):
+    """A C scope handed to a C++ stage is sweep_all's bug, not the
+    stage's. The C++ drivers correctly refuse a scope matching no files;
+    recording that as `failed' produces a line that means nothing, and
+    a failure list with noise in it is one a reader learns to skim."""
+
+    def _ctx(self, scopes):
+        return {"dir": Path("/tmp"), "scopes": scopes, "jobs": 1,
+                "timeout": 1, "resume": False}
+
+    def test_a_c_scope_skips_the_cxx_stages(self):
+        st = S.STAGE_BY_NAME["cxx-analyze"]
+        r = S.run_stage(st, self._ctx(["sys/geom/uzip"]),
+                        {"stages": {}}, dry=True)
+        self.assertEqual(r["status"], "skipped")
+        self.assertTrue(r["kind_mismatch"])
+        self.assertIn("no cxx sources", r["why"])
+
+    def test_a_cxx_scope_skips_the_c_stages(self):
+        st = S.STAGE_BY_NAME["cppcheck"]
+        r = S.run_stage(st, self._ctx(["kde/frameworks/kcoreaddons"]),
+                        {"stages": {}}, dry=True)
+        self.assertEqual(r["status"], "skipped")
+        self.assertTrue(r["kind_mismatch"])
+
+    def test_a_kind_mismatch_is_not_counted_as_a_coverage_gap(self):
+        """There were no functions of that kind to leave untouched."""
+        import io
+        import contextlib
+        state = {"stages": {
+            "cbmc": {"status": "ok", "seconds": 1.0},
+            "cxx-analyze": {"status": "skipped", "kind_mismatch": True,
+                            "why": "no cxx sources"},
+        }}
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            S.do_report(Path("/tmp"), state, ["x"], 10, {})
+        out = buf.getvalue()
+        self.assertIn("0 of 2 instruments produced NO data", out)
+        self.assertIn("not a coverage gap", out)
+
+    def test_the_kind_check_runs_before_the_dependency_check(self):
+        """Order matters and is asserted. `there is nothing here of that
+        kind' is a stronger answer than `its input failed', and getting
+        it backwards would report a C++ stage as blocked-on-classify in
+        every C-only scope in the tree."""
+        st = S.STAGE_BY_NAME["cxx-analyze"]
+        r = S.run_stage(st, self._ctx(["sys/geom/uzip"]),
+                        {"stages": {"classify": {"status": "failed"}}},
+                        dry=True)
+        self.assertEqual(r["status"], "skipped")
+
+    def test_the_meta_stage_is_never_kind_skipped(self):
+        """universe covers every tree; it has no kind."""
+        self.assertEqual(S.STAGE_BY_NAME["universe"].kind, "meta")
+
+
+class UnitCount(unittest.TestCase):
+    """The ledger names NOTHING under kde/ - 0 of 35,050 records. A KDE
+    scope counted from the ledger is zero units, every per-unit estimate
+    reads 0.00 h, and a three-hour job prints as free."""
+
+    def test_a_scope_the_ledger_names_is_counted_from_it(self):
+        n, src = S.count_units(["sys/geom/uzip"])
+        self.assertGreater(n, 0)
+        self.assertEqual(src, "ledger")
+
+    def test_a_scope_the_ledger_does_not_name_falls_back_to_disk(self):
+        n, src = S.count_units(["kde/frameworks/kcoreaddons"])
+        self.assertGreater(n, 0)
+        self.assertEqual(src, "disk")
+
+    def test_the_provenance_is_returned_not_just_the_number(self):
+        """A disk count and a ledger count do not mean the same thing,
+        so the caller must be able to say which it printed."""
+        for scope in (["sys/geom/uzip"], ["kde/frameworks/kcoreaddons"]):
+            self.assertIn(S.count_units(scope)[1], ("ledger", "disk"))
+
+    def test_a_scope_with_nothing_in_it_refuses(self):
+        import tempfile
+        rc = S.main(["--scope", "does/not/exist", "--out",
+                     tempfile.mkdtemp(), "--dry-run"])
+        self.assertEqual(rc, 2)
+
+    def test_a_missing_ledger_still_refuses_rather_than_counting_disk(self):
+        real = S.LEDGER
+        try:
+            S.LEDGER = Path("/nonexistent/port_plan.json")
+            self.assertEqual(S.count_units(["sys"]), (-1, "none"))
+        finally:
+            S.LEDGER = real
 
 
 class Contract(unittest.TestCase):
@@ -195,9 +297,34 @@ class Resume(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         self.assertEqual(S.load_state(d)["stages"], {})
 
-    def test_no_rates_file_means_no_estimate_not_a_guess(self):
+    def test_an_estimate_always_says_whose_machine_it_came_from(self):
+        """This used to assert `no rates file means no estimate'. A
+        reference profile ships now, so a first run gets a number - and
+        the contract that replaces it is stricter, not looser: an
+        estimate must never be UNLABELLED. A figure from the wrong
+        hardware with no provenance is worse than none, because a reader
+        does not think to ask."""
         d = Path(tempfile.mkdtemp())
-        self.assertEqual(S.load_rates(d), {})
+        r = S.load_rates(d)
+        self.assertEqual(r.get("_source"), "reference")
+        self.assertIn("_host", r)
+        self.assertIn("not your machine", r["_note"].lower())
+
+    def test_a_local_profile_takes_precedence_and_says_so(self):
+        d = Path(tempfile.mkdtemp())
+        (d / "rates.json").write_text(json.dumps(
+            {"units": 9, "jobs": 2, "per_unit": {"cbmc": 1.0}}))
+        r = S.load_rates(d)
+        self.assertEqual(r["_source"], "this machine")
+        self.assertEqual(r["units"], 9)
+
+    def test_with_no_reference_either_there_is_no_estimate(self):
+        real = S.REFERENCE_RATES
+        try:
+            S.REFERENCE_RATES = Path("/nonexistent/rates.json")
+            self.assertEqual(S.load_rates(Path(tempfile.mkdtemp())), {})
+        finally:
+            S.REFERENCE_RATES = real
 
 
 if __name__ == "__main__":
