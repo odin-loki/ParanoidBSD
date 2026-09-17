@@ -802,9 +802,34 @@ def main() -> int:
     for r in failed:
         buckets[bucket(r)].append(r)
 
+    # The three READ-THESE buckets are, and have always been, the
+    # frontier-model queue: a counterexample an engine produced and
+    # cannot itself decide, because deciding it means reading the
+    # callers, the comments and the intent. Naming them that way is the
+    # point - the work was never going to be done by a better checker.
+    read_these = sum(len(v) for k, v in buckets.items() if "READ THESE" in k)
     print(f"\n== {len(failed)} failures, bucketed by the five rules")
     for b in sorted(buckets, key=lambda x: -len(buckets[x])):
         print(f"  {len(buckets[b]):4d}  {b}")
+
+    if read_these:
+        untriaged = 0
+        for k, v in buckets.items():
+            if "READ THESE" not in k:
+                continue
+            for r in v:
+                lns = [desc_line(d) for d in r.get("failures", [])]
+                if not (lns and all(is_triaged(r["file"], x) for x in lns)):
+                    untriaged += 1
+        print(f"\n  {read_these} of those are in a READ-THESE bucket, and "
+              f"{untriaged} of them")
+        print("  are not yet in the not-a-defect table. That is the")
+        print("  FRONTIER-MODEL QUEUE: a counterexample the engine")
+        print("  produced and cannot decide, because deciding it means")
+        print("  reading the callers, the comments and the intent.")
+        print("  `taxonomy.py --needs-model' says which CLASSES need a")
+        print("  read; this is which FINDINGS do. A model's answer is a")
+        print("  hypothesis until it is checked against the source.")
 
     real = buckets.get("EXPORTED, arithmetic - READ THESE", [])
     def _all_read(r):

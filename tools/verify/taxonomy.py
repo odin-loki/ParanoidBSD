@@ -72,8 +72,15 @@ import sys
 PROVES = "PROVES"
 FINDS = "FINDS"
 SOME = "SOME"
+READS = "READS"
 
-_RANK = {PROVES: 3, FINDS: 2, SOME: 1}
+# READS ranks with SOME, DELIBERATELY, so a class only a frontier model
+# can see is PARTIAL and never COVERED. A model has no recall guarantee
+# on this tree, its silence is worth nothing, and it will describe a
+# defect that is not there with complete confidence. Letting it promote
+# a class to COVERED would inflate the headline with the one instrument
+# whose error rate nobody has measured.
+_RANK = {PROVES: 3, FINDS: 2, SOME: 1, READS: 1}
 
 COVERED = "COVERED"
 PARTIAL = "PARTIAL"
@@ -148,6 +155,22 @@ INSTRUMENTS = {
         what="whole-program dataflow queries over a compiled database",
         note="free for open source; the taint-tracking queries are the part "
              "nothing else here replaces"),
+    "frontier-model": dict(
+        bin=None, driver="tools/verify/", pkg=None, apt=None,
+        what="a large language model READING the code, its comments, its "
+             "call sites and the documents around it",
+        note="Listed as an instrument because pretending it is not one is "
+             "how its output gets quoted without its error profile. What it "
+             "does that nothing else here does: it reads INTENT. It can see "
+             "that a comment states a contract no callee enforces, follow a "
+             "value from a syscall boundary to an index across four files, "
+             "and tell a deliberate asymmetry from an accidental one. What "
+             "it cannot do: it has NO measured recall on this tree, its "
+             "silence is worth nothing at all, and it will describe a defect "
+             "that is not there in complete detail and correct-sounding "
+             "prose. Every finding it produces is a HYPOTHESIS that must be "
+             "checked against the source before it is written down - which "
+             "is why READS never makes a class COVERED."),
 }
 
 # ------------------------------------------------------------------ classes
@@ -313,7 +336,7 @@ CLASSES = [
       "struct padding or a partially filled buffer handed to userspace, "
       "to a device, or onto the wire",
       {"pbsd-lints": SOME, "clang-analyze": SOME, "sanitizers": SOME,
-       "codeql": SOME},
+       "codeql": SOME, "frontier-model": READS},
       "GAP IN PRACTICE. No instrument here models padding. The twelve "
       "bytes of kernel stack found in key_spdget were found by reading "
       "the code, and nothing would have reported it. This class is the "
@@ -418,7 +441,7 @@ CLASSES = [
     C("CTRL-SIBLING-ASYMMETRY", "one of a pair guards, the other does not", [],
       "two functions in a file take the same parameter and only one "
       "bounds it",
-      {"pbsd-lints": FINDS},
+      {"pbsd-lints": FINDS, "frontier-model": READS},
       "sibling_guard.py. No CWE, no general tool. It found three real "
       "defects on its first run and its high tier measures 37% false "
       "positives, which is the honest cost of the class."),
@@ -426,7 +449,7 @@ CLASSES = [
     C("API-IGNORED-ERROR", "a failure return nobody looks at", [252, 391],
       "a call that reports failure through its return value, discarded",
       {"compiler-warnings": SOME, "clang-tidy": FINDS, "cppcheck": FINDS,
-       "coccinelle": FINDS, "codeql": FINDS, "clang-analyze": SOME},
+       "coccinelle": FINDS, "codeql": FINDS, "clang-analyze": SOME, "frontier-model": READS},
       "-Wunused-result only fires where the declaration carries "
       "warn_unused_result, which in this tree is almost nowhere. The "
       "sixteen unchecked iwn_read_prom_data calls were found by hand."),
@@ -441,7 +464,7 @@ CLASSES = [
 
     C("API-PRECONDITION", "a documented contract enforced nowhere", [],
       "a range or nullness the comments state and no callee checks",
-      {"cbmc": SOME, "esbmc": SOME, "pbsd-lints": SOME},
+      {"cbmc": SOME, "esbmc": SOME, "pbsd-lints": SOME, "frontier-model": READS},
       "The isa_dma case: a channel contract written six times in comments "
       "and enforced in none of nine entry points. A model checker reports "
       "it as an unconstrained parameter, which is indistinguishable from "
@@ -458,7 +481,7 @@ CLASSES = [
 
     C("LOCK-ORDER", "lock order inversion", [833],
       "two paths taking the same two locks in opposite orders",
-      {"infer": SOME, "codeql": SOME},
+      {"infer": SOME, "codeql": SOME, "frontier-model": READS},
       "GAP HERE. Nothing available in this container looks for it. "
       "WITNESS and the kernel's own lock-order checker find these at "
       "RUNTIME and that is currently the only instrument this project "
@@ -516,7 +539,7 @@ CLASSES = [
       "an ioctl field, a sysctl, a copyin length or a syscall argument "
       "reaching an index, a size or a divisor",
       {"cbmc": SOME, "esbmc": SOME, "codeql": FINDS, "pbsd-lints": SOME,
-       "coccinelle": SOME, "clang-analyze": SOME},
+       "coccinelle": SOME, "clang-analyze": SOME, "frontier-model": READS},
       "THE MOST IMPORTANT CLASS IN THIS FILE AND THE WORST COVERED. A "
       "model checker treats every parameter as unconstrained, so it "
       "reports the attacker-controlled and the caller-constrained "
@@ -529,7 +552,7 @@ CLASSES = [
       "a value from a device, firmware or disk, trusted", [1285, 20],
       "a descriptor read off hardware, a length from an on-disk header, "
       "a field from a DMA'd structure",
-      {"cbmc": SOME, "esbmc": SOME, "codeql": SOME, "pbsd-lints": SOME},
+      {"cbmc": SOME, "esbmc": SOME, "codeql": SOME, "pbsd-lints": SOME, "frontier-model": READS},
       "Same shape as the above and even less visible, because the "
       "source is a volatile read or a bus_space_read and no dataflow "
       "engine here is told those are untrusted."),
@@ -537,7 +560,7 @@ CLASSES = [
     C("TRUST-STACK-DISCLOSURE", "kernel stack copied to userspace",
       [200, 909],
       "a copyout of a structure some path did not fully fill",
-      {"pbsd-lints": SOME},
+      {"pbsd-lints": SOME, "frontier-model": READS},
       "See INFOLEAK-PAD. Effectively a GAP; every instance found in this "
       "tree was found by reading."),
 
@@ -560,7 +583,7 @@ CLASSES = [
       "a reference, string_view, span or iterator into a destroyed or "
       "reallocated container",
       {"clang-tidy": SOME, "clang-analyze": SOME, "cppcheck": SOME,
-       "sanitizers": FINDS, "compiler-warnings": SOME},
+       "sanitizers": FINDS, "compiler-warnings": SOME, "frontier-model": READS},
       "PARTIAL AND IT MATTERS. -Wdangling-gsl and the lifetime checkers "
       "catch the textbook cases and miss the ones that cross a function "
       "boundary. In a Qt codebase this is the commonest real defect and "
@@ -584,7 +607,7 @@ CLASSES = [
     C("CXX-EXCEPTION-LEAK", "a throw between allocation and ownership",
       [401, 460],
       "a raw owning pointer held across a call that can throw",
-      {"clang-tidy": SOME, "cppcheck": SOME, "infer": SOME},
+      {"clang-tidy": SOME, "cppcheck": SOME, "infer": SOME, "frontier-model": READS},
       "PARTIAL. Requires knowing which calls throw, which in a Qt tree "
       "means knowing Qt, which none of these instruments do."),
 
@@ -600,19 +623,19 @@ CLASSES = [
 
     C("CONC-TOCTOU", "check now, use later", [367],
       "a condition validated and then acted on after it can have changed",
-      {"codeql": SOME, "coccinelle": SOME},
+      {"codeql": SOME, "coccinelle": SOME, "frontier-model": READS},
       "OUT OF SCOPE. The libusb refcount re-read after the lock was "
       "dropped is an instance found here by reading. No instrument "
       "available finds this class.", scope="out"),
 
     C("CONC-ATOMICITY", "a compound operation that is not atomic", [366, 662],
       "read-modify-write on shared state without the lock held throughout",
-      {"infer": SOME},
+      {"infer": SOME, "frontier-model": READS},
       "OUT OF SCOPE, same reason.", scope="out"),
 
     C("LOGIC-WRONG-RESULT", "the function computes the wrong answer", [],
       "no undefined behaviour, no memory error, no crash - simply wrong",
-      {},
+      {"frontier-model": READS},
       "OUT OF SCOPE AND THE LARGEST CLASS THERE IS. CBMC proving a "
       "function has no UB says nothing about whether it is correct; a "
       "driver that returns the wrong value for every input scores a "
@@ -630,7 +653,7 @@ CLASSES = [
 
     C("CRYPTO-MISUSE", "a cryptographic primitive used wrongly", [327, 330],
       "a reused nonce, a weak PRNG, a non-constant-time comparison",
-      {"codeql": SOME, "coccinelle": SOME},
+      {"codeql": SOME, "coccinelle": SOME, "frontier-model": READS},
       "OUT OF SCOPE. Needs a reviewer who knows the protocol.",
       scope="out"),
 
@@ -643,7 +666,7 @@ CLASSES = [
     C("BUILD-CONFIG", "a defect only reachable under an option nobody builds",
       [1105],
       "code behind an #ifdef that no configuration in the sweep defines",
-      {"pbsd-lints": SOME},
+      {"pbsd-lints": SOME, "frontier-model": READS},
       "PARTIALLY IN SCOPE AND WORTH WATCHING. Every instrument here sees "
       "one preprocessor configuration per translation unit. This tree has "
       "already found that a wrong -include order compiled out every ZFS "
@@ -758,6 +781,68 @@ def print_coverage(cov, tools):
   coverage confidence.py reports for the scope before quoting a figure.""")
 
 
+def needs_model(tools) -> list[dict]:
+    """Classes where a frontier model READING the code is the best thing
+    available - the work queue for a reading pass.
+
+    A class qualifies when `frontier-model' is among its instruments and
+    NOTHING available rates higher than READS. If a tool COVERS it, the
+    tool goes first: a model read is slower, unrepeatable, has no recall
+    guarantee, and costs a person's attention to check.
+    """
+    out = []
+    for c in CLASSES:
+        if c["seen"].get("frontier-model") != READS:
+            continue
+        best = 0
+        for tool, strength in c["seen"].items():
+            if tool == "frontier-model":
+                continue
+            if tools is not None and tool not in tools:
+                continue
+            best = max(best, _RANK.get(strength, 0))
+        if best <= 1:          # nothing better than SOME is available
+            out.append(c)
+    return out
+
+
+def print_needs_model(tools):
+    rows = needs_model(tools)
+    print("\n== the frontier-model queue")
+    print("   Classes where a model READING the code is the best thing")
+    print("   available, because no installed instrument rates above SOME.")
+    inn = [c for c in rows if c["scope"] == "in"]
+    out = [c for c in rows if c["scope"] == "out"]
+    for title, group in (("IN SCOPE", inn),
+                         ("OUT OF SCOPE - a read is the ONLY route", out)):
+        if not group:
+            continue
+        print(f"\n  {title}")
+        for c in group:
+            others = " ".join(f"{t}:{v}" for t, v in sorted(c["seen"].items())
+                              if t != "frontier-model") or "nothing"
+            print(f"\n    {c['id']}  {c['name']}")
+            print(f"      {c['what']}")
+            print(f"      everything else: {others}")
+    print(f"""
+  {len(inn)} in scope, {len(out)} out of scope, {len(rows)} total.
+
+  What a read is worth here, stated once: a frontier model is the only
+  instrument in this file that reads INTENT - a comment stating a
+  contract nobody enforces, a value followed from a syscall boundary to
+  an index across four files, a deliberate asymmetry told from an
+  accidental one. It is also the only one with NO measured recall on
+  this tree, and it will describe a defect that is not there in
+  complete and correct-sounding detail. So:
+
+    every model finding is a HYPOTHESIS until it is checked against the
+    source, and a model reporting nothing about a function means
+    nothing at all.
+
+  That is why READS ranks with SOME and can never make a class COVERED.
+  A queue is what a read produces; it is not a verdict.""")
+
+
 def print_missing(tools):
     missing = [n for n in INSTRUMENTS if n not in tools]
     if not missing:
@@ -797,6 +882,9 @@ def main(argv=None):
     ap.add_argument("--table", action="store_true", help="the full matrix")
     ap.add_argument("--gaps", action="store_true",
                     help="only the classes not COVERED")
+    ap.add_argument("--needs-model", action="store_true",
+                    help="classes where a frontier model reading the code "
+                         "is the best thing available")
     ap.add_argument("--missing", action="store_true",
                     help="instruments absent, what they would buy, how to "
                          "install them")
@@ -847,6 +935,10 @@ def main(argv=None):
         for c in CLASSES:
             if args.cwe in c["cwe"]:
                 print(f"{verdict(c, tools):8} {c['id']:28} {c['name']}")
+        return 0
+
+    if args.needs_model:
+        print_needs_model(tools)
         return 0
 
     if args.missing:

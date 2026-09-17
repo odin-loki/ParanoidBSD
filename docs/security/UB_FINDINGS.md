@@ -35752,3 +35752,121 @@ from the textual scanner, with its own measured error bar — which is why
 `matrix.py` can report those functions as `UNTOUCHED` while
 `confidence.py` correctly declines to score them. Two tools, two
 questions, and they disagree for a reason.
+
+## The frontier-model queue: naming the work no instrument can do
+
+A large share of this project's real findings were produced by a model
+reading code — the isa_dma contract, the `key_spdget` stack disclosure,
+the GELI slot bound, `es_vlangroup`. That work has never been *named*.
+It arrived as "READ THESE" buckets and unexplained failures, mixed in
+with work a better checker would eventually do.
+
+It is now a disposition, in three places.
+
+### 1. A frontier model is an instrument, and is rated as one
+
+`taxonomy.py` lists `frontier-model` beside cbmc and cppcheck, with a
+new strength:
+
+> **`READS`** — a model reading the code, its comments, its call sites
+> and the documents around it.
+
+**`READS` ranks with `SOME`, deliberately**, so a class only a model can
+see is `PARTIAL` and *never* `COVERED`. A test asserts it, and a second
+test adds `READS` to every class in the file and requires
+`fraction_covered` not to move. The headline stayed at **0.87**.
+
+That rating is not modesty, it is the measurement. Listing the model as
+an instrument is the only way its output gets quoted *with* its error
+profile:
+
+| what it does that nothing else here does | what it cannot do |
+|---|---|
+| reads **intent** — a comment stating a contract no callee enforces | **no measured recall** on this tree |
+| follows a value from a syscall boundary to an index across four files | **its silence is worth nothing at all** |
+| tells a deliberate asymmetry from an accidental one | describes defects that are not there, in complete and correct-sounding prose |
+
+**Every model finding is a hypothesis until it is checked against the
+source.** This session is its own evidence: a subagent reported that
+`analyze.py` was missing `core.BitwiseShift` and that adding it would
+cover the `1 << 31` class. The first half was true and worth having. The
+second was wrong, and a direct three-line test showed it — the checker
+fires on a count ≥ width or negative, both of which `-Wall` already
+gives free, and reports **zero** across 151 units. Believing it would
+have closed a defect class on paper that is still open.
+
+### 2. `taxonomy.py --needs-model` — which classes
+
+Classes where a read is the best thing available, because no *installed*
+instrument rates above `SOME`. Measured here: **7 in scope, 5 out of
+scope**.
+
+```
+  IN SCOPE
+    INFOLEAK-PAD              uninitialised bytes across a trust boundary
+    API-PRECONDITION          a documented contract enforced nowhere
+    LOCK-ORDER                lock order inversion
+    TRUST-UNVALIDATED-INPUT   an ioctl field reaching an index
+    TRUST-UNCHECKED-DEVICE    a length from an on-disk header, trusted
+    TRUST-STACK-DISCLOSURE    kernel stack copied to userspace
+    CXX-EXCEPTION-LEAK        a throw between allocation and ownership
+
+  OUT OF SCOPE - a read is the ONLY route
+    CONC-TOCTOU · CONC-ATOMICITY · LOGIC-WRONG-RESULT · CRYPTO-MISUSE
+    BUILD-CONFIG
+```
+
+The queue **yields to a real tool**: a class stays out if anything
+*available* reaches `FINDS`, because a read is slower, unrepeatable and
+costs a person's attention to check. `CTRL-SIBLING-ASYMMETRY` is absent
+because `sibling_guard.py` covers it; `TRUST-UNVALIDATED-INPUT` is
+present *only because codeql is not installed*, and a test asserts it
+leaves the queue the moment codeql arrives.
+
+`LOGIC-WRONG-RESULT` is the one that matters most. It was `GAP` —
+nothing whatsoever. A model can read what a function is *supposed* to do
+from its name, its comments and its callers, which moves it from "no
+instrument at all" to "one instrument, unmeasured". That is a small move
+and it is the only one available without writing a specification per
+function.
+
+### 3. `matrix.py --needs-model` and `report.py` — which functions, which findings
+
+A model read is recorded per function as **`REVIEWED`**, filed with the
+TU-level scans: it looked, it said nothing, its silence proves nothing.
+Filing it with `BOUNDED` or `FAILED` would let a read be mistaken for a
+decision, which is the one thing a model must never be credited with.
+
+And a read marks **only the functions it actually read**. A model given
+a 3,000-line file does not read all of it and says nothing about which
+parts it skipped; marking the whole file `REVIEWED` would invent
+coverage. Three tests hold that, including the case where the record
+carries no explicit `read` list.
+
+The two queues, measured on run 40:
+
+```
+  matrix.py --needs-model --scope hbsd/sys/geom
+      1439 in the queue, all scanned-only
+
+  report.py /tmp/r40_cbmc.jsonl
+      476 of those are in a READ-THESE bucket, and 463 of them
+      are not yet in the not-a-defect table.
+```
+
+**463 findings from run 40 that an engine produced and cannot decide**,
+because deciding them means reading the callers, the comments and the
+intent. That is the queue, and it was always the queue — it just did not
+have a name.
+
+The matrix's queue splits by why, because they are different work:
+
+| | |
+|---|---|
+| `attempted-no-answer` | an engine tried and could not decide — a TIMEOUT, a TU-ERROR, a SAT out-of-memory. A read is the only route left short of fixing the build. |
+| `scanned-only` | one approximate instrument had no complaint and nothing stronger ever looked. The cheapest way to raise the weakest evidence in the matrix. |
+| `never-attempted` | **not a model's job.** Point an engine at it first. |
+
+Rows a model has already read are excluded — the point is a queue, not a
+re-read — and so are rows with a `PROVED`. The expensive instrument goes
+where the proof is not.

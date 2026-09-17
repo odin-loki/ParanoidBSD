@@ -32,7 +32,7 @@ class Vocabulary(unittest.TestCase):
 
     def test_every_strength_is_a_known_word(self):
         """A typo'd strength ranks 0 and quietly weakens a row."""
-        allowed = {T.PROVES, T.FINDS, T.SOME}
+        allowed = {T.PROVES, T.FINDS, T.SOME, T.READS}
         for c in T.CLASSES:
             for tool, s in c["seen"].items():
                 self.assertIn(s, allowed, f"{c['id']}/{tool}: {s!r}")
@@ -79,6 +79,75 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(T.verdict(cls), T.COVERED)          # on paper
         self.assertEqual(T.verdict(cls, tools=set()), T.GAP)  # in the room
         self.assertEqual(T.verdict(cls, tools={"cbmc"}), T.GAP)
+
+
+class FrontierModel(unittest.TestCase):
+    """A model reading the code is an instrument. Saying so is the only
+    way its output gets quoted WITH its error profile - and the rating
+    has to stop it inflating the headline, because it is the one
+    instrument whose recall on this tree nobody has measured."""
+
+    def test_reads_can_never_make_a_class_covered(self):
+        cls = T.C("X", "x", [], "x", {"frontier-model": T.READS})
+        self.assertEqual(T.verdict(cls), T.PARTIAL)
+
+    def test_reads_ranks_with_some_not_above_it(self):
+        self.assertEqual(T._RANK[T.READS], T._RANK[T.SOME])
+        self.assertLess(T._RANK[T.READS], T._RANK[T.FINDS])
+
+    def test_a_model_does_not_raise_the_headline(self):
+        """Adding READS to every class in the file must leave
+        fraction_covered exactly where it was."""
+        before = T.coverage()["fraction_covered"]
+        saved = [dict(c["seen"]) for c in T.CLASSES]
+        try:
+            for c in T.CLASSES:
+                c["seen"]["frontier-model"] = T.READS
+            self.assertEqual(T.coverage()["fraction_covered"], before)
+        finally:
+            for c, old in zip(T.CLASSES, saved):
+                c["seen"].clear()
+                c["seen"].update(old)
+
+    def test_the_queue_yields_to_a_real_tool(self):
+        """If something COVERS the class, the tool goes first: a read is
+        slower, unrepeatable and costs a person's attention to check."""
+        covered = T.C("X", "x", [], "x",
+                      {"frontier-model": T.READS, "cbmc": T.PROVES})
+        only = T.C("Y", "y", [], "y", {"frontier-model": T.READS})
+        saved = list(T.CLASSES)
+        try:
+            T.CLASSES[:] = [covered, only]
+            ids = [c["id"] for c in T.needs_model(None)]
+            self.assertEqual(ids, ["Y"])
+        finally:
+            T.CLASSES[:] = saved
+
+    def test_an_absent_tool_does_not_keep_a_class_out_of_the_queue(self):
+        """codeql FINDS taint and is not installed, so the read is still
+        the best thing AVAILABLE. --available has to see that."""
+        cls = T.C("X", "x", [], "x",
+                  {"frontier-model": T.READS, "codeql": T.FINDS})
+        saved = list(T.CLASSES)
+        try:
+            T.CLASSES[:] = [cls]
+            self.assertEqual(T.needs_model(set()), [cls])   # none installed
+            self.assertEqual(T.needs_model({"codeql"}), [])  # installed
+        finally:
+            T.CLASSES[:] = saved
+
+    def test_the_instrument_records_that_its_silence_is_worthless(self):
+        note = T.INSTRUMENTS["frontier-model"]["note"]
+        self.assertIn("silence is worth nothing", note)
+        self.assertIn("HYPOTHESIS", note)
+
+    def test_the_worst_covered_classes_are_in_the_queue(self):
+        """If taint and the padding leak ever drop out of this list,
+        either a tool got better (check it) or a row was inflated."""
+        ids = {c["id"] for c in T.needs_model(T.available_tools())}
+        for cid in ("TRUST-UNVALIDATED-INPUT", "INFOLEAK-PAD",
+                    "LOCK-ORDER", "API-PRECONDITION"):
+            self.assertIn(cid, ids, cid)
 
 
 class Denominator(unittest.TestCase):

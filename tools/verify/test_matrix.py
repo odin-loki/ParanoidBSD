@@ -219,6 +219,58 @@ class TuStatusIsNotAssumedClean(unittest.TestCase):
                          "TU-ERROR")
 
 
+class FrontierModelReads(unittest.TestCase):
+    """A model read is recorded, and is worth exactly what it is worth.
+
+    REVIEWED sits with the TU-level scans: it looked, it said nothing,
+    and its silence proves nothing. Filing it with BOUNDED or FAILED
+    would let a read be mistaken for a decision, which is the one thing
+    a model must never be credited with.
+    """
+
+    def test_reviewed_is_scanned_not_checked(self):
+        self.assertEqual(M.strength({"frontier-model": "REVIEWED"}),
+                         M.S_SCANNED)
+        self.assertIn("REVIEWED", M.SCANNED_V)
+        self.assertNotIn("REVIEWED", M.DECIDED)
+        self.assertNotIn("REVIEWED", M.PROVEN)
+
+    def test_a_read_marks_only_the_functions_it_read(self):
+        """A model given a 3,000-line file does not read all of it and
+        says nothing about which parts it skipped. Marking the whole
+        file REVIEWED would invent coverage."""
+        m = _m(ROWS)
+        c = m.ingest("frontier-model", "hbsd", _jsonl([
+            {"file": "a.c", "status": "REVIEWED", "read": ["f"],
+             "findings": []}]))
+        self.assertEqual(m.rows[("hbsd", "a.c", "f")]["frontier-model"],
+                         "REVIEWED")
+        self.assertEqual(m.rows[("hbsd", "a.c", "g")], {},
+                         "g was not read and must stay untouched")
+        self.assertEqual(c["REVIEWED"], 1)
+
+    def test_a_read_that_found_something_reports_it(self):
+        m = _m(ROWS)
+        m.ingest("frontier-model", "hbsd", _jsonl([
+            {"file": "a.c", "status": "REVIEWED", "read": ["f", "g"],
+             "findings": [{"fn": "g", "msg": "wrong constant"}]}]))
+        self.assertEqual(m.rows[("hbsd", "a.c", "f")]["frontier-model"],
+                         "REVIEWED")
+        self.assertEqual(m.rows[("hbsd", "a.c", "g")]["frontier-model"],
+                         "REPORTED")
+
+    def test_read_defaults_to_the_functions_named_in_findings(self):
+        """A record with no explicit `read' list still must not claim
+        the whole file."""
+        m = _m(ROWS)
+        m.ingest("frontier-model", "hbsd", _jsonl([
+            {"file": "a.c", "status": "REVIEWED",
+             "findings": [{"fn": "f", "msg": "x"}]}]))
+        self.assertEqual(m.rows[("hbsd", "a.c", "f")]["frontier-model"],
+                         "REPORTED")
+        self.assertEqual(m.rows[("hbsd", "a.c", "g")], {})
+
+
 class Merging(unittest.TestCase):
 
     def test_ingest_is_idempotent(self):

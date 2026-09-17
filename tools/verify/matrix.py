@@ -76,7 +76,11 @@ ROOT = Path(__file__).resolve().parents[2]
 FUNC_ENGINES = {"cbmc", "esbmc", "fusebmc"}
 # Engines that speak per translation unit, with findings that name a function.
 TU_ENGINES = {"clang-analyze", "clang-tidy", "cppcheck", "coccinelle",
-              "compiler-warnings", "cxx-analyze", "cxx-tidy", "pbsd-lints"}
+              "compiler-warnings", "cxx-analyze", "cxx-tidy", "pbsd-lints",
+              # A frontier model reading a file and naming the functions
+              # it read. Per translation unit, because that is how a
+              # model is given code - it reads the file, not a signature.
+              "frontier-model"}
 ENGINES = sorted(FUNC_ENGINES | TU_ENGINES)
 
 # PROVED-UNBOUNDED is esbmc_driver.py's k-induction verdict: the
@@ -84,7 +88,12 @@ ENGINES = sorted(FUNC_ENGINES | TU_ENGINES)
 # strong as PROVED and belongs in the same tier.
 PROVEN = {"PROVED", "PROVED-ASSUMING", "PROVED-UNBOUNDED"}
 DECIDED = {"BOUNDED", "FAILED"}
-SCANNED_V = {"REPORTED", "TU-CLEAN"}
+# REVIEWED sits here, with the TU-level scans, DELIBERATELY. A model
+# read is exactly as strong as one approximate instrument having no
+# complaint: it looked, it said nothing, and its silence proves nothing.
+# Putting it with BOUNDED or FAILED would let a read be mistaken for a
+# decision, which is the one thing a model must never be credited with.
+SCANNED_V = {"REPORTED", "TU-CLEAN", "REVIEWED"}
 # A cell that says something about the INSTRUMENT, not about the code.
 # UNKNOWN is ESBMC's "the solver neither proved nor refuted",
 # which CBMC has no equivalent of. It says something about the
@@ -227,6 +236,21 @@ class Matrix:
                     # so a record saying NOTRUN - which is what a skipped
                     # CI step emits - was filed as CLEAN, which is the
                     # exact confusion this file exists to prevent.
+                    # A model read names the functions it looked at; the
+                    # rest of the file is untouched, not clean, because a
+                    # model given a 3,000-line file does not read all of
+                    # it and says nothing about which parts it skipped.
+                    if status == "REVIEWED":
+                        named = {g.get("fn") for g in d.get("findings", ())
+                                 if g.get("fn")}
+                        read = set(d.get("read") or named)
+                        for fn in fns:
+                            if fn not in read:
+                                continue
+                            v = "REPORTED" if fn in named else "REVIEWED"
+                            self._set((tree, f, fn), engine, v)
+                            counts[v] += 1
+                        continue
                     if status == "NOTRUN":
                         for fn in fns:
                             self._set((tree, f, fn), engine, "NOTRUN")
@@ -317,6 +341,61 @@ def report(m: Matrix, by_scope: bool, depth: int):
             print(f"   {sc:44} {tt:>7} {c[S_UNTOUCHED]:>10} {frac:>6.2f}")
 
 
+def list_needs_model(m: Matrix, scope: str | None, limit: int):
+    """Functions where a frontier model READING the code is the next step.
+
+    Two populations, and they are different work:
+
+      attempted-no-answer  an engine tried and could not decide - a
+                           TIMEOUT, a TU-ERROR, an out-of-memory. A model
+                           can read what the engine could not build or
+                           could not finish, which is the only route left
+                           short of fixing the build.
+      SCANNED only         one approximate instrument had no complaint
+                           and nothing stronger ever looked. A read here
+                           is the cheapest way to raise the weakest
+                           evidence in the matrix.
+
+    Rows a model has ALREADY read are excluded - the point is a queue,
+    not a re-read. Rows with a PROVED are excluded too: a read is slower,
+    unrepeatable and costs a person's attention to check, so it goes
+    where the proof is not.
+    """
+    import collections as _c
+    n = 0
+    why = _c.Counter()
+    for key in sorted(m.rows):
+        cells = m.rows[key]
+        if "frontier-model" in cells and \
+                cells["frontier-model"] not in NO_VERDICT:
+            continue                       # already read
+        st = strength(cells)
+        if st in (S_PROVED, S_CHECKED):
+            continue                       # an engine decided it
+        tree, f, fn = key
+        full = f"{tree}/{f}"
+        if scope and not full.startswith(scope):
+            continue
+        reason = ("attempted-no-answer" if st == S_UNTOUCHED
+                  and why_untouched(cells) == "attempted-no-answer"
+                  else "scanned-only" if st == S_SCANNED
+                  else "never-attempted")
+        why[reason] += 1
+        if not limit or n < limit:
+            seen = ",".join(f"{k}={v}" for k, v in sorted(cells.items())) \
+                or "-"
+            print(f"{reason:20} {full}:{fn}  [{seen}]")
+            n += 1
+    print(f"\n{n} shown, {sum(why.values())} in the queue")
+    for k, v in why.most_common():
+        print(f"  {k:22} {v}")
+    print("""
+  never-attempted is NOT a model's job - it is a RUN's. Point an engine
+  at it first; a read is the expensive instrument and it goes last.
+  Every model finding is a hypothesis until it is checked against the
+  source, and a model saying nothing about a function means nothing.""")
+
+
 def list_untouched(m: Matrix, scope: str | None, limit: int, reason: str | None):
     n = 0
     for key in sorted(m.rows):
@@ -352,6 +431,8 @@ def main(argv=None):
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--by-scope", action="store_true")
     ap.add_argument("--depth", type=int, default=2)
+    ap.add_argument("--needs-model", action="store_true",
+                    help="the queue for a frontier-model reading pass")
     ap.add_argument("--untouched", action="store_true",
                     help="list the rows nothing has a verdict for")
     ap.add_argument("--reason", choices=["never-attempted",
@@ -394,9 +475,11 @@ def main(argv=None):
         m.save(Path(args.out))
         print(f"wrote {args.out}", file=sys.stderr)
 
+    if args.needs_model:
+        list_needs_model(m, args.scope, args.limit)
     if args.untouched:
         list_untouched(m, args.scope, args.limit, args.reason)
-    if args.report or not (args.untouched or args.out):
+    if args.report or not (args.untouched or args.needs_model or args.out):
         report(m, args.by_scope, args.depth)
     return 0
 
