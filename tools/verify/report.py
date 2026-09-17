@@ -238,6 +238,65 @@ def index_bound(rec: dict) -> bool:
                for d in descs)
 
 
+# `__pc' is the name every one of amd64's per-CPU accessors binds:
+# get_pcpu(), __PCPU_PTR, __PCPU_GET, __PCPU_ADD and __PCPU_SET each
+# open with `static struct pcpu __seg_gs *__pc = 0'. That 0 is the base
+# of the per-CPU area in the %gs segment, not a null pointer -- but
+# tools/verify/includes.py hands goto-cc `-D__seg_gs=', because its C
+# parser does not know the qualifier and 245 translation units modelled
+# nothing at all until it did. With the qualifier defined away CBMC
+# sees a plain `struct pcpu *__pc = 0' and reports a null dereference
+# at every PCPU_GET site.
+#
+# That is the trade docs/security/UB_FINDINGS.md states rather than
+# buries, and this is its other half: the cost is bounded because the
+# class is recognisable. `__pc' is a macro-local name, so a report that
+# spells it is inside one of those five expansions and nowhere else.
+_PCPU = re.compile(r"\b__pc->")
+_AT_LINE = re.compile(r"^line (\d+) ")
+
+
+def pcpu_artefact(rec: dict) -> bool:
+    """Is every failing LINE one that reads the per-CPU segment base?
+
+    Per line, not per failure, and the difference is a real record.
+    sys/cddl/dev/dtrace/amd64/dtrace_subr.c's dtrace_gethrtime is
+    `tsc_skew[curcpu]', and CBMC reports two things about line 346: the
+    null `__pc', and an upper bound on tsc_skew. The second is
+    downstream of the first - the subscript is unconstrained BECAUSE
+    the value read out of the fake null pointer is - so a rule that
+    asked every failure to name `__pc' would have missed it.
+
+    Across lines that inference does not hold and is not made:
+    kern_clock.c's statclock reports `td->td_proc' on line 696 and
+    `__pc->pc_prvspace' on 698, and the first is a genuinely
+    unconstrained parameter. It keeps the older answer. A failure whose
+    desc carries no line number is its own group, so it cannot be
+    carried by somebody else's.
+
+    This only ever moves a record WITHIN the discard pile: everything
+    it catches was already going to "a missing precondition, not a
+    bug", and that label is the wrong reason for it. There is no
+    precondition to add - `__pc' is not a pointer a caller was supposed
+    to check. arc.c:arc_state_init, one of the 44 failures in the first
+    full model check of OpenZFS, was triaged by hand; doing that again
+    every sweep is how a known false positive turns back into a finding
+    somebody reads.
+    """
+    fails = rec.get("failures", [])
+    if not fails:
+        return False
+    lines, pcpu = set(), set()
+    for d in fails:
+        desc = d.get("desc", "")
+        m = _AT_LINE.match(desc)
+        at = m.group(1) if m else desc
+        lines.add(at)
+        if _PCPU.search(desc):
+            pcpu.add(at)
+    return lines == pcpu
+
+
 def bucket(rec: dict) -> str:
     k = kinds(rec)
     if not k:
@@ -262,6 +321,9 @@ def bucket(rec: dict) -> str:
     # of the pointer checks.
     k = {x for x in k if not any(w in x for w in PTR_WORDS)}
     if not k:
+        if pcpu_artefact(rec):
+            return ("the __seg_gs pcpu artefact (the model's null, not "
+                    "the code's)")
         if index_bound(rec):
             return "an INDEX out of its array's range - READ THESE"
         return "pointer/memory (a missing precondition, not a bug)"

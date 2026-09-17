@@ -249,6 +249,67 @@ check("__CPROVER_pipes is the library's array, not the tree's",
                         f="lib/libc/stdio/stdio.c")),
       "pointer/memory (a missing precondition, not a bug)")
 
+print("\nthe __seg_gs artefact is recognised, not re-read")
+# includes.py hands goto-cc `-D__seg_gs=' because its C parser does not
+# know the qualifier; without it 245 kernel translation units modelled
+# nothing at all. The cost is that amd64's per-CPU accessors, which all
+# open `static struct pcpu __seg_gs *__pc = 0', read as a null pointer
+# rather than the base of the %gs segment. arc.c:arc_state_init was one
+# of the 44 failures in the first full model check of OpenZFS and the
+# only one triaged by hand.
+pcpu = {"file": "sys/contrib/openzfs/module/zfs/arc.c",
+        "function": "arc_state_init", "linkage": "static",
+        "failures": [
+            {"name": "a", "desc": "line 91 dereference failure: pointer "
+                                  "NULL in __pc->pc_cpuid"},
+            {"name": "b", "desc": "line 91 dereference failure: dead "
+                                  "object in __pc->pc_cpuid"},
+            {"name": "c", "desc": "line 91 dereference failure: pointer "
+                                  "outside object bounds in "
+                                  "__pc->pc_cpuid"}]}
+check("a record that is only pcpu derefs is the artefact",
+      report.bucket(pcpu),
+      "the __seg_gs pcpu artefact (the model's null, not the code's)")
+# A property on the SAME line is downstream of the fake null: the
+# subscript in dtrace_subr.c's `tsc_skew[curcpu]' is unconstrained only
+# because the value read out of `__pc' is. Per-failure matching would
+# have missed this one, which is the record that found the bug in the
+# first version of the rule.
+same_line = {"file": "sys/cddl/dev/dtrace/amd64/dtrace_subr.c",
+             "function": "dtrace_gethrtime", "linkage": "exported",
+             "failures": [
+                 {"name": "a", "desc": "line 346 array 'tsc_skew' upper "
+                                       "bound in tsc_skew[(signed long "
+                                       "int)tmp_statement_expression]"},
+                 {"name": "b", "desc": "line 346 dereference failure: "
+                                       "pointer NULL in __pc->pc_cpuid"}]}
+check("a subscript fed by the fake null is the artefact too",
+      report.bucket(same_line),
+      "the __seg_gs pcpu artefact (the model's null, not the code's)")
+# Across lines the inference is not made. kern_clock.c's statclock
+# reports `td->td_proc' on 696 and `__pc->pc_prvspace' on 698; td is a
+# real unconstrained parameter and the record keeps the older answer,
+# which asks for a precondition rather than claiming the run already
+# knows what this is.
+mixed = {"file": "sys/kern/kern_clock.c", "function": "statclock",
+         "linkage": "exported", "failures": [
+             {"name": "a", "desc": "line 696 dereference failure: pointer "
+                                   "NULL in td->td_proc"},
+             {"name": "b", "desc": "line 698 dereference failure: pointer "
+                                   "NULL in __pc->pc_prvspace"}]}
+check("a real deref on another line is not the artefact",
+      report.bucket(mixed),
+      "pointer/memory (a missing precondition, not a bug)")
+# And arithmetic never reaches the test at all - bucket() strips the
+# pointer failures first, so the overflow decides, which is the whole
+# point of the strip.
+arith = dict(pcpu, linkage="exported", failures=pcpu["failures"] + [
+    {"name": "e",
+     "desc": "line 402 arithmetic overflow on signed + in size + n"}])
+check("arithmetic beside it still decides the record",
+      report.bucket(arith),
+      "EXPORTED, arithmetic - READ THESE")
+
 print("\nthe table is actually being read")
 n = len(report.triaged())
 check("more than twenty entries parsed", n > 20, True)

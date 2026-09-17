@@ -33362,11 +33362,53 @@ null pointer. With the qualifier defined away, CBMC sees
 is not one.
 
 **One of the 44** — `arc.c:arc_state_init` — is this, and it is
-recognisable: the failure names `__pc` or `pc_cpuid`. Any future report
-mentioning either is this artefact and not a finding.
+recognisable: the failure names `__pc`, the macro-local no source file
+in the tree spells for itself. `__pc` is bound by all five of amd64's
+per-CPU accessors — `get_pcpu`, `__PCPU_PTR`, `__PCPU_GET`,
+`__PCPU_ADD`, `__PCPU_SET` — and by nothing else.
 
 That is the trade, stated rather than buried: the fix takes the kernel
 model-check corpus from a fraction to nearly all of it, and costs one
 identifiable false-positive class at every `get_pcpu()` / `PCPU_GET`
 site. The alternative was 245 translation units reporting nothing at all
 and looking clean, which is the worse lie.
+
+### Recognising it in the tool rather than by hand
+
+Writing *any future report mentioning `__pc` is this artefact* into a
+document is how a known false positive comes back: the next sweep
+prints it beside real work and somebody reads it again.
+`tools/verify/report.py`'s `pcpu_artefact()` decides it instead, and
+the bucket is its own — **the `__seg_gs` pcpu artefact (the model's
+null, not the code's)**.
+
+The rule is **per failing line, not per failure**, and that distinction
+is a record. `sys/cddl/dev/dtrace/amd64/dtrace_subr.c`'s
+`dtrace_gethrtime` is `tsc_skew[curcpu]`, and CBMC reports two things
+about line 346:
+
+```
+line 346 array 'tsc_skew' upper bound in tsc_skew[...]
+line 346 dereference failure: pointer NULL in __pc->pc_cpuid
+```
+
+The subscript is unconstrained **because** the value read out of the
+fake null pointer is. A rule asking every failure to name `__pc` would
+have called that one a precondition and moved on.
+
+Across lines the inference is not made. `sys/kern/kern_clock.c`'s
+`statclock` reports `td->td_proc` on line 696 and `__pc->pc_prvspace`
+on 698; `td` is a genuinely unconstrained parameter, so that record
+keeps the older, weaker answer.
+
+The rule only ever moves a record **within the discard pile** —
+everything it catches was already going to *a missing precondition, not
+a bug*, and for the wrong reason: there is no precondition to add,
+because `__pc` is not a pointer a caller was ever supposed to check. It
+promotes nothing into the read pile, so being wrong about one costs a
+label and not a night.
+
+Measured over the three corpora on hand: 1 of 44 in OpenZFS
+(`arc_state_init`, the one triaged by hand above), 1 of 39 in the fs
+shard (`dtrace_gethrtime`), 0 of 37 in `sys/kern` — where `statclock`
+is the record it correctly declines.
