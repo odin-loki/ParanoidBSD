@@ -223,10 +223,23 @@ def load_rates(d: Path) -> dict:
 
 # --------------------------------------------------------------------- run
 
+LEDGER = ROOT / "docs" / "port_plan.json"
+LEDGER_HINT = (
+    f"{LEDGER} is not on disk. It is generated and .gitignore'd - the "
+    "markdown is what is committed - so a fresh checkout has none.\n"
+    "  regenerate it with: python3 tools/port_plan.py")
+
+
 def count_units(scopes) -> int:
     """Translation units under the scopes, from the ledger. The unit the
-    rate is per, so it must be counted the same way both times."""
-    plan = json.loads((ROOT / "docs" / "port_plan.json").read_text())
+    rate is per, so it must be counted the same way both times.
+
+    A missing ledger returns -1 rather than 0. Zero would make every
+    per-unit estimate read 0.00 h and the whole plan look free.
+    """
+    if not LEDGER.is_file():
+        return -1
+    plan = json.loads(LEDGER.read_text())
     n = 0
     for rec in plan["records"]:
         p = rec["path"]
@@ -365,6 +378,13 @@ def main(argv=None):
     ctx = {"dir": d, "scopes": args.scope, "jobs": args.jobs,
            "timeout": args.timeout, "resume": args.resume}
 
+    if units < 0:
+        print(f"sweep_all: {LEDGER_HINT}", file=sys.stderr)
+        print("  Without it there is no unit count, so no estimate and no",
+              file=sys.stderr)
+        print("  denominator. Refusing rather than reporting zero units.",
+              file=sys.stderr)
+        return 2
     print(f"== scope {' '.join(args.scope)}   {units} translation units   "
           f"{args.jobs} jobs")
     scale = 1.0

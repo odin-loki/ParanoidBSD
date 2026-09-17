@@ -253,8 +253,25 @@ def scan_file(path: Path) -> list[str]:
 
 # ------------------------------------------------------------------ universe
 
+class NoLedger(Exception):
+    """The generated half of the port ledger is not on disk.
+
+    docs/port_plan.json is .gitignore'd - the markdown is what is
+    committed - so a fresh checkout has no denominator at all. That is
+    the single most important thing this file produces, so its absence
+    is an error with the command that fixes it, never an empty universe
+    that would make every coverage fraction read 100%.
+    """
+
+
 def ledger_rows(ledger: Path):
     """(tree, path, function, source) from the port ledger."""
+    if not ledger.is_file():
+        raise NoLedger(
+            f"{ledger} is not on disk. It is generated and .gitignore'd; "
+            "regenerate it with\n    python3 tools/port_plan.py\n"
+            "Without it there is no denominator, and a universe built "
+            "from nothing would make every coverage fraction read 1.00.")
     data = json.loads(ledger.read_text())
     for rec in data["records"]:
         for fn in rec.get("functions") or ():
@@ -274,12 +291,24 @@ def textual_rows(tree: str, root: Path, skip: set[str] | None = None):
 
 
 def build(out: Path, trees: list[str], ledger: Path) -> dict:
+    # Checked BEFORE the output file is opened. Creating a universe and
+    # then abandoning it leaves a truncated file on disk that the next
+    # command would read as a real, tiny universe.
+    if "hbsd" in trees and not ledger.is_file():
+        raise NoLedger(
+            f"{ledger} is not on disk. It is generated and .gitignore'd; "
+            "regenerate it with\n    python3 tools/port_plan.py\n"
+            "Without it there is no denominator, and a universe built "
+            "from nothing would make every coverage fraction read 1.00.")
     counts = {"ledger": 0, "textual": 0}
     seen = set()
+    try:
+        led = str(ledger.relative_to(ROOT))
+    except ValueError:
+        led = str(ledger)
     with out.open("w") as fh:
         fh.write(json.dumps({
-            "_meta": True, "v": 1, "trees": trees,
-            "ledger": str(ledger.relative_to(ROOT)),
+            "_meta": True, "v": 1, "trees": trees, "ledger": led,
         }) + "\n")
         if "hbsd" in trees:
             # The ledger covers hbsd/src; do not scan it textually as well
@@ -322,6 +351,11 @@ def selftest(sample: int, seed: int) -> int:
     ways and a handful of each is printed, because the interesting
     question is not the percentage, it is what the two disagree ABOUT.
     """
+    if not LEDGER.is_file():
+        print(f"selftest: {LEDGER} is not on disk; it is generated and "
+              ".gitignore'd.\n  regenerate it with: python3 "
+              "tools/port_plan.py", file=sys.stderr)
+        return 2
     data = json.loads(LEDGER.read_text())
     cands = [r for r in data["records"]
              if r.get("functions") and Path(r["path"]).suffix in SRC_EXT
@@ -394,7 +428,11 @@ def main(argv=None):
     if "all" in trees:
         trees = sorted(TREES)
     out = Path(args.out)
-    counts = build(out, trees, Path(args.ledger))
+    try:
+        counts = build(out, trees, Path(args.ledger))
+    except NoLedger as e:
+        print(f"inventory: {e}", file=sys.stderr)
+        return 2
     total = counts["ledger"] + counts["textual"]
     print(f"== universe -> {out}")
     print(f"  from the ledger   {counts['ledger']}")

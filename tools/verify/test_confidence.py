@@ -16,6 +16,29 @@ import confidence  # noqa: E402
 
 ok = True
 
+# docs/port_plan.json is GENERATED and .gitignore'd -- `the markdown is
+# what is committed'. So on a fresh checkout ledger_scope() returns
+# (0, 0) for every prefix and verdict() correctly short-circuits to
+# NO LEDGER ENTRIES. That is right for the tool and fatal for a test
+# that asserts about anything downstream of the denominator: this file
+# passed on a machine that had run tools/port_plan.py and failed in CI
+# on every run from the day it landed, which is a test asserting about
+# an artefact rather than about the code.
+#
+# Every case below that needs a denominator now supplies its own, so
+# the behaviour is exercised wherever the test runs. The case that
+# checks what happens with NO ledger is at the bottom, and it drives the
+# real function.
+_REAL_LEDGER_SCOPE = confidence.ledger_scope
+
+
+def fake_ledger(tus: int, fns: int):
+    """Say the ledger names this many units and functions, whatever is
+    on disk. Returns the previous callable so it can be put back."""
+    prev = confidence.ledger_scope
+    confidence.ledger_scope = lambda prefix: (tus, fns)
+    return prev
+
 
 def check(name, got, want):
     global ok
@@ -49,6 +72,7 @@ print("\nvisibility comes from the classify index, not the verdict file")
 SCOPE = "lib/libc/"
 classes = {f"{SCOPE}a{i}.c": {"ok": True} for i in range(100)}
 model = [rec(f"{SCOPE}a0.c", "PROVED")]   # one unit, every record
+fake_ledger(100, 400)
 s = confidence.score(SCOPE, [], model, classes)
 check("100 built units, 1 with a verdict, modelled is 100 not 1",
       s["modelled"], 100)
@@ -88,6 +112,20 @@ check("visibility gate is reachable", confidence.GATE["visibility"] <= 1.0,
       True)
 check("answer gate is below what sys/dev returned untuned",
       confidence.GATE["answer"] <= 1001 / 1419, True)
+
+print("\nno ledger on disk is NO DENOMINATOR, not a clean tree")
+# docs/port_plan.json is generated and .gitignore'd, so on a fresh
+# checkout there is no denominator at all. What the tool must NOT do is
+# carry on with a denominator of zero and report a fraction; what it
+# must do is say it has none. This drives the REAL ledger_scope, so it
+# asserts the same behaviour either way: with the ledger present the
+# prefix below names nothing, and without it nothing is named at all.
+confidence.ledger_scope = _REAL_LEDGER_SCOPE
+s = confidence.score("no/such/prefix/", [], [], {})
+check("an unnamed scope has no denominator", s["tus"], 0)
+check("...and says so rather than scoring", confidence.verdict(s)[0],
+      "NO LEDGER ENTRIES")
+check("...and the confidence is zero, never 1.0", s["confidence"], 0.0)
 
 print("\n" + ("the metric fails the way it should"
               if ok else "SOMETHING IS WRONG"))

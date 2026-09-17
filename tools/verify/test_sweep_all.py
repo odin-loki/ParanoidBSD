@@ -113,6 +113,34 @@ class Cost(unittest.TestCase):
                 self.assertFalse(st.fixed_cost, st.name)
 
 
+class MissingLedger(unittest.TestCase):
+    """The generated ledger is not in the repository, and CI is a fresh
+    checkout. Zero units would make every per-unit estimate read 0.00 h
+    and the whole plan look free."""
+
+    def test_no_ledger_counts_minus_one_not_zero(self):
+        real = S.LEDGER
+        try:
+            S.LEDGER = Path("/nonexistent/port_plan.json")
+            self.assertEqual(S.count_units(["sys"]), -1)
+        finally:
+            S.LEDGER = real
+
+    def test_no_ledger_refuses_rather_than_planning_a_free_run(self):
+        import tempfile
+        real = S.LEDGER
+        try:
+            S.LEDGER = Path("/nonexistent/port_plan.json")
+            rc = S.main(["--scope", "sys", "--out",
+                         tempfile.mkdtemp(), "--dry-run"])
+            self.assertEqual(rc, 2)
+        finally:
+            S.LEDGER = real
+
+    def test_the_hint_names_the_command_that_fixes_it(self):
+        self.assertIn("tools/port_plan.py", S.LEDGER_HINT)
+
+
 class Contract(unittest.TestCase):
 
     def test_there_is_no_whole_tree_default(self):

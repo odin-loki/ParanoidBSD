@@ -35222,3 +35222,61 @@ than a superset. The honest expectation is that it widens the *depth* of
 what is already checked — k-induction on the scalar userland corpus, and
 a second opinion on the functions where CBMC's SAT back end runs out of
 memory — and does not widen coverage of the kernel at all.
+
+## The test that asserted about an artefact, not about the code
+
+CI had been **red since `2bc4b2008`** — runs 599, 601 and 602 — and the
+last two were not the exec-bit break that was already fixed. They were
+`test_confidence.py`, failing on one case:
+
+```
+an instrument that did not run is not an instrument that failed
+  ok   model ran, analyser did not
+  FAIL the verdict says which is missing
+       got  False
+       want True
+```
+
+It passed on every machine I ran it on. The cause is one line of
+`.gitignore`:
+
+```
+# The machine-readable half of the port ledger. Regenerate with
+# tools/port_plan.py; the markdown is what is committed.
+docs/port_plan.json
+```
+
+**The ledger is generated and is not in the repository.** On a fresh
+checkout — which is exactly what CI is — `ledger_scope()` returns
+`(0, 0)` for every prefix, `verdict()` short-circuits to
+`NO LEDGER ENTRIES`, and the warning the test looked for is never
+reached. The tool was behaving correctly. The test was asserting about
+an artefact that only exists on a machine where somebody has run
+`tools/port_plan.py`, which is the same category of mistake as a test
+that cannot run: it passes where it is written and says nothing where it
+matters.
+
+Fixed by having every case that needs a denominator supply its own, and
+by adding the case that drives the real function with no ledger at all
+and asserts `NO LEDGER ENTRIES` — so the behaviour is exercised wherever
+the test runs. Verified by moving `docs/port_plan.json` aside and running
+the whole battery: eleven suites, all green, with and without it.
+
+### The same hole in the two tools written today
+
+`inventory.py` and `sweep_all.py` both read that ledger, and both died
+with a bare `FileNotFoundError` traceback without it — which is what the
+first command on a fresh clone would have done on anyone else's machine.
+Worse than the traceback is what a *lenient* fix would have done:
+
+- an empty universe makes every coverage fraction read **1.00**, because
+  the denominator is zero and nothing is untouched;
+- zero translation units makes every per-unit estimate read **0.00 h**,
+  so a 33-hour plan prints as free.
+
+So neither degrades. `ledger_rows()` raises `NoLedger` naming the command
+that fixes it, checked *before* the output file is opened so no truncated
+universe is left behind for the next command to read as a real one;
+`count_units()` returns **-1**, never 0, and `sweep_all` refuses with the
+same hint. Both have tests, and the tests assert the error is raised
+rather than that a fraction comes back small.

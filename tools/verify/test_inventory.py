@@ -154,6 +154,38 @@ class Universe(unittest.TestCase):
                                          ("", "", "", "textual")]})
 
 
+class MissingLedger(unittest.TestCase):
+    """docs/port_plan.json is GENERATED and .gitignore'd.
+
+    A fresh checkout has no denominator at all, and CI is a fresh
+    checkout. test_confidence.py asserted about it anyway and was red on
+    every CI run from the day it landed. The rule this enforces: no
+    denominator is an ERROR with the command that fixes it, never an
+    empty universe - because a universe of zero rows makes every
+    coverage fraction read 1.00.
+    """
+
+    def test_a_missing_ledger_raises_rather_than_yielding_nothing(self):
+        gone = Path("/nonexistent/port_plan.json")
+        with self.assertRaises(I.NoLedger):
+            list(I.ledger_rows(gone))
+
+    def test_the_error_names_the_command_that_fixes_it(self):
+        try:
+            list(I.ledger_rows(Path("/nonexistent/port_plan.json")))
+        except I.NoLedger as e:
+            self.assertIn("tools/port_plan.py", str(e))
+        else:
+            self.fail("no NoLedger raised")
+
+    def test_build_exits_nonzero_rather_than_writing_an_empty_universe(self):
+        import tempfile
+        out = Path(tempfile.mkstemp(suffix=".jsonl")[1])
+        rc = I.main(["--out", str(out), "--tree", "hbsd",
+                     "--ledger", "/nonexistent/port_plan.json"])
+        self.assertEqual(rc, 2)
+
+
 class Keywords(unittest.TestCase):
 
     def test_the_keyword_list_holds_the_control_flow_words(self):
