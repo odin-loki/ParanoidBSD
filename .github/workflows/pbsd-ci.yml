@@ -277,6 +277,35 @@ jobs:
           # where the truth is 0.93 -- understating the exact
           # number this project has worked hardest to raise.
           python3 tools/verify/test_confidence.py
+          # The denominator of the "we check for most kinds of defect"
+          # claim. A taxonomy inflates itself two ways by default:
+          # dropping the out-of-scope classes (concurrency, functional
+          # correctness) out of the denominator, and rounding a SOME up
+          # to a COVERED. Both are asserted against here, along with the
+          # rule that installing a tool can never LOWER the score.
+          python3 tools/verify/test_taxonomy.py
+          # The function universe. "No function left untouched" is a
+          # claim about a SET, and the set must not be built by asking
+          # the instruments what they saw - that number is always 100%.
+          # The textual scanner's error bar is measured against the port
+          # ledger by `inventory.py --selftest'; these are its shape
+          # rules, including the one that kept `if (x) {' out.
+          python3 tools/verify/test_inventory.py
+          # The three states every findings report collapses into one:
+          # nobody ran it, it ran and could not build, it ran and said
+          # nothing. A file that does not compile contributes zero
+          # findings and is indistinguishable from a clean one in any
+          # report that counts findings; here it is TU-ERROR and it
+          # counts AGAINST coverage.
+          python3 tools/verify/test_matrix.py
+          # The port agent's own ESBMC wrapper, which no workflow ran
+          # until now -- and which passed --no-bounds-check on every
+          # invocation it has ever made. ESBMC's polarity is the reverse
+          # of CBMC's: bounds, pointer and division checks are ON and are
+          # switched off by a --no-* flag. So every formal check that
+          # wrapper reported clean had array bounds checking disabled,
+          # and nothing in the output it parsed would have said so.
+          python3 tools/pbsd_agent/test_agent_port.py
           # The build-system readers. Every one of them exists because
           # the tool had a rule where a makefile had the answer, and each
           # was found by a translation unit that came back ERROR and

@@ -34809,3 +34809,244 @@ wiring it up risks a **false negative** in a tool about to gate.
 The source was **not** reshaped to suit the tool. A lint that makes
 people rewrite correct code to silence it is worse than one that is
 wrong in a documented way.
+
+---
+
+## The military-grade harness: three questions instead of one
+
+The ask was "run a script over the whole codebase that shows 90%+ of
+possible error types, HBSD and KDE, no function left untouched." Read
+literally that is one number. It is actually three, they multiply, and
+keeping them apart is the only way the answer means anything.
+
+```
+    CLASS COVERAGE    of the kinds of defect that exist, how many does
+                      some instrument here know how to look for?
+                      tools/verify/taxonomy.py
+
+  x CODE COVERAGE     of the functions that exist, how many has some
+                      instrument actually returned a verdict on?
+                      tools/verify/inventory.py + matrix.py
+
+  x RESOLUTION        of the verdicts returned, how many has somebody
+                      read and settled?
+                      tools/verify/confidence.py
+```
+
+An instrument set that sees every class of defect, run over 5% of the
+tree, has found 5% of what is there. Quoting the first number alone is
+the easiest way to mislead somebody with any of this, and each tool
+prints the sentence that says so.
+
+### 1. The denominator — `tools/verify/taxonomy.py`
+
+Fifty-two defect classes in scope, CWE-anchored, each mapped to the
+instruments that can see it and at what strength:
+
+| | |
+|---|---|
+| `PROVES` | a clean verdict **discharges** the class for all inputs within the bound. The instrument's silence is evidence. Only bounded model checking earns this. |
+| `FINDS` | reports instances with useful recall. Its silence is **not** evidence. |
+| `SOME` | reports a named subset only. Silence is worth nothing. |
+
+A class is `COVERED` when something reaches PROVES or FINDS, `PARTIAL`
+when the best available is SOME, `GAP` when nothing sees it. **PARTIAL
+is never rounded up**, and `test_taxonomy.py` asserts it, because that
+rounding is how "we look for it" becomes "we would find it".
+
+Measured, this container, today:
+
+```
+  classes in scope           52
+  COVERED (PROVES or FINDS)  45
+  PARTIAL (SOME only)         6
+  GAP     (nothing sees it)   1
+  classes named out of scope  8
+
+  fraction COVERED            0.87
+```
+
+Eight classes are **out of scope and named rather than deleted**:
+`CONC-DATA-RACE`, `CONC-TOCTOU`, `CONC-ATOMICITY`, `LOGIC-WRONG-RESULT`,
+`SPEC-MISSING`, `CRYPTO-MISUSE`, `SIDE-CHANNEL`, `BUILD-CONFIG`. Dropping
+them from the denominator would take the headline from 0.87 to 0.90 and
+the codebase would be exactly as buggy. `test_taxonomy.py` fails if any
+of them drifts back into scope.
+
+The one `GAP`, with the instruments actually installed here, is
+**`TRUST-UNVALIDATED-INPUT`** — a value from an ioctl, a sysctl, a
+`copyin` length or a syscall argument reaching an index, a size or a
+divisor. This is the most important class in the file and the worst
+covered, and the reason is structural: a model checker treats *every*
+parameter as unconstrained, so it reports the attacker-controlled and
+the caller-constrained identically and a person has to separate them by
+hand. That separation has been the single largest cost in this project.
+Taint tracking is what answers it; `codeql` is the only instrument in
+the table that does taint and it is not installed. `--missing` names it
+and says what installing it would buy.
+
+`--available` recomputes over only what is on PATH, so the number
+describes a real run rather than a paper one, and the difference between
+the two **is** the install list.
+
+### 2. The row universe — `tools/verify/inventory.py`
+
+"No function left untouched" is a claim about a **set**, and the obvious
+way to fake it is circular: enumerate functions by asking the
+instruments which ones they saw, then report that they saw all of them.
+That number is always 100%.
+
+So the universe is built from sources independent of the instruments,
+and every row carries which source found it:
+
+| source | rows | how |
+|---|---:|---|
+| `ledger` | 297,212 | `docs/port_plan.json`, built by `tools/port_plan.py` from the tree |
+| `textual` | 32,417 | a brace matcher in `inventory.py`, for `kde/` (16,753) and `pbsd/` (15,664), which the ledger does not cover |
+| | **329,629** | the denominator of every coverage fraction below |
+
+The scanner's accuracy is **measured, not asserted**. `--selftest` runs
+it over files the ledger already knows and compares:
+
+```
+  == textual scanner vs the ledger, 300 files, seed 20260917
+    agreed            4448
+    scanner only      131
+    ledger only        33
+    precision 0.971   recall 0.993
+```
+
+That is the error bar on every `kde/` and `pbsd/` row and on nothing
+else. Reading the disagreements is more useful than the percentage: a
+good share of the 131 are the scanner being **right** where the ledger
+is wrong — `NCURSES_EXPORT(...)`, `__elfN(...)` and `MODULE_ID(...)`
+wrappers are real definitions — and several of the 33 are the ledger
+recording macro artefacts (`void`, `time`) as function names.
+
+One real scanner bug was found by its own test suite while writing it:
+the trailing-decoration regex was anchored with `$` against the slice
+after the close paren, so `int Window::width() const { ... }` never
+matched and **every const method in KDE would have been missing from
+the universe**. Anchored as a prefix instead, and `test_inventory.py`
+holds the case.
+
+### 3. The matrix — `tools/verify/matrix.py`
+
+One row per function, one column per instrument. There is deliberately
+**no cell value that means "fine"**. There are values that mean an
+instrument returned a verdict, values that mean it did not, and the
+report separates a function nobody attempted from a function somebody
+attempted and failed on — because those need completely different work:
+one needs a run, the other needs a build fixed or a bound raised.
+
+| from a per-function engine | |
+|---|---|
+| `PROVED` / `PROVED-ASSUMING` | discharged within the bound |
+| `BOUNDED` | holds up to the bound |
+| `FAILED` | a counterexample exists; `report.py` decides if it is a defect |
+| `TIMEOUT` / `ERROR` / `NOFUNC` | **no answer — the function is unchecked, not clean** |
+
+| from a per-TU instrument | |
+|---|---|
+| `REPORTED` | the tool named this function |
+| `TU-CLEAN` | the unit built, the tool ran, it said nothing about this function |
+| `TU-ERROR` | **the unit did not build** |
+
+`TU-ERROR` is the point of the whole structure. A file that does not
+compile produces zero findings and is indistinguishable from a clean one
+in every findings report ever written. Here it is a distinct cell and it
+counts **against** coverage.
+
+Run over the model-check and analyse artefacts on hand (CBMC over
+`sys/dev`, `sys/fs`, `sys/kern`, `sys/amd64`, OpenZFS and `sys/cddl`;
+clang `--analyze` over `crypto/` and `usr.sbin/bhyve` — a fraction of
+the full sweep, not all of it):
+
+```
+  == rows (functions the universe knows about)   329629
+     TOUCHED       7339  0.022
+       PROVED      1353   some engine discharged the checked properties
+       CHECKED      863   some engine returned a verdict
+       SCANNED     5123   only TU-level instruments looked
+     UNTOUCHED   322290  0.978
+       never attempted        288137   needs a RUN
+       attempted, no answer    34153   needs a BUILD FIXED or a BOUND RAISED
+```
+
+And the number that justifies the whole exercise, from the analyse
+column alone:
+
+```
+     clang-analyze   TU-ERROR   33609
+                     TU-CLEAN    5091
+                     REPORTED      32
+```
+
+**87% of the functions that pass "covered" nothing built.** In a
+findings report those 33,609 functions contribute zero findings and
+read exactly like the 5,091 that were genuinely scanned.
+
+Ingest is idempotent, last-write-wins per engine, and **a non-verdict
+never overwrites a verdict** — a later run that timed out does not erase
+an earlier proof, because the absence of data is not data. A verdict
+naming a function the universe does not hold is counted as
+`NOT IN UNIVERSE` rather than silently adding a row: that means the
+*universe* is wrong, and hiding it would hide the one thing this file
+exists to show.
+
+## Two defects in the port agent's ESBMC wrapper
+
+Found while building the ESBMC driver, both in
+`tools/pbsd_agent/esbmc_check.py`, both the same mistake.
+
+**`--no-bounds-check`, unconditionally.** ESBMC's check polarity is the
+**reverse** of CBMC's: bounds, pointer and division checks are ON by
+default and are switched off by a `--no-*` flag, while overflow and leak
+checks are off and must be named. This wrapper passed
+`--no-bounds-check` on every invocation, so every formal check it ever
+reported clean had **array bounds checking disabled**, and nothing in
+the output it parsed would have said so. A disabled check is invisible
+in the verdict that reports the result.
+
+Fixed: the flag is gone, `--overflow-check` and `--memory-leak-check`
+are named because ESBMC leaves those off, and `CHECKS_OFF` is a deny
+list that `_reject_weakening()` raises on — including for a flag
+smuggled in through the caller's `extra`.
+
+**Silence promoted to a proof.** The wrapper ended with:
+
+```c
+    if (status == "error" and proc.returncode == 0:
+        status = "ok"
+        sat = sat or "UNSAT"
+```
+
+`status == "error"` means the parser found neither `VERIFICATION
+SUCCESSFUL` nor `VERIFICATION FAILED` in the output. Promoting that to
+`ok`/`UNSAT` on the exit code alone manufactures a clean formal result
+out of an unreadable run — the exact failure the rest of this document
+set exists to prevent, sitting in the tree's own verification wrapper.
+Removed; an output with no verdict line is `error`, and an empty one is
+`error` too.
+
+`tools/pbsd_agent/test_agent_port.py` **ran in no workflow**, which is
+why both survived. It is now in `pbsd-ci.yml`.
+
+### The first version of those tests did not bite
+
+Worth recording because it is the same failure in miniature. Reverting
+both defects left the new tests passing:
+
+- `test_silence_is_not_a_proof` exercised `parse_esbmc_output`, but the
+  promotion lived in `esbmc_check`, so reverting it changed nothing the
+  test could see;
+- `test_default_flags_do_not_disable_a_check` called
+  `esbmc_check(Path("/nonexistent.c"))`, which returns `skipped` with
+  `cmd=None` on a machine without ESBMC — **the assertion loop never
+  ran**, and a test that cannot run is indistinguishable from a test
+  that passes.
+
+Fixed by extracting `build_cmd()` as a seam a test can read without a
+binary, and by driving the promotion through `esbmc_check` with a fake
+`subprocess.run`. Both now fail when the defect is put back, verified by
+putting it back.
