@@ -150,30 +150,90 @@ class MissingLedger(unittest.TestCase):
         self.assertIn("tools/port_plan.py", S.LEDGER_HINT)
 
 
+class TreeFixture:
+    """A tree and a ledger the test owns.
+
+    docs/port_plan.json is generated and .gitignore'd, so in a fresh
+    checkout - which is what CI is - it does not exist, and neither
+    does whatever the developer's machine happens to have under
+    hbsd/src. A test that asserts against those is asserting about the
+    machine it runs on. This builds both, so an assertion about
+    count_units is about count_units.
+    """
+
+    def __init__(self, files=(), ledger_paths=None):
+        self.root = Path(tempfile.mkdtemp())
+        for rel in files:
+            f = self.root / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("int main(void) { return 0; }\n")
+        self._root = S.ROOT
+        self._ledger = S.LEDGER
+        S.ROOT = self.root
+        if ledger_paths is None:
+            S.LEDGER = self.root / "there-is-no-ledger.json"
+        else:
+            S.LEDGER = self.root / "port_plan.json"
+            S.LEDGER.write_text(json.dumps(
+                {"records": [{"path": x} for x in ledger_paths]}))
+
+    def undo(self):
+        S.ROOT = self._root
+        S.LEDGER = self._ledger
+
+
 class KindRouting(unittest.TestCase):
     """A C scope handed to a C++ stage is sweep_all's bug, not the
     stage's. The C++ drivers correctly refuse a scope matching no files;
     recording that as `failed' produces a line that means nothing, and
-    a failure list with noise in it is one a reader learns to skim."""
+    a failure list with noise in it is one a reader learns to skim.
+
+    The stages here are synthetic on purpose. Asking the real cppcheck
+    stage would test whether cppcheck is installed - it is not, in CI -
+    and availability is decided before kind, so the answer would be
+    NOTRUN and the routing would never be reached.
+    """
 
     def _ctx(self, scopes):
         return {"dir": Path("/tmp"), "scopes": scopes, "jobs": 1,
                 "timeout": 1, "resume": False}
 
+    def _stage(self, kind, feeds=None):
+        return S.Stage("x", None, "sh", None, lambda c: ["true"],
+                       feeds=feeds, kind=kind)
+
     def test_a_c_scope_skips_the_cxx_stages(self):
-        st = S.STAGE_BY_NAME["cxx-analyze"]
-        r = S.run_stage(st, self._ctx(["sys/geom/uzip"]),
+        self.addCleanup(TreeFixture(["sys/geom/uzip/g_uzip.c"]).undo)
+        r = S.run_stage(self._stage("cxx"), self._ctx(["sys/geom/uzip"]),
                         {"stages": {}}, dry=True)
         self.assertEqual(r["status"], "skipped")
         self.assertTrue(r["kind_mismatch"])
         self.assertIn("no cxx sources", r["why"])
 
     def test_a_cxx_scope_skips_the_c_stages(self):
-        st = S.STAGE_BY_NAME["cppcheck"]
-        r = S.run_stage(st, self._ctx(["kde/frameworks/kcoreaddons"]),
+        self.addCleanup(TreeFixture(["kde/f/kcoreaddons/k.cpp"]).undo)
+        r = S.run_stage(self._stage("c"), self._ctx(["kde/f/kcoreaddons"]),
                         {"stages": {}}, dry=True)
         self.assertEqual(r["status"], "skipped")
         self.assertTrue(r["kind_mismatch"])
+        self.assertIn("no c sources", r["why"])
+
+    def test_a_scope_of_the_right_kind_is_not_skipped(self):
+        """The counterpart: the skip has to be the kind's doing, not
+        something that fires whatever the scope holds."""
+        self.addCleanup(TreeFixture(["sys/geom/uzip/g_uzip.c"]).undo)
+        r = S.run_stage(self._stage("c"), self._ctx(["sys/geom/uzip"]),
+                        {"stages": {}}, dry=True)
+        self.assertEqual(r["status"], "would-run")
+
+    def test_every_real_stage_declares_the_kind_it_reads(self):
+        """The routing above is only reached if the real stages carry a
+        kind. An unlabelled stage would default to c and be handed every
+        C++ scope in the tree."""
+        for st in S.STAGES:
+            self.assertIn(st.kind, ("c", "cxx", "meta"), st.name)
+        self.assertEqual(S.STAGE_BY_NAME["cppcheck"].kind, "c")
+        self.assertEqual(S.STAGE_BY_NAME["cxx-analyze"].kind, "cxx")
 
     def test_a_kind_mismatch_is_not_counted_as_a_coverage_gap(self):
         """There were no functions of that kind to leave untouched."""
@@ -196,7 +256,8 @@ class KindRouting(unittest.TestCase):
         kind' is a stronger answer than `its input failed', and getting
         it backwards would report a C++ stage as blocked-on-classify in
         every C-only scope in the tree."""
-        st = S.STAGE_BY_NAME["cxx-analyze"]
+        self.addCleanup(TreeFixture(["sys/geom/uzip/g_uzip.c"]).undo)
+        st = self._stage("cxx", feeds=["classify"])
         r = S.run_stage(st, self._ctx(["sys/geom/uzip"]),
                         {"stages": {"classify": {"status": "failed"}}},
                         dry=True)
@@ -213,34 +274,51 @@ class UnitCount(unittest.TestCase):
     reads 0.00 h, and a three-hour job prints as free."""
 
     def test_a_scope_the_ledger_names_is_counted_from_it(self):
-        n, src = S.count_units(["sys/geom/uzip"])
-        self.assertGreater(n, 0)
-        self.assertEqual(src, "ledger")
+        self.addCleanup(TreeFixture(
+            files=["sys/geom/uzip/g_uzip.c"],
+            ledger_paths=["sys/geom/uzip/g_uzip.c",
+                          "sys/geom/uzip/g_uzip_lzma.c",
+                          "sys/geom/uzip/g_uzip.h",
+                          "sys/geom/other/x.c"]).undo)
+        self.assertEqual(S.count_units(["sys/geom/uzip"]), (2, "ledger"))
 
     def test_a_scope_the_ledger_does_not_name_falls_back_to_disk(self):
-        n, src = S.count_units(["kde/frameworks/kcoreaddons"])
-        self.assertGreater(n, 0)
-        self.assertEqual(src, "disk")
+        self.addCleanup(TreeFixture(
+            files=["kde/f/kcoreaddons/a.cpp", "kde/f/kcoreaddons/b.cpp"],
+            ledger_paths=["sys/geom/uzip/g_uzip.c"]).undo)
+        n, src = S.count_units(["kde/f/kcoreaddons"])
+        self.assertEqual((n, src), (2, "disk"))
 
     def test_the_provenance_is_returned_not_just_the_number(self):
         """A disk count and a ledger count do not mean the same thing,
         so the caller must be able to say which it printed."""
-        for scope in (["sys/geom/uzip"], ["kde/frameworks/kcoreaddons"]):
+        self.addCleanup(TreeFixture(
+            files=["sys/geom/uzip/g_uzip.c", "kde/f/kcoreaddons/a.cpp"],
+            ledger_paths=["sys/geom/uzip/g_uzip.c"]).undo)
+        for scope in (["sys/geom/uzip"], ["kde/f/kcoreaddons"]):
             self.assertIn(S.count_units(scope)[1], ("ledger", "disk"))
 
+    def test_a_scope_with_nothing_in_it_is_zero_not_a_refusal_to_count(self):
+        """Zero and `cannot count' are different answers: one means the
+        scope is empty, the other means the ledger is missing. main()
+        refuses on both, but for different reasons, and the report has
+        to name the right one."""
+        self.addCleanup(TreeFixture(
+            files=["sys/geom/uzip/g_uzip.c"],
+            ledger_paths=["sys/geom/uzip/g_uzip.c"]).undo)
+        self.assertEqual(S.count_units(["does/not/exist"]), (0, "nothing"))
+
     def test_a_scope_with_nothing_in_it_refuses(self):
-        import tempfile
+        self.addCleanup(TreeFixture(
+            files=["sys/geom/uzip/g_uzip.c"],
+            ledger_paths=["sys/geom/uzip/g_uzip.c"]).undo)
         rc = S.main(["--scope", "does/not/exist", "--out",
                      tempfile.mkdtemp(), "--dry-run"])
         self.assertEqual(rc, 2)
 
     def test_a_missing_ledger_still_refuses_rather_than_counting_disk(self):
-        real = S.LEDGER
-        try:
-            S.LEDGER = Path("/nonexistent/port_plan.json")
-            self.assertEqual(S.count_units(["sys"]), (-1, "none"))
-        finally:
-            S.LEDGER = real
+        self.addCleanup(TreeFixture(files=["sys/geom/uzip/g_uzip.c"]).undo)
+        self.assertEqual(S.count_units(["sys"]), (-1, "none"))
 
 
 class Contract(unittest.TestCase):
