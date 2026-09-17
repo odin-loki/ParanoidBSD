@@ -34342,3 +34342,63 @@ and neither reaches an out-of-bounds index — for AR8327 `es_nports` is
 `numphys` cap is ≤ 5. `bwn_pio_idx2base` prints a warning on an
 out-of-range index and then indexes anyway, but all callers pass
 constants 0–4 against 8- and 6-entry tables.
+
+## The POINTER tier, tried on GEOM's parsers: 81% no verdict
+
+The `fs`-shard write-up above named the blind spot precisely — *"the
+model checker is still blind to this shard's PARSERS, the pointer-taking
+functions that read disk bytes; `g_uzip_taste`, `ldm_vmdb_parse` and
+`g_raid3_taste` have never been model-checked"* — and said a POINTER
+tier under a stated precondition was where the next findings would be.
+Tried. **It is still a blind spot, and this is what the attempt cost.**
+
+First scoping mistake, recorded because it is the cheaper lesson: all of
+`sys/geom` under `--allow POINTER` is **1,418 (file, function) pairs**,
+and at the observed rate — 10 records in four minutes at `--jobs 2` —
+that is about nine hours. Read the pair count before starting the run.
+
+Narrowed to the four directories that are actually on-disk-metadata
+readers — `sys/geom/part`, `uzip`, `label`, `bde` — which is **240
+pairs**, and run with the same settings the userland sweep uses for this
+tier: `--allow POINTER --null-depth 3 --unwind 6 --timeout 30
+--mem-mb 4096 --object-bits 12`, at `--jobs 3`.
+
+| verdict | n |
+|---:|---|
+| PROVED | **0** |
+| PROVED-ASSUMING | 6 |
+| BOUNDED | 1 |
+| FAILED | 38 |
+| **TIMEOUT** | **195** |
+
+**195 of 240 — 81% — produced no verdict at all, and nothing was
+proved.** The 38 that answered bucket as 31 pointer/memory, 6
+static-deferred, and exactly one record in a READ-THESE bucket. So the
+tier as configured says almost nothing about this code: an 81%
+no-verdict rate is not a weak result, it is an absent one, and reporting
+the 38 without the 195 beside them would be the exact failure this
+document exists to prevent.
+
+The one read-pile record, run down and **not a defect**:
+`g_part.c:g_part_geometry_heads` reports
+`division by zero in (blocks / heads) / sectors`. `heads` comes from a
+static candidate array the loop terminates on, so it is never 0;
+`sectors` is the parameter, and all three callers establish it —
+`g_part.c:263` iterates `candidate_sectors[]` and stops at the 0
+sentinel; `g_part_bsd.c:407` reads it from the disklabel and then
+rejects it with `if (sectors < 1 || sectors > 255) goto invalid_label;`;
+and `g_part_mbr.c:510` takes a six-bit field, `ent.dp_esect & 0x3f`, and
+guards with `sectors > basetable->gpt_sectors`, which implies
+`sectors >= 1` structurally whatever `gpt_sectors` holds. The function is
+exported, so the missing precondition is real and unstated — but no
+caller violates it, including the two that read the value off the
+medium.
+
+**What to change before trying again**, stated so the next attempt
+starts from the numbers rather than repeating them: the binding
+constraint is `--timeout 30` against `--null-depth 3`, which builds a
+tree of allocated objects per pointer parameter. Either raise the
+timeout by a large factor and accept the wall time on a much narrower
+scope — one taster at a time — or lower `--null-depth`, which weakens
+the precondition but may actually answer. What is *not* worth repeating
+is this configuration at this breadth.
