@@ -33368,6 +33368,14 @@ in the tree spells for itself. `__pc` is bound by all five of amd64's
 per-CPU accessors — `get_pcpu`, `__PCPU_PTR`, `__PCPU_GET`,
 `__PCPU_ADD`, `__PCPU_SET` — and by nothing else.
 
+> **Superseded, and read on before using this as the rule.** `__pc` is
+> ONE of four spellings, and it is not the commonest. The others are
+> `return_value_get_pcpu` (where `get_pcpu()` is a real out-of-line
+> call), `return_value___curthread` (amd64's `curthread`, which is
+> inline asm and nothing to do with `__seg_gs` — **11 of `sys/kern`'s
+> 17 per-CPU records reach it this way**), and, on i386, no pcpu name at
+> all. See *`sys/kern` model-checked after `__seg_gs`* below.
+
 That is the trade, stated rather than buried: the fix takes the kernel
 model-check corpus from a fraction to nearly all of it, and costs one
 identifiable false-positive class at every `get_pcpu()` / `PCPU_GET`
@@ -33380,8 +33388,10 @@ Writing *any future report mentioning `__pc` is this artefact* into a
 document is how a known false positive comes back: the next sweep
 prints it beside real work and somebody reads it again.
 `tools/verify/report.py`'s `pcpu_artefact()` decides it instead, and
-the bucket is its own — **the `__seg_gs` pcpu artefact (the model's
-null, not the code's)**.
+the bucket is its own — **a per-CPU read CBMC cannot model (the
+model's null, not the code's)**, named after the cause rather than after
+`__seg_gs`, because three of the four spellings have nothing to do with
+that define.
 
 The rule is **per failing line, not per failure**, and that distinction
 is a record. `sys/cddl/dev/dtrace/amd64/dtrace_subr.c`'s
