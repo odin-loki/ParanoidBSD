@@ -268,6 +268,15 @@ jobs:
           python3 tools/verify/test_analyze.py
           python3 tools/verify/test_classify.py
           python3 tools/verify/test_report_triage.py
+          # The coverage metric's own failure modes. A number
+          # people quote without reading has to be tested in
+          # the direction it lies: the first draft read
+          # visibility off the model-check jsonl, which holds
+          # one record per (file, function) CHECKED rather than
+          # per unit BUILT, and so reported 0.03 for sys/dev
+          # where the truth is 0.93 -- understating the exact
+          # number this project has worked hardest to raise.
+          python3 tools/verify/test_confidence.py
           # The build-system readers. Every one of them exists because
           # the tool had a rule where a makefile had the answer, and each
           # was found by a translation unit that came back ERROR and

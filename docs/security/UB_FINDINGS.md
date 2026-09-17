@@ -34402,3 +34402,129 @@ timeout by a large factor and accept the wall time on a much narrower
 scope — one taster at a time — or lower `--null-depth`, which weakens
 the precondition but may actually answer. What is *not* worth repeating
 is this configuration at this breadth.
+
+## A confidence and coverage metric, and the gate for proceeding with the port
+
+`tools/verify/confidence.py`, with `tools/verify/test_confidence.py`
+beside it. This section is the definition; the tool is the authority.
+
+### Why the obvious metric is the wrong one
+
+*"How many findings are left?"* is the question everybody asks and it is
+backwards. **A scope nobody checked reports zero findings and looks
+exactly like one that is clean.** Every large win in this document has
+been an instance of that:
+
+| the fix | what happened to the finding count |
+|---|---|
+| the interface-header fix | `sys/` went from a few hundred usable translation units to thousands |
+| the port ledger's SKIP tags | 2,465 invisible translation units down to 336 |
+| `-D__seg_gs=`, **one line** | `sys/dev` a fraction → 2,419 of 2,612; OpenZFS 35 → 276 |
+
+In every one the number of findings went **up** when the instrument got
+better. A metric that rewards a low count would have scored all three as
+regressions.
+
+### The definition
+
+Three fractions, **multiplied**, and the components are always printed
+beside the product:
+
+```
+VISIBILITY   of the translation units the LEDGER names in scope, how
+             many the instrument could build. clang ERROR and goto-cc
+             TU-ERROR both count against it.
+
+ANSWER       of the functions attempted, how many returned a verdict.
+             TIMEOUT and CBMC's own ERROR count against it — those
+             functions are UNCHECKED, not clean.
+
+RESOLUTION   of the verdicts returned, how many are settled: a proof,
+             or a failure in a bucket whose rule explains it, or a
+             failure in a READ-THESE bucket that a person read and
+             entered in the not-a-defect table.
+
+CONFIDENCE = VISIBILITY × ANSWER × RESOLUTION
+```
+
+A product, for two reasons. It is how the pipeline actually composes — a
+translation unit that will not build is never attempted, and a function
+with no verdict is never read — and it **cannot be inflated by one
+strong component**. 90% visible, 90% answered and 90% read is **0.73**,
+and that is the honest number.
+
+The denominator is the **ledger**, not what the run happened to attempt.
+That is the load-bearing choice: it means a scope the sweep never
+touched scores 0 rather than 1.0.
+
+### What the number is not
+
+- **Not a proof of correctness.** CBMC proves the *checked properties* —
+  signed overflow, shifts, division, array bounds, pointer validity —
+  hold for all inputs **within the loop bound**. A driver that returns
+  the wrong value for every input can score 1.0.
+- **Not risk-weighted.** Ten leaf helpers and ten on-disk parsers score
+  the same way, and they are not the same exposure. The `g_uzip` defect
+  came out of a parser; the `fls()` one came out of a helper nothing can
+  reach.
+- **Not a single tree-wide figure.** The tool refuses to compute one:
+  `--scope` is required. A tree-wide average would let `lib/libc` pay
+  for `sys/dev`.
+
+### The port gate
+
+A directory is **PORT-READY** when all three hold:
+
+| criterion | threshold | why that number |
+|---|---|---|
+| visibility | ≥ 0.95 | `sys/fs` is 119/119 and `sys/geom` 78/78 under goto-cc today — a bar something already clears, not an aspiration |
+| answer | ≥ 0.70 | roughly what `sys/dev` returned untuned (1,001 of 1,419) |
+| unread findings | **= 0** | an absolute, not a threshold — see below |
+
+**Why unread is absolute.** Porting a file means rewriting it. An unread
+finding carried across becomes a defect in the new code **without its
+provenance**: the bug survives and the record of where it came from does
+not. Everything else here is a judgement about instrument quality; this
+one is about not destroying evidence.
+
+A scope that cannot meet the thresholds is not forbidden from being
+ported. It is forbidden from being ported **quietly** — the gate names
+which criterion failed and by how much.
+
+### Measured today
+
+Over the artefacts on hand, which are partial for several scopes — and
+the tool says so rather than scoring the gaps as clean:
+
+| scope | TUs | vis | ans | res | CONF | proved | unread |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `sys/fs` | 119 | 1.00 | 0.82 | 0.98 | **0.80** | 33 | 1 |
+| `sys/kern` | 225 | 0.79 | 0.87 | 0.95 | **0.65** | 169 | 12 |
+| `sys/geom` | 78 | 1.00 | 0.31 | 0.99 | **0.31** | 36 | 1 |
+| `sys/netgraph` | 74 | — | — | — | **UNSEEN** | 0 | 0 |
+
+**Nothing is PORT-READY yet.** `sys/geom`'s 0.31 answer rate is the
+POINTER-tier timeout recorded above; `sys/kern`'s 0.79 visibility is its
+41 remaining TU-ERRORs; and `sys/netgraph` is the case the metric exists
+for — 74 translation units no instrument in these artefacts has ever
+returned data about, which reads as **UNSEEN** and not as zero findings.
+
+### The failure modes, tested
+
+`test_confidence.py` asserts the ways a coverage number can lie, and the
+first two are mistakes the first draft of the tool **actually made**:
+
+1. **Visibility was read off the wrong artefact.** The draft counted
+   distinct files in the model-check jsonl — which holds one record per
+   *(file, function) checked*, so most built translation units
+   contribute none. It reported 0.03 for `sys/dev`, a scope that is
+   really 0.93, understating precisely the number this project has
+   worked hardest to raise. It reads `classify.py`'s index now, which is
+   the only artefact that knows what goto-cc built.
+2. **"Not run" was folded into "ran and failed."** That is the same
+   error one level up, and it made a scope nobody analysed
+   indistinguishable from one the analyser could not build. The two are
+   reported separately now, and a scope where *neither* ran is `UNSEEN`.
+3. A scope with no data scores 0, never `n/a`, and is never omitted.
+4. An unread finding blocks the gate whatever the score.
+5. The product cannot be inflated by one strong component.
