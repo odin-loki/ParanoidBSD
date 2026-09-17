@@ -34113,11 +34113,35 @@ the numbers, as the next candidate rather than churned.
 | `vmm_mem_machdep.c:vmm_mem_maxaddr` — `Maxmem << 12` | a file-scope extern the model does not constrain; set once at boot from the memory map |
 | `vmm_instruction_emul.c:vie_alignment_check` — `size - 1` | same domain as `vie_size2mask` above: every decoder assignment gives 2, 4 or 8 |
 
-**Not established, and left open:**
-`mptable.c:mptable_pci_route_interrupt` does `pin--` on its `int pin`
-parameter with the comment *"Like ACPI, pin numbers are 0-3, not 1-4"*.
-The pin reaches it from the PCI layer, which reads it out of a device's
-configuration space, so it is a **device-supplied byte** rather than a
-value the kernel computed. Whether `pin == 0` is filtered before it
-arrives was not traced to a conclusion, and it is not claimed either
-way here.
+**`mptable.c:mptable_pci_route_interrupt` — traced, and not a
+defect.** It does `pin--` on its `int pin` parameter with the comment
+*"Like ACPI, pin numbers are 0-3, not 1-4"*, and the pin reaches it from
+the PCI layer, which reads it out of a device's configuration space
+(`pci.c:768`, `cfg->intpin = REG(PCIR_INTPIN, 1)`) — a
+**device-supplied byte**, so worth following rather than assuming.
+
+Three questions, three answers:
+
+- **Can `pin` be 0?** No, on this path. `pci_assign_interrupt()`
+  (`pci.c:3614`) opens with `if (cfg->intpin == 0) return;` at `:3622`,
+  and the only call to `PCI_ASSIGN_INTERRUPT` is at `:3642`, below that
+  filter. `hostb_pci.c:192` and `vga_pci.c:574` forward their own
+  device's assignment to the parent, and are themselves reached through
+  the same function. `pci.c:4224` has `if (cfg->intpin > 0 && ...)` for
+  the re-route path.
+- **Can `pin - 1` overflow?** No. `intpin` is one config-space byte, so
+  [0, 255]; `pin - 1` needs `INT_MIN` to overflow. CBMC reports it
+  because `mptable_pci_route_interrupt` is exported and its parameter is
+  unconstrained in the model — the missing-precondition class, not a
+  reachable one.
+- **What does a device reporting an out-of-spec pin (5..255) do?**
+  `args.irq = slot << 2 | pin` packs the pin into the low two bits, so a
+  larger value overlaps the slot field and can match the wrong MP-table
+  entry: a **misrouted interrupt**, not undefined behaviour and not a
+  memory-safety problem. And for `pin == -1`, had it been reachable,
+  `slot << 2 | -1` is -1, no entry matches, and the function returns
+  `PCI_INVALID_IRQ` after printing `'A' + pin` — one garbage character
+  in a diagnostic.
+
+Recorded because the first reading of this record left it open, and an
+open question in this document is a claim that nobody checked.
