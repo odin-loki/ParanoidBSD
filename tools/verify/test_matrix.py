@@ -180,6 +180,45 @@ class IngestTuEngine(unittest.TestCase):
                              M.S_UNTOUCHED)
 
 
+class TuStatusIsNotAssumedClean(unittest.TestCase):
+    """Only OK means the tool read the unit.
+
+    The first draft tested `status == "ERROR"' and filed everything else
+    as clean, so a record saying NOTRUN - which is what a CI step that
+    skips itself emits - came out TU-CLEAN. A skipped step and a passing
+    step are the two things this whole file exists to keep apart.
+    """
+
+    def test_notrun_is_notrun_not_clean(self):
+        m = _m(ROWS)
+        c = m.ingest("cxx-tidy", "hbsd", _jsonl([
+            {"file": "a.c", "status": "NOTRUN", "findings": [],
+             "detail": "no module interfaces in build/"}]))
+        self.assertEqual(c["NOTRUN"], 2)
+        for fn in ("f", "g"):
+            self.assertEqual(m.rows[("hbsd", "a.c", fn)]["cxx-tidy"],
+                             "NOTRUN")
+            self.assertEqual(M.strength(m.rows[("hbsd", "a.c", fn)]),
+                             M.S_UNTOUCHED)
+            self.assertEqual(M.why_untouched(m.rows[("hbsd", "a.c", fn)]),
+                             "never-attempted")
+
+    def test_an_unrecognised_status_is_pessimistic(self):
+        """A status nobody anticipated is not evidence of anything."""
+        m = _m(ROWS)
+        m.ingest("clang-analyze", "hbsd", _jsonl([
+            {"file": "a.c", "status": "SPLENDID", "findings": []}]))
+        self.assertEqual(m.rows[("hbsd", "a.c", "f")]["clang-analyze"],
+                         "TU-ERROR")
+
+    def test_a_missing_status_is_not_clean(self):
+        m = _m(ROWS)
+        m.ingest("clang-analyze", "hbsd", _jsonl([
+            {"file": "a.c", "findings": []}]))
+        self.assertEqual(m.rows[("hbsd", "a.c", "f")]["clang-analyze"],
+                         "TU-ERROR")
+
+
 class Merging(unittest.TestCase):
 
     def test_ingest_is_idempotent(self):

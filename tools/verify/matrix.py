@@ -219,7 +219,20 @@ class Matrix:
                 else:
                     status = d.get("status", "ERROR")
                     fns = by_file.get((tree, f), ())
-                    if status == "ERROR":
+                    # Only OK means the tool ran and had something to say
+                    # about this unit. Everything else is the tool NOT
+                    # having read it, and the default is the pessimistic
+                    # one: an unrecognised status is TU-ERROR, never
+                    # TU-CLEAN. The first draft tested only for "ERROR",
+                    # so a record saying NOTRUN - which is what a skipped
+                    # CI step emits - was filed as CLEAN, which is the
+                    # exact confusion this file exists to prevent.
+                    if status == "NOTRUN":
+                        for fn in fns:
+                            self._set((tree, f, fn), engine, "NOTRUN")
+                        counts["NOTRUN"] += len(fns)
+                        continue
+                    if status != "OK":
                         for fn in fns:
                             self._set((tree, f, fn), engine, "TU-ERROR")
                         counts["TU-ERROR"] += len(fns)

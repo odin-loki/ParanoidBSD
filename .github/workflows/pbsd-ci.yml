@@ -504,25 +504,52 @@ jobs:
       # above). Without BMIs, tidy reports "unknown type name 'import'" on
       # every export import line. Run it only when the build produced module
       # files, so this lights up on a FreeBSD runner without failing here.
+      # This step SKIPPED SILENTLY for its whole life, in 0 seconds, and
+      # reported success. Nothing said so: the ::warning is not a
+      # failure and a green tick beside it reads as "the C++ was linted".
+      # The verdict matrix found it - pbsd/ is 15,740 functions and every
+      # one of them was UNTOUCHED while this step was passing.
+      #
+      # It still exits 0, because the modules genuinely cannot be built
+      # on a Linux runner and failing here would gate the whole tree on
+      # something out of its scope. What changes is that the absence is
+      # now DATA: a NOTRUN record per file, in the schema matrix.py
+      # ingests, so those functions read as unchecked rather than as
+      # scanned. See docs/VERIFY_RUNBOOK.md.
       - name: L1 — clang-tidy (WarningsAsErrors)
         run: |
+          L1_SRCS="pbsd/handles/pbsd.handles.cppm
+                   pbsd/bifrost/pbsd.bifrost.cppm
+                   pbsd/bifrost/pbsd.bifrost.virtio.cppm
+                   pbsd/compositor/pbsd.compositor.cppm
+                   pbsd/pkg/pbsd.pkg.cppm"
           if ! find build -name '*.pcm' -print -quit | grep -q .; then
             echo "::warning title=clang-tidy skipped::No prebuilt module interfaces in build/. C++20 modules cannot be linted without them, and the FreeBSD userland ports do not scan on Linux."
+            : > cxx_notrun.jsonl
+            for f in $L1_SRCS; do
+              printf '{"file":%s,"status":"NOTRUN","findings":[],"detail":"no module interfaces in build/; C++20 modules cannot be linted without them"}\n' "\"$f\"" >> cxx_notrun.jsonl
+            done
+            echo "=============================================="
+            echo " L1 clang-tidy DID NOT RUN."
+            echo " $(wc -l < cxx_notrun.jsonl) file(s) recorded NOTRUN in cxx_notrun.jsonl."
+            echo " Those functions are UNCHECKED, not clean. A green"
+            echo " tick on this step means the step skipped."
+            echo "=============================================="
             exit 0
           fi
-          clang-tidy -p build \
-            pbsd/handles/pbsd.handles.cppm \
-            pbsd/bifrost/pbsd.bifrost.cppm \
-            pbsd/bifrost/pbsd.bifrost.virtio.cppm \
-            pbsd/compositor/pbsd.compositor.cppm \
-            pbsd/pkg/pbsd.pkg.cppm
+          clang-tidy -p build $L1_SRCS
 
       - name: L2/L4 — analyser plugin build (when LLVM dev packages present)
         run: |
           if [ -f build/analyser/libpbsd_analyser_ownership.so ] || [ -f build/analyser/pbsd_analyser_ownership.so ]; then
             echo "pbsd_analyser built"
           else
-            echo "LLVM dev packages absent — L2/L4 plugin skipped (see ANALYSER.md)"
+            echo "=============================================="
+            echo " L2/L4 ownership analyser DID NOT RUN."
+            echo " LLVM dev packages absent (see specs/ANALYSER.md)."
+            echo " The ownership checks this plugin makes were not"
+            echo " made. A green tick means the step skipped."
+            echo "=============================================="
           fi
 
       - name: Wave 9 inventory report

@@ -35280,3 +35280,118 @@ universe is left behind for the next command to read as a real one;
 `count_units()` returns **-1**, never 0, and `sweep_all` refuses with the
 same hint. Both have tests, and the tests assert the error is raised
 rather than that a fraction comes back small.
+
+## Run 40, through the matrix: 47.6% of the tree has a verdict
+
+Verify run 40 is the first over the widened model-check corpus.
+**9,744 functions model-checked** — the largest this project has done,
+against 4,737 in run 33:
+
+```
+  PROVED           3152      FAILED           3578
+  PROVED-ASSUMING   942      TIMEOUT          1133
+  BOUNDED           347      ERROR             592
+                                              9744 checked
+```
+
+Ingested into the matrix alongside the run's nine analyse shards
+(22,718 translation-unit records), against the 335,853-function universe:
+
+```
+  == rows (functions the universe knows about)   335853
+     TOUCHED     159885  0.476
+       PROVED      4004   some engine discharged the checked properties
+       CHECKED     3852   some engine returned a verdict
+       SCANNED   152029   only TU-level instruments looked
+     UNTOUCHED   175968  0.524
+       never attempted        161019   needs a RUN
+       attempted, no answer    14949   needs a BUILD FIXED or a BOUND RAISED
+```
+
+**That is the percentage-checked figure, and it needs reading carefully.**
+47.6% of functions have *some* verdict, but only **7,856 — 2.3%** have a
+per-function verdict from a model checker. The other 152,029 are
+`SCANNED`: one approximate instrument ran over the file and had no
+complaint, which is a much weaker statement than a proof and is recorded
+as a different thing for exactly that reason.
+
+The analyse column alone: **158,691 TU-CLEAN against 14,979 TU-ERROR**.
+So 8.6% of the functions in files the analyser was pointed at were in
+files that did not build — better than the 87% an earlier `crypto/`-only
+sample showed, and still 14,979 functions that a findings report counts
+as zero findings.
+
+### Where the untouched 52% is
+
+Almost all of it is third-party and never-scoped, and the matrix names it:
+
+| scope | functions | untouched |
+|---|---:|---:|
+| `hbsd/crypto/openssl` | 19,971 | 1.00 |
+| `hbsd/contrib/wpa` | 12,260 | 1.00 |
+| `kde/kwin/src` | 10,800 | 1.00 |
+| **`pbsd/lib/libc`** | **8,498** | **1.00** |
+| `hbsd/crypto/krb5` | 7,402 | 1.00 |
+| `hbsd/contrib/llvm-project` | 7,132 | 1.00 |
+| `hbsd/contrib/sqlite3` | 5,995 | 1.00 |
+| `hbsd/crypto/heimdal` | 5,692 | 1.00 |
+
+## ParanoidBSD's own C++ has never been through the harness
+
+The line in that table that is not like the others is `pbsd/lib/libc`.
+`kde/` (22,901 functions) and `pbsd/` (15,740) are **38,641 functions —
+11.5% of the universe — and the verification harness has never looked at
+one of them.** Every `--scope` in `pbsd-verify.yml` is a path under
+`hbsd/src`; there is no pbsd or kde shard and never has been.
+
+That is the project's own new code, and it is the least verified part of
+the tree.
+
+It is not unchecked in every sense — `check_port_symbols.py`,
+`check_port_cxx_warnings.py`, the module build and the IR oracle all bear
+on it. But no model checker, no static analyser and no defect lint has
+ever run over it.
+
+### And the one step that would have: it skipped, in zero seconds, green
+
+```yaml
+      - name: L1 — clang-tidy (WarningsAsErrors)
+        run: |
+          if ! find build -name '*.pcm' -print -quit | grep -q .; then
+            echo "::warning title=clang-tidy skipped::No prebuilt module interfaces..."
+            exit 0
+          fi
+```
+
+CI run 596, a green run, step 40: started `01:47:56`, completed
+`01:47:56`. **Zero seconds.** clang-tidy over five C++20 module
+interfaces does not take zero seconds. The step took its skip branch,
+exited 0, and the job showed a green tick beside it — and a `::warning`
+is not a failure, so nothing in the run summary distinguished "linted
+and clean" from "did not lint". The same is true of the L2/L4 ownership
+analyser step beside it.
+
+This is the project's own central failure mode, in the project's own CI,
+found by the matrix built to look for it — and it is worth noting that
+even when the step *does* run it covers **five named `.cppm` files**, not
+the tree.
+
+Both steps still exit 0, deliberately: the modules genuinely cannot be
+built on a Linux runner, and gating the whole tree on that would be
+gating it on something outside its scope. What changed is that the
+absence is now **data**. L1 writes a `NOTRUN` record per file in the
+schema `matrix.py` ingests, so those functions read as unchecked rather
+than as scanned, and both steps print a block that cannot be mistaken for
+a pass.
+
+### A bug in the matrix, found by that fix
+
+Writing those `NOTRUN` records exposed one in `matrix.py`'s own ingest:
+it tested `status == "ERROR"` and filed **everything else** as clean. A
+record saying `NOTRUN` — precisely what a skipped step emits — came out
+`TU-CLEAN`.
+
+Only `OK` means the tool read the unit now; `NOTRUN` is `NOTRUN`, and an
+unrecognised or missing status is `TU-ERROR` rather than clean, because a
+status nobody anticipated is not evidence of anything. Three tests, one
+per case.
