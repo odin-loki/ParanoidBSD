@@ -2903,6 +2903,16 @@ FIXES = {
         "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
         "and a missing shmem property dereferenced NULL at attach",
     ),
+    "hbsd/src/sys/x86/isa/isa_dma.c": (
+        "\tif (chan & ~VALID_DMA_MASK)\n\t\treturn (EINVAL);",
+        "isa_dma_init(int chan, u_int bouncebufsize, int flag)\n{\n\tvoid *buf;\n\n#ifdef DIAGNOSTIC",
+        "the file states its contract -- #define VALID_DMA_MASK (7) -- "
+        "and checked it in six of its nine entry points, every one of "
+        "them inside #ifdef DIAGNOSTIC, so a kernel built without "
+        "INVARIANTS enforced it nowhere. `1 << chan' is undefined at "
+        "chan >= 31 and for negative chan, and for chan in [8, 30] "
+        "dma_inuse |= (1 << chan) aliases two bad channels onto one bit",
+    ),
     "hbsd/src/sys/dev/rccgpio/rccgpio.c": (
         "\t\tsc->sc_output |= rcc_pins[pin].pin;",
         "\t\tsc->sc_output |= (1 << rcc_pins[pin].pin);",

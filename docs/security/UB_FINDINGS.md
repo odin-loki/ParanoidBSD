@@ -34089,20 +34089,23 @@ Consequences for an out-of-range `chan`: `1 << chan` is undefined at
 `dma_inuse |= (1 << chan)` sets a bit outside the eight real channels,
 so the in-use tracking silently aliases.
 
-**Where `chan` comes from, and why this is not fixed here.** Both
-callers derive it from a bus resource:
-`ppc.c:1739` is `ppc->ppc_dmachan = rman_get_start(ppc->res_drq)` and
-`fdc.c` uses `fdc->dmachan` the same way. That is a DRQ from device
-hints, ACPI or PnP — operator- or firmware-configured, not
-attacker-controlled at runtime, so it needs a bad `/boot/device.hints`
-or bad firmware. It is the same standing as the loader tunables this
-document has fixed, and it is *not* fixed here for a reason worth
-stating: four of the six functions return `void` and cannot report the
-error, so the only production fix is an early return that silently does
-nothing for a misconfigured device, and moving the existing `panic` out
-of `#ifdef DIAGNOSTIC` is a behaviour change to eight entry points of a
-vendor file on a path nothing has been shown to reach. Recorded, with
-the numbers, as the next candidate rather than churned.
+**Where `chan` comes from.** Both callers derive it from a bus
+resource: `ppc.c:1739` is
+`ppc->ppc_dmachan = rman_get_start(ppc->res_drq)` and `fdc.c` uses
+`fdc->dmachan` the same way. That is a DRQ from device hints, ACPI or
+PnP — operator- or firmware-configured, not attacker-controlled at
+runtime, so it needs a bad `/boot/device.hints` or bad firmware. Same
+standing as the loader tunables this document has fixed.
+
+> **This was deferred once, on a reason that was wrong, and is fixed
+> below.** The deferral read: *"four of the six functions return `void`
+> and cannot report the error, so the only production fix is an early
+> return that silently does nothing."* Counting the file rather than
+> recalling it: there are **nine** entry points, not six or eight, and
+> **five of them return `int`** — `isa_dma_init`, `isa_dma_acquire`,
+> `isa_dmastatus`, `isa_dmatc` and `isa_dmastop`. Only three are `void`.
+> The load-bearing claim was false, and with it the argument for
+> deferring.
 
 ### Read and left, the rest of the 23
 
@@ -34607,3 +34610,82 @@ One thing to fix before it bites: every job logs GitHub's Node 20
 deprecation warning on `actions/checkout@v4`,
 `download-artifact@v4` and `upload-artifact@v4`. Cosmetic now, a failure
 when Node 20 is removed.
+
+## `isa_dma`: the contract written six times and enforced nowhere, fixed
+
+The deferral above was wrong on its facts, so here is the count taken
+from the file rather than from memory. `sys/x86/isa/isa_dma.c` has
+**nine** entry points taking a `chan`:
+
+| entry point | returns | had a `DIAGNOSTIC` panic | had any production check |
+|---|---|---|---|
+| `isa_dma_init` | `int` | yes | no |
+| `isa_dma_acquire` | `int` | yes | no |
+| `isa_dma_release` | `void` | yes | no |
+| `isa_dmacascade` | `void` | yes | no |
+| `isa_dmastart` | `void` | yes | no |
+| `isa_dmadone` | `void` | yes | no |
+| `isa_dmastatus` | `int` | **no** | no |
+| `isa_dmatc` | `int` | **no** | no |
+| `isa_dmastop` | `int` | **no** | no |
+
+Six of nine carried
+
+```c
+#ifdef DIAGNOSTIC
+	if (chan & ~VALID_DMA_MASK)
+		panic("isa_dma_acquire: channel out of range");
+#endif
+```
+
+and three carried nothing at all. **On a kernel built without
+`INVARIANTS`, the contract the file itself defines — `#define
+VALID_DMA_MASK (7)` — was enforced in none of the nine.**
+
+`1 << chan` is undefined at `chan >= 31` and for negative `chan`, and
+for `chan` in [8, 30] `dma_inuse |= (1 << chan)` sets a bit outside the
+eight real channels, so two different bad channels alias onto one bit
+and the in-use tracking silently agrees with itself.
+
+**The fix, and why the deferral's objection dissolves.** Five of the
+nine return `int` and can say so:
+
+- `isa_dma_init` and `isa_dma_acquire` report errors, so they return
+  `EINVAL` — `isa_dma_acquire` already returns `EBUSY` for a channel in
+  use, and this is the same kind of answer.
+- `isa_dmastatus`, `isa_dmatc` and `isa_dmastop` return a *value*, so
+  they return `0`: nothing in flight, terminal count not reached,
+  nothing to stop — all true of a channel that does not exist.
+- The three `void` ones decline to act.
+
+The six `DIAGNOSTIC` panics stay, so a development kernel still stops
+loudly with the diagnostic. What changes is only what a production
+kernel does instead of executing `1 << 64`.
+
+One caller does not check: `ppc_isa.c:105` is a bare
+`isa_dma_acquire(ppc->ppc_dmachan);` with the return dropped, under a
+comment that reads `/* acquire the DMA channel forever */ /* XXX */`.
+`fdc.c:1825` checks. So the `EINVAL` is not load-bearing for `ppc` —
+the bounds on the other eight are what protect it, which is exactly why
+bounding all nine rather than only the two reporting ones was the right
+shape.
+
+`sys/x86/isa` analyses clean at zero findings across its eight
+translation units.
+
+### A process gap the same battery found, one commit late
+
+CI run 599 — the confidence-metric commit — **failed**, on
+`tools/check_exec_bits.py`: both new scripts start with `#!` and were
+committed mode 644.
+
+The battery had been run before committing and passed. It passed
+because **`check_exec_bits.py` walks TRACKED files**, and at that moment
+the two scripts were still untracked. `git add` made them tracked at
+644, and the gate could only see them from then on.
+
+So the rule is not "run the battery before committing", it is **run the
+battery after `git add` and before `git commit`**. A gate that reads the
+index cannot check what is not yet in it, and every other gate in the
+battery reads the working tree, which is why the difference had never
+mattered before.

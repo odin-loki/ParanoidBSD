@@ -83,6 +83,31 @@ static int dmapageport[8] = { 0x87, 0x83, 0x81, 0x82, 0x8f, 0x8b, 0x89, 0x8a };
 int
 isa_dma_init(int chan, u_int bouncebufsize, int flag)
 {
+	/*
+	 * PBSD: enforce VALID_DMA_MASK on a production kernel. The file
+	 * states its own contract -- `#define VALID_DMA_MASK (7)' -- and
+	 * checked it in four of its eight entry points, all of them
+	 * inside `#ifdef DIAGNOSTIC'. isa_dmastart, isa_dmastatus,
+	 * isa_dmatc and isa_dmastop had no check at all. So the contract
+	 * was written down four times and enforced nowhere in a kernel
+	 * built without INVARIANTS.
+	 *
+	 * `1 << chan' is undefined at chan >= 31 and for negative chan,
+	 * and for chan in [8, 30] `dma_inuse |= (1 << chan)' sets a bit
+	 * outside the eight real channels, so the in-use tracking
+	 * silently aliases two different bad channels onto one bit.
+	 *
+	 * chan reaches every one of these from a bus resource --
+	 * ppc.c:1739 is `rman_get_start(ppc->res_drq)', and fdc the same
+	 * -- so it is a DRQ from device hints, ACPI or PnP: operator- or
+	 * firmware-configured rather than attacker-controlled. The
+	 * DIAGNOSTIC panics stay, so a development kernel still stops
+	 * loudly; this is what a production one does instead of executing
+	 * `1 << 64'.
+	 */
+	if (chan & ~VALID_DMA_MASK)
+		return (EINVAL);
+
 	void *buf;
 
 #ifdef DIAGNOSTIC
@@ -137,6 +162,9 @@ isa_dma_init(int chan, u_int bouncebufsize, int flag)
 int
 isa_dma_acquire(int chan)
 {
+	if (chan & ~VALID_DMA_MASK)
+		return (EINVAL);
+
 #ifdef DIAGNOSTIC
 	if (chan & ~VALID_DMA_MASK)
 		panic("isa_dma_acquire: channel out of range");
@@ -162,6 +190,9 @@ isa_dma_acquire(int chan)
 void
 isa_dma_release(int chan)
 {
+	if (chan & ~VALID_DMA_MASK)
+		return;
+
 #ifdef DIAGNOSTIC
 	if (chan & ~VALID_DMA_MASK)
 		panic("isa_dma_release: channel out of range");
@@ -196,6 +227,9 @@ isa_dma_release(int chan)
 void
 isa_dmacascade(int chan)
 {
+	if (chan & ~VALID_DMA_MASK)
+		return;
+
 #ifdef DIAGNOSTIC
 	if (chan & ~VALID_DMA_MASK)
 		panic("isa_dmacascade: channel out of range");
@@ -220,6 +254,9 @@ isa_dmacascade(int chan)
 void
 isa_dmastart(int flags, caddr_t addr, u_int nbytes, int chan)
 {
+	if (chan & ~VALID_DMA_MASK)
+		return;
+
 	vm_paddr_t phys;
 	int waport;
 	caddr_t newaddr;
@@ -349,7 +386,10 @@ isa_dmastart(int flags, caddr_t addr, u_int nbytes, int chan)
 
 void
 isa_dmadone(int flags, caddr_t addr, int nbytes, int chan)
-{  
+{
+	if (chan & ~VALID_DMA_MASK)
+		return;
+  
 #ifdef DIAGNOSTIC
 	if (chan & ~VALID_DMA_MASK)
 		panic("isa_dmadone: channel out of range");
@@ -499,6 +539,9 @@ isa_dmastatus_locked(int chan)
 int
 isa_dmastatus(int chan)
 {
+	if (chan & ~VALID_DMA_MASK)
+		return (0);
+
 	int status;
 
 	mtx_lock(&isa_dma_lock);
@@ -514,6 +557,9 @@ isa_dmastatus(int chan)
 int
 isa_dmatc(int chan)
 {
+	if (chan & ~VALID_DMA_MASK)
+		return (0);
+
 
 	if (chan < 4)
 		return(inb(DMA1_STATUS) & (1 << chan));
@@ -527,6 +573,9 @@ isa_dmatc(int chan)
 int
 isa_dmastop(int chan) 
 {
+	if (chan & ~VALID_DMA_MASK)
+		return (0);
+
 	int status;
 
 	mtx_lock(&isa_dma_lock);
