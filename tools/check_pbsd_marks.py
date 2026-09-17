@@ -2903,6 +2903,30 @@ FIXES = {
         "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
         "and a missing shmem property dereferenced NULL at attach",
     ),
+    "hbsd/src/sys/dev/tpm/tpm_spibus.c": (
+        "\tif (size == 0 || size > sizeof(tx) - TPM_SPI_HEADER_SIZE)\n\t\treturn (EINVAL);",
+        "\tint err;\n\n\toff += TPM_BASE_ADDR;\n\ttx[0] = 0x00 | (size - 1); /* Write (size) bytes */",
+        "tpm_spi_read_n() bounds size with `if (size > sizeof(rx))' and "
+        "tpm_spi_write_n() did not -- and has LESS room, because the "
+        "payload goes to &tx[4]: `memcpy(&tx[4], buf, size)' overflows "
+        "the stack frame above four bytes, and size == 0 makes "
+        "`size - 1' SIZE_MAX in the command byte",
+    ),
+    "hbsd/src/sys/dev/iicbus/gpio/pcf8574.c": (
+        "\tif (pin >= NUM_PINS)\n\t\treturn (EINVAL);\n\n\tsc = device_get_softc(dev);",
+        "pcf8574_pin_get(device_t dev, uint32_t pin, unsigned int *on)\n{\n\tstruct pcf8574_softc *sc;\n\tuint8_t val;\n\tint error;\n\n\tsc = device_get_softc(dev);",
+        "six of this file's seven pin entry points test pin >= NUM_PINS "
+        "and pcf8574_pin_get() did not, then used it as a shift "
+        "distance: `1 << pin' on a uint32_t is undefined at 32 and "
+        "reads the wrong bit in [8, 31]",
+    ),
+    "hbsd/src/sys/dev/sound/pci/emu10kx.c": (
+        "\tif (mixer_idx >= 0 && mixer_idx < NUM_MIXERS) {",
+        "\tRANGE(volume, 0, 100);\n\tif (mixer_idx < NUM_MIXERS) {",
+        "emumix_get_volume() tests both ends of mixer_idx and "
+        "emumix_set_volume() tested only the upper, so a negative index "
+        "wrote mixer_volcache[-1] and read mixer_gpr[-1]",
+    ),
     "hbsd/src/sys/x86/isa/isa_dma.c": (
         "\tif (chan & ~VALID_DMA_MASK)\n\t\treturn (EINVAL);",
         "isa_dma_init(int chan, u_int bouncebufsize, int flag)\n{\n\tvoid *buf;\n\n#ifdef DIAGNOSTIC",

@@ -34689,3 +34689,123 @@ battery after `git add` and before `git commit`**. A gate that reads the
 index cannot check what is not yet in it, and every other gate in the
 battery reads the working tree, which is why the difference had never
 mattered before.
+
+## A lint for the shape, instead of a model check for the instance
+
+Nine of one night's ten defects were **one shape**: a guard that exists
+on one of a pair. `g_uzip` (one of two checks acts), `geli` (one of two
+uses bounded), `arswitch` (read validates `phy`, write does not),
+`dmc620`/`cmn600` (register bounds `unit`, unregister does not),
+`isa_dma` (six of nine, all under `DIAGNOSTIC`), `kern_event` (four
+sites, same wrong operator).
+
+That is a **lintable** pattern, and it is orders of magnitude cheaper
+than the model checker that found the instances: `tools/sibling_guard.py`
+reads `sys/dev`'s 2,633 files in **249 seconds**, against **1h48m** for
+the CBMC run over the same tree.
+
+### What it does
+
+For each C file it takes every function's parameters, works out which
+are the *subject* of a rejection-shaped guard — an `if` whose consequent
+is `return`, `goto`, `break`, `continue` or `panic()` — and groups
+functions in the same file that share a parameter name and numeric type.
+A group where some members guard and others do not is a finding. It
+ranks `*_read`/`*_write`, `*_register`/`*_unregister`,
+`*_alloc`/`*_free`, `*_acquire`/`*_release`, `get_`/`set_` pairs higher,
+and it treats a guard inside `#ifdef DIAGNOSTIC`/`INVARIANTS`, or a bare
+`KASSERT`, as **weak** — present for a developer, absent for a user.
+
+### Measured, including where it is wrong
+
+| scope | files | high | medium | weak | time |
+|---|---:|---:|---:|---:|---:|
+| `sys/dev` | 2,633 | 8 | 525 | 49 | 249 s |
+| `sys/kern` | 230 | 0 | 95 | 26 | 21 s |
+| `sys/x86` | 73 | 0 | 14 | 10 | 2 s |
+| `sys/geom` | 78 | 0 | 5 | 2 | 3 s |
+
+**High tier: 8 findings in `sys/dev`, 5 real, 3 false — 37%.**
+**Medium tier: a 22-finding hand-checked sample came out ~90% false.**
+So `--min` defaults to `high` and `--gate` counts only high. A lint with
+a 90% false-positive rate is worse than nothing, and saying so in the
+docstring is the price of the other 37%.
+
+The three high-tier false positives, each read: `vmbus_pcib`'s write
+side blocks *read-only registers*, not a range; `superio`'s refuses to
+write special registers where reading them is harmless;
+`mlx5_fs_chains` does a linear lookup with its own failure exit, so the
+getter's range check is unnecessary there.
+
+**It finds all five ground-truth cases.** Four of the five were already
+fixed in the tree by the time it existed, so they were checked against a
+reconstructed pre-fix corpus built from the `unwanted` text in
+`tools/check_pbsd_marks.py`'s `FIXES` — which is the marker table being
+used as a regression corpus, a second job it turns out to be good at.
+Against the live tree `sys/x86` now reports **0**, which is the lint
+confirming the `isa_dma` fix one section above.
+
+### Three new defects, all the same shape
+
+**`tpm_spibus.c:97` — `tpm_spi_write_n()` has no `size` bound, and less
+room than its sibling.** `tpm_spi_read_n()` opens with
+`if (size > sizeof(rx)) return (EINVAL);` against `uint8_t rx[4]`. The
+write side has `uint8_t tx[8]` and no check at all — and its payload
+goes to `&tx[4]`, so the room is **four** bytes, not eight:
+
+```c
+	memcpy(&tx[4], buf, size);           /* four bytes of room */
+	spic.tx_cmd_sz = size + TPM_SPI_HEADER_SIZE;   /* says the same */
+```
+
+Its two callers pass 1 and 4, so 4 is exactly the limit and nothing
+today exceeds it. **A stack overflow the moment anyone adds an 8-byte
+register write.** `size == 0` is rejected with it: `size - 1` on a
+`size_t` is `SIZE_MAX`, and `tx[0]` would take `0xff` — a 256-byte
+transfer request in the command byte.
+
+**`pcf8574.c:283` — `pcf8574_pin_get()` has no `pin` bound.** Six of the
+file's seven pin entry points test `pin >= NUM_PINS` (`:187`, `:202`,
+`:242`, `:276`, `:319`, `:364`); this one did not, and then used it as a
+shift distance — `1 << pin` on a `uint32_t pin`, undefined at 32 and
+reading the wrong bit in [8, 31]. gpiobus validates against
+`devi->npins` before invoking `GPIO_PIN_GET`, so it needs a
+misconfigured hint rather than an attacker — the same standing as
+`isa_dma`'s `chan`.
+
+**`emu10kx.c:2605` — `emumix_set_volume()` checks one end.**
+`emumix_get_volume()` just below tests
+`(mixer_idx < NUM_MIXERS) && (mixer_idx >= 0)`; the setter tested only
+the upper, so a negative index wrote `mixer_volcache[-1]` and read
+`mixer_gpr[-1]`. Its one caller passes a compile-time constant.
+Unreachable today; latent.
+
+Two more real asymmetries were found and **not** fixed, both unreachable
+and both recorded: `mthca_memfree.c:503` (`mthca_unmap_user_db` has no
+bound where `mthca_map_user_db` returns `-EINVAL`) and
+`t4_hw.c:7473` (`t4_get_trace_filter` unchecked where the setter checks
+— and the setter's `idx < 0` half is itself dead, since `t4_tracer.idx`
+is a `uint8_t`).
+
+### The false positive it has, named rather than worked around
+
+A guard must be **rejection-shaped**. A condition that *wraps* the
+dangerous use is not recognised:
+
+```c
+	if (mixer_idx >= 0 && mixer_idx < NUM_MIXERS) {
+		sc->mixer_volcache[mixer_idx] = volume;
+		...
+	}
+```
+
+That is as safe as returning early, and the lint reports it anyway —
+so `emu10kx.c:2605` was a real finding before the fix and is a false
+positive after it, because the fix kept the file's own wrapping style.
+Deciding it properly needs every use of the parameter to fall inside
+that `if` body; the machinery is there and is not wired up, because
+wiring it up risks a **false negative** in a tool about to gate.
+
+The source was **not** reshaped to suit the tool. A lint that makes
+people rewrite correct code to silence it is worse than one that is
+wrong in a documented way.

@@ -2606,7 +2606,13 @@ emumix_set_volume(struct emu_sc_info *sc, int mixer_idx, int volume)
 {
 
 	RANGE(volume, 0, 100);
-	if (mixer_idx < NUM_MIXERS) {
+	/*
+	 * PBSD: `mixer_idx >= 0' too. emumix_get_volume() just below
+	 * tests both ends -- `(mixer_idx < NUM_MIXERS) && (mixer_idx >= 0)'
+	 * -- and this tested only the upper, so a negative index wrote
+	 * sc->mixer_volcache[-1] and read sc->mixer_gpr[-1].
+	 */
+	if (mixer_idx >= 0 && mixer_idx < NUM_MIXERS) {
 		sc->mixer_volcache[mixer_idx] = volume;
 		emumix_set_fxvol(sc, sc->mixer_gpr[mixer_idx], volume);
 	}

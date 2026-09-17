@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,915 | 2,434 |
-| 8 | `sys` | 14,951 | 10,499,629 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,665 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,961** | **114,209** |
+| | **total** | **41,143** | **21,304,997** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -76727,7 +76727,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.769 `sys/dev/iicbus/gpio`
 
-- [ ] **8.769.1** `pcf8574.c` · 421L gen:5 · `TODO-PORT` · 14 fn
+- [ ] **8.769.1** `pcf8574.c` · 431L gen:5 · `TODO-PORT` · 14 fn
   - [ ] 8.769.1.1 `pcf8574_read()` · `TODO-FN`
   - [ ] 8.769.1.2 `pcf8574_write()` · `TODO-FN`
   - [ ] 8.769.1.3 `pcf8574_probe()` · `TODO-FN`
@@ -100507,7 +100507,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1013.19.43 `emu_pcm_probe()` · `TODO-FN`
   - [ ] 8.1013.19.44 `emu_pcm_attach()` · `TODO-FN`
   - [ ] 8.1013.19.45 `emu_pcm_detach()` · `TODO-FN`
-- [ ] **8.1013.20** `emu10kx.c` · 3,435L gen:2 · `TODO-PORT` · 69 fn
+- [ ] **8.1013.20** `emu10kx.c` · 3,441L gen:2 · `TODO-PORT` · 69 fn
   - [ ] 8.1013.20.1 `emu_getcard()` · `TODO-FN`
   - [ ] 8.1013.20.2 `emu_rd_nolock()` · `TODO-FN`
   - [ ] 8.1013.20.3 `emu_wr_nolock()` · `TODO-FN`
@@ -102449,7 +102449,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1044.6.17 `pluton_doorbell()` · `TODO-FN`
 - [ ] **8.1044.7** `tpm_isa.c` · 92L gen:1 · `TODO-PORT` · 1 fn
   - [ ] 8.1044.7.1 `tpm_isa_probe()` · `TODO-FN`
-- [ ] **8.1044.8** `tpm_spibus.c` · 167L gen:1 · `TODO-PORT` · 7 fn
+- [ ] **8.1044.8** `tpm_spibus.c` · 187L gen:1 · `TODO-PORT` · 7 fn
   - [ ] 8.1044.8.1 `tpm_insert_wait()` · `TODO-FN`
   - [ ] 8.1044.8.2 `tpm_spi_read_n()` · `TODO-FN`
   - [ ] 8.1044.8.3 `tpm_spi_write_n()` · `TODO-FN`

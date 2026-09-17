@@ -286,6 +286,16 @@ pcf8574_pin_get(device_t dev, uint32_t pin, unsigned int *on)
 	uint8_t val;
 	int error;
 
+	/*
+	 * PBSD: bound pin. Six of this file's seven pin entry points test
+	 * `pin >= NUM_PINS' (:187, :202, :242, :276, :319, :364) and this
+	 * one did not, then used it as a shift distance: `1 << pin' on a
+	 * uint32_t pin is undefined at 32 and above, and reads the wrong
+	 * bit for anything in [8, 31].
+	 */
+	if (pin >= NUM_PINS)
+		return (EINVAL);
+
 	sc = device_get_softc(dev);
 
 	sx_xlock(&sc->lock);

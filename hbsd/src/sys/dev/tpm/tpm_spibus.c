@@ -101,6 +101,26 @@ tpm_spi_write_n(device_t dev, bus_size_t off, void *buf, size_t size)
 	uint8_t rx[8] = {0};
 	int err;
 
+	/*
+	 * PBSD: bound size, which tpm_spi_read_n() above does with
+	 * `if (size > sizeof(rx)) return (EINVAL);' and this did not.
+	 * The room here is SMALLER than the array, not equal to it: the
+	 * payload goes to &tx[4], so sizeof(tx) - TPM_SPI_HEADER_SIZE is
+	 * four bytes, and `memcpy(&tx[4], buf, size)' below overflows the
+	 * stack frame for any size above that. `spic.tx_cmd_sz = size +
+	 * TPM_SPI_HEADER_SIZE' says the same thing from the other side.
+	 *
+	 * size == 0 is rejected with it: `size - 1' on a size_t is
+	 * SIZE_MAX, and tx[0] would take 0xff -- a 256-byte transfer
+	 * request in the command byte.
+	 *
+	 * The two callers (:147 and :154) pass 1 and 4, so 4 is exactly
+	 * the limit and nothing today exceeds it. This is the bound the
+	 * next caller needs.
+	 */
+	if (size == 0 || size > sizeof(tx) - TPM_SPI_HEADER_SIZE)
+		return (EINVAL);
+
 	off += TPM_BASE_ADDR;
 	tx[0] = 0x00 | (size - 1); /* Write (size) bytes */
 	tx[1] = (off >> 16) & 0xff;
