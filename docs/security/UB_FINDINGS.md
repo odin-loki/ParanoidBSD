@@ -33303,3 +33303,70 @@ This is the same shape as the interface-header fix that took `sys/` from
 a few hundred usable translation units to thousands, and the same shape
 as `-isystem` earlier today: the instrument was reporting on a fraction
 of what its scope named, and the fraction looked like the whole.
+
+## OpenZFS model-checked in full: 155 proofs, no new defect, one artefact
+
+With `__seg_gs` handled, the run that reported on 35 translation units
+reports on 216 jobs across 276:
+
+| verdict | first run | now |
+|---|---:|---:|
+| **PROVED** | 19 | **155** |
+| FAILED | 15 | 44 |
+| TIMEOUT | 2 | 8 |
+| BOUNDED | 1 | 7 |
+| ERROR | 1 | 2 |
+
+**None of the 44 is a new defect.** Every one falls in a bucket this
+document already names:
+
+| n | bucket |
+|---:|---|
+| 22 | dereference of a `KM_SLEEP` allocator result |
+| 11 | signed unary minus on an unconstrained value |
+| 6 | shift or `clz` on an unconstrained parameter |
+| 2 | lua's lexer helpers on an unconstrained `int` |
+| 1 | a leak property asked of a constructor |
+| 1 | pointer arithmetic on an unconstrained pointer |
+| 1 | **the `__seg_gs` artefact — see below** |
+
+The 22 are the **`M_WAITOK`/`KM_SLEEP` premise** in ZFS's spelling:
+`abd_alloc`, `zap_attribute_alloc`, `objlist_create`,
+`vdev_mirror_map_alloc` and the rest dereference `kmem_zalloc(n, KM_SLEEP)`,
+which by definition does not return. CBMC models the allocator as
+possibly-NULL and reports every one.
+
+The 6 include `vdev_draid_rand.c`'s `rotl(x, k)` — `(x << k) | (x >> (64 - k))`,
+undefined at `k == 0` — whose three call sites pass the constants 17, 49
+and 28. That is the "static, callers constrain the domain" deferral, and
+the constraint is checkable in the same file.
+
+`arc_set_need_free`'s `MAX(-remaining, 0)` on an `int64_t` is the
+extern-driven bucket: `remaining` is `arc_free_memory() - arc_sys_free / 2`,
+both unmodelled externs, so CBMC admits `INT64_MIN`; a memory figure is
+nowhere near it.
+
+### The artefact the fix introduces, named and bounded
+
+`-D__seg_gs=` is sound for types, sizes and values, and it is **not**
+sound for one idiom. `get_pcpu()` is
+
+```c
+	static struct pcpu __seg_gs *__pc = 0;
+	__pc->pc_cpuid;
+```
+
+where `0` is the **base of the per-CPU area in the `%gs` segment**, not a
+null pointer. With the qualifier defined away, CBMC sees
+`struct pcpu *__pc = 0` dereferenced, and reports a null dereference that
+is not one.
+
+**One of the 44** — `arc.c:arc_state_init` — is this, and it is
+recognisable: the failure names `__pc` or `pc_cpuid`. Any future report
+mentioning either is this artefact and not a finding.
+
+That is the trade, stated rather than buried: the fix takes the kernel
+model-check corpus from a fraction to nearly all of it, and costs one
+identifiable false-positive class at every `get_pcpu()` / `PCPU_GET`
+site. The alternative was 245 translation units reporting nothing at all
+and looking clean, which is the worse lie.
