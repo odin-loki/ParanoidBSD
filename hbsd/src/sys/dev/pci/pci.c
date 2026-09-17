@@ -6093,7 +6093,16 @@ pci_read_config_method(device_t dev, device_t child, int reg, int width)
 		if (reg == PCIR_VENDOR) {
 			switch (width) {
 			case 4:
-				return (cfg->device << 16 | cfg->vendor);
+				/*
+				 * PBSD: (uint32_t)cfg->device. It is a
+				 * uint16_t and promotes to int, so any
+				 * device ID >= 0x8000 makes this shift
+				 * undefined -- on a value the DEVICE
+				 * supplies. PCI_IOV is in amd64 GENERIC,
+				 * so this VF emulation path ships.
+				 */
+				return ((uint32_t)cfg->device << 16 |
+				    cfg->vendor);
 			case 2:
 				return (cfg->vendor);
 			case 1:

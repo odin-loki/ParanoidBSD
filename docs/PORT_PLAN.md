@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,915 | 2,434 |
-| 8 | `sys` | 14,951 | 10,499,516 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,580 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,848** | **114,209** |
+| | **total** | **41,143** | **21,304,912** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -149,7 +149,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.1014.2 | `sys/dev/sound/pci/hda/hdaa.c` | 7,216 | 0 | `TODO-PORT` |
 | 8.615.8 | `sys/dev/ath/if_ath.c` | 7,126 | 0 | `TODO-PORT` |
 | 8.671.20 | `sys/dev/cxgbe/t4_sge.c` | 7,098 | 0 | `TODO-PORT` |
-| 8.887.5 | `sys/dev/pci/pci.c` | 7,079 | 0 | `TODO-PORT` |
+| 8.887.5 | `sys/dev/pci/pci.c` | 7,088 | 0 | `TODO-PORT` |
 | 8.788.132 | `sys/dev/isci/scil/scic_sds_controller.c` | 7,043 | 0 | `TODO-PORT` |
 | 8.1200.75 | `sys/net/iflib.c` | 7,038 | 0 | `TODO-PORT` |
 | 8.959.14 | `sys/dev/qlnx/qlnxe/ecore_dev.c` | 7,019 | 0 | `TODO-PORT` |
@@ -45855,7 +45855,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.50.5.5 `bus_dma_tag_set_domain()` · `TODO-FN`
 - [ ] **8.50.6** `clock.c` · 37L · `TODO-MD` · 1 fn
   - [ ] 8.50.6.1 `cpu_initclocks()` · `TODO-FN`
-- [ ] **8.50.7** `cmn600.c` · 822L gen:2 · `TODO-MD` · 32 fn
+- [ ] **8.50.7** `cmn600.c` · 827L gen:2 · `TODO-MD` · 32 fn
   - [ ] 8.50.7.1 `cmn600_pmc_register()` · `TODO-FN`
   - [ ] 8.50.7.2 `cmn600_pmc_unregister()` · `TODO-FN`
   - [ ] 8.50.7.3 `cmn600_pmc_nunits()` · `TODO-FN`
@@ -67796,7 +67796,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.680.1.5 `dcphy_auto()` · `TODO-FN`
   - [ ] 8.680.1.6 `dcphy_reset()` · `TODO-FN`
 - [ ] **8.680.2** `if_dc.c` · 4,132L gen:6 · `TODO-PORT`
-- [ ] **8.680.3** `if_dcreg.h` · 1,202L · `TODO-HDR`
+- [ ] **8.680.3** `if_dcreg.h` · 1,207L · `TODO-HDR`
 - [ ] **8.680.4** `pnphy.c` · 226L gen:1 · `TODO-PORT` · 5 fn
   - [ ] 8.680.4.1 `pnphy_probe()` · `TODO-FN`
   - [ ] 8.680.4.2 `pnphy_attach()` · `TODO-FN`
@@ -70673,7 +70673,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.699.8.31 `ar8327_set_dot1q_vlan()` · `TODO-FN`
   - [ ] 8.699.8.32 `ar8327_attach()` · `TODO-FN`
 - [ ] **8.699.9** `arswitch_8327.h` · 97L · `TODO-HDR`
-- [ ] **8.699.10** `arswitch_phy.c` · 217L · `TODO-PORT` · 4 fn
+- [ ] **8.699.10** `arswitch_phy.c` · 229L · `TODO-PORT` · 4 fn
   - [ ] 8.699.10.1 `arswitch_readphy_external()` · `TODO-FN`
   - [ ] 8.699.10.2 `arswitch_writephy_external()` · `TODO-FN`
   - [ ] 8.699.10.3 `arswitch_readphy_internal()` · `TODO-FN`
@@ -74128,7 +74128,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.738.11.37 `pmc_core_initialize()` · `TODO-FN`
   - [ ] 8.738.11.38 `pmc_core_finalize()` · `TODO-FN`
 - [ ] **8.738.12** `hwpmc_core.h` · 207L · `TODO-HDR`
-- [ ] **8.738.13** `hwpmc_dmc620.c` · 710L gen:11 · `TODO-PORT` · 15 fn
+- [ ] **8.738.13** `hwpmc_dmc620.c` · 720L gen:11 · `TODO-PORT` · 15 fn
   - [ ] 8.738.13.1 `dmc620_pmc_register()` · `TODO-FN`
   - [ ] 8.738.13.2 `dmc620_pmc_unregister()` · `TODO-FN`
   - [ ] 8.738.13.3 `pmc_dmc620_nclasses()` · `TODO-FN`
@@ -81730,7 +81730,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.810 `sys/dev/lge`
 
-- [ ] **8.810.1** `if_lge.c` · 1,531L gen:5 · `TODO-PORT` · 35 fn
+- [ ] **8.810.1** `if_lge.c` · 1,539L gen:5 · `TODO-PORT` · 35 fn
   - [ ] 8.810.1.1 `lge_eeprom_getword()` · `TODO-FN`
   - [ ] 8.810.1.2 `lge_read_eeprom()` · `TODO-FN`
   - [ ] 8.810.1.3 `lge_miibus_readreg()` · `TODO-FN`
@@ -91204,7 +91204,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.887.4.2 `isab_pci_attach()` · `TODO-FN`
   - [ ] 8.887.4.3 `isab_pci_alloc_resource()` · `TODO-FN`
   - [ ] 8.887.4.4 `isab_pci_release_resource()` · `TODO-FN`
-- [ ] **8.887.5** `pci.c` · 7,079L gen:24 · `TODO-PORT`
+- [ ] **8.887.5** `pci.c` · 7,088L gen:24 · `TODO-PORT`
 - [ ] **8.887.6** `pci_dw.c` · 860L gen:1 · `TODO-PORT` · 23 fn
   - [ ] 8.887.6.1 `pci_dw_dbi_read()` · `TODO-FN`
   - [ ] 8.887.6.2 `pci_dw_dbi_write()` · `TODO-FN`
@@ -96733,7 +96733,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.968 `sys/dev/rccgpio`
 
-- [ ] **8.968.1** `rccgpio.c` · 372L gen:2 · `TODO-PORT` · 13 fn
+- [ ] **8.968.1** `rccgpio.c` · 385L gen:2 · `TODO-PORT` · 13 fn
   - [ ] 8.968.1.1 `rcc_gpio_modify_bits()` · `TODO-FN`
   - [ ] 8.968.1.2 `rcc_gpio_get_bus()` · `TODO-FN`
   - [ ] 8.968.1.3 `rcc_gpio_pin_max()` · `TODO-FN`
@@ -99391,7 +99391,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1001 `sys/dev/sis`
 
-- [ ] **8.1001.1** `if_sis.c` · 2,396L gen:5 · `TODO-PORT` · 52 fn
+- [ ] **8.1001.1** `if_sis.c` · 2,398L gen:5 · `TODO-PORT` · 52 fn
   - [ ] 8.1001.1.1 `sis_reverse()` · `TODO-FN`
   - [ ] 8.1001.1.2 `sis_delay()` · `TODO-FN`
   - [ ] 8.1001.1.3 `sis_eeprom_idle()` · `TODO-FN`

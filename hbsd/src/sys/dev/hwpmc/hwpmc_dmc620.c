@@ -123,6 +123,16 @@ void
 dmc620_pmc_unregister(int unit)
 {
 
+	/*
+	 * PBSD: the same bound dmc620_pmc_register() above applies.
+	 * Without it, firmware declaring more than DMC620_UNIT_MAX PMUs
+	 * gets those units attached (register silently skips them) and
+	 * detaching one writes a NULL past dmc620_pmcs[] and decrements
+	 * a count that was never incremented for it.
+	 */
+	if (unit < 0 || unit >= DMC620_UNIT_MAX)
+		return;
+
 	dmc620_pmcs[unit].arg = NULL;
 	dmc620_npmcs--;
 }

@@ -179,6 +179,18 @@ arswitch_writephy_internal(device_t dev, int phy, int reg, int data)
 	sc = device_get_softc(dev);
 	ARSWITCH_LOCK_ASSERT(sc, MA_NOTOWNED);
 
+	/*
+	 * PBSD: bound phy, which arswitch_readphy_internal() above does
+	 * and this did not. `phy' arrives from IOETHERSWITCHSETPHYREG
+	 * through ETHERSWITCH_WRITEPHYREG(etherswitch, phyreg->phy, ...)
+	 * (etherswitch.c:189) with no check of its own, and is then
+	 * shifted by AR8X16_MDIO_CTRL_PHY_ADDR_SHIFT. Every other
+	 * etherswitch driver -- mtkswitch, adm6996fc, ukswitch,
+	 * rtl8366rb, e6060sw -- tests it on both sides. Same shape as the
+	 * es_vlangroup bound this tree already fixed across all eight.
+	 */
+	if (phy < 0 || phy >= 32)
+		return (ENXIO);
 	if (reg < 0 || reg >= 32)
 		return (ENXIO);
 

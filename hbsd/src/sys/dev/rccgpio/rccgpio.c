@@ -54,6 +54,19 @@ struct rcc_gpio_pin {
 	uint32_t		caps;
 };
 
+/*
+ * PBSD: .pin is a MASK, not a bit number -- see the initialisers below
+ * and attach()'s rcc_gpio_modify_bits(sc, reg, 0, rcc_pins[i].pin),
+ * which passes it straight in as `mask'. Six sites used to write
+ * `1 << rcc_pins[pin].pin', i.e. 1 << 2048, 1 << 32768, 1 << 131072.
+ * A shift count at or past the width is UNDEFINED, and on x86 the
+ * count is masked to five bits, so 2048, 32768 and 131072 all become
+ * 0: every pin collapsed onto bit 0 and the driver's GPIO and LED
+ * control could not work as written.
+ *
+ * The index is not the problem and never was -- all six entry points
+ * already test `pin >= sc->sc_gpio_npins'.
+ */
 static struct rcc_gpio_pin rcc_pins[] = {
 	{ .pin = (1 << 11), .name = "reset switch", .caps = GPIO_PIN_INPUT },
 	{ .pin = (1 << 15), .name = "red LED", .caps = GPIO_PIN_OUTPUT },
@@ -189,9 +202,9 @@ rcc_gpio_pin_set(device_t dev, uint32_t pin, unsigned int value)
 
 	RCC_GPIO_LOCK(sc);
 	if (value)
-		sc->sc_output |= (1 << rcc_pins[pin].pin);
+		sc->sc_output |= rcc_pins[pin].pin;
 	else
-		sc->sc_output &= ~(1 << rcc_pins[pin].pin);
+		sc->sc_output &= ~rcc_pins[pin].pin;
 	RCC_WRITE(sc, RCC_GPIO_GP_LVL, sc->sc_output);
 	RCC_GPIO_UNLOCK(sc);
 
@@ -214,7 +227,7 @@ rcc_gpio_pin_get(device_t dev, uint32_t pin, unsigned int *val)
 	else
 		value = sc->sc_output;
 	RCC_GPIO_UNLOCK(sc);
-	*val = (value & (1 << rcc_pins[pin].pin)) ? 1 : 0;
+	*val = (value & rcc_pins[pin].pin) ? 1 : 0;
 
 	return (0);
 }
@@ -232,10 +245,10 @@ rcc_gpio_pin_toggle(device_t dev, uint32_t pin)
 		return (EINVAL);
 
 	RCC_GPIO_LOCK(sc);
-	if ((sc->sc_output & (1 << rcc_pins[pin].pin)) == 0)
-		sc->sc_output |= (1 << rcc_pins[pin].pin);
+	if ((sc->sc_output & rcc_pins[pin].pin) == 0)
+		sc->sc_output |= rcc_pins[pin].pin;
 	else
-		sc->sc_output &= ~(1 << rcc_pins[pin].pin);
+		sc->sc_output &= ~rcc_pins[pin].pin;
 	RCC_WRITE(sc, RCC_GPIO_GP_LVL, sc->sc_output);
 	RCC_GPIO_UNLOCK(sc);
 

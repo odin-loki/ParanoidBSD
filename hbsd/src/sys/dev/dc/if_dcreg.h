@@ -1047,7 +1047,12 @@ struct dc_softc {
 #define	DC_DEVICEID_M5261	0x5261
 #define	DC_DEVICEID_M5263	0x5263
 
-#define	DC_DEVID(vendor, device)	((device) << 16 | (vendor))
+/*
+ * PBSD: (uint32_t)(device). 30 of the 74 dc_devs[] entries have a
+ * device ID >= 0x8000, and `(device) << 16' on a plain int is
+ * undefined. Casting the parameter fixes all 74 uses at once.
+ */
+#define	DC_DEVID(vendor, device)	((uint32_t)(device) << 16 | (vendor))
 
 /*
  * PCI low memory base and low I/O base register, and

@@ -553,8 +553,10 @@ sis_miibus_writereg(device_t dev, int phy, int reg, int data)
 		if (phy != 0)
 			return (0);
 
-		CSR_WRITE_4(sc, SIS_PHYCTL, (data << 16) | (phy << 11) |
-		    (reg << 6) | SIS_PHYOP_WRITE);
+		/* PBSD: (uint32_t)data -- BMCR_RESET is 0x8000 and this is
+		 * the PHY-attach path; see sys/dev/lge/if_lge.c. */
+		CSR_WRITE_4(sc, SIS_PHYCTL, ((uint32_t)data << 16) |
+		    (phy << 11) | (reg << 6) | SIS_PHYOP_WRITE);
 		SIS_SETBIT(sc, SIS_PHYCTL, SIS_PHYCTL_ACCESS);
 
 		for (i = 0; i < SIS_TIMEOUT; i++) {

@@ -30596,8 +30596,14 @@ The bug is the evaluation, not the bound.
   only by this function.
 * **`ck->unit * 2` and `ch->unit << 1`** in `ata-intel.c`, `ata-nvidia.c`
   and `mvs_soc.c`: a channel unit number from `device_get_unit()`.
-  **`rcc_gpio_pin_set`'s `1 << rcc_pins[pin].pin`**: `pin` is bounded by
-  the caller's `GPIO_PIN_MAX` check, one frame up.
+  ~~**`rcc_gpio_pin_set`'s `1 << rcc_pins[pin].pin`**: `pin` is bounded
+  by the caller's `GPIO_PIN_MAX` check, one frame up.~~
+  **WRONG, and fixed — see *`rccgpio`: the field is the mask* below.**
+  That sentence bounds the array INDEX, which was never the question;
+  the defect is the value stored in the field, and `.pin` is `(1 << 11)`.
+  It is in prose after the table, so `triaged()` correctly never marked
+  it and the record surfaced again — which is the re-checkable-reasoning
+  case `triaged()`'s docstring describes, working.
   **`fortuna.c`'s `(sbintime_t)_bt.sec << 32`** is `bintime2sbintime`,
   where `sec` is a `time_t` past the year 2262 before it overflows.
 * **The `free argument has offset zero` and `double free` records** —
@@ -34145,3 +34151,194 @@ Three questions, three answers:
 
 Recorded because the first reading of this record left it open, and an
 open question in this document is a claim that nobody checked.
+
+## `sys/dev` model-checked in full: 559 proofs, five defects, one overturned triage
+
+1,419 (file, function) pairs across 570 translation units and 189
+`sys/dev` subdirectories, the first time CBMC has covered the driver
+tree at this width. Roughly 1h48m.
+
+| verdict | n |
+|---|---:|
+| PROVED | **559** |
+| BOUNDED | 26 |
+| FAILED | 416 |
+| TIMEOUT | 318 |
+| ERROR | 100 |
+
+**The answer rate is the headline caveat and belongs next to the
+proofs: 418 of 1,419 (29.5%) produced no verdict.** Those functions are
+unchecked, not clean. 88 of the 100 ERRORs are the per-process
+`--mem-mb 4096` `RLIMIT_AS` firing on hard SAT instances, which is the
+documented "one function unproved beats a shard lost" behaviour. And
+`--resume` skips by `(file, function)` regardless of status, so the
+TIMEOUTs and ERRORs are sticky: re-running them means filtering those
+records out of the jsonl first.
+
+Buckets of the 416:
+
+| n | bucket |
+|---:|---|
+| 305 | pointer/memory (a missing precondition) |
+| 63 | static (callers constrain the domain) |
+| 24 | EXPORTED, arithmetic — READ THESE |
+| 10 | STATIC but its address is taken — READ THESE |
+| 7 | a per-CPU read CBMC cannot model |
+| 5 | an INDEX out of its array's range — READ THESE |
+| 2 | extern-driven |
+
+39 records in the three READ-THESE buckets, 29 of them carrying a line
+not in the not-a-defect table. Five are defects.
+
+### `rccgpio`: the field is the mask, and six sites shift by it
+
+```c
+static struct rcc_gpio_pin rcc_pins[] = {
+	{ .pin = (1 << 11), .name = "reset switch", ... },
+	{ .pin = (1 << 15), .name = "red LED",      ... },
+	{ .pin = (1 << 17), .name = "green LED",    ... },
+};
+```
+
+`.pin` is a **mask**. `attach` uses it as one — `rcc_gpio_modify_bits(sc,
+RCC_GPIO_USE_SEL, 0, rcc_pins[i].pin)`, where the third parameter is
+literally named `mask` and the body is `value &= ~mask; value |=
+writebits;`. Six other sites shift *by* it:
+
+```c
+	sc->sc_output |= (1 << rcc_pins[pin].pin);   /* 1 << 2048 */
+```
+
+`1 << 2048`, `1 << 32768`, `1 << 131072`. A shift count at or past the
+operand's width is **undefined**, and on x86 the hardware masks the
+count to five bits, so `2048 & 31`, `32768 & 31` and `131072 & 31` are
+all **0**: every pin collapses onto bit 0. **The driver's GPIO and LED
+control cannot work as written.**
+
+**This overturns a triage already in this document.** The entry above
+read: *"`rcc_gpio_pin_set`'s `1 << rcc_pins[pin].pin`: `pin` is bounded
+by the caller's `GPIO_PIN_MAX` check, one frame up."* That is true and
+irrelevant — it bounds the **index**, and all six entry points do
+already test `pin >= sc->sc_gpio_npins`. The defect is the **value in
+the field**. The old reasoning is struck through rather than deleted,
+because a triage that was wrong has to stay visible for that to be
+discoverable, and it is exactly the case `triaged()`'s docstring
+describes: the sentence sits in prose after the table, so the marker
+correctly never claimed it had been read, and the record surfaced again.
+
+### `arswitch`: the read sibling bounds `phy`, the write one did not
+
+`arswitch_readphy_internal` opens with both `phy` and `reg` bounds;
+`arswitch_writephy_internal` had only `reg`, and then shifts by
+`AR8X16_MDIO_CTRL_PHY_ADDR_SHIFT`. `phy` arrives from
+`IOETHERSWITCHSETPHYREG` through
+`ETHERSWITCH_WRITEPHYREG(etherswitch, phyreg->phy, ...)`
+(`etherswitch.c:189`) with no check of its own. `/dev/etherswitch%d` is
+`0600 root:wheel`, so root-only — and every other etherswitch driver
+(`mtkswitch`, `adm6996fc`, `ukswitch`, `rtl8366rb`, `e6060sw`) checks
+`phy` on both sides. Same shape as the `es_vlangroup` bound this tree
+already fixed across all eight drivers.
+
+### `dmc620` and `cmn600`: register bounds the unit, unregister did not
+
+```c
+dmc620_pmc_register(int unit, ...)  { if (unit >= DMC620_UNIT_MAX) return; ... }
+dmc620_pmc_unregister(int unit)     { dmc620_pmcs[unit].arg = NULL; ... }
+```
+
+Firmware declaring more than `DMC620_UNIT_MAX` (16) PMUs attaches those
+units fine — `register` silently skips them — and detaching one writes a
+NULL past the array and decrements a count that was never incremented
+for it. `sys/arm64/arm64/cmn600.c`'s `cmn600_pmc_unregister` is
+character-for-character the same against
+`cmn600_pmcs[CMN600_UNIT_MAX]`, `CMN600_UNIT_MAX = 4`, and is fixed with
+it. Severity is bounded by how much you trust the ACPI/FDT unit count.
+
+### `lge` and `sis`: `data << 16` is UB on every PHY reset
+
+```c
+	CSR_WRITE_4(sc, LGE_GMIICTL,
+	    (data << 16) | (phy << 8) | reg | LGE_GMIICMD_WRITE);
+```
+
+`data` is the `int` parameter of `miibus_writereg`, carrying a 16-bit
+PHY register value, and `mii_phy_reset()` (`mii_physubr.c:338`) writes
+`BMCR_RESET`, which is `0x8000` (`mii.h:51`). `0x8000 << 16` is 2^31 —
+not representable in `int`. **This is the ordinary PHY-attach path, not
+an edge case**: a UBSan kernel traps on every `lge` and `sis` attach.
+No functional misbehaviour, since the negative `int` converts to the
+right `uint32_t`, and the correct idiom is already in-tree —
+`rt2860.c`, `if_run.c` and `if_mtw.c` all write `(uint32_t)val << 16`.
+
+`sis` was **not** flagged by CBMC; it came out of surveying the idiom
+after `lge`. Recorded separately so the provenance is weighable.
+
+### Two shift-into-bit-31 cases, the class this document already fixed twice
+
+`if_dcreg.h:1050` is `#define DC_DEVID(vendor, device) ((device) << 16 |
+(vendor))`, and resolving all 74 `dc_devs[]` entries against the header
+gives **30 with a device ID ≥ 0x8000** — `DM9009 0x9009`, `98713_CP
+0x9881`, `82C115 0xc115`, `3CSOHOB 0x9300` and the rest. Constant
+expressions, folded correctly, stored into a `uint32_t` and compared
+unsigned, so UB only. Casting the macro parameter fixes all 74 uses.
+
+`pci.c:6096` is the same shape on a **device-supplied runtime value in
+core PCI code**: `return (cfg->device << 16 | cfg->vendor)`, where
+`cfg->device` is a `uint16_t` promoting to `int`. It is gated on
+`PCI_IOV` + `PCICFG_VF` + `reg == PCIR_VENDOR` + `width == 4` — the
+SR-IOV VF vendor/device emulation — and `PCI_IOV` is in
+`sys/amd64/conf/GENERIC:122`, so the path ships. It now sits in the same
+marker list as `pci_ea_fill_info`'s three-bit index into `dw[4]`,
+because they are the same class one function apart.
+
+### Two instrument findings from this run, worth acting on
+
+**`extern_driven()` misses the commonest driver shape.** It matches on a
+failure naming `return_value_<callee>`, but the recurring `sys/dev` case
+is a *field* read through an unmodelled `device_get_softc` — the
+description says `ch->unit * 2`, not `return_value_device_get_softc`.
+Several records (ata-intel ×2, mvs_soc, lge ×2, rccgpio) landed in
+READ-THESE for that reason alone.
+
+**Two shared-header artefacts account for 6 of the 29**, and both will
+reappear in every scope: `sys/sys/systm.h:481`, `pause()`'s
+`tick_sbt * timo` (`tick_sbt` is a kernel global CBMC leaves
+unconstrained; at its real value ≈4.3e6 the product cannot overflow
+int64 for any `int timo`), and `sys/sys/time.h:145`, `bttosbt()`'s
+`(sbintime_t)_bt.sec << 32` reached from `getsbinuptime()`. They may
+deserve a named rule beside the per-CPU one.
+
+**And `report.py` prints only the EXPORTED bucket** under "worth a
+person's time", so the INDEX and address-taken-static buckets — which is
+where the `rccgpio` and `dmc620` findings live — are counted in the
+table and never listed. Its `_all_read` check also looks only at the
+first two failures. Both are why this run's list had to be dumped by
+hand rather than read off the report.
+
+### The 22 read and left
+
+`bwn_dma_base` (three call sites, all constants, max index 4);
+`evdev_hid2key` (both callers mask with `0xFF` against a `[256]` table);
+`cmn600_init_pmc_units` (bounded by the counter `cmn600_pmc_register`
+only increments under its own check — fragile, since the stated guard is
+a `KASSERT` placed *after* the call, but not currently reachable);
+`oct_set_config_info`; `ata-intel`'s two `ch->unit * 2` and `mvs_soc`'s
+(the SATA branch never sets `ctlr->channels`, so `ata-pci.c:93`'s
+default of 2 applies); the `phy << 8` readreg siblings (MII layer, 0–31);
+`ure_miibus_readreg`; `t4_get_chip_params` (`G_CHIPID` is a 4-bit field
+and the `chipid < 0` test below handles the difference);
+`dpaa2_swp_set_cfg` (two in-file callers, literals);
+`arswitch_read/writereg_msb` (`addr + 2`, two call sites, both
+constants); the four `pause()` artefacts; the two `fortuna.c`
+`bttosbt()` ones; `ixgbe_vf_que_index`;
+`mlx4_ib_get_aguid_comp_mask_from_ix` (shift ≤ 11);
+`adf_clock_get_current_time`; and `pick_mode_by_ref`.
+
+Investigated and clean, recorded so nobody re-derives it:
+`arswitch_setled`'s `phy > sc->numphys` and `arswitch_setport`'s
+`es_port > sc->info.es_nports` are both the `>`-should-be-`>=` shape,
+and neither reaches an out-of-bounds index — for AR8327 `es_nports` is
+7, `arswitch_is_cpuport` returns early for ports 0 and 6, and the
+`numphys` cap is ≤ 5. `bwn_pio_idx2base` prints a warning on an
+out-of-range index and then indexes anyway, but all callers pass
+constants 0–4 against 8- and 6-entry tables.

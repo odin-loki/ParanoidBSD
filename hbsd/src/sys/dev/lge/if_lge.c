@@ -295,8 +295,16 @@ lge_miibus_writereg(device_t dev, int phy, int reg, int data)
 
 	sc = device_get_softc(dev);
 
+	/*
+	 * PBSD: (uint32_t)data. `data' is an int carrying a 16-bit PHY
+	 * register value, and mii_phy_reset() (mii_physubr.c:338) writes
+	 * BMCR_RESET, which is 0x8000 -- so `data << 16' is 2^31, not
+	 * representable in int. This is the ordinary PHY-attach path, so
+	 * a UBSan kernel traps on every lge attach. rt2860, if_run and
+	 * if_mtw already spell it (uint32_t)val << 16.
+	 */
 	CSR_WRITE_4(sc, LGE_GMIICTL,
-	    (data << 16) | (phy << 8) | reg | LGE_GMIICMD_WRITE);
+	    ((uint32_t)data << 16) | (phy << 8) | reg | LGE_GMIICMD_WRITE);
 
 	for (i = 0; i < LGE_TIMEOUT; i++)
 		if (!(CSR_READ_4(sc, LGE_GMIICTL) & LGE_GMIICTL_CMDBUSY))

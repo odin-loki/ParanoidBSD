@@ -380,12 +380,22 @@ FIXES = {
         "fsl_espi_transfer() returned holding the controller lock when "
         "the platform clock reads zero",
     ),
-    "hbsd/src/sys/dev/pci/pci.c": (
-        "if (b < (int)nitems(dw))",
-        "\t\t\tdw[b] = REG(ptr, 4);\n",
-        "pci_ea_fill_info() indexed uint32_t dw[4] with a three-bit "
-        "entry size read out of the device's own config space",
-    ),
+    "hbsd/src/sys/dev/pci/pci.c": [
+        (
+            "if (b < (int)nitems(dw))",
+            "\t\t\tdw[b] = REG(ptr, 4);\n",
+            "pci_ea_fill_info() indexed uint32_t dw[4] with a three-bit "
+            "entry size read out of the device's own config space",
+        ),
+        (
+            "return ((uint32_t)cfg->device << 16 |\n\t\t\t\t    cfg->vendor);",
+            "return (cfg->device << 16 | cfg->vendor);",
+            "the same class one file over: cfg->device is a uint16_t "
+            "promoting to int, so a DEVICE-supplied ID >= 0x8000 makes "
+            "`cfg->device << 16' undefined. PCI_IOV is in amd64 GENERIC, "
+            "so this SR-IOV VF vendor/device emulation path ships",
+        ),
+    ],
     "hbsd/src/sys/dev/cardbus/cardbus_cis.c": (
         "int rid = 0;",
         "\tstruct resource *res;\n\tint rid;\n",
@@ -2892,6 +2902,57 @@ FIXES = {
         "OF_getencprop_alloc_multi() returns ssize_t and -1 on failure; "
         "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
         "and a missing shmem property dereferenced NULL at attach",
+    ),
+    "hbsd/src/sys/dev/rccgpio/rccgpio.c": (
+        "\t\tsc->sc_output |= rcc_pins[pin].pin;",
+        "\t\tsc->sc_output |= (1 << rcc_pins[pin].pin);",
+        ".pin is a MASK -- (1 << 11), (1 << 15), (1 << 17) -- and "
+        "attach() passes it straight to rcc_gpio_modify_bits() as the "
+        "mask, but six sites shifted BY it: 1 << 2048, 1 << 32768, "
+        "1 << 131072. Undefined, and on x86 all three collapse onto "
+        "bit 0, so the driver's GPIO and LED control could not work",
+    ),
+    "hbsd/src/sys/dev/etherswitch/arswitch/arswitch_phy.c": (
+        "\tif (phy < 0 || phy >= 32)\n\t\treturn (ENXIO);\n\tif (reg < 0 || reg >= 32)\n\t\treturn (ENXIO);\n\n\tif (AR8X16_IS_SWITCH(sc, AR8327))\n\t\ta = AR8327_REG_MDIO_CTRL;\n\telse\n\t\ta = AR8X16_REG_MDIO_CTRL;\n\n\tARSWITCH_LOCK(sc);\n\terr = arswitch_writereg(dev, a,",
+        "\tARSWITCH_LOCK_ASSERT(sc, MA_NOTOWNED);\n\n\tif (reg < 0 || reg >= 32)\n\t\treturn (ENXIO);\n\n\tif (AR8X16_IS_SWITCH(sc, AR8327))",
+        "arswitch_writephy_internal() bounded reg and not phy, where "
+        "arswitch_readphy_internal() bounds both; phy arrives from "
+        "IOETHERSWITCHSETPHYREG unvalidated and is then shifted. Every "
+        "other etherswitch driver checks it on both sides",
+    ),
+    "hbsd/src/sys/dev/hwpmc/hwpmc_dmc620.c": (
+        "\tif (unit < 0 || unit >= DMC620_UNIT_MAX)\n\t\treturn;",
+        "dmc620_pmc_unregister(int unit)\n{\n\n\tdmc620_pmcs[unit].arg = NULL;",
+        "dmc620_pmc_register() bounds unit against DMC620_UNIT_MAX and "
+        "dmc620_pmc_unregister() did not, so firmware declaring more "
+        "than 16 PMUs writes a NULL past dmc620_pmcs[] on detach",
+    ),
+    "hbsd/src/sys/arm64/arm64/cmn600.c": (
+        "\tif (unit < 0 || unit >= CMN600_UNIT_MAX)\n\t\treturn;",
+        "cmn600_pmc_unregister(int unit)\n{\n\n\tcmn600_pmcs[unit].arg = NULL;",
+        "character-for-character the same as hwpmc_dmc620.c's, against "
+        "cmn600_pmcs[CMN600_UNIT_MAX] with CMN600_UNIT_MAX = 4",
+    ),
+    "hbsd/src/sys/dev/lge/if_lge.c": (
+        "((uint32_t)data << 16) | (phy << 8) | reg | LGE_GMIICMD_WRITE);",
+        "\t    (data << 16) | (phy << 8) | reg | LGE_GMIICMD_WRITE);",
+        "`data' is an int carrying a 16-bit PHY register value and "
+        "mii_phy_reset() writes BMCR_RESET, which is 0x8000, so "
+        "`data << 16' is 2^31 on the ordinary PHY-attach path",
+    ),
+    "hbsd/src/sys/dev/sis/if_sis.c": (
+        "CSR_WRITE_4(sc, SIS_PHYCTL, ((uint32_t)data << 16) |",
+        "CSR_WRITE_4(sc, SIS_PHYCTL, (data << 16) | (phy << 11) |",
+        "the same as lge's, found by surveying the idiom rather than "
+        "by the model checker: BMCR_RESET is 0x8000 on the PHY-attach "
+        "path",
+    ),
+    "hbsd/src/sys/dev/dc/if_dcreg.h": (
+        "((uint32_t)(device) << 16 | (vendor))",
+        "#define\tDC_DEVID(vendor, device)\t((device) << 16 | (vendor))",
+        "30 of the 74 dc_devs[] entries have a device ID >= 0x8000 and "
+        "`(device) << 16' on a plain int is undefined; casting the "
+        "macro parameter fixes all 74 uses",
     ),
     "hbsd/src/sys/amd64/vmm/vmm.c": (
         "\tif (seg < 0 || seg >= (int)nitems(seg_names))\n\t\treturn (VM_REG_GUEST_DS);",

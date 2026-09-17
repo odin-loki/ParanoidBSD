@@ -132,6 +132,11 @@ static void
 cmn600_pmc_unregister(int unit)
 {
 
+	/* PBSD: the bound cmn600_pmc_register() applies; see the
+	 * identical case in sys/dev/hwpmc/hwpmc_dmc620.c. */
+	if (unit < 0 || unit >= CMN600_UNIT_MAX)
+		return;
+
 	cmn600_pmcs[unit].arg = NULL;
 	cmn600_npmcs--;
 }
