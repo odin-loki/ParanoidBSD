@@ -84,6 +84,39 @@ class Strength(unittest.TestCase):
                          "attempted-no-answer")
 
 
+class EsbmcVocabulary(unittest.TestCase):
+    """esbmc_driver.py returns three verdicts CBMC has no equivalent of."""
+
+    def test_k_induction_is_at_least_as_strong_as_a_bounded_proof(self):
+        """PROVED-UNBOUNDED carries no unwind bound at all. Leaving it out
+        of PROVEN would file the strongest verdict here as UNTOUCHED."""
+        self.assertIn("PROVED-UNBOUNDED", M.PROVEN)
+        self.assertEqual(M.strength({"esbmc": "PROVED-UNBOUNDED"}),
+                         M.S_PROVED)
+
+    def test_unknown_is_not_an_answer(self):
+        """The solver neither proved nor refuted. Not clean."""
+        self.assertEqual(M.strength({"esbmc": "UNKNOWN"}), M.S_UNTOUCHED)
+        self.assertEqual(M.why_untouched({"esbmc": "UNKNOWN"}),
+                         "attempted-no-answer")
+
+    def test_notrun_means_the_engine_was_absent(self):
+        """Different work from a timeout: this one needs an install."""
+        self.assertEqual(M.why_untouched({"esbmc": "NOTRUN"}),
+                         "never-attempted")
+
+    def test_esbmc_verdicts_survive_ingest(self):
+        m = _m(ROWS)
+        m.ingest("esbmc", "hbsd", _jsonl([
+            {"file": "a.c", "function": "f", "status": "PROVED-UNBOUNDED"},
+            {"file": "a.c", "function": "g", "status": "UNKNOWN"},
+            {"file": "b.c", "function": "h", "status": "NOTRUN"}]))
+        self.assertEqual(m.rows[("hbsd", "a.c", "f")]["esbmc"],
+                         "PROVED-UNBOUNDED")
+        self.assertEqual(m.rows[("hbsd", "a.c", "g")]["esbmc"], "UNKNOWN")
+        self.assertEqual(m.rows[("hbsd", "b.c", "h")]["esbmc"], "NOTRUN")
+
+
 class IngestFunctionEngine(unittest.TestCase):
 
     def test_status_lands_on_the_named_function_only(self):

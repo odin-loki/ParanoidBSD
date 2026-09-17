@@ -79,11 +79,18 @@ TU_ENGINES = {"clang-analyze", "clang-tidy", "cppcheck", "coccinelle",
               "compiler-warnings", "cxx-analyze", "cxx-tidy", "pbsd-lints"}
 ENGINES = sorted(FUNC_ENGINES | TU_ENGINES)
 
-PROVEN = {"PROVED", "PROVED-ASSUMING"}
+# PROVED-UNBOUNDED is esbmc_driver.py's k-induction verdict: the
+# claim carries no unwind bound at all, so it is at least as
+# strong as PROVED and belongs in the same tier.
+PROVEN = {"PROVED", "PROVED-ASSUMING", "PROVED-UNBOUNDED"}
 DECIDED = {"BOUNDED", "FAILED"}
 SCANNED_V = {"REPORTED", "TU-CLEAN"}
 # A cell that says something about the INSTRUMENT, not about the code.
-NO_VERDICT = {"TIMEOUT", "ERROR", "NOFUNC", "TU-ERROR", "NOTRUN"}
+# UNKNOWN is ESBMC's "the solver neither proved nor refuted",
+# which CBMC has no equivalent of. It says something about the
+# solver, not about the code, so it sits with the rest of them.
+NO_VERDICT = {"TIMEOUT", "ERROR", "NOFUNC", "TU-ERROR", "NOTRUN",
+              "UNKNOWN"}
 
 VERDICTS = PROVEN | DECIDED | SCANNED_V | NO_VERDICT
 

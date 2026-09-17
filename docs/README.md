@@ -12,6 +12,7 @@ Start at the [repository README](../README.md). This tree is the rest of the wri
 | [plans/](plans/) | How the port is supposed to run |
 | [specs/](specs/) | Frozen module contracts |
 | [security/](security/) | Threat model and invariants |
+| [VERIFY_RUNBOOK.md](VERIFY_RUNBOOK.md) | Running the whole verification harness on your own machine: what to install, what it costs, and what it still does not check |
 | [migration/](migration/) | Wave status, subsystem notes, live driver state |
 
 Vendor docs under `hbsd/` and `kde/` stay with those trees. Do not move them here.

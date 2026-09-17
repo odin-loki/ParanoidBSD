@@ -1,0 +1,438 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
+#
+# A fake ESBMC that emits ESBMC's DOCUMENTED output shapes.
+#
+# This exists because the real binary is in no distribution's package set
+# and is not on PyPI, so esbmc_driver.py was written against
+# documentation and could not otherwise be tested at all. It makes the
+# PARSER landable: test_esbmc_driver.py drives the real driver against
+# this and asserts every status mapping.
+#
+# What it does NOT do is make the flags right. This script accepts
+# anything and checks nothing, so it cannot tell you that --ub-shift-check
+# is spelled correctly or that --context-bound exists. Only the real
+# binary can, and esbmc_driver.py --selftest is what asks it.
+#
+# Behaviour is selected by the value of --function, so one script covers
+# every case the driver claims to parse. Every block below is ESBMC's
+# format as documented; where the real tool differs, this is the file to
+# correct first, and the driver's regexes second.
+
+set -u
+
+fn=""
+prev=""
+for a in "$@"; do
+	if [ "$prev" = "--function" ]; then fn="$a"; fi
+	case "$a" in
+	--function=*) fn="${a#--function=}" ;;
+	--help|-h)
+		# The flag list --selftest probes. Only the flags the driver
+		# can pass are listed; the real --help is much longer.
+		cat <<'EOF'
+Usage: esbmc [OPTION]... file.c...
+
+Main options:
+  --function name                  set main function name
+  --unwind nr                      unwind nr times
+  --max-k-step nr                  max k step
+  --k-step nr                      k step size
+  --k-induction                    prove properties using k-induction
+  --incremental-bmc                incremental BMC
+  --falsification                  incremental BMC, base case only
+  --unwinding-assertions           generate unwinding assertions
+  --no-unwinding-assertions        do not generate unwinding assertions
+  --context-bound nr               limit context switches per thread
+  --memlimit limit                 configure memory limit
+  --timeout t                      configure time limit, integer + {s,m,h}
+
+Property checking:
+  --no-bounds-check                do not do array bounds check
+  --no-pointer-check               do not do pointer check
+  --no-div-by-zero-check           do not do division by zero check
+  --no-assertions                  ignore assertions
+  --overflow-check                 enable arithmetic over- and underflow check
+  --unsigned-overflow-check        enable unsigned over- and underflow check
+  --ub-shift-check                 enable undefined behaviour check on shifts
+  --struct-fields-check            enable over-sized read checks for structs
+  --nan-check                      check floating-point for NaN
+  --memory-leak-check              enable memory leak check
+  --data-races-check               enable data races check
+  --deadlock-check                 enable deadlock check
+  --lock-order-check               enable lock acquisition ordering check
+
+Solver:
+  --boolector                      use Boolector (default)
+  --z3                             use Z3
+  --cvc                            use CVC
+  --mathsat                        use MathSAT
+  --yices                          use Yices
+  --bitwuzla                       use Bitwuzla
+
+Front-end:
+  --64                             set width of machine word
+  --little-endian                  allocate multi-byte words little-endian
+  -I path                          set include path
+  -D macro                         define preprocessor macro
+EOF
+		exit 0
+		;;
+	esac
+	prev="$a"
+done
+
+banner() {
+	cat <<'EOF'
+ESBMC version 7.6.1 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux-gnu
+Parsing probe.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.081s
+GOTO program processing time: 0.002s
+EOF
+}
+
+bmc_stats() {
+	cat <<EOF
+Starting Bounded Model Checking
+Symex completed in: 0.011s (37 assignments)
+Slicing time: 0.001s (removed 12 assignments)
+Generated $1 VCC(s), $2 remaining after simplification (25 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving with solver Boolector 3.2.2
+Runtime decision procedure: 0.022s
+BMC program time: 0.061s
+EOF
+}
+
+overflow_cex() {
+	cat <<'EOF'
+
+[Counterexample]
+
+
+State 1 file probe.c line 5 column 9 function f thread 0
+----------------------------------------------------
+  a = 2147483647 (01111111 11111111 11111111 11111111)
+
+State 2 file probe.c line 6 column 9 function f thread 0
+----------------------------------------------------
+  b = 1 (00000000 00000000 00000000 00000001)
+
+State 3 file probe.c line 7 column 5 function f thread 0
+----------------------------------------------------
+Violated property:
+  file probe.c line 7 column 5 function f
+  arithmetic overflow on add
+  !overflow("+", a, b)
+
+EOF
+}
+
+unwind_cex() {
+	cat <<'EOF'
+
+[Counterexample]
+
+
+State 1 file probe.c line 11 column 2 function f thread 0
+----------------------------------------------------
+Violated property:
+  file probe.c line 11 column 2 function f
+  unwinding assertion loop 0
+  !(unwind_bound >= 16)
+
+EOF
+}
+
+# --selftest compiles a four-line loop and runs every mode over it. The
+# real binary would actually check it; this dispatches on the mode flag
+# so the selftest demonstrates end to end against the mock too.
+smoke() {
+	for a in "$@"; do
+		case "$a" in
+		--k-induction)
+			banner
+			echo "*** Checking base case, k = 1 ***"
+			echo "No bug has been found in the base case"
+			echo "*** Checking inductive step, k = 1 ***"
+			echo "Solution found by the inductive step (k = 1)"
+			echo; echo "VERIFICATION SUCCESSFUL"; exit 0 ;;
+		--incremental-bmc)
+			banner
+			echo "*** Checking forward condition, k = 4 ***"
+			echo "Solution found by the forward condition; all states are reachable (k = 4)"
+			echo; echo "VERIFICATION SUCCESSFUL"; exit 0 ;;
+		--falsification)
+			banner
+			echo "*** Checking base case, k = 4 ***"
+			echo "No bug has been found in the base case"
+			echo; echo "VERIFICATION SUCCESSFUL"; exit 0 ;;
+		esac
+	done
+	banner
+	echo "Unwinding loop 1 iteration 4 file smoke.c line 5 function pbsd_smoke_scalar"
+	echo "Generating unwinding assertion for loop 1"
+	bmc_stats 11 6
+	echo; echo "VERIFICATION SUCCESSFUL"; exit 0
+}
+
+case "$fn" in
+
+pbsd_smoke_scalar) smoke "$@" ;;
+
+# ---- bounded mode ---------------------------------------------------
+ok_bounded)
+	# Clean, and ESBMC says nothing anywhere about unwinding assertions.
+	# Under --unwind-assert auto the driver must NOT call this PROVED.
+	banner; bmc_stats 14 9
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+ok_bounded_evidence)
+	# Clean, and the output mentions an unwinding assertion, so the bound
+	# was being policed and PROVED is a real bounded proof.
+	banner
+	echo "Unwinding loop 1 iteration 4 file probe.c line 11 function f"
+	echo "Generating unwinding assertion for loop 1"
+	bmc_stats 15 10
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+unwind_hit)
+	# The bound was too small and nothing else went wrong. ESBMC reports
+	# this as VERIFICATION FAILED whose only violated property is the
+	# unwinding one - the opposite direction from CBMC, same meaning.
+	banner; bmc_stats 16 11
+	unwind_cex
+	echo "VERIFICATION FAILED"
+	exit 1 ;;
+
+overflow_fail)
+	banner; bmc_stats 14 9
+	overflow_cex
+	echo "VERIFICATION FAILED"
+	exit 1 ;;
+
+mixed_fail)
+	# A real defect AND the bound was too small. The defect wins; the
+	# unwinding hit is recorded beside it.
+	banner; bmc_stats 18 13
+	overflow_cex
+	unwind_cex
+	echo "VERIFICATION FAILED"
+	exit 1 ;;
+
+failed_noprops)
+	# FAILED with nothing this driver can parse. Not a finding and not
+	# clean: a record nobody can act on.
+	banner; bmc_stats 9 4
+	echo
+	echo "VERIFICATION FAILED"
+	exit 1 ;;
+
+# ---- k-induction ----------------------------------------------------
+kind_inductive)
+	banner
+	cat <<'EOF'
+*** Checking base case, k = 1 ***
+Starting Bounded Model Checking
+Symex completed in: 0.008s (21 assignments)
+Generated 6 VCC(s), 3 remaining after simplification (14 assignments)
+Solving with solver Boolector 3.2.2
+Runtime decision procedure: 0.009s
+No bug has been found in the base case
+*** Checking forward condition, k = 1 ***
+Starting Bounded Model Checking
+Generated 2 VCC(s), 1 remaining after simplification (9 assignments)
+Solving with solver Boolector 3.2.2
+The forward condition is unable to prove the property
+*** Checking inductive step, k = 1 ***
+Starting Bounded Model Checking
+Generated 8 VCC(s), 5 remaining after simplification (19 assignments)
+Solving with solver Boolector 3.2.2
+The inductive step is unable to prove the property
+*** Checking base case, k = 2 ***
+No bug has been found in the base case
+*** Checking forward condition, k = 2 ***
+The forward condition is unable to prove the property
+*** Checking inductive step, k = 2 ***
+Generated 11 VCC(s), 7 remaining after simplification (28 assignments)
+Solving with solver Boolector 3.2.2
+Runtime decision procedure: 0.031s
+Solution found by the inductive step (k = 2)
+EOF
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+kind_forward)
+	banner
+	cat <<'EOF'
+*** Checking base case, k = 1 ***
+No bug has been found in the base case
+*** Checking forward condition, k = 1 ***
+The forward condition is unable to prove the property
+*** Checking inductive step, k = 1 ***
+The inductive step is unable to prove the property
+*** Checking base case, k = 2 ***
+No bug has been found in the base case
+*** Checking forward condition, k = 3 ***
+Generated 4 VCC(s), 2 remaining after simplification (11 assignments)
+Solving with solver Boolector 3.2.2
+Solution found by the forward condition; all states are reachable (k = 3)
+EOF
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+kind_base_fail)
+	banner
+	cat <<'EOF'
+*** Checking base case, k = 1 ***
+No bug has been found in the base case
+*** Checking base case, k = 2 ***
+Starting Bounded Model Checking
+Generated 12 VCC(s), 8 remaining after simplification (31 assignments)
+Solving with solver Boolector 3.2.2
+EOF
+	overflow_cex
+	echo "Solution found by the base case (k = 2)"
+	echo
+	echo "VERIFICATION FAILED"
+	exit 1 ;;
+
+kind_exhausted)
+	# Ran out of k without concluding either way. This is ESBMC's answer
+	# that it has no answer, and it is not a clean result.
+	banner
+	cat <<'EOF'
+*** Checking base case, k = 1 ***
+No bug has been found in the base case
+*** Checking forward condition, k = 1 ***
+The forward condition is unable to prove the property
+*** Checking inductive step, k = 1 ***
+The inductive step is unable to prove the property
+*** Checking base case, k = 32 ***
+No bug has been found in the base case
+*** Checking inductive step, k = 32 ***
+The inductive step is unable to prove the property
+EOF
+	echo
+	echo "VERIFICATION UNKNOWN"
+	exit 0 ;;
+
+kind_clean_no_reason)
+	# SUCCESSFUL under k-induction with no "Solution found by" line.
+	# Either it did not close by induction, or this driver failed to
+	# recognise the line that says it did. Either way: not UNBOUNDED.
+	banner
+	echo "*** Checking base case, k = 1 ***"
+	echo "No bug has been found in the base case"
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+# ---- incremental BMC ------------------------------------------------
+incr_forward)
+	banner
+	cat <<'EOF'
+*** Checking base case, k = 1 ***
+No bug has been found in the base case
+*** Checking forward condition, k = 1 ***
+The forward condition is unable to prove the property
+*** Checking base case, k = 2 ***
+No bug has been found in the base case
+*** Checking forward condition, k = 2 ***
+Solution found by the forward condition; all states are reachable (k = 2)
+EOF
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+incr_unknown)
+	banner
+	echo "*** Checking base case, k = 16 ***"
+	echo "No bug has been found in the base case"
+	echo
+	echo "VERIFICATION UNKNOWN"
+	exit 0 ;;
+
+# ---- falsification --------------------------------------------------
+fals_clean)
+	# Base case only. It looked for a bug and did not find one. That is
+	# never a proof, whatever the word SUCCESSFUL suggests.
+	banner
+	echo "*** Checking base case, k = 8 ***"
+	echo "No bug has been found in the base case"
+	echo
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+# ---- concurrency ----------------------------------------------------
+race_fail)
+	banner; bmc_stats 22 17
+	cat <<'EOF'
+
+[Counterexample]
+
+
+State 4 file probe.c line 19 column 2 function worker thread 1
+----------------------------------------------------
+Violated property:
+  file probe.c line 19 column 2 function worker
+  data race on shared_counter
+  !data_race(shared_counter)
+
+EOF
+	echo "VERIFICATION FAILED"
+	exit 1 ;;
+
+# ---- ESBMC declining to answer --------------------------------------
+parse_error)
+	banner
+	cat <<'EOF'
+probe.c:3:10: fatal error: 'sys/cdefs.h' file not found
+    3 | #include <sys/cdefs.h>
+      |          ^~~~~~~~~~~~~
+1 error generated.
+PARSING ERROR
+EOF
+	exit 1 ;;
+
+conversion_error)
+	banner
+	echo "CONVERSION ERROR"
+	echo "Unsupported construct: variable length array in struct"
+	exit 1 ;;
+
+nofunc)
+	banner
+	echo "ERROR: symbol \`nofunc' not found"
+	exit 1 ;;
+
+oom)
+	banner
+	echo "Starting Bounded Model Checking"
+	echo "Out of memory"
+	exit 1 ;;
+
+hang)
+	# Outlives any sane --timeout, so the driver's subprocess timeout is
+	# what answers. 300s, not infinity, so a runaway test still ends.
+	banner
+	sleep 300
+	echo "VERIFICATION SUCCESSFUL"
+	exit 0 ;;
+
+*)
+	echo "ERROR: symbol \`${fn}' not found" >&2
+	exit 1 ;;
+esac

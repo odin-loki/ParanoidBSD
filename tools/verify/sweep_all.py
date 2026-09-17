@@ -59,7 +59,8 @@ class Stage:
     """One instrument, and everything needed to decide whether it can run."""
 
     def __init__(self, name, engine, needs_bin, driver, argv,
-                 feeds=None, install=None, note="", kind="c"):
+                 feeds=None, install=None, note="", kind="c",
+                 fixed_cost=False):
         self.name = name
         self.engine = engine          # matrix.py column, or None
         self.needs_bin = needs_bin    # executable that must be on PATH
@@ -69,6 +70,11 @@ class Stage:
         self.install = install or {}  # {"pkg": ..., "apt": ...}
         self.note = note
         self.kind = kind              # c | cxx | meta
+        # A stage whose cost does not scale with the scope. The universe
+        # is built over the WHOLE tree whatever --scope says, so pricing
+        # it per unit of the scope inflates a tree-wide estimate by the
+        # square of the tree.
+        self.fixed_cost = fixed_cost
 
     def availability(self) -> tuple[str, str]:
         if self.driver and not (ROOT / self.driver).exists():
@@ -95,7 +101,7 @@ STAGES = [
     Stage("universe", None, None, "tools/verify/inventory.py",
           lambda c: [sys.executable, str(V / "inventory.py"),
                      "--out", str(c["dir"] / "universe.jsonl")],
-          kind="meta",
+          kind="meta", fixed_cost=True,
           note="the row set every coverage fraction is divided by"),
 
     Stage("classify", None, "goto-cc", "tools/verify/classify.py",
@@ -234,8 +240,9 @@ def run_stage(st: Stage, ctx, state, dry) -> dict:
     avail, why = st.availability()
     if avail != "ok":
         return {"status": avail, "why": why}
+    satisfied = {"ok", "would-run"} if dry else {"ok"}
     for dep in st.feeds:
-        if state["stages"].get(dep, {}).get("status") != "ok":
+        if state["stages"].get(dep, {}).get("status") not in satisfied:
             return {"status": "blocked",
                     "why": f"{dep} did not complete, and {st.name} reads "
                            f"what it writes"}
@@ -280,6 +287,10 @@ def do_report(d: Path, state, scopes, units, rates):
         print("\n  measured rates (seconds per translation unit)")
         for k, v in sorted(rates.get("per_unit", {}).items()):
             print(f"    {k:14} {v:8.3f}   from {rates.get('units', '?')} units")
+        if rates.get("fixed"):
+            print("\n  fixed costs (seconds, independent of the scope)")
+            for k, v in sorted(rates["fixed"].items()):
+                print(f"    {k:14} {v:8.1f}")
 
 
 def do_matrix(d: Path, state):
@@ -356,11 +367,18 @@ def main(argv=None):
 
     print(f"== scope {' '.join(args.scope)}   {units} translation units   "
           f"{args.jobs} jobs")
+    scale = 1.0
     if args.dry_run:
         pu = rates.get("per_unit", {})
         if pu:
+            pjobs = rates.get("jobs", args.jobs) or args.jobs
+            scale = pjobs / args.jobs
             print(f"   estimates extrapolated from a profile of "
-                  f"{rates.get('units')} units")
+                  f"{rates.get('units')} units at {pjobs} jobs")
+            if args.jobs != pjobs:
+                print(f"   scaled x{scale:.2f} for {args.jobs} jobs, "
+                      "assuming perfect parallelism - so these are a "
+                      "FLOOR, not a prediction")
         else:
             print("   no rates.json: times are NOT MEASURED and are not "
                   "guessed either")
@@ -383,10 +401,21 @@ def main(argv=None):
         r = run_stage(s, ctx, state, args.dry_run)
         state["stages"][s.name] = r
         if args.dry_run:
-            per = rates.get("per_unit", {}).get(s.name)
-            est = f"{per * units / 3600:.2f} h" if per else "not measured"
-            if per:
-                total_est += per * units
+            if s.fixed_cost:
+                cost = rates.get("fixed", {}).get(s.name)
+            else:
+                per = rates.get("per_unit", {}).get(s.name)
+                # The rate was measured at rates["jobs"] parallel workers.
+                # Scaling it to a different core count assumes the stage
+                # is perfectly parallel, which it is NOT - the model
+                # checkers come close, the ones bounded by disk do not.
+                # So this is a floor on the time, not a prediction, and
+                # the line below says so.
+                cost = per * units * scale if per else None
+            est = (f"{cost / 3600:.2f} h" if cost and cost >= 60
+                   else f"{cost:.0f} s" if cost else "not measured")
+            if cost:
+                total_est += cost
             print(f"    {s.name:14} {r['status']:10} {est:>14}  {s.note[:44]}")
         save_state(d, state)
 
@@ -394,18 +423,30 @@ def main(argv=None):
         if total_est:
             print(f"\n   estimated total: {total_est / 3600:.1f} h at "
                   f"{args.jobs} jobs, from a {rates.get('units')}-unit "
-                  "profile")
+                  f"profile taken at {rates.get('jobs')} jobs")
+            miss = [n for n, r in state["stages"].items()
+                    if r.get("status") in ("NOTRUN", "missing")]
+            if miss:
+                print(f"   and that total EXCLUDES {len(miss)} instruments "
+                      "that cannot run here:")
+                print(f"     {' '.join(sorted(miss))}")
+                print("   Installing them makes the run LONGER and the "
+                      "coverage larger. Neither number is in the total.")
         do_report(d, state, args.scope, units, rates)
         return 0
 
     if args.profile:
-        pu = {}
+        pu, fixed = {}, {}
         for n, r in state["stages"].items():
-            if r.get("status") == "ok" and r.get("seconds") and units:
+            if r.get("status") != "ok" or not r.get("seconds"):
+                continue
+            if STAGE_BY_NAME[n].fixed_cost:
+                fixed[n] = r["seconds"]
+            elif units:
                 pu[n] = r["seconds"] / units
         (d / "rates.json").write_text(json.dumps(
             {"units": units, "scopes": args.scope, "jobs": args.jobs,
-             "per_unit": pu}, indent=1))
+             "per_unit": pu, "fixed": fixed}, indent=1))
         print(f"\nwrote {d / 'rates.json'} from {units} units")
         rates = load_rates(d)
 

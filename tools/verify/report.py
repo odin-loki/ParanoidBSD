@@ -683,8 +683,14 @@ def main() -> int:
 
     status = collections.Counter(r["status"] for r in recs)
     print("\n== what the model checker concluded")
-    order = ["PROVED", "PROVED-ASSUMING", "BOUNDED", "FAILED",
-             "TIMEOUT", "ERROR", "NOFUNC"]
+    # PROVED-UNBOUNDED and UNKNOWN come from esbmc_driver.py and have no
+    # CBMC equivalent: the first is k-induction closing the loop so no
+    # bound is involved in the claim, the second is the solver giving up
+    # without deciding. NOTRUN means the engine was not installed. All
+    # three are listed here rather than falling through to the unordered
+    # tail, where a reader skims past them.
+    order = ["PROVED-UNBOUNDED", "PROVED", "PROVED-ASSUMING", "BOUNDED",
+             "FAILED", "UNKNOWN", "TIMEOUT", "ERROR", "NOFUNC", "NOTRUN"]
     for k in order + [k for k in status if k not in order]:
         if status.get(k):
             print(f"  {k:16s} {status[k]}")
@@ -764,13 +770,32 @@ def main() -> int:
         rest = len(errs) - sum(n for _, n in why.most_common(6))
         if rest:
             print(f"    {rest:4d}  (the rest)")
-        print("  An ERROR is CBMC declining to answer. Those functions")
+        _NAMES = {"cbmc": "CBMC", "esbmc": "ESBMC", "fusebmc": "FuSeBMC"}
+        engines = {r.get("engine", "cbmc") for r in recs}
+        who = "/".join(_NAMES.get(e, e) for e in sorted(engines)) or \
+            "the model checker"
+        print(f"  An ERROR is {who} declining to answer. Those functions")
         print("  are UNCHECKED, which a count cannot tell from clean.")
 
     if status.get("PROVED"):
         print("\n  PROVED means every checked property holds for ALL inputs -")
         print("  the loops closed inside the bound. BOUNDED and")
         print("  PROVED-ASSUMING are weaker and are never folded into it.")
+
+    if status.get("PROVED-UNBOUNDED"):
+        print("\n  PROVED-UNBOUNDED is the strongest verdict anything here")
+        print("  returns: k-induction closed the loop, so the claim carries")
+        print("  NO unwind bound at all. It still says nothing about whether")
+        print("  the function computes the right answer.")
+
+    if status.get("UNKNOWN"):
+        print(f"\n  {status['UNKNOWN']} UNKNOWN: the solver neither proved nor")
+        print("  refuted. Those functions are UNCHECKED, not clean, and they")
+        print("  are the ones to retry with a different mode or bound.")
+
+    if status.get("NOTRUN"):
+        print(f"\n  {status['NOTRUN']} NOTRUN: the engine was not installed, so")
+        print("  nothing was checked. This is not a result about the code.")
 
     failed = [r for r in recs if r["status"] == "FAILED"]
     buckets = collections.defaultdict(list)

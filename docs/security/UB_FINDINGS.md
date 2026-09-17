@@ -34873,17 +34873,30 @@ them from the denominator would take the headline from 0.87 to 0.90 and
 the codebase would be exactly as buggy. `test_taxonomy.py` fails if any
 of them drifts back into scope.
 
-The one `GAP`, with the instruments actually installed here, is
-**`TRUST-UNVALIDATED-INPUT`** — a value from an ioctl, a sysctl, a
-`copyin` length or a syscall argument reaching an index, a size or a
-divisor. This is the most important class in the file and the worst
-covered, and the reason is structural: a model checker treats *every*
-parameter as unconstrained, so it reports the attacker-controlled and
-the caller-constrained identically and a person has to separate them by
-hand. That separation has been the single largest cost in this project.
-Taint tracking is what answers it; `codeql` is the only instrument in
-the table that does taint and it is not installed. `--missing` names it
-and says what installing it would buy.
+The one `GAP` — nothing installed sees it at all — is
+**`LOCK-ORDER`**, two paths taking the same two locks in opposite
+orders. Even with every instrument in the table installed it only
+reaches `PARTIAL`: `infer` and `codeql` are both `SOME` and nothing is
+better. The kernel's own WITNESS finds these **at runtime**, so the
+coverage of this class is exactly the set of paths a boot exercises and
+nothing more.
+
+The class that matters most is a different one, and it is `PARTIAL`
+rather than `GAP`: **`TRUST-UNVALIDATED-INPUT`** — a value from an
+ioctl, a sysctl, a `copyin` length or a syscall argument reaching an
+index, a size or a divisor. Several instruments see *some* of it; none
+of the installed ones decides it. The reason is structural: a model
+checker treats *every* parameter as unconstrained, so it reports the
+attacker-controlled and the caller-constrained identically and a person
+separates them by hand, which has been the single largest cost in this
+project. Taint tracking is what answers it, `codeql` is the only
+instrument here that does taint, and it is the one install that would
+move a class from `PARTIAL` to `COVERED` — `--missing` says so.
+
+(The commit that introduced `taxonomy.py` calls
+`TRUST-UNVALIDATED-INPUT` the gap. It is the most important shortfall
+but it is not the `GAP`; `LOCK-ORDER` is. `taxonomy.py --available
+--gaps` prints both and is the authority.)
 
 `--available` recomputes over only what is on PATH, so the number
 describes a real run rather than a paper one, and the difference between
@@ -34902,8 +34915,8 @@ and every row carries which source found it:
 | source | rows | how |
 |---|---:|---|
 | `ledger` | 297,212 | `docs/port_plan.json`, built by `tools/port_plan.py` from the tree |
-| `textual` | 32,417 | a brace matcher in `inventory.py`, for `kde/` (16,753) and `pbsd/` (15,664), which the ledger does not cover |
-| | **329,629** | the denominator of every coverage fraction below |
+| `textual` | 38,641 | a brace matcher in `inventory.py`, for `kde/` (22,901) and `pbsd/` (15,740), which the ledger does not cover |
+| | **335,853** | the denominator of every coverage fraction below |
 
 The scanner's accuracy is **measured, not asserted**. `--selftest` runs
 it over files the ledger already knows and compares:
@@ -34929,6 +34942,19 @@ after the close paren, so `int Window::width() const { ... }` never
 matched and **every const method in KDE would have been missing from
 the universe**. Anchored as a prefix instead, and `test_inventory.py`
 holds the case.
+
+The size of that bug is worth stating, because it is the argument for
+measuring a denominator rather than assuming one. KDE's row count went
+from 16,753 to 22,901 — **6,148 functions, 27% of the tree, invisible**
+— and every one of them would have been absent from the universe, absent
+from the untouched list, and absent from every coverage fraction. Not
+reported as unchecked. Simply not there. A coverage number computed over
+the broken universe would have been *higher*, because the functions
+nobody had checked were the ones that had gone missing.
+
+(The commit that introduced these tools quotes the pre-fix figures —
+329,629 total and 32,417 textual. The numbers in this table are the
+correct ones.)
 
 ### 3. The matrix — `tools/verify/matrix.py`
 
@@ -34961,6 +34987,10 @@ Run over the model-check and analyse artefacts on hand (CBMC over
 `sys/dev`, `sys/fs`, `sys/kern`, `sys/amd64`, OpenZFS and `sys/cddl`;
 clang `--analyze` over `crypto/` and `usr.sbin/bhyve` — a fraction of
 the full sweep, not all of it):
+
+(measured against the 329,629-row universe, before the const-method fix
+widened it to 335,853; the touched counts are unaffected, the fraction
+drops slightly)
 
 ```
   == rows (functions the universe knows about)   329629
@@ -35050,3 +35080,145 @@ Fixed by extracting `build_cmd()` as a seam a test can read without a
 binary, and by driving the promotion through `esbmc_check` with a fake
 `subprocess.run`. Both now fail when the defect is put back, verified by
 putting it back.
+
+## The orchestrator, and what a whole-tree run costs
+
+`tools/verify/sweep_all.py` is the one command, and its job is the
+opposite of the usual one. A harness that runs twelve instruments and
+prints the findings of the five that worked is **worse** than one that
+runs five, because the reader cannot tell the difference. So a stage
+that cannot run writes that down, with which of four reasons:
+
+| | |
+|---|---|
+| `ok` | it ran and produced output |
+| `failed` | it ran and returned non-zero |
+| `NOTRUN` | the tool is not installed — the install line is printed |
+| `missing` | the driver is not in this tree yet — named too |
+| `blocked` | a stage it reads from did not complete — which one is named |
+
+`--report` prints all of them, always, so the last thing on screen after
+a twelve-hour run is the list of what did not happen, ending:
+
+```
+  7 of 12 instruments produced NO data for this scope.
+  Every function they would have covered is UNTOUCHED, not clean.
+```
+
+### Profiled, not guessed
+
+`--profile` over `lib/libutil` + `lib/libsysdecode` — **54 translation
+units, 8 jobs**, the sample size stated beside every figure it produces:
+
+| stage | seconds / TU | wall clock on the sample |
+|---|---:|---:|
+| `classify` | 0.135 | 7.3 s |
+| `cbmc` | 3.763 | 203.2 s |
+| `fusebmc` | 0.500 | 27.0 s |
+| `analyze` | 0.896 | 48.4 s |
+| `universe` | **fixed** | 11.4 s |
+
+`--dry-run` then extrapolates to the real thing — 22,851 translation
+units across `sys lib bin sbin usr.bin usr.sbin stand contrib crypto
+cddl secure libexec`:
+
+| jobs | estimated total |
+|---:|---:|
+| 8 | 33.6 h |
+| 16 | 16.8 h |
+| 32 | 8.4 h |
+| 64 | 4.2 h |
+
+The tool prints three caveats with those and so does this: they are a
+**floor** (scaling a rate measured at 8 jobs assumes perfect
+parallelism); they come from scalar-heavy userland and `sys/` will be
+slower per unit; and they **exclude every instrument that could not
+run**, so installing the missing ones makes the run longer *and* the
+coverage larger and neither is in the total.
+
+### Three bugs in my own estimator, found by running it
+
+Worth recording because all three would have produced a confident wrong
+number rather than an obvious failure.
+
+1. **`universe` was priced per unit.** It is built over the whole tree
+   whatever `--scope` says, so an 11-second job was extrapolated to
+   **1.34 hours** on a tree-wide scope — the cost inflated by the square
+   of the tree. Now a `fixed_cost` stage, with a test.
+2. **Every dependent stage read `blocked` in a dry run**, because
+   `classify` was `would-run` rather than `ok`. So the plan for a machine
+   where everything *is* installed omitted `cbmc` — the stage that
+   dominates the estimate — from the total. Now `would-run` satisfies a
+   dependency in a dry run and only in a dry run, with a test each way.
+3. **The estimate ignored `--jobs` completely.** 8 cores and 64 cores
+   printed the same 33.6 hours. Now scaled by the ratio against the job
+   count the profile was taken at, and labelled a floor rather than a
+   prediction, because the scaling is assumed and not measured.
+
+## The ESBMC driver
+
+`tools/verify/esbmc_driver.py` lands with a mock ESBMC in
+`tools/verify/testdata/esbmc_mock/` and 45 tests, because **ESBMC is in
+no distribution's package set and this driver has never met a real
+binary**. Everything below is therefore provisional in a way the file
+states about itself.
+
+It adds one verdict CBMC cannot produce:
+
+> `PROVED-UNBOUNDED` — k-induction's inductive step or forward condition
+> closed the loop, so the claim carries **no unwind bound at all**.
+
+And it earns it conservatively. `PROVED-UNBOUNDED` requires the line in
+ESBMC's output saying the induction closed — never the mode alone. A
+`--k-induction` run that comes back `VERIFICATION SUCCESSFUL` with no
+such line is `BOUNDED`, so "ran out of k" cannot become a theorem.
+`Solution found by the base case` is BMC at depth k and is never a
+proof. A clean `--falsification` run is `BOUNDED` whatever "SUCCESSFUL"
+suggests. Every uncertainty in the driver resolves to a *weaker* verdict.
+
+**The polarity trap, guarded structurally.** ESBMC's check defaults are
+the reverse of CBMC's, so `check_flags()` raises on any command line
+carrying `--no-bounds-check`, `--no-pointer-check`, `--no-div-by-zero-check`
+or `--no-assertions`, including one smuggled in through `--extra`. That
+guard is what surfaced the same flag sitting unconditionally in
+`tools/pbsd_agent/esbmc_check.py`.
+
+**With no ESBMC on PATH**, verified here directly rather than through
+the mock: every task is recorded `NOTRUN`, the run exits 1, and
+`--resume` deliberately does **not** skip a `NOTRUN` — otherwise the
+first binary-less run would make the gap permanent and invisible on the
+machine that later has ESBMC.
+
+```
+WARNING: esbmc not found ('esbmc').
+  [3/3] 56.3/s  NOTRUN=3
+FAIL  3 function(s) recorded NOTRUN:
+      esbmc is not on PATH, so they were never checked.
+      An unchecked scope and a clean one are the same
+      number in a total, which is why this cannot exit 0.
+EXIT=1
+```
+
+`report.py` and `matrix.py` learned the three statuses CBMC has no
+equivalent of: `PROVED-UNBOUNDED` (filed with `PROVED`, and it would
+otherwise have read as `UNTOUCHED` — the strongest verdict in the
+harness, invisible), `UNKNOWN` (the solver decided nothing: not clean)
+and `NOTRUN`. `report.py` also stopped hardcoding "CBMC" in the sentence
+about what an ERROR means, and now names whichever engines the records
+came from.
+
+Still open on first contact with a real binary, in the driver's own
+order: whether `--unwinding-assertions` exists in the positive spelling
+(the default policy passes neither flag and refuses `PROVED` without
+positive evidence, so being wrong costs a weaker verdict); whether
+`--ub-shift-check` is the right spelling; and `--context-bound`, on
+which the whole concurrency mode rests. `--selftest` greps the binary's
+`--help` for each and prints what it cannot confirm.
+
+One thing the driver cannot do, and it is structural: **ESBMC cannot
+read CBMC's goto binaries.** The formats differ, so it re-parses source
+and its reach will be a *subset* of CBMC's 749-of-4,737 units rather
+than a superset. The honest expectation is that it widens the *depth* of
+what is already checked — k-induction on the scalar userland corpus, and
+a second opinion on the functions where CBMC's SAT back end runs out of
+memory — and does not widen coverage of the kernel at all.

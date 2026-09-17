@@ -306,6 +306,19 @@ jobs:
           # wrapper reported clean had array bounds checking disabled,
           # and nothing in the output it parsed would have said so.
           python3 tools/pbsd_agent/test_agent_port.py
+          # The orchestrator, whose whole job is the opposite of the
+          # usual one: a harness that runs twelve instruments and prints
+          # the findings of the five that worked is worse than one that
+          # runs five, because the reader cannot tell the difference.
+          python3 tools/verify/test_sweep_all.py
+          # The ESBMC driver, against a mock, because ESBMC is in no
+          # distribution's package set and this driver has never met a
+          # real one. The mock emits the documented output shapes; the
+          # tests assert that every uncertainty resolves to a WEAKER
+          # verdict - k-induction claiming PROVED-UNBOUNDED needs the
+          # line in the output saying the induction closed, never the
+          # mode alone.
+          python3 tools/verify/test_esbmc_driver.py
           # The build-system readers. Every one of them exists because
           # the tool had a rule where a makefile had the answer, and each
           # was found by a translation unit that came back ERROR and
