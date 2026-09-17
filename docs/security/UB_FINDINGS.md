@@ -35575,3 +35575,180 @@ already has a rule for), and Coccinelle's `onesided-index` (`spatch` runs
 this toolchain and 0% on the target.** All 32 are printf(9)'s `%b`;
 upstream clang 18 has no `-fformat-extensions` and FreeBSD's does. Put
 them in the gate on a FreeBSD host.
+
+## The C++ tier, and the wall it hits
+
+`tools/verify/cxx_analyze.py` and `cxx_tidy.py` land with 59 tests, an
+error inventory (`cxx_expected_errors.json`), and a survey in
+`docs/CXX_TIER_SURVEY.md`. `sweep_all.py --list` now reads **11 of 12
+stages `ok`** — everything but ESBMC, which no distribution packages.
+
+They match `analyze.py`'s schema exactly, and one detail was
+load-bearing: `where` is `path:line` with **no column**, because
+`report.py`'s `agree()` uses `re.fullmatch(r"([^\s:]+):(\d+)")` and a
+column would make every C++ finding invisible to the one section whose
+job is spotting two instruments on the same line. The column lives in
+`col`; the merge key in `key`/`dedup`. Verified by running both
+`confidence.py` and `report.py` over real C++ output unchanged.
+
+### There is no Qt, and that is the whole story
+
+Verified here rather than taken on report:
+
+```
+  /usr/include/qt5, qt6, x86_64-linux-gnu/qt6   none exist
+  moc, qmake, uic, rcc                          not on PATH
+  pkg-config Qt6Core                            no
+```
+
+**cmake configures 0 of 12 KDE projects — a census, not a sample.** All
+ten frameworks plus kwin and plasma-desktop die at `find_package(ECM)`,
+the *first* dependency line in every `CMakeLists.txt`. Nothing even
+reaches `find_package(Qt6)`. Zero `compile_commands.json` exist.
+
+| configuration | sample | parse |
+|---|---:|---:|
+| bare `clang++ -fsyntax-only -std=c++20` | 50 | **0.0%** |
+| best-effort `-I` + 49 synthesised generated headers | **1,392 census** | **0.43%** |
+| confirmed by `clang --analyze` | **1,392 census** | **0.43%** |
+
+Reproduced on one framework from the landed tool:
+
+```
+  FAIL  0 translation units BUILT, 51 ERROR.
+        There is no finding count to read from this run.
+        VISIBILITY is zero. 'No findings' here means 'no
+        instrument', and the two must never be confused.
+  exit=2
+```
+
+That is the tier behaving correctly. A C++ sweep that printed "0
+findings" over KDE today would be the purest form of the lie this
+document set exists to prevent.
+
+The tree also declares `QT_MIN_VERSION 6.10.0` and `KF6_MIN_VERSION
+6.22.0` for kdecoration, kwayland and kwin — **newer than Debian/Ubuntu
+stable ships**. FreeBSD ports is the better host for this tier.
+
+### "All C++ in HBSD" means four different things
+
+| n | subtree |
+|---:|---|
+| **5,010** | `contrib/llvm-project` |
+| 356 | other vendored `contrib/` |
+| **259** | **ParanoidBSD/FreeBSD's own** |
+| 106 | `contrib/googletest` |
+| 48 | `crypto/` + `cddl/` |
+
+**87% of it is vendored LLVM.** Treating it as one lump lets 5,010 files
+of somebody else's code set this tier's headline number. And the failure
+mode differs in a way that matters: hbsd fails on files a build would
+*make* (TableGen `.inc` output — that is work), KDE fails on headers a
+package would *install* (that is a wall).
+
+### The false-positive rates, and the caveat that outweighs them
+
+Whole populations hand-checked, not samples: `cxx_analyze` **7 of 10 =
+70% FP**, `cxx_tidy` **10 of 15 = 67% FP**. Six of the seven analyser
+FPs are one pattern (googletest's `ASSERT_*` early return against a
+default-constructed fixture member).
+
+**Every one of those 25 findings came from vendored googletest**, which
+is macro- and type-erasure-heavy and unusually hostile to both
+instruments. The false-positive rate **on ParanoidBSD's own C++ is NOT
+MEASURED**, because too little of it builds here. Quoting 70% as this
+tier's rate would be quoting googletest's.
+
+Two checks were narrowed *because of* that hand-check:
+
+- **`cert-err33-c` produced 139 of 231 findings — 60% of everything the
+  tool said — and 10 of 10 checked were `fprintf(stderr, …)` and
+  `putc(' ', file)` in `usr.bin/dtc`. Zero were defects.** Narrowed by
+  `CheckedFunctions` to the allocation / IO-integrity / conversion
+  functions, verified on a seven-call probe. Cost, stated: an unchecked
+  `snprintf` truncation is no longer reported.
+- **`bugprone-assignment-in-if-condition` dropped** — 4 of 4 were the
+  deliberate parenthesised BSD idiom `if (!(valid = input.consume('"')))`,
+  which is what the extra parentheses are *for*. Cost: a genuine
+  `if (x = y)` typo is no longer reported.
+
+231 findings → 87; 114 distinct sites → 15.
+
+`bugprone-casting-through-void` was 2 of 2 FP and was **kept** — two
+samples from a type-erasure-heavy framework is not enough to delete a
+genuine defect class.
+
+And one hole is named rather than assumed away: **`cplusplus.SelfAssignment`
+is registered but silent** in clang 18. It accepts the flag, clang-tidy
+lists it, and on a probe whose `operator=` frees before it copies,
+neither the default set nor the explicitly-enabled checker reports
+anything. It is recorded in `CHECKER_EVIDENCE["unavailable"]`.
+`bugprone-unhandled-self-assignment` in `cxx_tidy` does catch it — which
+is that tool's whole justification.
+
+### cppcheck is the only instrument that can read the 1,386 — and it still is not the answer
+
+Verified directly:
+
+```
+  $ cat qt_probe.cpp
+  #include <QObject>
+  void f() { int *p = new int[4]; delete p; }
+
+  clang++   →  fatal error: 'QObject' file not found      (dies on line 1)
+  cppcheck  →  error: Mismatching allocation and deallocation: p
+```
+
+cppcheck's front end does not need the headers. On the file where every
+LLVM-based instrument in this harness stops at line 1, it reports the
+real defect on line 2.
+
+So I measured it on a real framework before building anything —
+`kcoreaddons`, 51 `.cpp`:
+
+```
+  missingIncludeSystem  390     unknownMacro  16
+  missingInclude         60
+  findings: noExplicitConstructor 20, knownConditionTrueFalse 20,
+            funcArgNamesDifferent 18, ... nullPointerArithmetic 1
+```
+
+**450 missing includes across 51 files.** cppcheck is reasoning about
+code where most types are unknown, and `knownConditionTrueFalse` on such
+a parse is very likely the tool "knowing" a condition because it cannot
+see the type. One `nullPointerArithmetic` is the entire real-class yield.
+
+**So no KDE cppcheck number is being shipped, deliberately.** cppcheck
+without the real headers parses approximately, silently skips what it
+cannot resolve, and reports zero for the skipped part — which is this
+project's own central failure with a different tool's name on it. A
+driver for it would need its own visibility accounting (missing-include
+and critical-id counts per TU, held against the total) before any figure
+it produced could be quoted, and even then the honest conclusion from
+the measurement above is that **the answer for KDE is to install Qt6,
+not to find a parser that does not need it.**
+
+### What survives a perfect install
+
+Qt's own semantics are invisible to every checker in this tier: signal
+and slot connection lifetimes, `QObject` parent-child ownership,
+`deleteLater()`, thread affinity, the `moc`-generated dispatch table. A
+`QObject` destroyed while a queued connection is in flight is *the*
+archetypal KDE crash and nothing here can see it. Worse,
+`cplusplus.NewDeleteLeaks` will actively report Qt's parent-owned
+children **as leaks** — adding noise precisely where the real bug class
+lives.
+
+### The ledger does not name kde/, and that is left alone
+
+`docs/port_plan.json` holds **0 records under `kde/`** out of 35,050, so
+`confidence.py`'s `ledger_scope()` returns `(0, 0)` and every `kde/`
+scope scores `NO LEDGER ENTRIES`. That is the correct answer and
+inventing a denominator from an `rglob` would produce a number that looks
+like the C tier's and does not mean the same thing.
+
+`inventory.py` does give the matrix a denominator for KDE — 22,901 rows
+from the textual scanner, with its own measured error bar — which is why
+`matrix.py` can report those functions as `UNTOUCHED` while
+`confidence.py` correctly declines to score them. Two tools, two
+questions, and they disagree for a reason.

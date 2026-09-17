@@ -319,6 +319,15 @@ jobs:
           # line in the output saying the induction closed, never the
           # mode alone.
           python3 tools/verify/test_esbmc_driver.py
+          # The C++ tier. Its central test is that a translation unit
+          # which fails to build is ERROR and its findings are DISCARDED
+          # -- the probe file holds a real use-after-free before the
+          # failing #include, so a tool that reported it would be
+          # presenting a partial result as a whole one. And a scope where
+          # nothing built exits 2, with a separate test asserting a clean
+          # scope exits 0 so that cannot be satisfied by always failing.
+          python3 tools/verify/test_cxx_analyze.py
+          python3 tools/verify/test_cxx_tidy.py
           # The build-system readers. Every one of them exists because
           # the tool had a rule where a makefile had the answer, and each
           # was found by a translation unit that came back ERROR and
