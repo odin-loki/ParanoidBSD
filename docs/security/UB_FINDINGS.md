@@ -34528,3 +34528,82 @@ first two are mistakes the first draft of the tool **actually made**:
 3. A scope with no data scores 0, never `n/a`, and is never omitted.
 4. An unread finding blocks the gate whatever the score.
 5. The product cannot be inflated by one strong component.
+
+## Verify run 40, collected in flight — and the shard at risk is not the one named
+
+Run 40 is the first verify over the widened model-check corpus. At 2h16m
+in: **nothing failed, was cancelled or timed out.** `plan`, `lints` and
+all nine analyse shards green; `fs`, `vendor` and `stand` sweeps
+finished; `kern`, `dev`, `rest` and `userland` still running.
+
+### The correction
+
+Dispatching this run, the stated risk was *"`dev`'s model check took 77
+of its 330-minute budget in run 39, so the widened corpus has margin."*
+**That named the wrong shard.** Reading run 39's uploaded artefacts:
+
+| shard | run 39 TUs modelled | run 39 CBMC jobs |
+|---|---:|---:|
+| kern | 197 / 662 | 158 |
+| rest | 810 / 1488 | 574 |
+| dev | 1248 / 2509 | 606 |
+| **userland** | **1352 / 1379** | **4,165** (ub 918 + ptr 3,247) |
+
+`userland` runs **seven times** `dev`'s job count, because it is the one
+shard that also runs the POINTER tier — and in run 39 it took roughly
+200–230 of its 330 minutes, about 2h20m after the next-slowest shard
+finished. `dev`'s 77 minutes was never the tight one; it was simply the
+number that happened to be in view.
+
+The `timeout-minutes: 330` also sits on the **job**, not the model-check
+step, so it covers checkout, install, the instrument self-test and
+classify as well. Both numbers are worth tracking separately.
+
+Current worst case in run 40 is 109 of 330 minutes used with 220 spare —
+a shard would have to take 3.7× longer than it already has to blow the
+budget. `dev` has just passed run 39's 77 minutes, which is exactly what
+a 1.9× corpus predicts.
+
+### The three finished sweeps
+
+| | stand | fs | vendor |
+|---|---:|---:|---:|
+| PROVED | 204 | 190 | 55 |
+| BOUNDED | 19 | 14 | 29 |
+| FAILED | 77 | 88 | 17 |
+| TIMEOUT | 8 | 8 | 1 |
+| ERROR | 10 | 15 | 1 |
+| pairs | 318 | 315 | 103 |
+| **TUs modelled** | **260 / 282** | **357 / 392** | **131 / 142** |
+
+**The `vendor` shard worked on its first CI outing** — 131 of 142
+translation units, 103 pairs, one minute of CBMC, artefact uploaded.
+`ksys-vendor.jsonl` is in the report job's `--expect` list, so a vendor
+shard that dies will be named rather than quietly shrinking the totals.
+
+`fs` on CI matches the local run that produced the three GEOM/CTL fixes
+almost exactly — same 392 TUs, 357 OK, 35 TU-ERROR, 315 jobs — and
+differs by one job each way in the verdicts (local 188/89/9, CI
+190/88/8). Two functions that timed out locally proved on CI. Timing
+noise, not a corpus change, and worth knowing the size of: **a single
+job can move between PROVED and TIMEOUT run to run.**
+
+### What this does to the confidence metric
+
+`confidence.py` scored `sys/fs` at visibility **1.00** (119/119). The CI
+`fs` *shard* is **357/392 = 0.91**, because the shard is six directories
+and `sys/fs` is one of them. Both numbers are right; they answer
+different questions. **A shard is not a directory**, and the metric is
+scope-sensitive by design — which is the same reason `--scope` is
+required and no tree-wide figure is offered.
+
+### Analyse, all nine shards
+
+1,995 findings across 11,350 translation units, 779 ERROR, 10,571 OK —
+and **all nine printed `all N ERROR translation unit(s) are on the
+record`**. The ERROR inventory holds at this width.
+
+One thing to fix before it bites: every job logs GitHub's Node 20
+deprecation warning on `actions/checkout@v4`,
+`download-artifact@v4` and `upload-artifact@v4`. Cosmetic now, a failure
+when Node 20 is removed.
