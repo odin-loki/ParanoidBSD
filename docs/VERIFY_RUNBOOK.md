@@ -358,6 +358,37 @@ Three rules the tooling enforces, and you should hold to as well:
 
 ---
 
+## 4a. Bringing the results back
+
+A whole-tree run leaves about **92 MB**, and roughly 90 of that is
+regenerable in fifteen seconds — `universe.jsonl` and `matrix.jsonl` are
+rebuilt from the port ledger and the stage results, which is what
+`matrix.py` is *for*. What cannot be regenerated is the evidence: the
+per-stage JSONL each instrument produced, and `state.json`, which says
+what ran and what did not.
+
+```sh
+python3 tools/verify/pack_results.py ~/pbsd-sweep \
+        --pack ~/sweep.tar.gz --digest ~/sweep-digest.json
+```
+
+Measured on a real run: **92 MB → 0.9 MB packed, 49 KB digest.**
+
+| | | |
+|---|---:|---|
+| `--pack` | ~1 MB | everything irreplaceable. Attach it, or push it to a branch. The rebuild commands travel inside as `HOW-TO-REBUILD.json`. |
+| `--digest` | ~50 KB | paste-able. Counts, the stages that produced nothing, the untriaged failures, the reading queue. |
+
+The digest carries the **absences first**, deliberately. A summary that
+lists findings and omits the four instruments that never ran is the same
+lie in a smaller file — and the smaller file is the one people read.
+It also says of itself that it is a summary and cannot be re-analysed;
+only the pack can be fed back to `matrix.py`.
+
+Verified round-trip: unpacking the 0.9 MB and re-running `matrix.py`
+reproduces the original matrix exactly — 159,885 TOUCHED of 335,853,
+the same numbers to the row.
+
 ## 5. The KDE and C++ half
 
 `hbsd/src` holds ~5,779 C++ files and `kde/` holds 1,392 more across

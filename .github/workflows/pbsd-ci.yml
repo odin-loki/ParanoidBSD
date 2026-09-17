@@ -328,6 +328,12 @@ jobs:
           # scope exits 0 so that cannot be satisfied by always failing.
           python3 tools/verify/test_cxx_analyze.py
           python3 tools/verify/test_cxx_tidy.py
+          # The results packer. It drops ~90 MB of regenerable bulk to
+          # make a day of somebody's CPU transferable, and the failure
+          # it must never have is dropping something that is NOT
+          # regenerable - the machine that produced it is a desktop and
+          # the run took hours. Anything it does not recognise is kept.
+          python3 tools/verify/test_pack_results.py
           # The build-system readers. Every one of them exists because
           # the tool had a rule where a makefile had the answer, and each
           # was found by a translation unit that came back ERROR and
