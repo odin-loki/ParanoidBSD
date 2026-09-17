@@ -2893,6 +2893,16 @@ FIXES = {
         "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
         "and a missing shmem property dereferenced NULL at attach",
     ),
+    "hbsd/src/sys/amd64/vmm/vmm.c": (
+        "\tif (seg < 0 || seg >= (int)nitems(seg_names))\n\t\treturn (VM_REG_GUEST_DS);",
+        "\t    (\"%s: invalid segment encoding %d\", __func__, seg));\n\treturn (seg_names[seg]);",
+        "vm_segment_name() is handed a THREE-BIT field off the VM exit "
+        "by both hypervisor backends -- vmx.c `(inst_info >> 15) & 0x7' "
+        "and svm.c `(info1 >> 10) & 0x7' -- and seg_names[] has six "
+        "entries, so encodings 6 and 7 read past a static array with "
+        "only a compiled-out KASSERT in the way; on the Intel path the "
+        "garbage enum reaches vmcs_getdesc()'s panic()",
+    ),
     "hbsd/src/sys/kern/kern_acct.c": (
         "\tnorm_exp = flsl(val) - 1;",
         "\t\tval = LONG_MAX;\n\t}\n\tnorm_exp = fls(val) - 1;",

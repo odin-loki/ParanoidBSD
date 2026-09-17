@@ -1818,6 +1818,35 @@ vm_segment_name(int seg)
 
 	KASSERT(seg >= 0 && seg < nitems(seg_names),
 	    ("%s: invalid segment encoding %d", __func__, seg));
+
+	/*
+	 * PBSD: bound the index. Both callers hand this a THREE-BIT field
+	 * off the VM exit -- vmx.c:2065 `(inst_info >> 15) & 0x7' and
+	 * svm.c:773 `(info1 >> 10) & 0x7' -- and seg_names[] has six
+	 * entries, so encodings 6 and 7 read past the end of a static
+	 * array. The KASSERT above is the only check and it is compiled
+	 * out without INVARIANTS.
+	 *
+	 * 6 and 7 are reserved in both architectures and no shipping
+	 * processor is known to produce them; svm.c's own comment on the
+	 * field it reads says "this is not specified explicitly in APMv2
+	 * but can be verified empirically", which is the in-tree
+	 * statement that the value is not contractually bounded. A
+	 * hypervisor is exactly the code that must not trust a reserved
+	 * field: on the Intel path the garbage enum goes straight to
+	 * vmx_getdesc() -> vmcs_getdesc(), whose vmcs_seg_desc_encoding()
+	 * failure arm is `panic("vmcs_getdesc: invalid segment register
+	 * %d")' -- a guest-triggerable host panic.
+	 *
+	 * DS is not a guess: it is what vmm_ioport.c:174's
+	 * decode_segment() returns for a string operation with no segment
+	 * override, which is the same question asked one layer up. An
+	 * INVARIANTS kernel still stops on the assertion; a production one
+	 * now does something defined instead of reading two enums past an
+	 * array.
+	 */
+	if (seg < 0 || seg >= (int)nitems(seg_names))
+		return (VM_REG_GUEST_DS);
 	return (seg_names[seg]);
 }
 

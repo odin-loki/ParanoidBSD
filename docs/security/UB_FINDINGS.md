@@ -33910,3 +33910,120 @@ rule strips the pointer failures and the arithmetic decides, which is
 exactly what it is for — and `deciding_failures()` prints the arithmetic
 rather than the deref, so a reader opening either one sees the question
 that put it there.
+
+## bhyve: a three-bit field off the VM exit indexes a six-entry table
+
+Found by model-checking `sys/amd64` and `sys/x86` — scopes inside the
+`rest` shard that `__seg_gs` opened, and which no CBMC run had reached in
+useful volume before. `vmm.c:vm_segment_name` came back as
+
+```
+array 'seg_names' lower bound in seg_names[(signed long int)seg]
+array 'seg_names' upper bound in seg_names[(signed long int)seg]
+```
+
+Both bounds, which is the signature of an unconstrained `int` parameter.
+
+```c
+enum vm_reg_name
+vm_segment_name(int seg)
+{
+	static enum vm_reg_name seg_names[] = {
+		VM_REG_GUEST_ES, VM_REG_GUEST_CS, VM_REG_GUEST_SS,
+		VM_REG_GUEST_DS, VM_REG_GUEST_FS, VM_REG_GUEST_GS
+	};
+
+	KASSERT(seg >= 0 && seg < nitems(seg_names), ...);
+	return (seg_names[seg]);
+}
+```
+
+**Six entries. Both callers hand it a three-bit field**, so the domain is
+[0, 7]:
+
+```c
+sys/amd64/vmm/intel/vmx.c:2065   s = (inst_info >> 15) & 0x7;
+sys/amd64/vmm/amd/svm.c:773      s = (info1 >> 10) & 0x7;
+```
+
+`seg == 6` and `seg == 7` read two `enum vm_reg_name` past the end of a
+static array, and the `KASSERT` is compiled out without `INVARIANTS`.
+Same shape as `pci_ea_fill_info`'s three-bit length into `uint32_t dw[4]`
+already in this document — a masked field wider than the table it
+indexes.
+
+**What the garbage becomes.** On the Intel path the value goes straight
+into `vmx_getdesc(vcpu, vis->seg_name, &vis->seg_desc)` two lines later,
+and `vmcs_getdesc()`'s failure arm is not an assertion:
+
+```c
+	error = vmcs_seg_desc_encoding(seg, &base, &limit, &access);
+	if (error)
+		panic("vmcs_getdesc: invalid segment register %d", seg);
+```
+
+So an out-of-range encoding is an out-of-bounds read followed by a
+**guest-triggerable host panic** whenever the adjacent enum is not a
+segment register. That is the whole consequence chain, in one file.
+
+**Reachability, and why it is worth fixing anyway.** Encodings 6 and 7
+are reserved in both architectures and no shipping processor is known to
+produce them, so this is not demonstrably reachable today. What makes it
+worth a bound rather than a note is the comment `svm.c` already carries
+about the very field it reads:
+
+```
+	 * XXX this is not specified explicitly in APMv2 but can be
+	 * verified empirically.
+```
+
+That is the tree's own statement that the value is not contractually
+bounded — the author saying they had no spec guarantee and checked by
+experiment. A hypervisor is exactly the code that must not trust a
+reserved field, and "reserved" is the one class of value a future
+stepping is free to change.
+
+**The fix, and why `DS`.** Keep the `KASSERT`, so an `INVARIANTS` kernel
+still stops with the diagnostic, and add a bound that returns
+`VM_REG_GUEST_DS`. That is not a guess: it is what `vmm_ioport.c:174`'s
+`decode_segment()` returns for a string operation with no segment
+override, which is the same question asked one layer up.
+
+`VM_REG_LAST` was the other candidate — it is the sentinel `svm.c`
+already uses when DecodeAssist is absent, and `emulate_inout_str()`
+handles it by re-decoding the instruction. It was **not** chosen, for two
+reasons. `vmx.c`'s `inout_str_seginfo()` calls `vmx_getdesc()`
+unconditionally after `vm_segment_name()`, so returning the sentinel
+there would *cause* the `vmcs_getdesc` panic rather than avoid it; and
+the vmx path sets `cs_d = 0` and `cs_base = 0` before the call
+(`vmx.c:2662-2663`) where the svm path fetches real values with
+`svm_get_cs_info()`, so a re-decode reached from vmx would run with a
+default operand size the guest did not necessarily have. The DS fallback
+needs no caller change and leaves every path that works today
+byte-for-byte unchanged: for `seg` in [0, 5] nothing is different.
+
+### The others in the same run, read and left
+
+`sys/amd64` + `sys/x86`, 464 SCALAR and 968 VOID candidates. The read
+pile's other entries:
+
+- **`vmm_instruction_emul.c:vie_size2mask`** and
+  **`vie_alignment_check`** — the same compiled-out-`KASSERT` shape and
+  **not** the same answer. `size2mask[]` is a designated-initialiser
+  array with `[8]` set, so it has nine elements and `size == 8` is in
+  bounds; and every assignment to `vie->addrsize` in the decoder
+  (`:2478-2492`) gives 2, 4 or 8, while `vmm_ioport.c:117` passes
+  `vmexit->u.inout.bytes`, which is hardware-reported. The domain holds.
+- **`pci_cfgreg.c:pci_cfgregread`/`pci_cfgregwrite`**, `1u << slot`
+  with an unconstrained `slot` — exported, and the callers are the PCI
+  bus enumerator, which walks 0..31.
+- **`pmap.c:pmap_invalidate_cache`** — `return_value___curthread->td_pinned + 1`,
+  the per-CPU artefact **with** a real increment beside it, so it is in
+  the read pile for the increment, correctly.
+- **`vmm_mem_machdep.c:vmm_mem_maxaddr`** — `Maxmem << 12` on a
+  file-scope extern the model does not constrain.
+
+**Twelve of the run's 53 FAILED are the per-CPU artefact**, which in
+`sys/amd64` is where one would expect them and is the first measurement
+of the renamed bucket doing its job: twelve records that a `__pc`-spelled
+rule would have left mixed in with the preconditions.

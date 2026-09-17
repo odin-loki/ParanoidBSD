@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,915 | 2,434 |
-| 8 | `sys` | 14,951 | 10,499,487 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,516 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,819** | **114,209** |
+| | **total** | **41,143** | **21,304,848** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -695,7 +695,7 @@ function; a file with two hundred of them is a project.
 | 8.124.31 | `sys/compat/linux/linux_misc.c` | 3,134 | 92 | `TODO-PORT` |
 | 8.1191.66 | `sys/kern/kern_prot.c` | 3,234 | 92 | `TODO-PORT` |
 | 1.298.2 | `lib/libsysdecode/flags.c` | 1,210 | 91 | `TODO-PORT` |
-| 8.11.1 | `sys/amd64/vmm/vmm.c` | 2,106 | 91 | `TODO-MD` |
+| 8.11.1 | `sys/amd64/vmm/vmm.c` | 2,135 | 91 | `TODO-MD` |
 | 8.1184.37 | `sys/i386/i386/pmap_base.c` | 983 | 91 | `TODO-MD` |
 | 1.270.6 | `lib/libprocstat/libprocstat.c` | 2,941 | 90 | `TODO-PORT` |
 | 4.81.3 | `sbin/pfctl/pfctl.c` | 3,656 | 90 | `TODO-PORT` |
@@ -40814,7 +40814,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.11 `sys/amd64/vmm`
 
-- [ ] **8.11.1** `vmm.c` · 2,106L gen:51 · `TODO-MD` · 91 fn
+- [ ] **8.11.1** `vmm.c` · 2,135L gen:51 · `TODO-MD` · 91 fn
   - [ ] 8.11.1.1 `vmmops_panic()` · `TODO-FN`
   - [ ] 8.11.1.2 `vcpu_cleanup()` · `TODO-FN`
   - [ ] 8.11.1.3 `vcpu_alloc()` · `TODO-FN`
