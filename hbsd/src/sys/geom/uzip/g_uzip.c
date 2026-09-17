@@ -791,6 +791,7 @@ g_uzip_taste(struct g_class *mp, struct g_provider *pp, int flags)
 	if (sc->blksz > MAX_BLKSZ) {
 		printf("%s: block size (%u) should not be larger than %lu.\n",
 		    gp->name, sc->blksz, MAX_BLKSZ);
+		goto e4;
 	}
 	total_offsets = sc->nblocks + 1;
 	if (sizeof(struct cloop_header) +

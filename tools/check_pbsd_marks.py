@@ -2893,6 +2893,25 @@ FIXES = {
         "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
         "and a missing shmem property dereferenced NULL at attach",
     ),
+    "hbsd/src/sys/geom/uzip/g_uzip.c": (
+        "\t\t    gp->name, sc->blksz, MAX_BLKSZ);\n\t\tgoto e4;",
+        "\t\t    gp->name, sc->blksz, MAX_BLKSZ);\n\t}\n\ttotal_offsets",
+        "the block size straight off the medium was checked against "
+        "MAX_BLKSZ and only PRINTED about; the `% 512' check one line "
+        "above it does goto e4. Unbounded, LZ4_compressBound(blksz) "
+        "signed-overflows into the `int max_blen', which makes the "
+        "per-cluster length check at :642 -- uint32_t against a negative "
+        "int -- pass everything, and g_uzip_request()'s own maxphys loop "
+        "gives up at one cluster and relies on this bound",
+    ),
+    "hbsd/src/sys/cam/ctl/ctl_frontend_cam_sim.c": (
+        "\tif (softc->sim != NULL) {\n\t\txpt_bus_deregister(cam_sim_path(softc->sim));",
+        "\tctl_port_offline(port);\n\n\txpt_free_path(softc->path);",
+        "cfcs_shutdown() ran over all five of cfcs_init()'s failure "
+        "exits, because kern_module.c:122 calls MOD_UNLOAD the moment "
+        "MOD_LOAD fails; softc->path was NULL and softc->sim NULL or "
+        "freed, and none of the three calls tested either",
+    ),
     "hbsd/src/sys/geom/raid3/g_raid3.c": (
         "if (md->md_all < 2)",
         "if (md->md_all < 1)",
@@ -2912,12 +2931,22 @@ FIXES = {
         "sc_data_per_sector can be zero and is the divisor for "
         "sc_bytes_per_sector; md(4) allows any power-of-two sector size",
     ),
-    "hbsd/src/sys/geom/eli/g_eli.c": (
-        "if (!eli_metadata_sectorsize_supported(md, bpp->sectorsize))",
-        None,
-        "the call site, in g_eli_create() rather than its two callers, "
-        "because the crypto check there is only a KASSERT",
-    ),
+    "hbsd/src/sys/geom/eli/g_eli.c": [
+        (
+            "if (!eli_metadata_sectorsize_supported(md, bpp->sectorsize))",
+            None,
+            "the call site, in g_eli_create() rather than its two callers, "
+            "because the crypto check there is only a KASSERT",
+        ),
+        (
+            "\tif (cpu < 0 || cpu >= CPU_SETSIZE)\n\t\treturn (0);",
+            "#ifdef SMP\n\treturn (CPU_ISSET(cpu, &hlt_cpus_mask));",
+            "kern.geom.eli.threads is a bare RWTUN u_int with no clamp, "
+            "and g_eli_create() walks [0, threads) into "
+            "g_eli_cpu_is_disabled(), where CPU_ISSET indexes "
+            "hlt_cpus_mask.__bits[cpu / 64] with no bound of its own",
+        ),
+    ],
     "hbsd/src/sys/cam/ctl/ctl.c": [
         (
             "PBSD: `>=' and a lower bound, which is what ctl_add_initiator()",

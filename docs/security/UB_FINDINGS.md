@@ -33412,3 +33412,262 @@ Measured over the three corpora on hand: 1 of 44 in OpenZFS
 (`arc_state_init`, the one triaged by hand above), 1 of 39 in the fs
 shard (`dtrace_gethrtime`), 0 of 37 in `sys/kern` — where `statclock`
 is the record it correctly declines.
+
+## The fs shard, model-checked: three guards on one side of a pair
+
+The `fs` shard — `sys/fs`, `sys/ufs`, `sys/geom`, `sys/cam`, `sys/security`,
+`sys/cddl` — model-checked after the `__seg_gs` fix opened it. 392
+translation units modelled, 357 OK and 35 TU-ERROR (almost all `sys/cddl`
+files that are `#include`d into `dtrace.c` rather than compiled, plus
+non-amd64 architecture files). 315 (file, function) jobs, SCALAR and VOID
+only:
+
+| verdict | n |
+|---|---:|
+| PROVED | 188 |
+| BOUNDED | 14 |
+| FAILED | 89 |
+| TIMEOUT | 9 |
+| ERROR | 15 |
+
+The 15 ERROR are CBMC's own limits, not the source's: nine are
+`Invariant check failed: number of literals in the literal map shall equal
+the bitvector width` in `dtrace_isa.c` and `kinst_isa.c`, three are
+`--object-bits`, three are no-body.
+
+Of the 89 FAILED, 50 are extern-driven, 23 are a leak property asked of a
+constructor whose caller frees, 5 are exported functions whose callers
+constrain the parameter, 3 are `M_WAITOK`/`KM_SLEEP`, 3 are the `__seg_gs`
+artefact and 2 are the static deferral. Three are defects, and all three
+are the same shape this document keeps finding: **a pair of checks where
+only one of them acts.**
+
+### `g_uzip`: a block size off the medium, checked and not rejected
+
+`sys/geom/uzip/g_uzip.c:784` takes the cluster size straight out of the
+CLOOP header a tasted provider offers:
+
+```c
+	sc->blksz = ntohl(header->blksz);
+	sc->nblocks = ntohl(header->nblocks);
+	if (sc->blksz % 512 != 0) {
+		printf("%s: block size (%u) should be multiple of 512.\n", ...);
+		goto e4;
+	}
+	if (sc->blksz > MAX_BLKSZ) {
+		printf("%s: block size (%u) should not be larger than %lu.\n",
+		    gp->name, sc->blksz, MAX_BLKSZ);
+	}                       /* <-- no goto e4 */
+```
+
+Two checks, one line apart. The first rejects. The second prints and
+continues, and its own message says what it meant to do.
+
+CBMC did not point here. It pointed at `g_uzip_lzma.c:94`:
+
+```
+LZ4_compressBound.overflow.1: arithmetic overflow on signed +
+    in isize + isize / 255
+```
+
+`LZ4_compressBound(int isize)` has one call site — `lzp->pub.max_blen =
+LZ4_compressBound(blksz)` — and `max_blen` is an `int`
+(`g_uzip_dapi.h:39`). So an unbounded `blksz` gives:
+
+```
+blksz=0x7FC00000 (%512==0)   isize + isize/255 + 16 = 2151694416   as int  -2143272880
+blksz=0xFFFFFE00 (%512==0)   (int)blksz = -512                     max_blen      -499
+```
+
+and `g_uzip.c:642` is
+
+```c
+		if (sc->toc[i].blen > sc->dcp->max_blen) {
+```
+
+`blen` is a `uint32_t` (`g_uzip.c:66`). A negative `int` on the right
+converts to a huge `unsigned`, no 32-bit `blen` can exceed it, and **the
+entire second-pass per-cluster length validation is dead** for such an
+image. The same truncation is waiting for the other two decompressors —
+`compressBound()` returns `uLong`, `ZSTD_compressBound()` returns
+`size_t`, both assigned into the same `int` — which is why the fix belongs
+at the header check and not inside `LZ4_compressBound`.
+
+Two more consequences of the same unbounded value: `g_uzip.c:894` is
+`malloc(sc->blksz, M_GEOM_UZIP, M_WAITOK)`, an allocation up to 4 GiB − 512
+chosen by the medium, and `:909` is `(off_t)sc->nblocks * sc->blksz`.
+
+**The read path already assumes this bound.** `g_uzip_request()` shrinks a
+transfer until it fits:
+
+```c
+	while (1) {
+		bp2->bio_length = TLEN_2_BLEN(sc, pp, bp2, end_blk - 1);
+		if (bp2->bio_length <= maxphys)
+			break;
+		if (end_blk == (start_blk + 1))
+			break;          /* one cluster: give up and issue it */
+		end_blk--;
+	}
+```
+
+A single cluster larger than `maxphys` goes to `g_io_request()` whatever
+its size. `MAX_BLKSZ` *is* `maxphys` (`:137`). So the taste-time check is
+the thing that was supposed to make that unreachable.
+
+**Reachability.** `g_uzip_taste` is a real GEOM taster (`:978`) and
+`kern.geom.uzip.attach_to` defaults to `"*"` (`:96`). It reads sector 0
+and wants the CLOOP magic and a supported compression byte; a ~1 KiB
+crafted image with `nblocks = 1` clears the only other bound
+(`sizeof(header) + (nblocks + 1) * 8 <= mediasize`, `:795`). Any provider
+that appears — a USB stick, `mdconfig`, iSCSI — with 512-aligned garbage
+in `header->blksz`. `geom_uzip` is a module rather than in GENERIC, but
+mounting any `.uzip` autoloads it and its taster then runs on everything.
+
+The writer already enforces what the reader only warned about:
+`usr.bin/mkuzip/mkuzip.c:250` refuses to produce an image whose compressed
+bound exceeds `MAXPHYS`. So the only images the rejection turns away are
+ones mkuzip cannot write.
+
+The fix is `goto e4;`.
+
+### `geli`: an unvalidated root tunable indexes a CPU bitset
+
+`sys/geom/eli/g_eli.c:86`:
+
+```c
+static u_int g_eli_threads = 0;
+SYSCTL_UINT(_kern_geom_eli, OID_AUTO, threads, CTLFLAG_RWTUN, &g_eli_threads, 0,
+    "Number of threads doing crypto work");
+```
+
+A bare `SYSCTL_UINT` — no handler, no clamp anywhere in the file. And
+`g_eli_create()`:
+
+```c
+	u_int i, threads;
+	...
+	threads = g_eli_threads;
+	if (threads == 0)
+		threads = mp_ncpus;
+	for (i = 0; i < threads; i++) {
+		if (g_eli_cpu_is_disabled(i)) {
+```
+
+`g_eli_cpu_is_disabled(int cpu)` was `return (CPU_ISSET(cpu,
+&hlt_cpus_mask));`. `CPU_ISSET(n, p)` is `__BIT_ISSET(CPU_SETSIZE, n, p)`,
+which indexes `p->__bits[n / 64]` and carries no bound of its own;
+`CPU_SETSIZE` is `MAXCPU`, 1024 on amd64, so `hlt_cpus_mask` is sixteen
+words. `kern.geom.eli.threads=100000` in `loader.conf` followed by a
+`geli attach` reads `__bits[16 .. 1562]` — past the end of a kernel
+global, once per iteration. `i` is a `u_int`, so a value above `INT_MAX`
+arrives at the `int` parameter negative and reads below it instead.
+
+Root-only and read-only, and the value read only decides whether that
+index gets a worker thread; the thread-count explosion beside it is the
+louder problem. But it is the same shape and the same reach as
+`net.inet.ip.reass_hashsize` and the four `vfs.nfsd.*hashsize` tunables
+already in this document: root-settable, unvalidated, used as an index.
+
+One of two, again — the *other* use of the same counter is guarded:
+`g_eli_worker()` binds with `sched_bind(curthread, wr->w_number %
+mp_ncpus)`. So the fix bounds the index rather than clamping `threads`,
+which keeps the worker count the operator asked for.
+
+### `ctl`: a frontend's cleanup runs over all five of its init's failures
+
+`sys/cam/ctl/ctl_frontend_cam_sim.c:213`:
+
+```c
+cfcs_shutdown(void)
+{
+	struct cfcs_softc *softc = &cfcs_softc;
+	struct ctl_port *port = &softc->port;
+
+	ctl_port_offline(port);
+	xpt_free_path(softc->path);
+	xpt_bus_deregister(cam_sim_path(softc->sim));
+	cam_sim_free(softc->sim, /*free_devq*/ TRUE);
+```
+
+No guard on either pointer. `cfcs_init()` opens with `bzero(softc,
+sizeof(*softc))` and has five failure exits — `ctl_port_register`,
+`cam_simq_alloc`, `cam_sim_alloc` (which is `M_NOWAIT`), `xpt_bus_register`
+and `xpt_create_path` — and on every one `softc->path` is NULL and
+`softc->sim` is NULL or *freed*, because `bailout:` does
+`cam_sim_free(softc->sim, TRUE)` and leaves the field pointing at it.
+
+**Reachability is not a guess.** `kern/kern_module.c:122`, in
+`module_register_init()` — the SYSINIT `DECLARE_MODULE` installs:
+
+```c
+	error = MOD_EVENT(mod, MOD_LOAD);
+	if (error) {
+		MOD_EVENT(mod, MOD_UNLOAD);
+```
+
+A failed `cfcs_init()` is followed immediately by MOD_UNLOAD, which is
+`ctl_frontend_deregister()` → `cfcs_shutdown()`. Three dereferences follow
+in order:
+
+1. `ctl_port_offline(port)` → `port->port_offline(port->onoff_arg)`.
+   `cfcs_init()` sets both at `:139-140`, **before** its first failure
+   return at `:148` — so `cfcs_onoffline()` runs with no SIM and reaches
+   `cam_sim_path(softc->sim)`, which is `sim->path_id`.
+2. `xpt_free_path(NULL)` → `xpt_release_path()` → `path->device`.
+3. `cam_sim_path(softc->sim)`, the one CBMC named, and a second
+   `cam_sim_free()` on the two dangling-pointer paths.
+
+The other four CTL frontends survive the same event, which is what makes
+this one a defect rather than a pattern: `ctlfeinitialize` and
+`cfiscsi_init` cannot fail; `cfi_shutdown` walks a list whose insert
+happens after the register succeeds, so it iterates zero times; and
+`tpcl_shutdown` is saved by `ctl_port_deregister()`'s own `if
+(port->targ_port == -1) return (1);`. `cfcs_shutdown` is the only one
+holding raw pointers and the only one with no guard.
+
+Not attacker-reachable: it needs `kldload ctl` to lose an `M_NOWAIT`
+allocation or a bus registration. Root-only, memory-pressure, and `device
+ctl` is commented out in GENERIC so this is the module path — the same
+standing as the nfsd loader tunables already here.
+
+The fix clears the field in `bailout:` and guards all three sites,
+including `cfcs_onoffline()`, which `ctl_port_offline()` reaches before
+`cfcs_shutdown()`'s own guards can run.
+
+### What this run could not see
+
+315 of the 8,745 functions the ledger names in scope. **27,161
+POINTER-class instances were skipped by design**, so the model checker is
+still blind to this shard's *parsers* — the pointer-taking functions that
+read disk bytes. The one medium-driven finding above arrived through a
+scalar helper, `LZ4_compressBound(int)`, that happened to sit downstream of
+an unvalidated header field; `g_uzip_taste` itself has never been
+model-checked, nor have `ldm_vmdb_parse`, `g_raid3_taste` and their peers.
+A POINTER tier under a stated precondition is where the next findings in
+this shard are, and that is a statement about the instrument, not about
+the code being clean.
+
+### A second spelling of the `__seg_gs` artefact, and why the rule keeps it out
+
+Three of the 89 are the per-CPU artefact. Two are the spelling
+`pcpu_artefact()` recognises — `amd64/dtrace_subr.c:dtrace_gethrtime`
+names `__pc->pc_cpuid`, and `riscv/kinst_isa.c:kinst_md_init` names
+`return_value_get_pcpu->pc_dynamic`. The third does not:
+`i386/dtrace_subr.c:dtrace_gethrtime` is the *same source line* as the
+amd64 one, but i386's `__PCPU_GET` is inline asm rather than `__seg_fs`,
+so CBMC reports
+
+```
+array 'tsc_skew' upper bound in tsc_skew[(signed int)tmp_statement_expression]
+```
+
+with no `__pc` anywhere in it. It is the same root cause under a different
+name, and the rule in `report.py` deliberately does **not** reach it:
+`tmp_statement_expression` is CBMC's generic name for the result of any
+statement expression, and matching on it would swallow real findings
+wholesale. The narrow rule is worth more than the complete one here,
+because what it costs is one record landing in *a missing precondition,
+not a bug* instead of the artefact bucket — both of which are the discard
+pile. Recorded so the next reader of an i386 per-CPU report does not spend
+the evening on it.

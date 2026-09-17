@@ -717,7 +717,7 @@ jobs:
             --expect ub.jsonl --expect ptr.jsonl \
             --expect ksys-kern.jsonl --expect ksys-fs.jsonl \
             --expect ksys-dev.jsonl --expect ksys-rest.jsonl \
-            --expect ksys-stand.jsonl \
+            --expect ksys-stand.jsonl --expect ksys-vendor.jsonl \
             | tee REPORT.txt
           {
             echo '### PBSD verify'

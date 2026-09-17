@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,915 | 2,434 |
-| 8 | `sys` | 14,951 | 10,499,410 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,465 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,742** | **114,209** |
+| | **total** | **41,143** | **21,304,797** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -48324,7 +48324,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.71.11.7 `ctl_port_online()` · `TODO-FN`
   - [ ] 8.71.11.8 `ctl_port_offline()` · `TODO-FN`
 - [ ] **8.71.12** `ctl_frontend.h` · 346L · `TODO-HDR`
-- [ ] **8.71.13** `ctl_frontend_cam_sim.c` · 789L gen:3 · `TODO-PORT` · 9 fn
+- [ ] **8.71.13** `ctl_frontend_cam_sim.c` · 826L gen:3 · `TODO-PORT` · 9 fn
   - [ ] 8.71.13.1 `cfcs_init()` · `TODO-FN`
   - [ ] 8.71.13.2 `cfcs_shutdown()` · `TODO-FN`
   - [ ] 8.71.13.3 `cfcs_poll()` · `TODO-FN`
@@ -112048,7 +112048,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1161 `sys/geom/eli`
 
-- [ ] **8.1161.1** `g_eli.c` · 1,654L gen:23 · `TODO-PORT` · 38 fn
+- [ ] **8.1161.1** `g_eli.c` · 1,671L gen:23 · `TODO-PORT` · 38 fn
   - [ ] 8.1161.1.1 `sysctl_g_eli_minbufs()` · `TODO-FN`
   - [ ] 8.1161.1.2 `fetch_loader_passphrase()` · `TODO-FN`
   - [ ] 8.1161.1.3 `zero_boot_passcache()` · `TODO-FN`
@@ -113272,7 +113272,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1176 `sys/geom/uzip` · 1 module(s) under `pbsd/sys/geom/uzip`
 
-- [ ] **8.1176.1** `g_uzip.c` · 991L gen:12 · `TODO-PORT` · 13 fn
+- [ ] **8.1176.1** `g_uzip.c` · 992L gen:12 · `TODO-PORT` · 13 fn
   - [ ] 8.1176.1.1 `g_uzip_softc_free()` · `TODO-FN`
   - [ ] 8.1176.1.2 `g_uzip_cached()` · `TODO-FN`
   - [ ] 8.1176.1.3 `g_uzip_request()` · `TODO-FN`

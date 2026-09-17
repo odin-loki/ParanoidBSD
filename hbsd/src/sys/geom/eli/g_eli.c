@@ -873,6 +873,23 @@ static int
 g_eli_cpu_is_disabled(int cpu)
 {
 #ifdef SMP
+	/*
+	 * PBSD: bound the index. kern.geom.eli.threads is a bare RWTUN
+	 * u_int with no handler and no clamp anywhere in this file, and
+	 * g_eli_create() walks [0, threads) straight into here. CPU_ISSET
+	 * is __BIT_ISSET(CPU_SETSIZE, n, p), which indexes
+	 * hlt_cpus_mask.__bits[n / _BITSET_BITS] and carries no bound of
+	 * its own -- so kern.geom.eli.threads=100000 followed by a geli
+	 * attach reads past the end of a kernel global once per iteration.
+	 * `i' is a u_int, so a value above INT_MAX arrives here negative.
+	 *
+	 * A CPU outside the set is not a disabled CPU. This keeps the
+	 * worker count the operator asked for, which is what the other use
+	 * of the same counter already does: g_eli_worker() binds with
+	 * `wr->w_number % mp_ncpus'.
+	 */
+	if (cpu < 0 || cpu >= CPU_SETSIZE)
+		return (0);
 	return (CPU_ISSET(cpu, &hlt_cpus_mask));
 #else
 	return (0);

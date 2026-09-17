@@ -202,10 +202,23 @@ cfcs_init(void)
 	return (retval);
 
 bailout:
-	if (softc->sim)
+	/*
+	 * PBSD: clear what was freed. kern_module.c:122 calls MOD_UNLOAD
+	 * immediately when MOD_LOAD fails, so cfcs_shutdown() runs over
+	 * whatever cfcs_init() left behind -- and on the xpt_bus_register
+	 * and xpt_create_path paths that was a FREED softc->sim, still in
+	 * the softc. The `if (softc->sim)' on the next line is the same
+	 * test cfcs_shutdown() now makes, and it can only be right if the
+	 * field is cleared here.
+	 */
+	if (softc->sim) {
 		cam_sim_free(softc->sim, /*free_devq*/ TRUE);
-	else if (softc->devq)
+		softc->sim = NULL;
+		softc->devq = NULL;
+	} else if (softc->devq) {
 		cam_simq_free(softc->devq);
+		softc->devq = NULL;
+	}
 	return (retval);
 }
 
@@ -218,9 +231,24 @@ cfcs_shutdown(void)
 
 	ctl_port_offline(port);
 
-	xpt_free_path(softc->path);
-	xpt_bus_deregister(cam_sim_path(softc->sim));
-	cam_sim_free(softc->sim, /*free_devq*/ TRUE);
+	/*
+	 * PBSD: cfcs_init() has five failure exits and this runs after
+	 * every one of them, because a failed MOD_LOAD is followed by
+	 * MOD_UNLOAD at kern_module.c:122. On all five softc->path is NULL
+	 * and softc->sim is NULL or freed, and none of the three calls
+	 * below tested either. xpt_free_path(NULL) reaches path->device in
+	 * xpt_release_path(); cam_sim_path() is sim->path_id.
+	 */
+	if (softc->path != NULL) {
+		xpt_free_path(softc->path);
+		softc->path = NULL;
+	}
+	if (softc->sim != NULL) {
+		xpt_bus_deregister(cam_sim_path(softc->sim));
+		cam_sim_free(softc->sim, /*free_devq*/ TRUE);
+		softc->sim = NULL;
+		softc->devq = NULL;
+	}
 
 	if ((error = ctl_port_deregister(port)) != 0)
 		printf("%s: cam_sim port deregistration failed\n", __func__);
@@ -240,6 +268,15 @@ cfcs_onoffline(void *arg, int online)
 	union ccb *ccb;
 
 	softc->online = online;
+
+	/*
+	 * PBSD: ctl_port_offline() in cfcs_shutdown() reaches here through
+	 * port->port_offline, which cfcs_init() installs BEFORE its first
+	 * failure return -- so this runs with no SIM at all after a failed
+	 * module load. cam_sim_path() is sim->path_id.
+	 */
+	if (softc->sim == NULL)
+		return;
 
 	ccb = xpt_alloc_ccb_nowait();
 	if (ccb == NULL) {
