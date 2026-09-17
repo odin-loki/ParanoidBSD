@@ -269,7 +269,7 @@ pcpu = {"file": "sys/contrib/openzfs/module/zfs/arc.c",
                                   "__pc->pc_cpuid"}]}
 check("a record that is only pcpu derefs is the artefact",
       report.bucket(pcpu),
-      "the __seg_gs pcpu artefact (the model's null, not the code's)")
+      "a per-CPU read CBMC cannot model (the model's null, not the code's)")
 # A property on the SAME line is downstream of the fake null: the
 # subscript in dtrace_subr.c's `tsc_skew[curcpu]' is unconstrained only
 # because the value read out of `__pc' is. Per-failure matching would
@@ -285,7 +285,62 @@ same_line = {"file": "sys/cddl/dev/dtrace/amd64/dtrace_subr.c",
                                        "pointer NULL in __pc->pc_cpuid"}]}
 check("a subscript fed by the fake null is the artefact too",
       report.bucket(same_line),
-      "the __seg_gs pcpu artefact (the model's null, not the code's)")
+      "a per-CPU read CBMC cannot model (the model's null, not the code's)")
+# CBMC's own spelling, where get_pcpu() is a real call rather than a
+# macro expansion: riscv's kinst_md_init. As narrow as `__pc', because
+# return_value_X can only name a call to a function called X.
+call = {"file": "sys/cddl/dev/kinst/riscv/kinst_isa.c",
+        "function": "kinst_md_init", "linkage": "exported",
+        "failures": [
+            {"name": "a", "desc": "line 560 dereference failure: pointer "
+                                  "NULL in return_value_get_pcpu->"
+                                  "pc_dynamic"},
+            {"name": "b", "desc": "line 560 dereference failure: dead "
+                                  "object in return_value_get_pcpu->"
+                                  "pc_dynamic"}]}
+check("CBMC's return_value_get_pcpu is the same artefact",
+      report.bucket(call),
+      "a per-CPU read CBMC cannot model (the model's null, not the code's)")
+# The commonest spelling of all: amd64's curthread is __curthread(),
+# an __asm("movq %%gs:...") CBMC leaves nondeterministic. 11 of
+# sys/kern's 17 per-CPU-rooted records reach the artefact this way and
+# a rule spelled __pc sees none of them. CBMC's $N suffix included,
+# because vfs_bio.c:buf_daemon carries return_value___curthread$0.
+cur = {"file": "sys/kern/sys_generic.c", "function": "iosize_max",
+       "linkage": "exported", "failures": [
+           {"name": "a", "desc": "line 154 dereference failure: pointer "
+                                 "NULL in return_value___curthread$0->"
+                                 "td_proc"}]}
+check("curthread's asm read is the same artefact",
+      report.bucket(cur),
+      "a per-CPU read CBMC cannot model (the model's null, not the code's)")
+# But a REAL arithmetic failure beside it still decides the record, and
+# this is not hypothetical: subr_smr.c:smr_poll and vfs_bio.c:buf_daemon
+# both carry a curthread deref AND an overflow, and both belong in the
+# read pile for the overflow.
+real = dict(cur, failures=cur["failures"] + [
+    {"name": "b", "desc": "line 233 arithmetic overflow on signed - in "
+                          "t - s_wr.ticks"}])
+check("an overflow beside curthread still decides it",
+      report.bucket(real),
+      "EXPORTED, arithmetic - READ THESE")
+# ...and the spelling the rule deliberately does NOT reach. i386's
+# __PCPU_GET is inline asm, so the same source line as the amd64 case
+# reports a bare array bound with no pcpu name in it. Matching CBMC's
+# tmp_statement_expression would swallow real findings, so this one is
+# a row in the not-a-defect table instead and lands in the read pile.
+i386 = {"file": "sys/cddl/dev/dtrace/i386/dtrace_subr.c",
+        "function": "dtrace_gethrtime", "linkage": "exported",
+        "failures": [
+            {"name": "a", "desc": "line 343 array 'tsc_skew' upper bound "
+                                  "in tsc_skew[(signed int)"
+                                  "tmp_statement_expression]"}]}
+check("the i386 spelling is NOT swallowed by the rule",
+      report.bucket(i386),
+      "an INDEX out of its array's range - READ THESE")
+check("...and the table marks it read instead",
+      report.is_triaged("sys/cddl/dev/dtrace/i386/dtrace_subr.c", 343),
+      True)
 # Across lines the inference is not made. kern_clock.c's statclock
 # reports `td->td_proc' on 696 and `__pc->pc_prvspace' on 698; td is a
 # real unconstrained parameter and the record keeps the older answer,

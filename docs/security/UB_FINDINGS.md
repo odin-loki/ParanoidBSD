@@ -5366,6 +5366,7 @@ Kept because the reasoning is what stops them being re-reported.
 
 | reported | why it is not a defect |
 |---|---|
+| `sys/cddl/dev/dtrace/i386/dtrace_subr.c:343` `tsc_skew[...]` | The `__seg_gs` artefact in the one spelling `report.py`'s `pcpu_artefact()` cannot reach, so it is marked here instead. The line is `tsc_skew[curcpu]` and the amd64 file's identical line, `sys/cddl/dev/dtrace/amd64/dtrace_subr.c:346`, proves it: there CBMC reports both the array bound AND `dereference failure: pointer NULL in __pc->pc_cpuid`, and the rule buckets it as the artefact. i386's `__PCPU_GET` is inline asm rather than a `__seg_fs` pointer, so nothing names a pcpu local and all that is left is the bound, over an index CBMC believes unconstrained. `curcpu` is bounded by construction. The rule is not widened to `tmp_statement_expression` because that is CBMC's name for the result of any statement expression and would hide real findings. |
 | `sys/fs/nfsclient/nfs_clrpcops.c:1793`, `sys/fs/nfsclient/nfs_clrpcops.c:3834` | One mount flag word, read twice, with a call in between. `nfsrpc_read()` sets `nfhp = np->n_fhp` under `NFSHASNFSV4(nmp)` and then re-tests `NFSHASNFSV4(nmp)` inside the retry loop; `nfsrpc_readdir()` sets `rderr` under `nd->nd_flag & ND_NFSV4` and reads it under the same test twenty lines down. Neither word changes: the only writes to `nm_flag` after mount are `sys/fs/nfsclient/nfs_clbio.c:1632` and `sys/fs/nfsclient/nfs_clvfsops.c:2098`, `sys/fs/nfsclient/nfs_clvfsops.c:2100`, and they touch only `NFSMNT_RDIRPLUS` and `NFSMNT_NOLOCKS` — the version bits are fixed for the life of the mount — and `nfsv4_loadattr()` never touches `nd_flag` (it is 1,250 lines of `nfs_commonsubs.c` with no write to it). The analyser has to assume a cross-TU call can change either. |
 | `sys/fs/nfsclient/nfs_clrpcops.c:3032` | `nfsrvd_renamerpc()` reads `nd->nd_flag` after `if (ret == 0) NFSCL_REQSTART(...)`, so on `ret != 0` the descriptor looks unwritten. It is not: `nfscl_renamedeleg()` (`nfs_clstate.c:4960`) increments `retcnt` only on the two lines that also set `*gotfdp` or `*gottdp` — `:5070`/`:5071` and `:5112`/`:5113` — and every early return sets both to 0 and returns 0. So `ret > 0` implies one of the three `NFSCL_REQSTART` above ran. The correlation is between a return value and two out-parameters, in another translation unit. |
 | `sys/fs/nfsclient/nfs_clrpcops.c:3740`, `sys/fs/nfsclient/nfs_clrpcops.c:4214` | `dp` is NULL until the first directory entry is written, and both sites are `dp->d_reclen += left` inside `if (_GENERIC_DIRLEN(len) + NFSX_HYPER > left)`. `left` is `DIRBLKSIZ - blksiz` with `DIRBLKSIZ` 512 - `sys/fs/nfs/nfsport.h:103` includes `<ufs/ufs/dir.h>`, whose `sys/ufs/ufs/dir.h:73` makes it `DEV_BSIZE`, and `blksiz` is only ever incremented after a `dp` has been set — so `dp == NULL` implies `blksiz == 0` implies `left == 512`. The largest the guard can be is `_GENERIC_DIRLEN(255) + 8`, and `offsetof(struct dirent, d_name)` is 24, so `(24 + 255 + 1 + 7) & ~7` is 280 and the sum is 288. The branch cannot be taken on the entry where `dp` is NULL. |
@@ -33650,24 +33651,262 @@ the code being clean.
 
 ### A second spelling of the `__seg_gs` artefact, and why the rule keeps it out
 
-Three of the 89 are the per-CPU artefact. Two are the spelling
-`pcpu_artefact()` recognises — `amd64/dtrace_subr.c:dtrace_gethrtime`
-names `__pc->pc_cpuid`, and `riscv/kinst_isa.c:kinst_md_init` names
-`return_value_get_pcpu->pc_dynamic`. The third does not:
-`i386/dtrace_subr.c:dtrace_gethrtime` is the *same source line* as the
-amd64 one, but i386's `__PCPU_GET` is inline asm rather than `__seg_fs`,
-so CBMC reports
+Three of the 89 name a per-CPU read, in **three different spellings**,
+and exactly one of them is the artefact bucket's. Measured against
+`report.py` rather than read off the failure text, which is how the
+first version of this section came out wrong in both directions:
+
+| record | CBMC's expression | bucket |
+|---|---|---|
+| `amd64/dtrace_subr.c:dtrace_gethrtime` | `__pc->pc_cpuid` | the artefact |
+| `riscv/kinst_isa.c:kinst_md_init` | `return_value_get_pcpu->pc_dynamic`, **and `ks->state` on the next line** | a missing precondition — correctly |
+| `i386/dtrace_subr.c:dtrace_gethrtime` | `tsc_skew[...tmp_statement_expression]` | **an INDEX — READ THESE** |
+
+There is a fourth spelling and it is the commonest of all —
+`return_value___curthread`, from amd64's `curthread`, which is
+`__curthread()`, an `__asm("movq %%gs:...")` CBMC leaves
+nondeterministic (`sys/amd64/include/pcpu_aux.h:52-61`). It is not the
+`__seg_gs` define at all; it is the same per-CPU area read through
+inline asm. **11 of `sys/kern`'s 17 per-CPU-rooted records reach it that
+way**, and a rule spelled `__pc` sees none of them. `_PCPU` matches it
+too now, `$N` suffix included — `vfs_bio.c:buf_daemon` carries
+`return_value___curthread$0` — and the bucket is named after the
+**cause** rather than after `__seg_gs`, because three of its four
+spellings have nothing to do with that define.
+
+**The `return_value_get_pcpu` spelling is now matched, and it does not
+move that record.** Where `get_pcpu()` is a real out-of-line call rather than a
+macro expansion, CBMC names the unmodelled return value
+`return_value_get_pcpu`, which is exactly as narrow a marker as `__pc`:
+it can only come from a call to a function literally called `get_pcpu`.
+`_PCPU` matches both now, so a record whose failing lines are all that
+spelling is the artefact.
+
+`kinst_md_init` is not such a record. Line 560 is the per-CPU read; line
+561 is `ks->state`, a genuinely unconstrained pointer, and the per-line
+rule declines the whole record for the same reason it declines
+`kern_clock.c`'s `statclock`. *A missing precondition* is the right
+answer here — there is one, on `ks`. The first version of this section
+claimed the spelling fix moved it; reading the record's own failure list
+says it does not, and should not.
+
+**The third is not, and the cost is not free.** `i386/dtrace_subr.c`'s
+`dtrace_gethrtime` is the *same source line* as the amd64 one —
+`tsc_skew[curcpu]` — but i386's `__PCPU_GET` is inline asm rather than a
+`__seg_fs` pointer, so no pcpu name appears anywhere and the only failure
+left is a bare array bound:
 
 ```
 array 'tsc_skew' upper bound in tsc_skew[(signed int)tmp_statement_expression]
 ```
 
-with no `__pc` anywhere in it. It is the same root cause under a different
-name, and the rule in `report.py` deliberately does **not** reach it:
-`tmp_statement_expression` is CBMC's generic name for the result of any
-statement expression, and matching on it would swallow real findings
-wholesale. The narrow rule is worth more than the complete one here,
-because what it costs is one record landing in *a missing precondition,
-not a bug* instead of the artefact bucket — both of which are the discard
-pile. Recorded so the next reader of an i386 per-CPU report does not spend
-the evening on it.
+That does not land in a discard bucket. `index_bound()` sees an array
+subscript with no null and no pointer-shaped bound beside it and puts it
+in **an INDEX out of its array's range — READ THESE**, which is the pile
+a person is asked to read. The rule is still not widened to match
+`tmp_statement_expression`, because that is CBMC's name for the result of
+*any* statement expression and matching it would hide real findings
+wholesale — the failure mode this whole document exists to prevent, in
+the direction that matters.
+
+So it goes in the not-a-defect table instead, cited at
+`sys/cddl/dev/dtrace/i386/dtrace_subr.c:343`, and `report.py` prints it
+`[triaged]` from now on. That is the designed path for a false positive
+too narrow to automate away: read once, marked, still visible.
+
+The amd64 file is what makes the i386 verdict checkable rather than
+asserted. Same source line, two spellings, and on amd64 CBMC reports the
+null `__pc` *beside* the bound — so the bound's index is known to be the
+per-CPU read, and `curcpu` is bounded by construction.
+
+## `sys/kern` model-checked after `__seg_gs`: 169 proofs and one wrong-width helper
+
+184 of 225 translation units modelled (41 `TU-ERROR`), which is the
+figure `bc85ffe19` claims, confirmed by re-running it. 282 (file,
+function) pairs across 86 files after intersecting the goto model with
+the ledger and keeping SCALAR and VOID:
+
+| verdict | n |
+|---|---:|
+| PROVED | 169 |
+| BOUNDED | 7 |
+| FAILED | 69 |
+| TIMEOUT | 33 |
+| ERROR | 4 |
+
+The 33 TIMEOUT are dominated by `subr_bus.c` (13) and the ELF linkers
+(6). The 4 ERROR are `kern_clock.c:hardclock_sync`,
+`kern_jail.c:{prison_ip_alloc,prison0_init}` and
+`uipc_ktls.c:ktls_start_kthreads`.
+
+Of the 69 FAILED: 18 extern-driven, **17 rooted in a per-CPU read CBMC
+cannot model**, 16 a leak property asked of a constructor whose caller
+frees, 8 the static deferral, 6 an allocator result modelled as
+possibly-NULL. Four records are two candidates. One is a defect.
+
+### `encode_long()` hands a `long` to `fls()`, which takes an `int`
+
+`sys/kern/kern_acct.c:520`, found from
+`arithmetic overflow on signed shl in val << shift` at `:529`:
+
+```c
+static uint32_t
+encode_long(long val)
+{
+	...
+	norm_exp = fls(val) - 1;                 /* fls(int mask) */
+	shift = FLT_MANT_DIG - norm_exp - 1;     /* = 23 - norm_exp */
+	...
+	return (((FLT_MAX_EXP - 1 + norm_exp) << (FLT_MANT_DIG - 1)) |
+	    ((shift > 0 ? val << shift : val >> -shift) & MANT_MASK));
+}
+```
+
+`fls` is `int fls(int mask)` and `flsl` is `int flsl(long mask)`
+(`sys/sys/libkern.h:167`, `:175`). On LP64 the argument's top 32 bits are
+discarded **before the magnitude is measured**, so `norm_exp` comes from
+the wrong number and `shift` is then far too large for the value actually
+shifted. For any positive multiple of 2^32, `fls((int)val)` is 0, so
+`norm_exp` is −1 and `shift` is 24.
+
+Reproduced under UBSan rather than argued:
+
+```
+runtime error: left shift of 549755813888 by 24 places
+               cannot be represented in type 'long int'
+```
+
+The wrong *value* arrives long before the undefined behaviour does:
+
+| `val` | as written | with `flsl` |
+|---|---|---|
+| 2^32 | `0x3f000000` — the float **0.5** | `0x4f800000` = 4.295e9 |
+| 2^39 | `0x3f000000` (**0.5**, and UB) | `0x53000000` = 5.498e11 |
+| 2^40+1 | `0x3f800000` (**1.0**, and UB) | `0x53800000` = 1.100e12 |
+
+**The fix is inert below 2^32, proved rather than sampled.**
+`fls((int)v)` is `32 - clz32(v)`; `flsl(v)` is `64 - clz64(v)`; and for
+`v` in [1, 2^32) `clz64(v) == 32 + clz32(v)`, so the two are equal
+everywhere the function can be reached today. 32-bit targets are
+unaffected — there `long` is 32 bits and `fls == flsl`.
+
+**Reachability, stated rather than implied.** The only caller is
+`acct_process()` (`:331`), reached from `exit1()` for every exiting
+process but returning at `:344` unless `acct_vp != NULL` — process
+accounting must have been turned on with `acct(2)`, which needs
+`PRIV_ACCT`. Its two call sites are `:399`, an average RSS in kilobytes
+bounded by physical memory and so unable to reach 2^32 at all, and
+`:405`, `ru.ru_inblock + ru.ru_oublock`, a lifetime block-I/O count. So
+the wrong value needs ~4.3e9 I/O operations in one process and the UB
+~5.5e11. **Not reachable from any unprivileged syscall, and neither
+threshold was shown to be reachable in practice.** It is a real defect
+with an unreachable trigger, and the one-word fix costs nothing.
+
+`encode_timeval()` twenty lines above is why the wrong helper looked
+right: its `val` is an `int` deliberately (`#define CALC_BITS 28`, with
+the comment saying so), so `fls()` is correct there. Same shape as the
+pairs above — one of two.
+
+`encode_timeval()` does carry the same narrowing once, at `:479`:
+`log2_s = fls(tv.tv_sec) - 1` with `tv_sec` a 64-bit `time_t`. **Left
+alone, with the reason.** All three call sites pass a *duration* — user
+time, system time, elapsed time — so 2^31 seconds is 68 years of one
+process, and in the branch that would matter `1000000 * tv.tv_sec`
+overflows the `int` long before the narrowing binds. Recorded so that a
+later reader does not have to re-derive it.
+
+### `kern_event.c`'s `filt > 0`: not a defect, and one `continue` from being one
+
+Four records, twelve properties, all
+`array 'sysfilt_ops' lower bound in sysfilt_ops[~filt]`:
+
+```c
+} sysfilt_ops[EVFILT_SYSCOUNT] = {          /* :376 — 15 entries, [0..14] */
+
+	if (filt > 0 || filt + EVFILT_SYSCOUNT < 0)   /* :1627 */
+		return NULL;
+	...
+	sysfilt_ops[~filt].for_refcnt++;              /* :1634 — an OOB WRITE */
+```
+
+The guard admits `filt` in [−15, 0] and the index is
+`~filt = -filt-1` in [−1, 14]. **`filt == 0` gives `sysfilt_ops[-1]`.**
+All four functions in the group use `filt > 0` where `filt >= 0` is meant
+(`:1580`, `:1605`, `:1627`, `:1646`).
+
+`kqueue_register()` takes `filt = kev->filter` straight from a userland
+`struct kevent` with no check of its own — but every syscall path goes
+through `kqueue_kevent()`, which skips those entries:
+
+```c
+	if (!kevp->filter)          /* :1516 */
+		continue;
+```
+
+That covers native `kevent(2)`, the `freebsd32` variants
+(`freebsd32_misc.c:822`, `:920`) and Linux epoll (`linux_event.c:355`,
+`:412`, `:542`). `kqfd_register()`'s only two in-tree callers
+(`vfs_aio.c:1660`, `:2287`) pass `EVFILT_AIO`/`EVFILT_LIO`.
+`kqueue_del_filteropts()` has no in-tree caller at all.
+
+**Not a defect as the tree stands, and recorded because of how thin that
+is:** the only thing between an unprivileged `kevent(2)` and an
+out-of-bounds increment sixteen bytes below a static array is a
+`continue` in a different function a hundred lines away, with no comment
+linking the two, and `kqueue_del_filteropts()` is exported for modules
+with no protection at all.
+
+### Three more read and left, with the reasoning
+
+- **`kern_cpuset.c:domainset_init`**, `ds_order` upper bound at `:515`.
+  `__BIT_FLS` (`sys/sys/bitset.h:259-272`) returns `flsl()` over the whole
+  64-bit word and is **not** bounded by its `_s` argument, while
+  `ds_order[MAXMEMDOM]` is 8 entries. Safe only because `all_domains`
+  never has a bit above `vm_ndomains - 1` set — module state a modular
+  checker cannot see. The unbounded `__BIT_FLS` is the part worth
+  remembering.
+- **`subr_param.c:init_param2`**: `20 + 16 * maxusers` (`:308`) and
+  `40 + 32 * maxusers` (`:324`) overflow `int` if `kern.maxusers` is set
+  in `loader.conf` above ~1.3e8. Same family as the four NFS-server
+  tunables already fixed here, but the consequence is a garbage
+  `maxproc`/`maxfiles`, partly re-clamped at `:311-314`, rather than a
+  division by zero or a near-`SIZE_MAX` allocation. Root-only, boot-time,
+  no memory-safety consequence.
+- **`kern_pmc.c:pmc_cpu_is_{active,disabled,present,primary}`**:
+  `CPU_ISSET(cpu, ...)` on an unconstrained `int cpu` — the *same shape*
+  as the `geli` defect fixed in the commit before this one, and here
+  every call site validates (`hwpmc_mod.c:3311` rejects
+  `cpu >= pmc_cpu_max()`, the rest come from `CPU_FOREACH`). Exported
+  without a stated precondition, which is what makes the pair worth
+  naming together: one of them had a caller that did not check.
+
+### The 12-failure cap, and why the artefact count has three numbers
+
+`cbmc_driver.py:233` records at most twelve failures per record
+(`real_failed[:12]`), and **25 of the 69 are at that cap**. A per-CPU
+property can therefore be truncated away before `report.py` ever sees it,
+which means `pcpu_artefact()` systematically *under*-counts on a record
+with many properties. That is the conservative direction — an
+unrecognised artefact stays in the discard bucket it was already in — but
+it is a real limit of the rule and not a property of the code.
+
+Counted three ways, all of them true of the same 69 records:
+
+| n | what was counted |
+|---:|---|
+| 3 | records naming `__pc` or `pc_cpuid` in a *recorded* failure |
+| 6 | records whose preprocessed body contains `static struct pcpu *__pc = 0` under the driver's own flags — the 3 above plus `subr_prng.c:{prng32,prng64}` and `subr_smr.c:smr_poll`, because `DPCPU_PTR(n)` is `_DPCPU_PTR(PCPU_GET(dynamic), n)` (`sys/sys/pcpu.h:121`), so every DPCPU access is the same artefact |
+| 17 | records whose failing expression is rooted in a per-CPU read at all — the 6 plus 11 reached through `curthread` |
+
+The 17 is the honest number and the 3 is what a `__pc`-spelled rule saw.
+That gap is what moved the bucket's name from the define to the cause.
+
+**Two of the 17 are in the read pile and belong there.**
+`subr_smr.c:smr_poll` carries the `curthread` deref on line 221 *and*
+`arithmetic overflow on signed - in t - s_wr.ticks` on 233;
+`vfs_bio.c:buf_daemon` carries it on 3487 *and*
+`arithmetic overflow on signed * in tick_sbt * hz` on 3546. The per-line
+rule strips the pointer failures and the arithmetic decides, which is
+exactly what it is for — and `deciding_failures()` prints the arithmetic
+rather than the deref, so a reader opening either one sees the question
+that put it there.

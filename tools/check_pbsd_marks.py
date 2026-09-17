@@ -2893,6 +2893,16 @@ FIXES = {
         "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
         "and a missing shmem property dereferenced NULL at attach",
     ),
+    "hbsd/src/sys/kern/kern_acct.c": (
+        "\tnorm_exp = flsl(val) - 1;",
+        "\t\tval = LONG_MAX;\n\t}\n\tnorm_exp = fls(val) - 1;",
+        "encode_long() takes a long and called fls(), which takes an "
+        "int, so on LP64 the top 32 bits were discarded before the "
+        "magnitude was measured; `val << shift' is undefined from 2^39 "
+        "up and the encoded value wrong from 2^32 up. encode_timeval() "
+        "in the same file keeps its value in an int on purpose, which "
+        "is why the wrong helper looked right",
+    ),
     "hbsd/src/sys/geom/uzip/g_uzip.c": (
         "\t\t    gp->name, sc->blksz, MAX_BLKSZ);\n\t\tgoto e4;",
         "\t\t    gp->name, sc->blksz, MAX_BLKSZ);\n\t}\n\ttotal_offsets",

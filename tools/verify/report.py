@@ -252,12 +252,40 @@ def index_bound(rec: dict) -> bool:
 # buries, and this is its other half: the cost is bounded because the
 # class is recognisable. `__pc' is a macro-local name, so a report that
 # spells it is inside one of those five expansions and nowhere else.
-_PCPU = re.compile(r"\b__pc->")
+#
+# The second spelling is CBMC's, not the tree's. Where get_pcpu() is a
+# real out-of-line call rather than an expansion -- riscv's kinst_isa.c
+# is the one in hand -- CBMC names the unmodelled return value
+# `return_value_get_pcpu', and that is exactly as narrow: it can only
+# come from a call to a function literally called get_pcpu. Missing it
+# put kinst_md_init in "a missing precondition, not a bug", which is
+# the wrong reason for the right pile.
+#
+# The third is `return_value___curthread', and it is the commonest of
+# all: amd64's curthread is __curthread(), an __asm("movq %%gs:...")
+# that CBMC leaves nondeterministic (sys/amd64/include/pcpu_aux.h). It
+# is not the __seg_gs define at all -- it is the same per-CPU area read
+# through inline asm -- which is why the bucket is named after the
+# CAUSE rather than after __seg_gs. 11 of sys/kern's 17 per-CPU-rooted
+# records reach it this way, and a rule spelled __pc sees none of them.
+#
+# There is a FOURTH spelling and it is deliberately not here. i386's
+# __PCPU_GET is inline asm rather than __seg_fs, so
+# i386/dtrace_subr.c:dtrace_gethrtime -- the same source line as the
+# amd64 one -- reports only
+#     array 'tsc_skew' upper bound in tsc_skew[...tmp_statement_expression]
+# with no pcpu name in it at all. tmp_statement_expression is CBMC's
+# name for the result of ANY statement expression, so matching it would
+# swallow real findings wholesale. That record costs a line in the
+# not-a-defect table instead, which is what the table is for.
+_PCPU = re.compile(
+    r"\b(?:__pc|return_value_get_pcpu|return_value___curthread)"
+    r"(?:\$\d+)?->")
 _AT_LINE = re.compile(r"^line (\d+) ")
 
 
 def pcpu_artefact(rec: dict) -> bool:
-    """Is every failing LINE one that reads the per-CPU segment base?
+    """Is every failing LINE one that reads the per-CPU area?
 
     Per line, not per failure, and the difference is a real record.
     sys/cddl/dev/dtrace/amd64/dtrace_subr.c's dtrace_gethrtime is
@@ -322,8 +350,8 @@ def bucket(rec: dict) -> str:
     k = {x for x in k if not any(w in x for w in PTR_WORDS)}
     if not k:
         if pcpu_artefact(rec):
-            return ("the __seg_gs pcpu artefact (the model's null, not "
-                    "the code's)")
+            return ("a per-CPU read CBMC cannot model (the model's null, "
+                    "not the code's)")
         if index_bound(rec):
             return "an INDEX out of its array's range - READ THESE"
         return "pointer/memory (a missing precondition, not a bug)"

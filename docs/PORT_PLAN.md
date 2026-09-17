@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,915 | 2,434 |
-| 8 | `sys` | 14,951 | 10,499,465 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,487 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,797** | **114,209** |
+| | **total** | **41,143** | **21,304,819** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -114435,7 +114435,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.9.17 `db_show_print_syinit()` · `TODO-FN`
   - [ ] 8.1191.9.18 `DB_SHOW_COMMAND_FLAGS()` · `TODO-FN`
 - [ ] **8.1191.10** `init_sysent.c` · 673L · `TODO-GEN`
-- [ ] **8.1191.11** `kern_acct.c` · 640L gen:6 · `TODO-PORT` · 8 fn
+- [ ] **8.1191.11** `kern_acct.c` · 662L gen:6 · `TODO-PORT` · 8 fn
   - [ ] 8.1191.11.1 `sysctl_acct_chkfreq()` · `TODO-FN`
   - [ ] 8.1191.11.2 `sys_acct()` · `TODO-FN`
   - [ ] 8.1191.11.3 `acct_disable()` · `TODO-FN`

@@ -517,7 +517,29 @@ encode_long(long val)
 		    val);
 		val = LONG_MAX;
 	}
-	norm_exp = fls(val) - 1;
+	/*
+	 * PBSD: flsl(), not fls(). `val' is a long and fls() takes an int
+	 * (sys/sys/libkern.h:167 and :175), so on LP64 the top 32 bits were
+	 * discarded before the magnitude was measured: norm_exp came from
+	 * the wrong number and `shift' was then far too large for the value
+	 * actually shifted. For any positive multiple of 2^32, fls((int)val)
+	 * is 0, so norm_exp is -1 and shift is 24. `val << shift' is
+	 * UNDEFINED from 2^39 up -- UBSan: "left shift of 549755813888 by 24
+	 * places cannot be represented in type 'long int'" -- and the
+	 * ENCODED VALUE is wrong from 2^32 up: 2^32 came out 0x3f000000,
+	 * which is the float 0.5, against a correct 0x4f800000.
+	 *
+	 * Inert below 2^32, proved rather than sampled: fls((int)v) is
+	 * 32 - clz32(v), flsl(v) is 64 - clz64(v), and for v in [1, 2^32)
+	 * clz64(v) == 32 + clz32(v). Equal everywhere it can be reached
+	 * today, correct where it could not.
+	 *
+	 * encode_timeval() above is why this was easy to miss: its `val' is
+	 * an int on purpose (CALC_BITS 28, and the comment saying so), so
+	 * fls() is the right helper THERE. This function was written by
+	 * analogy and kept the int helper while taking a long.
+	 */
+	norm_exp = flsl(val) - 1;
 	shift = FLT_MANT_DIG - norm_exp - 1;
 #ifdef ACCT_DEBUG
 	printf("val=%d shift=%d log2(val)=%d\n",
