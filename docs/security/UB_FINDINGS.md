@@ -34037,3 +34037,87 @@ pile's other entries:
 `sys/amd64` is where one would expect them and is the first measurement
 of the renamed bucket doing its job: twelve records that a `__pc`-spelled
 rule would have left mixed in with the preconditions.
+
+### The rest of the `sys/amd64` + `sys/x86` run, read
+
+425 jobs, and the totals: **227 PROVED**, 19 BOUNDED, 126 FAILED, 35
+TIMEOUT, 18 ERROR. Buckets:
+
+| n | bucket |
+|---:|---|
+| 60 | pointer/memory (a missing precondition) |
+| 23 | EXPORTED, arithmetic — READ THESE |
+| 17 | static (callers constrain the domain) |
+| 16 | **a per-CPU read CBMC cannot model** |
+| 8 | STATIC but its address is taken — READ THESE |
+| 2 | an INDEX out of its array's range — READ THESE |
+
+`vm_segment_name` is no longer in the read pile; the bound above removed
+it. The 16 per-CPU records are the renamed bucket's first real workload,
+and two of the 23 print `[triaged]` already — `delay.c`'s `DELAY` and
+`cpu_lock_delay`, both `return_value___curthread->td_pinned + 1`.
+
+**`sys/x86/isa/isa_dma.c`, six of the 23, one shape.** `1 << chan` with
+`chan` unconstrained, in `isa_dma_acquire`, `isa_dma_release`,
+`isa_dmadone`, `isa_dmastatus`, `isa_dmastop` and `isa_dmatc`. The file
+states its own contract — `#define VALID_DMA_MASK (7)` — and enforces it
+like this:
+
+```c
+#ifdef DIAGNOSTIC
+	if (chan & ~VALID_DMA_MASK)
+		panic("isa_dma_acquire: channel out of range");
+#endif
+```
+
+**Four of the eight entry points have that block and four have nothing
+at all.** `isa_dma_init`, `isa_dma_acquire`, `isa_dma_release` and
+`isa_dmadone` have it; `isa_dmastart`, `isa_dmastatus`, `isa_dmatc` and
+`isa_dmastop` do not, not even under `DIAGNOSTIC`. So the contract is
+written down in four places and enforced in none on a production kernel
+— the same "one of a pair" shape as the three GEOM/CTL guards above,
+with the pair being four and four.
+
+Consequences for an out-of-range `chan`: `1 << chan` is undefined at
+`chan >= 31` and for negative `chan`, and for `chan` in [8, 30]
+`dma_inuse |= (1 << chan)` sets a bit outside the eight real channels,
+so the in-use tracking silently aliases.
+
+**Where `chan` comes from, and why this is not fixed here.** Both
+callers derive it from a bus resource:
+`ppc.c:1739` is `ppc->ppc_dmachan = rman_get_start(ppc->res_drq)` and
+`fdc.c` uses `fdc->dmachan` the same way. That is a DRQ from device
+hints, ACPI or PnP — operator- or firmware-configured, not
+attacker-controlled at runtime, so it needs a bad `/boot/device.hints`
+or bad firmware. It is the same standing as the loader tunables this
+document has fixed, and it is *not* fixed here for a reason worth
+stating: four of the six functions return `void` and cannot report the
+error, so the only production fix is an early return that silently does
+nothing for a misconfigured device, and moving the existing `panic` out
+of `#ifdef DIAGNOSTIC` is a behaviour change to eight entry points of a
+vendor file on a path nothing has been shown to reach. Recorded, with
+the numbers, as the next candidate rather than churned.
+
+### Read and left, the rest of the 23
+
+| record | why not a defect |
+|---|---|
+| `pci_cfgreg.c:pci_cfgregread`, `pci_cfgregwrite` — `1u << slot` | exported, and the caller is the PCI bus enumerator, which walks slots 0..31 |
+| `iommu_utils.c:pglvl_page_size`, `pglvl_pgtbl_get_pindex`, `pglvl_pgtbl_pte_off` — `pglvl - lvl` | page-table level arithmetic; both operands are the unit's own level count and a loop index over it |
+| `cpu_machdep.c:cpu_reset` — `map.__bits[tmp_if_expr]` | `CPU_CLR(PCPU_GET(cpuid), &map)`. The index is `curcpu`, bounded by construction — **and this is a fifth instance of the spelling `pcpu_artefact()` cannot reach**, the bare `tmp_if_expr` subscript with no pcpu name in the failure, exactly as i386's `tsc_skew` |
+| `mp_x86.c:ipi_nmi_handler` — `started_cpus.__bits[...]` | the same, through `PCPU_GET(cpuid)` in an NMI handler |
+| `machdep.c:spinlock_exit` — `td->td_md.md_spinlock_count - 1` | the counter is incremented by `spinlock_enter()` on the matching path; the decrement cannot run without it |
+| `pmap.c:pmap_kenter_temporary` — `i * PAGE_SIZE` | `i` is a caller-supplied page index into the crash-dump window |
+| `pmap.c:pmap_qremove` — `count - 1` | caller-supplied count, and every in-tree caller passes a loop bound it computed |
+| `pmap.c:pmap_invalidate_cache` — `td_pinned + 1` | the per-CPU artefact **with** a real increment beside it, so it is in the read pile for the increment, correctly |
+| `vmm_mem_machdep.c:vmm_mem_maxaddr` — `Maxmem << 12` | a file-scope extern the model does not constrain; set once at boot from the memory map |
+| `vmm_instruction_emul.c:vie_alignment_check` — `size - 1` | same domain as `vie_size2mask` above: every decoder assignment gives 2, 4 or 8 |
+
+**Not established, and left open:**
+`mptable.c:mptable_pci_route_interrupt` does `pin--` on its `int pin`
+parameter with the comment *"Like ACPI, pin numbers are 0-3, not 1-4"*.
+The pin reaches it from the PCI layer, which reads it out of a device's
+configuration space, so it is a **device-supplied byte** rather than a
+value the kernel computed. Whether `pin == 0` is filtered before it
+arrives was not traced to a conclusion, and it is not claimed either
+way here.
