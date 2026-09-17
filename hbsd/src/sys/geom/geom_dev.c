@@ -64,7 +64,7 @@ struct g_dev_softc {
 	int		 sc_open;
 	u_int		 sc_active;
 	struct selinfo	 sc_selinfo;
-#define	SC_A_DESTROY	(1 << 31)
+#define	SC_A_DESTROY	(1U << 31)
 #define	SC_A_OPEN	(1 << 30)
 #define	SC_A_ACTIVE	(SC_A_OPEN - 1)
 };

@@ -112,7 +112,21 @@ g_eli_mkey_decrypt(const struct g_eli_metadata *md, const unsigned char *key,
 	const unsigned char *mmkey;
 	int bit, error;
 
-	if (nkey > G_ELI_MKEYLEN)
+	/*
+	 * nkey is a SLOT NUMBER, so the bound is the slot count. It was
+	 * G_ELI_MKEYLEN, which is the LENGTH OF ONE KEY -- 192 against a
+	 * limit of 2, and the array it guards is md_mkeys[MAXMKEYS *
+	 * MKEYLEN]. Every other bound on this parameter in the subsystem
+	 * (g_eli_ctl.c:87, :717, :840 and geom_eli.c:1394, :1510) already
+	 * says MAXMKEYS; this was the one that did not.
+	 *
+	 * Latent rather than reachable: the only caller that takes nkey
+	 * from userland, g_eli_ctl.c:87, bounds it correctly, and
+	 * g_eli_mkey_decrypt_any() loops 0..MAXMKEYS-1. So this guard
+	 * currently defends nothing -- which is exactly why it has to be
+	 * right.
+	 */
+	if (nkey >= G_ELI_MAXMKEYS)
 		return (-1);
 
 	/*

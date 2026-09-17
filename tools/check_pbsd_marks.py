@@ -3040,6 +3040,50 @@ FIXES = {
         "g_eli_ctl_configure() scrubbed md on one path of fifteen and "
         "read it uninitialised on the ONETIME path; md holds md_mkeys",
     ),
+    "hbsd/src/sys/geom/eli/g_eli_key.c": (
+        "if (nkey >= G_ELI_MAXMKEYS)",
+        "if (nkey > G_ELI_MKEYLEN)",
+        "nkey is a SLOT NUMBER and the bound said MKEYLEN, the length of "
+        "one key -- 192 against a limit of 2. Six other bounds on the same "
+        "parameter in the subsystem already say MAXMKEYS",
+    ),
+    "hbsd/src/sys/geom/raid/md_ddf.c": (
+        "memcpy(meta->hdr->DDF_Header_GUID, guid,",
+        "snprintf(meta->hdr->DDF_Header_GUID, 25,",
+        "four snprintf(field, 25, ...) into uint8_t[24]; every format "
+        "produces exactly 24 characters so the terminator always landed "
+        "one byte past the end",
+    ),
+    "hbsd/src/sys/geom/raid/tr_raid1e.c": (
+        "mask |= 1U << 31;",
+        "mask |= 1 << 31;",
+        "the correct 1U idiom was already on the NEXT line",
+    ),
+    "hbsd/src/sys/geom/geom_dev.c": (
+        "#define\tSC_A_DESTROY\t(1U << 31)",
+        "#define\tSC_A_DESTROY\t(1 << 31)",
+        "bit 31 of a u_int, formed as a signed shift",
+    ),
+    "hbsd/src/sys/sys/memrange.h": (
+        "#define MDF_FORCE\t\t(1U<<31)",
+        "#define MDF_FORCE\t\t(1<<31)",
+        "bit 31 constant formed by a signed shift",
+    ),
+    "hbsd/src/sys/x86/include/vmware.h": (
+        "#define\tVMW_VCPUINFO_VCPU_RESERVED\t(1U << 31)",
+        "#define\tVMW_VCPUINFO_VCPU_RESERVED\t(1 << 31)",
+        "bit 31 constant formed by a signed shift",
+    ),
+    "hbsd/src/sys/x86/x86/local_apic.c": (
+        "if (v & (1U << i)) {",
+        "if (v & (1 << i)) {",
+        "i runs to 31, so the last iteration is a signed 1 << 31",
+    ),
+    "hbsd/src/sys/x86/x86/identcpu.c": (
+        "if (regs[regnum] & (1U<<31))",
+        "if (regs[regnum] & (1<<31))",
+        "bit 31 tested with a signed shift",
+    ),
     "hbsd/src/sys/geom/eli/g_eli.h": (
         "eli_metadata_sectorsize_supported",
         None,

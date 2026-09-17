@@ -573,6 +573,15 @@ ddf_meta_create(struct g_raid_disk *disk, struct ddf_meta *sample)
 	u_int ss, pos, size;
 	int len, error;
 	char serial_buffer[DISK_IDENT_SIZE];
+	/*
+	 * The on-disk GUID fields are uint8_t[24] and are NOT NUL
+	 * terminated -- see the Controller_GUID memcpy below, which is
+	 * this file's own correct idiom. snprintf(field, 25, ...) wrote
+	 * 25 bytes into 24, every time: each of these formats produces
+	 * exactly 24 characters, so the terminator always landed one
+	 * byte past the end.
+	 */
+	char guid[25];
 
 	if (sample->hdr == NULL)
 		sample = NULL;
@@ -628,8 +637,10 @@ ddf_meta_create(struct g_raid_disk *disk, struct ddf_meta *sample)
 		}
 	} else {
 		SET32(meta, hdr->Signature, DDF_HEADER_SIGNATURE);
-		snprintf(meta->hdr->DDF_Header_GUID, 25, "FreeBSD %08x%08x",
+		snprintf(guid, sizeof(guid), "FreeBSD %08x%08x",
 		    (u_int)(ts.tv_sec - DECADE), arc4random());
+		memcpy(meta->hdr->DDF_Header_GUID, guid,
+		    sizeof(meta->hdr->DDF_Header_GUID));
 		memcpy(meta->hdr->DDF_rev, "02.00.00", 8);
 		SET32(meta, hdr->TimeStamp, (ts.tv_sec - DECADE));
 		SET32(meta, hdr->WorkSpace_Length, 16 * 1024 * 1024 / ss);
@@ -707,11 +718,12 @@ ddf_meta_create(struct g_raid_disk *disk, struct ddf_meta *sample)
 	len = sizeof(serial_buffer);
 	error = g_io_getattr("GEOM::ident", disk->d_consumer, &len, serial_buffer);
 	if (error == 0 && (len = strlen (serial_buffer)) >= 6 && len <= 20)
-		snprintf(pde->PD_GUID, 25, "DISK%20s", serial_buffer);
+		snprintf(guid, sizeof(guid), "DISK%20s", serial_buffer);
 	else
-		snprintf(pde->PD_GUID, 25, "DISK%04d%02d%02d%08x%04x",
+		snprintf(guid, sizeof(guid), "DISK%04d%02d%02d%08x%04x",
 		    ct.year, ct.mon, ct.day,
 		    arc4random(), arc4random() & 0xffff);
+	memcpy(pde->PD_GUID, guid, sizeof(pde->PD_GUID));
 	SET32D(meta, pde->PD_Reference, arc4random());
 	SET16D(meta, pde->PD_Type, DDF_PDE_GUID_FORCE);
 	SET16D(meta, pde->PD_State, 0);
@@ -844,6 +856,7 @@ ddf_vol_meta_create(struct ddf_vol_meta *meta, struct ddf_meta *sample)
 	struct timespec ts;
 	struct clocktime ct;
 	u_int ss, size;
+	char guid[25];		/* see ddf_meta_create(): VD_GUID is [24] */
 
 	meta->bigendian = sample->bigendian;
 	ss = meta->sectorsize = sample->sectorsize;
@@ -855,9 +868,10 @@ ddf_vol_meta_create(struct ddf_vol_meta *meta, struct ddf_meta *sample)
 	memset(meta->vde, 0xff, sizeof(struct ddf_vd_entry));
 	getnanotime(&ts);
 	clock_ts_to_ct(&ts, &ct);
-	snprintf(meta->vde->VD_GUID, 25, "FreeBSD%04d%02d%02d%08x%01x",
+	snprintf(guid, sizeof(guid), "FreeBSD%04d%02d%02d%08x%01x",
 	    ct.year, ct.mon, ct.day,
 	    arc4random(), arc4random() & 0xf);
+	memcpy(meta->vde->VD_GUID, guid, sizeof(meta->vde->VD_GUID));
 	size = GET16(sample, hdr->Configuration_Record_Length) * ss;
 	meta->vdc = malloc(size, M_MD_DDF, M_WAITOK);
 	memset(meta->vdc, 0xff, size);

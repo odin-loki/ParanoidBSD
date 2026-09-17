@@ -1042,7 +1042,7 @@ rebuild_round_done:
 			G_RAID_LOGREQ(2, cbp, "Retrying read from %d",
 			    nsd->sd_pos);
 			if (do_write)
-				mask |= 1 << 31;
+				mask |= 1U << 31;
 			if ((mask & (1U << 31)) != 0)
 				sd->sd_recovery++;
 			cbp->bio_caller2 = (void *)mask;

@@ -50,6 +50,17 @@ from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
 CHECKERS = [
+    # Added after cppcheck found nine signed `1 << 31' sites this
+    # whitelist had never looked for. It is worth having and it does NOT
+    # cover that class: measured over sys/geom + sys/x86, 151 units, it
+    # reports ZERO, and a direct test shows why -- core.BitwiseShift
+    # fires on a shift count >= the width or negative, both of which
+    # `clang -Wall' already gives for free, and says nothing about
+    # `1 << 31', where the count is legal and the RESULT does not fit.
+    # Only cppcheck's own front end sees that one. What this buys over
+    # -Wall is the path-sensitive case: a count that is only out of
+    # range on one path.
+    "core.BitwiseShift",
     "core.CallAndMessage", "core.DivideZero", "core.NonNullParamChecker",
     "core.NullDereference", "core.StackAddressEscape",
     "core.UndefinedBinaryOperatorResult", "core.VLASize",

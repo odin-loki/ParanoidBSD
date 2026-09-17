@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,658 | 4,188 |
 | 6 | `usr.sbin` | 1,142 | 657,958 | 9,020 |
 | 7 | `stand` | 484 | 135,915 | 2,434 |
-| 8 | `sys` | 14,951 | 10,499,665 | 81,388 |
+| 8 | `sys` | 14,951 | 10,499,693 | 81,388 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,732 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,304,997** | **114,209** |
+| | **total** | **41,143** | **21,305,025** | **114,209** |
 
 | tag | files |
 |---|---:|
@@ -112119,7 +112119,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1161.6.3 `g_eli_auth_write_done()` · `TODO-FN`
   - [ ] 8.1161.6.4 `g_eli_auth_read()` · `TODO-FN`
   - [ ] 8.1161.6.5 `g_eli_auth_run()` · `TODO-FN`
-- [ ] **8.1161.7** `g_eli_key.c` · 262L gen:1 · `TODO-PORT` · 6 fn
+- [ ] **8.1161.7** `g_eli_key.c` · 276L gen:1 · `TODO-PORT` · 6 fn
   - [ ] 8.1161.7.1 `g_eli_mkey_verify()` · `TODO-FN`
   - [ ] 8.1161.7.2 `g_eli_mkey_hmac()` · `TODO-FN`
   - [ ] 8.1161.7.3 `g_eli_mkey_decrypt()` · `TODO-FN`
@@ -112806,7 +112806,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1171.3.3 `g_raid_ctl_stop()` · `TODO-FN`
   - [ ] 8.1171.3.4 `g_raid_ctl_other()` · `TODO-FN`
   - [ ] 8.1171.3.5 `g_raid_ctl()` · `TODO-FN`
-- [ ] **8.1171.4** `md_ddf.c` · 3,088L gen:1 · `TODO-PORT` · 42 fn
+- [ ] **8.1171.4** `md_ddf.c` · 3,102L gen:1 · `TODO-PORT` · 42 fn
   - [ ] 8.1171.4.1 `isff()` · `TODO-FN`
   - [ ] 8.1171.4.2 `print_guid()` · `TODO-FN`
   - [ ] 8.1171.4.3 `g_raid_md_ddf_print()` · `TODO-FN`

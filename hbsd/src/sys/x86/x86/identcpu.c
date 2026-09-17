@@ -1979,7 +1979,7 @@ print_INTEL_info(void)
 				break;	/* we have a buggy CPU */
 
 			for (regnum = 0; regnum <= 3; ++regnum) {
-				if (regs[regnum] & (1<<31))
+				if (regs[regnum] & (1U<<31))
 					continue;
 				if (regnum != 0)
 					print_INTEL_TLB(regs[regnum] & 0xff);

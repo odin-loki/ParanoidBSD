@@ -35395,3 +35395,183 @@ Only `OK` means the tool read the unit now; `NOTRUN` is `NOTRUN`, and an
 unrecognised or missing status is `TU-ERROR` rather than clean, because a
 status nobody anticipated is not evidence of anything. Three tests, one
 per case.
+
+## The breadth tier: a second front end, and what it found in 151 files
+
+Four drivers land in `tools/verify/` — `clang_tidy_driver.py`,
+`cppcheck_driver.py`, `coccinelle_driver.py`, `compiler_warnings.py` —
+sharing `pbsd_breadth.py`, which imports `includes.py` rather than
+reimplementing it and emits `analyze.py`'s record schema plus `tool` and
+`v`. `matrix.py` ingests them unchanged.
+
+cppcheck 2.13.0 and Coccinelle 1.1.1 are now installed here. Neither is
+reachable through plain `apt install` on this box — a pre-existing broken
+`libz3-dev` pin makes apt refuse the whole transaction, and
+`apt --fix-broken install` would remove `libz3-dev`, which **cbmc needs**.
+`docs/VERIFY_RUNBOOK.md` has the `apt-get download` + `dpkg --force-depends`
+route that works.
+
+`sweep_all.py --list` now reads **ten of twelve stages `ok`**, against
+five before.
+
+### Measured, 151 translation units (`sys/geom` + `sys/x86`), 4 jobs
+
+| driver | wall | OK | ERROR | findings |
+|---|---:|---:|---:|---:|
+| `clang_tidy_driver` | 189 s | 151 | 0 | 257 |
+| `cppcheck_driver` | 123 s | 121 | **30** | 111 |
+| `coccinelle_driver` | 153 s | 151 | 0 | 29 |
+| `compiler_warnings` | 12 s | 151 | 0 | 3,071 |
+
+The 30 cppcheck ERRORs are its own parser (`internalAstError: AST broken`
+×22), not the build system — and they matter more than usual here,
+because **cppcheck reports the parse error and then carries on checking
+whatever it managed to parse**. The unit emits findings and looks
+checked. The driver drops those findings and marks the unit `ERROR`.
+
+Coccinelle has the same problem in a quieter form: `spatch` skips
+functions it cannot parse and says nothing at all. The driver runs
+`--parse-c` first and records the percentage — 122/151 whole, 29 partial,
+min 68.7%.
+
+### Eight defects, fixed
+
+All confirmed against the source before being touched, and all eight
+markers revert-verified.
+
+**`md_ddf.c` — a one-byte overflow on every call, four sites.**
+
+```c
+snprintf(meta->hdr->DDF_Header_GUID, 25, "FreeBSD %08x%08x", ...);
+```
+
+`DDF_Header_GUID`, `PD_GUID` and `VD_GUID` are all `uint8_t [24]`. And
+this is not "can overflow" — **every one of the four formats produces
+exactly 24 characters**, so `snprintf`'s terminator always landed one
+byte past the end:
+
+| format | chars |
+|---|---:|
+| `FreeBSD %08x%08x` | 24 |
+| `DISK%20s` | 24 |
+| `DISK%04d%02d%02d%08x%04x` | 24 |
+| `FreeBSD%04d%02d%02d%08x%01x` | 24 |
+
+The same file already shows the correct idiom for these fields —
+`memcpy(meta->cdr->Controller_GUID, "FreeBSD GEOM RAID SERIAL", 24)` —
+because they are fixed-width on-disk GUIDs that are *not* NUL
+terminated. The four `snprintf` sites were the inconsistent ones.
+
+The practical consequence was mostly masked, and the masking is an
+accident of ordering worth recording: the byte after `DDF_Header_GUID` is
+`DDF_rev[8]`, overwritten by the `memcpy` on the very next line, and the
+byte after `PD_GUID` is `PD_Reference`, written by `SET32D` two lines
+later. It is still an out-of-bounds write on a normal path, and the
+compiler is entitled to assume it does not happen.
+
+**`g_eli_key.c:115` — the wrong constant in a GELI bounds check.**
+
+```c
+if (nkey > G_ELI_MKEYLEN)	/* the LENGTH OF ONE KEY, 192 */
+	return (-1);
+mmkey = md->md_mkeys + G_ELI_MKEYLEN * nkey;
+```
+
+`nkey` is a **slot number**. `G_ELI_MAXMKEYS` is 2. The array is
+`md_mkeys[MAXMKEYS * MKEYLEN]`. And this is the project's own
+sibling-asymmetry shape again, at its cleanest: **six other bounds on
+this exact parameter** — `g_eli_ctl.c:87`, `:717`, `:840` and
+`geom_eli.c:1394`, `:1510` — already say `MAXMKEYS`. One did not.
+
+Latent, and that is the point. `g_eli_ctl.c:87` bounds the only
+user-supplied `nkey` correctly and `g_eli_mkey_decrypt_any()` loops
+`0..MAXMKEYS-1`, so the guard currently defends nothing — the isa_dma
+standing. A backstop in a disk-encryption key path has to be right.
+
+**Six signed `1 << 31` sites.** `tr_raid1e.c:1045` is the one to read:
+
+```c
+	if (do_write)
+		mask |= 1 << 31;
+	if ((mask & (1U << 31)) != 0)
+```
+
+The correct idiom is on the next line. The others are
+`geom_dev.c:67` (`SC_A_DESTROY`, into a `u_int`), `memrange.h:26`
+(`MDF_FORCE`), `vmware.h:41`, `local_apic.c:1885` (`for (i = 0; i < 32;
+i++) if (v & (1 << i))` — the last iteration), and `identcpu.c:1982`.
+
+### Measured both ways
+
+`analyze.py` over `sys/geom` + `sys/x86` before and after: **37 findings,
+151 OK, zero ERROR, identical, no per-file change.** The fixes introduce
+nothing.
+
+And the positive check, from the instrument that found them —
+cppcheck over the same scopes after the fixes:
+
+```
+  before:  shiftTooManyBitsSigned 8, bufferAccessOutOfBounds 4,
+           shiftTooManyBits 1, pointerOutOfBoundsCond 1     = 14
+  after:   remaining shift/buffer sites: (none)
+```
+
+All fourteen resolved.
+
+### `core.BitwiseShift` was missing from the whitelist — and does not cover the class
+
+`analyze.py`'s `CHECKERS` is a **whitelist**, and clang 18 ships
+`core.BitwiseShift` — "Finds cases where bitwise shift operation causes
+undefined behaviour" — which was not on it. It is now.
+
+It is worth having and it is **not** what catches `1 << 31`, which is
+worth stating because assuming otherwise would be the more comfortable
+conclusion. Measured over the same 151 units it reports **zero**, and a
+direct test says why:
+
+| | `core.BitwiseShift` | cppcheck | `clang -Wall` |
+|---|---|---|---|
+| `1 << 31` | — | **shiftTooManyBitsSigned** | — |
+| `1 << 32` | yes | yes | yes |
+| `1 << -1` | yes | yes | yes |
+
+`core.BitwiseShift` fires on a count ≥ the width or negative — both of
+which `-Wall` already gives free. On `1 << 31` the count is legal and the
+*result* does not fit, and only cppcheck's own front end sees it. What
+the checker buys over `-Wall` is the path-sensitive case: a count out of
+range on one path only. That is the real argument for this tier, and it
+is a stronger one than "a checker was missing": **a second, non-LLVM
+parser found what four LLVM-based instruments could not.**
+
+### Two Coccinelle rules that were wrong, found by measuring them
+
+Both are recorded in the `.cocci` headers rather than quietly fixed:
+
+- `tautological_bound.cocci` also matched `E < LO || E >= HI`, the
+  **exclusion** idiom, where `||` is correct. Two of its four tree-wide
+  hits were that. Removed, and the rule now returns **exactly two hits
+  across all of `sys/`, both true** — the `iommu_utils.c` assertions.
+- `realloc_self.cocci` matched the four-argument kernel `realloc(9)`
+  without reading the flags: 36 tree-wide hits of which **26 were
+  `M_WAITOK`, which cannot fail.**
+
+### Gate versus advisory, on the measured rates
+
+Gate: `tautological-bound` (0% FP tree-wide), `shift-bit31` (3/3),
+`realloc-self` on literal `M_NOWAIT`, cppcheck's `shiftTooManyBits*` and
+`bufferAccessOutOfBounds` (12/12 true), the compiler's
+`-Wformat-truncation` / `-Warray-bounds` / `-Wshift-*` family, **and any
+`NOTRUN` unit** — a missing instrument is a failed gate, not a pass.
+
+Advisory: `-Wconversion` and friends (**2,744 findings** — a real class
+and the tier's largest contribution, and 2,744 in a gate is a switch
+somebody turns off in week two), `-Wcast-align`, `-Wpointer-sign`,
+cppcheck `nullPointer` (93% FP, mostly the `__pc` artefact this document
+already has a rule for), and Coccinelle's `onesided-index` (`spatch` runs
+`--no-includes` and cannot see types, so it cannot tell `u_int idx` from
+`int idx` — a candidate list by construction, and its `.cocci` says so).
+
+`-Wformat`/`-Wformat-extra-args` is the interesting one: **100% false on
+this toolchain and 0% on the target.** All 32 are printf(9)'s `%b`;
+upstream clang 18 has no `-fformat-extensions` and FreeBSD's does. Put
+them in the gate on a FreeBSD host.

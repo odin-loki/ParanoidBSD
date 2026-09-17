@@ -38,7 +38,7 @@
 #define	VMW_HVCMD_DEFAULT_PARAM	UINT_MAX
 
 #define	VMW_VCPUINFO_LEGACY_X2APIC	(1 << 3)
-#define	VMW_VCPUINFO_VCPU_RESERVED	(1 << 31)
+#define	VMW_VCPUINFO_VCPU_RESERVED	(1U << 31)
 
 static __inline void
 vmware_hvcall(int chan, u_int cmd, u_int param, u_int *p)

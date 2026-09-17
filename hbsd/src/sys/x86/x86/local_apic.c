@@ -1882,7 +1882,7 @@ dump_mask(const char *prefix, uint32_t v, int base)
 
 	first = 1;
 	for (i = 0; i < 32; i++)
-		if (v & (1 << i)) {
+		if (v & (1U << i)) {
 			if (first) {
 				db_printf("%s:", prefix);
 				first = 0;
