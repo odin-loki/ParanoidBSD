@@ -1,5 +1,9 @@
 # Model checking hbsd/src
 
+The latest whole-tree run, with absences named and a queue a person can
+read, is [`docs/verify/sweep-2026-09-18/`](../../docs/verify/sweep-2026-09-18/README.md).
+This file is the method. That folder is what the method did on one machine.
+
 Three tools, in the order they have to run.
 
 | | |

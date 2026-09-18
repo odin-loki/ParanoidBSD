@@ -1,0 +1,90 @@
+{
+ "dir": "/home/odin/cxx-sweep",
+ "stages": {
+  "universe": {
+   "status": "ok",
+   "seconds": 21.8
+  },
+  "cxx-analyze": {
+   "status": "ok",
+   "seconds": 34.4
+  },
+  "cxx-tidy": {
+   "status": "ok",
+   "seconds": 91.5
+  }
+ },
+ "did_not_run": [
+  {
+   "stage": "classify",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "cbmc",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "esbmc",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "fusebmc",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "analyze",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "tidy",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "cppcheck",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "coccinelle",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  },
+  {
+   "stage": "warnings",
+   "status": "skipped",
+   "why": "not selected",
+   "kind_mismatch": false
+  }
+ ],
+ "totals": {
+  "cxx_analyze.jsonl": 1392,
+  "cxx_tidy.jsonl": 1392
+ },
+ "verdicts": {},
+ "tu_status": {
+  "OK": 12,
+  "ERROR": 2772
+ },
+ "top_checkers": {},
+ "failed_sample": [],
+ "_note": "A SUMMARY, not evidence. It cannot be re-analysed and it cannot be ingested by matrix.py. `did_not_run' is listed FIRST and in full, because a digest that lists findings and omits the instruments that never ran is the same lie in a smaller file - and the smaller file is the one people actually read.",
+ "_regenerable": {
+  "universe.jsonl": "python3 tools/verify/inventory.py --out universe.jsonl",
+  "matrix.jsonl": "python3 tools/verify/matrix.py --universe universe.jsonl --ingest <engine>=<file>.jsonl ... --out matrix.jsonl",
+  "classes.json": "python3 tools/verify/classify.py --scope <s> --out classes.json"
+ }
+}
