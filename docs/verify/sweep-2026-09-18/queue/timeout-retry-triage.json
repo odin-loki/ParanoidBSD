@@ -215,14 +215,98 @@
    "function": "set_nfs_read_size",
    "verdict": "not-a-defect",
    "note": "*end after strtol(&end); CBMC strtol model does not write endptr. getenv non-NULL is the C. prev BOUNDED"
+  },
+  {
+   "file": "sys/arm/ti/am335x/am335x_ecap.c",
+   "function": "am335x_pwm_config_ecap",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled so sc->sc_mem_res unconstrained. prev TIMEOUT"
+  },
+  {
+   "file": "sys/arm64/arm64/mp_machdep.c",
+   "function": "ipi_cpu",
+   "verdict": "not-a-defect",
+   "note": "CPU_SET(cpu); callers pass 0..MAXCPU-1. unconstrained cpu is the model. prev BOUNDED"
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zfs/spa_misc.c",
+   "function": "spa_fini",
+   "verdict": "deferred",
+   "note": "OpenZFS contrib teardown; unmodelled avl/dmu. prev TIMEOUT"
+  },
+  {
+   "file": "sys/crypto/ccp/ccp_hardware.c",
+   "function": "ccp_hw_detach_queue",
+   "verdict": "not-a-defect",
+   "note": "1<<queue with unsigned queue; callers 0..MAX_HW_QUEUES-1 (5). not 1<<31. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/acpica/acpi_pci.c",
+   "function": "acpi_pci_set_powerstate_method",
+   "verdict": "not-a-defect",
+   "note": "device_get_ivars unmodelled so dinfo unconstrained. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/agp/agp_i810.c",
+   "function": "agp_i810_install_gtt_pte",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; sc->sc_res[0] is the model's null. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/agp/agp_i810.c",
+   "function": "agp_i830_install_gtt_pte",
+   "verdict": "not-a-defect",
+   "note": "same agp_i810_write_gtt unmodelled softc. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/agp/agp_i810.c",
+   "function": "agp_i915_install_gtt_pte",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled sc->sc_res[1]. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/agp/agp_i810.c",
+   "function": "agp_i965_install_gtt_pte",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled sc->sc_res[0]. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/agp/agp_i810.c",
+   "function": "agp_g4x_install_gtt_pte",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled sc->sc_res[0]. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/alpm/alpm.c",
+   "function": "alpm_quick",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; sc->smbst in alpm_clear. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/alpm/alpm.c",
+   "function": "alpm_writew",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled sc->smbst. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/ata/chipsets/ata-intel.c",
+   "function": "ata_intel_sata_ahci_write",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; sidpr unit*2 is 0..1 on 2-channel default. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/ata/chipsets/ata-intel.c",
+   "function": "ata_intel_sata_cscr_write",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled ctlr/ch as ahci_write. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 36,
+  "settled": 50,
   "defect": 2,
-  "not-a-defect": 32,
-  "deferred": 2,
+  "not-a-defect": 45,
+  "deferred": 3,
   "remaining": 0
  }
 }

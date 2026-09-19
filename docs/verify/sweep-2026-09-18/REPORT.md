@@ -362,16 +362,15 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,487** rows, **6,282 PROVED**
-(BOUNDED 156 / FAILED 2,574 / ERROR 161 / TIMEOUT 314). Thirty-six new
-FAILED at unwind 32 were read: two test programs deferred; two type-level
-`1 << 31` sites patched (`gpioctl` `print_caps`, makefs `ilog2`); the rest
-unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`/`FD_SET`/
-`ficlMalloc`/`Calloc`/`file_findmetadata`/`sysctl`/`file2str`/`strtol`
-endptr, IEEE 0/0, or process-lifetime `calloc`. Unread new FAILED: 0.
-~1,381 pairs still missing. Last record:
-`TIMEOUT sys/arm/freescale/imx/imx_i2c.c:i2c_repeated_start`.
-Records:
+Live file while this is written: **9,640** rows, **6,291 PROVED**
+(BOUNDED 175 / FAILED 2,588 / ERROR 177 / TIMEOUT 409). The unwind-32
+resume was OOM-killed overnight (`cbmc` ~19 GB at `[800/2048]`); it did
+not finish. Fourteen TIMEOUT/BOUNDED→FAILED since the previous snapshot
+were read: **0 defects**. `ccp_hw_detach_queue` `1 << queue` is 0..4
+(`MAX_HW_QUEUES` is 5). The rest are unmodelled `device_get_softc` /
+`CPU_SET(cpu)` / OpenZFS `spa_fini`. ~1,228 pairs still missing. Last
+record: `FAILED sys/dev/ata/chipsets/ata-intel.c:ata_intel_sata_cscr_write`.
+Restart is `--resume` only at JOBS=2. Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
