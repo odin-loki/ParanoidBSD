@@ -21,7 +21,7 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Cover the trees this run left UNTOUCHED
 
-9. **KDE compile DB (19 Sep).** 148/149 `flagsrc=compile_commands` TUs OK. The 182/490 figure mixed in 341 guessed moc/autogen files (`--scope .`). Use `--compile-commands-only`. The one compile_commands ERROR is `kwindowsystem` QML plugin missing `.moc`. Still not a KDE proof column. Evidence: [queue/cxx-analyze-ccdb-digest.json](queue/cxx-analyze-ccdb-digest.json).
+9. **KDE compile DB (19 Sep).** 148/149 `flagsrc=compile_commands` TUs OK on the ingest already recorded. The compile DB itself is now **22 modules / 726 unique TUs**; leftover kguiaddons and knotifications installs finished (karchive too). Still not a KDE proof column; do not re-run `cxx_analyze` at high jobs while CBMC resume is filling the hole. Evidence: [queue/cxx-analyze-ccdb-digest.json](queue/cxx-analyze-ccdb-digest.json), [queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json).
 10. **IR transfer of the 40-twin queue (19 Sep).** 40/40 `ir.equal` ∧ `abi_equal` on this tree's HARDENEDBSD `vm.ufs.raw`. Evidence: [queue/ir-oracle-pbsd.jsonl](queue/ir-oracle-pbsd.jsonl). Re-index of the live PROVED set is still 40 `hbsd_cpp` files and **0 `pbsd/` twins**. The rest of `pbsd/` (15,742 functions) cannot inherit a C proof they do not have a twin for.
 11. **`hbsd/tests` and `hbsd/tools`** only if someone wants them in the denominator. They are 4,270 UNTOUCHED rows that inflate the headline if left in the universe and never scoped.
 

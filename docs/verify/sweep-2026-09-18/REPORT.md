@@ -287,7 +287,11 @@ drops that walk. A later filter of the mixed jsonl to
 `kwindowsystem/src/qml/KWindowSystem_org_kde_kwindowsystemPlugin.cpp`
 missing its `.moc`. Evidence:
 [queue/cxx-analyze-ccdb-digest.json](queue/cxx-analyze-ccdb-digest.json).
-Do not quote either run as “KDE is clean.”
+Do not quote either run as “KDE is clean.” Leftover kguiaddons /
+knotifications installs later finished; the merged DB is **22 modules /
+726 unique TUs** (`karchive` installed). That is a compile DB, not a
+new proof column. Evidence:
+[queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json).
 
 ### Coccinelle `nowait-deref` (3)
 
