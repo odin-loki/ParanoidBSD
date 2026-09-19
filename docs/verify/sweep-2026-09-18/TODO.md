@@ -17,7 +17,7 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file is complete for current sys+lib SCALAR/VOID: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR (6,433 rows; `--resume` reported 0 pairs left). Do **not** pass `--retry-status ERROR` again; do not quote the packed column as current.
 6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
 7. **Clang TU-ERROR (19 Sep).** Live 5,304 ERROR. Top missing files are generated `config.h` / OpenSSH `includes.h` / OpenSSL internals / contrib `math_config.h`. Not a first-party `includes.py` miss for lib/msun.
-8. **CBMC TIMEOUT resume (in flight).** Live file 9,241 rows, hole ~1,627. Twenty new FAILED read, 0 defects. Unread queue is empty. Do **not** pass `--retry-status` again.
+8. **CBMC TIMEOUT resume (in flight).** Live file 9,243 rows, hole ~1,625. Twenty new FAILED read, 0 defects. Unread queue is empty. Do **not** pass `--retry-status` again.
 
 ## Cover the trees this run left UNTOUCHED
 
