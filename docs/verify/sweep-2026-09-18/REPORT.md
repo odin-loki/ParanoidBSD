@@ -320,16 +320,33 @@ proofs exist; they are not in the packed digest. A hung `--smoke` of
 (`--resume --retry-status ERROR --mode kinduction`, jobs 8) is left
 running; it must not be SIGTERM'd.
 
-### CBMC TIMEOUT sample (do not rewrite the live jsonl)
+### CBMC TIMEOUT resume (unwind 32 / 180 s, in flight)
 
 `--retry-status TIMEOUT,BOUNDED,ERROR` already ran against
 `/home/odin/pbsd-sweep/cbmc.jsonl` and dropped 2,093 rows. The unwind-16
-file is `cbmc-old.jsonl` (still 1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
-The live file is 8,820 rows (6,241 PROVED / 2,541 FAILED / 28 BOUNDED /
-10 ERROR, 0 TIMEOUT). About 2,048 (file, function) pairs are the hole.
+file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
+`tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
+BOUNDED/ERROR rows are not dropped again.
 
-Do not pass `--retry-status` again: that would drop the new BOUNDED/ERROR.
-`tools/verify/run-cbmc-resume.sh` is `--resume` only, unwind 32 / 180 s.
-`cbmc_driver.py --pair-list` still exists so a future sample can write a
-*new* jsonl without touching the live file. `sys/` SCALAR TIMEOUT in the
-old file is 755 functions.
+Live file while this is written: **8,836** rows, **6,241 PROVED** (four
+new: `svc_exit`, `sysconf`, `getosreldate`, `mixer_get_nmixers`, all
+were BOUNDED at unwind 16). Four new FAILED at unwind 32 were read:
+two test programs deferred, `arc4random` / `localeconv` are unmodelled
+auxv/locale pointers, not defects. Records:
+[queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
+
+Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
+still exists so a future sample can write a *new* jsonl. `sys/` SCALAR
+TIMEOUT in the old file is 755 functions. Re-indexing twins on the live
+PROVED set is still **40 `hbsd_cpp` files, 0 `pbsd/` twins**.
+
+### CodeQL CLI (19 Sep)
+
+GitHub CodeQL 2.27.0 is at `~/.local/codeql` and on PATH.
+`taxonomy.py --available` is now **46/52 COVERED (0.88)**;
+`TRUST-UNVALIDATED-INPUT` is COVERED because this instrument rates
+FINDS. That is presence, not a taint run: no CodeQL database has been
+built on this tree. Infer is still absent and covers nothing extra.
+Installer: [tools/verify/install_codeql.py](../../../tools/verify/install_codeql.py)
+(zip extracts drop execute bits; the script restores them on ELF and
+shebang files).

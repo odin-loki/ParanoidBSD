@@ -1,0 +1,36 @@
+{
+ "settled": [
+  {
+   "file": "lib/libc/tests/sys/cpuset_test.c",
+   "function": "wait_jail",
+   "verdict": "deferred",
+   "note": "test program; unwind-32 FAILED on FD_SET index from unmodelled fd. prev BOUNDED"
+  },
+  {
+   "file": "lib/libipsec/test-policy.c",
+   "function": "test2",
+   "verdict": "deferred",
+   "note": "test program; unwind-32 FAILED on free of an unmodelled pointer. prev BOUNDED"
+  },
+  {
+   "file": "lib/libc/gen/arc4random.c",
+   "function": "arc4random",
+   "verdict": "not-a-defect",
+   "note": "inlined arc4random.h: _elf_aux_info(AT_FXRNG) is unmodelled so fxrngp is unconstrained; fxrngp->fx_vdso_version is the model's null, not a bug. prev TIMEOUT"
+  },
+  {
+   "file": "lib/libc/locale/localeconv.c",
+   "function": "localeconv",
+   "verdict": "not-a-defect",
+   "note": "inlined localeconv_l; __get_current_monetary_locale is unmodelled so mptr is unconstrained; M_ASSIGN_STR(int_curr_symbol) is the model's null, not a bug. prev TIMEOUT"
+  }
+ ],
+ "remaining": [],
+ "counts": {
+  "settled": 4,
+  "defect": 0,
+  "not-a-defect": 2,
+  "deferred": 2,
+  "remaining": 0
+ }
+}
