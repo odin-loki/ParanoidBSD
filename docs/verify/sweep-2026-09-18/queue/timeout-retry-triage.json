@@ -95,13 +95,25 @@
    "function": "default_initiator_name",
    "verdict": "not-a-defect",
    "note": "returns calloc to caller (t_initiator_name); CBMC --memory-leak-check on the callee. no body for gethostname. prev BOUNDED"
+  },
+  {
+   "file": "usr.bin/localedef/scanner.c",
+   "function": "get_byte",
+   "verdict": "not-a-defect",
+   "note": "inlined __sbmaskrune; __getCurrentRuneLocale is unmodelled so __runetype[_c] is unconstrained. prev TIMEOUT"
+  },
+  {
+   "file": "usr.bin/localedef/scanner.c",
+   "function": "get_wide",
+   "verdict": "not-a-defect",
+   "note": "same __sbmaskrune / unmodelled rune locale as get_byte. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 16,
+  "settled": 18,
   "defect": 0,
-  "not-a-defect": 14,
+  "not-a-defect": 16,
   "deferred": 2,
   "remaining": 0
  }
