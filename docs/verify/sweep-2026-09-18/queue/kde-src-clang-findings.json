@@ -1,0 +1,63 @@
+{
+  "note": "clang --analyze findings whose where is kde-src, not Qt and not vendored in ParanoidBSD kde/. k7zip and DBus watcher have their own files; this list is the rest plus a rollup.",
+  "not_in_pbsd_tree": true,
+  "settled": [
+    {
+      "file": "/home/odin/kde-src/kcompletion/src/klineedit.cpp",
+      "line": 1233,
+      "function": "KLineEdit::setCompletedItems",
+      "checker": "core.CallAndMessage",
+      "verdict": "not-a-defect",
+      "note": "completionBox() with create=true just ran; d->completionBox assigned before isVisible()"
+    },
+    {
+      "file": "/home/odin/kde-src/kcompletion/src/klineedit.cpp",
+      "line": 1279,
+      "function": "KLineEdit::completionBox",
+      "checker": "core.CallAndMessage",
+      "verdict": "not-a-defect",
+      "note": "create && !d->completionBox then setCompletionBox(new KCompletionBox(this)); null use unreachable"
+    },
+    {
+      "file": "/home/odin/kde-src/kcompletion/src/klineedit.cpp",
+      "line": 1279,
+      "function": "KLineEdit::completionBox",
+      "checker": "cplusplus.NewDeleteLeaks",
+      "verdict": "not-a-defect",
+      "note": "new KCompletionBox(this) is QObject-parented and stored in d->completionBox"
+    },
+    {
+      "file": "/home/odin/kde-src/kcompletion/src/kzoneallocator.cpp",
+      "line": 312,
+      "function": "KZoneAllocator::free_since",
+      "checker": "core.NullDereference",
+      "verdict": "not-a-defect",
+      "note": "currentBlock->newer after walking older; null only if ptr was never on the allocate() chain (API precondition)"
+    },
+    {
+      "file": "/home/odin/kde-src/kcompletion/src/kzoneallocator.cpp",
+      "line": 314,
+      "function": "KZoneAllocator::free_since",
+      "checker": "core.NullDereference",
+      "verdict": "not-a-defect",
+      "note": "same free_since mark precondition as line 312"
+    },
+    {
+      "file": "/home/odin/kde-src/kdbusaddons/src/kupdatelaunchenvironmentjob.cpp",
+      "line": 52,
+      "function": "monitorReply",
+      "checker": "cplusplus.NewDeleteLeaks",
+      "verdict": "not-a-defect",
+      "note": "new QDBusPendingCallWatcher(reply, q) parented; finished lambda deleteLater — same as DBusHelperProxy"
+    }
+  ],
+  "counts": {
+    "settled": 6,
+    "defect": 0,
+    "not-a-defect": 6
+  },
+  "rollup_with_earlier": {
+    "k7zip_seqOutStream": "defect-upstream (not vendored)",
+    "DBusHelperProxy_watcher": "not-a-defect"
+  }
+}
