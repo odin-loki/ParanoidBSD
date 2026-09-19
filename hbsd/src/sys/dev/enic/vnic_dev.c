@@ -48,7 +48,7 @@ static int vnic_dev_discover_res(struct vnic_dev *vdev,
 
 	rh = malloc(sizeof(*rh), M_DEVBUF, M_NOWAIT | M_ZERO);
 	mrh = malloc(sizeof(*mrh), M_DEVBUF, M_NOWAIT | M_ZERO);
-	if (!rh) {
+	if (!rh || !mrh) {
 		pr_err("vNIC BAR0 res hdr not mem-mapped\n");
 		free(rh, M_DEVBUF);
 		free(mrh, M_DEVBUF);

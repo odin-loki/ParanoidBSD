@@ -316,6 +316,14 @@ dropped, like every other receive failure in the file.
 of an unchecked `malloc(..., M_NOWAIT | M_ZERO)`, and the loop after it
 dereferences the same pointer.
 
+The `r` allocation was checked; `mrh` on the same path was not. Coccinelle
+`nowait-deref` (sweep 2026-09-18) named `vnic_dev.c:60` for `sizeof(*mrh)`,
+which does not evaluate the pointer — but the same line passes `mrh` as the
+`bus_space_read_region_4` destination, so a failed `M_NOWAIT` still writes
+device registers into NULL. `if (!rh || !mrh)` closes it. The other two
+`nowait-deref` hits (`in_fib_algo.c:567`, `in6_fib_algo.c:135`) are
+`if (p == NULL || !rn_inithead(&p->rnh, ...))` and short-circuit.
+
 ### Fixed — the nine that were reported and not fixed
 
 All nine are device attach and setup paths, each a separate vendor edit,
