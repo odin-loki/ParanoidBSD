@@ -132,10 +132,10 @@ print_caps(int caps)
 	need_coma = 0;
 	printf("<");
 	for (i = 0; i < 32; i++) {
-		if (caps & (1 << i)) {
+		if (caps & (1U << i)) {
 			if (need_coma)
 				printf(",");
-			printf("%s", cap2str(1 << i));
+			printf("%s", cap2str(1U << i));
 			need_coma = 1;
 		}
 	}

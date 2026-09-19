@@ -16,18 +16,18 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file is complete for current sys+lib SCALAR/VOID: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR (6,433 rows; `--resume` reported 0 pairs left). Do **not** pass `--retry-status ERROR` again; do not quote the packed column as current.
 6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
-7. **Clang TU-ERROR (19 Sep).** Live 5,304 ERROR. Top missing files are generated `config.h` / OpenSSH `includes.h` / OpenSSL internals / contrib `math_config.h`. Not a first-party `includes.py` miss for lib/msun.
-8. **CBMC TIMEOUT resume (in flight).** Live file 9,251 rows, hole ~1,617. Twenty-one new FAILED read, 0 defects. Do **not** pass `--retry-status` again.
+7. **Clang TU-ERROR (19 Sep).** Live packed file is still 16,906 OK / 5,304 ERROR / 2 TIMEOUT. `bin/csh` GENHDRS (`sh.err.h` / `ed.defns.h` / `tc.const.h`) now follow the Makefile recipe; a scoped re-analyze of `contrib/tcsh` (new jsonl, live file untouched) is **51 OK / 3 ERROR**. The three leftovers want `config.h` (`gethost.c`, `ma.setp.c`, `vms.termcap.c`). Do **not** `--resume` the live `analyze.jsonl` with a narrowed `--scope`: resume keeps only OK rows and drops every other ERROR. Remaining top missing: heimdal `config.h`, wpa `includes.h`, OpenSSL internals, contrib `math_config.h`. Not silent-clean stubs. Evidence: [queue/analyze-tcsh-cshhdrs-digest.json](queue/analyze-tcsh-cshhdrs-digest.json).
+8. **CBMC TIMEOUT resume (in flight).** Live file 9,423 rows, 6,280 PROVED, hole ~1,445. Thirty new FAILED read: 2 defects patched (`print_caps`, makefs `ilog2`), 2 deferred tests, 26 not-a-defect. Do **not** pass `--retry-status` again.
 
 ## Cover the trees this run left UNTOUCHED
 
-9. **KDE compile DB (19 Sep).** 148/149 `flagsrc=compile_commands` TUs OK. The 182/490 figure mixed in 341 guessed moc/autogen files (`--scope .`). Use `--compile-commands-only`. Still not a KDE proof column.
+9. **KDE compile DB (19 Sep).** 148/149 `flagsrc=compile_commands` TUs OK. The 182/490 figure mixed in 341 guessed moc/autogen files (`--scope .`). Use `--compile-commands-only`. The one compile_commands ERROR is `kwindowsystem` QML plugin missing `.moc`. Still not a KDE proof column. Evidence: [queue/cxx-analyze-ccdb-digest.json](queue/cxx-analyze-ccdb-digest.json).
 10. **IR transfer of the 40-twin queue (19 Sep).** 40/40 `ir.equal` ∧ `abi_equal` on this tree's HARDENEDBSD `vm.ufs.raw`. Evidence: [queue/ir-oracle-pbsd.jsonl](queue/ir-oracle-pbsd.jsonl). Re-index of the live PROVED set is still 40 `hbsd_cpp` files and **0 `pbsd/` twins**. The rest of `pbsd/` (15,742 functions) cannot inherit a C proof they do not have a twin for.
 11. **`hbsd/tests` and `hbsd/tools`** only if someone wants them in the denominator. They are 4,270 UNTOUCHED rows that inflate the headline if left in the universe and never scoped.
 
 ## Class coverage
 
-12. **Done (19 Sep).** CodeQL CLI 2.27.0. Smokes: `abs`, `sys_ffclock_setestimate`, `sys_clock_settime` are `SMOKE-OK`. ffclock `copyin` is `COPYIN-EMPTY` because HARDENEDBSD leaves `FFCLOCK` unset (ENOSYS stub). `kern_time.c` is **COPYIN-OK**. Extract is in-tree from `hbsd/src`. Not a tree taint run. Infer still absent.
+12. **Done (19 Sep).** CodeQL CLI 2.27.0. Smokes: `abs`, `sys_ffclock_setestimate`, `sys_clock_settime` are `SMOKE-OK`. ffclock `copyin` is `COPYIN-EMPTY` because HARDENEDBSD leaves `FFCLOCK` unset (ENOSYS stub). `kern_time.c` is **COPYIN-OK**. Three more one-TU extracts are also **COPYIN-OK**: `kern_context.c` (`sys_setcontext`, `sys_swapcontext`), `kern_prot.c` (`sys_setgroups`, `freebsd14_setgroups`, `sys_setcred`, `user_setcred_copyin_supp_groups`), `kern_resource.c` (`sys_setrlimit`, `sys_rtprio`, `sys_rtprio_thread`). Extract is in-tree from `hbsd/src`. Still not a tree taint run. Infer still absent.
 13. **Do not round PARTIAL up.** Infoleaks, lock order, trust-boundary input, and C++ exception leaks stay PARTIAL until an instrument actually PROVES or FINDS them with useful recall.
 
 ## Housekeeping

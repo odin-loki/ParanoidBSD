@@ -125,13 +125,67 @@
    "function": "defined_init",
    "verdict": "not-a-defect",
    "note": "seeds process-lifetime TAILQ defined_values via defined_add calloc/checked_strdup. CBMC --memory-leak-check; checked_strdup unmodelled. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/bsnmpd/modules/snmp_hostres/hostres_diskstorage_tbl.c",
+   "function": "refresh_disk_storage_tbl",
+   "verdict": "not-a-defect",
+   "note": "unmodelled sysctlbyname/strlcpy; inlined ctype __sbmaskrune; process-lifetime TAILQ disk_tbl. CBMC --memory-leak-check. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/bsnmpd/modules/snmp_hostres/hostres_storage_tbl.c",
+   "function": "storage_OS_get_vm",
+   "verdict": "not-a-defect",
+   "note": "unmodelled sysctl({CTL_VM,VM_TOTAL}) and storage_entry_create; strcmp/strcpy on unconstrained name. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/gpioctl/gpioctl.c",
+   "function": "print_caps",
+   "verdict": "defect",
+   "note": "loop i=0..31 always evaluates signed 1<<31 (C17 6.5.7p4). GPIO flags only to bit 21. patched 1U<<i. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/makefs/ffs/mkfs.c",
+   "function": "ilog2",
+   "verdict": "defect",
+   "note": "n < sizeof(u_int)*CHAR_BIT then 1<<n==val; miss path hits 1<<31 before errx. patched (int)(1U<<n). caller fs_fsize/sectorsize. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/moused/msconvd/msconvd.c",
+   "function": "pnpwakeup1",
+   "verdict": "not-a-defect",
+   "note": "FD_SET(rodent.mfd) ; mfd from unmodelled open. same FD_SET shape as wait_jail. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/moused/msconvd/msconvd.c",
+   "function": "pnpwakeup2",
+   "verdict": "not-a-defect",
+   "note": "same FD_SET on unmodelled rodent.mfd as pnpwakeup1. prev TIMEOUT"
+  },
+  {
+   "file": "stand/fdt/fdt_loader_cmd.c",
+   "function": "fdt_find_static_dtb",
+   "verdict": "not-a-defect",
+   "note": "file_findmetadata unmodelled so md->md_data unconstrained; ehdr->e_shnum is the model's null. prev TIMEOUT"
+  },
+  {
+   "file": "stand/i386/libi386/biosdisk.c",
+   "function": "fd_init",
+   "verdict": "not-a-defect",
+   "note": "Calloc/calloc unmodelled; NULL is checked then bd->bd_sectorsize. unconstrained success pointer is the model. prev TIMEOUT"
+  },
+  {
+   "file": "stand/ficl/dict.c",
+   "function": "dictCreateHashed",
+   "verdict": "not-a-defect",
+   "note": "ficlMalloc unmodelled; assert(pDict) then dictEmpty->alignPtr on unconstrained. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 21,
-  "defect": 0,
-  "not-a-defect": 19,
+  "settled": 30,
+  "defect": 2,
+  "not-a-defect": 26,
   "deferred": 2,
   "remaining": 0
  }

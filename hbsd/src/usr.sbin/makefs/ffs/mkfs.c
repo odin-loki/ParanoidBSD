@@ -875,7 +875,7 @@ ilog2(int val)
 	u_int n;
 
 	for (n = 0; n < sizeof(n) * CHAR_BIT; n++)
-		if (1 << n == val)
+		if ((int)(1U << n) == val)
 			return (n);
 	errx(1, "%s: %d is not a power of 2", __func__, val);
 }

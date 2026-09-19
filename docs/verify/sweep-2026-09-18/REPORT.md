@@ -252,7 +252,10 @@ behaviour-changing one. Contrib arithmetic (105) is now also in that
 file: **333 settled, 6 defect, 226 not-a-defect, 101 deferred,
 remaining []**. The sixth defect is
 `contrib/telnet/libtelnet/encrypt.c:findencryption` (`1 << (type-1)` on
-a 0–255 wire byte; type 32 is signed `1<<31`). 63 less/flex/compiler-rt/byacc
+a 0–255 wire byte; type 32 is signed `1<<31`). Unwind-32 TIMEOUT retries
+then found the same type-level `1 << 31` in `gpioctl` `print_caps`
+(loop always reaches 31) and makefs `ilog2` (miss path before `errx`);
+both now `1U <<`. 63 less/flex/compiler-rt/byacc
 records are deferred named-skips, not unread. Records:
 [queue/arithmetic-triage.json](queue/arithmetic-triage.json).
 
@@ -279,7 +282,12 @@ OK** (1 ERROR), and **34 OK / 307 ERROR** among 341 guessed moc/autogen
 files the directory walk added. Quote 148/149, not 182/490. Remaining
 guessed ERROR is `QObject` / KF `*_export.h` because those TUs were
 never in the compile DB. `cxx_analyze.py --compile-commands-only`
-drops that walk. Do not quote either run as “KDE is clean.”
+drops that walk. A later filter of the mixed jsonl to
+`flagsrc=compile_commands` is the same 148/149; the one ERROR is
+`kwindowsystem/src/qml/KWindowSystem_org_kde_kwindowsystemPlugin.cpp`
+missing its `.moc`. Evidence:
+[queue/cxx-analyze-ccdb-digest.json](queue/cxx-analyze-ccdb-digest.json).
+Do not quote either run as “KDE is clean.”
 
 ### Coccinelle `nowait-deref` (3)
 
@@ -308,10 +316,17 @@ wall clock does not change that.
 
 The live `analyze.jsonl` is 16,906 OK / 5,304 ERROR / 2 TIMEOUT (the packed
 report said 6,324 ERROR). The missing headers are generated or private:
-`config.h`, OpenSSH `includes.h`, OpenSSL `internal/common.h`, contrib
-`math_config.h` (arm-optimized-routines, not lib/msun). First-party
-`includes.py` already passes `-I lib/msun/src`. These TUs stay `TU-ERROR`
-until a generated config exists; they are not silent-clean.
+`config.h` (490 of 710 are `crypto/heimdal/lib`), OpenSSH/wpa `includes.h`,
+OpenSSL `internal/common.h`, contrib `math_config.h` (arm-optimized-routines,
+not lib/msun). First-party `includes.py` already passes `-I lib/msun/src`.
+`bin/csh` GENHDRS (`sh.err.h` / `ed.defns.h` / `tc.const.h`) now follow
+the Makefile recipe instead of writing only `iconv.h`. A scoped
+`--out` of `contrib/tcsh` (live file not resumed: resume drops every
+non-OK row) is **51 OK / 3 ERROR**; the three leftovers want `config.h`
+(`gethost.c`, `ma.setp.c`, `vms.termcap.c`). Evidence:
+[queue/analyze-tcsh-cshhdrs-digest.json](queue/analyze-tcsh-cshhdrs-digest.json).
+These TUs stay `TU-ERROR` until a generated config exists; they are not
+silent-clean.
 
 ### ESBMC live file (not the packed 10,868 ERROR)
 
@@ -332,11 +347,14 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,251** rows, **6,270 PROVED**. Twenty-one new
-FAILED at unwind 32 were read: two test programs deferred; the rest
-unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`, IEEE 0/0,
-static `ilog2`, or process-lifetime `calloc` (`defined_init`). **0 defects.**
-~1,617 pairs still missing. Records:
+Live file while this is written: **9,423** rows, **6,280 PROVED**
+(BOUNDED 150 / FAILED 2,568 / ERROR 140 / TIMEOUT 285). Thirty new
+FAILED at unwind 32 were read: two test programs deferred; two type-level
+`1 << 31` sites patched (`gpioctl` `print_caps`, makefs `ilog2`); the rest
+unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`/`FD_SET`/
+`ficlMalloc`/`Calloc`/`file_findmetadata`/`sysctl`, IEEE 0/0,
+or process-lifetime `calloc`. ~1,445 pairs still missing. Last record:
+`TIMEOUT stand/efi/libefi/efi_console.c:efi_term_emu`. Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
@@ -361,11 +379,23 @@ option-gated) is **COPYIN-OK**: the query sees `copyin` in
 `sys_clock_settime`, `user_clock_nanosleep`, `sys_settimeofday`,
 `sys_setitimer`, `sys_ktimer_create`, `sys_ktimer_settime`. Forcing `-DFFCLOCK` on the
 same ffclock TU is also **COPYIN-OK** (`copyin` in
-`sys_ffclock_setestimate`). One-TU extract is still not a taint run.
-Infer is still absent and covers nothing extra. Evidence:
+`sys_ffclock_setestimate`). Three more kernel TUs, still one extract
+each, are also **COPYIN-OK**: `kern_context.c` (`sys_setcontext`,
+`sys_swapcontext`), `kern_prot.c` (`sys_setgroups`,
+`freebsd14_setgroups`, `sys_setcred`,
+`user_setcred_copyin_supp_groups`), `kern_resource.c`
+(`sys_setrlimit`, `sys_rtprio`, `sys_rtprio_thread`). One-TU extract
+is still not a taint run. Infer is still absent and covers nothing extra.
+Evidence:
 [queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl),
 [queue/codeql-ffclock.jsonl](queue/codeql-ffclock.jsonl),
 [queue/codeql-time.jsonl](queue/codeql-time.jsonl),
 [queue/codeql-copyin.jsonl](queue/codeql-copyin.jsonl),
 [queue/codeql-ffclock-on.jsonl](queue/codeql-ffclock-on.jsonl),
-[queue/codeql-ffclock-on-copyin.jsonl](queue/codeql-ffclock-on-copyin.jsonl).
+[queue/codeql-ffclock-on-copyin.jsonl](queue/codeql-ffclock-on-copyin.jsonl),
+[queue/codeql-context.jsonl](queue/codeql-context.jsonl),
+[queue/codeql-context-copyin.jsonl](queue/codeql-context-copyin.jsonl),
+[queue/codeql-prot.jsonl](queue/codeql-prot.jsonl),
+[queue/codeql-prot-copyin.jsonl](queue/codeql-prot-copyin.jsonl),
+[queue/codeql-resource.jsonl](queue/codeql-resource.jsonl),
+[queue/codeql-resource-copyin.jsonl](queue/codeql-resource-copyin.jsonl).

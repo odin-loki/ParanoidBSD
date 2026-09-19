@@ -126,6 +126,19 @@ now `1U <<` with a shift-count bound; unknown types still return 0.
 The bit pattern for the types this file actually implements is
 unchanged.
 
+### `usr.sbin/gpioctl/gpioctl.c` — `print_caps` walks `1 << i` through 31
+
+`print_caps` loops `i = 0 .. 31` and tests `caps & (1 << i)`. GPIO flags
+only occupy bits 0–21 (`GPIO_INTR_ATTACHED` is `0x00200000`), but the
+signed `1 << 31` still runs on every call (C17 6.5.7p4). Now `1U << i`;
+`cap2str` already takes `uint32_t`.
+
+### `usr.sbin/makefs/ffs/mkfs.c` — `ilog2` compares `1 << n` through 31
+
+Local `ilog2` walks `n < sizeof(u_int)*CHAR_BIT` then was `1 << n == val`.
+The miss path (not a power of two) evaluates `1 << 31` before `errx`.
+Now `(int)(1U << n)`. The only caller is `fs_fsize / sectorsize`.
+
 ---
 
 ## Reported, not fixed — the UB *is* the overflow

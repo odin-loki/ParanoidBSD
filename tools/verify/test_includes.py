@@ -738,6 +738,37 @@ check_that("...and not a per-target one", "-h" not in _flags
 _s = includes._rpcgen_flags((SRC / "usr.sbin/rpc.statd/Makefile").read_text())
 check_that("...and rpc.statd, which has no -M, does not get one",
            "-M" not in _s and "-L" in _s)
+
+# bin/csh GENHDRS. generated_shim already ran for iconv.h; it did not
+# write sh.err.h, and 51 contrib/tcsh translation units failed on it.
+# Same shape as device_if.h / usbdevs.h: the Makefile's own recipe,
+# the tree's own input, no invented stub.
+_csh = includes.generated_shim("bin/csh")
+check_that("bin/csh generates sh.err.h from sh.err.c",
+           _csh is not None and Path(_csh, "sh.err.h").is_file(),
+           f"got {sorted(os.listdir(_csh)) if _csh else None}")
+if _csh and Path(_csh, "sh.err.h").is_file():
+    _se = Path(_csh, "sh.err.h").read_text()
+    check_that("...and it is the ERR_ table, not empty",
+               "#define ERR_NAME" in _se and "#define ERR_SILENT" in _se
+               and _se.count("#define ERR_") > 50,
+               f"{_se.count('#define ERR_')} ERR_ defines")
+check_that("...and ed.defns.h from ed.defns.c",
+           _csh is not None and Path(_csh, "ed.defns.h").is_file(),
+           f"got {sorted(os.listdir(_csh)) if _csh else None}")
+if _csh and Path(_csh, "tc.const.h").is_file():
+    _tc = Path(_csh, "tc.const.h").read_text()
+    check_that("...and tc.const.h is the extern Char STR table",
+               "extern Char STRlogout[];" in _tc
+               and _tc.count("extern Char STR") > 50,
+               f"{_tc.count('extern Char STR')} STR entries")
+else:
+    check_that("...and tc.const.h is the extern Char STR table",
+               False, "cc -E recipe produced nothing")
+check("...and contrib/tcsh is built by bin/csh",
+      includes._generated_dirs("contrib/tcsh/dotlock.c")[0],
+      "bin/csh")
+
 check_that("an RPCSRC outside include/rpcsvc is found",
            any(p.name == "rpctlscd.x" for p in includes._rpcsrc_of(
                (SRC / "usr.sbin/rpc.tlsclntd/Makefile").read_text(),
