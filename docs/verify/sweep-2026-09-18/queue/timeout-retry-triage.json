@@ -311,13 +311,19 @@
    "function": "ata_marvell_setmode",
    "verdict": "not-a-defect",
    "note": "same unmodelled ctlr->chip as ata_jmicron_setmode. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/ata/chipsets/ata-via.c",
+   "function": "ata_via_sata_scr_write",
+   "verdict": "not-a-defect",
+   "note": "device_get_parent unmodelled; FAIL is ((kobj_t)dev)->ops null, then pci_write_config. port clamped to 0|1. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 52,
+  "settled": 53,
   "defect": 2,
-  "not-a-defect": 47,
+  "not-a-defect": 48,
   "deferred": 3,
   "remaining": 0
  }

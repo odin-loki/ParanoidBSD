@@ -1,0 +1,67 @@
+{
+  "source": "/home/odin/pbsd-sweep/analyze.jsonl",
+  "status_counts": {
+    "OK": 16906,
+    "ERROR": 5304,
+    "TIMEOUT": 2,
+    "_meta": 1
+  },
+  "authority": "path-prefix plus sys/conf/files* for sys/. No userland_names cache; names() was not invoked.",
+  "error_prefix_all": [
+    ["crypto/heimdal", 807],
+    ["crypto/krb5", 564],
+    ["crypto/openssl", 411],
+    ["sys/contrib", 364],
+    ["contrib/llvm-project", 356],
+    ["contrib/wpa", 257],
+    ["contrib/arm-optimized-routines", 254],
+    ["contrib/netbsd-tests", 254],
+    ["contrib/kyua", 196],
+    ["contrib/ntp", 186],
+    ["contrib/ofed", 143],
+    ["crypto/openssh", 117],
+    ["contrib/bearssl", 111],
+    ["contrib/libfido2", 78],
+    ["contrib/jemalloc", 64]
+  ],
+  "headers_already_in_tree": {
+    "heimdal_config_h": "hbsd/src/kerberos5/include/config.h",
+    "openssl_internal_common_h": "hbsd/src/crypto/openssl/include/internal/common.h",
+    "aor_math_config_h": "hbsd/src/contrib/arm-optimized-routines/math/math_config.h"
+  },
+  "default_build": {
+    "MK_MITKRB5": "yes",
+    "heimdal_note": "crypto/heimdal 807 ERROR are orphans under default MIT krb5; kerberos5/ ERROR is 0. Do not generate config.h.in stubs. Do not prefix -I over the whole tree."
+  },
+  "named_amd64_kernel_error": {
+    "count_note": "files.amd64 named TUs still ERROR because generated objdir headers are missing, not because -I is wrong.",
+    "examples": [
+      {
+        "file": "sys/amd64/amd64/elf_machdep.c",
+        "missing": "vdso_offsets.h",
+        "why": "amd64_vdso.sh writes the kernel objdir; gen_headers() only runs sys/conf/files before-depend"
+      },
+      {
+        "file": "sys/amd64/ia32/ia32_syscall.c",
+        "missing": "vdso_ia32_offsets.h",
+        "why": "amd64_ia32_vdso.sh; optional compat_freebsd32"
+      },
+      {
+        "file": "sys/amd64/acpica/acpi_wakeup.c",
+        "missing": "acpi_wakecode.h",
+        "why": "as / objcopy / file2c generated pair with acpi_wakedata.h"
+      },
+      {
+        "file": "sys/amd64/amd64/mp_machdep.c",
+        "missing": "acpi_pxm_get_cpu_locality undeclared",
+        "why": "DEV_ACPI vs NUMA ifdef mismatch, not a missing -I"
+      }
+    ],
+    "cheap_dash_I": false
+  },
+  "do_not": [
+    "resume live analyze.jsonl with a narrowed --scope",
+    "silent-clean stub headers",
+    "prefix -I that would compile unnamed orphans"
+  ]
+}

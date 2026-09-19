@@ -291,7 +291,10 @@ Do not quote either run as “KDE is clean.” Leftover kguiaddons /
 knotifications installs later finished; the merged DB is **22 modules /
 726 unique TUs** (`karchive` installed). `--compile-commands-only` now
 takes that database as the universe (a cmake `--root` is not
-`kde/frameworks`). A jobs=1 ingest of those 726 is in flight. Evidence:
+`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **261 OK /
+23 ERROR / 1 TIMEOUT** of 285 written (0 guessed). The ERROR rows are
+missing Qt private `qtx11extras_p.h`, missing `moc_*.cpp`, or kjobwidgets
+build-dir paths — not KDE source defects. Evidence:
 [queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json),
 [queue/cxx-analyze-ccdb-726-digest.json](queue/cxx-analyze-ccdb-726-digest.json).
 
@@ -322,9 +325,13 @@ wall clock does not change that.
 
 The live `analyze.jsonl` is 16,906 OK / 5,304 ERROR / 2 TIMEOUT (the packed
 report said 6,324 ERROR). The missing headers are generated or private:
-`config.h` (490 of 710 are `crypto/heimdal/lib`), OpenSSH/wpa `includes.h`,
-OpenSSL `internal/common.h`, contrib `math_config.h` (arm-optimized-routines,
-not lib/msun). First-party `includes.py` already passes `-I lib/msun/src`.
+`config.h` (807 ERROR under `crypto/heimdal`; 0 under `kerberos5/`).
+Those three headers already exist in-tree (`kerberos5/include/config.h`,
+OpenSSL `include/internal/common.h`, AOR `math/math_config.h`). Prefix
+ERROR is orphans or kernel-objdir generated files (`vdso_offsets.h`,
+`acpi_wakecode.h`), not a missing `-I`. First-party `includes.py` already
+passes `-I lib/msun/src`. Evidence:
+[queue/analyze-error-prefix.json](queue/analyze-error-prefix.json).
 `bin/csh` GENHDRS (`sh.err.h` / `ed.defns.h` / `tc.const.h`) now follow
 the Makefile recipe instead of writing only `iconv.h`. A scoped
 `--out` of `contrib/tcsh` (live file not resumed: resume drops every
@@ -364,11 +371,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,651** rows, **6,291 PROVED**
-(BOUNDED 175 / FAILED 2,590 / ERROR 177 / TIMEOUT 418). ~1,217 pairs
-still missing. Two more TIMEOUT→FAILED (`ata_jmicron_setmode`,
-`ata_marvell_setmode`) are unmodelled `device_get_softc` on `ctlr->chip`.
-Restart remains `--resume` only at JOBS=2 (pid 887). Records:
+Live file while this is written: **9,676** rows, **6,292 PROVED**
+(BOUNDED 177 / FAILED 2,591 / ERROR 177 / TIMEOUT 439). ~1,192 pairs
+still missing. `ata_via_sata_scr_write` TIMEOUT→FAILED is unmodelled
+`device_get_parent` (`((kobj_t)dev)->ops`); port is clamped to 0|1.
+Settled unwind-32 FAILED is 53 (2 defects). Restart remains `--resume`
+only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
