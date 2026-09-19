@@ -248,8 +248,13 @@ first-party (`bin`/`sbin`/`usr.bin`/`usr.sbin`/`stand`/`crypto`/`libexec`,
 78 more) is now in the same file: **228 settled, 5 defects, 189 not-a-defect,
 34 deferred**. The fifth defect is OpenSSL `BN_set_params` `1 << 31` after a
 clamp to 31, fixed to `1U <<`. `inet6_option_space` is still the open
-behaviour-changing one. Contrib arithmetic (105) is still unread.
-Records: [queue/arithmetic-triage.json](queue/arithmetic-triage.json).
+behaviour-changing one. Contrib arithmetic (105) is now also in that
+file: **333 settled, 6 defect, 226 not-a-defect, 101 deferred,
+remaining []**. The sixth defect is
+`contrib/telnet/libtelnet/encrypt.c:findencryption` (`1 << (type-1)` on
+a 0–255 wire byte; type 32 is signed `1<<31`). 63 less/flex/compiler-rt/byacc
+records are deferred named-skips, not unread. Records:
+[queue/arithmetic-triage.json](queue/arithmetic-triage.json).
 
 ### IR transfer on this tree's HARDENEDBSD image
 
@@ -311,4 +316,20 @@ until a generated config exists; they are not silent-clean.
 ERROR 9,544, PROVED-UNBOUNDED 808, FAILED 344, TIMEOUT 134, UNKNOWN 38.
 The 18 September pack was the `-xc` unrecognised-option run. 808 unbounded
 proofs exist; they are not in the packed digest. A hung `--smoke` of
-`stdc_has_single_bit_uc` was blocking the ERROR retry.
+`stdc_has_single_bit_uc` was blocking the ERROR retry. The ERROR retry
+(`--resume --retry-status ERROR --mode kinduction`, jobs 8) is left
+running; it must not be SIGTERM'd.
+
+### CBMC TIMEOUT sample (do not rewrite the live jsonl)
+
+`--retry-status TIMEOUT,BOUNDED,ERROR` already ran against
+`/home/odin/pbsd-sweep/cbmc.jsonl` and dropped 2,093 rows. The unwind-16
+file is `cbmc-old.jsonl` (still 1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
+The live file is 8,820 rows (6,241 PROVED / 2,541 FAILED / 28 BOUNDED /
+10 ERROR, 0 TIMEOUT). About 2,048 (file, function) pairs are the hole.
+
+Do not pass `--retry-status` again: that would drop the new BOUNDED/ERROR.
+`tools/verify/run-cbmc-resume.sh` is `--resume` only, unwind 32 / 180 s.
+`cbmc_driver.py --pair-list` still exists so a future sample can write a
+*new* jsonl without touching the live file. `sys/` SCALAR TIMEOUT in the
+old file is 755 functions.

@@ -5,9 +5,9 @@ whether it turns a queue item into a confirmed bug.
 
 ## Confirm or kill the CBMC queue
 
-1. **Done (19 Sep).** First-party exported-arithmetic is closed: 228 settled in [queue/arithmetic-triage.json](queue/arithmetic-triage.json) (`sys/`+`lib/` plus `bin`/`sbin`/`usr.bin`/`usr.sbin`/`stand`/`crypto`/`libexec`). Contrib (105) remains.
+1. **Done (19 Sep).** Exported-arithmetic is closed: 333 settled in [queue/arithmetic-triage.json](queue/arithmetic-triage.json) (228 first-party + 105 contrib). 6 defect, 226 not-a-defect, 101 deferred (including 63 named skip: less/flex/compiler-rt/byacc). Remaining `[]`.
 2. **Done (19 Sep).** 35 unread index-OOB + 62 address-taken statics read; records in [queue/oob-static-triage.json](queue/oob-static-triage.json). Four defects fixed (`days_pmonth`/`parse8601`, ppp `protoname` ×2, pkru `3<<30`). Contrib remainder is deferred.
-3. **Frontier-model on READ-THESE (19 Sep).** The remaining first-party arithmetic/OOB/static queues were the model-read. Contrib arithmetic is still unread. Do not run a model on the 1,481 pointer/memory records.
+3. **Frontier-model on READ-THESE (19 Sep).** First-party arithmetic/OOB/static and contrib arithmetic are read. Do not run a model on the 1,481 pointer/memory records.
 4. **Done (19 Sep).** `vnic_dev.c` `mrh` was a real unchecked `M_NOWAIT` (fixed). The two `in*_fib_algo.c` hits are `p == NULL || p->field` short-circuit false positives.
 
 Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt builtins, dtrace test programs, byacc `vdiv` fixtures.
@@ -17,7 +17,7 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 5. **ESBMC (19 Sep).** The packed run was 10,868 ERROR (`-xc`). The live WSL `esbmc.jsonl` already has 808 PROVED-UNBOUNDED / 9,544 ERROR from kinduction. ERROR retry is the remaining work; do not quote the packed column as current.
 6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
 7. **Clang TU-ERROR (19 Sep).** Live 5,304 ERROR. Top missing files are generated `config.h` / OpenSSH `includes.h` / OpenSSL internals / contrib `math_config.h`. Not a first-party `includes.py` miss for lib/msun.
-8. **CBMC TIMEOUT (1,253) and BOUNDED (512).** Raising `--unwind` or `--timeout` is a different question per function, not a global knob. Start with `sys/` TIMEDOUT functions that classify still calls SCALAR.
+8. **CBMC TIMEOUT (1,253) and BOUNDED (512).** The unwind-16 evidence is `cbmc-old.jsonl`. A `--retry-status TIMEOUT,BOUNDED,ERROR` pass already dropped those 2,093 rows from the live jsonl and then stalled (~2,048 still missing). Do **not** pass `--retry-status` again. `tools/verify/run-cbmc-resume.sh` is `--resume` only at unwind 32 / 180 s. `sys/` SCALAR TIMEOUT in the old file: 755.
 
 ## Cover the trees this run left UNTOUCHED
 

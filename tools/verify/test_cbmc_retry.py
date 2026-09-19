@@ -137,6 +137,29 @@ class ApplyResumeRewrite(unittest.TestCase):
             self.assertEqual(done, {("lib/x/a.c", "proved")})
 
 
+class PairList(unittest.TestCase):
+    def test_tab_lines_blank_and_hash_ignored(self):
+        want = D.parse_pair_list(
+            "# comment\n"
+            "\n"
+            "sys/kern/subr_prf.c\tkprintf\n"
+            " sys/kern/kern_synch.c\tsleepq_type \n")
+        self.assertEqual(want, {
+            ("sys/kern/subr_prf.c", "kprintf"),
+            ("sys/kern/kern_synch.c", "sleepq_type"),
+        })
+
+    def test_rejects_space_separated(self):
+        with self.assertRaises(ValueError):
+            D.parse_pair_list("sys/kern/subr_prf.c kprintf\n")
+
+    def test_help_exposes_pair_list(self):
+        p = subprocess.run([sys.executable, str(DRIVER), "--help"],
+                           capture_output=True, text=True, timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("--pair-list", p.stdout)
+
+
 class DriverFlag(unittest.TestCase):
     def test_help_exposes_retry_status_unwind_timeout(self):
         p = subprocess.run([sys.executable, str(DRIVER), "--help"],

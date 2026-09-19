@@ -90,7 +90,8 @@ static int havesessionkey = 0;
 static int Server = 0;
 static const char *Name = "Noname";
 
-#define	typemask(x)	((x) > 0 ? 1 << ((x)-1) : 0)
+#define	typemask(x)	((x) > 0 && (unsigned)(x) <= 8 * sizeof(unsigned) \
+			    ? 1U << ((unsigned)(x) - 1) : 0)
 
 static u_long i_support_encrypt = 0
  | typemask(ENCTYPE_DES_CFB64) | typemask(ENCTYPE_DES_OFB64)

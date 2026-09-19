@@ -1367,14 +1367,644 @@
    "function": "BN_set_params",
    "verdict": "defect",
    "note": "type-level: 1<<mult after clamp to sizeof(int)*8-1; fixed to 1U<<; bits preserved"
+  },
+  {
+   "file": "contrib/bmake/parse.c",
+   "function": "CurFile_CondMinDepth",
+   "verdict": "not-a-defect",
+   "note": "assert i < includes.len via CurFile(); makefile-open invariant"
+  },
+  {
+   "file": "contrib/bmake/parse.c",
+   "function": "Parse_GuardElse",
+   "verdict": "not-a-defect",
+   "note": "same GetInclude assert as CurFile_CondMinDepth"
+  },
+  {
+   "file": "contrib/bmake/parse.c",
+   "function": "Parse_GuardEndif",
+   "verdict": "not-a-defect",
+   "note": "same GetInclude assert as CurFile_CondMinDepth"
+  },
+  {
+   "file": "contrib/bmake/var.c",
+   "function": "EvalStack_Pop",
+   "verdict": "not-a-defect",
+   "note": "assert evalStack.len > 0; callers Push first"
+  },
+  {
+   "file": "contrib/bsddialog/lib/theme.c",
+   "function": "bsddialog_color",
+   "verdict": "not-a-defect",
+   "note": "enum bsddialog_color is 0-7; GET_COLOR fg*8+bg+1 <= 64"
+  },
+  {
+   "file": "contrib/bsddialog/utility/bsddialog.c",
+   "function": "set_exit_code",
+   "verdict": "not-a-defect",
+   "note": "lib_retval+1 indexes 14-slot table; callers pass BSDDIALOG_* -1..12"
+  },
+  {
+   "file": "contrib/bzip2/unzcrash.c",
+   "function": "flip_bit",
+   "verdict": "not-a-defect",
+   "note": "main loops bit 0..nZ*8; bit%8 is 0-7 so 1<<bitno is in range"
+  },
+  {
+   "file": "contrib/ee/ee.c",
+   "function": "len_char",
+   "verdict": "not-a-defect",
+   "note": "inlined tabshift (column+1)%8; column is a screen column"
+  },
+  {
+   "file": "contrib/ee/ee.c",
+   "function": "tabshift",
+   "verdict": "not-a-defect",
+   "note": "(temp_int+1)%8; tab-stop column, not INT_MAX"
+  },
+  {
+   "file": "contrib/ee/ee.c",
+   "function": "leave_op",
+   "verdict": "not-a-defect",
+   "note": "FILE _w-1 from inlined curses/stdio; stdio leak"
+  },
+  {
+   "file": "contrib/libarchive/libarchive/archive_version_details.c",
+   "function": "archive_version_details",
+   "verdict": "not-a-defect",
+   "note": "sep-p is strchr or p+strlen of unmodelled bzlib version; same-object ptrdiff"
+  },
+  {
+   "file": "contrib/lua/src/lobject.c",
+   "function": "luaO_hexavalue",
+   "verdict": "not-a-defect",
+   "note": "lisdigit (c)+1 then c-'0'; callers pass a hex digit after lisxdigit"
+  },
+  {
+   "file": "contrib/mandoc/dba_array.c",
+   "function": "dba_array_new",
+   "verdict": "not-a-defect",
+   "note": "assert(ea > 0); callers pass npages/MACRO_MAX/1"
+  },
+  {
+   "file": "contrib/mandoc/dba_write.c",
+   "function": "dba_align",
+   "verdict": "not-a-defect",
+   "note": "dba_tell rejects pos>=INT32_MAX; remaining pos++/stdio _w-1 is unmodelled ftell/putc"
+  },
+  {
+   "file": "contrib/netbsd-tests/usr.bin/xlint/lint1/d_c99_decls_after_stmt3.c",
+   "function": "sample",
+   "verdict": "deferred",
+   "note": "xlint test fixture (d_*.c)"
+  },
+  {
+   "file": "contrib/ntp/libntp/audio.c",
+   "function": "audio_gain",
+   "verdict": "not-a-defect",
+   "note": "commented 0-255 gain; 100*gain/255 and r<<8 in that domain"
+  },
+  {
+   "file": "contrib/ntp/libntp/ntp_worker.c",
+   "function": "close_all_beyond",
+   "verdict": "not-a-defect",
+   "note": "keep_fd+1; fd domain, not INT_MAX"
+  },
+  {
+   "file": "contrib/ntp/libntp/timetoa.c",
+   "function": "format_time_fraction",
+   "verdict": "not-a-defect",
+   "note": "abs(prec) of a format precision; callers pass small prec, same as abs(INT_MIN) C17"
+  },
+  {
+   "file": "contrib/ntp/libntp/ymd2yd.c",
+   "function": "ymd2yd",
+   "verdict": "not-a-defect",
+   "note": "y-1/m-1/d-1; calendar domain, same as libcalendar"
+  },
+  {
+   "file": "contrib/ntp/libntp/systime.c",
+   "function": "adj_systime",
+   "verdict": "not-a-defect",
+   "note": "-adjtv.tv_sec after abs of an NTP slew; not LONG_MIN"
+  },
+  {
+   "file": "contrib/ntp/libntp/statestr.c",
+   "function": "statustoa",
+   "verdict": "not-a-defect",
+   "note": "lim-pch in LIB_GETBUF; same-object ptrdiff"
+  },
+  {
+   "file": "contrib/ntp/sntp/unity/unity.c",
+   "function": "UnityPrintOk",
+   "verdict": "not-a-defect",
+   "note": "FILE _w-1 from UnityPrint; stdio leak"
+  },
+  {
+   "file": "contrib/ntp/sntp/unity/unity.c",
+   "function": "UnityPrintFail",
+   "verdict": "not-a-defect",
+   "note": "FILE _w-1 from UnityPrint; stdio leak"
+  },
+  {
+   "file": "contrib/ntp/util/ntptime.c",
+   "function": "pll_trap",
+   "verdict": "deferred",
+   "note": "siglongjmp requires instrumentation; CBMC leak into arithmetic bucket"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_fini",
+   "verdict": "not-a-defect",
+   "note": "assert(pjdlog_initialized); same pjdlog family as libpjdlog/hastd"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_mode_get",
+   "verdict": "not-a-defect",
+   "note": "assert(pjdlog_initialized); same pjdlog family"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_debug_set",
+   "verdict": "not-a-defect",
+   "note": "assert initialized and level >= 0; same pjdlog family"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_mode_set",
+   "verdict": "not-a-defect",
+   "note": "assert initialized and mode is STD or SYSLOG; same pjdlog family"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_debug_get",
+   "verdict": "not-a-defect",
+   "note": "assert(pjdlog_initialized); same pjdlog family"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_init",
+   "verdict": "not-a-defect",
+   "note": "assert mode is STD or SYSLOG; same pjdlog family"
+  },
+  {
+   "file": "contrib/openbsm/libauditd/auditd_lib.c",
+   "function": "audit_quick_stop",
+   "verdict": "not-a-defect",
+   "note": "len+1 after readlink(sizeof-1); memcpy is same-length NOT_TERMINATED postfix, unmodelled strstr"
+  },
+  {
+   "file": "contrib/pnpinfo/pnpinfo.c",
+   "function": "pnp_readw",
+   "verdict": "not-a-defect",
+   "note": "d+1 of an ISA PnP register; no callers in-tree"
+  },
+  {
+   "file": "contrib/pnpinfo/pnpinfo.c",
+   "function": "DELAY",
+   "verdict": "not-a-defect",
+   "note": "i*=4 for 1/250/1000 usec; tv_sec*1000000 is unmodelled gettimeofday"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditd/auditd.c",
+   "function": "auditd_terminate",
+   "verdict": "not-a-defect",
+   "note": "inlined trail rename memcpy; same-length NOT_TERMINATED postfix, unmodelled strstr"
+  },
+  {
+   "file": "contrib/telnet/libtelnet/encrypt.c",
+   "function": "findencryption",
+   "verdict": "defect",
+   "note": "type-level: encrypt_reply passes *data++ 0-255 into 1<<(type-1); type 32 is 1<<31. fixed typemask to 1U<< with count bound; unknown types still return 0"
+  },
+  {
+   "file": "contrib/tnftp/src/cmds.c",
+   "function": "proxabort",
+   "verdict": "deferred",
+   "note": "siglongjmp requires instrumentation; CBMC leak into arithmetic bucket"
+  },
+  {
+   "file": "contrib/tnftp/src/util.c",
+   "function": "crankrate",
+   "verdict": "not-a-defect",
+   "note": "rate_get += rate_get_incr on SIGUSR1; user-set FTP rates, default incr 1024"
+  },
+  {
+   "file": "contrib/unbound/services/listen_dnsport.c",
+   "function": "set_ip_dscp",
+   "verdict": "not-a-defect",
+   "note": "dscp<<2; yacc ip-dscp is 0-63 (63<<2=252); DSCP is 6 bits"
+  },
+  {
+   "file": "contrib/unbound/validator/val_anchor.c",
+   "function": "anchors_create",
+   "verdict": "deferred",
+   "note": "free argument has offset zero / double free on error path; pointer leak into arithmetic bucket"
+  },
+  {
+   "file": "contrib/unbound/util/config_file.c",
+   "function": "config_apply_max_rtt",
+   "verdict": "not-a-defect",
+   "note": "max_rtt*4; default 120000 msec; RTT timeout domain"
+  },
+  {
+   "file": "contrib/wpa/src/common/ieee802_11_common.c",
+   "function": "get_6ghz_sec_channel",
+   "verdict": "not-a-defect",
+   "note": "channel-1; callers pass u8 6 GHz primary (1,5,9,...)"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditd/auditd.c",
+   "function": "auditd_handle_trigger",
+   "verdict": "not-a-defect",
+   "note": "inlined trail rename memcpy; same-length NOT_TERMINATED postfix, unmodelled strstr"
+  },
+  {
+   "file": "contrib/byacc/test/btyacc/btyacc_calc1.tab.c",
+   "function": "vdiv",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/byacc/test/btyacc/calc1.tab.c",
+   "function": "vdiv",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/byacc/test/btyacc/varsyntax_calc1.tab.c",
+   "function": "vdiv",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/byacc/test/yacc/calc1.tab.c",
+   "function": "vdiv",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/byacc/test/yacc/varsyntax_calc1.tab.c",
+   "function": "vdiv",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "allocate_array",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "dataend",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "dataflush",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "mkdata",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "mk2data",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "transition_struct_out",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/nfa.c",
+   "function": "mkbranch",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/brac.c",
+   "function": "match_brac",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/cmdbuf.c",
+   "function": "init_cmdhist",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "overlay_header",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "back",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/flex/src/ccl.c",
+   "function": "range_covers_case",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "get_back_scroll",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "backward",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_forw_buffered",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "repaint",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_percent",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_loc",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_line_loc",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_forw",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "line_pfx_width",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "pwidth",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "pdone",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "forward",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "longest_line_width",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "rrshift",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/optfunc.c",
+   "function": "calc_jump_sline",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/optfunc.c",
+   "function": "get_swindow",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/os.c",
+   "function": "percent_pos",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/position.c",
+   "function": "sindex_from_sline",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "repaint_hilite",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "clear_attn",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "undo_search",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "search_pos",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/absvti2.c",
+   "function": "__absvti2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashldi3.c",
+   "function": "__ashldi3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashlti3.c",
+   "function": "__ashlti3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashrdi3.c",
+   "function": "__ashrdi3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashrti3.c",
+   "function": "__ashrti3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/clzti2.c",
+   "function": "__clzti2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ctzti2.c",
+   "function": "__ctzti2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfdi.c",
+   "function": "__fixunsxfdi",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfsi.c",
+   "function": "__fixunsxfsi",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfti.c",
+   "function": "__fixunsxfti",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixxfdi.c",
+   "function": "__fixxfdi",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixxfti.c",
+   "function": "__fixxfti",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/floatuntixf.c",
+   "function": "__floatuntixf",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/floattixf.c",
+   "function": "__floattixf",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/lshrdi3.c",
+   "function": "__lshrdi3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/lshrti3.c",
+   "function": "__lshrti3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/mulvti3.c",
+   "function": "__mulvti3",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/negvti2.c",
+   "function": "__negvti2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/popcountti2.c",
+   "function": "__popcountti2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ppc/fixtfti.c",
+   "function": "__fixtfti",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ppc/fixunstfti.c",
+   "function": "__fixunstfti",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/profile/InstrProfilingBuffer.c",
+   "function": "__llvm_profile_get_size_for_buffer",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/powisf2.c",
+   "function": "__powisf2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/powidf2.c",
+   "function": "__powidf2",
+   "verdict": "deferred",
+   "note": "TODO skip: less/flex/compiler-rt/byacc"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 228,
-  "defect": 5,
-  "not-a-defect": 189,
-  "deferred": 34,
+  "settled": 333,
+  "defect": 6,
+  "not-a-defect": 226,
+  "deferred": 101,
   "remaining": 0,
   "queue_unread_sys_lib": 0
  }

@@ -118,6 +118,14 @@ end. `>=` matches the other `protoname` in this directory.
 type-level class as `IFCAP_BIT(31)`. `(int)(1U << mult)` is the bit
 pattern `bn_limit_num` already stored.
 
+### `contrib/telnet/libtelnet/encrypt.c` — `1 << (type-1)` on a wire byte
+
+`encrypt_reply` does `type = *data++` (0–255) then `typemask` was
+`1 << (type - 1)`. Type 32 is `1 << 31` (C17 6.5.7p4). `typemask` is
+now `1U <<` with a shift-count bound; unknown types still return 0.
+The bit pattern for the types this file actually implements is
+unchanged.
+
 ---
 
 ## Reported, not fixed — the UB *is* the overflow

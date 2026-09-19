@@ -464,6 +464,21 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
     return tasks
 
 
+def parse_pair_list(text: str) -> set[tuple[str, str]]:
+    """file<TAB>function lines. Blank and # comments are ignored."""
+    want: set[tuple[str, str]] = set()
+    for i, raw in enumerate(text.splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) != 2 or not parts[0] or not parts[1]:
+            raise ValueError(
+                f"pair-list line {i} must be file<TAB>function, got {raw!r}")
+        want.add((parts[0], parts[1]))
+    return want
+
+
 def parse_retry_status(items: list[str]) -> set[str]:
     """Repeatable --retry-status flags, also accepting comma-separated.
 
@@ -578,7 +593,14 @@ def main() -> int:
                          "this and check them again (repeatable, or "
                          "comma-separated). TIMEOUT,BOUNDED,ERROR is "
                          "the set that makes a higher --unwind re-run "
-                         "the functions the first bound did not close.")
+                         "the functions the first bound did not close. "
+                         "Do not point this at a live sweep jsonl together "
+                         "with a small --limit: it drops every matching "
+                         "row in --out before the re-run.")
+    ap.add_argument("--pair-list", default="",
+                    help="only check these file<TAB>function lines. Use a "
+                         "new --out to retry TIMEOUT/BOUNDED without "
+                         "rewriting the live sweep jsonl.")
     args = ap.parse_args()
 
     tasks = load_tasks(Path(args.plan), args.scope, args.unwind,
@@ -586,6 +608,11 @@ def main() -> int:
                        Path(args.classes),
                        set(args.allow.split(",")), args.null_depth,
                        args.mem_mb)
+    if args.pair_list:
+        want = parse_pair_list(Path(args.pair_list).read_text())
+        tasks = [t for t in tasks if (t["file"], t["function"]) in want]
+        print(f"  pair-list: {len(want)} named, {len(tasks)} still in "
+              f"classify ∩ ledger ∩ --allow", flush=True)
 
     out = Path(args.out)
     done: set[tuple[str, str]] = set()
