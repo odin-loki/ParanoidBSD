@@ -17,7 +17,9 @@ class SmokeContract(unittest.TestCase):
         self.assertTrue((ROOT / "hbsd" / "src" / S.SMOKE_REL).is_file())
 
     def test_query_names_abs(self):
-        self.assertIn('getName() = "abs"', S.SMOKE_QL)
+        q = S.smoke_ql("sys_ffclock_setestimate", "sys/kern/kern_ffclock.c")
+        self.assertIn('getName() = "sys_ffclock_setestimate"', q)
+        self.assertIn("kern_ffclock.c", q)
 
 
 if __name__ == "__main__":

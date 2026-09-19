@@ -318,7 +318,9 @@ The 18 September pack was the `-xc` unrecognised-option run. 808 unbounded
 proofs exist; they are not in the packed digest. A hung `--smoke` of
 `stdc_has_single_bit_uc` was blocking the ERROR retry. The ERROR retry
 (`--resume --retry-status ERROR --mode kinduction`, jobs 8) is left
-running; it must not be SIGTERM'd.
+running; it must not be SIGTERM'd. It is still in `load_tasks`
+(`include_flags` / `bmake` per TU: i386, then powerpc, then amd64). The
+jsonl mtime has not moved; that is not a hang.
 
 ### CBMC TIMEOUT resume (unwind 32 / 180 s, in flight)
 
@@ -328,11 +330,13 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **8,836** rows, **6,241 PROVED** (four
-new: `svc_exit`, `sysconf`, `getosreldate`, `mixer_get_nmixers`, all
-were BOUNDED at unwind 16). Four new FAILED at unwind 32 were read:
-two test programs deferred, `arc4random` / `localeconv` are unmodelled
-auxv/locale pointers, not defects. Records:
+Live file while this is written: **8,883** rows, **6,242 PROVED** (five
+new, all were BOUNDED at unwind 16: `svc_exit`, `sysconf`,
+`getosreldate`, `mixer_get_nmixers`, `rd_init`). Five new FAILED at
+unwind 32 were read: two test programs deferred; `arc4random` /
+`localeconv` unmodelled pointers; `__sigev_fork_child` process-lifetime
+calloc. 0 defects. ~1,985 pairs still missing; new TIMEOUT at 180 s is
+still TIMEOUT. Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
@@ -347,6 +351,9 @@ GitHub CodeQL 2.27.0 is at `~/.local/codeql` and on PATH.
 `TRUST-UNVALIDATED-INPUT` is COVERED because this instrument rates
 FINDS. A one-TU smoke (`tools/verify/codeql_smoke.py`) built a database
 for `lib/libc/stdlib/abs.c` with `include_flags()` and the query saw
-`abs`. That is not a tree taint run. Infer is still absent and covers
-nothing extra. Evidence:
-[queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl).
+`abs`. A second smoke on `sys/kern/kern_ffclock.c` saw
+`sys_ffclock_setestimate` (the syscall that `copyin`s
+`ffclock_estimate`). That is still not a tree taint run. Infer is still
+absent and covers nothing extra. Evidence:
+[queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl),
+[queue/codeql-ffclock.jsonl](queue/codeql-ffclock.jsonl).

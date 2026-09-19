@@ -28,13 +28,17 @@ sys.path.insert(0, str(HERE))
 import includes  # noqa: E402
 
 SMOKE_REL = "lib/libc/stdlib/abs.c"
-SMOKE_QL = r"""
-import cpp
 
-from Function f
-where f.getName() = "abs" and f.getFile().getRelativePath().matches("%abs.c")
-select f, "smoke: CodeQL sees abs"
-"""
+
+def smoke_ql(symbol: str, rel: str) -> str:
+    base = Path(rel).name
+    return (
+        "import cpp\n\n"
+        "from Function f\n"
+        f'where f.getName() = "{symbol}" '
+        f'and f.getFile().getRelativePath().matches("%{base}")\n'
+        f'select f, "smoke: CodeQL sees {symbol}"\n'
+    )
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
@@ -45,15 +49,20 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--rel", default=SMOKE_REL)
+    ap.add_argument("--symbol", default="abs")
     ap.add_argument("--db", default=str(Path.home() / "pbsd-sweep" / "codeql-smoke-db"))
     ap.add_argument("--out", default=str(Path.home() / "pbsd-sweep" / "codeql-smoke.jsonl"))
     ap.add_argument("--arch", default="amd64")
     args = ap.parse_args()
 
+    expect = f"smoke: CodeQL sees {args.symbol}"
+    ql_text = smoke_ql(args.symbol, args.rel)
+
     codeql = shutil.which("codeql")
     rec = {
         "v": 1,
         "file": args.rel,
+        "symbol": args.symbol,
         "instrument": "codeql",
         "codeql": codeql,
     }
@@ -114,7 +123,7 @@ def main() -> int:
         "name: pbsd-codeql-smoke\nversion: 0.0.1\ndependencies:\n"
         "  codeql/cpp-all: \"*\"\n",
         encoding="utf-8")
-    (qdir / "smoke.ql").write_text(SMOKE_QL, encoding="utf-8")
+    (qdir / "smoke.ql").write_text(ql_text, encoding="utf-8")
     pack = run([codeql, "pack", "install", str(qdir)])
     rec["pack_rc"] = pack.returncode
     rec["pack_err"] = ((pack.stderr or "") + (pack.stdout or ""))[-400:]
@@ -122,7 +131,7 @@ def main() -> int:
              "--database", str(db)])
     rec["query_rc"] = q.returncode
     rec["query_out"] = ((q.stdout or "") + (q.stderr or ""))[-800:]
-    if q.returncode == 0 and "smoke: CodeQL sees abs" in (q.stdout or ""):
+    if q.returncode == 0 and expect in (q.stdout or ""):
         rec["status"] = "SMOKE-OK"
     elif q.returncode == 0:
         rec["status"] = "SMOKE-EMPTY"

@@ -1,0 +1,1 @@
+{"v": 1, "file": "sys/kern/kern_ffclock.c", "symbol": "sys_ffclock_setestimate", "instrument": "codeql", "status": "SMOKE-OK", "create_rc": 0, "query_rc": 0, "note": "extractor saw sys_ffclock_setestimate (copyin of ffclock_estimate); not a taint run"}
