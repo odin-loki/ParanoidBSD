@@ -332,11 +332,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,243** rows, **6,269 PROVED**. Twenty new
+Live file while this is written: **9,251** rows, **6,270 PROVED**. Twenty-one new
 FAILED at unwind 32 were read: two test programs deferred; the rest
-unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`
-(`fout`/`err`), IEEE 0/0, static `ilog2`, or a callee that returns
-`calloc`. **0 defects.** ~1,625 pairs still missing. Records:
+unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`, IEEE 0/0,
+static `ilog2`, or process-lifetime `calloc` (`defined_init`). **0 defects.**
+~1,617 pairs still missing. Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`

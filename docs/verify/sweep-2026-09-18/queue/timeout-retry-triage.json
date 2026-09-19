@@ -119,13 +119,19 @@
    "function": "terminate",
    "verdict": "not-a-defect",
    "note": "SIGINT handler calls flsh_errs(); err is a static FILE* set in setup() to tmpfile() or stderr. Modular fgets(*stream) is unconstrained err. prev TIMEOUT"
+  },
+  {
+   "file": "usr.sbin/autofs/defined.c",
+   "function": "defined_init",
+   "verdict": "not-a-defect",
+   "note": "seeds process-lifetime TAILQ defined_values via defined_add calloc/checked_strdup. CBMC --memory-leak-check; checked_strdup unmodelled. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 20,
+  "settled": 21,
   "defect": 0,
-  "not-a-defect": 18,
+  "not-a-defect": 19,
   "deferred": 2,
   "remaining": 0
  }
