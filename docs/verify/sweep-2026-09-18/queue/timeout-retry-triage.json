@@ -299,13 +299,25 @@
    "function": "ata_intel_sata_cscr_write",
    "verdict": "not-a-defect",
    "note": "same unmodelled ctlr/ch as ahci_write. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/ata/chipsets/ata-jmicron.c",
+   "function": "ata_jmicron_setmode",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc(parent) unmodelled; ctlr->chip unconstrained. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/ata/chipsets/ata-marvell.c",
+   "function": "ata_marvell_setmode",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled ctlr->chip as ata_jmicron_setmode. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 50,
+  "settled": 52,
   "defect": 2,
-  "not-a-defect": 45,
+  "not-a-defect": 47,
   "deferred": 3,
   "remaining": 0
  }

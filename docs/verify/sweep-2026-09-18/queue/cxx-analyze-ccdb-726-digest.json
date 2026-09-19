@@ -1,5 +1,13 @@
 {
-  "status": "started",
+  "status": "in_flight",
+  "partial": {
+    "jsonl_lines": 36,
+    "OK": 35,
+    "ERROR": 0,
+    "flagsrc_compile_commands": 35,
+    "guessed": 0,
+    "finding_example": "Qt qsharedpointer_impl.h:143 cplusplus.NewDelete Use of memory after it is freed — Qt header, not KDE source"
+  },
   "note": "726-TU kde-compile-db-build compile_commands.json; NOT the old 148/149 ingest (cxx_analyze_ccdb_only.jsonl). First invocation with DEFAULT_SCOPES under --root kde-compile-db-build was NOT RUN (0 TUs). WSL cxx_analyze.py --compile-commands-only now ingests the DB as the universe so guessed=0. Did not --retry-status. Did not kill CBMC pid 887. jobs=1.",
   "pid": 4980,
   "worker_pid": 4985,

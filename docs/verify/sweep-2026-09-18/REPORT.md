@@ -364,14 +364,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,642** rows, **6,291 PROVED**
-(BOUNDED 175 / FAILED 2,588 / ERROR 177 / TIMEOUT 411). The unwind-32
-resume was OOM-killed overnight (`cbmc` ~19 GB at `[800/2048]`); it did
-not finish. Fourteen TIMEOUT/BOUNDED→FAILED since the previous snapshot
-were read: **0 defects**. `ccp_hw_detach_queue` `1 << queue` is 0..4
-(`MAX_HW_QUEUES` is 5). The rest are unmodelled `device_get_softc` /
-`CPU_SET(cpu)` / OpenZFS `spa_fini`. ~1,226 pairs still missing. Restart
-is `--resume` only at JOBS=2 (pid 887). Records:
+Live file while this is written: **9,651** rows, **6,291 PROVED**
+(BOUNDED 175 / FAILED 2,590 / ERROR 177 / TIMEOUT 418). ~1,217 pairs
+still missing. Two more TIMEOUT→FAILED (`ata_jmicron_setmode`,
+`ata_marvell_setmode`) are unmodelled `device_get_softc` on `ctlr->chip`.
+Restart remains `--resume` only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
