@@ -62,8 +62,8 @@ x86_pkru_get_perm_hw(u_int keyidx, int *access, int *modify)
 	}
 	keyidx *= 2;
 	pkru = rdpkru();
-	*access = (pkru & (1 << keyidx)) == 0;
-	*modify = (pkru & (2 << keyidx)) == 0;
+	*access = (pkru & (1u << keyidx)) == 0;
+	*modify = (pkru & (2u << keyidx)) == 0;
 	return (0);
 }
 
@@ -93,11 +93,11 @@ x86_pkru_set_perm_hw(u_int keyidx, int access, int modify)
 	}
 	keyidx *= 2;
 	pkru = rdpkru();
-	pkru &= ~(3 << keyidx);
+	pkru &= ~(3u << keyidx);
 	if (!access)
-		pkru |= 1 << keyidx;
+		pkru |= 1u << keyidx;
 	if (!modify)
-		pkru |= 2 << keyidx;
+		pkru |= 2u << keyidx;
 	wrpkru(pkru);
 	return (0);
 }

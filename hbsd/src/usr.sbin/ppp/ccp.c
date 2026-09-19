@@ -133,7 +133,7 @@ protoname(int proto)
     "DEFLATE",		/* 26: Deflate (rfc1979) */
   };
 
-  if (proto < 0 || (unsigned)proto > sizeof cftypes / sizeof *cftypes ||
+  if (proto < 0 || (unsigned)proto >= sizeof cftypes / sizeof *cftypes ||
       cftypes[proto] == NULL) {
     if (proto == -1)
       return "none";

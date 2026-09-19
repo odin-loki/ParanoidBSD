@@ -168,7 +168,7 @@ parse8601(struct ptime_data *ptime, const char *s)
 	}
 
 	/* sanity check */
-	if (tm.tm_year < 70 || tm.tm_mon < 0 || tm.tm_mon > 12
+	if (tm.tm_year < 70 || tm.tm_mon < 0 || tm.tm_mon > 11
 	    || tm.tm_mday < 1 || tm.tm_mday > 31)
 		return (-1);
 

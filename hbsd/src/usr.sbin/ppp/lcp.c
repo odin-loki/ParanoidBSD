@@ -146,7 +146,7 @@ protoname(unsigned proto)
     "LDBACP",		/* 23: Link Discriminator for BACP */
   };
 
-  if (proto > sizeof cftypes / sizeof *cftypes || cftypes[proto] == NULL)
+  if (proto >= sizeof cftypes / sizeof *cftypes || cftypes[proto] == NULL)
     return HexStr(proto, NULL, 0);
 
   return cftypes[proto];

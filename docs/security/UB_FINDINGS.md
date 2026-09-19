@@ -92,6 +92,26 @@ because `sys/net/if.c` initialises `ifcap_nv_bit_names[]` with
 33 bits to represent, but 'int' only has 32 bits"*. Same class as
 `MDF_FORCE`, `SC_A_DESTROY`, `s_rint.c`.
 
+### `lib/libsys/x86/pkru.c` — `3 << 30` on key 15
+
+`MAX_PKRU_IDX` is `0xf`. After `keyidx *= 2`, key 15 does `3 << 30` and
+`2 << 30`. `3 * 2^30` is not representable in `int` (C17 6.5.7p4). The
+destination is `uint32_t pkru`; `3u << keyidx` is the bit pattern
+`rdpkru`/`wrpkru` already used.
+
+### `usr.sbin/newsyslog/ptimes.c` — `tm_mon == 12` indexes `mtab[12]`
+
+`parse8601` stored `tm_mon = (l / 100) - 1` and rejected `tm_mon > 12`,
+so month 13 in the digit string (`1301`, `YYYY13DD`) became 12 and
+`days_pmonth` read `mtab[12]` (12 entries, 0..11). POSIX `tm_mon` is
+0..11; the check is now `> 11`.
+
+### `usr.sbin/ppp/{ccp,lcp}.c` — `protoname` used `>` instead of `>=`
+
+Both name tables are indexed by a peer option id. `proto > nitems`
+lets `proto == nitems` through, then `cftypes[nitems]` is one past the
+end. `>=` matches the other `protoname` in this directory.
+
 ---
 
 ## Reported, not fixed — the UB *is* the overflow
