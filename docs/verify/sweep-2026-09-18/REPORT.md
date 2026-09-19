@@ -291,12 +291,19 @@ Do not quote either run as “KDE is clean.” Leftover kguiaddons /
 knotifications installs later finished; the merged DB is **22 modules /
 726 unique TUs** (`karchive` installed). `--compile-commands-only` now
 takes that database as the universe (a cmake `--root` is not
-`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **261 OK /
-23 ERROR / 1 TIMEOUT** of 285 written (0 guessed). The ERROR rows are
-missing Qt private `qtx11extras_p.h`, missing `moc_*.cpp`, or kjobwidgets
-build-dir paths — not KDE source defects. Evidence:
+`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **332 OK /
+32 ERROR / 1 TIMEOUT** of 365 written (0 guessed). ERROR is DB-honest:
+kwindowsystem compile commands never include `QtGuiPrivate` (header exists
+at `QtGui/6.10.3/QtGui/private/qtx11extras_p.h`), plus stale autogen/moc,
+kjobwidgets build-dir paths, and two Solid `.c` TUs with `-std=c99` under
+clang++. TIMEOUT is `kwayland` `registry.cpp`. Of 31 findings, 30 are clang
+on Qt headers; **one is `karchive-618` `k7zip.cpp:1803`**
+(`readAndDecodePackedStreams`: uninitialized `seqOutStream` appended after
+`getOutStream` whose false return does not write the out-ref). That unpack
+is not vendored in `kde/frameworks/`. Evidence:
 [queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json),
-[queue/cxx-analyze-ccdb-726-digest.json](queue/cxx-analyze-ccdb-726-digest.json).
+[queue/cxx-analyze-ccdb-726-digest.json](queue/cxx-analyze-ccdb-726-digest.json),
+[queue/k7zip-uninit-seqOutStream.json](queue/k7zip-uninit-seqOutStream.json).
 
 ### Coccinelle `nowait-deref` (3)
 
@@ -371,10 +378,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,676** rows, **6,292 PROVED**
-(BOUNDED 177 / FAILED 2,591 / ERROR 177 / TIMEOUT 439). ~1,192 pairs
-still missing. `ata_via_sata_scr_write` TIMEOUT→FAILED is unmodelled
-`device_get_parent` (`((kobj_t)dev)->ops`); port is clamped to 0|1.
+Live file while this is written: **9,680** rows, **6,292 PROVED**
+(BOUNDED 178 / FAILED 2,591 / ERROR 177 / TIMEOUT 442). ~1,188 pairs
+still missing. Unread new-FAILED is 0. Current TIMEOUTs
+(`axgbe_if_promisc_set`, `bce_miibus_read_reg`) are unmodelled MMIO/softc.
 Settled unwind-32 FAILED is 53 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
