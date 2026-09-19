@@ -352,8 +352,10 @@ GitHub CodeQL 2.27.0 is at `~/.local/codeql` and on PATH.
 FINDS. A one-TU smoke (`tools/verify/codeql_smoke.py`) built a database
 for `lib/libc/stdlib/abs.c` with `include_flags()` and the query saw
 `abs`. A second smoke on `sys/kern/kern_ffclock.c` saw
-`sys_ffclock_setestimate` (the syscall that `copyin`s
-`ffclock_estimate`). That is still not a tree taint run. Infer is still
-absent and covers nothing extra. Evidence:
+`sys_ffclock_setestimate`. A `copyin()` query on that database is
+**EMPTY**: the extracted body is `{ return ... }`, so the `copyin` of
+`ffclock_estimate` is not in the AST. One-TU kernel extract is not a
+taint run. Infer is still absent and covers nothing extra. Evidence:
 [queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl),
-[queue/codeql-ffclock.jsonl](queue/codeql-ffclock.jsonl).
+[queue/codeql-ffclock.jsonl](queue/codeql-ffclock.jsonl),
+[queue/codeql-copyin.jsonl](queue/codeql-copyin.jsonl).

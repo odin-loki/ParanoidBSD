@@ -1,0 +1,1 @@
+{"v": 1, "query": "tools/verify/codeql/copyin_call.ql", "db": "codeql-ffclock-db", "status": "COPYIN-EMPTY", "note": "sys_ffclock_setestimate is in the DB as a definition, but its extracted body is { return ... } with no copyin Call. One-TU kernel extract is not a taint run."}
