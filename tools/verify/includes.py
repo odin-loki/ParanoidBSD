@@ -2752,6 +2752,25 @@ def _ncurses_headers(d: Path) -> None:
     tinfo = SRC / "lib" / "ncurses" / "tinfo"
     inc = SRC / "contrib" / "ncurses" / "include"
     mk = tinfo / "Makefile"
+    # ncurses_def.h is INTERNAL (CLEANFILES, not INCS). 253 named
+    # translation units failed on it -- contrib/ncurses/form/*.c and
+    # siblings, reached through lib/ncurses/*/Makefile's .PATH. The
+    # recipe is lib/ncurses/config.mk:39-41 and does not need bmake,
+    # so it runs even when the public-header substitutions below
+    # cannot. Angle-bracket include from ncurses_cfg.h, unique name,
+    # so landing it in the installed-header shim is how those files
+    # find it the same way they find curses.h.
+    script, defs = inc / "MKncurses_def.sh", inc / "ncurses_defs"
+    if script.is_file() and defs.is_file():
+        try:
+            r = subprocess.run(
+                ["sh", str(script), str(defs)],
+                capture_output=True, text=True, timeout=60,
+                env=dict(os.environ, AWK="awk"))
+            if r.returncode == 0 and r.stdout.strip():
+                (d / "ncurses_def.h").write_text(r.stdout)
+        except (OSError, subprocess.SubprocessError):
+            pass
     if not mk.is_file() or not inc.is_dir():
         return
     text = mk.read_text(errors="replace")
@@ -2875,6 +2894,31 @@ def _installed_generated(d: Path) -> None:
             "#endif /* KRB5_KRB5_H_INCLUDED */\n")
     except OSError:
         pass
+
+    # krb5/util/profile/Makefile:27 INCS= profile.h, generated
+    # `cat profile.hin prof_err.h`. installed_headers() maps INCS to a
+    # source file, so a header that does not exist on disk is simply
+    # not staged -- 450 named translation units, crypto/krb5's ksu
+    # among them, failed on `profile.h' file not found. Same recipe
+    # _gen_krb5 already runs for pam_ksu; this is the installed copy.
+    try:
+        _write_krb5_profile(d)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+    # sendmail's sm_os.h is a symlink to sm_os_freebsd.h, written into
+    # the object directory by every sendmail Makefile (lib/libsm:38,
+    # usr.sbin/editmap:24, ...). It is SRCS, not INCS, so the installed
+    # layout never carries it, and 147 named translation units failed
+    # on it. The file is the same everywhere; one copy on the shim is
+    # the object-directory -I. those Makefiles add.
+    sm_os = SRC / "contrib" / "sendmail" / "include" / "sm" / "os" / \
+        "sm_os_freebsd.h"
+    if sm_os.is_file() and not (d / "sm_os.h").exists():
+        try:
+            (d / "sm_os.h").symlink_to(sm_os)
+        except OSError:
+            pass
 
 
 
@@ -3546,7 +3590,7 @@ def _gen_netstat(out: Path, _dir: str = "") -> None:
         nl_defs.h: nlist_symbols
             awk 'BEGIN { print "#include <nlist.h>";
                          print "extern struct nlist nl[];"; i = 0; }
-                 !/^\#/ { printf("#define\tN%s\t%s\n", toupper($2), i++); }' \
+                 !/^#/ { printf("#define\tN%s\t%s\n", toupper($2), i++); }' \
                 < ${.ALLSRC} > ${.TARGET} || rm -f ${.TARGET}
 
     The same Makefile generates nl_symbols.c the same way; that one is a
@@ -3905,6 +3949,27 @@ def _compile_et(out: Path, et: Path, src: Path) -> Path | None:
     return hdr if r.returncode == 0 and hdr.is_file() else None
 
 
+def _write_krb5_profile(out: Path) -> None:
+    """profile.h: cat profile.hin prof_err.h, krb5/util/profile/Makefile:63.
+
+    compile_et writes .c/.h beside its input; do that in a scratch
+    directory so the include shim only receives the concatenated header.
+    """
+    prof = SRC / "crypto" / "krb5" / "src" / "util" / "profile"
+    hin = prof / "profile.hin"
+    if not hin.is_file():
+        return
+    work = Path(tempfile.mkdtemp(prefix="pbsd_prof_"))
+    try:
+        err = _compile_et(work, prof / "prof_err.et", SRC)
+        if err is not None:
+            (out / "profile.h").write_text(
+                hin.read_text(errors="replace")
+                + err.read_text(errors="replace"))
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
 def _gen_krb5(out: Path, _dir: str = "") -> None:
     """krb5's profile.h and krb5.h, which the build makes in an OBJDIR.
 
@@ -3931,12 +3996,7 @@ def _gen_krb5(out: Path, _dir: str = "") -> None:
     kv5m_err, krb524_err, asn1_err.  Concatenation order is the file's
     content, so it is kept.
     """
-    prof = SRC / "crypto" / "krb5" / "src" / "util" / "profile"
-    err = _compile_et(out, prof / "prof_err.et", SRC)
-    hin = prof / "profile.hin"
-    if err is not None and hin.is_file():
-        (out / "profile.h").write_text(hin.read_text(errors="replace")
-                                       + err.read_text(errors="replace"))
+    _write_krb5_profile(out)
 
     inc = SRC / "crypto" / "krb5" / "src" / "include"
     ets = SRC / "crypto" / "krb5" / "src" / "lib" / "krb5" / "error_tables"
@@ -3961,6 +4021,28 @@ def _gen_krb5(out: Path, _dir: str = "") -> None:
         "#ifndef KRB5_KRB5_H_INCLUDED\n#define KRB5_KRB5_H_INCLUDED\n"
         + "".join(parts)
         + "#endif /* KRB5_KRB5_H_INCLUDED */\n")
+
+
+def _gen_ncurses(out: Path, _dir: str = "") -> None:
+    """lib/ncurses/config.mk:39-41, ncurses_def.h from MKncurses_def.sh."""
+    inc = SRC / "contrib" / "ncurses" / "include"
+    script, defs = inc / "MKncurses_def.sh", inc / "ncurses_defs"
+    if not (script.is_file() and defs.is_file()):
+        return
+    r = subprocess.run(
+        ["sh", str(script), str(defs)],
+        capture_output=True, text=True, timeout=60,
+        env=dict(os.environ, AWK="awk"))
+    if r.returncode == 0 and r.stdout.strip():
+        (out / "ncurses_def.h").write_text(r.stdout)
+
+
+def _gen_sm_os(out: Path, _dir: str = "") -> None:
+    """Every sendmail Makefile: ln -sf sm_os_freebsd.h sm_os.h."""
+    src = SRC / "contrib" / "sendmail" / "include" / "sm" / "os" / \
+        "sm_os_freebsd.h"
+    if src.is_file():
+        (out / "sm_os.h").symlink_to(src)
 
 
 _GENERATED = {
@@ -3994,7 +4076,70 @@ _GENERATED = {
     # libifconfig_sfp.c includes the same header.
     "sbin/ifconfig": _gen_lua_sfp,
     "lib/libifconfig": _gen_lua_sfp,
+    # sendmail: same recipe in each, object-directory sm_os.h.
+    "lib/libsm": _gen_sm_os,
+    "lib/libsmutil": _gen_sm_os,
+    "lib/libsmdb": _gen_sm_os,
+    "lib/libmilter": _gen_sm_os,
+    "usr.sbin/sendmail": _gen_sm_os,
+    "usr.sbin/editmap": _gen_sm_os,
+    "usr.sbin/mailstats": _gen_sm_os,
+    "usr.sbin/makemap": _gen_sm_os,
+    "usr.sbin/praliases": _gen_sm_os,
+    "usr.bin/vacation": _gen_sm_os,
+    "bin/rmail": _gen_sm_os,
+    "libexec/smrsh": _gen_sm_os,
+    "libexec/mail.local": _gen_sm_os,
 }
+
+# Directories whose generator is the same for every subdirectory.
+# lib/ncurses/form, menu, panel, tinfo, ncurses all run config.mk's
+# ncurses_def.h recipe; listing them individually would go stale the
+# next time a panel is added.
+_GENERATED_PREFIX = (
+    ("lib/ncurses/", _gen_ncurses),
+    # MIT krb5 userland lives under krb5/ and .PATH's into crypto/krb5.
+    # profile.h and krb5/krb5.h are generated into OBJDIR; 450 named
+    # translation units failed on profile.h until the installed shim
+    # carried it, and ksu then failed on the error-table identifiers
+    # that only the full krb5.h (pam_ksu's generator) provides.
+    ("krb5/", _gen_krb5),
+)
+
+
+def _generator_for(directory: str):
+    fn = _GENERATED.get(directory)
+    if fn is not None:
+        return fn
+    for pre, fn in _GENERATED_PREFIX:
+        if directory == pre.rstrip("/") or directory.startswith(pre):
+            return fn
+    return _gen_rpcgen
+
+
+def _generated_dirs(rel: str) -> tuple[str, ...]:
+    """Directories whose Makefiles generate headers this source needs.
+
+    generated_shim() is keyed on the BUILDING directory, not the
+    source's parent. contrib/ncurses/form/fld_arg.c is compiled by
+    lib/ncurses/form, and that Makefile's recipe is what writes
+    ncurses_def.h. Asking the source's parent looks at a directory
+    with no FreeBSD Makefile and reports the header missing -- 253
+    named translation units of form/menu/panel/tinfo. Same shape as
+    contrib/bsnmp/snmp_mibII vs usr.sbin/bsnmpd/modules/snmp_mibII.
+    """
+    out: list[str] = []
+    comp = _component_dir(rel)
+    if comp is not None:
+        try:
+            out.append(str(comp.relative_to(SRC)))
+        except ValueError:
+            pass
+    parent = str(Path(rel).parent)
+    if parent not in out:
+        out.append(parent)
+    return tuple(out)
+
 
 
 # A header a directory's own Makefile generates with rpcgen, from an
@@ -4130,7 +4275,7 @@ def generated_shim(directory: str) -> str | None:
     fails - a half-written shim is a compile that succeeds and means
     nothing, so a failure leaves the ERROR standing where it can be seen.
     """
-    fn = _GENERATED.get(directory, _gen_rpcgen)
+    fn = _generator_for(directory)
     d = Path(tempfile.mkdtemp(prefix="pbsd_gen_"))
     try:
         fn(d, directory)
@@ -4410,6 +4555,19 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     # rather than whatever bmake could be persuaded to answer on the day.
     # See llvm_shim().
     flags.extend(llvm_shim(rel))
+    # .PATH: contrib/llvm-project/lld/Common/DWARF.cpp is compiled by
+    # usr.bin/clang/lld, and llvm_shim() keys on the building directory.
+    # The source path is not under lib/clang or usr.bin/clang, so 45
+    # named translation units failed on llvm/ADT/Hashing.h.
+    if not (rel.startswith("lib/clang/") or rel.startswith("usr.bin/clang/")):
+        _lc = _component_dir(rel)
+        if _lc is not None:
+            try:
+                crel = str(_lc.relative_to(SRC))
+            except ValueError:
+                crel = ""
+            if crel.startswith("lib/clang/") or crel.startswith("usr.bin/clang/"):
+                flags.extend(llvm_shim(crel))
 
     # -isystem, not -I. machine_shim() is this sweep's stand-in for the
     # INSTALLED header tree -- machine/, x86/, the LHDRS out of sys/sys,
@@ -4715,10 +4873,14 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
 
     # Any header this directory's Makefile GENERATES. bin/sh's nodes.h,
     # syntax.h and token.h do not exist in a source tree, the same way
-    # device_if.h does not.
-    _gen = generated_shim(str(Path(rel).parent))
-    if _gen:
-        flags.append(f"-I{_gen}")
+    # device_if.h does not. The building directory, not the source's
+    # parent: a .PATH'd source lives under contrib/ and is compiled by
+    # a Makefile elsewhere.
+    for _gd in _generated_dirs(rel):
+        _gen = generated_shim(_gd)
+        if _gen:
+            flags.append(f"-I{_gen}")
+            break
 
     # <rpcsvc/rquota.h> and its twenty siblings do not exist in the tree;
     # include/rpcsvc/Makefile says how to make them and rpc_headers()

@@ -467,6 +467,28 @@ class EndToEnd(unittest.TestCase):
             recs = (td / "out.jsonl").read_text().splitlines()
             self.assertEqual(len([l for l in recs if l.strip()]), 4)
 
+    def test_retry_status_drops_error_and_rechecks(self):
+        # --resume would skip ERROR, which is how a corrected driver
+        # would never re-run the 10868-ERROR sweep. --retry-status
+        # ERROR drops those rows so the file does not hold two
+        # generations, then checks them again.
+        with tempfile.TemporaryDirectory() as t:
+            td = self._tree(t)
+            rec = {
+                "v": D.RESULT_VERSION, "engine": "esbmc", "mode": "bounded",
+                "file": "lib/x/a.c", "function": "ok_bounded",
+                "status": "ERROR", "tier": "ub", "detail": "unrecognised option '-xc'",
+            }
+            (td / "out.jsonl").write_text(json.dumps(rec) + "\n")
+            p = self._run(td, "--resume", "--retry-status", "ERROR")
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            recs = [json.loads(l) for l in
+                    (td / "out.jsonl").read_text().splitlines() if l.strip()]
+            by_fn = [r for r in recs if r["function"] == "ok_bounded"]
+            self.assertEqual(len(by_fn), 1, by_fn)
+            self.assertNotEqual(by_fn[0]["status"], "ERROR")
+            self.assertIn("retried", p.stdout)
+
     def test_selftest_against_the_mock_probes_every_flag(self):
         p = subprocess.run([sys.executable, str(DRIVER), "--selftest"],
                            capture_output=True, text=True, timeout=120,
@@ -481,6 +503,45 @@ class EndToEnd(unittest.TestCase):
         self.assertNotIn("NOT IN --help", p.stdout,
                          "a flag the driver passes is not in the mock's "
                          "--help; fix the mock or the spelling")
+
+
+class ClangEThenDotI(unittest.TestCase):
+    """The path that actually produces proofs: clang -E, then ESBMC
+    on the .i, never -xc on ESBMC's argv."""
+
+    def test_compiler_driver_flags_never_reach_esbmc(self):
+        cmd = D.build_cmd(task("ok_bounded", cflags=[
+            "-xc", "-std=gnu17", "--target=x86_64-unknown-freebsd15.0",
+            "-Wno-everything", "-I/foo", "-D__FreeBSD__=15",
+        ]))
+        joined = " ".join(cmd)
+        self.assertNotIn("-xc", cmd)
+        self.assertNotIn("-std=gnu17", cmd)
+        self.assertNotIn("--target=x86_64-unknown-freebsd15.0", joined)
+        self.assertIn("-I/foo", cmd)
+        self.assertIn("-D__FreeBSD__=15", cmd)
+
+    def test_preprocess_cmd_is_clang_e_with_those_flags(self):
+        cmd = D.preprocess_cmd("a.c", "a.c.i", ["-xc", "-std=gnu17", "-I/h"])
+        self.assertEqual(cmd[1], "-E")
+        self.assertIn("-xc", cmd)
+        self.assertIn("-o", cmd)
+        self.assertIn("a.c.i", cmd)
+
+    def test_pointer_success_is_proved_assuming_not_proved(self):
+        r = D.verify_one(task("ok_bounded_evidence", **{"class": "POINTER"}))
+        self.assertEqual(r["status"], "PROVED-ASSUMING")
+        self.assertIn("min-null-tree-depth", r.get("assuming", ""))
+
+    def test_kinduction_pointer_is_still_assuming(self):
+        r = D.verify_one(task("kind_inductive", mode="kinduction",
+                              **{"class": "POINTER"}))
+        self.assertEqual(r["status"], "PROVED-ASSUMING")
+        self.assertEqual(r.get("closed_by"), "inductive-step")
+
+    def test_scalar_kinduction_is_still_unbounded(self):
+        r = D.verify_one(task("kind_inductive", mode="kinduction"))
+        self.assertEqual(r["status"], "PROVED-UNBOUNDED")
 
 
 if __name__ == "__main__":

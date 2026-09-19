@@ -616,13 +616,14 @@ def ask_incs(d: Path, arch: str, src: Path = SRC, timeout: int = 40
     if vals is None:
         return {}
     dirs = [str(d)] + [x for x in path if x != "."]
+    overrides = _incs_dir_overrides(d, incdir)
     out: dict[str, str] = {}
     for i in range(0, len(want), 2):
         names = vals[i].split()
         where = vals[i + 1].strip() or incdir
+        group = want[i]
         if not where.startswith(incdir):
             continue          # installed outside /usr/include; not a
-        sub = where[len(incdir):].strip("/")   # header a program includes
         for n in names:
             if "$" in n or not n.endswith((".h", ".hh", ".hpp")):
                 continue
@@ -631,11 +632,51 @@ def ask_incs(d: Path, arch: str, src: Path = SRC, timeout: int = 40
             # it into ${INCLUDEDIR}/security, so the installed path is
             # security/pam_appl.h and not security/security/pam_appl.h.
             base = os.path.basename(n)
+            dest = overrides.get((group, base), where)
+            if not dest.startswith(incdir):
+                continue
+            sub = dest[len(incdir):].strip("/")
             for pdir in dirs:
                 cand = os.path.join(pdir, n)
                 if os.path.isfile(cand):
                     out[f"{sub}/{base}" if sub else base] = cand
                     break
+    return out
+
+
+_GROUP_DIR_FILE = re.compile(
+    r"^([A-Za-z_][A-Za-z0-9]*)DIR_([A-Za-z0-9_.-]+)\s*\??=\s*(\S+)",
+    re.M)
+
+
+def _incs_dir_overrides(d: Path, incdir: str) -> dict[tuple[str, str], str]:
+    """bsd.incs.mk:44-51 ${group}DIR_${header:T} per-file install directory.
+
+    lib/atf/libatf-c/Makefile installs most headers into
+    ${INCLUDEDIR}/atf-c and then:
+
+        INCS+=           atf-c.h
+        INCSDIR_atf-c.h= ${INCLUDEDIR}
+
+    Reading only INCSDIR staged atf-c.h as atf-c/atf-c.h, so
+    `#include <atf-c.h>' failed -- 227 named translation units, the
+    netbsd-tests among them. The tests/ special-case -I in includes.py
+    covered files whose path contained /tests/ and nothing else.
+    """
+    mk = d / "Makefile"
+    if not mk.is_file():
+        return {}
+    try:
+        text = mk.read_text(errors="replace")
+    except OSError:
+        return {}
+    out: dict[tuple[str, str], str] = {}
+    for group, name, val in _GROUP_DIR_FILE.findall(text):
+        val = (val.replace("${INCLUDEDIR}", incdir)
+                  .replace("$(INCLUDEDIR)", incdir))
+        if "$" in val:
+            continue
+        out[(group, name)] = val
     return out
 
 
@@ -650,9 +691,16 @@ def build_incs(arch: str, src: Path = SRC, jobs: int = 8) -> dict[str, str]:
     return out
 
 
+# Bumped when ask_incs() layout rules change, so a stale cache from
+# before INCSDIR_<file> overrides is not reused as if it were the
+# installed tree. compiler_key() already covers the compiler; this
+# covers the reader.
+INCS_LAYOUT = "2"
+
+
 def incs_cache_path(arch: str) -> Path:
     return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
-        f"pbsd_userland_incs_{arch}_{compiler_key()}.json"
+        f"pbsd_userland_incs_{INCS_LAYOUT}_{arch}_{compiler_key()}.json"
 
 
 @functools.lru_cache(maxsize=None)

@@ -71,6 +71,27 @@ under wrapping, so unsigned is what the code already assumed.
 
 *Verified:* 6,200,000 cases across every `j0` in [21,51], zero mismatches.
 
+### `sys/net/if.h` — `IFCAP_BIT(31)` is `1 << 31`
+
+```c
+#define	IFCAP_BIT(x)		(1 << (x))
+#define	IFCAP_TXTLS_RTLMT	IFCAP_BIT(IFCAP_B_TXTLS_RTLMT)	/* 31 */
+```
+
+`1` is an `int`. `1 << 31` needs a 33rd bit — C17 6.5.7p4, undefined. The
+sibling two macros down is already the defined spelling:
+`IFCAP2_BIT(x)` is `(1UL << (x))`. `struct ifnet.if_capabilities` is an
+`int`; `1U << 31` is the bit pattern the compiler was already emitting,
+and `~IFCAP_TXTLS_RTLMT` is `0x7fffffff` either way on two's complement,
+so `if_capenable &= ~IFCAP_TXTLS_RTLMT` is unchanged.
+
+CBMC reported it on `ifa_alloc` / `link_alloc_sdl` / `if_allocdescr`
+because `sys/net/if.c` initialises `ifcap_nv_bit_names[]` with
+`IFCAP_TXTLS_RTLMT` in the same translation unit. gcc 13
+`-Wshift-overflow=2` on the old spelling: *"result of '1 << 31' requires
+33 bits to represent, but 'int' only has 32 bits"*. Same class as
+`MDF_FORCE`, `SC_A_DESTROY`, `s_rint.c`.
+
 ---
 
 ## Reported, not fixed — the UB *is* the overflow
@@ -35870,3 +35891,80 @@ The matrix's queue splits by why, because they are different work:
 Rows a model has already read are excluded — the point is a queue, not a
 re-read — and so are rows with a `PROVED`. The expensive instrument goes
 where the proof is not.
+
+## Sweep 2026-09-18: unread EXPORTED-arithmetic under `sys/` and `lib/`
+
+The queue is `docs/verify/sweep-2026-09-18/queue/cbmc-read-these.json`,
+key `EXPORTED, arithmetic - READ THESE`, `already_in_ub_findings` false,
+paths under `sys/` or `lib/`. 129 records. Machine-readable disposition:
+`docs/verify/sweep-2026-09-18/queue/arithmetic-triage.json`.
+
+WSL was down (`Wsl/Service/E_UNEXPECTED`); MinGW has no `libubsan`.
+Integer claims below are C17, the same authority this file used for
+`rint` / `stdbit` / `abs`. gcc 13 `-Wshift-overflow=2` confirmed the
+one type-level hit.
+
+### One type-level defect, fixed
+
+`IFCAP_BIT(x)` was `(1 << (x))`. `IFCAP_B_TXTLS_RTLMT` is 31, so
+`IFCAP_TXTLS_RTLMT` is `1 << 31` on a signed `int` — C17 6.5.7p4.
+Now `(1U << (x))`, matching `IFCAP2_BIT`'s unsigned spelling and
+`MDF_FORCE` / `SC_A_DESTROY`. Written up with the other type-level
+fixes above. CBMC named `ifa_alloc`, `link_alloc_sdl` and
+`if_allocdescr` because `if.c` initialises `ifcap_nv_bit_names[]` in
+the same translation unit.
+
+`inet6_option_space` remains the overflow that was already reported
+and not fixed: `nbytes + 2` on an exported `int`.
+
+### Looked like a defect and was not
+
+| reported | why it is not a defect |
+|---|---|
+| `lib/libc/gen/alarm.c`, `clock.c`, `lib/libc/rpc/svc_run.c` | already in this file: the overflowing values come from `setitimer` / `getrusage` / `svc_maxfd`, unmodelled externs. |
+| `lib/libc/stdlib/abs.c`, `labs.cpp`, `llabs.cpp` | C17 7.22.6.1 / 7.22.6.3: if the result cannot be represented the behaviour is undefined. `abs(INT_MIN)` is the caller's to keep in range. |
+| `lib/libc/stdlib/div.c`, `ldiv.cpp`, `lldiv.cpp` | C17 7.22.6.2p2: zero divisor or unrepresentable quotient is the caller's contract. |
+| `lib/libc/posix1e/acl_branding.c`, `acl_strip.c` | already in this file: the `assert` *is* the check; CBMC starts with an unconstrained ACL. |
+| `lib/libcasper/libcasper/libcasper.c:cap_init` | `assert(ret)` after `cap_add_pd`; the assertion family this file already named for casper magic numbers. |
+| `lib/libc/gen/cap_sandboxed.c` | `assert(errno == ENOSYS)` and `assert(mode == 0 \|\| mode == 1)` after `cap_getmode()`. On success Capsicum's mode is a boolean; on failure FreeBSD's `cap_getmode` is `ENOSYS` when the kernel has no Capsicum. CBMC does not model the syscall, so both `errno` and `mode` are unconstrained. The asserts are the contract. |
+| eight `lib/libpjdlog/pjdlog.c` exported functions | every one is `assert(pjdlog_initialized == PJDLOG_INITIALIZED)` (and, for `pjdlog_init` / `pjdlog_mode_set`, that `mode` is `STD` or `SYSLOG`). A modular check does not see `pjdlog_init` having run. Same family as casper's magic and the ACL brand asserts. |
+| `lib/libgeom/geom_stats.c:geom_stats_open` | `mediasize / pagesize`. `pagesize` is `getpagesize()`, which POSIX requires to be a power of two ≥ 1. CBMC does not model it. |
+| `lib/libthr` `locklevel + 1` / `sigblock ± 1` in six functions | per-thread recursion counters, same shape as `fp->_fl_count + 1`. Overflow needs 2^31 nested list-locks or signal-blocks on one thread. `THREAD_LIST_RDLOCK` / `thr_signal_block_slow` increment; the matching unlock decrements. |
+| `lib/libvgl/main.c:VGLSetSegment` | integer `/ VGLAdpInfo.va_window_size`. The size is filled by `CONS_ADPINFO` in `VGLInit`. Zero is a broken adapter or a call before init — a missing precondition, not a bug in the division. |
+| `lib/libvgl/mouse.c:VGLMouseMode` | `-VGLMouseAndMask->VYsize` is the cursor height, a small positive from the mask bitmap. `INT_MIN` is not a mouse cursor. |
+| `lib/msun/src/k_exp.c:__ldexp_exp`, `k_expf.c:__ldexp_expf` | already in this file: the comment *above the function* says `expt` is 0 or −1 and the caller has filtered large `x`. The type does not carry that. |
+| `lib/msun` `cos`/`sin`/`tan`/`cosf`/`sinf`/`cosl`/`sinl`/`tanl` `-n` | already in this file: `n` is `__ieee754_rem_pio2*`'s quadrant count, small and non-negative. Unmodelled callee. |
+| `lib/msun/src/e_jnf.cpp:ynf` | `n = -n` on a negative Bessel order. Overflow only at `INT_MIN`. `yn(3)`'s domain is an order, not an arbitrary `int`. Same as libcalendar's year. |
+| `lib/msun/src/s_fma.c:fma`, `s_fmal.c:fmal` | already in this file for `fma`: the overflowing expression is in `static add_and_denormalize`, which leaked into the exported bucket. `fmal` is the `long double` copy of the same helper. |
+| `sys/amd64` + `sys/x86` + `sys/i386` + `sys/riscv` `spinlock_exit`, `pmap_*`, `pci_cfgreg*`, `vie_alignment_check`, `vmm_mem_maxaddr`, `pglvl_*`, `cpu_reset`, `ipi_nmi_handler`, `mptable_pci_route_interrupt` | already read in this file. Counters, PCI slots 0..31, page-table levels, `Maxmem`, `curcpu`. |
+| `sys/kern/kern_pmc.c` four `pmc_cpu_is_*` | already in this file: `CPU_ISSET` on an unconstrained `int cpu`; every call site validates. |
+| `sys/kern/subr_param.c:init_param2` | already in this file: `16 * maxusers` is a root-only boot tunable, re-clamped. |
+| `sys/kern/subr_smr.c:smr_poll` | already in this file: the per-CPU artefact with a real `t - s_wr.ticks` beside it. |
+| `sys/compat/linux/linux.c:linux_to_bsd_signal`, `bsd_to_linux_signal` | `SIGRTMIN + sig - LINUX_SIGRTMIN` and `_SIG_IDX(sig)` (`sig - 1`). Linux syscall signal numbers are 1..64; `KASSERT(sig > 0 && sig <= LINUX_SIGRTMAX)` is compiled out without `INVARIANTS`. Overflow needs `sig` near `INT_MAX` / `INT_MIN`. Exported, caller-constrained. |
+| `sys/compat/linux/linux_file.c:linux_common_openflags` | CBMC named `34 << 26` on the file-scope `mfd_bitmap[]`. `LINUX_HUGETLB_FLAG_ENCODE_16GB` is already `(34U << 26)`. The pretty-printer dropped the `U`. |
+| `sys/compat/linuxkpi` `idr_preload_end`, `local_bh_enable`/`disable` | `sched_pin` / `sched_unpin` on `td_pinned`, the same counter this file already named in `delay.c`. |
+| `sys/compat/linuxkpi` `linux_alloc_pages`, `linux_alloc_kmem`, `linux_free_kmem` | `1UL << order` / `PAGE_SIZE << order` with `unsigned int order`. Linux GFP order is 0..`MAX_ORDER` (typically 11). Shift-too-large needs `order >= 64`. Every in-tree caller passes a small literal or a page-order the slab computed. |
+| `sys/compat/x86bios/x86bios.c:x86bios_get_intr`, `x86bios_set_intr` | `intno * 4` into the IVT. x86 interrupt numbers are 0..255. |
+| `sys/cddl/dev/dtrace/*/dtrace_isa.c:dtrace_getstackdepth` | `aframes + 1` / `depth - aframes`. `aframes` is DTrace's skip count, a small non-negative from the probe machinery. |
+| `sys/ddb/db_access.c:db_get_value` | `size - 1` in the byte loop. Debugger widths are 1, 2, 4, 8. The signed-shift UB that *was* here is already rewritten in unsigned; this remainder is the loop bound. |
+| `sys/dev/etherswitch/arswitch/arswitch_reg.c` `*_msb` | `addr + 2` for the high half of a 32-bit switch register. Overflow at `INT_MAX - 1`. Callers pass MDIO register numbers. |
+| `sys/dev/iavf/iavf_lib.c:iavf_msec_pause` | `MSEC_2_TICKS(msecs)` → `tick_sbt * timo`. Every in-tree call passes 10 or 100. |
+| `sys/dev/ixgbe/if_sriov.c:ixgbe_vf_que_index` | `vfnum * ixgbe_vf_queues(mode) + num`. VF count and queues-per-VF are hardware-small (the sibling `ixgbe_vf_queues` returns 0, 2 or 4). |
+| `sys/dev/mlx4/mlx4_ib/mlx4_ib_alias_GUID.c:mlx4_ib_get_aguid_comp_mask_from_ix` | `IB_SA_COMP_MASK(4 + index)` is `1ull << (4 + index)`. `index` is an alias-GUID slot, 0..15. Negative shift needs a negative slot. |
+| `sys/dev/qat/qat_common/adf_clock.c:adf_clock_get_current_time` | `tv_sec * 1000` inside `static timespec_to_ms`. `time_t` nanoseconds-since-boot; the static leaked into the exported bucket. Same family as `rstatd`'s `hz * uptime`. |
+| `sys/fs/nfs/nfs_commonsubs.c:newnfs_init` | `hz * NFS_TICKINTVL`. `hz` is clamped to `[HZ_MINIMUM, HZ_MAXIMUM]` in `subr_param.c:187` — the row this file already has for `altq_subr.c:922`. |
+| `sys/kern/kern_mbuf.c:debugnet_mbuf_reinit` | `while (nmbuf-- > 0)` under `#ifdef DEBUGNET`. Postfix `--` overflows only at `INT_MIN`, and that value fails `> 0` so the loop does not run. Callers pass mbuf counts. |
+| `sys/kern/kern_sharedpage.c:shared_page_alloc` | `roundup(free, align)` divides by `align`. The three in-tree callers pass `CACHE_LINE_SIZE` or a `sizeof`. Zero is not a cache-line. |
+| `sys/kern/kern_tc.c:tc_ticktock` | the overflowing arithmetic is in `static recalculate_scaling_factor_and_large_delta` (`th_adjustment / 1024 * 2199` and `scale / tc_frequency`). A timecounter frequency of 0 is not a clock. Static leaked. |
+| `sys/net/altq/altq_subr.c:read_machclk` | `tv.tv_sec - boottime.tv_sec` is uptime in a `time_t`. |
+| `sys/net80211/ieee80211_phy.c:ieee80211_compute_duration_ht` | `HT_LTF(streams)` is `streams * 4`. The one in-tree caller passes `IEEE80211_HT_RC_2_STREAMS(rc)` = `(((rc & 0x78) >> 3) + 1)`, so 1..16 by construction. Same as `ath_hal_computetxtime_ht` already in this file. |
+| `sys/riscv/riscv/pmap.c:pmap_qremove`, `pmap_kenter` | `1ul << tmp_if_expr` is `CPU_CLR(PCPU_GET(hart), &mask)` — `n % 64` on a `u_int`. Already the `CPU_SET` row for `mp_machdep.c`. |
+| `sys/vm/vm_page.c:vm_page_bits` | `base + size` under `KASSERT(base + size <= PAGE_SIZE)`. Inputs "are required to range within a page", the comment says. PAGE_SIZE is 4096. |
+| `sys/vm/vm_phys.c:vm_phys_avail_size` | `phys_avail[i + 1]`. Callers walk even slots of the boot memory map (`for (i = 0; phys_avail[i + 1]; i += 2)`). |
+
+### Deferred, not read as first-party arithmetic
+
+| why | records |
+|---|---|
+| `sys/contrib/**` and `sys/cddl/contrib/**` | 24. Not the stdbit/rint type-level class (`1 << 31` on a value the function already computed, or a signed shift of a 0/1). Left for a contrib pass. |
+| missing-precondition pointer that leaked into this bucket | `lib/libmp/mpasbn.c:mp_itom` and `lib/libpfctl/libpfctl.c:pfctl_set_keepcounters` (`free` argument has offset zero — CBMC will not place an unmodelled `malloc`/`nvlist_pack` at offset 0); `sys/netpfil/ipfw/ip_fw_sockopt.c:ipfw_destroy_sopt_handler` (pointer difference `ctl3_handlers + ctl3_hsize - (h + 1)` across two objects in the model). |

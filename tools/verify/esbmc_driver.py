@@ -3,21 +3,28 @@
 # SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Model checking over every function in hbsd/src, with ESBMC.
 
-THIS DRIVER HAS NEVER BEEN RUN AGAINST A REAL ESBMC BINARY.
+THE FIRST REAL RUN WAS 10868 ERROR, EVERY ONE THE SAME LINE
 
-Say that first and keep saying it. `esbmc` is in no distribution's
-package set and is not on PyPI - fusebmc.py's docstring recorded that,
-and it was re-checked when this file was written:
+    ERROR: unrecognised option '-xc'
 
-    # apt-cache policy esbmc      -> no candidate, no such package
-    # pip download esbmc          -> No matching distribution found
+That was this driver passing includes.py's `lang_flags()` (`-xc`,
+`-std=gnu17`) as if ESBMC were clang. ESBMC is not a compiler driver.
+`--target=` is not in its --help either. Feeding FreeBSD sources plus
+clang's argv to a Linux ESBMC binary is not a check of those sources.
 
-So every flag below comes from ESBMC's DOCUMENTED command line and every
-output pattern from its documented format. Neither has been confirmed
-against the tool. What HAS been executed is the parsing: mock/esbmc is a
-shell script that emits ESBMC's output shapes, and test_esbmc_driver.py
-runs this driver against it and asserts every status mapping. That makes
-the parser landable. It does not make the flags right.
+The path that works, measured on ESBMC 8.4 against a SCALAR function
+CBMC already PROVED (`stdc_has_single_bit_uc`):
+
+  clang -E  with includes.py's lang_flags + include_flags
+  esbmc     on the resulting .i  (no compiler-driver flags)
+
+ESBMC 8.4 has `--preprocess` (stop after its own cpp) and does NOT
+have `--preprocessed`. The equivalent of CBMC's `--preprocessed` is
+"hand it a .i". `--preprocessed` as an ESBMC flag is itself an
+unrecognised option.
+
+The parser was written against documentation and is tested against
+mock/esbmc. The flags that reach ESBMC still go through --selftest.
 
 The three flags most likely to be wrong are named in FLAG_CONFIDENCE
 below and printed by --selftest, which also probes `esbmc --help` for
@@ -78,16 +85,16 @@ program; the ireps are not the same format and there is no documented
 converter. So this driver uses classify.py's output for the SIGNATURE
 CLASSES and LINKAGE only, and gets the code from source:
 
-  * --preprocessed DIR is the honest path. A self-contained .i built on
-    a FreeBSD host has no header problem to have, and ESBMC parses it
-    anywhere. Same remedy cbmc_driver.py's docstring names.
-  * failing that, hbsd/src/<path> with includes.py's -I set, which on a
-    Linux host will ERROR for most of the tree for exactly the reason
-    cbmc_driver.py's PREPROCESSING section gives.
+  * Default: clang -E with includes.py's flags, then ESBMC on the .i.
+    Same header story as CBMC / analyze.py; a second -I set is how
+    this would silently check different code.
+  * --preprocessed DIR still accepted: a tree of .i, used as-is, no
+    clang -E. For .i built elsewhere, or for tests.
+  * Compiler-driver flags (-xc, -std=, --target=) are NEVER passed to
+    ESBMC. That is how the first whole-tree run became 10868 ERROR.
 
-That is a real reduction in reach relative to the CBMC sweep, and it is
-recorded rather than worked around: an unreachable translation unit is
-ERROR with the compiler's message, never a clean result.
+An unreachable translation unit is ERROR with clang's or ESBMC's
+message, never a clean result.
 
 THE STATUS VOCABULARY
 
@@ -99,6 +106,11 @@ cbmc_driver.py's, plus three. None of them is ever merged:
   PROVED            every property discharged, loops closed inside the
                     bound, and unwinding assertions were demonstrably
                     active. Bounded proof, cbmc_driver.py's meaning.
+  PROVED-ASSUMING   same as PROVED / PROVED-UNBOUNDED, but the function
+                    is POINTER. ESBMC has no --min-null-tree-depth, so a
+                    POINTER result is never PROVED outright - the same
+                    rule as cbmc_driver.py. Default --allow excludes
+                    POINTER; this is the status if someone opts it in.
   BOUNDED           nothing found within the bound, and that is all.
                     Also where a clean bounded run lands when this
                     driver cannot PROVE that unwinding assertions were
@@ -134,6 +146,7 @@ import resource
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -349,6 +362,83 @@ def esbmc_bin() -> str:
     return shutil.which("esbmc") or "esbmc"
 
 
+# Compiler-driver flags ESBMC will reject. The first whole-tree run was
+# 10868 ERROR, every record `unrecognised option '-xc'`, because
+# lang_flags() starts with -xc and those were passed as if ESBMC were
+# clang. --target= is not in ESBMC's --help either.
+_COMPILER_DRIVER_EXACT = frozenset({
+    "-xc", "-xc++", "-x", "c", "c++", "-Wno-everything",
+})
+
+
+def _esbmc_cflags(flags: list[str]) -> list[str]:
+    """Drop compiler-driver flags ESBMC will reject as unrecognised."""
+    out: list[str] = []
+    skip_next = False
+    for f in flags:
+        if skip_next:
+            skip_next = False
+            continue
+        if f in ("-x", "--target"):
+            skip_next = True
+            continue
+        if f in _COMPILER_DRIVER_EXACT:
+            continue
+        if f.startswith(("-std=", "--target=", "-isystem", "-Wno")):
+            continue
+        out.append(f)
+    return out
+
+
+def clang_bin() -> str:
+    return os.environ.get("PBSD_CLANG") or shutil.which("clang") or "clang"
+
+
+def preprocess_cmd(src: str, out_i: str, clang_flags: list[str]) -> list[str]:
+    """clang -E with includes.py's flags. The .i is what ESBMC parses."""
+    return [clang_bin(), "-E", *clang_flags, "-Wno-everything",
+            src, "-o", out_i]
+
+
+def clang_preprocess(task: dict) -> tuple[str | None, str]:
+    """Return (path_to_.i, error). Caches one .i per translation unit.
+
+    Two functions in the same file share the cache entry. Write to a
+    pid-suffixed temp then os.replace, so two workers racing on one TU
+    cannot leave a half-written .i.
+    """
+    src = task["src"]
+    rel = task["file"]
+    pp_dir = Path(task["pp_dir"])
+    pp_dir.mkdir(parents=True, exist_ok=True)
+    out_i = pp_dir / (rel.replace("/", "__") + ".i")
+    src_p = Path(src)
+    if out_i.is_file() and out_i.stat().st_size > 0:
+        try:
+            if not src_p.is_file() or out_i.stat().st_mtime >= src_p.stat().st_mtime:
+                return str(out_i), ""
+        except OSError:
+            return str(out_i), ""
+    tmp = out_i.with_suffix(out_i.suffix + f".{os.getpid()}.tmp")
+    cmd = preprocess_cmd(src, str(tmp), list(task.get("clang_flags") or []))
+    try:
+        p = subprocess.run(
+            cmd, capture_output=True, text=True,
+            timeout=task.get("pp_timeout") or task.get("timeout") or 60)
+    except subprocess.TimeoutExpired:
+        tmp.unlink(missing_ok=True)
+        return None, "clang -E timeout"
+    except OSError as e:
+        tmp.unlink(missing_ok=True)
+        return None, f"clang -E: {e}"
+    if p.returncode != 0 or not tmp.is_file() or tmp.stat().st_size == 0:
+        err = (p.stderr or p.stdout or "clang -E failed").strip()
+        tmp.unlink(missing_ok=True)
+        return None, _tail(err)
+    os.replace(tmp, out_i)
+    return str(out_i), ""
+
+
 def esbmc_available() -> bool:
     """Is there something to run at all?
 
@@ -522,8 +612,8 @@ def build_cmd(task: dict) -> list[str]:
         # asking for it, because the format is the uncertain part and
         # subprocess.run's timeout does the job with no format at all.
         cmd += ["--timeout", f"{int(task['esbmc_timeout'])}s"]
-    cmd += list(task.get("cflags", []))
-    cmd += list(task.get("extra", []))
+    cmd += _esbmc_cflags(list(task.get("cflags", [])))
+    cmd += _esbmc_cflags(list(task.get("extra", [])))
     check_flags(cmd)
     return cmd
 
@@ -615,7 +705,7 @@ def classify_output(task: dict, out: str, rc: int) -> tuple[str, dict]:
     if ind:
         # The inductive step or the forward condition closed it. No loop
         # bound is involved in the claim.
-        return "PROVED-UNBOUNDED", extra
+        return _pointer_proof(task, "PROVED-UNBOUNDED", extra)
     if mode == "falsification":
         # Base case only. It looked for a bug and did not find one at
         # this depth. That is not a proof and is never recorded as one.
@@ -636,9 +726,26 @@ def classify_output(task: dict, out: str, rc: int) -> tuple[str, dict]:
     # know. See UNWIND_ASSERT_POLICY.
     pol = task.get("unwind_assert", "auto")
     if pol == "on" or (pol == "auto" and UNWIND_EVIDENCE_RE.search(out)):
-        return "PROVED", extra
+        return _pointer_proof(task, "PROVED", extra)
     extra["unwind_assert_unconfirmed"] = True
     return "BOUNDED", extra
+
+
+def _pointer_proof(task: dict, status: str, extra: dict) -> tuple[str, dict]:
+    """POINTER is never PROVED outright. Same rule as cbmc_driver.py.
+
+    cbmc_driver.py records PROVED-ASSUMING when --min-null-tree-depth
+    stated the precondition that pointer arguments are valid objects.
+    ESBMC has no equivalent flag; pointer-check is on by default, so a
+    SUCCESS on a POINTER function is still a result under an unstated
+    (or missing) precondition. Default --allow excludes POINTER. If
+    someone opts it in, the status says so rather than claiming PROVED.
+    """
+    if task.get("class") == "POINTER":
+        extra["assuming"] = (
+            "pointer arguments; ESBMC has no --min-null-tree-depth")
+        return "PROVED-ASSUMING", extra
+    return status, extra
 
 
 def verify_one(task: dict) -> dict:
@@ -649,28 +756,45 @@ def verify_one(task: dict) -> dict:
                     detail=f"esbmc not found on PATH (looked for "
                            f"{esbmc_bin()!r}); NOTHING was checked",
                     elapsed=0.0)
-    try:
-        cmd = build_cmd(task)
-    except ValueError as e:
-        return _rec(task, "ERROR", detail=str(e), elapsed=0.0)
 
+    work = dict(task)
     t0 = time.time()
+    # load_tasks sets src_kind to "source" or "preprocessed". Tests that
+    # call verify_one directly leave it unset and skip clang -E, so the
+    # mock keeps working on a filename it never opens.
+    if work.get("src_kind") == "source":
+        if not work.get("pp_dir"):
+            work["pp_dir"] = tempfile.mkdtemp(prefix="pbsd_esbmc_i_")
+        i_path, err = clang_preprocess(work)
+        if not i_path:
+            return _rec(work, "ERROR",
+                        detail=err or "clang -E failed",
+                        elapsed=time.time() - t0)
+        work["src"] = i_path
+        work["cflags"] = []
+        work["src_kind"] = "clang-E"
+
+    try:
+        cmd = build_cmd(work)
+    except ValueError as e:
+        return _rec(work, "ERROR", detail=str(e), elapsed=time.time() - t0)
+
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
-                           timeout=task["timeout"],
-                           preexec_fn=_mem_capped(task.get("mem_mb", 0)))
+                           timeout=work["timeout"],
+                           preexec_fn=_mem_capped(work.get("mem_mb", 0)))
         out = (p.stdout or "") + "\n" + (p.stderr or "")
         rc = p.returncode
     except subprocess.TimeoutExpired:
-        return _rec(task, "TIMEOUT", elapsed=task["timeout"])
+        return _rec(work, "TIMEOUT", elapsed=work["timeout"])
     except OSError as e:
-        return _rec(task, "ERROR", detail=str(e), elapsed=time.time() - t0)
+        return _rec(work, "ERROR", detail=str(e), elapsed=time.time() - t0)
 
     elapsed = time.time() - t0
-    status, extra = classify_output(task, out, rc)
+    status, extra = classify_output(work, out, rc)
     if status in ("ERROR", "NOFUNC", "UNKNOWN"):
         extra.setdefault("detail", _tail(out))
-    return _rec(task, status, elapsed=elapsed, **extra)
+    return _rec(work, status, elapsed=elapsed, **extra)
 
 
 def _tail(s: str, n: int = 600) -> str:
@@ -709,7 +833,10 @@ def _tail(s: str, n: int = 600) -> str:
 # for a bug fix that leaves the fields meaning what they meant.
 #
 #   1  first version. Never run against a real ESBMC.
-RESULT_VERSION = 1
+#   2  clang -E then .i; -xc is not passed to ESBMC. v=1 ERROR was
+#      "unrecognised option '-xc'" for the whole tree, which is not an
+#      answer to whether the function is well-defined.
+RESULT_VERSION = 2
 
 
 def _rec(task: dict, status: str, **kw) -> dict:
@@ -732,6 +859,7 @@ def _rec(task: dict, status: str, **kw) -> dict:
         "unwind": task.get("unwind", 0),
         "max_k": task.get("max_k", 0),
         "solver": task.get("solver", "default"),
+        "src_kind": task.get("src_kind"),
         "status": status,
         **kw,
     }
@@ -743,12 +871,9 @@ def _src_for(rel: str, preprocessed: Path | None) -> tuple[str | None, str]:
     ESBMC cannot read CBMC's goto binaries, so classify.py's .gb tree is
     of no use here beyond its classes. Preference order:
 
-      1. --preprocessed DIR/<rel>.i  - self-contained, built where the
-         FreeBSD headers are. The only path that works for most of this
-         tree, and the same remedy cbmc_driver.py's docstring names.
-      2. hbsd/src/<rel> - honest, and on a Linux host it will mostly
-         ERROR on the glibc header collision. That ERROR is a
-         measurement of reach, not something to hide.
+      1. --preprocessed DIR/<rel>.i  - already a .i, used as-is.
+      2. hbsd/src/<rel> - clang -E with includes.py's flags, then ESBMC
+         on the .i. Compiler-driver flags never reach ESBMC.
     """
     if preprocessed:
         for cand in (preprocessed / (rel + ".i"),
@@ -765,12 +890,10 @@ def _src_for(rel: str, preprocessed: Path | None) -> tuple[str | None, str]:
 
 
 def _cflags_for(rel: str, arch: str, preprocessed: bool) -> list[str]:
-    """includes.py's -I set, or nothing for an already-preprocessed unit.
+    """includes.py's flags for clang -E, or nothing for an already-.i unit.
 
-    Imported lazily and defensively. includes.py is 238KB and pulls in
-    the whole port ledger machinery; --selftest and the mock tests have
-    no business paying for it, and a checkout where it is absent should
-    still be able to run this driver against a preprocessed tree.
+    These go to clang, never to ESBMC. Imported lazily: includes.py is
+    238KB and --selftest / the mock tests have no business paying for it.
     """
     if preprocessed:
         return []
@@ -823,7 +946,9 @@ def load_tasks(plan: Path, scopes: list[str], classes: Path,
             skipped["no-source"] += len(rec["functions"])
             continue
         fns = c["functions"]
-        cflags = _cflags_for(path, opts["arch"], how == "preprocessed")
+        # clang -E gets the full includes.py set. ESBMC gets none of it:
+        # -xc is how the first whole-tree run became 10868 ERROR.
+        clang_flags = _cflags_for(path, opts["arch"], how == "preprocessed")
         for fn in rec["functions"]:
             if fn not in fns:
                 skipped["not-in-model"] += 1
@@ -835,7 +960,9 @@ def load_tasks(plan: Path, scopes: list[str], classes: Path,
                 "file": path, "src": src, "src_kind": how, "function": fn,
                 "class": fns[fn],
                 "linkage": c.get("linkage", {}).get(fn, "?"),
-                "cflags": cflags,
+                "cflags": [],
+                "clang_flags": clang_flags,
+                "pp_dir": opts.get("pp_dir") or "",
             }
             t.update(opts["run"])
             tasks.append(t)
@@ -962,6 +1089,64 @@ def selftest(args) -> int:
     return rc
 
 
+SMOKE_REL = "lib/libc/stdbit/stdc_has_single_bit.c"
+SMOKE_FN = "stdc_has_single_bit_uc"
+
+
+def smoke(args) -> int:
+    """One SCALAR function CBMC already PROVED must not be ERROR.
+
+    lib/libc/stdbit/stdc_has_single_bit_uc is the probe: 70 stdbit
+    functions came back PROVED from CBMC, this is one of them, and it
+    is small enough that k-induction finishes in seconds once clang -E
+    has run. A run that still reports ERROR measured the instrument.
+    """
+    src = SRC / SMOKE_REL
+    print(f"== smoke  {SMOKE_REL}:{SMOKE_FN}")
+    if not src.is_file():
+        print(f"FAIL  source not found: {src}")
+        return 1
+    if not esbmc_available():
+        print(f"FAIL  esbmc not found ({esbmc_bin()!r})")
+        return 1
+    clang_flags = _cflags_for(SMOKE_REL, args.arch, preprocessed=False)
+    if not clang_flags:
+        print("FAIL  includes.py produced no flags for clang -E")
+        return 1
+    with tempfile.TemporaryDirectory(prefix="pbsd_esbmc_smoke_") as td:
+        task = {
+            "file": SMOKE_REL, "src": str(src), "src_kind": "source",
+            "function": SMOKE_FN, "class": "SCALAR",
+            "linkage": "exported", "tier": "ub",
+            "mode": getattr(args, "mode", "kinduction") or "kinduction",
+            "unwind": args.unwind, "max_k": args.max_k, "k_step": 0,
+            "context_bound": 2, "concurrency_checks": False,
+            "unwind_assert": args.unwind_assert, "solver": args.solver,
+            "timeout": args.timeout, "esbmc_timeout": 0, "memlimit": "",
+            "mem_mb": 0, "cflags": [], "clang_flags": clang_flags,
+            "pp_dir": td,
+        }
+        if task["mode"] == "bounded":
+            # Smoke is the k-induction path the rerun will use, unless
+            # the caller overrode --mode.
+            task["mode"] = "kinduction"
+        r = verify_one(task)
+    print(f"  status={r['status']}  elapsed={r.get('elapsed', 0):.2f}s"
+          f"  src_kind={r.get('src_kind')}")
+    if r.get("detail"):
+        print("  detail:", r["detail"].splitlines()[0][:200])
+    if r.get("closed_by"):
+        print(f"  closed_by={r['closed_by']}  k={r.get('k')}")
+    if r["status"] == "ERROR":
+        print("FAIL  smoke is ERROR; clang -E / ESBMC path is still broken")
+        return 1
+    if r["status"] in ("NOTRUN", "NOFUNC"):
+        print(f"FAIL  smoke is {r['status']}")
+        return 1
+    print("ok  not ERROR")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -1029,20 +1214,36 @@ def main() -> int:
     ap.add_argument("--arch", default="amd64")
     ap.add_argument("--allow", default="SCALAR,VOID",
                     help="classes to check (SCALAR,VOID are sound "
-                         "unguarded). ESBMC has no known equivalent of "
-                         "CBMC's --min-null-tree-depth, so there is no "
-                         "PROVED-ASSUMING path here and POINTER is not run.")
+                         "unguarded). POINTER is not the default: ESBMC "
+                         "has no --min-null-tree-depth, and a POINTER "
+                         "success is recorded PROVED-ASSUMING, never "
+                         "PROVED, same as cbmc_driver.py.")
     ap.add_argument("--out", default="verify_esbmc_results.jsonl")
+    ap.add_argument("--pp-dir", default="",
+                    help="cache of clang -E .i files, one per translation "
+                         "unit. Default: <out-dir>/esbmc-i")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--resume", action="store_true",
                     help="skip (file, function) pairs already in --out")
+    ap.add_argument("--retry-status", action="append", default=[],
+                    help="with --resume, drop records whose status is "
+                         "this and check them again (repeatable, or "
+                         "comma-separated). ERROR is the one that makes "
+                         "a corrected driver re-run a sweep that "
+                         "measured the instrument.")
     ap.add_argument("--selftest", action="store_true",
                     help="report what is known about this machine's ESBMC "
                          "and probe --help for every flag. Run this first.")
+    ap.add_argument("--smoke", action="store_true",
+                    help="run one SCALAR function CBMC already PROVED "
+                         "(stdc_has_single_bit_uc) through clang -E + "
+                         "k-induction. Fails if the result is ERROR.")
     args = ap.parse_args()
 
     if args.selftest:
         return selftest(args)
+    if args.smoke:
+        return smoke(args)
 
     # Said once, up front, on every run. The alternative is a reader who
     # finds out from the commit log.
@@ -1062,10 +1263,12 @@ def main() -> int:
         "timeout": args.timeout, "esbmc_timeout": args.esbmc_timeout,
         "memlimit": args.memlimit, "mem_mb": args.mem_mb,
     }
+    pp_dir = args.pp_dir or str(Path(args.out).resolve().parent / "esbmc-i")
     tasks = load_tasks(Path(args.plan), args.scope, Path(args.classes),
                        set(args.allow.split(",")),
                        {"run": run_opts, "arch": args.arch,
-                        "preprocessed": args.preprocessed})
+                        "preprocessed": args.preprocessed,
+                        "pp_dir": pp_dir})
 
     out = Path(args.out)
     done: set[tuple[str, str]] = set()
@@ -1078,7 +1281,10 @@ def main() -> int:
         # without it, this starts.
         out.write_text("")
     if args.resume and out.is_file():
-        stale, keep = 0, []
+        stale, dropped_retry, keep = 0, 0, []
+        retry: set[str] = set()
+        for item in args.retry_status:
+            retry.update(s.strip() for s in item.split(",") if s.strip())
         for line in out.read_text().splitlines():
             if not line.strip():
                 continue
@@ -1092,6 +1298,11 @@ def main() -> int:
             # is kept in the file and does not satisfy the task.
             if r.get("v") != RESULT_VERSION or r.get("engine") != "esbmc":
                 stale += 1
+                continue
+            if r.get("mode") == args.mode and r.get("status") in retry:
+                # Drop, do not keep: otherwise report.py would count the
+                # old ERROR next to the new answer for the same function.
+                dropped_retry += 1
                 continue
             keep.append(line)
             if r.get("mode") != args.mode:
@@ -1107,10 +1318,14 @@ def main() -> int:
                 done.add((r["file"], r["function"]))
             except KeyError:
                 pass
-        if stale:
+        if stale or dropped_retry:
             print(f"  {stale} result(s) were written by an older driver or "
                   f"another engine (want v={RESULT_VERSION}, "
                   f"engine=esbmc); rechecking those", flush=True)
+            if dropped_retry:
+                print(f"  {dropped_retry} result(s) retried "
+                      f"(--retry-status {','.join(sorted(retry))})",
+                      flush=True)
             out.write_text("".join(l + "\n" for l in keep))
         tasks = [t for t in tasks if (t["file"], t["function"]) not in done]
 
@@ -1174,8 +1389,9 @@ def main() -> int:
         print(f"\nFAIL  {len(tasks)} function(s) and not one could be")
         print("      checked. Every result is ERROR, so this run measured")
         print("      the instrument rather than the tree - most often the")
-        print("      sources are unparseable on this host and no")
-        print("      --preprocessed tree was given.")
+        print("      sources are unparseable on this host: clang -E "
+              "failed,")
+        print("      or ESBMC rejected the .i.")
         return 1
     return 0
 

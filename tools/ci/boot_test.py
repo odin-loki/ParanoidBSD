@@ -929,6 +929,10 @@ def main() -> int:
     cmd = list(QEMU[args.target])
     if args.bios:
         cmd += ["-bios", args.bios]
+    # WSL2 and Linux CI both have KVM; without it a 300s timeout is often
+    # not enough for the loader+kernel+userland path on TCG.
+    if os.access("/dev/kvm", os.W_OK):
+        cmd += ["-accel", "kvm"]
     cmd += [
         "-drive", f"file={args.image},format=raw,if=none,id=hd0",
         "-device", "virtio-blk-pci,drive=hd0",

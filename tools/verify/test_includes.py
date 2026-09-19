@@ -678,6 +678,38 @@ if _krb and Path(_krb, "krb5", "krb5.h").is_file():
                and "KRB524_BADKEY" in _k and "KRB5_KDB_RCSID" in _k,
                f"{len(_k)} bytes")
 
+# generated_shim keys on the BUILDING directory. contrib/ncurses/form
+# has no FreeBSD Makefile; lib/ncurses/form does, and that is what
+# writes ncurses_def.h.
+_ncf = includes.generated_shim("lib/ncurses/form")
+check_that("lib/ncurses/form gets ncurses_def.h",
+           _ncf is not None and Path(_ncf, "ncurses_def.h").is_file(),
+           f"got {sorted(os.listdir(_ncf)) if _ncf else None}")
+if _ncf and Path(_ncf, "ncurses_def.h").is_file():
+    _nd = Path(_ncf, "ncurses_def.h").read_text()
+    check_that("...and it is the fallback-#define file, not empty",
+               "NC_DEFINE_H" in _nd and "#ifndef HAVE_TCGETATTR" in _nd,
+               _nd[:160])
+check("...and _generated_dirs prefers the builder over the source parent",
+      includes._generated_dirs("contrib/ncurses/form/fld_arg.c")[0],
+      "lib/ncurses/form")
+check("...and ksu's builder is under krb5/, so it gets the full generator",
+      includes._generated_dirs("crypto/krb5/src/clients/ksu/ccache.c")[0],
+      "krb5/usr.bin/ksu")
+
+# INCSDIR_<file> override: atf-c.h installs at the include root, not
+# under atf-c/.
+_atf_ov = userland_names._incs_dir_overrides(
+    SRC / "lib" / "atf" / "libatf-c", "/usr/include")
+check("libatf-c's INCSDIR_atf-c.h override",
+      _atf_ov.get(("INCS", "atf-c.h")), "/usr/include")
+
+# sm_os.h is the same symlink every sendmail Makefile writes.
+_sm = includes.generated_shim("usr.sbin/editmap")
+check_that("usr.sbin/editmap gets sm_os.h",
+           _sm is not None and Path(_sm, "sm_os.h").is_file(),
+           f"got {sorted(os.listdir(_sm)) if _sm else None}")
+
 # RPCSRC is not the only spelling. lib/libypclnt has three, and
 # RPCSRC_PRIV is the only place in the tree that names
 # yppasswd_private.x -- so ypclnt_passwd.c, which the library builds,
@@ -984,6 +1016,22 @@ for _where, _h, _want in (
         _body = ""
     check_that(f"{'the farm' if _where is _farm else 'the MIT shim'}"
                f" generates {_h}", _want in _body, f"{len(_body)} bytes")
+
+check_that("the farm generates ncurses_def.h",
+           (_farm / "ncurses_def.h").is_file() and
+           "NC_DEFINE_H" in (_farm / "ncurses_def.h").read_text(), "")
+check_that("...and profile.h, which INCS names but no source file backs",
+           (_farm / "profile.h").is_file() and
+           "_KRB5_PROFILE_H" in (_farm / "profile.h").read_text() and
+           "PROF_NO_SECTION" in (_farm / "profile.h").read_text(),
+           "compile_et over prof_err.et plus profile.hin")
+check_that("...and sm_os.h, sendmail's object-directory symlink",
+           (_farm / "sm_os.h").is_file() or
+           (_farm / "sm_os.h").is_symlink(), "")
+check_that("...and atf-c.h at the include root, not under atf-c/",
+           (_farm / "atf-c.h").is_file() or
+           (_farm / "atf-c.h").is_symlink(),
+           f"atf-c/atf-c.h={'yes' if (_farm / 'atf-c' / 'atf-c.h').exists() else 'no'}")
 
 # ...and only the two directories the build marks reach the MIT one.
 _mitflag = f"-I{_mit}"

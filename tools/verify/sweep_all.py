@@ -126,8 +126,10 @@ STAGES = [
           lambda c: [sys.executable, str(V / "esbmc_driver.py"),
                      *_scopes(c), "--jobs", str(c["jobs"]),
                      "--classes", str(c["dir"] / "classes.json"),
-                     "--out", str(c["dir"] / "esbmc.jsonl")]
-                    + (["--resume"] if c["resume"] else []),
+                     "--out", str(c["dir"] / "esbmc.jsonl"),
+                     "--mode", "kinduction"]
+                    + (["--resume", "--retry-status", "ERROR"]
+                       if c["resume"] else []),
           feeds=["classify"],
           note="k-induction: the only route here to a verdict that is not "
                "bounded by an unwind depth. No distribution packages it; "

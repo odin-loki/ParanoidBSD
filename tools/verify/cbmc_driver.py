@@ -208,16 +208,7 @@ def verify_one(task: dict) -> dict:
     unwind_failed = [p for p in failed if UNWIND_RE.search(p["desc"])]
     real_failed = [p for p in failed if not UNWIND_RE.search(p["desc"])]
 
-    if real_failed:
-        status = "FAILED"
-    elif unwind_failed:
-        status = "BOUNDED"
-    elif task.get("null_depth"):
-        # Not PROVED. Proved GIVEN that the pointer arguments were valid
-        # objects, which is an assumption this run made and did not check.
-        status = "PROVED-ASSUMING"
-    else:
-        status = "PROVED"
+    status = decide_status(task, real_failed, unwind_failed)
 
     extra = {}
     if real_failed:
@@ -343,19 +334,79 @@ def _tail(s: str, n: int = 600) -> str:
 RESULT_VERSION = 2
 
 
+def is_assumed_run(task: dict) -> bool:
+    """A success here is not a theorem over the signature domain.
+
+    --min-null-tree-depth states "pointer arguments are valid objects".
+    A generated C harness states a stronger, still partial, precondition
+    (bounded NUL-terminated buffers, ...). classify.py's POINTER class
+    means the signature itself is not a sound unguarded domain. Any of
+    the three is enough: POINTER is never PROVED outright, with or
+    without the flag. harness.py's records carry the same verdict.
+    """
+    if task.get("harness"):
+        return True
+    if task.get("null_depth"):
+        return True
+    return task.get("class") == "POINTER"
+
+
+def null_depth_assumption(n: int) -> str:
+    return (
+        "pointer arguments are valid, non-null objects "
+        f"(CBMC --min-null-tree-depth {n})"
+    )
+
+
+def decide_status(task: dict, real_failed: list, unwind_failed: list) -> str:
+    """PROVED and PROVED-ASSUMING are never merged.
+
+    FAILED / BOUNDED / TIMEOUT / ERROR / NOFUNC are about what CBMC
+    did, and they stay those words under an assumption. The assumption
+    is recorded on the record; it does not turn a counterexample into a
+    proof or a bound into a theorem. Only a clean success is renamed,
+    and only to PROVED-ASSUMING, never the other way.
+    """
+    if real_failed:
+        return "FAILED"
+    if unwind_failed:
+        return "BOUNDED"
+    if is_assumed_run(task):
+        return "PROVED-ASSUMING"
+    return "PROVED"
+
+
 def _rec(task: dict, status: str, **kw) -> dict:
-    return {
+    rec = {
         "v": RESULT_VERSION,
         "file": task["file"],
-        "function": task["function"],
+        # orig_function: harness.py starts CBMC at `harness` and names
+        # the callee here, so --resume and the report key off the
+        # function that was actually under test.
+        "function": task.get("orig_function") or task["function"],
         "tier": task["tier"],
         "class": task.get("class"),
         "linkage": task.get("linkage"),
         "null_depth": task.get("null_depth", 0),
         "unwind": task["unwind"],
         "status": status,
-        **kw,
     }
+    harness = task.get("harness")
+    if harness:
+        rec["harness"] = harness
+    assuming = task.get("assuming")
+    if assuming:
+        rec["assuming"] = assuming
+    elif status == "PROVED-ASSUMING":
+        if task.get("null_depth"):
+            rec["assuming"] = null_depth_assumption(int(task["null_depth"]))
+        elif task.get("class") == "POINTER":
+            rec["assuming"] = (
+                "POINTER function; pointer arguments unconstrained "
+                "without --min-null-tree-depth or a harness"
+            )
+    rec.update(kw)
+    return rec
 
 
 def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
@@ -373,7 +424,11 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
     unit, instead of once per includer.
 
     And `allow` keeps only the classes where an unguarded modular check is
-    sound. A POINTER function needs a precondition and is not run here.
+    sound. A POINTER function needs a precondition: default --allow
+    excludes it. `--allow POINTER --null-depth N` is the stated-assumption
+    path; a success is PROVED-ASSUMING, never PROVED. String-shaped
+    POINTER functions whose real contract is a NUL-terminated buffer are
+    harness.py, not this flag.
     """
     d = json.loads(plan.read_text())
     cls = json.loads(classes.read_text())
@@ -409,6 +464,78 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
     return tasks
 
 
+def parse_retry_status(items: list[str]) -> set[str]:
+    """Repeatable --retry-status flags, also accepting comma-separated.
+
+    Copied from esbmc_driver.py: `--retry-status ERROR` and
+    `--retry-status TIMEOUT,BOUNDED,ERROR` have to mean the same set.
+    """
+    retry: set[str] = set()
+    for item in items:
+        retry.update(s.strip() for s in item.split(",") if s.strip())
+    return retry
+
+
+def resume_filter(lines: list[str], retry: set[str]
+                  ) -> tuple[list[str], set[tuple[str, str]], int, int]:
+    """Which --out rows still answer this run's question.
+
+    Records whose status is in `retry` are not added to `done` and are
+    omitted from the rewritten jsonl, so they get rechecked. PROVED,
+    FAILED, and a BOUNDED not in the list stay. Older-version records
+    are dropped as stale. retry-status itself does not bump
+    RESULT_VERSION: the record schema is unchanged.
+    """
+    stale = 0
+    dropped_retry = 0
+    keep: list[str] = []
+    done: set[tuple[str, str]] = set()
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("v") != RESULT_VERSION:
+            # Written by an older driver, so its fields do not mean what
+            # this one's mean. Drop it and check the function again
+            # rather than resume onto an answer to a different question.
+            stale += 1
+            continue
+        if r.get("status") in retry:
+            # Drop, do not keep: otherwise report.py would count the old
+            # TIMEOUT/BOUNDED/ERROR next to the new answer for the same
+            # function.
+            dropped_retry += 1
+            continue
+        try:
+            done.add((r["file"], r["function"]))
+        except KeyError:
+            continue
+        keep.append(line)
+    return keep, done, stale, dropped_retry
+
+
+def apply_resume(out: Path, retry: set[str]) -> set[tuple[str, str]]:
+    """Rewrite --out if stale or retried records must leave the file."""
+    keep, done, stale, dropped_retry = resume_filter(
+        out.read_text().splitlines(), retry)
+    if stale:
+        print(f"  {stale} result(s) were written by an older driver "
+              f"(result version != {RESULT_VERSION}); rechecking those",
+              flush=True)
+    if dropped_retry:
+        print(f"  {dropped_retry} result(s) retried "
+              f"(--retry-status {','.join(sorted(retry))})",
+              flush=True)
+    if stale or dropped_retry:
+        # Rewrite --out with only the still-valid records, so the file
+        # never holds two generations of answers at once.
+        out.write_text("".join(l + "\n" for l in keep))
+    return done
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -438,11 +565,20 @@ def main() -> int:
                          "non-null objects; a result under it is a proof "
                          "UNDER THAT ASSUMPTION and is recorded as such.")
     ap.add_argument("--allow", default="SCALAR,VOID",
-                    help="classes to check (SCALAR,VOID are sound unguarded)")
+                    help="classes to check (SCALAR,VOID are sound unguarded). "
+                         "POINTER is never PROVED: with --null-depth it is "
+                         "PROVED-ASSUMING, and without it the same word so "
+                         "an unguarded POINTER run cannot look like a theorem")
     ap.add_argument("--out", default="verify_results.jsonl")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--resume", action="store_true",
                     help="skip (file, function) pairs already in --out")
+    ap.add_argument("--retry-status", action="append", default=[],
+                    help="with --resume, drop records whose status is "
+                         "this and check them again (repeatable, or "
+                         "comma-separated). TIMEOUT,BOUNDED,ERROR is "
+                         "the set that makes a higher --unwind re-run "
+                         "the functions the first bound did not close.")
     args = ap.parse_args()
 
     tasks = load_tasks(Path(args.plan), args.scope, args.unwind,
@@ -464,33 +600,7 @@ def main() -> int:
         # continue; without it this starts.
         out.write_text("")
     if args.resume and out.is_file():
-        stale = 0
-        keep = []
-        for line in out.read_text().splitlines():
-            if not line.strip():
-                continue
-            try:
-                r = json.loads(line)
-            except ValueError:
-                continue
-            if r.get("v") != RESULT_VERSION:
-                # Written by an older driver, so its fields do not mean what
-                # this one's mean. Drop it and check the function again
-                # rather than resume onto an answer to a different question.
-                stale += 1
-                continue
-            try:
-                done.add((r["file"], r["function"]))
-            except KeyError:
-                continue
-            keep.append(line)
-        if stale:
-            print(f"  {stale} result(s) were written by an older driver "
-                  f"(result version != {RESULT_VERSION}); rechecking those",
-                  flush=True)
-            # Rewrite --out with only the still-valid records, so the file
-            # never holds two generations of answers at once.
-            out.write_text("".join(l + "\n" for l in keep))
+        done = apply_resume(out, parse_retry_status(args.retry_status))
         tasks = [t for t in tasks if (t["file"], t["function"]) not in done]
 
     if args.limit:

@@ -323,6 +323,9 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--out", default="analyze_results.jsonl")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--resume", action="store_true",
+                    help="keep OK records already in --out and retry "
+                         "ERROR/TIMEOUT/missing files")
     ap.add_argument("--check-errors", action="store_true",
                     help="fail if a translation unit does not compile and is "
                          "not in tools/verify/expected_errors.py, or if one "
@@ -345,6 +348,25 @@ def main() -> int:
                              "timeout": args.timeout})
     if args.limit:
         jobs = jobs[:args.limit]
+    kept: list[dict] = []
+    skip: set[str] = set()
+    if args.resume and Path(args.out).is_file():
+        with open(args.out, encoding="utf-8", errors="replace") as prev:
+            for line in prev:
+                if not line.strip():
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("_meta"):
+                    continue
+                if r.get("status") == "OK":
+                    skip.add(r["file"])
+                    kept.append(r)
+        jobs = [j for j in jobs if j["rel"] not in skip]
+        print(f"resume: keeping {len(skip)} OK, {len(jobs)} to retry",
+              flush=True)
     print(f"{len(jobs)} translation units to analyse", flush=True)
 
     # Build the include shim in the PARENT, once per architecture the
@@ -376,6 +398,9 @@ def main() -> int:
             userland_names.warm((_a,))
 
     counts, nfind, t0 = {}, 0, time.time()
+    for r in kept:
+        counts[r.get("status", "OK")] = counts.get(r.get("status", "OK"), 0) + 1
+        nfind += len(r.get("findings") or [])
     with open(args.out, "w") as fh, ProcessPoolExecutor(args.jobs) as ex:
         # First record: what produced these numbers.
         #
@@ -392,9 +417,12 @@ def main() -> int:
             "_meta": True,
             "analyzer": analyzer_version(),
             "scopes": args.scope or DEFAULT_SCOPES,
-            "units": len(jobs),
+            "units": len(jobs) + len(kept),
+            "resumed": len(kept),
         }) + "\n")
-        futs = [ex.submit(analyze, j) for j in jobs]
+        for r in kept:
+            fh.write(json.dumps(r) + "\n")
+        futs = [ex.submit(analyze, j) for j in jobs] if jobs else []
         for i, fut in enumerate(as_completed(futs), 1):
             r = fut.result()
             counts[r["status"]] = counts.get(r["status"], 0) + 1
@@ -408,7 +436,8 @@ def main() -> int:
                       f"findings={nfind}  "
                       + "  ".join(f"{k}={v}" for k, v in sorted(counts.items())),
                       flush=True)
-    print(f"\n{nfind} finding(s) across {len(jobs)} translation units")
+    total = len(jobs) + len(kept)
+    print(f"\n{nfind} finding(s) across {total} translation units")
     for k, v in sorted(counts.items()):
         print(f"  {k:8s} {v}")
     if counts.get("ERROR"):

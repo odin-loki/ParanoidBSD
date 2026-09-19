@@ -965,7 +965,7 @@ resurrect_labels(ctf_header_t *h, tdata_t *td, caddr_t ctfdata, char *matchlbl)
 	caddr_t buf = ctfdata + h->cth_lbloff;
 	size_t bufsz = h->cth_objtoff - h->cth_lbloff;
 	int lastidx = 0, baseidx = -1;
-	char *baselabel = NULL;
+	const char *baselabel = NULL;
 	ctf_lblent_t *ctl;
 	void *v = (void *) buf;
 
@@ -976,11 +976,11 @@ resurrect_labels(ctf_header_t *h, tdata_t *td, caddr_t ctfdata, char *matchlbl)
 
 		debug(3, "Resurrected label %s type idx %d\n", label, lastidx);
 
-		tdata_label_add(td, (char *)label, lastidx);
+		tdata_label_add(td, label, lastidx);
 
 		if (baseidx == -1) {
 			baseidx = lastidx;
-			baselabel = (char *)label;
+			baselabel = label;
 			if (matchlbl != NULL && streq(matchlbl, "BASE"))
 				return (lastidx);
 		}

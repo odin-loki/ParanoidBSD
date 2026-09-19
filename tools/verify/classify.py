@@ -252,13 +252,22 @@ def main() -> int:
     ap.add_argument("--resume", action="store_true",
                     help="continue from <out>.partial.jsonl, which is "
                          "written as each translation unit finishes")
-    ap.add_argument("--outdir", default="/tmp/pbsd_goto")
+    ap.add_argument("--refresh-gb", action="store_true",
+                    help="re-run goto-cc for resumed TUs whose .gb is "
+                         "missing (tmp wipe). The class split is kept; "
+                         "only the binary is rebuilt, under --outdir")
+    ap.add_argument("--outdir", default=None,
+                    help="goto-cc output directory. Default: <out>/../goto "
+                         "so a sweep's classes.json keeps binaries next to "
+                         "it instead of in /tmp")
     ap.add_argument("--out", default="verify_classes.json")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--limit", type=int)
     ap.add_argument("--arch", default="amd64")
     args = ap.parse_args()
+    if args.outdir is None:
+        args.outdir = str(Path(args.out).resolve().parent / "goto")
 
     d = json.loads(Path(args.plan).read_text())
     jobs = []
@@ -279,6 +288,7 @@ def main() -> int:
                      "outdir": args.outdir, "timeout": args.timeout})
     if args.limit:
         jobs = jobs[:args.limit]
+    all_jobs = list(jobs)
 
     # One line of JSON per translation unit, appended as it finishes.
     #
@@ -305,6 +315,24 @@ def main() -> int:
         jobs = [j for j in jobs if j["rel"] not in results]
         print(f"resuming: {len(results)} already modelled, "
               f"{before - len(jobs)} skipped", flush=True)
+
+    # /tmp/pbsd_goto does not survive a reboot. A resumed class split
+    # with no goto binary is not a model CBMC can check.
+    if args.refresh_gb:
+        stale = []
+        for rel, r in list(results.items()):
+            gb = r.get("gb")
+            if not r.get("ok"):
+                continue
+            if gb and Path(gb).is_file():
+                continue
+            stale.append(rel)
+            del results[rel]
+        if stale:
+            back = [j for j in all_jobs if j["rel"] in set(stale)]
+            jobs.extend(back)
+            print(f"refresh-gb: {len(back)} TUs lost their goto binary; "
+                  f"rebuilding under {args.outdir}", flush=True)
 
     print(f"{len(jobs)} translation units to model", flush=True)
     counts: dict[str, int] = {}

@@ -966,7 +966,8 @@ check_acpi_spcr(void)
 int
 parse_uefi_con_out(void)
 {
-	int how, rv;
+	int how;
+	EFI_STATUS rv;
 	int vid_seen = 0, com_seen = 0, seen = 0;
 	size_t sz;
 	char buf[4096], *ep;

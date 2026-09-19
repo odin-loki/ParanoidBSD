@@ -261,7 +261,7 @@ struct if_data {
 #define	IFCAP_B_MAX	(__IFCAP_B_MAX - 1)
 #define	IFCAP_B_SIZE	(__IFCAP_B_SIZE)
 
-#define	IFCAP_BIT(x)		(1 << (x))
+#define	IFCAP_BIT(x)		(1U << (x))
 
 #define	IFCAP_RXCSUM		IFCAP_BIT(IFCAP_B_RXCSUM)
 #define	IFCAP_TXCSUM		IFCAP_BIT(IFCAP_B_TXCSUM)
