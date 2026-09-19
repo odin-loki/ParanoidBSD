@@ -89,13 +89,19 @@
    "function": "fix_select",
    "verdict": "not-a-defect",
    "note": "LIST_FOREACH(&ifnet); queue macros unmodelled so ifp is unconstrained. prev BOUNDED"
+  },
+  {
+   "file": "usr.bin/iscsictl/iscsictl.c",
+   "function": "default_initiator_name",
+   "verdict": "not-a-defect",
+   "note": "returns calloc to caller (t_initiator_name); CBMC --memory-leak-check on the callee. no body for gethostname. prev BOUNDED"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 15,
+  "settled": 16,
   "defect": 0,
-  "not-a-defect": 13,
+  "not-a-defect": 14,
   "deferred": 2,
   "remaining": 0
  }

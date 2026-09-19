@@ -365,6 +365,38 @@ class TestGuessedFlagsAreMarked(Tree):
         self.assertTrue(f, "the database run found nothing at all")
         self.assertTrue(all("guessed" not in x for x in f))
 
+    def test_compile_commands_only_drops_guessed_tus(self):
+        extra = self.root / "good" / "extra.cpp"
+        extra.write_text(UNBUILDABLE)
+        self.addCleanup(extra.unlink)
+        db = self.root / "cc-only.json"
+        src = self.root / "good" / "defects.cpp"
+        db.write_text(json.dumps([{
+            "directory": str(self.root),
+            "file": str(src),
+            "arguments": ["clang++", "-std=c++17", "-c", str(src),
+                          "-o", "defects.o"],
+        }]))
+        out = self.out / "cc-only.jsonl"
+        p = run(["--root", str(self.root), "--scope", "good",
+                 "--out", str(out), "--jobs", "1", "--no-shim",
+                 "--compile-commands", str(db),
+                 "--compile-commands-only"])
+        self.assertEqual(p.returncode, 0, p.stdout[-800:])
+        recs = [r for r in records(out) if not r.get("_meta")]
+        self.assertEqual([r["file"] for r in recs], ["good/defects.cpp"])
+        self.assertEqual([r["flagsrc"] for r in recs], ["compile_commands"])
+        m = meta(records(out))
+        self.assertEqual(m["guessed_units"], 0)
+
+    def test_compile_commands_only_without_a_db_is_a_fail(self):
+        p = run(["--root", str(self.root), "--scope", "good",
+                 "--out", str(self.out / "cc-only-nodb.jsonl"),
+                 "--jobs", "1", "--no-shim",
+                 "--compile-commands-only"])
+        self.assertEqual(p.returncode, 2)
+        self.assertIn("compile-commands-only", p.stdout)
+
     def test_meta_counts_the_guessed_units(self):
         m = meta(records(self.out / "good.jsonl"))
         self.assertEqual(m["guessed_units"], m["units"])

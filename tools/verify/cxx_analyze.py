@@ -775,6 +775,11 @@ def main(argv: list[str] | None = None) -> int:
                          "holding one; repeatable. A TU found here is "
                          "flagsrc=compile_commands; every other TU is "
                          "flagsrc=guess and says so in its record.")
+    ap.add_argument("--compile-commands-only", action="store_true",
+                    help="drop TUs not in a supplied compile_commands.json. "
+                         "Walking a cmake build dir otherwise pulls moc "
+                         "autogen as flagsrc=guess and those ERROR are "
+                         "not a KDE result.")
     ap.add_argument("--no-shim", action="store_true",
                     help="do not synthesise the cmake-generated headers. "
                          "Raises the ERROR count and lowers VISIBILITY, "
@@ -799,10 +804,21 @@ def main(argv: list[str] | None = None) -> int:
 
     scopes = args.scope or DEFAULT_SCOPES
     db = load_compile_commands(args.compile_commands)
+    if args.compile_commands_only and not db:
+        print("FAIL  --compile-commands-only needs a compile_commands.json "
+              "that names at least one translation unit.", flush=True)
+        return 2
     if not args.no_shim:
         os.environ[_SHIM_ENV] = build_shim(root)
 
     jobs, per_scope = collect(root, scopes, db, args.limit, args.timeout)
+    if args.compile_commands_only:
+        jobs = [j for j in jobs if j["flagsrc"] == "compile_commands"]
+        per_scope = {
+            s: sum(1 for j in jobs
+                   if j["rel"] == s or j["rel"].startswith(s.rstrip("/") + "/"))
+            for s in scopes
+        }
     empty = [s for s, n in per_scope.items() if n == 0]
     nguess = sum(1 for j in jobs if j["flagsrc"] == "guess")
 
