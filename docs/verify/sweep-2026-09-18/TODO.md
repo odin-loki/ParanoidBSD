@@ -6,7 +6,7 @@ whether it turns a queue item into a confirmed bug.
 ## Confirm or kill the CBMC queue
 
 1. **Done (19 Sep).** 150 `sys/`+`lib/` exported-arithmetic failures read; records in [queue/arithmetic-triage.json](queue/arithmetic-triage.json). Unread in that bucket is 0. `contrib/` and other prefixes remain.
-2. **Read the 35 unread index-OOB and 62 address-taken statics.** The static-but-`&fn` bucket is the one `report.py` split out because in-file callers do *not* constrain those.
+2. **Done (19 Sep).** 35 unread index-OOB + 62 address-taken statics read; records in [queue/oob-static-triage.json](queue/oob-static-triage.json). Four defects fixed (`days_pmonth`/`parse8601`, ppp `protoname` ×2, pkru `3<<30`). Contrib remainder is deferred.
 3. **Run a frontier-model pass only on READ-THESE**, never on the 1,481 pointer/memory records. `taxonomy.py --needs-model` is the class list; this JSON is the finding list. A model's answer is a hypothesis until it is checked against the source.
 4. **Done (19 Sep).** `vnic_dev.c` `mrh` was a real unchecked `M_NOWAIT` (fixed). The two `in*_fib_algo.c` hits are `p == NULL || p->field` short-circuit false positives.
 
@@ -32,6 +32,6 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Housekeeping
 
-14. The WSL copy of `cxx_analyze.py` now defaults `PBSD_ROOT` from the tree rather than `/home/user/paranoidbsd`. That patch is not in this OneDrive clone; port it or the next KDE run will scan an empty path again.
+14. **Done (19 Sep).** `cxx_analyze.py` / `test_cxx_analyze.py` default `PBSD_ROOT` from the repository root (`Path(__file__).parents[2]`), same as `cbmc_driver.py`.
 15. Keep packs in `docs/verify/sweep-<date>/evidence/` and leave `~/pbsd-sweep` as the working tree. Do not commit `matrix.jsonl` (84 MB, regenerable) or `classes.json` (74 MB, regenerable).
 16. Never quote `FAILED` 2,538, tidy 16,410, or warnings 192,383 as bug counts. The sentences that are allowed are in [REPORT.md](REPORT.md).

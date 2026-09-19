@@ -492,7 +492,7 @@ class TestErrorInventory(Tree):
 class TestAgainstTheRealTreeIfPresent(unittest.TestCase):
     """Skipped when the ParanoidBSD tree is not mounted."""
 
-    ROOT = Path(os.environ.get("PBSD_ROOT", "/home/user/paranoidbsd"))
+    ROOT = Path(os.environ.get("PBSD_ROOT", str(Path(__file__).resolve().parents[2])))
 
     def setUp(self):
         if not (self.ROOT / "kde").is_dir():

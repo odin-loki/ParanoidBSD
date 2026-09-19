@@ -1,0 +1,600 @@
+{
+ "settled": [
+  {
+   "file": "lib/libc/gen/libc_interposing_table.c",
+   "function": "__libc_interposing_slot",
+   "verdict": "not-a-defect",
+   "note": "interposno is INTERPOS_* < INTERPOS_MAX; already in UB_FINDINGS"
+  },
+  {
+   "file": "lib/libc/gen/readpassphrase.c",
+   "function": "handler",
+   "verdict": "not-a-defect",
+   "note": "signo[s] is NSIG; kernel signal number; already in UB_FINDINGS"
+  },
+  {
+   "file": "libexec/rtld-elf/rtld.c",
+   "function": "ld_get_env_var",
+   "verdict": "not-a-defect",
+   "note": "idx is LD_* designated enum; every caller passes a named constant"
+  },
+  {
+   "file": "bin/sh/options.c",
+   "function": "setoptionbyindex",
+   "verdict": "not-a-defect",
+   "note": "idx from 0..NOPTS-1 name/letter loops; optval[NOPTS]"
+  },
+  {
+   "file": "usr.bin/procstat/procstat_rlimit.c",
+   "function": "humanize_rlimit",
+   "verdict": "not-a-defect",
+   "note": "indx from for i < RLIM_NLIMITS; _Static_assert nitems==RLIM_NLIMITS"
+  },
+  {
+   "file": "usr.bin/systat/vmstat.c",
+   "function": "cputime",
+   "verdict": "not-a-defect",
+   "note": "indx is cpuorder[lc] with lc < CPUSTATES; s.time[CPUSTATES]"
+  },
+  {
+   "file": "usr.sbin/acpi/acpidump/acpi.c",
+   "function": "spcr_interface_type",
+   "verdict": "not-a-defect",
+   "note": "ift is UINT8 InterfaceType; ift>=nitems short-circuits, 0-255 never negative"
+  },
+  {
+   "file": "usr.sbin/acpi/acpidump/acpi.c",
+   "function": "spcr_terminal_type",
+   "verdict": "not-a-defect",
+   "note": "type is UINT8 TerminalType; same >=nitems guard as spcr_interface_type"
+  },
+  {
+   "file": "usr.sbin/lpr/common_source/displayq.c",
+   "function": "prank",
+   "verdict": "not-a-defect",
+   "note": "inform() lifts rank from -1 to >=0 before prank; n%10 in 0..9"
+  },
+  {
+   "file": "usr.sbin/moused/msconvd/msconvd.c",
+   "function": "r_init",
+   "verdict": "not-a-defect",
+   "note": "rtype is MOUSE_PROTO_* from rnames[]/MOUSE_GETMODE; UNKNOWN is closed before r_init"
+  },
+  {
+   "file": "usr.sbin/newsyslog/ptimes.c",
+   "function": "days_pmonth",
+   "verdict": "defect",
+   "note": "FIXED: parse8601 allowed tm_mon==12 (`> 12`); mtab has 12 entries. Check is now `> 11`."
+  },
+  {
+   "file": "usr.sbin/pkg/config.c",
+   "function": "pkg_get_myabi",
+   "verdict": "not-a-defect",
+   "note": "machine_arch[len] after unmodelled sysctlbyname hw.machine_arch; kernel arch name is short"
+  },
+  {
+   "file": "usr.sbin/ppp/ccp.c",
+   "function": "protoname",
+   "verdict": "defect",
+   "note": "FIXED: `(unsigned)proto > nitems` missed proto==nitems; now `>=`. cftypes[nitems] was reachable from opt->hdr.id"
+  },
+  {
+   "file": "usr.sbin/ppp/lcp.c",
+   "function": "protoname",
+   "verdict": "defect",
+   "note": "FIXED: `proto > nitems` missed proto==nitems; now `>=`. same peer option-id hole as ccp"
+  },
+  {
+   "file": "usr.sbin/route6d/route6d.c",
+   "function": "plen2mask",
+   "verdict": "not-a-defect",
+   "note": "n is rip6_plen u_char 0..255; indexes pl2m only for remainder 0..7"
+  },
+  {
+   "file": "sys/amd64/vmm/vmm_instruction_emul.c",
+   "function": "vie_size2mask",
+   "verdict": "not-a-defect",
+   "note": "size2mask has [8]; decoder assigns 2/4/8; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/arm64/arm64/disassem.c",
+   "function": "arm64_reg",
+   "verdict": "not-a-defect",
+   "note": "num==31 is wsp/wzr; else w_reg[0..30] from a 5-bit field; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/arm64/arm64/disassem.c",
+   "function": "arm64_disasm_reg_width",
+   "verdict": "not-a-defect",
+   "note": "inlines arm64_w_reg; same 5-bit register field as arm64_reg"
+  },
+  {
+   "file": "sys/cddl/dev/dtrace/i386/dtrace_subr.c",
+   "function": "dtrace_gethrtime",
+   "verdict": "not-a-defect",
+   "note": "tsc_skew[curcpu]; already_in_ub_findings"
+  },
+  {
+   "file": "sys/compat/linux/linux_errno.c",
+   "function": "bsd_to_linux_errno",
+   "verdict": "not-a-defect",
+   "note": "KASSERT 0..ELAST; in-tree callers pass errno; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/contrib/dev/iwlwifi/fw/rs.c",
+   "function": "iwl_fw_rate_idx_to_plcp",
+   "verdict": "deferred",
+   "note": "contrib iwlwifi under sys; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "sys/contrib/dev/iwlwifi/mvm/scan.c",
+   "function": "rate_to_scan_rate_flag",
+   "verdict": "deferred",
+   "note": "contrib iwlwifi under sys; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "sys/ddb/db_access.c",
+   "function": "db_put_value",
+   "verdict": "not-a-defect",
+   "note": "data[sizeof(int)]; size is 1/2/4 from db_write_cmd or BKPT_SIZE; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/bwn/if_bwn.c",
+   "function": "bwn_dma_base",
+   "verdict": "not-a-defect",
+   "note": "map64[6]; in-tree callers pass constants, max 4; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/evdev/evdev_utils.c",
+   "function": "evdev_hid2key",
+   "verdict": "not-a-defect",
+   "note": "evdev_usb_scancodes[256]; callers KEY_INDEX & 0xFF; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/hwpmc/hwpmc_cmn600.c",
+   "function": "cmn600_init_pmc_units",
+   "verdict": "not-a-defect",
+   "note": "cmn600_pmcs[CMN600_UNIT_MAX=4]; nunits from hardware, KASSERT after; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/liquidio/base/lio_device.c",
+   "function": "oct_set_config_info",
+   "verdict": "not-a-defect",
+   "note": "only caller loops 0..LIO_MAX_DEVICES-1; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/kern/kern_event.c",
+   "function": "kqueue_del_filteropts",
+   "verdict": "not-a-defect",
+   "note": "filt in [-EVFILT_SYSCOUNT,0]; no in-tree caller; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/kern/kern_cpuset.c",
+   "function": "domainset_init",
+   "verdict": "not-a-defect",
+   "note": "ds_order[MAXMEMDOM]; all_domains bits < vm_ndomains; already in UB_FINDINGS"
+  },
+  {
+   "file": "contrib/flex/src/tblcmp.c",
+   "function": "mv2front",
+   "verdict": "deferred",
+   "note": "contrib flex; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/hyperv/tools/hv_kvp_daemon.c",
+   "function": "kvp_acquire_lock",
+   "verdict": "deferred",
+   "note": "contrib hyperv; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/hyperv/tools/hv_kvp_daemon.c",
+   "function": "kvp_release_lock",
+   "verdict": "deferred",
+   "note": "contrib hyperv; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "set_pfx",
+   "verdict": "deferred",
+   "note": "contrib less; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/libarchive/libarchive/test/test_write_format_mtree_classic.c",
+   "function": "test_write_format_mtree_sub",
+   "verdict": "deferred",
+   "note": "contrib libarchive tests; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/libarchive/libarchive/test/test_write_format_mtree_classic_indent.c",
+   "function": "test_write_format_mtree_sub",
+   "verdict": "deferred",
+   "note": "contrib libarchive tests; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/openbsm/bin/auditd/auditd_fbsd.c",
+   "function": "auditd_relay_signal",
+   "verdict": "deferred",
+   "note": "contrib openbsm; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "lib/libsys/x86/pkru.c",
+   "function": "x86_pkru_set_perm_hw",
+   "verdict": "defect",
+   "note": "FIXED: after keyidx*=2, key 15 did `3<<30`/`2<<30` in int; now `3u`/`2u`/`1u`. get_perm_hw same."
+  },
+  {
+   "file": "libexec/rtld-elf/rtld_lock.c",
+   "function": "def_lock_create",
+   "verdict": "not-a-defect",
+   "note": "free(base) after unmodelled xmalloc; already in UB_FINDINGS"
+  },
+  {
+   "file": "sbin/ifconfig/ifconfig.c",
+   "function": "printifnamemaybe",
+   "verdict": "not-a-defect",
+   "note": "IFCAP_TXTLS_RTLMT is 1U<<31 already; CBMC named the TU that still lists the bit; already in UB_FINDINGS"
+  },
+  {
+   "file": "sbin/shutdown/shutdown.c",
+   "function": "timeout",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "sbin/fsck_ffs/suj.c",
+   "function": "blk_free_visit",
+   "verdict": "not-a-defect",
+   "note": "dtog blk/fs_fpg and fs_frag-1 from the UFS superblock; zero fpg is not a filesystem"
+  },
+  {
+   "file": "usr.bin/login/login.c",
+   "function": "timedout",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/login/login.c",
+   "function": "bail_sig",
+   "verdict": "not-a-defect",
+   "note": "exit(128+signo); kernel signal number, not INT_MAX"
+  },
+  {
+   "file": "usr.bin/msgs/msgs.c",
+   "function": "onsusp",
+   "verdict": "not-a-defect",
+   "note": "SIGTSTP handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/biz22.c",
+   "function": "sigALRM",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/courier.c",
+   "function": "sigALRM",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/df.c",
+   "function": "alrm_timeout",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/dn11.c",
+   "function": "alarmtr",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/hayes.c",
+   "function": "sigALRM",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tftp/main.c",
+   "function": "intr",
+   "verdict": "not-a-defect",
+   "note": "SIGINT handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/t3000.c",
+   "function": "sigALRM",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/v3451.c",
+   "function": "alarmtr",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/v831.c",
+   "function": "alarmtr",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/libacu/ventel.c",
+   "function": "sigALRM",
+   "verdict": "not-a-defect",
+   "note": "SIGALRM handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/tip/hunt.c",
+   "function": "dead",
+   "verdict": "not-a-defect",
+   "note": "signal handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/tip/tip.c",
+   "function": "intprompt",
+   "verdict": "not-a-defect",
+   "note": "signal handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/tip/tipout.c",
+   "function": "intIOT",
+   "verdict": "not-a-defect",
+   "note": "signal handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/tip/tipout.c",
+   "function": "intSYS",
+   "verdict": "not-a-defect",
+   "note": "signal handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.bin/tip/tip/cmds.c",
+   "function": "intcopy",
+   "verdict": "not-a-defect",
+   "note": "signal handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.sbin/bhyve/mevent.c",
+   "function": "mevent_init",
+   "verdict": "not-a-defect",
+   "note": "assert(mfd>0) after unmodelled kqueue(); the assert is the check"
+  },
+  {
+   "file": "usr.sbin/moused/moused/moused.c",
+   "function": "reset",
+   "verdict": "not-a-defect",
+   "note": "SIGHUP handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.sbin/moused/msconvd/msconvd.c",
+   "function": "hup",
+   "verdict": "not-a-defect",
+   "note": "SIGHUP handler longjmp; CBMC cannot model setjmp"
+  },
+  {
+   "file": "usr.sbin/ppp/sig.c",
+   "function": "signal_recorder",
+   "verdict": "not-a-defect",
+   "note": "caused[sig-1]; sig_signal rejects sig<=0||>NSIG before installing this handler"
+  },
+  {
+   "file": "usr.sbin/rpc.ypupdated/ypupdated_main.c",
+   "function": "reaper",
+   "verdict": "not-a-defect",
+   "note": "children-- on SIGCHLD; fork counter, not INT_MIN"
+  },
+  {
+   "file": "usr.sbin/rpc.ypxfrd/ypxfrd_main.c",
+   "function": "reaper",
+   "verdict": "not-a-defect",
+   "note": "children-- on SIGCHLD; fork counter, not INT_MIN"
+  },
+  {
+   "file": "usr.sbin/ypserv/yp_main.c",
+   "function": "reaper",
+   "verdict": "not-a-defect",
+   "note": "children-- on SIGCHLD; fork counter, not INT_MIN"
+  },
+  {
+   "file": "stand/efi/libefi/efi_console.c",
+   "function": "efi_cons_init",
+   "verdict": "not-a-defect",
+   "note": "inlined ffs(fb_mask_*)-1; ffs has no model; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/arm/allwinner/aw_thermal.c",
+   "function": "h3_to_reg",
+   "verdict": "not-a-defect",
+   "note": "vtable in file-static h3_config; val is compile-time init_alarm/init_shut Celsius"
+  },
+  {
+   "file": "sys/arm/allwinner/aw_thermal.c",
+   "function": "h5_to_reg",
+   "verdict": "not-a-defect",
+   "note": "vtable in file-static h5_config; val is compile-time trip Celsius, not a negative shift"
+  },
+  {
+   "file": "sys/arm64/arm64/nexus.c",
+   "function": "nexus_fdt_pcib_release_msix",
+   "verdict": "not-a-defect",
+   "note": "failure is retval+printf in the same TU; unmodelled printf"
+  },
+  {
+   "file": "sys/dev/lge/if_lge.c",
+   "function": "lge_miibus_writereg",
+   "verdict": "not-a-defect",
+   "note": "phy<<8; MII layer 0..31; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/lge/if_lge.c",
+   "function": "lge_miibus_readreg",
+   "verdict": "not-a-defect",
+   "note": "phy<<8; MII layer 0..31; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/mvs/mvs_soc.c",
+   "function": "mvs_edma",
+   "verdict": "not-a-defect",
+   "note": "unit*2 from SATA channel; default 2 channels; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/random/fortuna.c",
+   "function": "random_fortuna_pre_read",
+   "verdict": "not-a-defect",
+   "note": "inlined bttosbt _bt.sec<<32; time_t past year 2262; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/random/fortuna.c",
+   "function": "random_fortuna_seeded",
+   "verdict": "not-a-defect",
+   "note": "inlined bttosbt _bt.sec<<32; same bintime2sbintime; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/dev/usb/net/if_ure.c",
+   "function": "ure_miibus_readreg",
+   "verdict": "not-a-defect",
+   "note": "reg*2 into OCP MII; MII register 0..31; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/kern/vfs_bio.c",
+   "function": "buf_daemon",
+   "verdict": "not-a-defect",
+   "note": "tick_sbt*hz inside msleep; hz clamped, tick_sbt unconstrained global; already in UB_FINDINGS"
+  },
+  {
+   "file": "sys/netinet/cc/cc_htcp.c",
+   "function": "htcp_mod_init",
+   "verdict": "not-a-defect",
+   "note": "100*TCP_RTT_SCALE*hz/1000; hz clamped in subr_param.c"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_status_reg",
+   "verdict": "not-a-defect",
+   "note": "MSR_MC_STATUS(bank); bank 0..mca_banks-1 from MCG_CAP_COUNT 8-bit field"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_ctl_reg",
+   "verdict": "not-a-defect",
+   "note": "0x10*bank into SMCA MSRs; same MCG_CAP_COUNT bank domain"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_addr_reg",
+   "verdict": "not-a-defect",
+   "note": "MSR_MC_ADDR(bank); same 0..255 bank domain as mca_ia32_status_reg"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_misc_reg",
+   "verdict": "not-a-defect",
+   "note": "MSR_MC_MISC(bank); same 0..255 bank domain as mca_ia32_status_reg"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_ctl_reg",
+   "verdict": "not-a-defect",
+   "note": "MSR_MC_CTL(bank); same 0..255 bank domain as mca_ia32_status_reg"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_status_reg",
+   "verdict": "not-a-defect",
+   "note": "0x10*bank into SMCA MSRs; same MCG_CAP_COUNT bank domain"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_addr_reg",
+   "verdict": "not-a-defect",
+   "note": "0x10*bank into SMCA MSRs; same MCG_CAP_COUNT bank domain"
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_misc_reg",
+   "verdict": "not-a-defect",
+   "note": "0x10*bank into SMCA MSRs; same MCG_CAP_COUNT bank domain"
+  },
+  {
+   "file": "sys/x86/x86/mptable.c",
+   "function": "mptable_probe",
+   "verdict": "not-a-defect",
+   "note": "BIOS_PADDRTOVADDR(x); x is an MP-table physical address in the first megabyte"
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/io/tst.fds.c",
+   "function": "interrupt",
+   "verdict": "deferred",
+   "note": "contrib dtrace test; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/blocklist/bin/blacklistd.c",
+   "function": "sigusr1",
+   "verdict": "deferred",
+   "note": "contrib blocklist; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/blocklist/bin/blacklistd.c",
+   "function": "sigusr2",
+   "verdict": "deferred",
+   "note": "contrib blocklist; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/blocklist/bin/blocklistd.c",
+   "function": "sigusr1",
+   "verdict": "deferred",
+   "note": "contrib blocklist; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/blocklist/bin/blocklistd.c",
+   "function": "sigusr2",
+   "verdict": "deferred",
+   "note": "contrib blocklist; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/libdiff/lib/diff_atomize_text.c",
+   "function": "diff_data_signal_handler",
+   "verdict": "deferred",
+   "note": "contrib libdiff; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/ntp/ntpd/ntp_loopfilter.c",
+   "function": "pll_trap",
+   "verdict": "deferred",
+   "note": "contrib ntp; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/pf/libevent/signal.c",
+   "function": "evsignal_handler",
+   "verdict": "deferred",
+   "note": "contrib pf; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/tcp_wrappers/rfc931.c",
+   "function": "timeout",
+   "verdict": "deferred",
+   "note": "contrib tcp_wrappers; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/telnet/libtelnet/encrypt.c",
+   "function": "finddecryption",
+   "verdict": "deferred",
+   "note": "contrib telnet; TODO skip until first-party queue is empty"
+  },
+  {
+   "file": "contrib/telnet/telnet/sys_bsd.c",
+   "function": "intr",
+   "verdict": "deferred",
+   "note": "contrib telnet; TODO skip until first-party queue is empty"
+  }
+ ],
+ "remaining": [],
+ "counts": {
+  "settled": 98,
+  "defect": 4,
+  "not-a-defect": 74,
+  "deferred": 20,
+  "remaining": 0
+ }
+}

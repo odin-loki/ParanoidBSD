@@ -198,7 +198,8 @@ CHECKER_EVIDENCE = {
     },
 }
 
-DEFAULT_ROOT = Path(os.environ.get("PBSD_ROOT", "/home/user/paranoidbsd"))
+_TREE = Path(__file__).resolve().parents[2]
+DEFAULT_ROOT = Path(os.environ.get("PBSD_ROOT", str(_TREE)))
 
 # KDE projects: <root>/kde/frameworks/<name> or <root>/kde/<name>.
 # hbsd C++: <root>/hbsd/src/...

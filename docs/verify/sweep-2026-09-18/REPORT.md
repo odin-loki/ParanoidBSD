@@ -277,5 +277,8 @@ the old 1,386 compile errors as "KDE is clean."
 | `sys/netinet/in_fib_algo.c:567` | not-a-defect: `if (lr == NULL \|\| !rn_inithead(&lr->rnh, ...))` short-circuits |
 | `sys/netinet6/in6_fib_algo.c:135` | not-a-defect: same `\|\|` shape |
 
-Index-OOB (35 unread) and address-taken statics (62) are still unread.
-ESBMC/FuSeBMC/Clang TU-ERROR numbers above are unchanged.
+Index-OOB and address-taken statics: [queue/oob-static-triage.json](queue/oob-static-triage.json).
+98 settled (4 defect, 74 not-a-defect, 20 deferred contrib). The four defects
+are fixed: `parse8601` `tm_mon > 11`, ppp `protoname` `>= nitems`, pkru
+`3u << keyidx`. ESBMC/FuSeBMC/Clang TU-ERROR numbers above are unchanged.
+`cxx_analyze.py` now defaults `PBSD_ROOT` from the tree.
