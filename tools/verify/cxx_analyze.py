@@ -802,7 +802,6 @@ def main(argv: list[str] | None = None) -> int:
               f"wrong.")
         return 2
 
-    scopes = args.scope or DEFAULT_SCOPES
     db = load_compile_commands(args.compile_commands)
     if args.compile_commands_only and not db:
         print("FAIL  --compile-commands-only needs a compile_commands.json "
@@ -811,14 +810,34 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_shim:
         os.environ[_SHIM_ENV] = build_shim(root)
 
-    jobs, per_scope = collect(root, scopes, db, args.limit, args.timeout)
+    # --compile-commands-only: the database IS the universe. Walking
+    # --scope under --root misses TUs whose sources live in kde-src or
+    # another tree named by compile_commands.json, and DEFAULT_SCOPES
+    # under a cmake build dir match nothing (NOT RUN, 0 TUs).
     if args.compile_commands_only:
-        jobs = [j for j in jobs if j["flagsrc"] == "compile_commands"]
-        per_scope = {
-            s: sum(1 for j in jobs
-                   if j["rel"] == s or j["rel"].startswith(s.rstrip("/") + "/"))
-            for s in scopes
-        }
+        jobs = []
+        for src, (argv, cwd) in sorted(db.items()):
+            f = Path(src)
+            jobs.append({"src": src, "rel": record_path(f, root),
+                         "root": str(root), "flags": replay_flags(argv),
+                         "flagsrc": "compile_commands", "cwd": cwd,
+                         "timeout": args.timeout})
+        if args.limit:
+            jobs = jobs[:args.limit]
+        scopes = args.scope or ["compile_commands.json"]
+        per_scope = {s: 0 for s in scopes}
+        if len(scopes) == 1:
+            per_scope[scopes[0]] = len(jobs)
+        else:
+            for j in jobs:
+                for s in scopes:
+                    if j["rel"] == s or j["rel"].startswith(
+                            s.rstrip("/") + "/"):
+                        per_scope[s] += 1
+                        break
+    else:
+        scopes = args.scope or DEFAULT_SCOPES
+        jobs, per_scope = collect(root, scopes, db, args.limit, args.timeout)
     empty = [s for s, n in per_scope.items() if n == 0]
     nguess = sum(1 for j in jobs if j["flagsrc"] == "guess")
 

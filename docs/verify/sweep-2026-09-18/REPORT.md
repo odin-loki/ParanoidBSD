@@ -289,9 +289,11 @@ missing its `.moc`. Evidence:
 [queue/cxx-analyze-ccdb-digest.json](queue/cxx-analyze-ccdb-digest.json).
 Do not quote either run as “KDE is clean.” Leftover kguiaddons /
 knotifications installs later finished; the merged DB is **22 modules /
-726 unique TUs** (`karchive` installed). That is a compile DB, not a
-new proof column. Evidence:
-[queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json).
+726 unique TUs** (`karchive` installed). `--compile-commands-only` now
+takes that database as the universe (a cmake `--root` is not
+`kde/frameworks`). A jobs=1 ingest of those 726 is in flight. Evidence:
+[queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json),
+[queue/cxx-analyze-ccdb-726-digest.json](queue/cxx-analyze-ccdb-726-digest.json).
 
 ### Coccinelle `nowait-deref` (3)
 
@@ -362,21 +364,22 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,640** rows, **6,291 PROVED**
-(BOUNDED 175 / FAILED 2,588 / ERROR 177 / TIMEOUT 409). The unwind-32
+Live file while this is written: **9,642** rows, **6,291 PROVED**
+(BOUNDED 175 / FAILED 2,588 / ERROR 177 / TIMEOUT 411). The unwind-32
 resume was OOM-killed overnight (`cbmc` ~19 GB at `[800/2048]`); it did
 not finish. Fourteen TIMEOUT/BOUNDED→FAILED since the previous snapshot
 were read: **0 defects**. `ccp_hw_detach_queue` `1 << queue` is 0..4
 (`MAX_HW_QUEUES` is 5). The rest are unmodelled `device_get_softc` /
-`CPU_SET(cpu)` / OpenZFS `spa_fini`. ~1,228 pairs still missing. Last
-record: `FAILED sys/dev/ata/chipsets/ata-intel.c:ata_intel_sata_cscr_write`.
-Restart is `--resume` only at JOBS=2. Records:
+`CPU_SET(cpu)` / OpenZFS `spa_fini`. ~1,226 pairs still missing. Restart
+is `--resume` only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
 still exists so a future sample can write a *new* jsonl. `sys/` SCALAR
 TIMEOUT in the old file is 755 functions. Re-indexing twins on the live
-PROVED set is still **40 `hbsd_cpp` files, 0 `pbsd/` twins**.
+PROVED set is **44 `hbsd_cpp` files, 0 `pbsd/` twins** (four new msun
+`.cpp` proved in-tree, not in clang_port staged). Evidence:
+[queue/proved-twin-index.json](queue/proved-twin-index.json).
 
 ### CodeQL CLI (19 Sep)
 

@@ -1,0 +1,32 @@
+{
+  "status": "started",
+  "note": "726-TU kde-compile-db-build compile_commands.json; NOT the old 148/149 ingest (cxx_analyze_ccdb_only.jsonl). First invocation with DEFAULT_SCOPES under --root kde-compile-db-build was NOT RUN (0 TUs). WSL cxx_analyze.py --compile-commands-only now ingests the DB as the universe so guessed=0. Did not --retry-status. Did not kill CBMC pid 887. jobs=1.",
+  "pid": 4980,
+  "worker_pid": 4985,
+  "jobs": 1,
+  "timeout": 90,
+  "root": "/home/odin/kde-compile-db-build",
+  "compile_commands": "/home/odin/kde-compile-db-build/compile_commands.json",
+  "compile_commands_only": true,
+  "out": "/home/odin/cxx-sweep/cxx_analyze_ccdb_726.jsonl",
+  "log": "/home/odin/cxx-sweep/cxx_analyze_ccdb_726.log",
+  "units_queued": 726,
+  "flag_source": {
+    "compile_commands": 726,
+    "guess": 0
+  },
+  "guessed_must_be_0": true,
+  "jsonl_records_visible": 0,
+  "jsonl_bytes": 0,
+  "jsonl_note": "Python block-buffers --out; first records appear after ~8KiB or process exit. Progress prints every 200 TUs.",
+  "log_head": [
+    "726 translation unit(s) to analyse across 1 scope(s)",
+    "       726  compile_commands.json",
+    "  flag source: 726 from compile_commands.json, 0 GUESSED"
+  ],
+  "cxx_analyze_alive": true,
+  "cbmc_pid_887_alive": true,
+  "cbmc_cmd": "cbmc_driver.py --jobs 2 --resume (untouched)",
+  "old_ingest_quote": "148/149 is the OLD ingest (cxx_analyze_ccdb_only.jsonl / prior ccdb run). This run is the 726-TU DB.",
+  "started_utc": "2026-09-19T22:23:19Z"
+}

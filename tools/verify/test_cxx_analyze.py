@@ -389,6 +389,35 @@ class TestGuessedFlagsAreMarked(Tree):
         m = meta(records(out))
         self.assertEqual(m["guessed_units"], 0)
 
+    def test_compile_commands_only_uses_the_db_as_universe(self):
+        """A cmake build dir is not kde/frameworks. Walking DEFAULT_SCOPES
+        there is NOT RUN, 0 TUs, even when compile_commands.json names 726.
+        """
+        elsewhere = self.root / "elsewhere"
+        elsewhere.mkdir()
+        src = elsewhere / "unit.cpp"
+        src.write_text(DEFECTS)
+        db = self.root / "cc-universe.json"
+        db.write_text(json.dumps([{
+            "directory": str(self.root),
+            "file": str(src),
+            "arguments": ["clang++", "-std=c++17", "-c", str(src),
+                          "-o", "unit.o"],
+        }]))
+        out = self.out / "cc-universe.jsonl"
+        p = run(["--root", str(self.root),
+                 "--out", str(out), "--jobs", "1", "--no-shim",
+                 "--compile-commands", str(db),
+                 "--compile-commands-only"])
+        self.assertNotIn("NOT RUN", p.stdout, p.stdout[-800:])
+        recs = [r for r in records(out) if not r.get("_meta")]
+        self.assertEqual(len(recs), 1, p.stdout[-800:])
+        self.assertEqual(recs[0]["flagsrc"], "compile_commands")
+        m = meta(records(out))
+        self.assertEqual(m["units"], 1)
+        self.assertEqual(m["guessed_units"], 0)
+        self.assertEqual(m.get("scopes"), ["compile_commands.json"])
+
     def test_compile_commands_only_without_a_db_is_a_fail(self):
         p = run(["--root", str(self.root), "--scope", "good",
                  "--out", str(self.out / "cc-only-nodb.jsonl"),
