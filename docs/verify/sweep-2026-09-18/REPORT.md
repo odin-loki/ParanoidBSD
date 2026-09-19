@@ -265,9 +265,11 @@ bug, not a bug in `atan`.
 ### KDE `compile_commands.json`
 
 732 TUs across KF6 + Wayland-related modules (kwayland unblocked via
-plasma-wayland-protocols 1.19). That is compile-DB coverage so a later
-`cxx-analyze` can see real KDE C++, not a KDE proof column. Do not quote
-the old 1,386 compile errors as "KDE is clean."
+plasma-wayland-protocols 1.19). A later ingest of that DB with
+`cxx_analyze.py --compile-commands` built **182 of 490** TUs (the old
+guessed-flag run was 6 of 1,392). The rest are still ERROR, mostly moc
+autogen missing Qt headers. Clang findings in `qobjectdefs.h` are Qt's
+header, not KDE. Do not quote either run as “KDE is clean.”
 
 ### Coccinelle `nowait-deref` (3)
 

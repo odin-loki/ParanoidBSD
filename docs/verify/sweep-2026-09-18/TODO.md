@@ -21,7 +21,7 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Cover the trees this run left UNTOUCHED
 
-9. **KDE compile DB (19 Sep).** 732 TUs in `/home/odin/kde-compile-db-build/compile_commands.json` (KF6 + Wayland). A cxx-analyze ingest of that DB is still UNTOUCHED in the matrix.
+9. **KDE compile DB (19 Sep).** 732 TUs configured; `cxx_analyze` with that DB built 182/490 (was 6/1392 guessed). Still not a KDE proof column.
 10. **IR transfer of the 40-twin queue (19 Sep).** 40/40 `ir.equal` ∧ `abi_equal` on this tree's HARDENEDBSD `vm.ufs.raw`. Evidence: [queue/ir-oracle-pbsd.jsonl](queue/ir-oracle-pbsd.jsonl). The rest of `pbsd/` (15,742 functions) is still UNTOUCHED.
 11. **`hbsd/tests` and `hbsd/tools`** only if someone wants them in the denominator. They are 4,270 UNTOUCHED rows that inflate the headline if left in the universe and never scoped.
 
