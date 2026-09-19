@@ -1,15 +1,16 @@
 {
   "status": "in_flight",
   "partial": {
-    "jsonl_tus": 365,
-    "OK": 332,
+    "jsonl_tus": 409,
+    "OK": 376,
     "ERROR": 32,
     "TIMEOUT": 1,
-    "flagsrc_compile_commands": 365,
+    "flagsrc_compile_commands": 409,
     "guessed": 0,
-    "findings": 31,
-    "findings_qt": 30,
+    "findings": 35,
+    "findings_qt": 33,
     "findings_karchive_k7zip": 1,
+    "findings_kauth_dbus_watcher": 1,
     "timeout_file": "kde/frameworks/kwayland/src/client/registry.cpp",
     "error_buckets": {
       "missing_private_qtx11extras_p.h": 15,
@@ -18,7 +19,7 @@
       "solid_c99_as_cxx": 2
     },
     "qtx11extras_note": "DB never had QtGuiPrivate -I; header exists at QtGui/6.10.3/QtGui/private/qtx11extras_p.h. Driver did not strip -I.",
-    "finding_example": "30 Qt NewDelete/NewDeleteLeaks; 1 core.CallAndMessage in kde-src/karchive-618 k7zip.cpp:1803 uninitialized seqOutStream (not vendored in pbsd kde/)"
+    "finding_example": "33 Qt NewDelete*; k7zip.cpp:1803 uninit seqOutStream (defect, not vendored); DBusHelperProxy.cpp:142 watcher leak is parented+deleteLater (not-a-defect)"
   },
   "note": "726-TU kde-compile-db-build compile_commands.json; NOT the old 148/149 ingest (cxx_analyze_ccdb_only.jsonl). First invocation with DEFAULT_SCOPES under --root kde-compile-db-build was NOT RUN (0 TUs). WSL cxx_analyze.py --compile-commands-only now ingests the DB as the universe so guessed=0. Did not --retry-status. Did not kill CBMC pid 887. jobs=1.",
   "pid": 4980,
