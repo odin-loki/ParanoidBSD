@@ -29,13 +29,55 @@
    "function": "__sigev_fork_child",
    "verdict": "not-a-defect",
    "note": "fork child re-calls __sigev_thread_init -> sigev_thread_create calloc stored in sigev_default_thread; process-lifetime after fork. CBMC --memory-leak-check. prev BOUNDED"
+  },
+  {
+   "file": "lib/msun/ld128/s_logl.c",
+   "function": "log2l",
+   "verdict": "not-a-defect",
+   "note": "IEEE-754: log(+-0) is -1/zero -> -Inf; msun depends on it. prev TIMEOUT"
+  },
+  {
+   "file": "lib/msun/ld128/s_logl.c",
+   "function": "log10l",
+   "verdict": "not-a-defect",
+   "note": "same RETURN1(-1/zero) as log2l. prev TIMEOUT"
+  },
+  {
+   "file": "lib/msun/src/e_acosh.cpp",
+   "function": "acosh",
+   "verdict": "not-a-defect",
+   "note": "IEEE-754: acosh(x<1) is (x-x)/(x-x) NaN; comment says so. prev TIMEOUT"
+  },
+  {
+   "file": "lib/msun/src/e_j0f.cpp",
+   "function": "y0f",
+   "verdict": "not-a-defect",
+   "note": "IEEE-754: y0f(0) is -one/vzero -> -Inf. prev TIMEOUT"
+  },
+  {
+   "file": "lib/msun/src/e_j0f.cpp",
+   "function": "qzerof",
+   "verdict": "not-a-defect",
+   "note": "static helper; j0f/y0f only call it for |x|>=2. Modular CBMC sees unconstrained x at one/(x*x) and /x. prev TIMEOUT"
+  },
+  {
+   "file": "lib/msun/src/e_j1f.cpp",
+   "function": "y1f",
+   "verdict": "not-a-defect",
+   "note": "IEEE-754: y1f(0) is -one/vzero; y1f(x<0) is vzero/vzero NaN. z/cc is the fdlibm cancellation identity. prev TIMEOUT"
+  },
+  {
+   "file": "lib/msun/src/s_tanf.cpp",
+   "function": "tanf",
+   "verdict": "not-a-defect",
+   "note": "inlined __ieee754_rem_pio2f: no body for __kernel_rem_pio2 so n is unconstrained (-n overflow); __kernel_tandf -1.0/r is IEEE. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 5,
+  "settled": 12,
   "defect": 0,
-  "not-a-defect": 3,
+  "not-a-defect": 10,
   "deferred": 2,
   "remaining": 0
  }

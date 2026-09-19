@@ -312,15 +312,14 @@ until a generated config exists; they are not silent-clean.
 
 ### ESBMC live file (not the packed 10,868 ERROR)
 
-`/home/odin/pbsd-sweep/esbmc.jsonl` now has mixed statuses (kinduction):
-ERROR 9,544, PROVED-UNBOUNDED 808, FAILED 344, TIMEOUT 134, UNKNOWN 38.
-The 18 September pack was the `-xc` unrecognised-option run. 808 unbounded
-proofs exist; they are not in the packed digest. A hung `--smoke` of
-`stdc_has_single_bit_uc` was blocking the ERROR retry. The ERROR retry
-(`--resume --retry-status ERROR --mode kinduction`, jobs 8) is left
-running; it must not be SIGTERM'd. It is still in `load_tasks`
-(`include_flags` / `bmake` per TU: i386, then powerpc, then amd64). The
-jsonl mtime has not moved; that is not a hang.
+`/home/odin/pbsd-sweep/esbmc.jsonl` is kinduction, not the packed `-xc`
+column. After the ERROR retry dropped ERROR rows once, the live file
+was **808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT /
+5,108 ERROR** (~6,433 rows; hole vs the 10,868-pair class file is the
+functions not yet rewritten). The ERROR-retry driver then exited; do
+not SIGTERM a live ESBMC, and do **not** pass `--retry-status ERROR`
+again (that would drop the 5,108). `tools/verify/run-esbmc-resume.sh` is
+`--resume` only, same contract as `run-cbmc-resume.sh`.
 
 ### CBMC TIMEOUT resume (unwind 32 / 180 s, in flight)
 
@@ -330,13 +329,13 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **8,883** rows, **6,242 PROVED** (five
-new, all were BOUNDED at unwind 16: `svc_exit`, `sysconf`,
-`getosreldate`, `mixer_get_nmixers`, `rd_init`). Five new FAILED at
+Live file while this is written: **9,072** rows, **6,252 PROVED**. New FAILED at
 unwind 32 were read: two test programs deferred; `arc4random` /
 `localeconv` unmodelled pointers; `__sigev_fork_child` process-lifetime
-calloc. 0 defects. ~1,985 pairs still missing; new TIMEOUT at 180 s is
-still TIMEOUT. Records:
+calloc; four `lib/msun` IEEE-754 0/0 sites (`log2l`, `log10l`, `acosh`,
+`y0f`); `qzerof` static helper with caller `|x|>=2`; `y1f` IEEE;
+`tanf` `-n` from unmodelled `__ieee754_rem_pio2f`. **0 defects.** ~1,796
+pairs still missing. Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
@@ -349,13 +348,23 @@ PROVED set is still **40 `hbsd_cpp` files, 0 `pbsd/` twins**.
 GitHub CodeQL 2.27.0 is at `~/.local/codeql` and on PATH.
 `taxonomy.py --available` is now **46/52 COVERED (0.88)**;
 `TRUST-UNVALIDATED-INPUT` is COVERED because this instrument rates
-FINDS. A one-TU smoke (`tools/verify/codeql_smoke.py`) built a database
-for `lib/libc/stdlib/abs.c` with `include_flags()` and the query saw
-`abs`. A second smoke on `sys/kern/kern_ffclock.c` saw
-`sys_ffclock_setestimate`. A `copyin()` query on that database is
-**EMPTY**: the extracted body is `{ return ... }`, so the `copyin` of
-`ffclock_estimate` is not in the AST. One-TU kernel extract is not a
-taint run. Infer is still absent and covers nothing extra. Evidence:
+FINDS. A one-TU smoke (`tools/verify/codeql_smoke.py`) compiles from
+`hbsd/src` with `include_flags()` (not a copied-out empty tree) and saw
+`abs` and `sys_ffclock_setestimate`. The first `copyin()` query on the
+ffclock database was **EMPTY** because HARDENEDBSD does not set
+`FFCLOCK`: `kern_ffclock.c` is `standard` in `sys/conf/files` but
+`opt_shim()` writes an empty `opt_ffclock.h`, so the extracted body is
+the real `#else` stub `return (ENOSYS)`. That is not an extractor
+failure. `sys/kern/kern_time.c` `sys_clock_settime` (copyin is not
+option-gated) is **COPYIN-OK**: the query sees `copyin` in
+`sys_clock_settime`, `user_clock_nanosleep`, `sys_settimeofday`,
+`sys_setitimer`, `sys_ktimer_create`, `sys_ktimer_settime`. Forcing `-DFFCLOCK` on the
+same ffclock TU is also **COPYIN-OK** (`copyin` in
+`sys_ffclock_setestimate`). One-TU extract is still not a taint run.
+Infer is still absent and covers nothing extra. Evidence:
 [queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl),
 [queue/codeql-ffclock.jsonl](queue/codeql-ffclock.jsonl),
-[queue/codeql-copyin.jsonl](queue/codeql-copyin.jsonl).
+[queue/codeql-time.jsonl](queue/codeql-time.jsonl),
+[queue/codeql-copyin.jsonl](queue/codeql-copyin.jsonl),
+[queue/codeql-ffclock-on.jsonl](queue/codeql-ffclock-on.jsonl),
+[queue/codeql-ffclock-on-copyin.jsonl](queue/codeql-ffclock-on-copyin.jsonl).

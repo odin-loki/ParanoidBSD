@@ -14,10 +14,10 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Make the instruments that ran actually answer
 
-5. **ESBMC (19 Sep).** The packed run was 10,868 ERROR (`-xc`). The live WSL `esbmc.jsonl` already has 808 PROVED-UNBOUNDED / 9,544 ERROR from kinduction. The ERROR retry is still in `load_tasks` (`include_flags` / `bmake` per TU), jsonl mtime unchanged. Do not SIGTERM it; do not quote the packed column as current.
+5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file after one ERROR retry: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR. That retry driver then exited. Resume with `run-esbmc-resume.sh` (`--resume` only). Do **not** pass `--retry-status ERROR` again; do not SIGTERM a live ESBMC; do not quote the packed column as current.
 6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
 7. **Clang TU-ERROR (19 Sep).** Live 5,304 ERROR. Top missing files are generated `config.h` / OpenSSH `includes.h` / OpenSSL internals / contrib `math_config.h`. Not a first-party `includes.py` miss for lib/msun.
-8. **CBMC TIMEOUT resume (in flight).** Live file ~8,915 rows, hole ~1,953. Five new FAILED read, 0 defects. Five BOUNDED became PROVED. Do **not** pass `--retry-status` again.
+8. **CBMC TIMEOUT resume (in flight).** Live file 9,072 rows, hole ~1,796. Twelve new FAILED read, 0 defects. Do **not** pass `--retry-status` again.
 
 ## Cover the trees this run left UNTOUCHED
 
@@ -27,7 +27,7 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Class coverage
 
-12. **Done (19 Sep).** CodeQL CLI 2.27.0 is on PATH. Smokes: `abs.c` and `sys_ffclock_setestimate` are `SMOKE-OK`. `copyin()` on that kernel DB is `COPYIN-EMPTY` (extracted body is `return` only). Not a tree taint run. Infer still absent.
+12. **Done (19 Sep).** CodeQL CLI 2.27.0. Smokes: `abs`, `sys_ffclock_setestimate`, `sys_clock_settime` are `SMOKE-OK`. ffclock `copyin` is `COPYIN-EMPTY` because HARDENEDBSD leaves `FFCLOCK` unset (ENOSYS stub). `kern_time.c` is **COPYIN-OK**. Extract is in-tree from `hbsd/src`. Not a tree taint run. Infer still absent.
 13. **Do not round PARTIAL up.** Infoleaks, lock order, trust-boundary input, and C++ exception leaks stay PARTIAL until an instrument actually PROVES or FINDS them with useful recall.
 
 ## Housekeeping

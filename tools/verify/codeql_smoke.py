@@ -41,6 +41,26 @@ def smoke_ql(symbol: str, rel: str) -> str:
     )
 
 
+def build_script(rel: str, flags: list[str], clang: str,
+                 extra: list[str] | None = None) -> str:
+    """Compile the TU from hbsd/src. Do not copy it into an empty tree.
+
+    include_flags() already assume the real source root. Extra flags are
+    for a one-TU option that opt_shim() leaves off (e.g. -DFFCLOCK):
+    kern_ffclock.c is `standard` in sys/conf/files but HARDENEDBSD does
+    not set FFCLOCK, so the extracted body is `return (ENOSYS)` unless
+    the option is forced.
+    """
+    import shlex
+    cmd = [clang, "-c", rel, "-o", "/tmp/codeql-smoke.o", *flags, *(extra or [])]
+    quoted = " ".join(shlex.quote(x) for x in cmd)
+    return (
+        "#!/bin/sh\nset -e\n"
+        f"cd {shlex.quote(str(SRC))}\n"
+        f"{quoted}\n"
+    )
+
+
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     print("+", " ".join(cmd), flush=True)
     return subprocess.run(cmd, text=True, capture_output=True, **kw)
@@ -53,6 +73,8 @@ def main() -> int:
     ap.add_argument("--db", default=str(Path.home() / "pbsd-sweep" / "codeql-smoke-db"))
     ap.add_argument("--out", default=str(Path.home() / "pbsd-sweep" / "codeql-smoke.jsonl"))
     ap.add_argument("--arch", default="amd64")
+    ap.add_argument("--extra-cflag", action="append", default=[],
+                    help="extra clang flags; write --extra-cflag=-DFFCLOCK")
     args = ap.parse_args()
 
     expect = f"smoke: CodeQL sees {args.symbol}"
@@ -86,26 +108,15 @@ def main() -> int:
     if db.exists():
         shutil.rmtree(db)
     db.parent.mkdir(parents=True, exist_ok=True)
-    work = db.parent / "codeql-smoke-src"
-    if work.exists():
-        shutil.rmtree(work)
-    work.mkdir(parents=True)
-    # Keep the relative path so CodeQL's file names match the tree.
-    dest = work / args.rel
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(src.read_bytes())
-
-    compile_cmd = [clang, "-c", args.rel, "-o", "/tmp/codeql-smoke.o", *flags]
-    wrapper = work / "build.sh"
-    # One line, quoted enough for a POSIX sh -c the extractor will run
-    # from --source-root.
-    quoted = " ".join(shlex_quote(x) for x in compile_cmd)
-    wrapper.write_text("#!/bin/sh\nset -e\ncd \"$(dirname \"$0\")\"\n" + quoted + "\n",
-                       encoding="utf-8")
+    rec["extra_cflag"] = list(args.extra_cflag)
+    wrapper = db.parent / "codeql-smoke-build.sh"
+    wrapper.write_text(
+        build_script(args.rel, flags, clang, extra=args.extra_cflag),
+        encoding="utf-8")
     wrapper.chmod(0o755)
 
     p = run([codeql, "database", "create", str(db),
-             "--language=c-cpp", "--source-root", str(work),
+             "--language=c-cpp", "--source-root", str(SRC),
              "--command", str(wrapper)])
     rec["create_rc"] = p.returncode
     rec["create_err"] = ((p.stderr or "") + (p.stdout or ""))[-800:]
@@ -142,11 +153,6 @@ def main() -> int:
     print("status", rec["status"], flush=True)
     print(rec.get("query_out", "")[-400:], flush=True)
     return 0 if rec["status"].startswith("SMOKE") else 1
-
-
-def shlex_quote(s: str) -> str:
-    import shlex
-    return shlex.quote(s)
 
 
 if __name__ == "__main__":

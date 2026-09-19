@@ -21,6 +21,18 @@ class SmokeContract(unittest.TestCase):
         self.assertIn('getName() = "sys_ffclock_setestimate"', q)
         self.assertIn("kern_ffclock.c", q)
 
+    def test_build_script_runs_from_source_root(self):
+        script = S.build_script("sys/kern/kern_ffclock.c", ["-I", "sys"], "clang")
+        self.assertIn("cd ", script)
+        self.assertIn("hbsd/src", script.replace("\\", "/"))
+        self.assertIn("-c sys/kern/kern_ffclock.c", script)
+        self.assertNotIn("codeql-smoke-src", script)
+
+    def test_build_script_extra_cflag(self):
+        script = S.build_script(
+            "sys/kern/kern_ffclock.c", [], "clang", extra=["-DFFCLOCK"])
+        self.assertIn("-DFFCLOCK", script)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
