@@ -228,14 +228,22 @@ class BitCastExpandRewritePass(Pass):
             ops.append((m.start(), m.end(), new, old))
             covered.add(m.start())
 
+        # Capture &name, &name[i], &obj.field. Do not stop at the identifier
+        # or `*(T*)&atanlo[3]` becomes `std::bit_cast<T>(atanlo)[3]` and
+        # libc++ rejects bit_cast of the whole array.
         rx_star = re.compile(
             r"\*\s*\(\s*((?:unsigned\s+|signed\s+|long\s+|short\s+|const\s+|volatile\s+)*"
             r"(?:char|int|short|long|float|double|size_t|uint\d+_t|int\d+_t|u_int|[\w]+_t|[\w:]+))"
-            r"\s*\*\s*\)\s*&(\w+)\b"
+            r"\s*\*\s*\)\s*&(\w+(?:\.\w+|\[\w+\])*)"
         )
         star_rewritten: set[int] = set()
         for m in rx_star.finditer(masked):
             typ, src = m.group(1).strip(), m.group(2)
+            # fdlibm `*(volatile double *)&atanlo[3]` is a forced load of
+            # the same type, not a pun. bit_cast drops the volatile access
+            # and does not match C IR.
+            if re.search(r"\bvolatile\b", typ):
+                continue
             old = text[m.start() : m.end()]
             new = f"std::bit_cast<{typ}>({src})"
             ops.append((m.start(), m.end(), new, old))
@@ -261,11 +269,13 @@ class BitCastExpandRewritePass(Pass):
                 continue
             # Try rewrite: *(T*)&x / *(T*)&(x.y)
             mm = re.match(
-                r"\*\s*\(\s*((?:struct\s+|union\s+|unsigned\s+|signed\s+|long\s+|short\s+|const\s+)*[\w:]+)\s*\*\s*\)\s*&(\w+(?:\.\w+|\[\w+\])*)",
+                r"\*\s*\(\s*((?:struct\s+|union\s+|unsigned\s+|signed\s+|long\s+|short\s+|const\s+|volatile\s+)*[\w:]+)\s*\*\s*\)\s*&(\w+(?:\.\w+|\[\w+\])*)",
                 text[m.start() : m.start() + 120],
             )
             if mm:
                 typ, src = mm.group(1).strip(), mm.group(2)
+                if re.search(r"\bvolatile\b", typ):
+                    continue
                 old = text[m.start() : m.start() + mm.end()]
                 new = f"std::bit_cast<{typ}>({src})"
                 ops.append((m.start(), m.start() + mm.end(), new, old))

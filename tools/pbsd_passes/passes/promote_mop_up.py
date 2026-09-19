@@ -76,10 +76,15 @@ class MemcpyByteSpanPass(Pass):
         # offsets ahead of the cursor untouched.
         needs_bit = False
         for m in list(
-            re.finditer(r"\*\s*\(\s*([\w:]+)\s*\*\s*\)\s*&(\w+)", unit.mask_strings_comments())
+            re.finditer(
+                r"\*\s*\(\s*((?:const\s+|volatile\s+)*[\w:]+)\s*\*\s*\)\s*&(\w+(?:\.\w+|\[\w+\])*)",
+                unit.mask_strings_comments(),
+            )
         )[::-1]:
             typ, src = m.group(1), m.group(2)
-            if typ in ("void", "char", "unsigned"):
+            if re.search(r"\bvolatile\b", typ):
+                continue
+            if typ in ("void", "char", "unsigned") or typ.endswith(" void") or typ.endswith(" char"):
                 refusals.append(_ref(unit, self.name, "BIT_CAST_CANDIDATE", m.start(), m.group(0)[:40]))
                 continue
             old = text[m.start() : m.end()]

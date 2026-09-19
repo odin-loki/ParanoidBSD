@@ -233,3 +233,49 @@ Packs: [evidence/](evidence/). Digests name absences first, on purpose.
 - It does not replace `docs/security/UB_FINDINGS.md`. That file is still the list of bugs that survived a human.
 
 Machine-readable companion: [numbers.json](numbers.json).
+
+---
+
+## 19 September 2026 — what closed after this report
+
+The 18 September numbers above are the sweep as packed. The next day closed
+four queues that report listed as work, without re-running the whole tree.
+
+### Arithmetic READ-THESE (`sys/` + `lib/`)
+
+150 exported-arithmetic failures were read. **4 defects** (one still open:
+`inet6_option_space` `nbytes+2`/`nbytes+7`, already in `UB_FINDINGS` and not
+behaviour-changing to "fix"; three records of `IFCAP_BIT(31)` `1<<31`, fixed
+to `1U<<`). 119 not-a-defect, 27 deferred. Unread `sys/`+`lib/` arithmetic
+is 0. Records: [queue/arithmetic-triage.json](queue/arithmetic-triage.json).
+
+### IR transfer on this tree's HARDENEDBSD image
+
+40 `hbsd_cpp` twins from [queue/ir-transfer-queue.jsonl](queue/ir-transfer-queue.jsonl)
+ran on `vm.ufs.raw` (`FreeBSD 15.1-STABLE-HBSD`, clang 21.1.8).
+**40/40 `ir.equal` and `abi_equal`.** Evidence:
+[queue/ir-oracle-pbsd.jsonl](queue/ir-oracle-pbsd.jsonl).
+
+`s_atan.cpp` / `s_atanf.cpp` first `compile_fail`'d because
+`bit_cast_rewrite` turned `*(volatile double *)&atanlo[3]` into
+`std::bit_cast<volatile double>(atanlo)[3]` (array, and not a volatile load).
+The pass now leaves volatile-same-type loads alone. That is a converter
+bug, not a bug in `atan`.
+
+### KDE `compile_commands.json`
+
+732 TUs across KF6 + Wayland-related modules (kwayland unblocked via
+plasma-wayland-protocols 1.19). That is compile-DB coverage so a later
+`cxx-analyze` can see real KDE C++, not a KDE proof column. Do not quote
+the old 1,386 compile errors as "KDE is clean."
+
+### Coccinelle `nowait-deref` (3)
+
+| Site | Verdict |
+|---|---|
+| `sys/dev/enic/vnic_dev.c:60` | defect: `mrh` `M_NOWAIT` used as `bus_space_read_region_4` dest after only `rh` was checked. Fixed `if (!rh \|\| !mrh)`. Coccinelle matched `sizeof(*mrh)`; the write through NULL is the actual fault. |
+| `sys/netinet/in_fib_algo.c:567` | not-a-defect: `if (lr == NULL \|\| !rn_inithead(&lr->rnh, ...))` short-circuits |
+| `sys/netinet6/in6_fib_algo.c:135` | not-a-defect: same `\|\|` shape |
+
+Index-OOB (35 unread) and address-taken statics (62) are still unread.
+ESBMC/FuSeBMC/Clang TU-ERROR numbers above are unchanged.

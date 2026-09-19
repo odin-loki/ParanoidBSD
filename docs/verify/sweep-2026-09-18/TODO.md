@@ -5,10 +5,10 @@ whether it turns a queue item into a confirmed bug.
 
 ## Confirm or kill the CBMC queue
 
-1. **Read the 103 `sys/` + 47 `lib/` exported-arithmetic failures** in [queue/cbmc-read-these.json](queue/cbmc-read-these.json). Same process as `UB_FINDINGS.md`: read the code, UBSan if it is arithmetic UB, then either fix or write the reasoning that kills it.
+1. **Done (19 Sep).** 150 `sys/`+`lib/` exported-arithmetic failures read; records in [queue/arithmetic-triage.json](queue/arithmetic-triage.json). Unread in that bucket is 0. `contrib/` and other prefixes remain.
 2. **Read the 35 unread index-OOB and 62 address-taken statics.** The static-but-`&fn` bucket is the one `report.py` split out because in-file callers do *not* constrain those.
 3. **Run a frontier-model pass only on READ-THESE**, never on the 1,481 pointer/memory records. `taxonomy.py --needs-model` is the class list; this JSON is the finding list. A model's answer is a hypothesis until it is checked against the source.
-4. **Look at the 3 `nowait-deref` Coccinelle hits.** That checker already gates. Three sites is a short read.
+4. **Done (19 Sep).** `vnic_dev.c` `mrh` was a real unchecked `M_NOWAIT` (fixed). The two `in*_fib_algo.c` hits are `p == NULL || p->field` short-circuit false positives.
 
 Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt builtins, dtrace test programs, byacc `vdiv` fixtures.
 
@@ -21,8 +21,8 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Cover the trees this run left UNTOUCHED
 
-9. **KDE, properly.** Qt 6.10+ and a real `compile_commands.json`. Until then a KDE sweep will keep reporting 0 findings on 1,386 compile errors. Do not quote that as “KDE is clean”.
-10. **Sweep `pbsd/`.** 15,742 functions, all UNTOUCHED. That is the C++ port, which is the product. CBMC's C++ front end still cannot parse `noexcept`; the intended path is still “prove the C, transfer via IR oracle.”
+9. **KDE compile DB (19 Sep).** 732 TUs in `/home/odin/kde-compile-db-build/compile_commands.json` (KF6 + Wayland). A cxx-analyze ingest of that DB is still UNTOUCHED in the matrix.
+10. **IR transfer of the 40-twin queue (19 Sep).** 40/40 `ir.equal` ∧ `abi_equal` on this tree's HARDENEDBSD `vm.ufs.raw`. Evidence: [queue/ir-oracle-pbsd.jsonl](queue/ir-oracle-pbsd.jsonl). The rest of `pbsd/` (15,742 functions) is still UNTOUCHED.
 11. **`hbsd/tests` and `hbsd/tools`** only if someone wants them in the denominator. They are 4,270 UNTOUCHED rows that inflate the headline if left in the universe and never scoped.
 
 ## Class coverage
