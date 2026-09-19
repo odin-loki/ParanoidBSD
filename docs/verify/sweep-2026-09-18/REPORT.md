@@ -345,8 +345,8 @@ PROVED set is still **40 `hbsd_cpp` files, 0 `pbsd/` twins**.
 GitHub CodeQL 2.27.0 is at `~/.local/codeql` and on PATH.
 `taxonomy.py --available` is now **46/52 COVERED (0.88)**;
 `TRUST-UNVALIDATED-INPUT` is COVERED because this instrument rates
-FINDS. That is presence, not a taint run: no CodeQL database has been
-built on this tree. Infer is still absent and covers nothing extra.
-Installer: [tools/verify/install_codeql.py](../../../tools/verify/install_codeql.py)
-(zip extracts drop execute bits; the script restores them on ELF and
-shebang files).
+FINDS. A one-TU smoke (`tools/verify/codeql_smoke.py`) built a database
+for `lib/libc/stdlib/abs.c` with `include_flags()` and the query saw
+`abs`. That is not a tree taint run. Infer is still absent and covers
+nothing extra. Evidence:
+[queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl).

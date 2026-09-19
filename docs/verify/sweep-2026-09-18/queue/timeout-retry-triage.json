@@ -23,13 +23,19 @@
    "function": "localeconv",
    "verdict": "not-a-defect",
    "note": "inlined localeconv_l; __get_current_monetary_locale is unmodelled so mptr is unconstrained; M_ASSIGN_STR(int_curr_symbol) is the model's null, not a bug. prev TIMEOUT"
+  },
+  {
+   "file": "lib/librt/sigev_thread.c",
+   "function": "__sigev_fork_child",
+   "verdict": "not-a-defect",
+   "note": "fork child re-calls __sigev_thread_init -> sigev_thread_create calloc stored in sigev_default_thread; process-lifetime after fork. CBMC --memory-leak-check. prev BOUNDED"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 4,
+  "settled": 5,
   "defect": 0,
-  "not-a-defect": 2,
+  "not-a-defect": 3,
   "deferred": 2,
   "remaining": 0
  }
