@@ -58,6 +58,7 @@
   },
   "rollup_with_earlier": {
     "k7zip_seqOutStream": "defect-upstream (not vendored)",
-    "DBusHelperProxy_watcher": "not-a-defect"
+    "DBusHelperProxy_watcher": "not-a-defect",
+    "klocalimagecache_insertLocalPixmap": "defect-upstream (not vendored); see klocalimagecache-pixmap-leak.json"
   }
 }

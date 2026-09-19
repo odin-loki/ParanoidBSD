@@ -1,0 +1,11 @@
+{
+  "status": "read",
+  "verdict": "defect-upstream-kguiaddons",
+  "not_in_pbsd_tree": true,
+  "function": "KLocalImageCacheImplementation::insertLocalPixmap",
+  "file": "/home/odin/kde-src/kguiaddons-618/src/util/klocalimagecacheimpl.cpp",
+  "line": 90,
+  "checker": "cplusplus.NewDeleteLeaks",
+  "msg": "Potential memory leak",
+  "note": "return d->insertPixmap(key, new QPixmap(pixmap)). insertPixmap only pixmapCache.inserts when enablePixmapCaching && pixmap && !isNull(); otherwise returns false and drops the pointer. Success path is QCache-owned. Not vendored in ParanoidBSD kde/. Not UB_FINDINGS: not this tree, not UBSan-reproduced."
+}

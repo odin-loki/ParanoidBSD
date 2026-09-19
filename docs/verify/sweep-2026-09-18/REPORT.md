@@ -291,19 +291,20 @@ Do not quote either run as “KDE is clean.” Leftover kguiaddons /
 knotifications installs later finished; the merged DB is **22 modules /
 726 unique TUs** (`karchive` installed). `--compile-commands-only` now
 takes that database as the universe (a cmake `--root` is not
-`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **404 OK /
-32 ERROR / 1 TIMEOUT** of 437 written (0 guessed). ERROR set unchanged.
-Of 44 findings, 36 are clang on Qt headers; **one is `karchive-618`
-`k7zip.cpp:1803`** (uninitialized `seqOutStream`). Six more kde-src hits
-(`klineedit` null/leak, `kzoneallocator` `free_since`,
-`kupdatelaunchenvironmentjob` watcher) are clang false positives or
-precondition/`deleteLater` — not defects. None of these files are
-vendored in `kde/frameworks/`. Evidence:
+`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **443 OK /
+32 ERROR / 2 TIMEOUT** of 477 written (0 guessed). ERROR set unchanged.
+Of 48 findings, 39 are clang on Qt headers; **two kde-src defects**
+(neither vendored): `karchive-618` `k7zip.cpp:1803` uninitialized
+`seqOutStream`, and `kguiaddons-618` `klocalimagecacheimpl.cpp:90`
+(`new QPixmap` dropped when caching is off or the pixmap is null).
+Other kde-src hits remain clang FP / `deleteLater` / allocator
+precondition. Evidence:
 [queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json),
 [queue/cxx-analyze-ccdb-726-digest.json](queue/cxx-analyze-ccdb-726-digest.json),
 [queue/k7zip-uninit-seqOutStream.json](queue/k7zip-uninit-seqOutStream.json),
 [queue/kauth-dbus-watcher-leak.json](queue/kauth-dbus-watcher-leak.json),
-[queue/kde-src-clang-findings.json](queue/kde-src-clang-findings.json).
+[queue/kde-src-clang-findings.json](queue/kde-src-clang-findings.json),
+[queue/klocalimagecache-pixmap-leak.json](queue/klocalimagecache-pixmap-leak.json).
 
 ### Coccinelle `nowait-deref` (3)
 
@@ -378,14 +379,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,699** rows, **6,292 PROVED**
-(BOUNDED 179 / FAILED 2,591 / ERROR 178 / TIMEOUT 459). ~1,169 pairs
-still missing. Unread new-FAILED is 0. Some TIMEOUT/BOUNDED became
-`ERROR` with `too many addressed objects` (`--object-bits` 8) — a bound,
-not a defect. Do not raise `--object-bits` on the live file. Current
-TIMEOUTs (`rk_cru_reset_assert`, `zynqmp_reset_assert`, `cxgb_ioctl`) are
-unmodelled MMIO/softc. Settled unwind-32 FAILED is 53 (2 defects). Restart
-remains `--resume` only at JOBS=2 (pid 887). Records:
+Live file while this is written: **9,708** rows, **6,292 PROVED**
+(BOUNDED 179 / FAILED 2,593 / ERROR 180 / TIMEOUT 464). ~1,160 pairs
+still missing. Two more TIMEOUT→FAILED (`cxgb_debugnet_poll`,
+`dc_miibus_writereg`) are unmodelled `if_getsoftc` / `device_get_softc`.
+Settled unwind-32 FAILED is 55 (2 defects). Restart remains `--resume`
+only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`

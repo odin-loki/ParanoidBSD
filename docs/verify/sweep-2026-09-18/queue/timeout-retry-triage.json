@@ -317,13 +317,25 @@
    "function": "ata_via_sata_scr_write",
    "verdict": "not-a-defect",
    "note": "device_get_parent unmodelled; FAIL is ((kobj_t)dev)->ops null, then pci_write_config. port clamped to 0|1. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/cxgb/cxgb_main.c",
+   "function": "cxgb_debugnet_poll",
+   "verdict": "not-a-defect",
+   "note": "if_getsoftc unmodelled; FAIL is pi->adapter null. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/dc/if_dc.c",
+   "function": "dc_miibus_writereg",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is sc->dc_type via DC_IS_PNIC. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 53,
+  "settled": 55,
   "defect": 2,
-  "not-a-defect": 48,
+  "not-a-defect": 50,
   "deferred": 3,
   "remaining": 0
  }
