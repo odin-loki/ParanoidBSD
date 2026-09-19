@@ -113,13 +113,19 @@
    "function": "write_svc_aux",
    "verdict": "not-a-defect",
    "note": "f_print(fout) inlined to vfprintf; fout is a global FILE* unconstrained in a modular check. prev TIMEOUT"
+  },
+  {
+   "file": "usr.bin/pr/pr.c",
+   "function": "terminate",
+   "verdict": "not-a-defect",
+   "note": "SIGINT handler calls flsh_errs(); err is a static FILE* set in setup() to tmpfile() or stderr. Modular fgets(*stream) is unconstrained err. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 19,
+  "settled": 20,
   "defect": 0,
-  "not-a-defect": 17,
+  "not-a-defect": 18,
   "deferred": 2,
   "remaining": 0
  }
