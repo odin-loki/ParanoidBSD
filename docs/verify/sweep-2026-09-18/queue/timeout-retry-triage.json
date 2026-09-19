@@ -71,13 +71,31 @@
    "function": "tanf",
    "verdict": "not-a-defect",
    "note": "inlined __ieee754_rem_pio2f: no body for __kernel_rem_pio2 so n is unconstrained (-n overflow); __kernel_tandf -1.0/r is IEEE. prev TIMEOUT"
+  },
+  {
+   "file": "sbin/dump/dumprmt.c",
+   "function": "rmtwrite0",
+   "verdict": "not-a-defect",
+   "note": "no body for snprintf; strlen s+len is the model's, not dump. prev BOUNDED"
+  },
+  {
+   "file": "sbin/newfs/mkfs.c",
+   "function": "ilog2",
+   "verdict": "not-a-defect",
+   "note": "static; callers POWEROF2-check bsize/fsize before ilog2. Modular 1<<n with n<32 is the errx path. prev BOUNDED"
+  },
+  {
+   "file": "sbin/routed/main.c",
+   "function": "fix_select",
+   "verdict": "not-a-defect",
+   "note": "LIST_FOREACH(&ifnet); queue macros unmodelled so ifp is unconstrained. prev BOUNDED"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 12,
+  "settled": 15,
   "defect": 0,
-  "not-a-defect": 10,
+  "not-a-defect": 13,
   "deferred": 2,
   "remaining": 0
  }

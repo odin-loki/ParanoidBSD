@@ -14,14 +14,14 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Make the instruments that ran actually answer
 
-5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file after one ERROR retry: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR. That retry driver then exited. Resume with `run-esbmc-resume.sh` (`--resume` only). Do **not** pass `--retry-status ERROR` again; do not SIGTERM a live ESBMC; do not quote the packed column as current.
+5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR. `--resume` only (`run-esbmc-resume.sh`) is in `load_tasks` (driver alive, 0 esbmc workers, jsonl unchanged until the hole is filled). Do **not** pass `--retry-status ERROR` again; do not SIGTERM; do not quote the packed column as current.
 6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
 7. **Clang TU-ERROR (19 Sep).** Live 5,304 ERROR. Top missing files are generated `config.h` / OpenSSH `includes.h` / OpenSSL internals / contrib `math_config.h`. Not a first-party `includes.py` miss for lib/msun.
-8. **CBMC TIMEOUT resume (in flight).** Live file 9,072 rows, hole ~1,796. Twelve new FAILED read, 0 defects. Do **not** pass `--retry-status` again.
+8. **CBMC TIMEOUT resume (in flight).** Live file 9,161 rows, hole ~1,707. Fifteen new FAILED read, 0 defects. Do **not** pass `--retry-status` again.
 
 ## Cover the trees this run left UNTOUCHED
 
-9. **KDE compile DB (19 Sep).** 732 TUs configured; `cxx_analyze` with that DB built 182/490 (was 6/1392 guessed). Still not a KDE proof column.
+9. **KDE compile DB (19 Sep).** 732 TUs configured; `cxx_analyze` with that DB built 182/490 (was 6/1392 guessed). Remaining 308 ERROR are missing `QObject` / KF `*_export.h`, not a first-party flag miss. Still not a KDE proof column.
 10. **IR transfer of the 40-twin queue (19 Sep).** 40/40 `ir.equal` ∧ `abi_equal` on this tree's HARDENEDBSD `vm.ufs.raw`. Evidence: [queue/ir-oracle-pbsd.jsonl](queue/ir-oracle-pbsd.jsonl). Re-index of the live PROVED set is still 40 `hbsd_cpp` files and **0 `pbsd/` twins**. The rest of `pbsd/` (15,742 functions) cannot inherit a C proof they do not have a twin for.
 11. **`hbsd/tests` and `hbsd/tools`** only if someone wants them in the denominator. They are 4,270 UNTOUCHED rows that inflate the headline if left in the universe and never scoped.
 

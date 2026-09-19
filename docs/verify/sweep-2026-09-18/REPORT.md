@@ -274,9 +274,11 @@ bug, not a bug in `atan`.
 732 TUs across KF6 + Wayland-related modules (kwayland unblocked via
 plasma-wayland-protocols 1.19). A later ingest of that DB with
 `cxx_analyze.py --compile-commands` built **182 of 490** TUs (the old
-guessed-flag run was 6 of 1,392). The rest are still ERROR, mostly moc
-autogen missing Qt headers. Clang findings in `qobjectdefs.h` are Qt's
-header, not KDE. Do not quote either run as “KDE is clean.”
+guessed-flag run was 6 of 1,392). The rest are 308 ERROR. Top missing
+headers: `QObject` (81), `kwidgetsaddons_export.h` (30), other KF
+`*_export.h` / Qt wrappers. Clang findings in `qobjectdefs.h` are Qt's
+header, not KDE. Re-running without those include paths does not make a
+proof column. Do not quote either run as “KDE is clean.”
 
 ### Coccinelle `nowait-deref` (3)
 
@@ -329,12 +331,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,072** rows, **6,252 PROVED**. New FAILED at
-unwind 32 were read: two test programs deferred; `arc4random` /
-`localeconv` unmodelled pointers; `__sigev_fork_child` process-lifetime
-calloc; four `lib/msun` IEEE-754 0/0 sites (`log2l`, `log10l`, `acosh`,
-`y0f`); `qzerof` static helper with caller `|x|>=2`; `y1f` IEEE;
-`tanf` `-n` from unmodelled `__ieee754_rem_pio2f`. **0 defects.** ~1,796
+Live file while this is written: **9,161** rows, **6,265 PROVED**. Fifteen new
+FAILED at unwind 32 were read: two test programs deferred; the rest
+unmodelled `snprintf`/`LIST_FOREACH`/`rem_pio2`, IEEE 0/0, or static
+`ilog2` whose callers already `POWEROF2`-check. **0 defects.** ~1,707
 pairs still missing. Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
