@@ -107,13 +107,19 @@
    "function": "get_wide",
    "verdict": "not-a-defect",
    "note": "same __sbmaskrune / unmodelled rune locale as get_byte. prev TIMEOUT"
+  },
+  {
+   "file": "usr.bin/rpcgen/rpc_svcout.c",
+   "function": "write_svc_aux",
+   "verdict": "not-a-defect",
+   "note": "f_print(fout) inlined to vfprintf; fout is a global FILE* unconstrained in a modular check. prev TIMEOUT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 18,
+  "settled": 19,
   "defect": 0,
-  "not-a-defect": 16,
+  "not-a-defect": 17,
   "deferred": 2,
   "remaining": 0
  }
