@@ -5,18 +5,18 @@ whether it turns a queue item into a confirmed bug.
 
 ## Confirm or kill the CBMC queue
 
-1. **Done (19 Sep).** 150 `sys/`+`lib/` exported-arithmetic failures read; records in [queue/arithmetic-triage.json](queue/arithmetic-triage.json). Unread in that bucket is 0. `contrib/` and other prefixes remain.
+1. **Done (19 Sep).** First-party exported-arithmetic is closed: 228 settled in [queue/arithmetic-triage.json](queue/arithmetic-triage.json) (`sys/`+`lib/` plus `bin`/`sbin`/`usr.bin`/`usr.sbin`/`stand`/`crypto`/`libexec`). Contrib (105) remains.
 2. **Done (19 Sep).** 35 unread index-OOB + 62 address-taken statics read; records in [queue/oob-static-triage.json](queue/oob-static-triage.json). Four defects fixed (`days_pmonth`/`parse8601`, ppp `protoname` ×2, pkru `3<<30`). Contrib remainder is deferred.
-3. **Run a frontier-model pass only on READ-THESE**, never on the 1,481 pointer/memory records. `taxonomy.py --needs-model` is the class list; this JSON is the finding list. A model's answer is a hypothesis until it is checked against the source.
+3. **Frontier-model on READ-THESE (19 Sep).** The remaining first-party arithmetic/OOB/static queues were the model-read. Contrib arithmetic is still unread. Do not run a model on the 1,481 pointer/memory records.
 4. **Done (19 Sep).** `vnic_dev.c` `mrh` was a real unchecked `M_NOWAIT` (fixed). The two `in*_fib_algo.c` hits are `p == NULL || p->field` short-circuit false positives.
 
 Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt builtins, dtrace test programs, byacc `vdiv` fixtures.
 
 ## Make the instruments that ran actually answer
 
-5. **ESBMC.** Either feed it preprocessed FreeBSD TUs (the Linux binary cannot parse this tree as-is) or stop marking the stage `ok` when every cell is `ERROR`. 10,868 ERROR rows currently look like a column in the matrix and are UNTOUCHED for proof purposes.
-6. **FuSeBMC.** 182 `CLEAN` out of 292,752 is not a fuzz-guided proof run. Diagnose `NOSEED` / `NORETURN` before spending another hour of wall clock.
-7. **Clang TU-ERROR.** 6,324 of 22,212 analyser TUs did not build. Every one of those functions is indistinguishable from clean in a findings report and is `TU-ERROR` in the matrix. `includes.py` is the lever; the kernel `device_if.h` / userland `INCS` path is already documented in `tools/verify/README.md`.
+5. **ESBMC (19 Sep).** The packed run was 10,868 ERROR (`-xc`). The live WSL `esbmc.jsonl` already has 808 PROVED-UNBOUNDED / 9,544 ERROR from kinduction. ERROR retry is the remaining work; do not quote the packed column as current.
+6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
+7. **Clang TU-ERROR (19 Sep).** Live 5,304 ERROR. Top missing files are generated `config.h` / OpenSSH `includes.h` / OpenSSL internals / contrib `math_config.h`. Not a first-party `includes.py` miss for lib/msun.
 8. **CBMC TIMEOUT (1,253) and BOUNDED (512).** Raising `--unwind` or `--timeout` is a different question per function, not a global knob. Start with `sys/` TIMEDOUT functions that classify still calls SCALAR.
 
 ## Cover the trees this run left UNTOUCHED

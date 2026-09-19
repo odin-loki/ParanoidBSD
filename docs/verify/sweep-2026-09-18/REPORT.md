@@ -243,11 +243,13 @@ four queues that report listed as work, without re-running the whole tree.
 
 ### Arithmetic READ-THESE (`sys/` + `lib/`)
 
-150 exported-arithmetic failures were read. **4 defects** (one still open:
-`inet6_option_space` `nbytes+2`/`nbytes+7`, already in `UB_FINDINGS` and not
-behaviour-changing to "fix"; three records of `IFCAP_BIT(31)` `1<<31`, fixed
-to `1U<<`). 119 not-a-defect, 27 deferred. Unread `sys/`+`lib/` arithmetic
-is 0. Records: [queue/arithmetic-triage.json](queue/arithmetic-triage.json).
+150 `sys/`+`lib/` exported-arithmetic failures were read first. The rest of
+first-party (`bin`/`sbin`/`usr.bin`/`usr.sbin`/`stand`/`crypto`/`libexec`,
+78 more) is now in the same file: **228 settled, 5 defects, 189 not-a-defect,
+34 deferred**. The fifth defect is OpenSSL `BN_set_params` `1 << 31` after a
+clamp to 31, fixed to `1U <<`. `inet6_option_space` is still the open
+behaviour-changing one. Contrib arithmetic (105) is still unread.
+Records: [queue/arithmetic-triage.json](queue/arithmetic-triage.json).
 
 ### IR transfer on this tree's HARDENEDBSD image
 
@@ -282,5 +284,31 @@ header, not KDE. Do not quote either run as “KDE is clean.”
 Index-OOB and address-taken statics: [queue/oob-static-triage.json](queue/oob-static-triage.json).
 98 settled (4 defect, 74 not-a-defect, 20 deferred contrib). The four defects
 are fixed: `parse8601` `tm_mon > 11`, ppp `protoname` `>= nitems`, pkru
-`3u << keyidx`. ESBMC/FuSeBMC/Clang TU-ERROR numbers above are unchanged.
-`cxx_analyze.py` now defaults `PBSD_ROOT` from the tree.
+`3u << keyidx`. `cxx_analyze.py` now defaults `PBSD_ROOT` from the tree.
+
+### FuSeBMC (why 182 CLEAN is not a proof column)
+
+292,752 records: 258,497 ERROR, 26,770 NOSEED, 6,102 NOFUNC, 1,188 NORETURN,
+182 CLEAN, 13 CRASH. NOSEED is CBMC failing to emit a seed — top reasons are
+missing contrib/crypto test headers (`testutil.h`, `includes.h`, `kmp.h`,
+`math.h` via the host path). NORETURN is `_exit`/`quick_exit` (AFL cannot
+tell exit from crash). ERROR is the harness not compiling on Linux. CLEAN
+means the budget ran out with no crash; it is not PROVED. Another hour of
+wall clock does not change that.
+
+### Clang TU-ERROR
+
+The live `analyze.jsonl` is 16,906 OK / 5,304 ERROR / 2 TIMEOUT (the packed
+report said 6,324 ERROR). The missing headers are generated or private:
+`config.h`, OpenSSH `includes.h`, OpenSSL `internal/common.h`, contrib
+`math_config.h` (arm-optimized-routines, not lib/msun). First-party
+`includes.py` already passes `-I lib/msun/src`. These TUs stay `TU-ERROR`
+until a generated config exists; they are not silent-clean.
+
+### ESBMC live file (not the packed 10,868 ERROR)
+
+`/home/odin/pbsd-sweep/esbmc.jsonl` now has mixed statuses (kinduction):
+ERROR 9,544, PROVED-UNBOUNDED 808, FAILED 344, TIMEOUT 134, UNKNOWN 38.
+The 18 September pack was the `-xc` unrecognised-option run. 808 unbounded
+proofs exist; they are not in the packed digest. A hung `--smoke` of
+`stdc_has_single_bit_uc` was blocking the ERROR retry.

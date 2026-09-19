@@ -899,14 +899,482 @@
    "function": "DELAY",
    "verdict": "not-a-defect",
    "note": "inlined sched_pin td_pinned+1; same pin counter; already in UB_FINDINGS"
+  },
+  {
+   "file": "libexec/rtld-elf/tests/libpythagoras/pythagoras.c",
+   "function": "pythagorean_theorem",
+   "verdict": "not-a-defect",
+   "note": "CBMC hit math.h INFINITY 1.0/0.0 and NAN 0.0/0.0; function is sqrt(pow), IEEE not a product bug"
+  },
+  {
+   "file": "bin/dd/misc.c",
+   "function": "secs_elapsed",
+   "verdict": "not-a-defect",
+   "note": "end.tv_sec - st.start.tv_sec from CLOCK_MONOTONIC; unmodelled clock"
+  },
+  {
+   "file": "bin/ed/buf.c",
+   "function": "get_addressed_line_node",
+   "verdict": "not-a-defect",
+   "note": "SPL1 mutex++; nested interrupt suppression counter"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "signal_hup",
+   "verdict": "not-a-defect",
+   "note": "1<<(signo-1); registered for SIGHUP only"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "delete_lines",
+   "verdict": "not-a-defect",
+   "note": "INC_MOD(to)+1; editor line addresses"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "signal_int",
+   "verdict": "not-a-defect",
+   "note": "1<<(signo-1); registered for SIGINT only"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "copy_lines",
+   "verdict": "not-a-defect",
+   "note": "current_addr+1; editor line addresses"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "handle_int",
+   "verdict": "not-a-defect",
+   "note": "1<<(signo-1); SIGINT handler"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "handle_winch",
+   "verdict": "not-a-defect",
+   "note": "1<<(signo-1); SIGWINCH is 28"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "handle_hup",
+   "verdict": "not-a-defect",
+   "note": "1<<(signo-1); SIGHUP handler"
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "move_lines",
+   "verdict": "not-a-defect",
+   "note": "INC_MOD(addr)+1; editor line addresses"
+  },
+  {
+   "file": "bin/sh/memalloc.c",
+   "function": "growstackstr",
+   "verdict": "not-a-defect",
+   "note": "INTOFF/INTON suppressint+/-1; same recursion counter as thr_sig"
+  },
+  {
+   "file": "sbin/fsck_ffs/fsutil.c",
+   "function": "blerase",
+   "verdict": "not-a-defect",
+   "note": "blk * dev_bsize; fs block to off_t"
+  },
+  {
+   "file": "sbin/fsck_ffs/setup.c",
+   "function": "readsb",
+   "verdict": "not-a-defect",
+   "note": "readcnt++ I/O counter; bflag * dev_bsize is -b offset"
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_fini",
+   "verdict": "not-a-defect",
+   "note": "assert(pjdlog_initialized); same pjdlog family as libpjdlog"
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_mode_get",
+   "verdict": "not-a-defect",
+   "note": "assert(pjdlog_initialized); same pjdlog family"
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_debug_set",
+   "verdict": "not-a-defect",
+   "note": "assert initialized and level >= 0; same family"
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_debug_get",
+   "verdict": "not-a-defect",
+   "note": "assert(pjdlog_initialized); same pjdlog family"
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_mode_set",
+   "verdict": "not-a-defect",
+   "note": "assert initialized and mode is STD or SYSLOG; same family"
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_init",
+   "verdict": "not-a-defect",
+   "note": "assert mode is STD or SYSLOG; same family"
+  },
+  {
+   "file": "sbin/geom/misc/subr.c",
+   "function": "g_lcm",
+   "verdict": "not-a-defect",
+   "note": "gcd 0 only if a=b=0; in-tree callers pass provider sectorsize"
+  },
+  {
+   "file": "sbin/routed/if.c",
+   "function": "ifwithindex",
+   "verdict": "not-a-defect",
+   "note": "inlined ifinit now.tv_sec+30/300; unmodelled time"
+  },
+  {
+   "file": "sbin/routed/trace.c",
+   "function": "addrname",
+   "verdict": "not-a-defect",
+   "note": "strcpy is inet_ntoa static into distinct bufs[]; no overlap"
+  },
+  {
+   "file": "sbin/fsck_ffs/fsutil.c",
+   "function": "finalIOstats",
+   "verdict": "not-a-defect",
+   "note": "timespecadd of I/O timers; unmodelled clock"
+  },
+  {
+   "file": "usr.bin/calendar/ostern.c",
+   "function": "easter",
+   "verdict": "not-a-defect",
+   "note": "29/(H+1) and year+year/4; calendar year domain; already in UB_FINDINGS"
+  },
+  {
+   "file": "sbin/fsck_ffs/inode.c",
+   "function": "chkrange",
+   "verdict": "not-a-defect",
+   "note": "fs_frag-1; superblock fragment count"
+  },
+  {
+   "file": "usr.bin/gprof/printgprof.c",
+   "function": "flatprofheader",
+   "verdict": "not-a-defect",
+   "note": "FILE _w-1 from printf; stdio leak"
+  },
+  {
+   "file": "usr.bin/mail/lex.c",
+   "function": "incfile",
+   "verdict": "not-a-defect",
+   "note": "inlined setmsize sz+1; mailbox message count"
+  },
+  {
+   "file": "usr.bin/mail/tty.c",
+   "function": "ttyint",
+   "verdict": "not-a-defect",
+   "note": "longjmp; CBMC needs instrumentation"
+  },
+  {
+   "file": "usr.bin/mail/tty.c",
+   "function": "ttystop",
+   "verdict": "not-a-defect",
+   "note": "longjmp; CBMC needs instrumentation"
+  },
+  {
+   "file": "usr.bin/mkimg/image.c",
+   "function": "image_copyout_region",
+   "verdict": "not-a-defect",
+   "note": "size * secsz; image LBA region"
+  },
+  {
+   "file": "usr.bin/netstat/route.c",
+   "function": "routepr",
+   "verdict": "not-a-defect",
+   "note": "numfibs-1 from sysctl net.fibs; default 1"
+  },
+  {
+   "file": "usr.bin/gprof/printgprof.c",
+   "function": "gprofheader",
+   "verdict": "not-a-defect",
+   "note": "FILE _w-1 from printf; stdio leak"
+  },
+  {
+   "file": "usr.bin/systat/proc.c",
+   "function": "procshow",
+   "verdict": "not-a-defect",
+   "note": "lcol+1 / y+1 screen row"
+  },
+  {
+   "file": "usr.bin/systat/pigs.c",
+   "function": "initpigs",
+   "verdict": "not-a-defect",
+   "note": "ccpu/fscale from kern.fscale sysctl; fscale never 0"
+  },
+  {
+   "file": "usr.bin/systat/vmstat.c",
+   "function": "putint",
+   "verdict": "not-a-defect",
+   "note": "w-- > 0 column width; INT_MIN fails the compare"
+  },
+  {
+   "file": "usr.bin/talk/init_disp.c",
+   "function": "sig_sent",
+   "verdict": "not-a-defect",
+   "note": "inlined quit his_win.x_nlines-1; curses LINES/2-1"
+  },
+  {
+   "file": "usr.bin/talk/init_disp.c",
+   "function": "quit",
+   "verdict": "not-a-defect",
+   "note": "x_nlines-1; curses window height"
+  },
+  {
+   "file": "usr.bin/talk/invite.c",
+   "function": "re_invite",
+   "verdict": "not-a-defect",
+   "note": "x_nlines-1 and longjmp; same window height"
+  },
+  {
+   "file": "usr.bin/top/display.c",
+   "function": "u_message",
+   "verdict": "not-a-defect",
+   "note": "setup_buffer screen_width+5; terminal columns"
+  },
+  {
+   "file": "usr.sbin/autofs/common.c",
+   "function": "rpc_umntall",
+   "verdict": "not-a-defect",
+   "note": "assert(f) after auto_popen; unmodelled"
+  },
+  {
+   "file": "usr.sbin/bhyve/acpi.c",
+   "function": "dsdt_indent",
+   "verdict": "not-a-defect",
+   "note": "assert indent_level >= 0 after +=; generator recursion"
+  },
+  {
+   "file": "usr.sbin/bhyve/acpi.c",
+   "function": "dsdt_unindent",
+   "verdict": "not-a-defect",
+   "note": "assert level >= levels then -=; matched indent"
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pirq_read",
+   "verdict": "not-a-defect",
+   "note": "assert pin in 1..NPIRQS; pin-1 index"
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pci_irq_reserve",
+   "verdict": "not-a-defect",
+   "note": "assert irq in 0..15; ISA IRQ"
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pci_irq_use",
+   "verdict": "not-a-defect",
+   "note": "assert irq in 0..15; ISA IRQ"
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pirq_irq",
+   "verdict": "not-a-defect",
+   "note": "assert pin in 1..NPIRQS; pin-1 index"
+  },
+  {
+   "file": "usr.sbin/bluetooth/bthidd/btuinput.c",
+   "function": "uinput_rep_leds",
+   "verdict": "not-a-defect",
+   "note": "elapsed-1 timespec; assert fd>=0; LED loop i<3"
+  },
+  {
+   "file": "usr.sbin/lpr/common_source/common.c",
+   "function": "delay",
+   "verdict": "not-a-defect",
+   "note": "stdio _w-1 leak; delay itself clamps 1..10000"
+  },
+  {
+   "file": "usr.sbin/pkg/config.c",
+   "function": "config_get_repositories",
+   "verdict": "not-a-defect",
+   "note": "inlined subst_packagesite strstr-oldval; same-object ptrdiff"
+  },
+  {
+   "file": "usr.sbin/pmcstat/pmcstat.c",
+   "function": "pmcstat_kill_process",
+   "verdict": "not-a-defect",
+   "note": "assert FLAG_HAS_COMMANDLINE and pt; caller contract"
+  },
+  {
+   "file": "usr.sbin/virtual_oss/virtual_oss/virtual_oss.c",
+   "function": "virtual_oss_delay_ns",
+   "verdict": "not-a-defect",
+   "note": "/voss_dsp_sample_rate; main rejects 0 before wait path"
+  },
+  {
+   "file": "usr.sbin/virtual_oss/virtual_oss/virtual_oss.c",
+   "function": "virtual_oss_wait",
+   "verdict": "not-a-defect",
+   "note": "same sample-rate invariant as delay_ns"
+  },
+  {
+   "file": "stand/common/bcache.c",
+   "function": "bcache_allocate",
+   "verdict": "not-a-defect",
+   "note": "fls unmodelled; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/ficl/math64.c",
+   "function": "m64FlooredDivI",
+   "verdict": "not-a-defect",
+   "note": "-den; Forth divisor, same as abs(INT_MIN)"
+  },
+  {
+   "file": "stand/ficl/math64.c",
+   "function": "m64MulI",
+   "verdict": "not-a-defect",
+   "note": "-x/-y; Forth integers"
+  },
+  {
+   "file": "stand/ficl/math64.c",
+   "function": "m64SymmetricDivI",
+   "verdict": "not-a-defect",
+   "note": "m64Negate lo++/hi++; Forth two-cell negate"
+  },
+  {
+   "file": "stand/ficl/stack.c",
+   "function": "stackCreate",
+   "verdict": "not-a-defect",
+   "note": "assert nCells and malloc; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/ficl/aarch64/sysdep.c",
+   "function": "ficlLongDiv",
+   "verdict": "not-a-defect",
+   "note": "divide by Forth divisor; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/ficl/amd64/sysdep.c",
+   "function": "ficlLongDiv",
+   "verdict": "not-a-defect",
+   "note": "divide by Forth divisor; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/ficl/arm/sysdep.c",
+   "function": "ficlLongDiv",
+   "verdict": "not-a-defect",
+   "note": "divide by Forth divisor; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/ficl/i386/sysdep.c",
+   "function": "ficlLongDiv",
+   "verdict": "not-a-defect",
+   "note": "divide by Forth divisor; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/ficl/riscv/sysdep.c",
+   "function": "ficlLongDiv",
+   "verdict": "not-a-defect",
+   "note": "divide by Forth divisor; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/i386/common/cons.c",
+   "function": "getc",
+   "verdict": "not-a-defect",
+   "note": "fn<<8 BIOS int16; callers pass 0 or 1; already in UB_FINDINGS"
+  },
+  {
+   "file": "stand/i386/libi386/biospci.c",
+   "function": "biospci_write_config",
+   "verdict": "not-a-defect",
+   "note": "0xB10B+width; width is 0/1/2"
+  },
+  {
+   "file": "stand/kboot/kboot/main.c",
+   "function": "delay",
+   "verdict": "not-a-defect",
+   "note": "tv_sec*1000000; unmodelled host_gettimeofday"
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/pid/tst.weak1.c",
+   "function": "go",
+   "verdict": "deferred",
+   "note": "dtrace test program (tst.*.c)"
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.bigstack.c",
+   "function": "grow1",
+   "verdict": "deferred",
+   "note": "dtrace test program (tst.*.c)"
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c",
+   "function": "baz",
+   "verdict": "deferred",
+   "note": "dtrace test program (tst.*.c)"
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c",
+   "function": "bar",
+   "verdict": "deferred",
+   "note": "dtrace test program (tst.*.c)"
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c",
+   "function": "foo",
+   "verdict": "deferred",
+   "note": "dtrace test program (tst.*.c)"
+  },
+  {
+   "file": "crypto/krb5/src/util/et/com_err.c",
+   "function": "reset_com_err_hook",
+   "verdict": "not-a-defect",
+   "note": "assert r==0 after k5_mutex_lock; unmodelled init"
+  },
+  {
+   "file": "crypto/krb5/src/util/et/error_message.c",
+   "function": "com_err_finish_init",
+   "verdict": "not-a-defect",
+   "note": "CALL_INIT_FUNCTION did_run assert; unmodelled constructor"
+  },
+  {
+   "file": "crypto/openssh/auth2.c",
+   "function": "auth2_read_banner",
+   "verdict": "deferred",
+   "note": "free argument has offset zero; xmalloc unmodelled; pointer leak into arithmetic bucket"
+  },
+  {
+   "file": "crypto/openssh/readconf.c",
+   "function": "kex_default_pk_alg",
+   "verdict": "deferred",
+   "note": "free(all_key) offset zero; sshkey_alg_list unmodelled; pointer leak into arithmetic bucket"
+  },
+  {
+   "file": "crypto/openssl/apps/lib/apps.c",
+   "function": "app_tminterval",
+   "verdict": "not-a-defect",
+   "note": "/sysconf(_SC_CLK_TCK); tck never 0"
+  },
+  {
+   "file": "crypto/openssl/crypto/bio/bio_sock.c",
+   "function": "BIO_socket_wait",
+   "verdict": "not-a-defect",
+   "note": "max_time-now; unmodelled time(); callers pass short timeout"
+  },
+  {
+   "file": "crypto/openssl/crypto/bn/bn_lib.c",
+   "function": "BN_set_params",
+   "verdict": "defect",
+   "note": "type-level: 1<<mult after clamp to sizeof(int)*8-1; fixed to 1U<<; bits preserved"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 150,
-  "defect": 4,
-  "not-a-defect": 119,
-  "deferred": 27,
+  "settled": 228,
+  "defect": 5,
+  "not-a-defect": 189,
+  "deferred": 34,
   "remaining": 0,
   "queue_unread_sys_lib": 0
  }

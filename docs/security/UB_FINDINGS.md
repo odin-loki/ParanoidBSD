@@ -112,6 +112,12 @@ Both name tables are indexed by a peer option id. `proto > nitems`
 lets `proto == nitems` through, then `cftypes[nitems]` is one past the
 end. `>=` matches the other `protoname` in this directory.
 
+### `crypto/openssl/crypto/bn/bn_lib.c` — `BN_set_params` clamps then `1 << 31`
+
+`mult` is capped at `sizeof(int)*8 - 1` (31) then was `1 << mult`. Same
+type-level class as `IFCAP_BIT(31)`. `(int)(1U << mult)` is the bit
+pattern `bn_limit_num` already stored.
+
 ---
 
 ## Reported, not fixed — the UB *is* the overflow
