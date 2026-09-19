@@ -26,9 +26,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--db", default=str(Path.home() / "pbsd-sweep" / "codeql-ffclock-db"))
     ap.add_argument("--out", default=str(Path.home() / "pbsd-sweep" / "codeql-copyin.jsonl"))
+    ap.add_argument("--query", default=str(QUERY),
+                    help="ql file; default copyin_call.ql")
+    ap.add_argument("--hit-text", default="copyin call",
+                    help="substring in query stdout that means a hit")
     args = ap.parse_args()
+    query = Path(args.query)
     codeql = shutil.which("codeql")
-    rec = {"v": 1, "query": str(QUERY), "db": args.db, "codeql": codeql}
+    rec = {"v": 1, "query": str(query), "db": args.db, "codeql": codeql}
     if not codeql:
         rec["status"] = "ERROR"
         rec["detail"] = "codeql not on PATH"
@@ -43,22 +48,25 @@ def main() -> int:
     subprocess.run([codeql, "pack", "install", str(PACK)],
                    capture_output=True, text=True)
     p = subprocess.run(
-        [codeql, "query", "run", str(QUERY), "--database", str(db)],
+        [codeql, "query", "run", str(query), "--database", str(db)],
         capture_output=True, text=True)
     rec["query_rc"] = p.returncode
     rec["query_out"] = ((p.stdout or "") + (p.stderr or ""))[-1200:]
-    hit = "copyin call" in (p.stdout or "")
+    hit = args.hit_text in (p.stdout or "")
+    tag = "COPYIN"
+    if "dest_used" in query.name:
+        tag = "DEST-USED"
     if p.returncode == 0 and hit:
-        rec["status"] = "COPYIN-OK"
+        rec["status"] = f"{tag}-OK"
     elif p.returncode == 0:
-        rec["status"] = "COPYIN-EMPTY"
+        rec["status"] = f"{tag}-EMPTY"
     else:
         rec["status"] = "ERROR"
         rec["detail"] = "query run failed"
     Path(args.out).write_text(json.dumps(rec) + "\n", encoding="utf-8")
     print("status", rec["status"], flush=True)
     print(rec.get("query_out", "")[-500:], flush=True)
-    return 0 if rec["status"].startswith("COPYIN") else 1
+    return 0 if rec["status"].endswith("OK") or rec["status"].endswith("EMPTY") else 1
 
 
 if __name__ == "__main__":

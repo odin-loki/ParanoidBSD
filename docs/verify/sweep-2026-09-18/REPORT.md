@@ -325,8 +325,10 @@ the Makefile recipe instead of writing only `iconv.h`. A scoped
 non-OK row) is **51 OK / 3 ERROR**; the three leftovers want `config.h`
 (`gethost.c`, `ma.setp.c`, `vms.termcap.c`). Evidence:
 [queue/analyze-tcsh-cshhdrs-digest.json](queue/analyze-tcsh-cshhdrs-digest.json).
-These TUs stay `TU-ERROR` until a generated config exists; they are not
-silent-clean.
+`contrib/wpa` TUs the build names are **183/183 OK**; the 257 ERROR are
+unnamed orphans (`hlr_auc_gw`, hs20, dbus, Windows). A prefix `-I`
+would compile those as if they were `usr.sbin/wpa`. These TUs stay
+`TU-ERROR` until a generated config exists; they are not silent-clean.
 
 ### ESBMC live file (not the packed 10,868 ERROR)
 
@@ -337,7 +339,11 @@ column. After the ERROR retry dropped ERROR rows once, the live file is
 reported **0 pairs left to check** against the current `classes.json`
 SCALAR/VOID ∩ sys+lib set: that file is the kinduction result, not a
 hole vs the packed 10,868 `-xc` column. Do **not** pass `--retry-status
-ERROR` again.
+ERROR` again. A 25-row sample of the 344 FAILED is libc already in the
+CBMC arithmetic queue (`killpg`, `alarm`, `clock`, `nice`, `isctype`),
+not 344 bugs. Text-class of all 344: 163 arithmetic, 140 pointer, 41
+other. Evidence:
+[queue/esbmc-failed-sample.json](queue/esbmc-failed-sample.json).
 
 ### CBMC TIMEOUT resume (unwind 32 / 180 s, in flight)
 
@@ -347,14 +353,15 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,423** rows, **6,280 PROVED**
-(BOUNDED 150 / FAILED 2,568 / ERROR 140 / TIMEOUT 285). Thirty new
+Live file while this is written: **9,443** rows, **6,282 PROVED**
+(BOUNDED 156 / FAILED 2,574 / ERROR 140 / TIMEOUT 291). Thirty-six new
 FAILED at unwind 32 were read: two test programs deferred; two type-level
 `1 << 31` sites patched (`gpioctl` `print_caps`, makefs `ilog2`); the rest
 unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`/`FD_SET`/
-`ficlMalloc`/`Calloc`/`file_findmetadata`/`sysctl`, IEEE 0/0,
-or process-lifetime `calloc`. ~1,445 pairs still missing. Last record:
-`TIMEOUT stand/efi/libefi/efi_console.c:efi_term_emu`. Records:
+`ficlMalloc`/`Calloc`/`file_findmetadata`/`sysctl`/`file2str`/`strtol`
+endptr, IEEE 0/0, or process-lifetime `calloc`. ~1,425 pairs still
+missing. Last record: `FAILED stand/libsa/nfs.c:set_nfs_read_size`.
+Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
@@ -384,8 +391,13 @@ each, are also **COPYIN-OK**: `kern_context.c` (`sys_setcontext`,
 `sys_swapcontext`), `kern_prot.c` (`sys_setgroups`,
 `freebsd14_setgroups`, `sys_setcred`,
 `user_setcred_copyin_supp_groups`), `kern_resource.c`
-(`sys_setrlimit`, `sys_rtprio`, `sys_rtprio_thread`). One-TU extract
-is still not a taint run. Infer is still absent and covers nothing extra.
+(`sys_setrlimit`, `sys_rtprio`, `sys_rtprio_thread`). A later local
+dest-use query (`copyin_dest_used.ql`) on those same DBs is
+**DEST-USED-OK** on `kern_prot.c` (`groups` in `sys_setgroups`,
+`freebsd14_setgroups`, `user_setcred_copyin_supp_groups`) and
+**DEST-USED-EMPTY** on time/context/resource/ffclock-on: dest as
+`&local` is not a named `VariableAccess`. That is still not a taint
+run. Infer is still absent and covers nothing extra.
 Evidence:
 [queue/codeql-smoke.jsonl](queue/codeql-smoke.jsonl),
 [queue/codeql-ffclock.jsonl](queue/codeql-ffclock.jsonl),
@@ -398,4 +410,9 @@ Evidence:
 [queue/codeql-prot.jsonl](queue/codeql-prot.jsonl),
 [queue/codeql-prot-copyin.jsonl](queue/codeql-prot-copyin.jsonl),
 [queue/codeql-resource.jsonl](queue/codeql-resource.jsonl),
-[queue/codeql-resource-copyin.jsonl](queue/codeql-resource-copyin.jsonl).
+[queue/codeql-resource-copyin.jsonl](queue/codeql-resource-copyin.jsonl),
+[queue/codeql-time-dest.jsonl](queue/codeql-time-dest.jsonl),
+[queue/codeql-prot-dest.jsonl](queue/codeql-prot-dest.jsonl),
+[queue/codeql-context-dest.jsonl](queue/codeql-context-dest.jsonl),
+[queue/codeql-resource-dest.jsonl](queue/codeql-resource-dest.jsonl),
+[queue/codeql-ffclock-on-dest.jsonl](queue/codeql-ffclock-on-dest.jsonl).

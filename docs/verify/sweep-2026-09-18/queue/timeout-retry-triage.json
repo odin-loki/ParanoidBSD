@@ -179,13 +179,49 @@
    "function": "dictCreateHashed",
    "verdict": "not-a-defect",
    "note": "ficlMalloc unmodelled; assert(pDict) then dictEmpty->alignPtr on unconstrained. prev TIMEOUT"
+  },
+  {
+   "file": "stand/ficl/dict.c",
+   "function": "dictCreate",
+   "verdict": "not-a-defect",
+   "note": "wrapper of dictCreateHashed; same unmodelled ficlMalloc. prev TIMEOUT"
+  },
+  {
+   "file": "stand/kboot/kboot/main.c",
+   "function": "kboot_rsdp_from_efi",
+   "verdict": "not-a-defect",
+   "note": "file2str/strcspn/strtoull unmodelled so walker/buffer unconstrained; loop walker < ep is the C. prev TIMEOUT"
+  },
+  {
+   "file": "stand/kboot/kboot/main.c",
+   "function": "find_acpi",
+   "verdict": "not-a-defect",
+   "note": "wrapper of kboot_rsdp_from_efi. prev TIMEOUT"
+  },
+  {
+   "file": "stand/kboot/kboot/main.c",
+   "function": "kboot_find_smbios",
+   "verdict": "not-a-defect",
+   "note": "same file2str/strcspn walker as kboot_rsdp_from_efi. prev TIMEOUT"
+  },
+  {
+   "file": "stand/kboot/kboot/main.c",
+   "function": "find_smbios",
+   "verdict": "not-a-defect",
+   "note": "calls kboot_find_smbios then unmodelled host_mmap/ptov; map[].va unconstrained. prev TIMEOUT"
+  },
+  {
+   "file": "stand/libsa/nfs.c",
+   "function": "set_nfs_read_size",
+   "verdict": "not-a-defect",
+   "note": "*end after strtol(&end); CBMC strtol model does not write endptr. getenv non-NULL is the C. prev BOUNDED"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 30,
+  "settled": 36,
   "defect": 2,
-  "not-a-defect": 26,
+  "not-a-defect": 32,
   "deferred": 2,
   "remaining": 0
  }

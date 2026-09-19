@@ -14,10 +14,10 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Make the instruments that ran actually answer
 
-5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file is complete for current sys+lib SCALAR/VOID: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR (6,433 rows; `--resume` reported 0 pairs left). Do **not** pass `--retry-status ERROR` again; do not quote the packed column as current.
+5. **ESBMC (19 Sep).** Packed run was 10,868 ERROR (`-xc`). Live kinduction file is complete for current sys+lib SCALAR/VOID: 808 PROVED-UNBOUNDED / 344 FAILED / 38 UNKNOWN / 135 TIMEOUT / 5,108 ERROR (6,433 rows; `--resume` reported 0 pairs left). A 25-row FAILED sample is libc sites already in the CBMC arithmetic queue (`killpg`, `alarm`, `nice`, `isctype`, …), not 344 new bugs. Do **not** pass `--retry-status ERROR` again; do not quote the packed column as current. Evidence: [queue/esbmc-failed-sample.json](queue/esbmc-failed-sample.json).
 6. **FuSeBMC (19 Sep).** Diagnosed: NOSEED is CBMC seed failure on missing contrib/crypto test headers; NORETURN is `_exit`; ERROR is harness compile on Linux; 182 CLEAN is budget-not-crash, not a proof.
-7. **Clang TU-ERROR (19 Sep).** Live packed file is still 16,906 OK / 5,304 ERROR / 2 TIMEOUT. `bin/csh` GENHDRS (`sh.err.h` / `ed.defns.h` / `tc.const.h`) now follow the Makefile recipe; a scoped re-analyze of `contrib/tcsh` (new jsonl, live file untouched) is **51 OK / 3 ERROR**. The three leftovers want `config.h` (`gethost.c`, `ma.setp.c`, `vms.termcap.c`). Do **not** `--resume` the live `analyze.jsonl` with a narrowed `--scope`: resume keeps only OK rows and drops every other ERROR. Remaining top missing: heimdal `config.h`, wpa `includes.h`, OpenSSL internals, contrib `math_config.h`. Not silent-clean stubs. Evidence: [queue/analyze-tcsh-cshhdrs-digest.json](queue/analyze-tcsh-cshhdrs-digest.json).
-8. **CBMC TIMEOUT resume (in flight).** Live file 9,423 rows, 6,280 PROVED, hole ~1,445. Thirty new FAILED read: 2 defects patched (`print_caps`, makefs `ilog2`), 2 deferred tests, 26 not-a-defect. Do **not** pass `--retry-status` again.
+7. **Clang TU-ERROR (19 Sep).** Live packed file is still 16,906 OK / 5,304 ERROR / 2 TIMEOUT. `bin/csh` GENHDRS now follow the Makefile recipe; scoped `contrib/tcsh` is **51 OK / 3 ERROR**. `contrib/wpa` **named** TUs are 183/183 OK; the 257 ERROR are unnamed orphans (`hlr_auc_gw`, hs20, dbus, Windows) the build does not compile. A prefix `-I` would wrongly compile those. Remaining top missing: heimdal `config.h`, OpenSSL internals, contrib `math_config.h`. Not silent-clean stubs. Do **not** `--resume` the live `analyze.jsonl` with a narrowed `--scope`.
+8. **CBMC TIMEOUT resume (in flight).** Live file 9,443 rows, 6,282 PROVED, hole ~1,425. Thirty-six new FAILED read: 2 defects patched (`print_caps`, makefs `ilog2`), 2 deferred tests, 32 not-a-defect. Do **not** pass `--retry-status` again.
 
 ## Cover the trees this run left UNTOUCHED
 
@@ -27,7 +27,7 @@ Skip, until the first-party queue is empty: `contrib/less`, flex, compiler-rt bu
 
 ## Class coverage
 
-12. **Done (19 Sep).** CodeQL CLI 2.27.0. Smokes: `abs`, `sys_ffclock_setestimate`, `sys_clock_settime` are `SMOKE-OK`. ffclock `copyin` is `COPYIN-EMPTY` because HARDENEDBSD leaves `FFCLOCK` unset (ENOSYS stub). `kern_time.c` is **COPYIN-OK**. Three more one-TU extracts are also **COPYIN-OK**: `kern_context.c` (`sys_setcontext`, `sys_swapcontext`), `kern_prot.c` (`sys_setgroups`, `freebsd14_setgroups`, `sys_setcred`, `user_setcred_copyin_supp_groups`), `kern_resource.c` (`sys_setrlimit`, `sys_rtprio`, `sys_rtprio_thread`). Extract is in-tree from `hbsd/src`. Still not a tree taint run. Infer still absent.
+12. **Done (19 Sep).** CodeQL CLI 2.27.0. Smokes and COPYIN-OK as before. A local dest-use query (`copyin_dest_used.ql`) on the same one-TU DBs is **DEST-USED-OK** on `kern_prot.c` (`groups` in `sys_setgroups` / `freebsd14_setgroups` / `user_setcred_copyin_supp_groups`) and **DEST-USED-EMPTY** on time/context/resource/ffclock-on (`&local` dests are not a named `VariableAccess`). Still not a taint run. Infer still absent.
 13. **Do not round PARTIAL up.** Infoleaks, lock order, trust-boundary input, and C++ exception leaks stay PARTIAL until an instrument actually PROVES or FINDS them with useful recall.
 
 ## Housekeeping
