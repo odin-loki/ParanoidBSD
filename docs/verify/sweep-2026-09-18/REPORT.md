@@ -342,8 +342,13 @@ hole vs the packed 10,868 `-xc` column. Do **not** pass `--retry-status
 ERROR` again. A 25-row sample of the 344 FAILED is libc already in the
 CBMC arithmetic queue (`killpg`, `alarm`, `clock`, `nice`, `isctype`),
 not 344 bugs. Text-class of all 344: 163 arithmetic, 140 pointer, 41
-other. Evidence:
-[queue/esbmc-failed-sample.json](queue/esbmc-failed-sample.json).
+other. First-party (sys/ or lib/, not isctype): 172 FAILED. Fifteen
+that looked like shl/OOB and were not already in the CBMC arithmetic
+queue were read: **0 defects** (11 not-a-defect, 4 deferred tests).
+Evidence:
+[queue/esbmc-failed-sample.json](queue/esbmc-failed-sample.json),
+[queue/esbmc-failed-firstparty.json](queue/esbmc-failed-firstparty.json),
+[queue/esbmc-failed-triage.json](queue/esbmc-failed-triage.json).
 
 ### CBMC TIMEOUT resume (unwind 32 / 180 s, in flight)
 
@@ -353,14 +358,15 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,443** rows, **6,282 PROVED**
-(BOUNDED 156 / FAILED 2,574 / ERROR 140 / TIMEOUT 291). Thirty-six new
+Live file while this is written: **9,487** rows, **6,282 PROVED**
+(BOUNDED 156 / FAILED 2,574 / ERROR 161 / TIMEOUT 314). Thirty-six new
 FAILED at unwind 32 were read: two test programs deferred; two type-level
 `1 << 31` sites patched (`gpioctl` `print_caps`, makefs `ilog2`); the rest
 unmodelled libc/`LIST_FOREACH`/`rem_pio2`/rune locale/`FILE *`/`FD_SET`/
 `ficlMalloc`/`Calloc`/`file_findmetadata`/`sysctl`/`file2str`/`strtol`
-endptr, IEEE 0/0, or process-lifetime `calloc`. ~1,425 pairs still
-missing. Last record: `FAILED stand/libsa/nfs.c:set_nfs_read_size`.
+endptr, IEEE 0/0, or process-lifetime `calloc`. Unread new FAILED: 0.
+~1,381 pairs still missing. Last record:
+`TIMEOUT sys/arm/freescale/imx/imx_i2c.c:i2c_repeated_start`.
 Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
