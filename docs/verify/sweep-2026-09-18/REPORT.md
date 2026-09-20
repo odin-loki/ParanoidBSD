@@ -382,10 +382,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,738** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 493). ~1,130 pairs
+Live file while this is written: **9,739** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 494). ~1,129 pairs
 still missing. Unread new-FAILED is 0. Current TIMEOUTs
-(`e6000sw_writephy_locked`/`readreg_wrapper`/`writereg_wrapper`) are
+(`e6000sw_readreg_wrapper`/`writereg_wrapper`, `e6060sw_dot1q_mode`) are
 unmodelled MMIO/softc. Settled unwind-32 FAILED is 55 (2 defects). Restart
 remains `--resume` only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
