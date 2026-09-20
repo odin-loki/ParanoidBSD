@@ -49,7 +49,7 @@
       "checker": "cplusplus.NewDeleteLeaks",
       "verdict": "not-a-defect",
       "note": "new QDBusPendingCallWatcher(reply, q) parented; finished lambda deleteLater — same as DBusHelperProxy"
-    }
+    },
     {
       "file": "/home/odin/kde-src/knotifications/src/notifybypopup.cpp",
       "line": 359,
