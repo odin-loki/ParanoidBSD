@@ -382,11 +382,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,831** rows, **6,294 PROVED**
-(BOUNDED 181 / FAILED 2,596 / ERROR 180 / TIMEOUT 580). ~1,037 pairs
+Live file while this is written: **9,833** rows, **6,294 PROVED**
+(BOUNDED 181 / FAILED 2,596 / ERROR 180 / TIMEOUT 582). ~1,035 pairs
 still missing. Unread new-FAILED is 0. Second hole-fill PROVED this
 resume: `ipw_cmdname` (after `ida_cmd_lookup`). Current last TIMEOUT is
-`jme_miibus_readreg`.
+`mdio_readreg`.
 Settled unwind-32 FAILED is 58 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
