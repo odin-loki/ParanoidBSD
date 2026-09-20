@@ -291,13 +291,17 @@ Do not quote either run as “KDE is clean.” Leftover kguiaddons /
 knotifications installs later finished; the merged DB is **22 modules /
 726 unique TUs** (`karchive` installed). `--compile-commands-only` now
 takes that database as the universe (a cmake `--root` is not
-`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **626 OK /
-39 ERROR / 2 TIMEOUT** of 667 written (0 guessed). ERROR set unchanged.
-Of 68 findings, 58 are clang on Qt headers; **two kde-src defects**
+`kde/frameworks`). A jobs=1 ingest of those 726 **finished**: **685 OK /
+39 ERROR / 2 TIMEOUT**, 0 guessed. ERROR is DB-honest (14 TUs missing
+`private/qtx11extras_p.h` because the DB never had `QtGuiPrivate`, plus
+stale autogen/moc and two Solid `.c` TUs with `-std=c99` under clang++).
+TIMEOUT is `kwayland` `registry.cpp` and `ki18n` `klocalizedcontext.cpp`.
+Of 72 findings, 62 are clang on Qt headers; **two kde-src defects**
 (neither vendored): `k7zip.cpp:1803` uninitialized `seqOutStream`, and
 `klocalimagecacheimpl.cpp:90` (`new QPixmap` dropped when caching is off).
 `notifybypopup.cpp:359` is an unparented `QDBusPendingCallWatcher` with
-`deleteLater` on `finished` (clang FP). Evidence:
+`deleteLater` on `finished` (clang FP). Do not quote 685 OK as “KDE is
+clean.” This is still not a proof column. Evidence:
 [queue/kde-compile-db-expand-digest.json](queue/kde-compile-db-expand-digest.json),
 [queue/cxx-analyze-ccdb-726-digest.json](queue/cxx-analyze-ccdb-726-digest.json),
 [queue/k7zip-uninit-seqOutStream.json](queue/k7zip-uninit-seqOutStream.json),
@@ -378,12 +382,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,731** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 486). ~1,137 pairs
+Live file while this is written: **9,733** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 488). ~1,135 pairs
 still missing. Unread new-FAILED is 0. Current TIMEOUTs
-(`arswitch_writephy`, `e6000sw_serdes_power`/`read_xmdio`) are unmodelled
-MMIO/softc. Settled unwind-32 FAILED is 55 (2 defects). Restart remains
-`--resume` only at JOBS=2 (pid 887). Records:
+(`e6000sw_read_xmdio`/`write_xmdio`/`readphy`) are unmodelled MMIO/softc.
+Settled unwind-32 FAILED is 55 (2 defects). Restart remains `--resume`
+only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
