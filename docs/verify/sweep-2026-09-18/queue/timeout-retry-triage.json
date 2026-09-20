@@ -365,13 +365,19 @@
    "function": "mvs_edma",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is child softc ->unit. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/nge/if_nge.c",
+   "function": "nge_miibus_readreg",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is sc->nge_flags. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 61,
+  "settled": 62,
   "defect": 3,
-  "not-a-defect": 55,
+  "not-a-defect": 56,
   "deferred": 3,
   "remaining": 0
  }
