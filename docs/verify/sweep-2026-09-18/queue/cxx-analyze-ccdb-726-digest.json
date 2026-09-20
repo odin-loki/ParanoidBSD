@@ -1,27 +1,28 @@
 {
   "status": "in_flight",
   "partial": {
-    "jsonl_tus": 477,
-    "OK": 443,
-    "ERROR": 32,
+    "jsonl_tus": 510,
+    "OK": 469,
+    "ERROR": 39,
     "TIMEOUT": 2,
-    "flagsrc_compile_commands": 477,
+    "flagsrc_compile_commands": 510,
     "guessed": 0,
-    "findings": 48,
-    "findings_qt": 39,
+    "findings": 51,
+    "findings_qt": 41,
     "findings_karchive_k7zip": 1,
     "findings_klocalimagecache_leak": 1,
     "findings_kauth_dbus_watcher": 1,
     "findings_kcompletion_kdbusaddons_read": 6,
+    "findings_notifybypopup_watcher": 1,
     "timeout_file": "kwayland registry.cpp; ki18n klocalizedcontext.cpp",
     "error_buckets": {
       "missing_private_qtx11extras_p.h": 15,
-      "missing_moc_or_autogen": 10,
+      "missing_moc_or_autogen": 17,
       "kjobwidgets_builddir_path_gone": 5,
       "solid_c99_as_cxx": 2
     },
     "qtx11extras_note": "DB never had QtGuiPrivate -I; header exists at QtGui/6.10.3/QtGui/private/qtx11extras_p.h. Driver did not strip -I.",
-    "finding_example": "39 Qt; k7zip seqOutStream + klocalimagecache insertLocalPixmap leaks (upstream, not vendored); rest kde-src clang FP / deleteLater"
+    "finding_example": "41 Qt; k7zip + klocalimagecache leaks (upstream, not vendored); notifybypopup watcher is deleteLater FP; 7 new ERROR are kjobwidgets missing moc"
   },
   "note": "726-TU kde-compile-db-build compile_commands.json; NOT the old 148/149 ingest (cxx_analyze_ccdb_only.jsonl). First invocation with DEFAULT_SCOPES under --root kde-compile-db-build was NOT RUN (0 TUs). WSL cxx_analyze.py --compile-commands-only now ingests the DB as the universe so guessed=0. Did not --retry-status. Did not kill CBMC pid 887. jobs=1.",
   "pid": 4980,

@@ -50,11 +50,19 @@
       "verdict": "not-a-defect",
       "note": "new QDBusPendingCallWatcher(reply, q) parented; finished lambda deleteLater — same as DBusHelperProxy"
     }
+    {
+      "file": "/home/odin/kde-src/knotifications/src/notifybypopup.cpp",
+      "line": 359,
+      "function": "NotifyByPopup::queryPopupServerCapabilities",
+      "checker": "cplusplus.NewDeleteLeaks",
+      "verdict": "not-a-defect",
+      "note": "new QDBusPendingCallWatcher(call) unparented; finished lambda watcher->deleteLater(). Clang does not model Qt deferred delete. Same FP class as DBusHelperProxy; sibling watcher at :324 is parented."
+    }
   ],
   "counts": {
-    "settled": 6,
+    "settled": 7,
     "defect": 0,
-    "not-a-defect": 6
+    "not-a-defect": 7
   },
   "rollup_with_earlier": {
     "k7zip_seqOutStream": "defect-upstream (not vendored)",
