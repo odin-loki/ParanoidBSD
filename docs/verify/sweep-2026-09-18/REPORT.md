@@ -382,13 +382,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,810** rows, **6,293 PROVED**
-(BOUNDED 181 / FAILED 2,596 / ERROR 180 / TIMEOUT 560). ~1,058 pairs
+Live file while this is written: **9,812** rows, **6,293 PROVED**
+(BOUNDED 181 / FAILED 2,596 / ERROR 180 / TIMEOUT 562). ~1,056 pairs
 still missing. Unread new-FAILED is 0. `ichsmb_writew` FAILED is
 unmodelled `device_get_softc` (PCI attach sets `sc->dev`). Current last
-TIMEOUT is `iicbb_repstart`. Two live workers are at ~25 GiB and ~19 GiB
-RSS (45 GiB used / 2 GiB avail). Do not SIGTERM; 180 s timeout should
-reap them.
+TIMEOUT is `iicoc_iicbus_start`. The iicbb balloon timed out without
+killing pid 887; one live worker is still ~24 GiB RSS.
 Settled unwind-32 FAILED is 58 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
