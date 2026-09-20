@@ -329,13 +329,19 @@
    "function": "dc_miibus_writereg",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is sc->dc_type via DC_IS_PNIC. prev TIMEOUT"
+  },
+  {
+   "file": "sys/dev/fb/vesa.c",
+   "function": "vesa_bios_post",
+   "verdict": "not-a-defect",
+   "note": "devclass_get_devices unmodelled; FAIL is NULL pointer arithmetic on devs[i]. On return 0, subr_bus.c always mallocs the list or returns ENOMEM. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 55,
+  "settled": 56,
   "defect": 2,
-  "not-a-defect": 50,
+  "not-a-defect": 51,
   "deferred": 3,
   "remaining": 0
  }
