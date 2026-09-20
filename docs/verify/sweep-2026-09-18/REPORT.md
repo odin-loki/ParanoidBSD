@@ -382,10 +382,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,746** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 501). ~1,122 pairs
+Live file while this is written: **9,748** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 503). ~1,120 pairs
 still missing. Unread new-FAILED is 0. Current TIMEOUTs
-(`felix_setup_port`; live `felix_readreg_wrapper`) are unmodelled MMIO/softc.
+(`felix_readreg_wrapper`; live `adm6996fc_readphy`) are unmodelled MMIO/softc.
 Settled unwind-32 FAILED is 55 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
