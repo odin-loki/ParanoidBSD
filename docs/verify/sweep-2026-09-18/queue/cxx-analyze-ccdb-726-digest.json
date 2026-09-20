@@ -1,14 +1,14 @@
 {
   "status": "in_flight",
   "partial": {
-    "jsonl_tus": 510,
-    "OK": 469,
+    "jsonl_tus": 549,
+    "OK": 508,
     "ERROR": 39,
     "TIMEOUT": 2,
-    "flagsrc_compile_commands": 510,
+    "flagsrc_compile_commands": 549,
     "guessed": 0,
-    "findings": 51,
-    "findings_qt": 41,
+    "findings": 56,
+    "findings_qt": 46,
     "findings_karchive_k7zip": 1,
     "findings_klocalimagecache_leak": 1,
     "findings_kauth_dbus_watcher": 1,
@@ -22,7 +22,7 @@
       "solid_c99_as_cxx": 2
     },
     "qtx11extras_note": "DB never had QtGuiPrivate -I; header exists at QtGui/6.10.3/QtGui/private/qtx11extras_p.h. Driver did not strip -I.",
-    "finding_example": "41 Qt; k7zip + klocalimagecache leaks (upstream, not vendored); notifybypopup watcher is deleteLater FP; 7 new ERROR are kjobwidgets missing moc"
+    "finding_example": "46 Qt; k7zip + klocalimagecache leaks (upstream, not vendored); 8 other kde-src are clang FP / deleteLater / allocator precondition"
   },
   "note": "726-TU kde-compile-db-build compile_commands.json; NOT the old 148/149 ingest (cxx_analyze_ccdb_only.jsonl). First invocation with DEFAULT_SCOPES under --root kde-compile-db-build was NOT RUN (0 TUs). WSL cxx_analyze.py --compile-commands-only now ingests the DB as the universe so guessed=0. Did not --retry-status. Did not kill CBMC pid 887. jobs=1.",
   "pid": 4980,
