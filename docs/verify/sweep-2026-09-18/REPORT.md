@@ -382,11 +382,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,820** rows, **6,293 PROVED**
-(BOUNDED 181 / FAILED 2,596 / ERROR 180 / TIMEOUT 570). ~1,048 pairs
-still missing. Unread new-FAILED is 0. `ichsmb_writew` FAILED is
-unmodelled `device_get_softc` (PCI attach sets `sc->dev`). Current last
-TIMEOUT is `imcsmb_writew`.
+Live file while this is written: **9,823** rows, **6,294 PROVED**
+(BOUNDED 181 / FAILED 2,596 / ERROR 180 / TIMEOUT 572). ~1,045 pairs
+still missing. Unread new-FAILED is 0. Second hole-fill PROVED this
+resume: `ipw_cmdname` (after `ida_cmd_lookup`).
 Settled unwind-32 FAILED is 58 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
