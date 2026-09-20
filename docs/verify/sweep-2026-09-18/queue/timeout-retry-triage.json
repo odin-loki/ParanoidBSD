@@ -389,13 +389,19 @@
    "function": "intel_ntb_spad_write",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is ntb->spad_count. Attach sets spad_count from chip tables. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/ntb/ntb_hw/ntb_hw_intel.c",
+   "function": "intel_ntb_mw_set_wc",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is ntb->mw_count in inlined intel_ntb_mw_count. Attach sets mw_count. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 65,
+  "settled": 66,
   "defect": 3,
-  "not-a-defect": 59,
+  "not-a-defect": 60,
   "deferred": 3,
   "remaining": 0
  }
