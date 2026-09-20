@@ -382,12 +382,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,788** rows, **6,292 PROVED**
-(BOUNDED 181 / FAILED 2,595 / ERROR 180 / TIMEOUT 540). ~1,080 pairs
+Live file while this is written: **9,790** rows, **6,292 PROVED**
+(BOUNDED 181 / FAILED 2,595 / ERROR 180 / TIMEOUT 542). ~1,078 pairs
 still missing. Unread new-FAILED is 0. `bytgpio_pin_set` FAILED is
 unmodelled `device_get_softc` (attach always sets `sc_pinpad_map` to a
-static table). Current last is BOUNDED `GetStamp`; TIMEOUTs still filling
-(`hpt_do_tasks`).
+static table). Current TIMEOUTs (live `fDeSetTCQ`); last BOUNDED was
+`GetStamp`.
 Settled unwind-32 FAILED is 57 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
