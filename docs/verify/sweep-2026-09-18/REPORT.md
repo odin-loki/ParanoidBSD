@@ -383,10 +383,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,905** rows, **6,295 PROVED**
-(BOUNDED 185 / FAILED 2,606 / ERROR 184 / TIMEOUT 635). ~963 pairs
+Live file while this is written: **9,911** rows, **6,295 PROVED**
+(BOUNDED 185 / FAILED 2,606 / ERROR 184 / TIMEOUT 641). ~957 pairs
 still missing. Unread new-FAILED is 0. Hole-fill PROVED `pci_has_quirk`.
-Current last TIMEOUT is `pci_read_device`.
+Current last TIMEOUT is `pci_set_powerstate_method`.
 Settled unwind-32 FAILED is 68 (3 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
