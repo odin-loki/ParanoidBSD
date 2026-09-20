@@ -383,10 +383,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,865** rows, **6,294 PROVED**
-(BOUNDED 185 / FAILED 2,599 / ERROR 184 / TIMEOUT 603). ~1,003 pairs
+Live file while this is written: **9,867** rows, **6,294 PROVED**
+(BOUNDED 185 / FAILED 2,599 / ERROR 184 / TIMEOUT 605). ~1,001 pairs
 still missing. Unread new-FAILED is 0. `mvs_edma` FAILED is unmodelled
-`device_get_softc` (child `->unit`).
+`device_get_softc` (child `->unit`). Current last TIMEOUT is
+`mvneta_miibus_writereg`.
 Settled unwind-32 FAILED is 61 (3 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
