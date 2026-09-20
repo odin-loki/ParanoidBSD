@@ -139,6 +139,13 @@ Local `ilog2` walks `n < sizeof(u_int)*CHAR_BIT` then was `1 << n == val`.
 The miss path (not a power of two) evaluates `1 << 31` before `errx`.
 Now `(int)(1U << n)`. The only caller is `fs_fsize / sectorsize`.
 
+### `sys/dev/mlx5/mlx5_ib/mlx5_ib_qp.c` — `ib_mask_to_mlx5_opt` walks `1 << i` through 31
+
+Loop is `i = 0 .. 8*sizeof(int)-1` then was `(1 << i) & ib_mask`.
+The last iteration is signed `1 << 31` (C17 6.5.7p4). Now `1U << i`
+and `(int)(1U << i)` for the `ib_nr_to_mlx5_nr` argument. Bit 31 of
+an IB modify mask is still the same pattern.
+
 ---
 
 ## Reported, not fixed — the UB *is* the overflow

@@ -347,13 +347,25 @@
    "function": "ichsmb_writew",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is sc->dev in inlined ichsmb_wait. PCI attach sets sc->dev = dev. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/mlx5/mlx5_core/mlx5_fs_core.c",
+   "function": "alloc_flow_table",
+   "verdict": "not-a-defect",
+   "note": "kzalloc unmodelled; FAIL is INIT_LIST_HEAD(&ft->fwd_rules) list->prev. Function returns ERR_PTR(-ENOMEM) if kzalloc fails. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/mlx5/mlx5_ib/mlx5_ib_qp.c",
+   "function": "ib_mask_to_mlx5_opt",
+   "verdict": "defect",
+   "note": "loop i = 0 .. 8*sizeof(int)-1 always reaches 31; 1 << i is signed shl UB. Same class as gpioctl print_caps. Patched 1U. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 58,
-  "defect": 2,
-  "not-a-defect": 53,
+  "settled": 60,
+  "defect": 3,
+  "not-a-defect": 54,
   "deferred": 3,
   "remaining": 0
  }

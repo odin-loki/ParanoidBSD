@@ -255,7 +255,8 @@ remaining []**. The sixth defect is
 a 0–255 wire byte; type 32 is signed `1<<31`). Unwind-32 TIMEOUT retries
 then found the same type-level `1 << 31` in `gpioctl` `print_caps`
 (loop always reaches 31) and makefs `ilog2` (miss path before `errx`);
-both now `1U <<`. 63 less/flex/compiler-rt/byacc
+both now `1U <<`. Unwind-32 later found a third in mlx5
+`ib_mask_to_mlx5_opt` (same `i = 0 .. 31` loop; now `1U <<`). 63 less/flex/compiler-rt/byacc
 records are deferred named-skips, not unread. Records:
 [queue/arithmetic-triage.json](queue/arithmetic-triage.json).
 
@@ -382,12 +383,13 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,845** rows, **6,294 PROVED**
-(BOUNDED 182 / FAILED 2,596 / ERROR 180 / TIMEOUT 593). ~1,023 pairs
-still missing. Unread new-FAILED is 0. Second hole-fill PROVED this
-resume: `ipw_cmdname` (after `ida_cmd_lookup`). Current last TIMEOUT is
-`mlx4_en_set_ring_size`.
-Settled unwind-32 FAILED is 58 (2 defects). Restart remains `--resume`
+Live file while this is written: **9,851** rows, **6,294 PROVED**
+(BOUNDED 182 / FAILED 2,598 / ERROR 183 / TIMEOUT 594). ~1,017 pairs
+still missing. Unread new-FAILED is 0. `ib_mask_to_mlx5_opt` is a
+type-level `1 << 31` defect (loop always reaches 31; patched `1U`, same
+class as gpioctl `print_caps`). `alloc_flow_table` FAILED is unmodelled
+`kzalloc` (`INIT_LIST_HEAD` on a NULL `ft`).
+Settled unwind-32 FAILED is 60 (3 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
