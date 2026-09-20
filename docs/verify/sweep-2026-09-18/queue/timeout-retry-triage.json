@@ -371,13 +371,31 @@
    "function": "nge_miibus_readreg",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is sc->nge_flags. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/ntb/ntb_hw/ntb_hw_amd.c",
+   "function": "amd_ntb_mw_clear_trans",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is ntb->hw_info. Attach sets hw_info from tbl->driver_data. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/ntb/ntb_hw/ntb_hw_amd.c",
+   "function": "amd_ntb_mw_set_trans",
+   "verdict": "not-a-defect",
+   "note": "same unmodelled device_get_softc / ntb->hw_info as amd_ntb_mw_clear_trans. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/ntb/ntb_hw/ntb_hw_intel.c",
+   "function": "intel_ntb_spad_write",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is ntb->spad_count. Attach sets spad_count from chip tables. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 62,
+  "settled": 65,
   "defect": 3,
-  "not-a-defect": 56,
+  "not-a-defect": 59,
   "deferred": 3,
   "remaining": 0
  }
