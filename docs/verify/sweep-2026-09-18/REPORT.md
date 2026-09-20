@@ -382,10 +382,10 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,763** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 518). ~1,105 pairs
+Live file while this is written: **9,765** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 520). ~1,103 pairs
 still missing. Unread new-FAILED is 0. Current TIMEOUTs
-(`rtl_readreg`; live `rtl_readphy`) are unmodelled MMIO/softc.
+(`rtl_readphy`; live `ukswitch_readphy`) are unmodelled MMIO/softc.
 Settled unwind-32 FAILED is 55 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
