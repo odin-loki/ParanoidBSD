@@ -401,13 +401,19 @@
    "function": "ntb_plx_mw_set_wc",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is sc->mw_count. Attach sets mw_count. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/pccbb/pccbb.c",
+   "function": "cbb_power",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is inlined exca_getb sc->getb (excavar.h:132). Attach sets getb in exca.c. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 67,
+  "settled": 68,
   "defect": 3,
-  "not-a-defect": 61,
+  "not-a-defect": 62,
   "deferred": 3,
   "remaining": 0
  }

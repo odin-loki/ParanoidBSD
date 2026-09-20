@@ -383,12 +383,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,890** rows, **6,294 PROVED**
-(BOUNDED 185 / FAILED 2,605 / ERROR 184 / TIMEOUT 622). ~978 pairs
-still missing. Unread new-FAILED is 0. `ntb_plx_mw_set_wc` FAILED is
-unmodelled `device_get_softc` (`sc->mw_count`). Current last TIMEOUT is
-`oce_mbox_nic_set_iface_lro_config`.
-Settled unwind-32 FAILED is 67 (3 defects). Restart remains `--resume`
+Live file while this is written: **9,893** rows, **6,294 PROVED**
+(BOUNDED 185 / FAILED 2,606 / ERROR 184 / TIMEOUT 624). ~975 pairs
+still missing. Unread new-FAILED is 0. `cbb_power` FAILED is unmodelled
+`device_get_softc` (inlined `exca_getb` `sc->getb`). Current last is that
+FAILED.
+Settled unwind-32 FAILED is 68 (3 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
