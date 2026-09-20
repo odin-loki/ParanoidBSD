@@ -359,13 +359,19 @@
    "function": "ib_mask_to_mlx5_opt",
    "verdict": "defect",
    "note": "loop i = 0 .. 8*sizeof(int)-1 always reaches 31; 1 << i is signed shl UB. Same class as gpioctl print_caps. Patched 1U. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/mvs/mvs_pci.c",
+   "function": "mvs_edma",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is child softc ->unit. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 60,
+  "settled": 61,
   "defect": 3,
-  "not-a-defect": 54,
+  "not-a-defect": 55,
   "deferred": 3,
   "remaining": 0
  }

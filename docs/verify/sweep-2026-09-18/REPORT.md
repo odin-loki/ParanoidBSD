@@ -383,14 +383,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,863** rows, **6,294 PROVED**
-(BOUNDED 185 / FAILED 2,598 / ERROR 184 / TIMEOUT 602). ~1,005 pairs
-still missing. Unread new-FAILED is 0. `ib_mask_to_mlx5_opt` is a
-type-level `1 << 31` defect (loop always reaches 31; patched `1U`, same
-class as gpioctl `print_caps`). `alloc_flow_table` FAILED is unmodelled
-`kzalloc` (`INIT_LIST_HEAD` on a NULL `ft`). Current last TIMEOUT is
-`mvs_legacy_intr`.
-Settled unwind-32 FAILED is 60 (3 defects). Restart remains `--resume`
+Live file while this is written: **9,865** rows, **6,294 PROVED**
+(BOUNDED 185 / FAILED 2,599 / ERROR 184 / TIMEOUT 603). ~1,003 pairs
+still missing. Unread new-FAILED is 0. `mvs_edma` FAILED is unmodelled
+`device_get_softc` (child `->unit`).
+Settled unwind-32 FAILED is 61 (3 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
