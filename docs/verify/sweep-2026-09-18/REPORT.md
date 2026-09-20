@@ -382,11 +382,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,769** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,594 / ERROR 180 / TIMEOUT 523). ~1,099 pairs
+Live file while this is written: **9,771** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,594 / ERROR 180 / TIMEOUT 525). ~1,097 pairs
 still missing. Unread new-FAILED is 0. `vesa_bios_post` FAILED is
 unmodelled `devclass_get_devices` (malloc-or-ENOMEM on success). Current
-TIMEOUTs (`ukswitch_writephy`; live `ffec_miibus_readreg`) are unmodelled
+TIMEOUTs (`ffec_miibus_readreg`; live `scmi_req_initialized_alloc`) are unmodelled
 MMIO/softc.
 Settled unwind-32 FAILED is 56 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
