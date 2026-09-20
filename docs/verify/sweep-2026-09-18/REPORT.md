@@ -382,13 +382,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,777** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,594 / ERROR 180 / TIMEOUT 531). ~1,091 pairs
-still missing. Unread new-FAILED is 0. `vesa_bios_post` FAILED is
-unmodelled `devclass_get_devices` (malloc-or-ENOMEM on success). Current
-TIMEOUTs (`fxp_miibus_writereg`; live `gem_mii_readreg`) are unmodelled
-MMIO/softc.
-Settled unwind-32 FAILED is 56 (2 defects). Restart remains `--resume`
+Live file while this is written: **9,779** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,595 / ERROR 180 / TIMEOUT 532). ~1,089 pairs
+still missing. Unread new-FAILED is 0. `bytgpio_pin_set` FAILED is
+unmodelled `device_get_softc` (attach always sets `sc_pinpad_map` to a
+static table). Current last row is that FAILED.
+Settled unwind-32 FAILED is 57 (2 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
