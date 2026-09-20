@@ -383,11 +383,11 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,893** rows, **6,294 PROVED**
-(BOUNDED 185 / FAILED 2,606 / ERROR 184 / TIMEOUT 624). ~975 pairs
+Live file while this is written: **9,895** rows, **6,294 PROVED**
+(BOUNDED 185 / FAILED 2,606 / ERROR 184 / TIMEOUT 626). ~973 pairs
 still missing. Unread new-FAILED is 0. `cbb_power` FAILED is unmodelled
-`device_get_softc` (inlined `exca_getb` `sc->getb`). Current last is that
-FAILED.
+`device_get_softc` (inlined `exca_getb` `sc->getb`). Current last TIMEOUT
+is `cbb_read_config`.
 Settled unwind-32 FAILED is 68 (3 defects). Restart remains `--resume`
 only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
