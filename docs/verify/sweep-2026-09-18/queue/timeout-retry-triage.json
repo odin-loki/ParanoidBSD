@@ -341,13 +341,19 @@
    "function": "bytgpio_pin_set",
    "verdict": "not-a-defect",
    "note": "device_get_softc unmodelled; FAIL is sc->sc_pinpad_map[pin] in inlined bytgpio_pad_is_gpio. Attach always sets sc_pinpad_map to a static table. prev ABSENT"
+  },
+  {
+   "file": "sys/dev/ichsmb/ichsmb.c",
+   "function": "ichsmb_writew",
+   "verdict": "not-a-defect",
+   "note": "device_get_softc unmodelled; FAIL is sc->dev in inlined ichsmb_wait. PCI attach sets sc->dev = dev. prev ABSENT"
   }
  ],
  "remaining": [],
  "counts": {
-  "settled": 57,
+  "settled": 58,
   "defect": 2,
-  "not-a-defect": 52,
+  "not-a-defect": 53,
   "deferred": 3,
   "remaining": 0
  }
