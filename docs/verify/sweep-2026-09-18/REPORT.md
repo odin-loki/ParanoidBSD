@@ -291,10 +291,11 @@ Do not quote either run as “KDE is clean.” Leftover kguiaddons /
 knotifications installs later finished; the merged DB is **22 modules /
 726 unique TUs** (`karchive` installed). `--compile-commands-only` now
 takes that database as the universe (a cmake `--root` is not
-`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **544 OK /
-39 ERROR / 2 TIMEOUT** of 585 written (0 guessed). ERROR set unchanged.
-Of 62 findings, 52 are clang on Qt headers; **two kde-src defects**
-(neither vendored): `k7zip.cpp:1803` uninitialized `seqOutStream`, and
+`kde/frameworks`). A jobs=1 ingest of those 726 is in flight: **584 OK /
+39 ERROR / 2 TIMEOUT** of 625 flushed (0 guessed). jsonl block-buffers;
+clang++ was live on Solid, not hung. ERROR set unchanged. Of 66 findings,
+56 are clang on Qt headers; **two kde-src defects** (neither vendored):
+`k7zip.cpp:1803` uninitialized `seqOutStream`, and
 `klocalimagecacheimpl.cpp:90` (`new QPixmap` dropped when caching is off).
 `notifybypopup.cpp:359` is an unparented `QDBusPendingCallWatcher` with
 `deleteLater` on `finished` (clang FP). Evidence:
@@ -378,12 +379,12 @@ file is `cbmc-old.jsonl` (1,253 TIMEOUT / 512 BOUNDED / 328 ERROR).
 `tools/verify/run-cbmc-resume.sh` is `--resume` only so the new
 BOUNDED/ERROR rows are not dropped again.
 
-Live file while this is written: **9,723** rows, **6,292 PROVED**
-(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 478). ~1,145 pairs
+Live file while this is written: **9,727** rows, **6,292 PROVED**
+(BOUNDED 180 / FAILED 2,593 / ERROR 180 / TIMEOUT 482). ~1,141 pairs
 still missing. Unread new-FAILED is 0. Current TIMEOUTs
-(`eqos_miibus_*`, `et_miibus_readreg`) are unmodelled MMIO/softc.
-Settled unwind-32 FAILED is 55 (2 defects). Restart remains `--resume`
-only at JOBS=2 (pid 887). Records:
+(`miiproxy_readreg`/`writereg`, `arswitch_atu_flush_port`) are unmodelled
+MMIO/softc. Settled unwind-32 FAILED is 55 (2 defects). Restart remains
+`--resume` only at JOBS=2 (pid 887). Records:
 [queue/timeout-retry-triage.json](queue/timeout-retry-triage.json).
 
 Do not pass `--retry-status` at the live file. `cbmc_driver.py --pair-list`
