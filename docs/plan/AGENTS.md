@@ -1,6 +1,6 @@
-# PBSD agent execution: DeepSeek Flash only
+# PBSD agent execution: GLM-5.3-Flash on Odin's PC
 
-Every task in PBSD is done by `deepseek-flash` (DeepSeek-V4.1-Flash) through the DeepSeek API. No other model, no IDE agents. The 40 work packages in `PBSD_PLAN.md` are broken into 12,963 atomic tasks in `tasks.yaml` / `tasks.json`.
+Every task in PBSD is done by GLM-5.3-Flash (320B total, 18B active, mixture of experts) running locally under llama.cpp's `llama-server` on Odin's Lenovo P920, through its OpenAI-compatible API at `http://127.0.0.1:8080/v1`. No IDE agents. The DeepSeek Flash API is kept only as an optional fallback (`fallback_api` in the runner config); the previous API-only plan is Appendix C. The 40 work packages in `PBSD_PLAN.md` are broken into 12,963 atomic tasks in `tasks.yaml` / `tasks.json`.
 
 ## 1. Task breakdown
 
@@ -95,15 +95,15 @@ All roles are the same model (`deepseek-flash`) with different system prompts an
 
 ## 5. Harness
 
-- Plain Python with `asyncio` and `httpx` against the OpenAI-compatible endpoint `https://api.deepseek.com/chat/completions`, `model: "deepseek-flash"`. Thinking mode on for implementer, prover and reviewer; off for spec extraction and test boilerplate. Reuses the existing `pbsd.py` driver, `secrets/api-keys` and `docs/migration/*` bookkeeping.
+- `pbsd_run` (C++23, `tools/runner`) against llama-server's OpenAI-compatible endpoint `http://127.0.0.1:8080/v1/chat/completions`. Each agent is pinned to one llama-server slot (`id_slot`, `cache_prompt`) so its prompt prefix stays in that slot's KV cache. The DeepSeek endpoint is used only when `backend` is `api` or `fallback_api` is on.
 - Tools via function calling: `read_file(path, range)`, `list_dir`, `grep`, `write_file(path, content)` (rejected outside `owns`), `apply_patch`, `build(target)`, `run_tests(filter)`, `run_prism(file)`, `post_message(to, type, body)`, `read_messages()`, `submit()`. Each task runs in its own container with its branch checked out.
-- Concurrency: a semaphore at 2,400 in-flight requests (100 spare under the 2,500 limit); exponential backoff on 429 and 5xx; 30-minute leases so a dead worker's task is re-queued.
+- Concurrency: one agent per llama-server slot (2 with IQ2_XXS, 4 with Q4_K_M; section 7). Leases are 3 hours because a local turn can take tens of minutes.
 - Build, test and PRISM capacity is the real bottleneck: size the builder farm so a `build` call waits under ~60 s, and share object caches (sccache) keyed on contract version.
 - Every response's `usage` block goes to `cost.jsonl` (hit, miss, output tokens, peak flag) for live cost tracking.
 
 ### Cache strategy
 
-DeepSeek bills an identical prompt prefix at the cache-hit rate (50x cheaper). Every request is laid out in this order:
+Locally, a prefix that is already in the agent's llama-server slot is not recomputed, and prompt processing on the CPU is the second-largest cost after generation (section 7.3), so the same layout matters. With the API, DeepSeek bills an identical prompt prefix at the cache-hit rate (50x cheaper). Every request is laid out in this order:
 
 1. Global prefix, identical for every agent: dialect rules, naming rules, tool schemas.
 2. Role prefix, identical per role.
@@ -113,9 +113,9 @@ DeepSeek bills an identical prompt prefix at the cache-hit rate (50x cheaper). E
 
 Nothing that changes per task (ids, timestamps, attempt counts) goes above layer 5. The scheduler runs tasks of the same package back to back so layers 1–3 stay warm. Target hit rate is 75–85% of input tokens.
 
-### Off-peak scheduling
+### Off-peak scheduling (API backend only)
 
-Peak is 01:00–04:00 and 06:00–10:00 UTC Monday to Friday (12:00–15:00 and 17:00–21:00 Sydney summer time). The scheduler drops to 10% concurrency in peak windows (critical-path retries only) and runs flat out the rest of the time and all weekend, which keeps more than 95% of tokens at off-peak rates.
+Local runs ignore peak hours. With the API, peak is 01:00–04:00 and 06:00–10:00 UTC Monday to Friday (12:00–15:00 and 17:00–21:00 Sydney summer time). The scheduler drops to 10% concurrency in peak windows (critical-path retries only) and runs flat out the rest of the time and all weekend, which keeps more than 95% of tokens at off-peak rates.
 
 ## 6. Prompt templates
 
@@ -133,7 +133,7 @@ You are one agent in the PBSD build. PBSD is a clean-slate verified C++23 kernel
 Decomposer:
 ```text
 Role: decomposer. Task {{id}}: {{title}}.
-Read {{source}} and the frozen contracts above. Write docs/plan/specs/{{wp}}/{{unit}}.md with purpose, inputs, outputs, invariants, locking, error paths and every behaviour callers rely on. Write the C++ declarations with contracts. If the unit will not fit one implementer task (over ~800 lines of output), split it and post the new task ids.
+Read {{source}} and the frozen contracts above. Write docs/plan/specs/{{wp}}/{{unit}}.md with purpose, inputs, outputs, invariants, locking, error paths and every behaviour callers rely on. Write the C++ declarations with contracts. If the unit will not fit one implementer task (over ~300 lines of output, so that each file write fits one 4,096-token reply), split it and post the new task ids.
 Acceptance: {{accept}}
 ```
 
@@ -171,130 +171,131 @@ Merge every reviewed unit branch of {{wp}} into wp/{{wp}}, regenerate shared fil
 Acceptance: {{accept}}
 ```
 
-## 7. Cost and timeline (Flash only)
+## 7. Local model: GLM-5.3-Flash on the P920
 
-Off-peak prices per 1M tokens: cache hit $0.003, cache miss $0.15, output $0.60. Peak is double.
+### 7.1 Two stages
 
-Assumptions per task: 4 turns, 60k input per turn at 80% cache hit, 10k output per turn including thinking, 1.6x for retries.
+| Stage | RAM | Quant | Model file (estimate) | Slots | Use |
+|---|---|---|---|---|---|
+| Now | 64 GB | IQ2_XXS | about 85 GB (320B × 2.06 bits ÷ 8) | 2 | Harness calibration on about 50 tasks. The file is bigger than RAM, so part of it is read from disk every token: expect well under 1 token/s. |
+| After the upgrade | 512 GB–2 TB (16 slots; memory table in Appendix C.2) | Q4_K_M | about 195 GB (320B × 4.85 bits ÷ 8) | 4 | The run. Weights locked in RAM, the rest is tmpfs and gates. |
 
-- Input: 4 × 60k × 1.6 = 384k tokens → 307k hit ($0.001) + 77k miss ($0.012)
-- Output: 4 × 10k × 1.6 = 64k tokens ($0.038)
-- About $0.05 per task, about $650 for 12,963 tasks. Provers and big driver units run longer, so budget 3x: $1,500–2,500 off-peak in total, roughly double at peak. These are estimates; `cost.jsonl` gives the real figure after the first few hundred tasks.
+Files are in `D:\models\GLM-5.3-Flash`. Qwen 3.5 9B can run as a second, faster local model (`aux_url`, `role_backend` in the runner config) for roles that turn out not to need GLM; this is off until calibration shows it passes reviewer or tester gates at a similar rate.
 
-Timeline (superseded by section 8, the PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+### 7.2 Server, slots and context
+
+Launch scripts and both configs are in `tools/llama/` (README there):
+- `-ngl 999 --n-cpu-moe 999`: attention, shared weights and the KV cache on the RTX 3090; the routed experts in system RAM. Each token only touches 18B active weights, so memory bandwidth, not core count, sets the speed.
+- `--parallel 4 --ctx-size 131072`: 4 slots of 32k tokens. More slots give more total tokens/s with diminishing returns, because every slot reads the same expert weights.
+- `--threads 24`: 8 cores stay free for builds, proofs and QEMU.
+- `--numa distribute` on Linux. On Windows llama.cpp has no NUMA placement, so enable memory interleaving in the BIOS, or boot Linux for the run (faster, and the gates need Linux anyway).
+
+`pbsd_run` and the gates run in WSL2 (or on Linux) and reach the server at `127.0.0.1:8080`.
+
+### 7.3 Task granularity and context
+
+The API plan put the whole plan, the agent guide and every contract header (up to about 120k tokens) into every request, and ran 2,400 agents at once. Locally there are 4 agents, each with 32k tokens. The runner's compact prompt mode (`compact_prompt`, on by default for the local backend) changes this:
+
+| Item | API plan | Local plan |
+|---|---|---|
+| Start of each task | plan + guide + contract bodies, about 60–120k tokens | shared prefix + one role template + task + contract file list, about 4–8k tokens; the agent opens headers with `read_file` |
+| Tool results | up to 200 kB | up to 24,000 chars (about 6k tokens); gate logs keep the tail |
+| History | unbounded | older tool results, then older replies, elided to stay under 32k − 4k − 1k |
+| Reply cap | none | 4,096 tokens (`max_tokens`) |
+| Unit size | split above ~800 output lines | split above ~300, so one file write fits in one reply |
+| Order | by package | by package, so consecutive tasks share the prefix already in the slot |
+| Leases and watchdog | 45 min, 20 min per turn | 3 h, 60 min per turn |
+
+Splitting above 300 lines means decomposers will add tasks at run time. The estimate below allows 1.3× for that and for retries.
 
 ## 8. Default schedule: Odin's PC, no time limit
 
-PBSD runs only on Odin's PC, a Lenovo ThinkStation P920 with two Xeon Scalable CPUs (32 cores in total, two NUMA nodes) and one 4 TB HDD, using only the DeepSeek Flash API. There is no deadline: all 12,964 tasks run, every proof is a full proof and no driver is deferred. The `month1` and `priority` fields in `tasks.yaml` only set the order: the core and the common drivers first, then mlx5, ice, iwlwifi and drm/xe. Appendix A (one day) and Appendix B (7–14 days on cloud machines) are kept for reference.
+### 8.1 Run-time estimate (estimate, not measured)
 
-### 8.1 Memory
+Only measured number: about 7 tokens/s generation, single stream, CPU only, on a newer 48-core machine. Everything else is assumed and gets replaced by the runner's live figures after calibration.
 
-The P920 has 16 DDR4 DIMM slots: 8 per CPU, with 6 channels per CPU. It takes registered ECC memory only, at DDR4-2666 or DDR4-2933: RDIMM, LRDIMM or 3DS LRDIMM. Never mix RDIMMs and LRDIMMs.
+Assumptions:
+- Turns: about 73,000 planned turns (sum of `turns_budget` is 77,790) × 1.3 for splits and retries = **95,000 turns**.
+- Output: 900 tokens per turn on average (cap 4,096) → 95,000 × 900 = **85.5M tokens generated**.
+- Prompt processing that is not already cached in the slot: 8k tokens at the start of each task (12,964 × 1.3 × 8k = 135M) plus 2.5k new tokens per turn (95,000 × 2.5k = 237M) → **about 372M tokens**.
+- Q4_K_M with 512 GB or more, 4 slots, the RTX 3090 holding attention and KV. Generation and prompt processing share the same CPUs and memory bandwidth, so their times add.
 
-| Configuration | Total | CPUs needed | Status |
-|---|---|---|---|
-| 16 × 32 GB RDIMM | 512 GB | any | Lenovo-tested |
-| 16 × 64 GB LRDIMM | 1 TB | any | Lenovo PSREF maximum ("based on current Lenovo memory offerings") |
-| 16 × 128 GB 3DS LRDIMM, DDR4-2666 | 2 TB (1 TB per CPU) | 2nd-gen Xeon Scalable (x2xx) of any kind, or 1st-gen "M" (x1xxM, 1.5 TB per CPU). 1st-gen non-M CPUs stop at 768 GB per CPU. | Supported by memory vendors (Crucial, Kingston, CompuRAM, Mr Memory) and reviews; not in Lenovo's list |
-| 16 × 256 GB 3DS LRDIMM | 4 TB | 2nd-gen "M" (2 TB per CPU) or "L" | Claimed by one memory vendor only; untested |
+| Case | Generation, total tok/s over 4 slots | Prompt processing tok/s | Generation time | Prompt time | Total |
+|---|---|---|---|---|---|
+| Optimistic | 12 | 200 | 85.5M ÷ 12 = 7.1M s = 82 days | 372M ÷ 200 = 1.9M s = 22 days | **about 104 days (3.5 months)** |
+| Middle | 8 | 120 | 85.5M ÷ 8 = 10.7M s = 124 days | 372M ÷ 120 = 3.1M s = 36 days | **about 160 days (5.3 months)** |
+| Pessimistic | 5 | 60 | 85.5M ÷ 5 = 17.1M s = 198 days | 372M ÷ 60 = 6.2M s = 72 days | **about 270 days (9 months)** |
 
-1.5 TB per CPU is a CPU limit, not a P920 configuration. With 8 slots per CPU it would need 192 GB DIMMs, which do not exist for DDR4. **The practical maximum is 2 TB (16 × 128 GB)**, and the plan below is sized for it. Balanced choices are 12 sticks (one per channel) or 16 (all slots). Larger sizes and 2 DIMMs per channel run at 2666 or below.
+Gates on the 8 free cores: proofs about 2,700 proof-hours × 2 cores + compile about 1,900 core-hours + QEMU about 400 core-hours ≈ 7,700 core-hours ÷ 8 cores ≈ 40 days. They run while the model works, so the model sets the length: **about 3.5–9 months, most likely about 5**, plus fix rounds. At 64 GB with IQ2_XXS the run is not practical (the model does not fit in RAM); use it only for calibration.
+
+Electricity: about 500 W × 24 h × 160 days ≈ 1,900 kWh, about A$650 at A$0.33/kWh (estimate). No API cost unless the fallback is used.
+
+What moves the estimate most:
+1. Measured generation speed with 4 slots on the P920 (`llama-bench`, then the calibration batch).
+2. Average output per turn, especially if the model's thinking is long. `max_tokens` caps it.
+3. First-pass gate rate: each failed attempt repeats turns.
 
 ### 8.2 Slots and NUMA
 
-With 512 GB or more, the 32 cores are the limit, not RAM. Slots are pinned with `numactl` so each job uses the memory of its own socket.
-
-| Slot | Count | Cores | RAM each | Node |
+| Slot | Count (Q4_K_M) | Cores | RAM each | Node |
 |---|---|---|---|---|
-| Agents (wait on the API) | 48 | shared | 0.3 GB | any |
-| Compile and unit tests | 12 | 1 | 2 GB | 0 |
-| QEMU | 3 | 2 | 4 GB | 0 |
-| PRISM | 6 at 512 GB, 8 at 1–2 TB | 2 | 12 GB at 512 GB, 24 GB at 1 TB, 48 GB at 2 TB | 1 |
-| Task database, git server, scheduler | 1 | 2 | 8 GB | 0 |
-| tmpfs: repository, worktrees, builds, ccache, images, reference trees | — | — | about 250 GB at 512 GB; about 1.2 TB at 2 TB (the whole working set, HDD only for backups) | split |
+| Agents = llama-server slots | 4 | (llama-server: 24 threads) | weights about 195 GB, KV on the GPU | both (`--numa distribute`) |
+| Compile and unit tests | 3 | 1 | 2 GB | 0 |
+| QEMU | 1 | 2 | 4 GB | 0 |
+| PRISM | 3 | 2 | 24 GB | 1 |
+| Task database, git server, scheduler | 1 | shared | 8 GB | 0 |
+| tmpfs: repository, worktrees, builds, ccache, images | — | — | the rest of RAM | split |
 
-Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `$PBSD_STATE/config.json` (runner README) back to 12 compile, 4 PRISM at 4 GB and 3 QEMU.
+With 64 GB and IQ2_XXS: 2 agents, 2 compile, 1 QEMU, 1 PRISM at 4 GB (`tools/llama/config.iq2xxs.json`).
 
-**Fastest upgrade after RAM:** NVMe in one of the P920's two onboard M.2 slots for checkpoints and backups. With everything in RAM this matters much less.
+### 8.3 Runner and progress
 
-### 8.3 How long
-
-| Work | Total | Slots | Time |
-|---|---|---|---|
-| Full proofs, 2,577 tasks, 60-minute cap (30 minutes for drivers) × 1.3 | about 2,700 proof-hours | 6 (8) | about 19 days (14 with 1 TB) |
-| Compile and test, 2,577 units | about 1,900 core-hours (in RAM, no HDD penalty) | 12 | about 7 days |
-| QEMU acceptance | about 60 runs × 3 architectures | 3 | about 8 days |
-| Model turns, about 73,000 | off-peak only | 48 agents | about 9 days |
-
-These overlap, so proofs set the length: about **4–6 weeks of wall clock** with 512 GB, or 3–5 weeks with 1–2 TB, plus fix rounds. Beyond 1 TB the 32 cores are the limit: 2 TB adds headroom for large proofs and the whole reference corpus in RAM, not more speed. With the current 64 GB it is about 7–9 weeks. The runner shows the real estimate as it goes.
-
-**Cost:**
-- API: $1,500–2,500, all off-peak.
-- Electricity: a dual-Xeon P920 at about 450–550 W for 6 weeks is about 500 kWh, about A$175.
-
-### 8.4 Runner and progress
-
-The runner is `docs/plan/tools/runner/`. It is one C++23 binary, `pbsd_run`, that combines the scheduler, the agent harness and the DeepSeek client. It uses libcurl, nlohmann_json, SQLite in WAL mode and libnuma, and builds with CMake (see `runner/README.md`). The Python scripts in `tools/deprecated/` are kept for reference only.
+`pbsd_run` (C++23, `tools/runner`, README there) now has a local backend:
 
 ```
-pbsd_run init      # load tasks.json into the SQLite task database (WAL; safe to rerun)
-pbsd_run run       # start or resume
-pbsd_run status    # print progress once
-pbsd_run selftest  # watchdog and job path
+cp docs/plan/tools/llama/config.q4km.json $PBSD_STATE/config.json
+pbsd_run health    # GET /health on the configured server
+pbsd_run init
+pbsd_run run       # checks the server, restarts it if needed, then starts
+pbsd_run selftest  # watchdog, job path, server restart, local chat, context compaction
 ```
 
-The live display redraws every 2 seconds:
+- **Endpoint and slots:** `local_url` (default `http://127.0.0.1:8080/v1`), `local_model`, `local_slots` (must equal `--parallel`), `ctx_per_slot`, `max_tokens`, `tool_result_chars`, `request_timeout_s`.
+- **Health check and restart:** a supervisor thread polls `/health` every `health_every_s`. On a failure it runs `server_cmd` (for example the Windows launch script via `powershell.exe`), waits up to `load_timeout_s` for the model to load (`/health` returns 503 while loading), and gives up after `restart_max` restarts. A failed request also triggers the check. While the server is down no new tasks are leased; running agents retry.
+- **Fallback:** with `fallback_api: true` and `DEEPSEEK_API_KEY` set, turns go to the DeepSeek API while the local server is down. `backend: "api"` restores the old plan (Appendix C).
+
+The display adds a model line:
 
 ```
-PBSD  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 2,593/12,964 (20.0%)
-  running 46  queued 310  blocked 9,972  failed 21  escalated 9  quarantined 2
-  throughput 13.4 tasks/h   time left 32d 6h 10m   ETA Sat 19 Dec 21:40 AEDT
-  cost so far $412.30   projected total $2,061
+PBSD  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1,296/12,964 (10.0%)
+  running 4  queued 61  blocked 11,580  failed 14  escalated 6  quarantined 1
+  throughput 3.4 tasks/h   time left 143d 2h 10m   ETA Thu 26 Mar 09:40 AEDT
   P0 ██████████████████████████████ 292/292
-  P1 ███████████████████░░░░░░░░░░░ 560/888
   ...
-  slots  agent 46/48   RAM 61%  load 27.4
+  slots  agent 4/4   RAM 71%  load 29.8
+  model local GLM-5.3-Flash @ http://127.0.0.1:8080/v1 (4 slots)   8.1 tok/s out   restarts 0
 ```
 
-- **Time left** is the remaining tasks divided by the number of tasks passed in the last 24 hours (or since the first lease, until a day has passed).
-- **Cost** is summed from the token usage the API reports, at off-peak or peak prices.
-- **Projected total** is the cost per passed task times the tasks left.
+Time left is the remaining tasks divided by the tasks passed in the last 24 hours.
 
-Measured on the build box against the full `tasks.json`:
+### 8.4 Order of work
 
-| Measurement | C++ | Python |
-|---|---|---|
-| `init` | 0.26 s, 39 MB peak RSS | 0.34 s, 52 MB |
-| `status` | 0.01 s, 12 MB | 0.05 s, 23 MB |
+1. **Now, 64 GB:** build llama.cpp from PR #27752 (CUDA), run `llama-bench` on IQ2_XXS, start the server with `config.iq2xxs.json`, run `pbsd_run selftest`, write the gate scripts, run about 50 Phase 0 tasks to check tool calling and the compact prompt.
+2. **After the RAM upgrade:** switch to Q4_K_M and `config.q4km.json`, run `llama-bench` with 1, 2, 4 and 6 slots, and keep the slot count with the best total tok/s.
+3. Phase 0 contracts and freeze.
+4. Phase 1 core; first QEMU boot.
+5. Phase 2 I/O.
+6. Phase 3 device model and common drivers.
+7. Phase 4 personalities.
+8. Phase 5 userland and hypervisor.
+9. Large drivers (mlx5, ice, iwlwifi, drm/xe).
+10. `P6-01` final merge and fix rounds.
 
-During a run, each C++ agent thread uses a few MB. The PRISM, compile and QEMU jobs dominate memory either way.
-
-Gate commands live in the repository as `tools/gates/<role>.sh <task-id> <worktree>`. They are still to be written: build, tests including fault injection, PRISM and QEMU.
-
-### 8.5 Order of work
-
-1. Setup: tmpfs layout, task database, git server, reference builds, QEMU images, dry run of P2-01 to calibrate.
-2. Phase 0 contracts and freeze.
-3. Phase 1 core; first QEMU boot.
-4. Phase 2 I/O.
-5. Phase 3 device model and common drivers.
-6. Phase 4 personalities.
-7. Phase 5 userland and hypervisor.
-8. Large drivers (mlx5, ice, iwlwifi, drm/xe).
-9. `P6-01` final merge and fix rounds.
-
-Full proofs run around the clock in every step.
-
-When the run finishes:
-- Everything is merged on `pbsd-cutover`.
-- It is proved, and it boots in QEMU on amd64, arm64 and riscv64.
-- The QEMU acceptance suites are green.
-
-Real-hardware tests on the P920 and the merge to `main` follow.
+When the run finishes, everything is merged on `pbsd-cutover`, proved, and booting in QEMU on amd64, arm64 and riscv64 with the acceptance suites green. Real-hardware tests on the P920 and the merge to `main` follow.
 
 ## 9. Fault tolerance of the run
 
-The PC can lose power, run out of memory or crash, and the API can fail. The run has to resume where it stopped and never redo or corrupt finished work.
+The PC can lose power, run out of memory or crash, llama-server can crash or hang, and the API (when used) can fail. The run has to resume where it stopped and never redo or corrupt finished work.
 
 - **Idempotent tasks.** A task's output is its branch `t/<id>` plus its status row. Rerunning a task starts again from the last commit on its branch. Gates are pure functions of the commit, so running a gate twice gives the same answer.
 - **Task database durability.** SQLite in WAL mode with `synchronous=FULL`, or Postgres with its own write-ahead log. Each state change is one transaction, written before the action it records. An `events` table is an append-only log of every lease, submit, gate result and message.
@@ -308,7 +309,13 @@ The PC can lose power, run out of memory or crash, and the API can fail. The run
   5. Continues.
 
   A systemd unit (or rc.d script) starts the scheduler on boot.
-- **API failures.**
+- **Local server failures.**
+  - Health check every 30 s on `/health`; 503 means the model is still loading and is waited for, not restarted.
+  - A crash or hang (no answer, or a connection error on a request) restarts llama-server with `server_cmd`; the Windows script kills any old `llama-server.exe` first.
+  - No new leases while it is down; in-flight turns retry with backoff, up to 6 tries, then the task is requeued from its last commit.
+  - Slot KV caches are lost on restart; the next turn recomputes the prompt, which costs time, not correctness.
+  - After `restart_max` restarts the runner stops leasing (or uses the API fallback if enabled) and the status line shows `[server down]`.
+- **API failures (fallback only).**
   - Timeout per request: 15 minutes.
   - Retries with exponential backoff and jitter on 429, 5xx and network errors, up to 8 tries.
   - The client honours `Retry-After` headers.
@@ -487,4 +494,130 @@ Still after week 2:
 - Longer fuzzing.
 - Turning runtime checks into proofs.
 - The cutover merge to `main`.
+
+
+## Appendix C. DeepSeek Flash API run on the PC (previous default, kept as the fallback)
+
+This was the default plan before the switch to GLM-5.3-Flash on the P920. It still applies when `backend` is `api` in the runner config.
+
+### C.1 Cost and timeline (Flash only)
+
+Off-peak prices per 1M tokens: cache hit $0.003, cache miss $0.15, output $0.60. Peak is double.
+
+Assumptions per task: 4 turns, 60k input per turn at 80% cache hit, 10k output per turn including thinking, 1.6x for retries.
+
+- Input: 4 × 60k × 1.6 = 384k tokens → 307k hit ($0.001) + 77k miss ($0.012)
+- Output: 4 × 10k × 1.6 = 64k tokens ($0.038)
+- About $0.05 per task, about $650 for 12,963 tasks. Provers and big driver units run longer, so budget 3x: $1,500–2,500 off-peak in total, roughly double at peak. These are estimates; `cost.jsonl` gives the real figure after the first few hundred tasks.
+
+Timeline (superseded by section 8, the PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+
+### C.2 Schedule on the PC with the API
+
+PBSD runs only on Odin's PC, a Lenovo ThinkStation P920 with two Xeon Scalable CPUs (32 cores in total, two NUMA nodes) and one 4 TB HDD, using only the DeepSeek Flash API. There is no deadline: all 12,964 tasks run, every proof is a full proof and no driver is deferred. The `month1` and `priority` fields in `tasks.yaml` only set the order: the core and the common drivers first, then mlx5, ice, iwlwifi and drm/xe. Appendix A (one day) and Appendix B (7–14 days on cloud machines) are kept for reference.
+
+#### C.2.1 Memory
+
+The P920 has 16 DDR4 DIMM slots: 8 per CPU, with 6 channels per CPU. It takes registered ECC memory only, at DDR4-2666 or DDR4-2933: RDIMM, LRDIMM or 3DS LRDIMM. Never mix RDIMMs and LRDIMMs.
+
+| Configuration | Total | CPUs needed | Status |
+|---|---|---|---|
+| 16 × 32 GB RDIMM | 512 GB | any | Lenovo-tested |
+| 16 × 64 GB LRDIMM | 1 TB | any | Lenovo PSREF maximum ("based on current Lenovo memory offerings") |
+| 16 × 128 GB 3DS LRDIMM, DDR4-2666 | 2 TB (1 TB per CPU) | 2nd-gen Xeon Scalable (x2xx) of any kind, or 1st-gen "M" (x1xxM, 1.5 TB per CPU). 1st-gen non-M CPUs stop at 768 GB per CPU. | Supported by memory vendors (Crucial, Kingston, CompuRAM, Mr Memory) and reviews; not in Lenovo's list |
+| 16 × 256 GB 3DS LRDIMM | 4 TB | 2nd-gen "M" (2 TB per CPU) or "L" | Claimed by one memory vendor only; untested |
+
+1.5 TB per CPU is a CPU limit, not a P920 configuration. With 8 slots per CPU it would need 192 GB DIMMs, which do not exist for DDR4. **The practical maximum is 2 TB (16 × 128 GB)**, and the plan below is sized for it. Balanced choices are 12 sticks (one per channel) or 16 (all slots). Larger sizes and 2 DIMMs per channel run at 2666 or below.
+
+#### C.2.2 Slots and NUMA
+
+With 512 GB or more, the 32 cores are the limit, not RAM. Slots are pinned with `numactl` so each job uses the memory of its own socket.
+
+| Slot | Count | Cores | RAM each | Node |
+|---|---|---|---|---|
+| Agents (wait on the API) | 48 | shared | 0.3 GB | any |
+| Compile and unit tests | 12 | 1 | 2 GB | 0 |
+| QEMU | 3 | 2 | 4 GB | 0 |
+| PRISM | 6 at 512 GB, 8 at 1–2 TB | 2 | 12 GB at 512 GB, 24 GB at 1 TB, 48 GB at 2 TB | 1 |
+| Task database, git server, scheduler | 1 | 2 | 8 GB | 0 |
+| tmpfs: repository, worktrees, builds, ccache, images, reference trees | — | — | about 250 GB at 512 GB; about 1.2 TB at 2 TB (the whole working set, HDD only for backups) | split |
+
+Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `$PBSD_STATE/config.json` (runner README) back to 12 compile, 4 PRISM at 4 GB and 3 QEMU.
+
+**Fastest upgrade after RAM:** NVMe in one of the P920's two onboard M.2 slots for checkpoints and backups. With everything in RAM this matters much less.
+
+#### C.2.3 How long
+
+| Work | Total | Slots | Time |
+|---|---|---|---|
+| Full proofs, 2,577 tasks, 60-minute cap (30 minutes for drivers) × 1.3 | about 2,700 proof-hours | 6 (8) | about 19 days (14 with 1 TB) |
+| Compile and test, 2,577 units | about 1,900 core-hours (in RAM, no HDD penalty) | 12 | about 7 days |
+| QEMU acceptance | about 60 runs × 3 architectures | 3 | about 8 days |
+| Model turns, about 73,000 | off-peak only | 48 agents | about 9 days |
+
+These overlap, so proofs set the length: about **4–6 weeks of wall clock** with 512 GB, or 3–5 weeks with 1–2 TB, plus fix rounds. Beyond 1 TB the 32 cores are the limit: 2 TB adds headroom for large proofs and the whole reference corpus in RAM, not more speed. With the current 64 GB it is about 7–9 weeks. The runner shows the real estimate as it goes.
+
+**Cost:**
+- API: $1,500–2,500, all off-peak.
+- Electricity: a dual-Xeon P920 at about 450–550 W for 6 weeks is about 500 kWh, about A$175.
+
+#### C.2.4 Runner and progress
+
+The runner is `docs/plan/tools/runner/`. It is one C++23 binary, `pbsd_run`, that combines the scheduler, the agent harness and the DeepSeek client. It uses libcurl, nlohmann_json, SQLite in WAL mode and libnuma, and builds with CMake (see `runner/README.md`). The Python scripts in `tools/deprecated/` are kept for reference only.
+
+```
+pbsd_run init      # load tasks.json into the SQLite task database (WAL; safe to rerun)
+pbsd_run run       # start or resume
+pbsd_run status    # print progress once
+pbsd_run selftest  # watchdog and job path
+```
+
+The live display redraws every 2 seconds:
+
+```
+PBSD  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 2,593/12,964 (20.0%)
+  running 46  queued 310  blocked 9,972  failed 21  escalated 9  quarantined 2
+  throughput 13.4 tasks/h   time left 32d 6h 10m   ETA Sat 19 Dec 21:40 AEDT
+  cost so far $412.30   projected total $2,061
+  P0 ██████████████████████████████ 292/292
+  P1 ███████████████████░░░░░░░░░░░ 560/888
+  ...
+  slots  agent 46/48   RAM 61%  load 27.4
+```
+
+- **Time left** is the remaining tasks divided by the number of tasks passed in the last 24 hours (or since the first lease, until a day has passed).
+- **Cost** is summed from the token usage the API reports, at off-peak or peak prices.
+- **Projected total** is the cost per passed task times the tasks left.
+
+Measured on the build box against the full `tasks.json`:
+
+| Measurement | C++ | Python |
+|---|---|---|
+| `init` | 0.26 s, 39 MB peak RSS | 0.34 s, 52 MB |
+| `status` | 0.01 s, 12 MB | 0.05 s, 23 MB |
+
+During a run, each C++ agent thread uses a few MB. The PRISM, compile and QEMU jobs dominate memory either way.
+
+Gate commands live in the repository as `tools/gates/<role>.sh <task-id> <worktree>`. They are still to be written: build, tests including fault injection, PRISM and QEMU.
+
+#### C.2.5 Order of work
+
+1. Setup: tmpfs layout, task database, git server, reference builds, QEMU images, dry run of P2-01 to calibrate.
+2. Phase 0 contracts and freeze.
+3. Phase 1 core; first QEMU boot.
+4. Phase 2 I/O.
+5. Phase 3 device model and common drivers.
+6. Phase 4 personalities.
+7. Phase 5 userland and hypervisor.
+8. Large drivers (mlx5, ice, iwlwifi, drm/xe).
+9. `P6-01` final merge and fix rounds.
+
+Full proofs run around the clock in every step.
+
+When the run finishes:
+- Everything is merged on `pbsd-cutover`.
+- It is proved, and it boots in QEMU on amd64, arm64 and riscv64.
+- The QEMU acceptance suites are green.
+
+Real-hardware tests on the P920 and the merge to `main` follow.
 

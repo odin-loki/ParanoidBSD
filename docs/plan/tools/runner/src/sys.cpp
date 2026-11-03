@@ -71,6 +71,8 @@ Config Config::load() {
   c.tasks_json = env("PBSD_TASKS", "docs/plan/tasks.json");
   c.repo = env("PBSD_REPO", ".");
   for (auto k : {"DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY_2"}) if (auto v = env(k); !v.empty()) c.keys.push_back(v);
+  c.backend = env("PBSD_BACKEND", c.backend.c_str());
+  c.local_url = env("PBSD_LOCAL_URL", c.local_url.c_str());
   std::ifstream f(c.state_dir + "/config.json");
   if (f) {
     json j = json::parse(f, nullptr, false);
@@ -79,6 +81,19 @@ Config Config::load() {
         c.slots[k] = {v.value("count", 1), v.value("cores", 1), v.value("ram_gb", 1.0), v.value("node", -1)};
       c.load_max = j.value("load_max", c.load_max); c.ram_admit = j.value("ram_admit", c.ram_admit);
       c.ram_pause = j.value("ram_pause", c.ram_pause); c.model = j.value("model", c.model);
+      c.backend = j.value("backend", c.backend); c.local_url = j.value("local_url", c.local_url);
+      c.local_model = j.value("local_model", c.local_model); c.local_slots = j.value("local_slots", c.local_slots);
+      c.ctx_per_slot = j.value("ctx_per_slot", c.ctx_per_slot); c.max_tokens = j.value("max_tokens", c.max_tokens);
+      c.tool_result_chars = j.value("tool_result_chars", c.tool_result_chars);
+      c.request_timeout_s = j.value("request_timeout_s", c.request_timeout_s);
+      c.health_every_s = j.value("health_every_s", c.health_every_s); c.load_timeout_s = j.value("load_timeout_s", c.load_timeout_s);
+      c.restart_max = j.value("restart_max", c.restart_max); c.fallback_api = j.value("fallback_api", c.fallback_api);
+      c.compact_prompt = j.value("compact_prompt", c.compact_prompt);
+      c.aux_url = j.value("aux_url", c.aux_url); c.aux_model = j.value("aux_model", c.aux_model);
+      c.max_turns = j.value("max_turns", c.max_turns); c.lease_s = j.value("lease_s", c.lease_s);
+      c.agent_watchdog_s = j.value("agent_watchdog_s", c.agent_watchdog_s);
+      if (j.contains("server_cmd")) c.server_cmd = j["server_cmd"].get<std::vector<std::string>>();
+      if (j.contains("role_backend")) c.role_backend = j["role_backend"].get<std::map<std::string, std::string>>();
     }
   }
   return c;

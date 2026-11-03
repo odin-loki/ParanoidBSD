@@ -44,7 +44,7 @@ json tools_schema() {
 }
 }  // namespace
 
-TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db) {
+TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot) {
   TaskOutcome out{Result::failed, {}};
   const std::string id = t["id"], role = t["role"], branch = "t/" + id;
   const int attempt = t.value("_attempt", 1);
@@ -65,16 +65,32 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db) {
   }
   // 2. Layered prompt: global, role, package contracts, unit source, then the variable tail (cache-friendly).
   fs::path plan = fs::path(c.repo) / "docs/plan";
-  std::string global = slurp(plan / "PBSD_PLAN.md", 120000);
-  std::string agents = slurp(plan / "AGENTS.md", 60000);
+  // Full prompt (API, large context) or compact prompt (local model, ctx_per_slot tokens): the
+  // compact one sends the role template, the task and file lists; the agent reads what it needs.
+  const size_t ctx_chars = size_t(c.ctx_per_slot) * 4;
+  const bool compact = c.backend != "api" && c.compact_prompt;
+  std::string global, agents;
+  if (compact) {   // AGENTS.md section 6: the shared prefix and this role's template only
+    std::string all = slurp(plan / "AGENTS.md", 400000);
+    auto block = [&](const std::string& marker) {
+      auto a = all.find(marker); if (a == std::string::npos) return std::string();
+      return all.substr(a, all.find("```", a) - a);
+    };
+    global = block("You are one agent in the PBSD build.");
+    agents = block("Role: " + role + ".");
+  } else {
+    global = slurp(plan / "PBSD_PLAN.md", 120000);
+    agents = slurp(plan / "AGENTS.md", 60000);
+  }
   std::string contracts; for (auto& e : fs::recursive_directory_iterator(wt / "pbsd/kernel/include", fs::directory_options::skip_permission_denied))
-    if (e.is_regular_file()) contracts += "// " + e.path().string() + "\n" + slurp(e.path(), 40000);
+    if (e.is_regular_file()) contracts += compact ? e.path().lexically_relative(wt).string() + "\n"
+                                                  : "// " + e.path().string() + "\n" + slurp(e.path(), 40000);
   std::string source; if (t.contains("source")) for (auto& s : (t["source"].is_array() ? t["source"] : json::array({t["source"]})))
-    if (s.is_string() && fs::exists(fs::path(c.repo) / s.get<std::string>())) source += slurp(fs::path(c.repo) / s.get<std::string>(), 200000);
+    if (s.is_string() && fs::exists(fs::path(c.repo) / s.get<std::string>())) source += slurp(fs::path(c.repo) / s.get<std::string>(), compact ? ctx_chars / 4 : 200000);
   json msgs = json::array({
-    {{"role", "system"}, {"content", "PBSD plan:\n" + global}},
+    {{"role", "system"}, {"content", (compact ? "PBSD agent rules:\n" : "PBSD plan:\n") + global}},
     {{"role", "system"}, {"content", "Agent rules and role templates:\n" + agents + "\nYour role: " + role}},
-    {{"role", "system"}, {"content", "Frozen contracts:\n" + contracts.substr(0, 300000)}},
+    {{"role", "system"}, {"content", (compact ? "Frozen contract headers (read_file to open):\n" : "Frozen contracts:\n") + contracts.substr(0, compact ? ctx_chars / 16 : 300000)}},
     {{"role", "user"}, {"content", "Unit source:\n" + source}},
     {{"role", "user"}, {"content", std::string("Task:\n") + t.dump(2) + "\nAttempt " + std::to_string(attempt) +
       (attempt >= 5 ? ". This task has failed repeatedly: if it is too large, post a handoff message proposing a split." : "")}}});
@@ -90,7 +106,10 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db) {
   for (int turn = 0; turn < c.max_turns; ++turn) {
     db.heartbeat(id, c.lease_s);
     Usage u;
-    auto r = api.chat(msgs, tools, u);
+    // Leave room for the reply inside this slot's context.
+    if (int n = compact_history(msgs, size_t(c.ctx_per_slot - c.max_tokens - 1024) * (c.backend == "api" ? 8 : 1)))
+      db.event(id, "compacted", n);
+    auto r = api.chat(msgs, tools, u, role, slot);
     out.usage.push_back(u);
     if (!r) { db.event(id, "api_error", r.error()); if (r.error().starts_with("402")) throw std::runtime_error(r.error()); return out; }
     json m = (*r)["choices"][0]["message"];
@@ -101,7 +120,7 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db) {
       std::string fnm = call["function"]["name"];
       json a = json::parse(call["function"].value("arguments", "{}"), nullptr, false);
       std::string res;
-      if (fnm == "read_file") res = slurp(wt / a.value("path", ""), 200000);
+      if (fnm == "read_file") res = slurp(wt / a.value("path", ""), c.backend == "api" ? 200000 : size_t(c.tool_result_chars));
       else if (fnm == "list_dir") { for (auto& e : fs::directory_iterator(wt / a.value("path", "."), fs::directory_options::skip_permission_denied)) res += e.path().filename().string() + "\n"; }
       else if (fnm == "write_file") {
         std::string p = a.value("path", "");
@@ -114,7 +133,8 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db) {
         auto g = run_job({"sh", gate.string(), id, wt.string()}, node, gate_timeout(t, kind, c), wt.string());
         gate_ok = g.code == 0;
         db.event(id, "gate", json{{"code", g.code}, {"timeout", g.timed_out}});
-        res = std::format("exit {}{}\n{}", g.code, g.timed_out ? " (watchdog timeout)" : "", g.tail);
+        std::string tail = g.tail.size() > size_t(c.tool_result_chars) ? g.tail.substr(g.tail.size() - c.tool_result_chars) : g.tail;
+        res = std::format("exit {}{}\n{}", g.code, g.timed_out ? " (watchdog timeout)" : "", tail);
       } else if (fnm == "post_message") {
         db.event(id, "msg:" + a.value("kind", "note"), a.value("body", "")); res = "posted";
       } else if (fnm == "submit") {

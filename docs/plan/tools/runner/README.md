@@ -20,15 +20,25 @@ cmake --build build
 
 A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a distribution without them, configure with `-DPBSD_STATIC=OFF`.
 
+## Backends
+
+`backend` in `$PBSD_STATE/config.json` (or `PBSD_BACKEND`):
+- `local` (default): llama-server at `local_url` (default `http://127.0.0.1:8080/v1`, or `PBSD_LOCAL_URL`). Ready-made configs for both quants and the launch scripts are in `../llama/`. Keys: `local_model`, `local_slots`, `ctx_per_slot`, `max_tokens`, `tool_result_chars`, `request_timeout_s`, `health_every_s`, `load_timeout_s`, `restart_max`, `server_cmd`, `compact_prompt`, `aux_url`, `aux_model`, `role_backend`.
+- `api`: DeepSeek Flash (needs `DEEPSEEK_API_KEY`). With `fallback_api: true`, a local run uses the API only while llama-server is down.
+
+`pbsd_run health` checks the server. `pbsd_run selftest` starts a stand-in server (`pbsd_run fake-server PORT`) to test the restart, chat and context-compaction paths.
+
 ## Use
 
 ```
-export DEEPSEEK_API_KEY=...            # optional DEEPSEEK_API_KEY_2 for key rotation
+cp ../llama/config.q4km.json $PBSD_STATE/config.json   # local GLM-5.3-Flash (default)
+export DEEPSEEK_API_KEY=...            # only for backend=api or fallback_api; optional DEEPSEEK_API_KEY_2
 export PBSD_REPO=/path/to/bare-or-main-clone PBSD_WT=/run/pbsd/wt PBSD_STATE=~/.pbsd
 pbsd_run init       # load docs/plan/tasks.json into SQLite (WAL, synchronous=FULL); safe to rerun
 pbsd_run run        # start or resume; live progress bars, ETA, cost
 pbsd_run status     # print progress once
-pbsd_run selftest   # check the watchdog and the job path
+pbsd_run health     # is llama-server up
+pbsd_run selftest   # watchdog, job path, server restart, local chat, context compaction
 ```
 
 To change slot counts, NUMA nodes and limits, write `$PBSD_STATE/config.json`, for example:

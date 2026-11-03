@@ -1,0 +1,21 @@
+{
+  "backend": "local",
+  "local_url": "http://127.0.0.1:8080/v1",
+  "local_model": "GLM-5.3-Flash",
+  "local_slots": 2,
+  "ctx_per_slot": 32768,
+  "max_tokens": 4096,
+  "tool_result_chars": 24000,
+  "request_timeout_s": 7200,
+  "health_every_s": 30,
+  "load_timeout_s": 5400,
+  "restart_max": 20,
+  "server_cmd": ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", "D:\\llama.cpp\\pbsd\\glm-server.ps1", "-Quant", "IQ2_XXS", "-Once"],
+  "fallback_api": false,
+  "lease_s": 14400,
+  "agent_watchdog_s": 7200,
+  "slots": {"compile": {"count": 2, "cores": 1, "ram_gb": 2, "node": 0},
+            "qemu": {"count": 1, "cores": 2, "ram_gb": 4, "node": 0},
+            "proof": {"count": 1, "cores": 2, "ram_gb": 4, "node": 1}},
+  "ram_admit": 0.97, "ram_pause": 0.99
+}
