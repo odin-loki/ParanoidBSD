@@ -1,4 +1,5 @@
 """Per-task harness stub used by pbsd_run.py.
+# DEPRECATED: replaced by the C++ runner in docs/plan/tools/runner (pbsd_run). Kept for reference only.
 
 run_task(task, api, run_job) -> (result, usage_list)
   result: "passed" | "failed" | "crash"; usage_list: [(usage_dict, was_peak), ...]

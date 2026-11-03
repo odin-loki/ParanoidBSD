@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# DEPRECATED: replaced by the C++ runner in docs/plan/tools/runner (pbsd_run). Kept for reference only.
 """PBSD runner and scheduler for one PC (docs/plan/AGENTS.md section 8).
 
 Loads docs/plan/tasks.json into a SQLite task database (WAL), leases ready

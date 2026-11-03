@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.24)
+project(pbsd_run CXX C)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(PBSD_STATIC "Link a single static binary" ON)
+include(FetchContent)
+
+# JSON: system nlohmann_json, else fetch the single header.
+find_package(nlohmann_json 3.11 QUIET)
+if(NOT nlohmann_json_FOUND)
+  FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+  FetchContent_MakeAvailable(json)
+endif()
+
+# SQLite: system library, else the amalgamation (built in, WAL enabled by default).
+find_package(SQLite3 QUIET)
+if(NOT SQLite3_FOUND)
+  FetchContent_Declare(sqlite URL https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip)
+  FetchContent_MakeAvailable(sqlite)
+  add_library(sqlite3_bundled STATIC ${sqlite_SOURCE_DIR}/sqlite3.c)
+  target_include_directories(sqlite3_bundled PUBLIC ${sqlite_SOURCE_DIR})
+  target_compile_definitions(sqlite3_bundled PRIVATE SQLITE_THREADSAFE=1 SQLITE_DEFAULT_WAL_SYNCHRONOUS=2)
+  set(SQLITE_TARGET sqlite3_bundled)
+else()
+  set(SQLITE_TARGET SQLite::SQLite3)
+endif()
+
+find_package(CURL REQUIRED)
+find_library(NUMA_LIB numa)   # optional; numactl fallback otherwise
+
+add_executable(pbsd_run src/main.cpp src/db.cpp src/api.cpp src/sched.cpp src/progress.cpp src/harness.cpp src/sys.cpp)
+target_link_libraries(pbsd_run PRIVATE nlohmann_json::nlohmann_json ${SQLITE_TARGET} CURL::libcurl pthread)
+if(NUMA_LIB)
+  target_link_libraries(pbsd_run PRIVATE ${NUMA_LIB})
+  target_compile_definitions(pbsd_run PRIVATE PBSD_HAVE_NUMA=1)
+endif()
+if(PBSD_STATIC)
+  target_link_options(pbsd_run PRIVATE -static)
+endif()
+target_compile_options(pbsd_run PRIVATE -O2 -Wall -Wextra)

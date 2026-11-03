@@ -189,12 +189,16 @@ PBSD runs only on Odin's PC, a Lenovo ThinkStation P920 with two Xeon Scalable C
 
 ### 8.1 Memory
 
-The P920 has 16 DDR4 DIMM slots: 8 per CPU, 6 channels per CPU. It takes DDR4-2666 or DDR4-2933 registered ECC memory (RDIMM or LRDIMM), up to 1 TB with 16 × 64 GB (Lenovo PSREF). It has no 24-slot option, and 16 is the balanced full population.
+The P920 has 16 DDR4 DIMM slots: 8 per CPU, with 6 channels per CPU. It takes registered ECC memory only, at DDR4-2666 or DDR4-2933: RDIMM, LRDIMM or 3DS LRDIMM. Never mix RDIMMs and LRDIMMs.
 
-- Plan RAM is 16 × the new stick's capacity.
-- With 16 × 32 GB (512 GB), everything runs in RAM. The task database, the git repository, worktrees, build directories, ccache and QEMU images live in tmpfs. The HDD holds only checkpoints, backups and compressed reference trees.
-- With 16 × 64 GB (1 TB), the same layout runs with more PRISM memory.
-- With the current 64 GB, the HDD layout in 8.2 applies.
+| Configuration | Total | CPUs needed | Status |
+|---|---|---|---|
+| 16 × 32 GB RDIMM | 512 GB | any | Lenovo-tested |
+| 16 × 64 GB LRDIMM | 1 TB | any | Lenovo PSREF maximum ("based on current Lenovo memory offerings") |
+| 16 × 128 GB 3DS LRDIMM, DDR4-2666 | 2 TB (1 TB per CPU) | 2nd-gen Xeon Scalable (x2xx) of any kind, or 1st-gen "M" (x1xxM, 1.5 TB per CPU). 1st-gen non-M CPUs stop at 768 GB per CPU. | Supported by memory vendors (Crucial, Kingston, CompuRAM, Mr Memory) and reviews; not in Lenovo's list |
+| 16 × 256 GB 3DS LRDIMM | 4 TB | 2nd-gen "M" (2 TB per CPU) or "L" | Claimed by one memory vendor only; untested |
+
+1.5 TB per CPU is a CPU limit, not a P920 configuration. With 8 slots per CPU it would need 192 GB DIMMs, which do not exist for DDR4. **The practical maximum is 2 TB (16 × 128 GB)**, and the plan below is sized for it. Balanced choices are 12 sticks (one per channel) or 16 (all slots). Larger sizes and 2 DIMMs per channel run at 2666 or below.
 
 ### 8.2 Slots and NUMA
 
@@ -205,11 +209,11 @@ With 512 GB or more, the 32 cores are the limit, not RAM. Slots are pinned with 
 | Agents (wait on the API) | 48 | shared | 0.3 GB | any |
 | Compile and unit tests | 12 | 1 | 2 GB | 0 |
 | QEMU | 3 | 2 | 4 GB | 0 |
-| PRISM | 6 (8 with 1 TB) | 2 | 12 GB (24 GB with 1 TB) | 1 |
+| PRISM | 6 at 512 GB, 8 at 1–2 TB | 2 | 12 GB at 512 GB, 24 GB at 1 TB, 48 GB at 2 TB | 1 |
 | Task database, git server, scheduler | 1 | 2 | 8 GB | 0 |
-| tmpfs: repository, worktrees, builds, ccache, images | — | — | about 250 GB | split |
+| tmpfs: repository, worktrees, builds, ccache, images, reference trees | — | — | about 250 GB at 512 GB; about 1.2 TB at 2 TB (the whole working set, HDD only for backups) | split |
 
-Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `pbsd_run.py` back to 12 compile, 4 PRISM at 4 GB and 3 QEMU.
+Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `$PBSD_STATE/config.json` (runner README) back to 12 compile, 4 PRISM at 4 GB and 3 QEMU.
 
 **Fastest upgrade after RAM:** NVMe in one of the P920's two onboard M.2 slots for checkpoints and backups. With everything in RAM this matters much less.
 
@@ -222,7 +226,7 @@ Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets 
 | QEMU acceptance | about 60 runs × 3 architectures | 3 | about 8 days |
 | Model turns, about 73,000 | off-peak only | 48 agents | about 9 days |
 
-These overlap, so proofs set the length: about **4–6 weeks of wall clock** with 512 GB, or 3–5 weeks with 1 TB, plus fix rounds. With the current 64 GB it is about 7–9 weeks. The runner shows the real estimate as it goes.
+These overlap, so proofs set the length: about **4–6 weeks of wall clock** with 512 GB, or 3–5 weeks with 1–2 TB, plus fix rounds. Beyond 1 TB the 32 cores are the limit: 2 TB adds headroom for large proofs and the whole reference corpus in RAM, not more speed. With the current 64 GB it is about 7–9 weeks. The runner shows the real estimate as it goes.
 
 **Cost:**
 - API: $1,500–2,500, all off-peak.
@@ -230,12 +234,13 @@ These overlap, so proofs set the length: about **4–6 weeks of wall clock** wit
 
 ### 8.4 Runner and progress
 
-`docs/plan/tools/pbsd_run.py`:
+The runner is `docs/plan/tools/runner/`. It is one C++23 binary, `pbsd_run`, that combines the scheduler, the agent harness and the DeepSeek client. It uses libcurl, nlohmann_json, SQLite in WAL mode and libnuma, and builds with CMake (see `runner/README.md`). The Python scripts in `tools/deprecated/` are kept for reference only.
 
 ```
-pbsd_run.py init      # load tasks.json into the SQLite task database (WAL; safe to rerun)
-pbsd_run.py run       # start or resume
-pbsd_run.py status    # print progress once
+pbsd_run init      # load tasks.json into the SQLite task database (WAL; safe to rerun)
+pbsd_run run       # start or resume
+pbsd_run status    # print progress once
+pbsd_run selftest  # watchdog and job path
 ```
 
 The live display redraws every 2 seconds:
@@ -248,14 +253,23 @@ PBSD  ████████░░░░░░░░░░░░░░░░�
   P0 ██████████████████████████████ 292/292
   P1 ███████████████████░░░░░░░░░░░ 560/888
   ...
-  slots agent 46/48  compile 12/12  qemu 2/3  proof 6/6
+  slots  agent 46/48   RAM 61%  load 27.4
 ```
 
-- **Time left** is the remaining tasks divided by the number of tasks passed in the last 24 hours (or since start, until a day has passed).
+- **Time left** is the remaining tasks divided by the number of tasks passed in the last 24 hours (or since the first lease, until a day has passed).
 - **Cost** is summed from the token usage the API reports, at off-peak or peak prices.
 - **Projected total** is the cost per passed task times the tasks left.
 
-`pbsd_harness.py` is the per-task agent loop. It connects the runner to the repository's `pbsd.py` and to the prompts and gates in sections 5–6.
+Measured on the build box against the full `tasks.json`:
+
+| Measurement | C++ | Python |
+|---|---|---|
+| `init` | 0.26 s, 39 MB peak RSS | 0.34 s, 52 MB |
+| `status` | 0.01 s, 12 MB | 0.05 s, 23 MB |
+
+During a run, each C++ agent thread uses a few MB. The PRISM, compile and QEMU jobs dominate memory either way.
+
+Gate commands live in the repository as `tools/gates/<role>.sh <task-id> <worktree>`. They are still to be written: build, tests including fault injection, PRISM and QEMU.
 
 ### 8.5 Order of work
 
@@ -306,7 +320,7 @@ The PC can lose power, run out of memory or crash, and the API can fail. The run
   - Build over 30 minutes, test over 60 minutes, or proof over its budget: kill the job and record a timeout.
   - QEMU guest with no console output for 10 minutes: kill it.
 - **Poison-task quarantine.** A task that crashes the harness, triggers OOM, or hits the watchdog 3 times goes to `quarantined`. It is not retried automatically. It appears in the daily escalation report with logs attached.
-- **Memory-pressure throttling.** See 8.2 and the scheduler in `tools/pbsd_run.py`. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
+- **Memory-pressure throttling.** See 8.2 and the scheduler in `tools/runner`. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
 - **Daily backup.** At 04:00 Sydney time, during the API pause: the database dump, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
 
 ## Appendix A. One-day run (optional, 24 hours wall clock)
