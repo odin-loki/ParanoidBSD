@@ -181,120 +181,102 @@ Assumptions per task: 4 turns, 60k input per turn at 80% cache hit, 10k output p
 - Output: 4 × 10k × 1.6 = 64k tokens ($0.038)
 - About $0.05 per task, about $650 for 12,963 tasks. Provers and big driver units run longer, so budget 3x: $1,500–2,500 off-peak in total, roughly double at peak. These are estimates; `cost.jsonl` gives the real figure after the first few hundred tasks.
 
-Timeline (superseded by section 8, the 30-day PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+Timeline (superseded by section 8, the PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
 
-## 8. Default schedule: one 32-core PC, about 30 days
+## 8. Default schedule: Odin's PC, no time limit
 
-This is the default. The run uses Odin's PC: 32 cores, 64 GB RAM and 4 TB free on one spinning HDD, with only the DeepSeek Flash API. Earlier options are kept as Appendix A (one day) and Appendix B (7–14 days on cloud machines).
+PBSD runs only on Odin's PC, a Lenovo ThinkStation P920 with two Xeon Scalable CPUs (32 cores in total, two NUMA nodes) and one 4 TB HDD, using only the DeepSeek Flash API. There is no deadline: all 12,964 tasks run, every proof is a full proof and no driver is deferred. The `month1` and `priority` fields in `tasks.yaml` only set the order: the core and the common drivers first, then mlx5, ice, iwlwifi and drm/xe. Appendix A (one day) and Appendix B (7–14 days on cloud machines) are kept for reference.
 
-### 8.1 What limits the run
+### 8.1 Memory
 
-Agents are cheap API calls. Builds, PRISM proofs and QEMU tests compete for the PC, and RAM and the HDD run out before the cores do.
+The P920 has 16 DDR4 DIMM slots: 8 per CPU, 6 channels per CPU. It takes DDR4-2666 or DDR4-2933 registered ECC memory (RDIMM or LRDIMM), up to 1 TB with 16 × 64 GB (Lenovo PSREF). It has no 24-slot option, and 16 is the balanced full population.
 
-| Resource | Budget |
-|---|---|
-| OS, Postgres or SQLite task database, local git server, scheduler | 6 GB RAM, 2 cores |
-| tmpfs for active worktrees and build directories | 16 GB RAM |
-| Compile slots | 12 × 1.5 GB RAM, 1 core each |
-| PRISM slots | 4 × 4 GB RAM, 2 cores each |
-| QEMU slots | 3 × 2 GB RAM, 2 cores each |
-| **Total** | **About 62 GB RAM, 28 cores busy** |
+- Plan RAM is 16 × the new stick's capacity.
+- With 16 × 32 GB (512 GB), everything runs in RAM. The task database, the git repository, worktrees, build directories, ccache and QEMU images live in tmpfs. The HDD holds only checkpoints, backups and compressed reference trees.
+- With 16 × 64 GB (1 TB), the same layout runs with more PRISM memory.
+- With the current 64 GB, the HDD layout in 8.2 applies.
 
-Active agent tasks: up to 40, most of them waiting on the model at any moment. That is 20–40 requests in flight, far under the 2,500 key limit.
+### 8.2 Slots and NUMA
 
-### 8.2 Disk layout for one HDD
+With 512 GB or more, the 32 cores are the limit, not RAM. Slots are pinned with `numactl` so each job uses the memory of its own socket.
 
-Random I/O on a spinning disk (about 100–150 IOPS) is the main slowdown. The layout keeps random access in RAM and gives the HDD large sequential work.
+| Slot | Count | Cores | RAM each | Node |
+|---|---|---|---|---|
+| Agents (wait on the API) | 48 | shared | 0.3 GB | any |
+| Compile and unit tests | 12 | 1 | 2 GB | 0 |
+| QEMU | 3 | 2 | 4 GB | 0 |
+| PRISM | 6 (8 with 1 TB) | 2 | 12 GB (24 GB with 1 TB) | 1 |
+| Task database, git server, scheduler | 1 | 2 | 8 GB | 0 |
+| tmpfs: repository, worktrees, builds, ccache, images | — | — | about 250 GB | split |
 
-- **One bare git repository** on the HDD, served by a local git daemon or Gitea. No per-task clones.
-- **Worktrees in tmpfs**: each active task gets a sparse checkout of only its package paths plus `pbsd/kernel/include`, about 100–300 MB, in `/run/pbsd/wt/<task>`. A worktree is created when the task is leased, committed and deleted when it is submitted.
-- **Build directories in tmpfs**. Object files go to ccache, or sccache in local-disk mode, on the HDD (about 150 GB, mostly sequential writes of whole files).
-- **Shared prebuilt objects**: contract headers and stubs are compiled once per contract version into a shared, read-only object directory (and a precompiled C++ module cache). Every task links against it, so no task rebuilds them.
-- **Reference trees** (HBSD 15-STABLE, one Linux LTS, drm-kmod, Wine, AOSP pieces) are built once in week 1 and stored as compressed archives. Differential tests unpack only what they need into tmpfs.
-- **Read-ahead**: the scheduler groups tasks by package, so the same files stay in the page cache.
-- **Disk use**: about 1.2 TB (reference trees and builds 400 GB, ccache 150 GB, git 100 GB, QEMU images and test data 300 GB, logs and checkpoints 100 GB, headroom 150 GB) out of 4 TB.
+Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `pbsd_run.py` back to 12 compile, 4 PRISM at 4 GB and 3 QEMU.
 
-**Best upgrade:** a 1–2 TB NVMe SSD (about A$100–200) for git, ccache and QEMU images. As an assumption, it would make builds and tests 1.5–2 times faster and cut the run from about 4 weeks to about 3. 128 GB RAM would be the second upgrade, allowing 8 PRISM slots.
+**Fastest upgrade after RAM:** NVMe in one of the P920's two onboard M.2 slots for checkpoints and backups. With everything in RAM this matters much less.
 
-### 8.3 Scheduler
+### 8.3 How long
 
-- Admits a job only when its slot class is free, load is under 28, available RAM is over 6 GB and HDD queue depth is under 8.
-- Above 85% RAM it stops admitting new jobs. Above 92% it pauses the newest QEMU job, then the newest PRISM job (SIGSTOP), and resumes them when pressure falls.
-- Uses PSI pressure files (`/proc/pressure/memory` and `/proc/pressure/io`) as the signal on Linux hosts, or load and free memory on BSD hosts.
-- **Off-peak API pausing**: no new model requests 01:00–04:00 and 06:00–10:00 UTC on weekdays (12:00–15:00 and 17:00–21:00 Sydney time, AEDT). Builds, proofs and tests that do not need the model keep running through the pause, so the CPU never sits idle.
-- Order: phase, then package, then the lowest dependency depth first, so cached prompt prefixes and page-cache contents stay warm.
-
-### 8.4 Proof budgets
-
-- **Full proofs** (1,230 tasks) for the verified core: phases 0–2, device model and PCI, IOMMU, driver host, dispatcher, gateways. 60-minute wall-clock cap per task.
-- **Boundary proofs** (1,347 tasks) for drivers, NT, Android, translation, userland: only the gateway contracts are proved, with a 10-minute cap. The rest are runtime checks.
-- Obligations still open at the cap become runtime checks with a reason, plus a follow-up proof task for month 2.
-
-### 8.5 Throughput
-
-Assumptions per unit (spec, port, test, proof and review together):
-- About 0.5 core-hours of compile and test. That is about 6 incremental builds at 3 core-minutes each, plus about 10 core-minutes of reference and port tests, plus review builds.
-- Times 1.3 for retries and 1.7 for the HDD.
-- Proof time from the budgets above, times 1.3.
-
-| Work | Month-1 scope | Capacity | Days |
+| Work | Total | Slots | Time |
 |---|---|---|---|
-| Compile and test | 2,000 units × 1.1 core-h = 2,200 core-h | 12 compile slots | about 8 |
-| Proofs | 1,230 full (about 1,600 h) + 720 boundary (about 160 h) | 4 PRISM slots | about 18 |
-| QEMU acceptance | about 40 runs × 3 architectures; riscv64 under emulation weekly only | 3 QEMU slots | about 6 |
-| Model turns | about 55,000 turns at 5 minutes with 40 active tasks | off-peak hours only | about 6 |
+| Full proofs, 2,577 tasks, 60-minute cap (30 minutes for drivers) × 1.3 | about 2,700 proof-hours | 6 (8) | about 19 days (14 with 1 TB) |
+| Compile and test, 2,577 units | about 1,900 core-hours (in RAM, no HDD penalty) | 12 | about 7 days |
+| QEMU acceptance | about 60 runs × 3 architectures | 3 | about 8 days |
+| Model turns, about 73,000 | off-peak only | 48 agents | about 9 days |
 
-These run at the same time, so PRISM sets the length: about 18–20 days of proofs inside a 30-day month, plus week 1 setup.
+These overlap, so proofs set the length: about **4–6 weeks of wall clock** with 512 GB, or 3–5 weeks with 1 TB, plus fix rounds. With the current 64 GB it is about 7–9 weeks. The runner shows the real estimate as it goes.
 
-**All 12,964 tasks do not fit.** Proofs alone would take about 27 days, before setup and fix rounds. The month-1 scope (`month1: true` in `tasks.yaml`) is 9,834 tasks.
+**Cost:**
+- API: $1,500–2,500, all off-peak.
+- Electricity: a dual-Xeon P920 at about 450–550 W for 6 weeks is about 500 kWh, about A$175.
 
-Deferred to month 2 (3,130 tasks) are the four largest driver sets:
-- `mlx5` (Mellanox 100G and up)
-- `ice` (Intel 100G)
-- `iwlwifi` (Intel Wi-Fi)
-- `xe` (Intel's newest GPU driver)
+### 8.4 Runner and progress
 
-Month 1 keeps virtio, NVMe, the e1000 and igb class of NICs, xHCI, input and audio, amdgpu and i915 through drm-kmod, and the full core.
+`docs/plan/tools/pbsd_run.py`:
 
-If proofs run slower than assumed (check after week 1 in `cost.jsonl` and the scheduler log), cut further in this order:
-1. Boundary proofs for P3-05 and P4-04 become runtime checks only.
-2. P4-06 cross-architecture translation moves to month 2.
-3. P4-04 NT kernel-mode drivers move to month 2 (NT user mode stays).
+```
+pbsd_run.py init      # load tasks.json into the SQLite task database (WAL; safe to rerun)
+pbsd_run.py run       # start or resume
+pbsd_run.py status    # print progress once
+```
 
-### 8.6 Cost
+The live display redraws every 2 seconds:
 
-| Item | Estimate |
-|---|---|
-| API, all off-peak, 9,834 tasks | $1,200–2,000 |
-| Electricity: about 450 W average × 720 h = about 325 kWh at about A$0.35/kWh | about A$115 |
-| **Total for the month** | **about $1,300–2,100** |
+```
+PBSD  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 2,593/12,964 (20.0%)
+  running 46  queued 310  blocked 9,972  failed 21  escalated 9  quarantined 2
+  throughput 13.4 tasks/h   time left 32d 6h 10m   ETA Sat 19 Dec 21:40 AEDT
+  cost so far $412.30   projected total $2,061
+  P0 ██████████████████████████████ 292/292
+  P1 ███████████████████░░░░░░░░░░░ 560/888
+  ...
+  slots agent 46/48  compile 12/12  qemu 2/3  proof 6/6
+```
 
-### 8.7 Week by week (start on a Saturday)
+- **Time left** is the remaining tasks divided by the number of tasks passed in the last 24 hours (or since start, until a day has passed).
+- **Cost** is summed from the token usage the API reports, at off-peak or peak prices.
+- **Projected total** is the cost per passed task times the tasks left.
 
-| Week | Work |
-|---|---|
-| 1 | Set up the disk layout, task database, git server and scheduler. Build the reference trees (HBSD for 3 architectures, Linux LTS, drm-kmod). Make QEMU images. Dry run of P2-01 to measure real times. All contracts, `P0-FREEZE`, P0-07 harness. Start phase 1. |
-| 2 | Phase 1 core merged and booting in QEMU on amd64 and arm64 (riscv64 weekly). Phase 2 I/O: rings, blk-mq, VFS, network, IPC. Full proofs running around the clock. |
-| 3 | Phase 2 merges and QEMU suites. Phase 3 device model, PCI, IOMMU, driver host, DRM, month-1 driver sets. Phase 4 dispatcher, Linux and BSD syscalls. |
-| 4 | Phase 4 NT user mode, Android, translation, gateways. Phase 5 userland and hypervisor. `P6-01` final merge on `pbsd-cutover`, fix rounds, full QEMU matrix. Fuzzing in leftover slots. |
-| Days 29–30 | Buffer, escalation triage, proof report, month-2 task list. |
+`pbsd_harness.py` is the per-task agent loop. It connects the runner to the repository's `pbsd.py` and to the prompts and gates in sections 5–6.
 
-### 8.8 End of month
+### 8.5 Order of work
 
-Done:
-- Every month-1 task passed or escalated.
-- `pbsd-cutover` builds for amd64, arm64 and riscv64 and boots in QEMU.
-- Core, I/O, device model, IOMMU, driver host, DRM (amdgpu and i915), virtio, NVMe and common NIC, USB, input and audio drivers.
-- Linux and BSD syscall layers, Binder and Android, NT user mode, cross-architecture translation.
-- QEMU acceptance suites green: LTP, kyua, xfstests, liburing, blktests, packetdrill, Binder.
-- Full proofs on the verified core; boundary proofs elsewhere.
+1. Setup: tmpfs layout, task database, git server, reference builds, QEMU images, dry run of P2-01 to calibrate.
+2. Phase 0 contracts and freeze.
+3. Phase 1 core; first QEMU boot.
+4. Phase 2 I/O.
+5. Phase 3 device model and common drivers.
+6. Phase 4 personalities.
+7. Phase 5 userland and hypervisor.
+8. Large drivers (mlx5, ice, iwlwifi, drm/xe).
+9. `P6-01` final merge and fix rounds.
 
-Month 2:
-- The 3,130 deferred driver tasks.
-- Proofs of the runtime checks left open.
-- Real-hardware testing on the PC itself and performance comparison with Linux.
-- Full Wine and Android suites, longer fuzzing.
-- The cutover merge to `main`.
+Full proofs run around the clock in every step.
+
+When the run finishes:
+- Everything is merged on `pbsd-cutover`.
+- It is proved, and it boots in QEMU on amd64, arm64 and riscv64.
+- The QEMU acceptance suites are green.
+
+Real-hardware tests on the P920 and the merge to `main` follow.
 
 ## 9. Fault tolerance of the run
 
@@ -324,7 +306,7 @@ The PC can lose power, run out of memory or crash, and the API can fail. The run
   - Build over 30 minutes, test over 60 minutes, or proof over its budget: kill the job and record a timeout.
   - QEMU guest with no console output for 10 minutes: kill it.
 - **Poison-task quarantine.** A task that crashes the harness, triggers OOM, or hits the watchdog 3 times goes to `quarantined`. It is not retried automatically. It appears in the daily escalation report with logs attached.
-- **Memory-pressure throttling.** See 8.3. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
+- **Memory-pressure throttling.** See 8.2 and the scheduler in `tools/pbsd_run.py`. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
 - **Daily backup.** At 04:00 Sydney time, during the API pause: the database dump, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
 
 ## Appendix A. One-day run (optional, 24 hours wall clock)
