@@ -181,105 +181,164 @@ Assumptions per task: 4 turns, 60k input per turn at 80% cache hit, 10k output p
 - Output: 4 × 10k × 1.6 = 64k tokens ($0.038)
 - About $0.05 per task, about $650 for 12,963 tasks. Provers and big driver units run longer, so budget 3x: $1,500–2,500 off-peak in total, roughly double at peak. These are estimates; `cost.jsonl` gives the real figure after the first few hundred tasks.
 
-Timeline (superseded by section 8, the 7–14 day run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+Timeline (superseded by section 8, the 30-day PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
 
-## 8. Default schedule: 7–14 day run
+## 8. Default schedule: one 32-core PC, about 30 days
 
-This is the default. It is set up for low cost and simple infrastructure. The one-day run is kept as Appendix A.
+This is the default. The run uses Odin's PC: 32 cores, 64 GB RAM and 4 TB free on one spinning HDD, with only the DeepSeek Flash API. Earlier options are kept as Appendix A (one day) and Appendix B (7–14 days on cloud machines).
 
-### 8.1 Rules
+### 8.1 What limits the run
 
-- **Off-peak only.** The scheduler stops leasing new requests at 00:55 UTC and 05:55 UTC on weekdays and starts again at 04:00 and 10:00 UTC. In-flight turns may finish. In Sydney time (AEDT) the pauses are 12:00–15:00 and 17:00–21:00 on weekdays. That gives 17 working hours per weekday and 24 on weekends, about 133 hours a week.
-- **One API key.** No more than 600 tasks are active at once, which is about 300 requests in flight at 50% tool time. That is well under the 2,500 limit and leaves room for bursts to 1,000 active tasks during merges.
-- **Gated dependencies, less rework** (`deps` in `tasks.yaml`; the one-day graph is kept as `deps_one_day`):
-  - Packages run in phase waves, and each wave's contracts are proved out by the previous wave's merges. That catches contract changes early, when few tasks depend on them.
-  - Each unit runs `-SPEC` first. Then `-IMPL` and `-TEST` run in parallel from the approved spec. Then `-PROOF`, then `-REVIEW`.
-  - This cuts the speculative rework (about 30% of tokens) from the one-day plan.
-- **Cache-friendly ordering.** Tasks of one package run back to back on the one key, so the contract prefix stays cached.
+Agents are cheap API calls. Builds, PRISM proofs and QEMU tests compete for the PC, and RAM and the HDD run out before the cores do.
 
-### 8.2 Throughput
-
-All 12,964 tasks take about 73,000 agent turns, including retries. At 5 minutes per turn that is about 6,100 agent-hours. With 600 tasks active, that is about 10 off-peak hours of pure model work. The schedule is set by waves, build and test time, proof time and fix rounds, not by the API. So the plan uses a small, steady farm and spends the calendar time on validation between waves.
-
-### 8.3 Infrastructure
-
-| Pool | Sizing |
+| Resource | Budget |
 |---|---|
-| Agent tool containers | 600 at 0.25 vCPU, 1 GB (150 vCPU) |
-| Compile, with sccache on shared storage | 256 vCPU |
-| PRISM | 512 vCPU |
-| QEMU test farm (amd64, arm64, riscv64) | 64 VMs, 128 vCPU |
-| Task database, git server, object storage | One 16 vCPU VM |
-| **Total** | **About 1,050 vCPU**, for example eight 128-vCPU spot machines plus one small VM |
+| OS, Postgres or SQLite task database, local git server, scheduler | 6 GB RAM, 2 cores |
+| tmpfs for active worktrees and build directories | 16 GB RAM |
+| Compile slots | 12 × 1.5 GB RAM, 1 core each |
+| PRISM slots | 4 × 4 GB RAM, 2 cores each |
+| QEMU slots | 3 × 2 GB RAM, 2 cores each |
+| **Total** | **About 62 GB RAM, 28 cores busy** |
 
-Git: per-task branches live on a modest self-hosted git server, which can be the same 16 vCPU VM. `wp/<WP>` and `pbsd-cutover` are pushed to GitHub after each package merge, which is about 40 pushes plus fix rounds over the run and well within GitHub limits. GitHub alone also works: at about 1,000 pushes a day it is usable but slower, so batch task branches into one push per package per hour.
+Active agent tasks: up to 40, most of them waiting on the model at any moment. That is 20–40 requests in flight, far under the 2,500 key limit.
 
-Scale the farm down to about half between waves (days 12–14), and turn it off in peak pauses if the cloud bills by the minute.
+### 8.2 Disk layout for one HDD
 
-### 8.4 Cost
+Random I/O on a spinning disk (about 100–150 IOPS) is the main slowdown. The layout keeps random access in RAM and gives the HDD large sequential work.
+
+- **One bare git repository** on the HDD, served by a local git daemon or Gitea. No per-task clones.
+- **Worktrees in tmpfs**: each active task gets a sparse checkout of only its package paths plus `pbsd/kernel/include`, about 100–300 MB, in `/run/pbsd/wt/<task>`. A worktree is created when the task is leased, committed and deleted when it is submitted.
+- **Build directories in tmpfs**. Object files go to ccache, or sccache in local-disk mode, on the HDD (about 150 GB, mostly sequential writes of whole files).
+- **Shared prebuilt objects**: contract headers and stubs are compiled once per contract version into a shared, read-only object directory (and a precompiled C++ module cache). Every task links against it, so no task rebuilds them.
+- **Reference trees** (HBSD 15-STABLE, one Linux LTS, drm-kmod, Wine, AOSP pieces) are built once in week 1 and stored as compressed archives. Differential tests unpack only what they need into tmpfs.
+- **Read-ahead**: the scheduler groups tasks by package, so the same files stay in the page cache.
+- **Disk use**: about 1.2 TB (reference trees and builds 400 GB, ccache 150 GB, git 100 GB, QEMU images and test data 300 GB, logs and checkpoints 100 GB, headroom 150 GB) out of 4 TB.
+
+**Best upgrade:** a 1–2 TB NVMe SSD (about A$100–200) for git, ccache and QEMU images. As an assumption, it would make builds and tests 1.5–2 times faster and cut the run from about 4 weeks to about 3. 128 GB RAM would be the second upgrade, allowing 8 PRISM slots.
+
+### 8.3 Scheduler
+
+- Admits a job only when its slot class is free, load is under 28, available RAM is over 6 GB and HDD queue depth is under 8.
+- Above 85% RAM it stops admitting new jobs. Above 92% it pauses the newest QEMU job, then the newest PRISM job (SIGSTOP), and resumes them when pressure falls.
+- Uses PSI pressure files (`/proc/pressure/memory` and `/proc/pressure/io`) as the signal on Linux hosts, or load and free memory on BSD hosts.
+- **Off-peak API pausing**: no new model requests 01:00–04:00 and 06:00–10:00 UTC on weekdays (12:00–15:00 and 17:00–21:00 Sydney time, AEDT). Builds, proofs and tests that do not need the model keep running through the pause, so the CPU never sits idle.
+- Order: phase, then package, then the lowest dependency depth first, so cached prompt prefixes and page-cache contents stay warm.
+
+### 8.4 Proof budgets
+
+- **Full proofs** (1,230 tasks) for the verified core: phases 0–2, device model and PCI, IOMMU, driver host, dispatcher, gateways. 60-minute wall-clock cap per task.
+- **Boundary proofs** (1,347 tasks) for drivers, NT, Android, translation, userland: only the gateway contracts are proved, with a 10-minute cap. The rest are runtime checks.
+- Obligations still open at the cap become runtime checks with a reason, plus a follow-up proof task for month 2.
+
+### 8.5 Throughput
+
+Assumptions per unit (spec, port, test, proof and review together):
+- About 0.5 core-hours of compile and test. That is about 6 incremental builds at 3 core-minutes each, plus about 10 core-minutes of reference and port tests, plus review builds.
+- Times 1.3 for retries and 1.7 for the HDD.
+- Proof time from the budgets above, times 1.3.
+
+| Work | Month-1 scope | Capacity | Days |
+|---|---|---|---|
+| Compile and test | 2,000 units × 1.1 core-h = 2,200 core-h | 12 compile slots | about 8 |
+| Proofs | 1,230 full (about 1,600 h) + 720 boundary (about 160 h) | 4 PRISM slots | about 18 |
+| QEMU acceptance | about 40 runs × 3 architectures; riscv64 under emulation weekly only | 3 QEMU slots | about 6 |
+| Model turns | about 55,000 turns at 5 minutes with 40 active tasks | off-peak hours only | about 6 |
+
+These run at the same time, so PRISM sets the length: about 18–20 days of proofs inside a 30-day month, plus week 1 setup.
+
+**All 12,964 tasks do not fit.** Proofs alone would take about 27 days, before setup and fix rounds. The month-1 scope (`month1: true` in `tasks.yaml`) is 9,834 tasks.
+
+Deferred to month 2 (3,130 tasks) are the four largest driver sets:
+- `mlx5` (Mellanox 100G and up)
+- `ice` (Intel 100G)
+- `iwlwifi` (Intel Wi-Fi)
+- `xe` (Intel's newest GPU driver)
+
+Month 1 keeps virtio, NVMe, the e1000 and igb class of NICs, xHCI, input and audio, amdgpu and i915 through drm-kmod, and the full core.
+
+If proofs run slower than assumed (check after week 1 in `cost.jsonl` and the scheduler log), cut further in this order:
+1. Boundary proofs for P3-05 and P4-04 become runtime checks only.
+2. P4-06 cross-architecture translation moves to month 2.
+3. P4-04 NT kernel-mode drivers move to month 2 (NT user mode stays).
+
+### 8.6 Cost
 
 | Item | Estimate |
 |---|---|
-| API (all off-peak, gated, no speculative rework) | $1,500–2,500 |
-| Compute (about 1,050 vCPU spot, about 200 billed hours over 14 days with pauses and scale-down) | $2,000–3,500 |
-| **Total** | **$3,500–6,000** |
+| API, all off-peak, 9,834 tasks | $1,200–2,000 |
+| Electricity: about 450 W average × 720 h = about 325 kWh at about A$0.35/kWh | about A$115 |
+| **Total for the month** | **about $1,300–2,100** |
 
-These are estimates. `cost.jsonl` and the cloud bill after day 1 give the real rate, and the farm size can be adjusted then.
+### 8.7 Week by week (start on a Saturday)
 
-### 8.5 Day by day (start Saturday 00:00 UTC, 11:00 Saturday Sydney)
-
-| Day | Work |
+| Week | Work |
 |---|---|
-| 1 (Sat) | Dry run of P2-01 end to end to measure turn time, cache hit and build times. All 40 contract tasks, then `P0-FREEZE`. P0-07 build, CI, PRISM and differential harness green. |
-| 2 (Sun) | Phase 1 core: boot, allocator, VM, capabilities, scheduler, locks, processes, PSI, hardening. Specs, then ports, tests, proofs. |
-| 3 (Mon) | Phase 1 reviews and merges; first QEMU boot of the core on three architectures. Phase 2 specs start. |
-| 4 (Tue) | Phase 2 I/O: rings, blk-mq, VFS, sk_buff network, IPC and Binder; ports, tests, proofs. |
-| 5 (Wed) | Phase 2 merges; liburing, blktests, xfstests and packetdrill in QEMU. Phase 3 specs and the device model, PCI, IOMMU and Linux driver host start. |
-| 6 (Thu) | Phase 3 driver sets (the largest wave, about 7,200 tasks): storage, NIC, USB, input, audio, Wi-Fi, DRM. |
-| 7 (Fri) | Phase 3 continues; batched contract-change round; escalation triage 1. |
-| 8 (Sat) | Phase 3 merges; virtio and NVMe drivers green in QEMU. Phase 4 personalities start: dispatcher, Linux and BSD syscalls. |
-| 9 (Sun) | Phase 4 NT, Android, cross-architecture translation, gateway checks. |
-| 10 (Mon) | Phase 4 merges; LTP and kyua runs. Phase 5 userland, desktop and hypervisor. |
-| 11 (Tue) | `P6-01` final merge on `pbsd-cutover`; fix round 1. |
-| 12 (Wed) | Fix rounds 2–3; full QEMU acceptance matrix; syzkaller starts. |
-| 13 (Thu) | Escalation triage 2; Wine and Android suites, first results. |
-| 14 (Fri) | Buffer; proof report; hardware test plan ready. |
+| 1 | Set up the disk layout, task database, git server and scheduler. Build the reference trees (HBSD for 3 architectures, Linux LTS, drm-kmod). Make QEMU images. Dry run of P2-01 to measure real times. All contracts, `P0-FREEZE`, P0-07 harness. Start phase 1. |
+| 2 | Phase 1 core merged and booting in QEMU on amd64 and arm64 (riscv64 weekly). Phase 2 I/O: rings, blk-mq, VFS, network, IPC. Full proofs running around the clock. |
+| 3 | Phase 2 merges and QEMU suites. Phase 3 device model, PCI, IOMMU, driver host, DRM, month-1 driver sets. Phase 4 dispatcher, Linux and BSD syscalls. |
+| 4 | Phase 4 NT user mode, Android, translation, gateways. Phase 5 userland and hypervisor. `P6-01` final merge on `pbsd-cutover`, fix rounds, full QEMU matrix. Fuzzing in leftover slots. |
+| Days 29–30 | Buffer, escalation triage, proof report, month-2 task list. |
 
-### 8.6 End of week 1 compared with end of week 2
+### 8.8 End of month
 
-End of week 1 (day 7):
-- Contracts frozen and stable.
-- Core and I/O (phases 1–2) merged, booting in QEMU on three architectures, with QEMU suites for them green.
-- The phase 3 driver wave well under way.
-
-End of week 2 (day 14):
-- Every task passed or escalated.
-- `pbsd-cutover` builds and boots on three architectures with all packages merged.
+Done:
+- Every month-1 task passed or escalated.
+- `pbsd-cutover` builds for amd64, arm64 and riscv64 and boots in QEMU.
+- Core, I/O, device model, IOMMU, driver host, DRM (amdgpu and i915), virtio, NVMe and common NIC, USB, input and audio drivers.
+- Linux and BSD syscall layers, Binder and Android, NT user mode, cross-architecture translation.
 - QEMU acceptance suites green: LTP, kyua, xfstests, liburing, blktests, packetdrill, Binder.
-- PRISM proof report published.
-- About 3 days of syzkaller run.
-- First Wine and Android results.
-- Escalations (about 250–650 tasks) triaged.
+- Full proofs on the verified core; boundary proofs elsewhere.
 
-Still after week 2:
-- Real-hardware validation and performance against Linux.
-- Full Wine conformance and Android CTS.
-- Longer fuzzing.
-- Turning runtime checks into proofs.
+Month 2:
+- The 3,130 deferred driver tasks.
+- Proofs of the runtime checks left open.
+- Real-hardware testing on the PC itself and performance comparison with Linux.
+- Full Wine and Android suites, longer fuzzing.
 - The cutover merge to `main`.
+
+## 9. Fault tolerance of the run
+
+The PC can lose power, run out of memory or crash, and the API can fail. The run has to resume where it stopped and never redo or corrupt finished work.
+
+- **Idempotent tasks.** A task's output is its branch `t/<id>` plus its status row. Rerunning a task starts again from the last commit on its branch. Gates are pure functions of the commit, so running a gate twice gives the same answer.
+- **Task database durability.** SQLite in WAL mode with `synchronous=FULL`, or Postgres with its own write-ahead log. Each state change is one transaction, written before the action it records. An `events` table is an append-only log of every lease, submit, gate result and message.
+- **Atomic commits.** Agents write into the tmpfs worktree. The harness commits and pushes to the bare repository only at the end of each turn, and a gate result is recorded only with the commit SHA it ran on. Bare repo writes use git's own atomic ref updates.
+- **RAM-to-HDD checkpoints.** Every 10 minutes, and at every turn end, the harness commits each tmpfs worktree's work-in-progress to a `wip/<id>` ref on the HDD. It also saves each agent's conversation state (messages and tool results, so far) to `state/<id>.jsonl.zst`. After a crash, at most 10 minutes of work is lost per task.
+- **Resume after crash, power loss or OOM.** On start, the scheduler:
+  1. Marks every `leased` task whose lease has expired as `ready`.
+  2. Rebuilds worktrees from `wip/<id>` refs.
+  3. Reloads conversation state.
+  4. Reruns `git fsck` on the bare repo and `PRAGMA integrity_check` on SQLite.
+  5. Continues.
+
+  A systemd unit (or rc.d script) starts the scheduler on boot.
+- **API failures.**
+  - Timeout per request: 15 minutes.
+  - Retries with exponential backoff and jitter on 429, 5xx and network errors, up to 8 tries.
+  - The client honours `Retry-After` headers.
+  - A circuit breaker halves concurrency after 20 failures in a minute and backs off for 5 minutes.
+  - A balance check stops the run cleanly when the API returns 402 (out of credit).
+  - An optional second key is used only if the first is revoked.
+- **Watchdogs.**
+  - Agent turn with no progress for 20 minutes: kill and requeue.
+  - Build over 30 minutes, test over 60 minutes, or proof over its budget: kill the job and record a timeout.
+  - QEMU guest with no console output for 10 minutes: kill it.
+- **Poison-task quarantine.** A task that crashes the harness, triggers OOM, or hits the watchdog 3 times goes to `quarantined`. It is not retried automatically. It appears in the daily escalation report with logs attached.
+- **Memory-pressure throttling.** See 8.3. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
+- **Daily backup.** At 04:00 Sydney time, during the API pause: the database dump, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
 
 ## Appendix A. One-day run (optional, 24 hours wall clock)
 
 Goal: run all 12,964 tasks at once and finish with a first full merged build on `pbsd-cutover` within 24 hours. The flattened dependencies for this option are in `deps_one_day` in `tasks.yaml` / `tasks.json`, which also carry and a `turns_budget` per task.
 
-### 8.1 Flattened graph
+### A.1 Flattened graph
 
 - **Contracts burst (hours 0–2):** all 40 `<WP>-IF` tasks start at once with no dependencies on each other. Each writes its package headers and stubs against the package list in `PBSD_PLAN.md`. Then one `P0-FREEZE` task reconciles every cross-package mismatch, builds all headers together, links all stubs, and tags `contracts-v1`.
 - **Speculative unit work (from hour 2):** every unit's `-SPEC`, `-IMPL` and `-TEST` start together right after the freeze, built against the frozen headers and stubs, not against each other's real code. IMPL works from the original source plus contracts; the spec is checked against it at review.
 - **Pipelined gates:** `-PROOF` needs only that unit's `-IMPL`. `-REVIEW` needs the unit's four tasks. `<WP>-INT` needs that package's reviews. `P6-01-INT` needs every package merge. Package merges link against the other packages' stubs, so no package waits for another package's real code.
 - **Contract changes during the day:** batched hourly into `contracts-v1.N`. Only dependants whose build breaks are re-queued.
 
-### 8.2 Critical path
+### A.2 Critical path
 
 | Step | Turn budget |
 |---|---|
@@ -297,7 +356,7 @@ Goal: run all 12,964 tasks at once and finish with a first full merged build on 
 
 Turn latency: Flash in thinking mode at about 10k output tokens per turn takes about 2–3 minutes of generation, plus 1–2 minutes of build or test tool time, so budget 5 minutes per turn. That makes 50 turns about 4.2 hours and 92 turns about 7.7 hours. The remaining ~16 hours are buffer for the escalation chain (fresh-context retry, split) on slow tasks and for queueing at the build farm.
 
-### 8.3 Infrastructure
+### A.3 Infrastructure
 
 **API concurrency.** About 10,300 unit tasks (spec, port, test, then proof and review) are live in the busy middle hours. Each task alternates between a model call and tool time, about 50/50, so about 5,000–6,000 requests are in flight at peak. One DeepSeek key allows 2,500.
 - Preferred: ask DeepSeek for a raised concurrency limit of 6,000 on one account before the run.
@@ -321,7 +380,7 @@ Notes:
 - Pre-build the Linux and HBSD reference trees for differential tests before hour 0.
 - Dry run: run one package (for example P2-01, 30 tasks) end to end the day before to measure turn latency, cache hit rate and build times. Then scale the farm.
 
-### 8.4 Peak or off-peak
+### A.4 Peak or off-peak
 
 A 24-hour weekday run crosses 7 peak hours (01:00–04:00 and 06:00–10:00 UTC, which is 12:00–15:00 and 17:00–21:00 Sydney time) at double price. Speculative work adds about 30% more tokens, because some ports are redone after spec or contract changes.
 
@@ -333,7 +392,7 @@ A 24-hour weekday run crosses 7 peak hours (01:00–04:00 and 06:00–10:00 UTC,
 
 Recommendation: start Saturday 00:00 UTC (11:00 Sydney). The whole run is off-peak and finishes Sunday morning Sydney time. Total about $7,000–11,000, mostly compute.
 
-### 8.5 What "done in a day" means
+### A.5 What "done in a day" means
 
 In the day:
 - Every task either passed its gate or escalated.
@@ -347,3 +406,89 @@ Not in the day:
 - Long fuzzing campaigns (syzkaller needs days to weeks), and turning runtime-check obligations into proofs.
 - Escalated tasks: expect 2–5%, about 250–650 tasks, for Odin to review the next day.
 - The cutover merge to `main`. That is a separate decision after hardware validation.
+
+## Appendix B. 7–14 day run on cloud machines
+
+This option uses cloud machines and one API key.
+
+### B.1 Rules
+
+- **Off-peak only.** The scheduler stops leasing new requests at 00:55 UTC and 05:55 UTC on weekdays and starts again at 04:00 and 10:00 UTC. In-flight turns may finish. In Sydney time (AEDT) the pauses are 12:00–15:00 and 17:00–21:00 on weekdays. That gives 17 working hours per weekday and 24 on weekends, about 133 hours a week.
+- **One API key.** No more than 600 tasks are active at once, which is about 300 requests in flight at 50% tool time. That is well under the 2,500 limit and leaves room for bursts to 1,000 active tasks during merges.
+- **Gated dependencies, less rework** (`deps` in `tasks.yaml`; the one-day graph is kept as `deps_one_day`):
+  - Packages run in phase waves, and each wave's contracts are proved out by the previous wave's merges. That catches contract changes early, when few tasks depend on them.
+  - Each unit runs `-SPEC` first. Then `-IMPL` and `-TEST` run in parallel from the approved spec. Then `-PROOF`, then `-REVIEW`.
+  - This cuts the speculative rework (about 30% of tokens) from the one-day plan.
+- **Cache-friendly ordering.** Tasks of one package run back to back on the one key, so the contract prefix stays cached.
+
+### B.2 Throughput
+
+All 12,964 tasks take about 73,000 agent turns, including retries. At 5 minutes per turn that is about 6,100 agent-hours. With 600 tasks active, that is about 10 off-peak hours of pure model work. The schedule is set by waves, build and test time, proof time and fix rounds, not by the API. So the plan uses a small, steady farm and spends the calendar time on validation between waves.
+
+### B.3 Infrastructure
+
+| Pool | Sizing |
+|---|---|
+| Agent tool containers | 600 at 0.25 vCPU, 1 GB (150 vCPU) |
+| Compile, with sccache on shared storage | 256 vCPU |
+| PRISM | 512 vCPU |
+| QEMU test farm (amd64, arm64, riscv64) | 64 VMs, 128 vCPU |
+| Task database, git server, object storage | One 16 vCPU VM |
+| **Total** | **About 1,050 vCPU**, for example eight 128-vCPU spot machines plus one small VM |
+
+Git: per-task branches live on a modest self-hosted git server, which can be the same 16 vCPU VM. `wp/<WP>` and `pbsd-cutover` are pushed to GitHub after each package merge, which is about 40 pushes plus fix rounds over the run and well within GitHub limits. GitHub alone also works: at about 1,000 pushes a day it is usable but slower, so batch task branches into one push per package per hour.
+
+Scale the farm down to about half between waves (days 12–14), and turn it off in peak pauses if the cloud bills by the minute.
+
+### B.4 Cost
+
+| Item | Estimate |
+|---|---|
+| API (all off-peak, gated, no speculative rework) | $1,500–2,500 |
+| Compute (about 1,050 vCPU spot, about 200 billed hours over 14 days with pauses and scale-down) | $2,000–3,500 |
+| **Total** | **$3,500–6,000** |
+
+These are estimates. `cost.jsonl` and the cloud bill after day 1 give the real rate, and the farm size can be adjusted then.
+
+### B.5 Day by day (start Saturday 00:00 UTC, 11:00 Saturday Sydney)
+
+| Day | Work |
+|---|---|
+| 1 (Sat) | Dry run of P2-01 end to end to measure turn time, cache hit and build times. All 40 contract tasks, then `P0-FREEZE`. P0-07 build, CI, PRISM and differential harness green. |
+| 2 (Sun) | Phase 1 core: boot, allocator, VM, capabilities, scheduler, locks, processes, PSI, hardening. Specs, then ports, tests, proofs. |
+| 3 (Mon) | Phase 1 reviews and merges; first QEMU boot of the core on three architectures. Phase 2 specs start. |
+| 4 (Tue) | Phase 2 I/O: rings, blk-mq, VFS, sk_buff network, IPC and Binder; ports, tests, proofs. |
+| 5 (Wed) | Phase 2 merges; liburing, blktests, xfstests and packetdrill in QEMU. Phase 3 specs and the device model, PCI, IOMMU and Linux driver host start. |
+| 6 (Thu) | Phase 3 driver sets (the largest wave, about 7,200 tasks): storage, NIC, USB, input, audio, Wi-Fi, DRM. |
+| 7 (Fri) | Phase 3 continues; batched contract-change round; escalation triage 1. |
+| 8 (Sat) | Phase 3 merges; virtio and NVMe drivers green in QEMU. Phase 4 personalities start: dispatcher, Linux and BSD syscalls. |
+| 9 (Sun) | Phase 4 NT, Android, cross-architecture translation, gateway checks. |
+| 10 (Mon) | Phase 4 merges; LTP and kyua runs. Phase 5 userland, desktop and hypervisor. |
+| 11 (Tue) | `P6-01` final merge on `pbsd-cutover`; fix round 1. |
+| 12 (Wed) | Fix rounds 2–3; full QEMU acceptance matrix; syzkaller starts. |
+| 13 (Thu) | Escalation triage 2; Wine and Android suites, first results. |
+| 14 (Fri) | Buffer; proof report; hardware test plan ready. |
+
+### B.6 End of week 1 compared with end of week 2
+
+End of week 1 (day 7):
+- Contracts frozen and stable.
+- Core and I/O (phases 1–2) merged, booting in QEMU on three architectures, with QEMU suites for them green.
+- The phase 3 driver wave well under way.
+
+End of week 2 (day 14):
+- Every task passed or escalated.
+- `pbsd-cutover` builds and boots on three architectures with all packages merged.
+- QEMU acceptance suites green: LTP, kyua, xfstests, liburing, blktests, packetdrill, Binder.
+- PRISM proof report published.
+- About 3 days of syzkaller run.
+- First Wine and Android results.
+- Escalations (about 250–650 tasks) triaged.
+
+Still after week 2:
+- Real-hardware validation and performance against Linux.
+- Full Wine conformance and Android CTS.
+- Longer fuzzing.
+- Turning runtime checks into proofs.
+- The cutover merge to `main`.
+

@@ -1,6 +1,6 @@
 # PBSD architecture and implementation plan
 
-Execution: every task runs on DeepSeek Flash through the API, on a 7–14 day off-peak schedule with one API key (one-day option in the appendix of AGENTS.md). The atomic task graph, coordination, harness, prompts and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
+Execution: every task runs on DeepSeek Flash through the API, on one 32-core PC over about 30 days (cloud options in the appendices of AGENTS.md). The atomic task graph, coordination, harness, prompts and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
 Status: draft, November 2026. Supersedes the stage plan in `docs/plans/cxx23-port-master-plan.md` for the kernel; that plan's per-file pipeline (stages A–H), handle set, envelopes and userland waves remain in force for userland.
 ## 1. Direction
 - The kernel core is rewritten clean-slate in a verified memory-safe C++23 subset, proved by PRISM as it is written. Old HBSD is not proved first as an oracle.
@@ -885,6 +885,18 @@ Reuse first: none.
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
 Done when: All acceptance suites green on amd64/arm64/riscv64; PRISM proof obligations closed for every verified-core TU. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
 ```
+
+## 6a. Fault tolerance in PBSD itself
+
+Every work package carries a `fault_tolerance` requirement in `tasks.yaml`, and every port, test, contract and merge task's acceptance gate includes fault-injection tests (allocation failure, I/O error, timeout, crash and restart). The common rules, frozen in P0-01 and P0-07:
+
+- **Errors are values.** Every fallible function returns a result type. No panic on any recoverable path. A contract violation in a release build becomes a recoverable fault in its compartment.
+- **Restartable parts.** Compartments, sandboxed drivers, fast-path Linux modules, the NT and Android services and the compositor can each be restarted. Capabilities carry a generation number, so stale handles fail closed after a restart.
+- **Transactional state.** Process, VFS metadata and capability-table updates are transactional (journal or copy-on-write).
+- **Storage integrity.** Checksums on by default (ZFS), block-layer retry and multipath failover, and read-only remount on corruption instead of panic.
+- **Watchdogs.** Soft lockup and stalled-CPU detection, hung workqueue detection, DRM GPU hang reset, I/O timeouts.
+- **Graceful degradation.** PSI pressure throttles before anything fails. The display falls back to a simple framebuffer, and a crashed fast-path driver falls back to the sandboxed path.
+- **Crash dumps.** To disk or serial. The bootloader falls back to the previous kernel after repeated failed boots.
 
 ## 7. Additional features
 
