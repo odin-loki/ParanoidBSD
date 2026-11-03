@@ -1,6 +1,6 @@
 # PBSD architecture and implementation plan
 
-Execution: every task runs on DeepSeek Flash through the API. The atomic task graph, coordination, harness, prompts and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
+Execution: every task runs on DeepSeek Flash through the API, on a 7–14 day off-peak schedule with one API key (one-day option in the appendix of AGENTS.md). The atomic task graph, coordination, harness, prompts and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
 Status: draft, November 2026. Supersedes the stage plan in `docs/plans/cxx23-port-master-plan.md` for the kernel; that plan's per-file pipeline (stages A–H), handle set, envelopes and userland waves remain in force for userland.
 ## 1. Direction
 - The kernel core is rewritten clean-slate in a verified memory-safe C++23 subset, proved by PRISM as it is written. Old HBSD is not proved first as an oracle.
