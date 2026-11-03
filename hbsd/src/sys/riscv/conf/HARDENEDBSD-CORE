@@ -1,9 +1,0 @@
-#
-# HARDENEDBSD-CORE -- kept as a name other configs already include.
-#
-# The content moved to sys/conf/std.hardenedbsd, which every architecture
-# shares. This file existed twice, once here and once under the other
-# architecture, and the two had drifted.
-
-include "std.hardenedbsd"
-include "std.hardenedbsd.debug"

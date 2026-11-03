@@ -1,4 +1,0 @@
-set -e
-if false; false; then
-	:
-fi

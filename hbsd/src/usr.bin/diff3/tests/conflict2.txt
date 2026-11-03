@@ -1,9 +1,0 @@
-#root:me@my.domain
-
-#Basicsystemaliases--theseMUSTbepresent
-MAILER-DAEMON:postmaster
-postmaster:root
-
-#Generalredirectionsforpseudoaccounts
-_dhcp:root
-_pflogd:root

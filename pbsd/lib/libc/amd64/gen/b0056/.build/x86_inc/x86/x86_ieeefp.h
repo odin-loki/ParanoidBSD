@@ -1,1 +1,0 @@
-/home/odin/pbsd/hbsd/src/sys/x86/include/x86_ieeefp.h

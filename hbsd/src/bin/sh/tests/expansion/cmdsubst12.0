@@ -1,5 +1,0 @@
-
-f() {
-	echo x$(printf foo >&2)y
-}
-[ "$(f 2>&1)" = "fooxy" ]

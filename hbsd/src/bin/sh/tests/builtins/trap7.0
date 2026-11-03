@@ -1,2 +1,0 @@
-
-[ "$(trap 'echo trapped' EXIT)" = trapped ]

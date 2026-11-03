@@ -1,6 +1,0 @@
-
-IFS=?
-set p r
-v=pqrs
-r=${v#"$*"}
-[ "$r" = pqrs ]

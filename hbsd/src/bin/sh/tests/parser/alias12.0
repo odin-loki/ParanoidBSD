@@ -1,5 +1,0 @@
-
-unalias -a
-alias alias0=command
-alias true='echo bad'
-eval 'alias0 true'

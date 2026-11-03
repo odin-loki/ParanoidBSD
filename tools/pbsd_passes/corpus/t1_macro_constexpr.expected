@@ -1,8 +1,0 @@
-@@inline constexpr auto SIZE
-@@inline constexpr auto WRAPPED
-@@inline constexpr auto CASTED
-@@inline constexpr auto GREETING
-@@#define FEATURE
-@@inline constexpr auto SKIPME
-@@inline constexpr auto PAGES
-@@#define MSG

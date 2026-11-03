@@ -1,5 +1,0 @@
-include HARDENEDBSD
-
-ident LATT-SEC
-
-options	PAX_HARDEN_KMALLOC

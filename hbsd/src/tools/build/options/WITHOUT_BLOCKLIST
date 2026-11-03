@@ -1,4 +1,0 @@
-Set this if you do not want to build
-.Xr blocklistd 8
-and
-.Xr blocklistctl 8 .
