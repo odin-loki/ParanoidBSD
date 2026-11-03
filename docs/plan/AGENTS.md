@@ -181,4 +181,84 @@ Assumptions per task: 4 turns, 60k input per turn at 80% cache hit, 10k output p
 - Output: 4 × 10k × 1.6 = 64k tokens ($0.038)
 - About $0.05 per task, about $650 for 12,963 tasks. Provers and big driver units run longer, so budget 3x: $1,500–2,500 off-peak in total, roughly double at peak. These are estimates; `cost.jsonl` gives the real figure after the first few hundred tasks.
 
-Timeline: the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+Timeline (superseded by section 8, one-day run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+
+## 8. One-day run (24 hours wall clock)
+
+Goal: run all 12,964 tasks at once and finish with a first full merged build on `pbsd-cutover` within 24 hours. This section replaces the timeline in section 7. `tasks.yaml` / `tasks.json` now carry the flattened dependencies below and a `turns_budget` per task.
+
+### 8.1 Flattened graph
+
+- **Contracts burst (hours 0–2):** all 40 `<WP>-IF` tasks start at once with no dependencies on each other. Each writes its package headers and stubs against the package list in `PBSD_PLAN.md`. Then one `P0-FREEZE` task reconciles every cross-package mismatch, builds all headers together, links all stubs, and tags `contracts-v1`.
+- **Speculative unit work (from hour 2):** every unit's `-SPEC`, `-IMPL` and `-TEST` start together right after the freeze, built against the frozen headers and stubs, not against each other's real code. IMPL works from the original source plus contracts; the spec is checked against it at review.
+- **Pipelined gates:** `-PROOF` needs only that unit's `-IMPL`. `-REVIEW` needs the unit's four tasks. `<WP>-INT` needs that package's reviews. `P6-01-INT` needs every package merge. Package merges link against the other packages' stubs, so no package waits for another package's real code.
+- **Contract changes during the day:** batched hourly into `contracts-v1.N`. Only dependants whose build breaks are re-queued.
+
+### 8.2 Critical path
+
+| Step | Turn budget |
+|---|---|
+| Package contracts (`-IF`) | 6 |
+| Freeze (`P0-FREEZE`) | 12 |
+| Port (`-IMPL`) | 8 |
+| Proof (`-PROOF`) | 8 |
+| Review (`-REVIEW`) | 4 |
+| Package merge (`-INT`) | 6 |
+| Final merge (`P6-01-INT`) | 6 |
+| **No-retry critical path** | **50 turns** |
+| Two review fix cycles (+2 × 12) | 24 |
+| Three final-merge fix rounds (+3 × 6) | 18 |
+| **Planned critical path** | **92 turns** |
+
+Turn latency: Flash in thinking mode at about 10k output tokens per turn takes about 2–3 minutes of generation, plus 1–2 minutes of build or test tool time, so budget 5 minutes per turn. That makes 50 turns about 4.2 hours and 92 turns about 7.7 hours. The remaining ~16 hours are buffer for the escalation chain (fresh-context retry, split) on slow tasks and for queueing at the build farm.
+
+### 8.3 Infrastructure
+
+**API concurrency.** About 10,300 unit tasks (spec, port, test, then proof and review) are live in the busy middle hours. Each task alternates between a model call and tool time, about 50/50, so about 5,000–6,000 requests are in flight at peak. One DeepSeek key allows 2,500.
+- Preferred: ask DeepSeek for a raised concurrency limit of 6,000 on one account before the run.
+- Otherwise: three API keys at 2,400 each, with the scheduler pinning each package to one key so a package's cached prompt prefix stays on the same key. Confirm with DeepSeek that several keys are allowed for one project.
+- Throttle when the API returns 429s; never retry tighter than exponential backoff.
+
+**Build and test farm** (cloud spot instances for one day):
+
+| Pool | Sizing | vCPU |
+|---|---|---|
+| Agent containers (tool execution, git worktrees) | 13,000 light containers at 0.25 vCPU, 1 GB | 3,300 |
+| Compile | about 5,000 builds per 5 minutes, about 30 s each on 4 vCPU, with sccache over shared object storage and remote execution (Bazel REAPI-style or distcc) | 6,000 |
+| PRISM | 2,577 provers, 8 vCPU each at about 50% duty | 10,000 |
+| QEMU test farm (amd64, arm64, riscv64) | about 500 VMs at 2 vCPU for differential and acceptance suites | 1,000 |
+| Coordination | Postgres task database, self-hosted git server (Gitea or plain git over SSH) on NVMe, object storage | 64 |
+| **Total** | | **about 20,000 vCPU, 60–80 TB-hours of RAM** |
+
+Notes:
+- Run git on the self-hosted server during the day. GitHub cannot take tens of thousands of branch pushes an hour. Push `pbsd-cutover` and the task log to GitHub at the end.
+- Warm sccache with a full build of the headers and stubs during the contracts burst.
+- Pre-build the Linux and HBSD reference trees for differential tests before hour 0.
+- Dry run: run one package (for example P2-01, 30 tasks) end to end the day before to measure turn latency, cache hit rate and build times. Then scale the farm.
+
+### 8.4 Peak or off-peak
+
+A 24-hour weekday run crosses 7 peak hours (01:00–04:00 and 06:00–10:00 UTC, which is 12:00–15:00 and 17:00–21:00 Sydney time) at double price. Speculative work adds about 30% more tokens, because some ports are redone after spec or contract changes.
+
+| Run window | API cost |
+|---|---|
+| Saturday or Sunday, start 00:00 UTC (11:00 Sydney) | $2,000–3,300 (all off-peak) |
+| Weekday | $2,600–4,300 |
+| Compute farm, 20,000 vCPU for 24 h on spot | about $5,000–8,000 |
+
+Recommendation: start Saturday 00:00 UTC (11:00 Sydney). The whole run is off-peak and finishes Sunday morning Sydney time. Total about $7,000–11,000, mostly compute.
+
+### 8.5 What "done in a day" means
+
+In the day:
+- Every task either passed its gate or escalated.
+- `pbsd-cutover` builds for amd64, arm64 and riscv64 and boots in QEMU.
+- Every package acceptance suite that runs in QEMU is green: LTP, kyua, xfstests, liburing, blktests, packetdrill, binder selftests and virtio drivers.
+- PRISM obligations are proved, or listed as runtime checks with a reason.
+
+Not in the day:
+- Real-hardware validation: GPUs, NICs, Wi-Fi, USB, IOMMU attack tests and the performance benchmarks against Linux.
+- Full Wine conformance, Android CTS and Windows kernel-mode drivers. These suites need longer than the day; first results only.
+- Long fuzzing campaigns (syzkaller needs days to weeks), and turning runtime-check obligations into proofs.
+- Escalated tasks: expect 2–5%, about 250–650 tasks, for Odin to review the next day.
+- The cutover merge to `main`. That is a separate decision after hardware validation.
