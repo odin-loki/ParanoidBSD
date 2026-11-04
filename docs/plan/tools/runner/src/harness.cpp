@@ -1,63 +1,225 @@
-// One task end to end: tmpfs sparse worktree, layered prompt, tool-calling turns with DeepSeek
-// Flash, WIP checkpoints, commit to t/<id>, acceptance gate via a NUMA-pinned watchdogged job.
+// One task end to end (AGENTS.md sections 2, 5 and 9):
+//  1. a tmpfs worktree on t/<id>, cut from wp/<WP> after wp/<WP> has merged the integrated branch, so
+//     a task sees every dependency's output; big reference trees stay out (read_file "ref:..." instead);
+//  2. a layered, cache-friendly prompt plus the messages addressed to this task;
+//  3. tool-calling turns on the role's model tier; writes only inside the task's owned paths;
+//  4. the acceptance gate on a committed SHA, in a sandbox without secrets (or on a cloud worker);
+//     any write after a passing gate invalidates it;
+//  5. on success a deterministic merge: t/<id> into wp/<WP>; integrators and -IF tasks then merge
+//     wp/<WP> into the integration branch. Reviewers return a verdict that can reopen the unit.
 #include "common.hpp"
-#include <filesystem>
-#include <fstream>
-#include <sstream>
+#include <algorithm>
 #include <cctype>
-#include <thread>
 #include <condition_variable>
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <thread>
 
+extern char** environ;
 namespace fs = std::filesystem;
 namespace pbsd {
 namespace {
 std::string slurp(const fs::path& p, size_t max = 400000) {
-  std::ifstream f(p, std::ios::binary); std::string s((std::istreambuf_iterator<char>(f)), {});
-  if (s.size() > max) s.resize(max); return s;
+  std::ifstream f(p, std::ios::binary);
+  std::string s((std::istreambuf_iterator<char>(f)), {});
+  if (s.size() > max) s.resize(max);
+  return s;
 }
 std::string sh(const std::string& cwd, const std::vector<std::string>& a, int to = 600) { return run_job(a, -1, to, cwd, 0).tail; }
+std::string trim(std::string s) {
+  while (!s.empty() && std::isspace((unsigned char)s.back())) s.pop_back();
+  size_t i = 0; while (i < s.size() && std::isspace((unsigned char)s[i])) ++i;
+  return s.substr(i);
+}
+std::vector<std::string> expand_braces(const std::string& s) {
+  auto a = s.find('{'); if (a == std::string::npos) return {s};
+  auto b = s.find('}', a); if (b == std::string::npos) return {s};
+  std::vector<std::string> out; std::string mid = s.substr(a + 1, b - a - 1), part; std::istringstream is(mid);
+  while (std::getline(is, part, ','))
+    for (auto& r : expand_braces(s.substr(0, a) + trim(part) + s.substr(b + 1))) out.push_back(r);
+  return out;
+}
+// A relative path that stays inside root (no absolute paths, no "..", no symlink escape).
+std::optional<fs::path> in_tree(const fs::path& root, const std::string& rel) {
+  if (rel.empty() || rel[0] == '/' || rel.find("..") != std::string::npos || rel.find('\0') != std::string::npos) return std::nullopt;
+  std::error_code ec;
+  fs::path r = fs::weakly_canonical(root, ec), p = fs::weakly_canonical(root / rel, ec);
+  if (ec) return std::nullopt;
+  auto [ra, pa] = std::mismatch(r.begin(), r.end(), p.begin(), p.end());
+  if (ra != r.end()) return std::nullopt;
+  return p;
+}
 bool owned(const json& t, const std::string& rel) {
-  if (rel.find("..") != std::string::npos) return false;
-  for (auto& o : t["owns"]) { std::string p = o; if (!p.empty() && p.back() == '*') p.pop_back(); if (rel.rfind(p, 0) == 0) return true; }
+  if (rel.empty() || rel[0] == '/' || rel.find("..") != std::string::npos) return false;
+  for (auto& p : owns_list(t)) {
+    if (p.ends_with("/") ? rel.rfind(p, 0) == 0 : rel == p) return true;
+    // "dir/name.*" owns every file of that stem in that directory
+    if (p.ends_with(".*") && rel.rfind(p.substr(0, p.size() - 1), 0) == 0 && rel.find('/', p.size() - 1) == std::string::npos) return true;
+  }
   return false;
 }
 // Which slot class and NUMA node a gate uses.
 std::pair<std::string, int> gate_slot(const std::string& role, const Config& c) {
   std::string k = role == "prover" ? "proof" : role == "integrator" ? "qemu" : "compile";
-  return {k, c.slots.at(k).node};
+  return {k, c.slots.count(k) ? c.slots.at(k).node : -1};
 }
 int gate_timeout(const json& t, const std::string& kind, const Config& c) {
   if (kind == "proof") return 60 * t.value("proof_budget_minutes", 60);
   return kind == "qemu" ? c.qemu_watchdog_s : c.build_watchdog_s;
 }
-json tools_schema() {
+json tools_schema(const std::string& role, bool lean = false) {
   auto fn = [](const char* n, const char* d, json props, std::vector<std::string> req) {
     return json{{"type", "function"}, {"function", {{"name", n}, {"description", d},
       {"parameters", {{"type", "object"}, {"properties", props}, {"required", req}}}}}};
   };
+  json str = {{"type", "string"}}, num = {{"type", "integer"}};
+  json submit_props = {{"summary", str}};
+  std::vector<std::string> submit_req{"summary"};
+  if (role == "reviewer") {
+    submit_props["verdict"] = {{"type", "string"}, {"enum", {"approve", "changes"}}};
+    submit_props["findings"] = {{"type", "array"}, {"items", {{"type", "object"}, {"properties",
+      {{"target", {{"type", "string"}, {"enum", {"spec", "impl", "test", "proof"}}}}, {"file", str}, {"line", num}, {"issue", str}}}}}};
+    submit_req.push_back("verdict");
+  }
   return json::array({
-    fn("read_file", "Read a file in the worktree", {{"path", {{"type", "string"}}}}, {"path"}),
-    fn("write_file", "Write a file inside this task's owned paths", {{"path", {{"type", "string"}}}, {"content", {{"type", "string"}}}}, {"path", "content"}),
-    fn("list_dir", "List a directory in the worktree", {{"path", {{"type", "string"}}}}, {"path"}),
-    fn("run_gate", "Run this task's acceptance gate (build, tests incl. fault injection, proof); returns the log tail", json::object(), {}),
-    fn("post_message", "Post to the message board (question, contract_change, review, failure, handoff)",
-       {{"kind", {{"type", "string"}}}, {"body", {{"type", "string"}}}}, {"kind", "body"}),
-    fn("submit", "Finish the task when the gate passes", {{"summary", {{"type", "string"}}}}, {"summary"})});
+    fn("read_file", "Read a file: a worktree path, or ref:<tree>/<path> for a read-only reference tree (ref:linux/..., ref:wine/...). Optional line range.",
+       {{"path", str}, {"start_line", num}, {"end_line", num}}, {"path"}),
+    fn("list_dir", "List a directory (worktree path or ref:<tree>/<path>)", {{"path", str}}, {"path"}),
+    fn("grep", "Search files under a path for a regular expression (worktree or ref:<tree>/<path>); returns up to 200 matching lines",
+       {{"pattern", str}, {"path", str}}, {"pattern", "path"}),
+    fn("write_file", "Create or replace a file inside this task's owned paths; append=true adds to the end (write a large file in parts)",
+       {{"path", str}, {"content", str}, {"append", {{"type", "boolean"}}}}, {"path", "content"}),
+    fn("edit_file", "Replace one exact, unique occurrence of old_text with new_text in an owned file",
+       {{"path", str}, {"old_text", str}, {"new_text", str}}, {"path", "old_text", "new_text"}),
+    fn("run_gate", "Commit the owned files and run this task's acceptance gate (build, tests incl. fault injection, proofs); returns the log tail. Any later write invalidates the result.",
+       json::object(), {}),
+    fn("post_message", "Post a typed message. to: a task id, or spec|impl|test|proof|if (this unit's or package's task). kind: question, contract_change_request, review_findings, test_failure, proof_failure, handoff",
+       {{"to", str}, {"kind", str}, {"body", str}}, {"to", "kind", "body"}),
+    fn("read_messages", "Read the messages addressed to this task or its package", json::object(), {}),
+    fn("lean_prove", "Prove one Lean 4 theorem with the local Lean prover model: the statement is appended to the owned .lean file, the prover writes the proof, Lean checks it; on success the file is updated. State small lemmas and prove them one at a time.",
+       {{"file", str}, {"statement", str}}, {"file", "statement"}),
+    fn("submit", role == "reviewer" ? "Finish the review: verdict approve, or changes with findings (each names the task to reopen)"
+                                    : "Finish the task; accepted only if the gate passed on the current tree", submit_props, submit_req)});
+}
+// Task source as text. Formats: "hbsd/src/...c" (repository path), "linux:<path>" (file or directory
+// in ref_roots["linux"]), "<tree>:<dir> part k/N" (slice k of N: the directory's .c/.h/.S files sorted
+// by path, concatenated, cut into N equal line ranges). Descriptive sources return the text only.
+std::string load_source(const json& t, const Config& c, size_t max_chars) {
+  if (!t.contains("source") || !t["source"].is_string()) return "";
+  std::string s = t["source"];
+  static const std::regex part_re(R"(^(.*) part (\d+)/(\d+)$)");
+  std::smatch m; int k = 0, n = 0;
+  std::string spec = s;
+  if (std::regex_match(s, m, part_re)) { spec = m[1]; k = std::stoi(m[2]); n = std::stoi(m[3]); }
+  fs::path root = c.repo; std::string rel = spec;
+  if (auto colon = spec.find(':'); colon != std::string::npos && spec.find('/') > colon) {
+    auto it = c.ref_roots.find(spec.substr(0, colon));
+    if (it == c.ref_roots.end()) return "(source tree '" + spec.substr(0, colon) + "' is not configured in ref_roots: " + s + ")";
+    root = it->second; rel = spec.substr(colon + 1);
+  }
+  auto p = in_tree(root, rel);
+  if (!p || !fs::exists(*p)) return "(source not found on disk: " + s + "; find the files with list_dir/grep and record them in the spec)";
+  std::vector<fs::path> files;
+  if (fs::is_regular_file(*p)) files.push_back(*p);
+  else for (auto& e : fs::recursive_directory_iterator(*p, fs::directory_options::skip_permission_denied)) {
+    auto x = e.path().extension().string();
+    if (e.is_regular_file() && (x == ".c" || x == ".h" || x == ".S")) files.push_back(e.path());
+  }
+  std::sort(files.begin(), files.end());
+  std::vector<std::pair<fs::path, std::vector<std::string>>> lines; size_t total = 0;
+  for (auto& f : files) { std::ifstream in(f); std::vector<std::string> v; std::string l; while (std::getline(in, l)) v.push_back(l); total += v.size(); lines.emplace_back(f, std::move(v)); }
+  size_t lo = 0, hi = total;
+  if (n > 0 && k >= 1 && k <= n) { lo = total * size_t(k - 1) / size_t(n); hi = total * size_t(k) / size_t(n); }
+  std::string out = std::format("Source {} (lines {}-{} of {} over {} files)\n", s, lo + 1, hi, total, files.size());
+  size_t at = 0;
+  for (auto& [f, v] : lines) {
+    size_t a = std::max(lo, at), b = std::min(hi, at + v.size());
+    if (a < b) {
+      out += std::format("// ---- {} lines {}-{}\n", fs::relative(f, root).string(), a - at + 1, b - at);
+      for (size_t i = a; i < b && out.size() < max_chars; ++i) out += v[i - at] + "\n";
+    }
+    at += v.size();
+    if (out.size() >= max_chars) { out += "\n[source truncated; read the rest with read_file]\n"; break; }
+  }
+  return out;
+}
+std::string rev(const Config& c, const std::string& ref) {
+  auto r = run_job({"git", "rev-parse", "--verify", "-q", ref + "^{commit}"}, -1, 60, c.repo, 0);
+  return r.code == 0 ? trim(r.tail) : "";
+}
+// Unit id prefix of a task: P1-02-U001-IMPL -> P1-02-U001.
+std::string unit_of(const std::string& id) { auto d = id.rfind('-'); return d == std::string::npos ? id : id.substr(0, d); }
+std::string resolve_to(const json& t, const std::string& to) {
+  const std::string id = t["id"], wp = t.value("wp", "");
+  if (to == "spec" || to == "impl" || to == "test" || to == "proof" || to == "review") {
+    std::string up = to; std::transform(up.begin(), up.end(), up.begin(), ::toupper); return unit_of(id) + "-" + up;
+  }
+  if (to == "if" || to == "decomposer") return wp + "-IF";
+  return to;
 }
 }  // namespace
 
-// ---- gate admission. Without it, 100+ agents would start 100+ builds and proofs on 32 cores.
+std::vector<std::string> owns_list(const json& t) {
+  std::vector<std::string> raw, out;
+  if (!t.contains("owns")) return out;
+  if (t["owns"].is_array()) { for (auto& o : t["owns"]) if (o.is_string()) raw.push_back(o); }
+  else if (t["owns"].is_string()) {   // comma-separated, commas inside {...} kept
+    std::string s = t["owns"], cur; int depth = 0;
+    for (char ch : s) { if (ch == '{') ++depth; if (ch == '}') --depth; if (ch == ',' && depth == 0) { raw.push_back(cur); cur.clear(); } else cur += ch; }
+    raw.push_back(cur);
+  }
+  for (auto& r : raw) {
+    std::string s = trim(r);
+    if (s.empty() || s == "-" || s.find(' ') != std::string::npos || s.find('<') != std::string::npos) continue;
+    for (auto e : expand_braces(s)) { if (e.ends_with("*") && !e.ends_with(".*")) e.pop_back(); if (!e.empty()) out.push_back(e); }
+  }
+  return out;
+}
+
+std::string role_tier(const json& t, const Config& c) {
+  if (t.contains("tier") && t["tier"].is_string()) return t["tier"];
+  if (t.value("_attempt", 1) >= c.escalate_at) return c.escalate_tier;
+  auto it = c.role_tier.find(t.value("role", ""));
+  return it != c.role_tier.end() ? it->second : c.default_tier;
+}
+
+std::string merge_branch(const Config& c, const std::string& dst, const std::string& src, const std::string& msg) {
+  static std::mutex mm; std::lock_guard g(mm);
+  const std::string d = rev(c, "refs/heads/" + dst), s = rev(c, "refs/heads/" + src);
+  if (s.empty()) return "no branch " + src;
+  auto git = [&](std::vector<std::string> a) { a.insert(a.begin(), {"git", "-c", "user.name=pbsd-runner", "-c", "user.email=runner@pbsd.local"}); return run_job(a, -1, 600, c.repo, 0); };
+  if (d.empty()) { auto r = git({"update-ref", "refs/heads/" + dst, s, ""}); return r.code == 0 ? "" : "update-ref failed: " + r.tail; }
+  if (git({"merge-base", "--is-ancestor", s, d}).code == 0) return "";                       // already merged
+  std::string target;
+  if (git({"merge-base", "--is-ancestor", d, s}).code == 0) target = s;                    // fast-forward
+  else {
+    auto mt = git({"merge-tree", "--write-tree", "--messages", d, s});
+    if (mt.code != 0) return "merge conflict merging " + src + " into " + dst + ":\n" + mt.tail.substr(0, 4000);
+    std::string tree = trim(mt.tail.substr(0, mt.tail.find('\n')));
+    auto ct = git({"commit-tree", tree, "-p", d, "-p", s, "-m", msg});
+    if (ct.code != 0) return "commit-tree failed: " + ct.tail;
+    target = trim(ct.tail);
+  }
+  auto u = git({"update-ref", "refs/heads/" + dst, target, d});                             // compare-and-swap
+  return u.code == 0 ? "" : "update-ref failed: " + u.tail;
+}
+
+// ---- gate admission. Without it, hundreds of agents would start hundreds of builds and proofs at once.
 namespace {
 std::mutex g_gm; std::condition_variable g_gcv;
 std::map<std::string, int> g_gbusy; int g_burst_busy = 0;
-std::map<std::string, int> g_wbusy; std::vector<Worker> g_workers; long g_workers_at = 0;
+std::map<std::string, int> g_wbusy; std::vector<Worker> g_workers; double g_workers_at = 0;
 }
 std::vector<Worker> load_workers(const std::string& path) {
   std::vector<Worker> w; std::ifstream f(path); std::string line;
   while (std::getline(f, line)) {
     if (line.empty() || line[0] == '#') continue;
-    std::istringstream is(line); Worker x; if (is >> x.host >> x.slots && x.slots > 0) w.push_back(x);
+    std::istringstream is(line); Worker x; std::string flag;
+    if (is >> x.host >> x.slots && x.slots > 0) { while (is >> flag) if (flag == "kvm") x.kvm = true; w.push_back(x); }
   }
   return w;
 }
@@ -65,14 +227,17 @@ GateLease gate_acquire(const std::string& kind, const Config& c) {
   std::unique_lock l(g_gm);
   const int cap = c.slots.count(kind) ? c.slots.at(kind).count : 1;
   for (;;) {
-    if (g_gbusy[kind] < cap) { ++g_gbusy[kind]; return {kind, false}; }
+    if (g_gbusy[kind] < cap) { ++g_gbusy[kind]; return {kind, false, ""}; }
     if (!c.workers_file.empty()) {
       if (now() - g_workers_at > 30) { g_workers = load_workers(c.workers_file); g_workers_at = now(); }
       const Worker* best = nullptr; double load = 1.0;
-      for (auto& w : g_workers) { double l = double(g_wbusy[w.host]) / w.slots; if (l < load) { load = l; best = &w; } }
+      for (auto& w : g_workers) {
+        if (kind == "qemu" && !w.kvm) continue;   // QEMU without KVM is far too slow for a gate
+        double x = double(g_wbusy[w.host]) / w.slots; if (x < load) { load = x; best = &w; }
+      }
       if (best) { ++g_wbusy[best->host]; return {kind, true, best->host}; }
     }
-    if (!c.burst_cmd.empty() && g_burst_busy < c.burst_slots) { ++g_burst_busy; return {kind, true}; }
+    if (!c.burst_cmd.empty() && g_burst_busy < c.burst_slots) { ++g_burst_busy; return {kind, true, ""}; }
     g_gcv.wait_for(l, std::chrono::seconds(5));
   }
 }
@@ -84,41 +249,100 @@ std::string gate_status(const Config& c) {
   std::lock_guard l(g_gm);
   std::string s = "  gates";
   for (const char* k : {"compile", "qemu", "proof"})
-    if (c.slots.count(k)) s += std::format("  {} {}/{}", k, g_gbusy[k], c.slots.at(k).count);
+    if (c.slots.count(k) && c.slots.at(k).count > 0) s += std::format("  {} {}/{}", k, g_gbusy[k], c.slots.at(k).count);
   if (c.burst_slots) s += std::format("  burst {}/{}", g_burst_busy, c.burst_slots);
-  for (auto& w : g_workers) s += std::format("  {} {}/{}", w.host, g_wbusy[w.host], w.slots);
+  int busy = 0, all = 0;
+  for (auto& w : g_workers) { busy += g_wbusy[w.host]; all += w.slots; }
+  if (!g_workers.empty()) s += std::format("  workers {} ({}/{} slots)", g_workers.size(), busy, all);
   return s + "\n";
 }
 
+// lean_prove: sample proofs from the local Lean prover and keep the first one Lean accepts.
+// The candidate is the owned file plus the statement plus the prover's proof; it is checked with
+// `lake env lean` in the file's Lake project, in a scrubbed environment. Code that runs at elaboration
+// time (#eval, run_cmd, IO, unsafe, extern, ...) is refused before it is checked.
+std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& stmt, Db& db) {
+  static const std::regex bad(R"((#eval|#exit|run_cmd|run_elab|run_meta|\bIO\b|unsafe|@\[extern|implemented_by|initialize|native_decide|\bsorry\b|\badmit\b|^\s*axiom\s))");
+  fs::path proj = file.parent_path();
+  while (proj != wt && !fs::exists(proj / "lakefile.lean") && !fs::exists(proj / "lakefile.toml")) proj = proj.parent_path();
+  if (proj == wt) return "no Lake project (lakefile.lean or lakefile.toml) above " + file.string();
+  const std::string header = fs::exists(file) ? slurp(file, 4u << 20) : std::string();
+  std::string feedback, best_err;
+  auto env = gate_env("");
+  for (int round = 0; round < std::max(1, c.lean_rounds); ++round) {
+    for (int k = 0; k < std::max(1, c.lean_samples); ++k) {
+      std::string prompt = "Complete the following Lean 4 code:\n\n```lean4\n" + header + "\n" + stmt + " := by\n```" +
+                           (feedback.empty() ? "" : "\n\nA previous attempt failed with these Lean errors; fix them:\n" + feedback);
+      json body{{"model", c.lean_prover_model}, {"messages", json::array({{{"role", "user"}, {"content", prompt}}})},
+                {"max_tokens", c.lean_max_tokens}, {"temperature", 0.8}};
+      std::string url = c.lean_prover_url; while (!url.empty() && url.back() == '/') url.pop_back();
+      Http r = http_post(url + "/chat/completions", body.dump(), "", 3600);
+      if (r.conn_error || r.code != 200) return "local Lean prover unavailable (" + std::to_string(r.code) + "); try again later";
+      json j = json::parse(r.body, nullptr, false);
+      std::string out = j.is_discarded() ? "" : j["choices"][0]["message"].value("content", "");
+      auto a = out.rfind("```lean4"); if (a == std::string::npos) a = out.rfind("```lean");
+      if (a == std::string::npos) continue;
+      auto b = out.find("```", out.find('\n', a)); if (b == std::string::npos) continue;
+      std::string code = out.substr(out.find('\n', a) + 1, b - out.find('\n', a) - 1);
+      std::string cand = code.find(header.substr(0, std::min<size_t>(header.size(), 200))) == 0 && !header.empty() ? code : header + "\n" + code;
+      if (!header.empty() && cand.compare(0, header.size(), header) != 0) continue;   // the prover may not rewrite earlier text
+      if (std::regex_search(cand.substr(header.size()), bad)) { best_err = "candidate used a refused construct"; continue; }
+      fs::path tmp = file.parent_path() / (".pbsd_try_" + std::to_string(getpid()) + "_" + std::to_string(k) + ".lean");
+      std::ofstream(tmp) << cand;
+      std::vector<std::string> argv{"lake", "env", "lean", fs::relative(tmp, proj).string()};
+      if (!c.gate_wrap.empty()) argv.insert(argv.begin(), c.gate_wrap.begin(), c.gate_wrap.end());
+      auto chk = run_job(argv, -1, c.lean_check_timeout_s, proj.string(), 500, &env);
+      fs::remove(tmp);
+      db.event(t["id"], "lean_prove", json{{"round", round}, {"sample", k}, {"code", chk.code}});
+      if (chk.code == 0 && chk.tail.find("sorry") == std::string::npos && chk.tail.find("error") == std::string::npos) {
+        std::ofstream(file, std::ios::trunc) << cand;
+        return "proved and written to " + fs::relative(file, wt).string();
+      }
+      if (best_err.empty() || chk.tail.size() < best_err.size()) best_err = chk.tail.substr(0, 6000);
+    }
+    feedback = best_err;
+  }
+  return "not proved after " + std::to_string(c.lean_samples * c.lean_rounds) + " samples; best attempt's Lean errors:\n" + best_err +
+         "\nSplit the statement into smaller lemmas and prove them first.";
+}
+
 TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot) {
-  TaskOutcome out{Result::failed, {}};
-  const std::string id = t["id"], role = t["role"], branch = "t/" + id;
+  TaskOutcome out{Result::failed, {}, ""};
+  const std::string id = t["id"], role = t["role"], wp = t.value("wp", std::string("misc")), branch = "t/" + id;
   const int attempt = t.value("_attempt", 1);
-  // 1. Worktree in tmpfs (PBSD_WT, default /run/pbsd/wt), sparse to owned paths plus the contract headers.
+  const std::string tier = role_tier(t, c);
+  const auto owns = owns_list(t);
+  // 1. Worktree in tmpfs (PBSD_WT). The package branch first takes in the integration branch, so a
+  //    task sees its dependencies' merged output and every integrated upstream package.
   const char* wtroot = getenv("PBSD_WT");
   fs::path wt = fs::path(wtroot ? wtroot : "/run/pbsd/wt") / id;
   fs::create_directories(wt.parent_path());
   if (!fs::exists(wt)) {
+    const std::string wpb = "wp/" + wp;
+    if (rev(c, "refs/heads/" + wpb).empty()) {
+      std::string from = rev(c, "refs/heads/" + c.merge_target); if (from.empty()) from = rev(c, "HEAD");
+      run_job({"git", "update-ref", "refs/heads/" + wpb, from, ""}, -1, 60, c.repo, 0);
+    }
+    if (!rev(c, "refs/heads/" + c.merge_target).empty()) {
+      if (auto e = merge_branch(c, wpb, c.merge_target, "sync " + wpb + " with " + c.merge_target); !e.empty()) db.event(id, "sync_conflict", e);
+    }
     sh(c.repo, {"git", "worktree", "prune"});
-    // Resume from wip/<id> if a checkpoint exists, else from t/<id>, else from the package branch.
-    std::string base = sh(c.repo, {"git", "rev-parse", "--verify", "-q", "wip/" + id}).empty() ? "" : "wip/" + id;
-    if (base.empty() && !sh(c.repo, {"git", "rev-parse", "--verify", "-q", branch}).empty()) base = branch;
-    if (base.empty()) base = "wp/" + t["wp"].get<std::string>();
+    // Resume from wip/<id> if a checkpoint exists, else from t/<id> (merged with the package branch), else the package branch.
+    std::string base = !rev(c, "refs/heads/wip/" + id).empty() ? "wip/" + id : !rev(c, "refs/heads/" + branch).empty() ? branch : wpb;
+    if (base != wpb) {   // a retry or a reopened task also takes in what its package merged since
+      if (auto e = merge_branch(c, base, wpb, "refresh " + id + " from " + wpb); !e.empty()) db.event(id, "refresh_conflict", e);
+    }
     sh(c.repo, {"git", "worktree", "add", "--no-checkout", "-B", branch, wt.string(), base});
-    std::vector<std::string> sp{"git", "sparse-checkout", "set", "--no-cone", "/pbsd/kernel/include/"};
-    for (auto& o : t["owns"]) sp.push_back("/" + o.get<std::string>());
-    sh(wt.string(), sp); sh(wt.string(), {"git", "checkout"});
+    std::vector<std::string> sp{"git", "sparse-checkout", "set", "--no-cone"};
+    for (auto& p : c.wt_sparse) sp.push_back(p);
+    sh(wt.string(), sp); sh(wt.string(), {"git", "checkout", "-q"});
+    if (!fs::exists(wt / ".git")) { db.event(id, "worktree_failed", base); out.r = Result::infra; return out; }
   }
-  // 2. Layered prompt: global, role, package contracts, unit source, then the variable tail (cache-friendly).
+  // 2. Layered prompt: global rules, role template, contract list, unit source, then the variable tail.
   fs::path plan = fs::path(c.repo) / "docs/plan";
-  // Full prompt (API, large context) or compact prompt (local model, ctx_per_slot tokens): the
-  // compact one sends the role template, the task and file lists; the agent reads what it needs.
   const size_t ctx_chars = size_t(c.ctx_per_slot) * 4;
-  // Compact for both backends: with the API it keeps every request's stable prefix small and
-  // byte-identical (cache hits bill at $0.03/1M instead of $0.15/1M); agents open headers on demand.
-  const bool compact = c.compact_prompt;
   std::string global, agents;
-  if (compact) {   // AGENTS.md section 6: the shared prefix and this role's template only
+  {
     std::string all = slurp(plan / "AGENTS.md", 400000);
     auto block = [&](const std::string& marker) {
       auto a = all.find(marker); if (a == std::string::npos) return std::string();
@@ -126,97 +350,216 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
     };
     global = block("You are one agent in the PBSD build.");
     agents = block("Role: " + role + ".");
-  } else {
-    global = slurp(plan / "PBSD_PLAN.md", 120000);
-    agents = slurp(plan / "AGENTS.md", 60000);
   }
-  std::string contracts; for (auto& e : fs::recursive_directory_iterator(wt / "pbsd/kernel/include", fs::directory_options::skip_permission_denied))
-    if (e.is_regular_file()) contracts += compact ? e.path().lexically_relative(wt).string() + "\n"
-                                                  : "// " + e.path().string() + "\n" + slurp(e.path(), 40000);
-  std::string source; if (t.contains("source")) for (auto& s : (t["source"].is_array() ? t["source"] : json::array({t["source"]})))
-    if (s.is_string() && fs::exists(fs::path(c.repo) / s.get<std::string>())) source += slurp(fs::path(c.repo) / s.get<std::string>(), compact ? ctx_chars / 4 : 200000);
+  std::vector<std::string> headers;
+  if (fs::exists(wt / "pbsd/kernel/include"))
+    for (auto& e : fs::recursive_directory_iterator(wt / "pbsd/kernel/include", fs::directory_options::skip_permission_denied))
+      if (e.is_regular_file()) headers.push_back(e.path().lexically_relative(wt).string());
+  std::sort(headers.begin(), headers.end());   // byte-stable for the prompt cache
+  std::string contracts; for (auto& h : headers) contracts += h + "\n";
+  std::string source = load_source(t, c, ctx_chars / 4);
+  json task = t; task.erase("_attempt"); task.erase("deps_one_day");
+  std::string inbox; for (auto& m : db.messages_for(id, wp)) inbox += m.dump() + "\n";
   json msgs = json::array({
-    {{"role", "system"}, {"content", (compact ? "PBSD agent rules:\n" : "PBSD plan:\n") + global}},
-    {{"role", "system"}, {"content", "Agent rules and role templates:\n" + agents + "\nYour role: " + role}},
-    {{"role", "system"}, {"content", (compact ? "Frozen contract headers (read_file to open):\n" : "Frozen contracts:\n") + contracts.substr(0, compact ? ctx_chars / 16 : 300000)}},
+    {{"role", "system"}, {"content", "PBSD agent rules:\n" + global}},
+    {{"role", "system"}, {"content", "Role template:\n" + agents + "\nYour role: " + role}},
+    {{"role", "system"}, {"content", "Frozen contract headers (read_file to open):\n" + contracts.substr(0, ctx_chars / 16)}},
     {{"role", "user"}, {"content", "Unit source:\n" + source}},
-    {{"role", "user"}, {"content", std::string("Task:\n") + t.dump(2) + "\nAttempt " + std::to_string(attempt) +
-      (attempt >= 5 ? ". This task has failed repeatedly: if it is too large, post a handoff message proposing a split." : "")}}});
+    {{"role", "user"}, {"content", "Task:\n" + task.dump(2) + "\nOwned paths (the only ones you may write): " + json(owns).dump() +
+      "\nAttempt " + std::to_string(attempt) + (inbox.empty() ? "" : "\nMessages for you:\n" + inbox) +
+      (attempt >= 5 ? "\nThis task has failed repeatedly: if it is too large, post a handoff message proposing a split." : "")}}});
   // Conversation state saved for resume (fresh context from attempt 3).
   fs::path state = fs::path(c.state_dir) / "conv" / (id + ".json");
   fs::create_directories(state.parent_path());
-  if (attempt < 3 && fs::exists(state)) { json s = json::parse(slurp(state), nullptr, false); if (s.is_array()) msgs = s; }
+  if (attempt < 3 && fs::exists(state)) { json s = json::parse(slurp(state, 64 << 20), nullptr, false); if (s.is_array()) msgs = s; }
 
   auto [kind, node] = gate_slot(role, c);
-  double last_ck = now(), turn_start = now();
+  const int max_turns = c.role_max_turns.count(role) ? c.role_max_turns.at(role) : c.max_turns;
+  double last_ck = now(), task_start = now();
   bool gate_ok = false;
-  json tools = tools_schema();
-  for (int turn = 0; turn < c.max_turns; ++turn) {
+  json tools = tools_schema(role, false);
+  if (role == "prover" && !c.lean_prover_url.empty()) tools = tools_schema(role, true);
+  else tools.erase(std::remove_if(tools.begin(), tools.end(), [](const json& x) { return x["function"]["name"] == "lean_prove"; }), tools.end());
+  auto commit = [&](std::string m) {
+    if (m.ends_with(" gate")) {   // the proof gate checks annotation-only diffs against this base
+      std::string base = trim(sh(wt.string(), {"git", "merge-base", "HEAD", "refs/heads/wp/" + wp}));
+      if (!base.empty()) m += "\n\nPBSD-Base: " + base;
+    }
+    // Stage only owned paths, one at a time: one missing path must not stop the others.
+    for (auto& p : owns) sh(wt.string(), {"git", "add", "-A", "--", p.ends_with(".*") ? ":(glob)" + p : p});
+    sh(wt.string(), {"git", "-c", "user.name=pbsd-agent", "-c", "user.email=agent@pbsd.local", "commit", "-q", "--allow-empty", "-m", m});
+    return trim(sh(wt.string(), {"git", "rev-parse", "HEAD"}));
+  };
+  auto finish_state = [&] {
+    sh(wt.string(), {"git", "update-ref", "refs/heads/wip/" + id, "HEAD"});
+    std::ofstream(state) << msgs.dump();
+  };
+  bool compacted_hard = false;
+  for (int turn = 0; turn < max_turns; ++turn) {
     db.heartbeat(id, c.lease_s);
     Usage u;
-    // Leave room for the reply inside this slot's context.
     const int reply = c.backend == "api" ? c.api_max_tokens : c.max_tokens;
-    if (int n = compact_history(msgs, size_t(std::max(4096, c.ctx_per_slot - reply - 1024))))
-      db.event(id, "compacted", n);
-    auto r = api.chat(msgs, tools, u, role, slot, t.value("wp", std::string()));
+    size_t budget = size_t(std::max(4096, c.ctx_per_slot - reply - 1024));
+    if (compacted_hard) budget /= 2;
+    if (int n = compact_history(msgs, budget)) db.event(id, "compacted", n);
+    auto r = api.chat(msgs, tools, u, role, slot, wp, tier);
     out.usage.push_back(u);
-    if (!r) { db.event(id, "api_error", r.error()); if (r.error().starts_with("402")) throw std::runtime_error(r.error()); return out; }
+    if (u.hit + u.miss + u.out > 0) db.cost(id, u.hit, u.miss, u.out, u.usd(), u.provider);   // billed as it happens
+    if (!r) {
+      db.event(id, "api_error", r.error());
+      if (r.error().starts_with("402")) throw std::runtime_error(r.error());
+      if (r.error().starts_with("400") && !compacted_hard) { compacted_hard = true; continue; }   // context too long: compact harder once
+      finish_state(); out.r = r.error().starts_with("400") ? Result::failed : Result::infra; return out;
+    }
     json m = (*r)["choices"][0]["message"];
+    if (m.contains("reasoning_content")) m.erase("reasoning_content");   // not resent: saves input tokens
     msgs.push_back(m);
     if (!m.contains("tool_calls") || m["tool_calls"].empty()) { msgs.push_back({{"role", "user"}, {"content", "Use the tools; call submit when the gate passes."}}); continue; }
     bool submitted = false;
     for (auto& call : m["tool_calls"]) {
-      std::string fnm = call["function"]["name"];
+      std::string fnm = call["function"].value("name", "");
       json a = json::parse(call["function"].value("arguments", "{}"), nullptr, false);
+      if (!a.is_object()) a = json::object();
       std::string res;
-      if (fnm == "read_file") res = slurp(wt / a.value("path", ""), size_t(c.tool_result_chars));
-      else if (fnm == "list_dir") { for (auto& e : fs::directory_iterator(wt / a.value("path", "."), fs::directory_options::skip_permission_denied)) res += e.path().filename().string() + "\n"; }
-      else if (fnm == "write_file") {
+      auto rd = [&](const std::string& p) -> std::optional<fs::path> {   // ref:<tree>/..., worktree, then main checkout
+        if (p.starts_with("ref:")) {
+          auto sl = p.find('/', 4); auto it = c.ref_roots.find(p.substr(4, sl == std::string::npos ? std::string::npos : sl - 4));
+          if (it == c.ref_roots.end()) return std::nullopt;
+          return in_tree(it->second, sl == std::string::npos ? "." : p.substr(sl + 1));
+        }
+        auto w = in_tree(wt, p.empty() ? "." : p); if (w && fs::exists(*w)) return w;
+        auto mc = in_tree(c.repo, p.empty() ? "." : p); if (mc && fs::exists(*mc)) return mc;
+        return w;
+      };
+      if (fnm == "read_file") {
+        auto p = rd(a.value("path", ""));
+        if (!p || !fs::is_regular_file(*p)) res = "not found or not allowed: " + a.value("path", "");
+        else {
+          std::string s = slurp(*p, 8u << 20);
+          int lo = a.value("start_line", 0), hi = a.value("end_line", 0);
+          if (lo > 0 || hi > 0) {
+            std::istringstream is(s); std::string l, o; int n = 0;
+            while (std::getline(is, l)) { ++n; if (n >= std::max(lo, 1) && (hi <= 0 || n <= hi)) o += l + "\n"; }
+            s = o;
+          }
+          if (s.size() > size_t(c.tool_result_chars)) s = s.substr(0, c.tool_result_chars) + "\n[truncated: use start_line/end_line]";
+          res = s;
+        }
+      } else if (fnm == "list_dir") {
+        auto p = rd(a.value("path", "."));
+        if (!p || !fs::is_directory(*p)) res = "not found or not allowed";
+        else { std::vector<std::string> v; for (auto& e : fs::directory_iterator(*p, fs::directory_options::skip_permission_denied)) v.push_back(e.path().filename().string() + (e.is_directory() ? "/" : ""));
+               std::sort(v.begin(), v.end()); for (auto& x : v) res += x + "\n"; if (res.size() > size_t(c.tool_result_chars)) res.resize(c.tool_result_chars); }
+      } else if (fnm == "grep") {
+        auto p = rd(a.value("path", "."));
+        if (!p) res = "not allowed";
+        else { auto g = run_job({"grep", "-rnIE", "--max-count=20", "-e", a.value("pattern", ""), p->string()}, -1, 60, wt.string(), 0);
+               res = g.tail.substr(0, std::min<size_t>(g.tail.size(), size_t(c.tool_result_chars))); if (res.empty()) res = "no matches"; }
+      } else if (fnm == "write_file" || fnm == "edit_file") {
         std::string p = a.value("path", "");
-        if (!owned(t, p)) res = "refused: " + p + " is outside this task's owned paths";
-        else { fs::create_directories((wt / p).parent_path()); std::ofstream(wt / p) << a.value("content", ""); res = "written"; }
+        auto dst = in_tree(wt, p);
+        if (!owned(t, p) || !dst) res = "refused: " + p + " is outside this task's owned paths " + json(owns).dump();
+        else if (fnm == "write_file") {
+          fs::create_directories(dst->parent_path());
+          std::ofstream f(*dst, a.value("append", false) ? std::ios::app : std::ios::trunc); f << a.value("content", "");
+          res = "written"; gate_ok = false;
+        } else {
+          std::string s = slurp(*dst, 64u << 20), o = a.value("old_text", ""), nw = a.value("new_text", "");
+          size_t at = o.empty() ? std::string::npos : s.find(o);
+          if (at == std::string::npos) res = "old_text not found";
+          else if (s.find(o, at + 1) != std::string::npos) res = "old_text occurs more than once; include more context";
+          else { s.replace(at, o.size(), nw); std::ofstream(*dst, std::ios::trunc) << s; res = "edited"; gate_ok = false; }
+        }
       } else if (fnm == "run_gate") {
-        while (mem_used_frac() > c.ram_pause) std::this_thread::sleep_for(std::chrono::seconds(10));  // memory throttle
-        // Gate script per role; must include the fault-injection tests in task.accept.
-        fs::path gate = fs::path(c.repo) / "tools/gates" / (role + ".sh");
-        // Wait for a gate slot of this kind (local, NUMA-pinned) or a cloud burst slot.
-        GateLease gl = gate_acquire(kind, c);
-        std::vector<std::string> argv{"bash", gate.string(), id, wt.string()};
-        if (!gl.host.empty()) {
-          // Cloud worker: commit the tree, push it to the mirror, run the same gate there on that commit.
-          sh(wt.string(), {"git", "add", "-A"});
-          sh(wt.string(), {"git", "-c", "user.name=pbsd-agent", "-c", "user.email=agent@pbsd.local", "commit", "-q", "--allow-empty", "-m", id + " gate"});
-          std::string sha = sh(wt.string(), {"git", "rev-parse", "HEAD"});
-          while (!sha.empty() && std::isspace((unsigned char)sha.back())) sha.pop_back();
-          sh(wt.string(), {"git", "push", "-q", "-f", c.mirror_url, "HEAD:refs/gates/" + id});
-          argv = {"ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=30", gl.host, "--", c.remote_gate, role, id, sha};
-        } else if (gl.burst) argv.insert(argv.begin(), c.burst_cmd.begin(), c.burst_cmd.end());
-        auto g = run_job(argv, gl.burst ? -1 : node, gate_timeout(t, kind, c), wt.string());
-        gate_release(gl);
-        gate_ok = g.code == 0;
-        db.event(id, "gate", json{{"code", g.code}, {"timeout", g.timed_out}});
+        while (mem_used_frac() > c.ram_pause) std::this_thread::sleep_for(std::chrono::seconds(10));
+        const std::string sha = commit(id + " gate");
+        fs::path gate = fs::path(c.gates_dir) / (role + ".sh");
+        JobResult g{3, "", false};
+        for (int tries = 0; tries < std::max(1, c.gate_infra_retries); ++tries) {
+          GateLease gl = gate_acquire(kind, c);
+          std::vector<std::string> argv{"bash", gate.string(), id, wt.string()};
+          std::vector<std::string> env; const std::vector<std::string>* envp = nullptr;
+          if (!gl.host.empty()) {   // cloud worker: same gate on the same commit, fetched from the mirror
+            sh(wt.string(), {"git", "push", "-q", "-f", c.mirror_url, "HEAD:refs/gates/" + id});
+            argv = {"ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=30", gl.host, "--", c.remote_gate, role, id, sha,
+                    t.value("proof_tier", std::string("-"))};
+          } else {
+            if (gl.burst) argv.insert(argv.begin(), c.burst_cmd.begin(), c.burst_cmd.end());
+            else if (!c.gate_wrap.empty()) argv.insert(argv.begin(), c.gate_wrap.begin(), c.gate_wrap.end());
+            if (c.gate_scrub_env && !gl.burst) { env = gate_env((fs::path(wtroot ? wtroot : "/run/pbsd/wt") / ".build" / id).string()); envp = &env; }
+            if (t.contains("proof_tier")) {   // the proof gate takes its tier from the task, never from the tree
+              if (!envp) { for (char** e = environ; *e; ++e) env.push_back(*e); envp = &env; }
+              env.push_back("PBSD_PROOF_TIER=" + t["proof_tier"].get<std::string>());
+            }
+          }
+          g = run_job(argv, gl.burst ? -1 : node, gate_timeout(t, kind, c), wt.string(), 500, envp);
+          gate_release(gl);
+          // ssh exits 255 when the worker is gone (spot reclaim): same as an infrastructure error.
+          if (g.code != 3 && g.code != 255) break;
+          db.event(id, "gate_infra", json{{"code", g.code}, {"host", gl.host}});
+        }
+        if (g.code == 3 || g.code == 255) { finish_state(); out.r = Result::infra; return out; }
+        gate_ok = g.code == 0; if (gate_ok) out.gate_sha = sha;
+        db.event(id, "gate", json{{"code", g.code}, {"timeout", g.timed_out}, {"sha", sha}});
         std::string tail = g.tail.size() > size_t(c.tool_result_chars) ? g.tail.substr(g.tail.size() - c.tool_result_chars) : g.tail;
-        res = std::format("exit {}{}\n{}", g.code, g.timed_out ? " (watchdog timeout)" : "", tail);
+        res = std::format("exit {}{} on {}\n{}", g.code, g.timed_out ? " (watchdog timeout)" : "", sha.substr(0, 12), tail);
       } else if (fnm == "post_message") {
-        db.event(id, "msg:" + a.value("kind", "note"), a.value("body", "")); res = "posted";
+        std::string to = resolve_to(t, a.value("to", "")), k = a.value("kind", "note");
+        db.post(to, id, k, a.value("body", ""));
+        // A contract change request reopens the package's -IF task (it owns the package contracts) so
+        // requests are applied in a batch; dependants whose build breaks are retried by their gates.
+        if (k == "contract_change_request" && db.state_of(to) == "passed") db.reopen({to}, {});
+        res = "posted to " + to;
+      } else if (fnm == "lean_prove") {
+        std::string p = a.value("file", ""), stmt = a.value("statement", "");
+        auto dst = in_tree(wt, p);
+        if (c.lean_prover_url.empty()) res = "no local Lean prover configured";
+        else if (!owned(t, p) || !dst || !p.ends_with(".lean")) res = "refused: " + p + " is not an owned .lean file";
+        else { res = lean_prove(c, t, wt, *dst, stmt, db); if (res.starts_with("proved")) gate_ok = false; }
+      } else if (fnm == "read_messages") {
+        for (auto& mm : db.messages_for(id, wp)) res += mm.dump() + "\n";
+        if (res.empty()) res = "no messages";
       } else if (fnm == "submit") {
-        submitted = true; res = gate_ok ? "accepted" : "rejected: gate has not passed on the current tree";
-      } else res = "unknown tool";
-      msgs.push_back({{"role", "tool"}, {"tool_call_id", call["id"]}, {"content", res}});
+        submitted = true;
+        if (!gate_ok) res = "rejected: the gate has not passed on the current tree (run_gate after your last write)";
+        else if (role == "reviewer" && a.value("verdict", "") == "changes") {
+          // Reopen the unit's tasks the findings name (impl by default); this review waits for them.
+          std::set<std::string> targets;
+          for (auto& f : a.value("findings", json::array())) targets.insert(f.value("target", "impl"));
+          if (targets.empty()) targets.insert("impl");
+          std::vector<std::string> ready, block{id};
+          auto add = [&](const std::string& x) { ready.push_back(resolve_to(t, x)); };
+          for (auto& x : targets) add(x);
+          if (targets.count("spec")) { add("impl"); add("test"); }
+          if (targets.count("impl") || targets.count("spec")) block.push_back(resolve_to(t, "proof"));
+          std::sort(ready.begin(), ready.end()); ready.erase(std::unique(ready.begin(), ready.end()), ready.end());
+          for (auto& r2 : ready) db.post(r2, id, "review_findings", a.dump());
+          db.reopen(ready, block);
+          res = "changes requested; reopened " + json(ready).dump();
+          commit(id + " review: changes"); finish_state();
+          out.r = Result::changes; return out;
+        } else if (role == "reviewer" && a.value("verdict", "") != "approve") {
+          submitted = false; res = "rejected: verdict must be approve or changes";
+        } else res = "accepted";
+      } else res = "unknown tool " + fnm;
+      msgs.push_back({{"role", "tool"}, {"tool_call_id", call.value("id", "")}, {"content", res}});
     }
-    // 3. Atomic commit at turn end; WIP checkpoint to the HDD-backed repo every checkpoint_s.
-    sh(wt.string(), {"git", "add", "-A"});
-    sh(wt.string(), {"git", "-c", "user.name=pbsd-agent", "-c", "user.email=agent@pbsd.local", "commit", "-q", "-m", id + " turn " + std::to_string(turn)});
-    if (now() - last_ck > c.checkpoint_s) {
-      sh(wt.string(), {"git", "update-ref", "refs/heads/wip/" + id, "HEAD"});
-      std::ofstream(state) << msgs.dump(); last_ck = now();
-    }
+    // 3. Atomic commit at turn end; WIP checkpoint every checkpoint_s.
+    commit(id + " turn " + std::to_string(turn));
+    if (now() - last_ck > c.checkpoint_s) { finish_state(); last_ck = now(); }
     if (submitted && gate_ok) { out.r = Result::passed; break; }
-    if (now() - turn_start > c.agent_watchdog_s * c.max_turns) break;   // whole-task watchdog
+    if (now() - task_start > double(c.agent_watchdog_s) * max_turns) break;   // whole-task watchdog
   }
-  sh(wt.string(), {"git", "update-ref", "refs/heads/wip/" + id, "HEAD"});
-  std::ofstream(state) << msgs.dump();
-  if (out.r == Result::passed) { sh(c.repo, {"git", "worktree", "remove", "--force", wt.string()}); fs::remove(state); }
+  finish_state();
+  if (out.r != Result::passed) return out;
+  // 5. Deterministic merges. A conflict sends the task back with the conflict as a message.
+  std::string e = merge_branch(c, "wp/" + wp, branch, "merge " + id);
+  if (e.empty() && (role == "integrator" || id.ends_with("-IF")))
+    e = merge_branch(c, c.merge_target, "wp/" + wp, "integrate " + wp + " (" + id + ")");
+  if (!e.empty()) { db.post(id, "runner", "test_failure", e); db.event(id, "merge_failed", e); out.r = Result::failed; return out; }
+  db.event(id, "merged", out.gate_sha);
+  sh(c.repo, {"git", "worktree", "remove", "--force", wt.string()});
+  fs::remove(state);
   return out;
 }
 }  // namespace pbsd

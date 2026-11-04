@@ -1,11 +1,14 @@
 #cloud-config
 # Paste as user-data (GCP: --metadata-from-file user-data=cloud-init.yaml; AWS: --user-data file://cloud-init.yaml;
-# Hetzner: "Cloud config"). Replace the two values marked REPLACE.
+# Hetzner: "Cloud config"). Replace the values marked REPLACE. The clone fetches only docs/plan (the
+# full repository is about 1.5 GB); add "-b <branch>" until the plan is merged into main.
 write_files:
   - path: /root/pbsd.env
     permissions: '0600'
     content: |
       PBSD_PUBKEY="REPLACE: contents of ~/.ssh/pbsd_runner.pub on the PC"
       PBSD_IS_MIRROR=1
+      LINUX_TAG="REPLACE: the Linux tag the PC uses (CLOUD_SETUP.md step 6)"
+      WINE_TAG="REPLACE: the Wine tag the PC uses"
 runcmd:
-  - [bash, -c, "git clone -q --depth 1 https://github.com/odin-loki/ParanoidBSD /opt/pbsd-src && set -a && . /root/pbsd.env && set +a && bash /opt/pbsd-src/docs/plan/tools/cloud/bootstrap.sh > /var/log/pbsd-bootstrap.log 2>&1"]
+  - [bash, -c, "git clone -q --depth 1 --filter=blob:none --sparse https://github.com/odin-loki/ParanoidBSD /opt/pbsd-src && git -C /opt/pbsd-src sparse-checkout set docs/plan && set -a && . /root/pbsd.env && set +a && bash /opt/pbsd-src/docs/plan/tools/cloud/bootstrap.sh > /var/log/pbsd-bootstrap.log 2>&1"]

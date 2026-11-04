@@ -1,117 +1,187 @@
 # PBSD agent execution: GLM-5.3-Flash API, parallel agents, Odin's PC
 
-Every task in PBSD is done by GLM-5.3-Flash (320B total, 18B active, mixture of experts) through its API, spread over several providers (Z.ai first, plus DeepInfra, Fireworks, Together or OpenRouter when keys are set), with many agents in parallel. The builds, tests, PRISM proofs and QEMU gates run on Odin's Lenovo P920, in RAM, with the HDD for checkpoints only. No IDE agents. Running the model locally under llama-server is kept as an optional backend (Appendix D); the DeepSeek Flash plan is Appendix C. The 40 work packages in `PBSD_PLAN.md` are broken into 12,964 atomic tasks in `tasks.yaml` / `tasks.json`.
+Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what was done about it.
+
+**Who does the work:**
+- **GLM-5.3-Flash** does every task through its API: decomposition, porting, tests, proof work, reviews and merges. It is served by several providers: Z.ai first, plus DeepInfra, Fireworks, Together or OpenRouter when keys are set.
+- **Lean proofs** come from a **local Lean-specialised prover model** on the P920's RTX 3090, for example Goedel-Prover-V2-32B. GLM-5.3-Flash states each lemma and calls the runner's `lean_prove` tool; the prover writes the proof; Lean checks it.
+- **Code-level proofs** use ESBMC, CBMC and GenMC (section 10). PRISM is gone, because it cannot check code.
+
+**Where things run:**
+- The builds, tests, proof checks and QEMU gates run on Odin's Lenovo P920, in RAM, with the HDD for checkpoints only.
+- Optionally they also run on rented cloud burst workers (`CLOUD_SETUP.md`). QEMU gates run only where KVM exists: on the PC, or on workers marked `kvm`.
+- No IDE agents.
+- Running GLM itself locally under llama-server stays an optional backend (Appendix D); the DeepSeek Flash plan is Appendix C.
+
+**Task graph:** the 40 work packages in `PBSD_PLAN.md` are broken into 12,976 atomic tasks in `tasks.yaml` / `tasks.json`.
+
+**Middle-case estimate:**
+- About **US$3.0k of API**, and **US$3.4k** in total with cloud burst.
+- About **6 days** of wall clock on the PC plus one GCP burst worker, or about 44 days on the PC alone.
+- The range is US$1.5k–8.2k (section 8.1).
 
 ## 1. Task breakdown
 
-Each work package expands as:
+Each work package expands as follows.
 
-1. `<WP>-IF` (decomposer): contract headers and stubs for the package. Depends on the frozen headers of upstream packages (`-IF` in phase 0, `-INT` afterwards).
-2. For every reuse unit (one HBSD file, or one ~800-line slice of a Linux file or directory):
-   - `-SPEC` decomposer: behaviour spec and contracts extracted from the source.
+1. **`<WP>-IF` (decomposer):** contract headers and stubs for the package.
+   - It is the owner of the package's contracts, so contract change requests reopen it.
+   - In the 12 verified-core packages it also writes the **locked theorem statements** in `proofs/<WP>/spec/`: definitions and statements, no proofs.
+2. **`P0-FREEZE`:** reconciles all headers, builds them together, tags `contracts-v1` and hash-pins every locked statement file in `proofs/spec-lock.json`.
+3. **`<WP>-MODEL` (prover, tier T1):** only in the 12 verified-core packages. It proves the locked statements:
+   - in Lean 4 with the local prover, through `lean_prove`;
+   - or in TLA+ with Apalache inductive invariants, for the P1-06 RCU/epoch and P2-01 ring protocols.
+4. **One set of tasks per reuse unit**, where a unit is one HBSD file or one slice of about 800 lines of a Linux or Wine directory:
+   - `-SPEC` decomposer: behaviour spec, the files the implementer writes, and the obligation list for the prover.
    - `-IMPL` implementer: port into the PBSD C++ dialect.
-   - `-TEST` tester: unit and differential tests against the Linux/HBSD original (runs in parallel with IMPL).
-   - `-PROOF` prover: drive PRISM until obligations close.
-   - `-REVIEW` reviewer: a second, independent Flash agent checks the diff against the spec.
-3. `<WP>-INT` integrator: merge all reviewed units into `pbsd-cutover` and run the package acceptance suite.
+   - `-TEST` tester: unit, fault-injection and differential tests against the original. Runs in parallel with IMPL.
+   - `-PROOF` prover: tier T0–T4, set per unit in `tasks.json` (section 10).
+   - `-REVIEW` reviewer: a second, independent agent checks the merged spec, code, tests and proofs against the original. A verdict of "changes" reopens the named tasks.
+5. **`<WP>-INT` integrator:** runs the package acceptance suite on the merged package and fixes integration failures. It now also waits for the INT tasks of the packages this one really depends on (`PBSD_PLAN.md` "Depends on"). Integration therefore follows the real order instead of piling up at P6-01.
 
-Sizing rule: a task's working set (role prompt + frozen contracts + source slice + its own diff) stays under 120k tokens with under 16k output per turn, so Flash finishes in at most 6 turns. A unit that breaks the rule is split by the decomposer into `-U###a`, `-U###b`, and so on.
+**Ownership.** Every unit task owns its own paths, so parallel tasks never write the same file:
 
-| Package | Tasks |
+| Task | Owns |
 |---|---|
-| P0-01 | 27 |
-| P0-02 | 22 |
-| P0-03 | 47 |
-| P0-04 | 42 |
-| P0-05 | 92 |
-| P0-06 | 7 |
-| P0-07 | 27 |
-| P0-08 | 27 |
-| P1-01 | 117 |
-| P1-02 | 122 |
-| P1-03 | 92 |
-| P1-04 | 12 |
-| P1-05 | 227 |
-| P1-06 | 112 |
-| P1-07 | 37 |
-| P1-08 | 97 |
-| P1-09 | 72 |
-| P2-01 | 107 |
-| P2-02 | 92 |
-| P2-03 | 752 |
-| P2-04 | 1552 |
-| P2-05 | 82 |
-| P3-01 | 162 |
-| P3-02 | 432 |
-| P3-03 | 1732 |
-| P3-04 | 162 |
-| P3-05 | 1012 |
-| P3-06 | 3732 |
-| P4-01 | 17 |
-| P4-02 | 447 |
-| P4-03 | 17 |
-| P4-04 | 877 |
-| P4-05 | 67 |
-| P4-06 | 192 |
-| P4-07 | 97 |
-| P5-01 | 27 |
-| P5-02 | 27 |
-| P5-03 | 172 |
-| P6-01 | 27 |
+| SPEC | `docs/plan/specs/<WP>/<U>.md` |
+| IMPL | `<package dir>/<unit>/` and `fragments/<WP>/<U>/` |
+| TEST | `tests/<WP>/<U>/` |
+| PROOF | `proofs/<WP>/<U>/`, plus annotation-only edits to the unit's code, enforced by the gate |
 
-Task schema (`tasks.yaml`): `id, wp, phase, role, title, source, owns, deps, reuse, accept`.
+Shared registration files (CMake lists, syscall tables, module tables) are generated by the integrator from `fragments/`.
+
+**Size rule.** A task's working set (role prompt, frozen contract list, source slice, its own diff) stays under about 120k tokens. Large units are written as several files of under about 400 lines over more turns: `write_file(append=true)` and `edit_file` make that cheap.
+
+| Package | Tasks | Package | Tasks |
+|---|---|---|---|
+| P0 (freeze) | 1 | P2-03 | 753 (model) |
+| P0-01 | 27 | P2-04 | 1,552 |
+| P0-02 | 23 (model) | P2-05 | 82 |
+| P0-03 | 47 | P3-01 | 162 |
+| P0-04 | 42 | P3-02 | 433 (model) |
+| P0-05 | 92 | P3-03 | 1,732 |
+| P0-06 | 8 (model) | P3-04 | 162 |
+| P0-07 | 27 | P3-05 | 1,012 |
+| P0-08 | 27 | P3-06 | 3,732 |
+| P1-01 | 117 | P4-01 | 18 (model) |
+| P1-02 | 123 (model) | P4-02 | 447 |
+| P1-03 | 93 (model) | P4-03 | 17 |
+| P1-04 | 13 (model) | P4-04 | 877 |
+| P1-05 | 228 (model) | P4-05 | 67 |
+| P1-06 | 113 (model) | P4-06 | 192 |
+| P1-07 | 37 | P4-07 | 98 (model) |
+| P1-08 | 97 | P5-01 | 27 |
+| P1-09 | 72 | P5-02 | 27 |
+| P2-01 | 108 (model) | P5-03 | 172 |
+| P2-02 | 92 | P6-01 | 27 |
+
+**Roles:** 2,616 decomposer, 2,577 implementer, 2,577 tester, 2,589 prover (12 T1, 83 T2, 837 T3, 1,642 T4, 15 T0), 2,577 reviewer and 40 integrator tasks.
+
+**Task fields** (`tasks.yaml`): `id, wp, phase, role, title, source, owns[], deps[], deps_one_day[], reuse, accept, turns_budget, max_turns, proof_tier, proof_budget_minutes, priority, fault_tolerance`. `turns_budget` is the expected number of API requests for one attempt.
+
+**How to regenerate:** `tools/gen/upgrade_tasks.py` produced this revision from the previous task list and documents every change it made. It is idempotent.
 
 ## 2. Coordination: git plus a task database
 
-Agents never talk free-form. They coordinate through three shared things:
+Agents never talk free-form. They coordinate through four shared things.
 
-1. **Frozen contracts**: `pbsd/kernel/include/**` after phase 0, read-only. Prompts embed the relevant headers verbatim (see caching).
-2. **Task database** (SQLite to start, Postgres past ~500 workers): table `tasks` mirrors `tasks.yaml` plus `state, attempts, lease_until, worker, branch, last_error, artifacts`. States: `blocked → ready → leased → submitted → passed | failed → escalated`. The scheduler marks a task `ready` when all its `deps` are `passed`.
-3. **Blackboard**: table `messages`, mirrored to `docs/plan/board/<task>.jsonl` on the branch. Typed messages only: `question` (to the unit's decomposer), `contract_change_request` (to the interface owner), `review_findings`, `test_failure`, `proof_failure`, `handoff`. A task reads every message addressed to it or its package when it starts.
-
-Git: each task works on `t/<task-id>` cut from the latest `wp/<WP>`; the integrator merges into `wp/<WP>`, then into `pbsd-cutover`. Path ownership (`owns`) is enforced by a pre-merge hook. Units write one output file each, so merges inside a package do not conflict. Shared registration files (CMake lists, syscall tables, module tables) are generated by the integrator from per-unit fragments in `fragments/<task-id>.*`; nobody edits them by hand.
+1. **Frozen contracts:** `pbsd/kernel/include/**` and `proofs/*/spec/` after `P0-FREEZE`, read-only. Prompts list the headers, and agents open them with `read_file`. Changes go through `post_message(kind=contract_change_request, to=if)`, which reopens the package's `-IF` task to apply the requests in a batch.
+2. **Task database** (SQLite to start, Postgres past ~500 workers):
+   - **States:** `blocked → ready → leased → passed`, with `failed → ready` on retry, `escalated` and `quarantined`.
+   - **Promotion:** the scheduler marks a task `ready` when all its `deps` have `passed`.
+   - **Event log:** every lease, gate result (with the commit SHA it ran on), merge, reopen and cost row.
+3. **Messages:** table `message`, typed only: `question`, `contract_change_request`, `review_findings`, `test_failure`, `proof_failure`, `handoff`. A task gets every message addressed to it or its package in its first prompt, and can call `read_messages` later.
+4. **Git, with merges done by the runner rather than an agent:**
+   - **Branches:** each task works on `t/<task-id>`, cut from `wp/<WP>`. Before that, `wp/<WP>` merges the integration branch `pbsd-cutover`, so the task sees its dependencies' output and every integrated upstream package.
+   - **On a pass:** the runner merges `t/<id>` into `wp/<WP>` without a working tree (`git merge-tree --write-tree`, then a compare-and-swap ref update). `-IF` and `-INT` tasks then also merge `wp/<WP>` into `pbsd-cutover`.
+   - **On a conflict:** the task goes back to `ready` with the conflict as a message.
+   - **Path ownership:** enforced by the harness (writes outside `owns` are refused) and by the gate.
 
 ## 3. Roles
 
 | Role | Does | Gate it must pass |
 |---|---|---|
-| decomposer | specs, contracts, splits oversize units, answers questions | reviewer approves spec; headers compile |
-| implementer | writes C++ for one unit | build, dialect lint, sanitizers |
-| tester | writes tests, runs them on reference and port | tests green on the reference first |
-| prover | runs PRISM, adds invariants and lemmas | obligations closed or justified runtime checks |
-| reviewer | independent review of the diff against the spec | structured approve or findings |
-| integrator | merges, regenerates shared files, runs package suite | package acceptance criteria |
+| decomposer | specs, contracts, theorem statements, obligation lists, contract change rounds | headers build; reviewer approves the spec |
+| implementer | writes the C++ for one unit | build, dialect lint, sanitizers, unit and fault-injection tests |
+| tester | writes tests, runs them on the reference and then on the port | tests green on the reference first |
+| prover | Lean/TLA+ models (T1), ESBMC proofs (T2), bounded checks (T3), gateway harnesses (T4) | the tiered proof gate (section 10) |
+| reviewer | independent review of the merged unit | build and tests, then `submit(verdict, findings)` |
+| integrator | fixes integration failures in the merged package | build, tests, proof re-check of the units the merge changed, QEMU boot |
 
-All roles are the same model (`deepseek-flash`) with different system prompts and tool sets. The scheduler, gates and merges are deterministic code, not agents.
+All roles are the same model, GLM-5.3-Flash, with different system prompts and tools. The local Lean prover is a tool the T1 prover calls, not an agent.
+
+The scheduler, gates, merges and proof checkers are deterministic code, not agents. No agent certifies its own work.
+
+The tier mechanism (`role_tier`, `escalate_at`, `escalate_tier`) can move hard tasks to GLM-5.3 from a given attempt (section 7). It is off by default.
 
 ## 4. Failure handling and escalation
 
-- A failed gate posts a typed message and returns the task to `ready` with the error attached (attempt +1).
-- Attempt 3 fails: rerun with a fresh context and a summary of every previous failure.
-- Attempt 5 fails: a decomposer task splits it into smaller tasks, or files a `contract_change_request`.
-- Contract change requests are batched per header. The owning decomposer applies them and bumps the header version; the scheduler re-queues dependants whose builds break.
-- Attempt 8 fails, or a contract change is rejected twice: state `escalated` for Odin. The rest of the graph keeps running.
-- Reviewer and implementer disagree twice: a third reviewer instance decides (majority of three).
+- **Gate failure:** the agent sees the log tail and keeps working within its turn budget. If the budget runs out, the task returns to `ready` with attempt +1.
+- **Attempt numbers:**
+  - Attempt 3 reruns with a fresh context, carrying the messages about every earlier failure.
+  - From attempt 5 the agent is asked to propose a split, or to file a `contract_change_request`.
+  - Attempt 8 sets the task to `escalated` for Odin. The rest of the graph keeps running.
+- **Infrastructure errors are not the task's fault.** An API outage that outlasts the retries, or a gate that exits 3 or loses its worker (ssh 255, spot reclaim), ends the attempt as `infra`:
+  - No attempt is charged.
+  - The gate is retried up to 3 times, on another worker if there is one.
+  - 20 infra results in a row pause leasing for 5 minutes.
+  - 20 on one task quarantine it.
+- **Reviewer "changes":**
+  - Each finding names a target: `spec`, `impl`, `test` or `proof`.
+  - The runner reopens those tasks with the findings as a message, and blocks the unit's PROOF (when the code changes) and the REVIEW until they pass again.
+  - The REVIEW then runs again.
+- **Contract change requests:** they reopen the owning `-IF` task, which applies them and bumps the header version. Dependants whose build breaks are caught by their gates.
+- **Proof campaigns:**
+  - A T1 or T2 obligation that stays open after 8 attempts is not turned into a runtime check. It stays `escalated` and appears in the daily report.
+  - Re-leasing escalated proof tasks with fresh contexts after the rest of the graph drains is the way to close them.
+- **Quarantine:** a task that crashes the harness 3 times is quarantined with its logs.
 
 ## 5. Harness
 
-- `pbsd_run` (C++23, `tools/runner`) sends every turn to GLM-5.3-Flash over the OpenAI-compatible chat API of the configured providers (section 8.3): Z.ai first, then DeepInfra, Fireworks, Together or OpenRouter when their keys are set. Each provider has its own in-flight cap and RPM/TPM token buckets, and a failed or rate-limited request fails over to the next provider. `backend: "local"` uses llama-server instead (Appendix D); DeepSeek Flash is a last-resort provider when `DEEPSEEK_API_KEY` is set (Appendix C).
-- Tools via function calling: `read_file(path, range)`, `list_dir`, `grep`, `write_file(path, content)` (rejected outside `owns`), `apply_patch`, `build(target)`, `run_tests(filter)`, `run_prism(file)`, `post_message(to, type, body)`, `read_messages()`, `submit()`. Each task runs in its own tmpfs worktree with its branch checked out.
-- Concurrency: `slots.agent.count` agents (24 on the PC alone, 128 with cloud CI burst; section 8.2). Leases are 3 hours.
-- Build, test and PRISM capacity is the bottleneck (section 8.1): gates wait for a slot of their kind, NUMA-pinned, so the 32 cores are never oversubscribed; overflow can go to cloud CI through `burst_cmd`.
-- Every response's `usage` block (input, cache hits, output, provider) is billed at that provider's prices and stored in the task database for live cost tracking.
+- `pbsd_run` (C++23, `tools/runner`) sends each turn to GLM-5.3-Flash over the OpenAI-compatible chat API of the configured providers. **A turn is one API request carrying the whole conversation so far.**
+- **Providers and failover:**
+  - Each provider has its own in-flight cap and RPM/TPM token buckets.
+  - A failed or rate-limited request fails over to the next provider.
+  - `backend: "local"` uses llama-server instead (Appendix D). DeepSeek Flash is a last-resort provider when `DEEPSEEK_API_KEY` is set (Appendix C).
+- **Tools** (they match the harness exactly):
+
+| Tool | What it does |
+|---|---|
+| `read_file(path, start_line?, end_line?)` | Reads the worktree, the main checkout (`hbsd/`, `kde/`), or a reference tree (`ref:linux/...`, `ref:wine/...`). Absolute paths and `..` are refused, so no file outside these can be read. |
+| `list_dir`, `grep` | List and search, with the same path rules. |
+| `write_file(path, content, append?)` | Write, or append to, a file. Refused outside `owns`. |
+| `edit_file(path, old_text, new_text)` | Replace one exact, unique occurrence. Refused outside `owns`. |
+| `run_gate` | Commits the owned files and gates that SHA. |
+| `post_message(to, kind, body)`, `read_messages` | Typed messages; `to` is a task id or `spec`/`impl`/`test`/`proof`/`if`. |
+| `lean_prove(file, statement)` | Prover role, when `lean_prover_url` is set. |
+| `submit` | Accepted only if the gate passed on the current tree; any write after a passing gate invalidates it. Reviewers must give a verdict and findings. |
+
+- **Worktrees:** each task runs in its own tmpfs worktree with its branch checked out. The worktree is sparse: everything except `hbsd/`, `kde/`, `linux/`, `docs/migration/`, `docs/verify/` and `docs/PORT_PLAN.md`, about 75 MB.
+- **Concurrency:** `slots.agent.count` agents (32 on the PC alone, 224 with one cloud burst worker; section 8.2). Leases are 6 hours, with a heartbeat every turn.
+- **Gates:**
+  - Build, test and proof-check capacity is the bottleneck (section 8.1). Gates wait for a slot of their kind, NUMA-pinned, so the 32 cores are never oversubscribed.
+  - Overflow goes to the cloud workers listed in `workers_file`. QEMU gates go only to workers marked `kvm`.
+  - Gate scripts are a **pinned copy**: `gates_dir`, `/opt/pbsd/gates` by default. Remote gates also use `/opt/pbsd/gates` on the worker. A gate never runs the copy inside an agent's commit.
+  - Local gates run with a scrubbed environment (no `*_KEY` or `*_TOKEN` variables), so agent-written build code cannot read the API keys. `gate_wrap` can add a sandbox prefix.
+  - Remote gates run in a network namespace with no network, on workers that hold no keys.
+  - Local gates and remote gates check out the same sparse tree, so they give the same answer.
+- **Sources:** `linux:<dir> part k/N` is resolved deterministically under `ref_roots.linux`. The directory's `.c`, `.h` and `.S` files are sorted by path, concatenated and cut into N equal line ranges. Linux and Wine are cloned at pinned tags during setup.
+- **Cost:** recorded per turn from each response's `usage` block (input, cache hits, output, provider), at that provider's prices. A crashed task's cost is not lost.
 
 ### Cache strategy
 
-Every provider bills an identical prompt prefix at the cache-hit rate ($0.03 instead of $0.15 per 1M input tokens), and the whole conversation is resent each turn, so input tokens are most of the volume. Every request is laid out in this order:
+Every provider bills an identical prompt prefix at the cache-hit rate: $0.03 instead of $0.15 per 1M input tokens. The whole conversation is resent each turn, so input is about 90% of the token volume.
 
+Every request is laid out in this order:
 1. Global prefix, identical for every agent: dialect rules, naming rules, tool schemas.
 2. Role prefix, identical per role.
-3. Package prefix: the frozen contract header list for the package, sorted and byte-stable (agents open headers with `read_file`).
-4. Unit prefix: the source slice being ported and its spec.
-5. Variable tail: task instructions, messages, tool results.
+3. Package prefix: the sorted, byte-stable list of frozen contract headers. Agents open headers with `read_file`.
+4. Unit prefix: the source slice being ported.
+5. Variable tail: the task, its messages and tool results.
 
-Nothing that changes per task (ids, timestamps, attempt counts) goes above layer 5. The scheduler runs tasks of the same package back to back, and the runner sends all tasks of one package to the same provider first (affinity), so layers 1–3 stay warm in that provider's cache. Target hit rate is 75–85% of input tokens.
+Nothing that changes per task (ids, attempt counts, messages) goes above layer 5. Reasoning text from earlier turns is not resent.
+
+The scheduler runs tasks of the same package back to back, and the runner sends all tasks of one package to the same provider first (affinity), so layers 1–3 stay warm in that provider's cache. The estimate assumes 85% of input tokens are cache hits (75% in the high case).
 
 ### Peak hours
 
@@ -122,52 +192,58 @@ GLM-5.3-Flash API prices have no peak surcharge, so the run goes flat out at all
 Every request starts with the shared global prefix:
 
 ```text
-You are one agent in the PBSD build. PBSD is a clean-slate verified C++23 kernel. Rules:
-- Use only the PBSD kernel dialect: no raw owning pointers, no new/delete/malloc, contracts [[expects]] [[ensures]] [[invariant]] on every public function, typestate where a resource has states.
+You are one agent in the PBSD build. PBSD is a verified C++23 kernel. Rules:
+- Use only the PBSD kernel dialect: no raw owning pointers, no new/delete/malloc, contracts on every public function written with PBSD_PRE / PBSD_POST / PBSD_INVARIANT / PBSD_ASSERT (they expand to C++26 pre/post/contract_assert in the GCC 16 runtime build and to ESBMC/CBMC contracts in the verification build), typestate where a resource has states.
 - Never invent names for components or subsystems; use plain descriptive names.
-- Reuse Linux and HBSD code: keep algorithms and structure, change only what the dialect and capability model require.
-- Edit only paths in your task's owns. Frozen headers in pbsd/kernel/include are read-only; propose changes with post_message(type=contract_change_request).
-- Communicate only through post_message. Call submit() when your gate should pass.
+- Reuse Linux, HBSD and Wine code: keep algorithms and structure, change only what the dialect and capability model require. Read sources with read_file (hbsd/..., ref:linux/..., ref:wine/...).
+- Edit only paths in your task's owns. Frozen headers in pbsd/kernel/include and locked statements in proofs/*/spec are read-only; propose changes with post_message(kind=contract_change_request, to=if).
+- Change files with edit_file; write a large file in parts with write_file(append=true).
+- Communicate only through post_message. Call run_gate after your last change and submit() when it passes.
 ```
 
 Decomposer:
 ```text
 Role: decomposer. Task {{id}}: {{title}}.
-Read {{source}} and the frozen contracts above. Write docs/plan/specs/{{wp}}/{{unit}}.md with purpose, inputs, outputs, invariants, locking, error paths and every behaviour callers rely on. Write the C++ declarations with contracts. If the unit will not fit one implementer task (over ~300 lines of output, so that each file write fits one 4,096-token reply), split it and post the new task ids.
+For a -SPEC task: read the unit source and the frozen contracts. Write docs/plan/specs/{{wp}}/{{unit}}.md with purpose, inputs, outputs, invariants, locking, error paths, every behaviour callers rely on, the exact files the implementer writes under its owned directory (each under about 400 lines), and an "Obligations" list: every public function with the property the prover must establish (contract, memory safety, and for verified-core units the refinement post-condition against the package model).
+For a -IF task: write the package contract headers and stubs; in a verified-core package also write the theorem statements (definitions and Prop statements only, no proofs) in proofs/{{wp}}/spec/ for the -MODEL task. Apply every contract_change_request addressed to you, or answer it with a reason.
 Acceptance: {{accept}}
 ```
 
 Implementer:
 ```text
 Role: implementer. Task {{id}}: {{title}}.
-Spec: {{spec}}. Port {{source}} into {{owns}} following the spec exactly and keeping the original algorithm. Call build(), fix every error and lint finding, then submit().
+Port the unit source into the files the spec names under your owned directory, following the spec exactly and keeping the original algorithm. Contracts on every public function. Register the unit through files in fragments/ only. Run the gate, fix every error and lint finding, then submit().
 Acceptance: {{accept}}
 ```
 
 Tester:
 ```text
 Role: tester. Task {{id}}: {{title}}.
-Write tests in {{owns}} from the spec. Each test must pass on the reference ({{source}} built by the differential harness) before it is run on the PBSD port. Cover every error path in the spec.
+Write tests in your owned directory from the spec. Each test must pass on the reference (the HBSD, Linux or Wine original built by the differential harness) before it runs on the PBSD port. Cover every error path in the spec and the fault-injection cases in the acceptance text.
 Acceptance: {{accept}}
 ```
 
 Prover:
 ```text
-Role: prover. Task {{id}}: {{title}}.
-Call run_prism on the unit. For each open obligation add loop invariants, lemmas or tighter contracts in {{owns}}; never weaken a contract the spec requires. Obligations you cannot close become runtime checks, each with a one-line reason.
+Role: prover. Task {{id}}: {{title}}. Proof tier: see proof_tier in the task.
+T1 (-MODEL): prove every locked statement in proofs/{{wp}}/spec/ in your owned model project (Lean 4: a Lake package "Model" importing "Spec"; TLA+: Init, Next, Safety and an inductive invariant IndInv). For Lean, state small lemmas and call lean_prove(file, statement) for each; the local prover writes the proof and Lean checks it. Never edit spec files; no sorry, admit, axiom, native_decide, implemented_by or extern.
+T2: write proofs/{{wp}}/{{unit}}/obligations.json ([{"file", "function", "kind"}], one entry per obligation in the spec) and add loop invariants, assigns clauses and ghost state as PBSD_* annotation lines in the unit's code until ESBMC proves every obligation in contract or k-induction mode. Change only annotation lines in code; never weaken a contract the spec requires; no assume statements.
+T3: the same obligation file; ESBMC (C++) or CBMC (C) bounded checks with unwinding assertions; mark lock-free or concurrent functions "kind": "concurrent" for GenMC.
+T4: write CBMC/ESBMC harnesses under proofs/{{wp}}/{{unit}}/harness/ for every gateway-facing function (assumptions may constrain the harness inputs; end every harness with PBSD_REACHED();), list them in obligations.json, and generate the matching runtime gateway checks.
+The checker flags are fixed by the gate; you cannot choose them.
 Acceptance: {{accept}}
 ```
 
 Reviewer:
 ```text
 Role: reviewer. Task {{id}}: {{title}}.
-Compare the diff on {{branch}} with the spec and the original source. Reply with JSON {"verdict": "approve" | "changes", "findings": [{"file": "", "line": 0, "issue": ""}]}. Reject any change in behaviour the spec lists, any raw pointer, any edit outside owns, any invented component name.
+Compare the unit's merged spec, code, tests and proofs with the original source. Run the gate, then submit with verdict "approve", or "changes" and findings [{"target": "spec"|"impl"|"test"|"proof", "file", "line", "issue"}]. Reject any change in behaviour the spec lists, any raw owning pointer, any edit outside owns, any invented component name, any contract weaker than the spec, any obligation list that leaves out a public function, and any test that does not run on the reference.
 ```
 
 Integrator:
 ```text
 Role: integrator. Task {{id}}: {{title}}.
-Merge every reviewed unit branch of {{wp}} into wp/{{wp}}, regenerate shared files from fragments/, run the package acceptance suite, then merge into pbsd-cutover. On conflict or failure post test_failure to the owning unit task and stop.
+The runner has merged every reviewed unit of {{wp}} into wp/{{wp}}, and the integrated upstream packages into it. Regenerate the shared files from fragments/, run the gate (build, tests, proof re-check of every unit the merge changed, QEMU boot) and fix failures inside your owned paths. Criteria that need a package not yet integrated are recorded as deferred for P6-01. On a failure inside a unit, post test_failure to that unit's task instead of rewriting it.
 Acceptance: {{accept}}
 ```
 
@@ -175,197 +251,401 @@ Acceptance: {{accept}}
 
 ### 7.1 Providers, prices and limits (checked 4 Nov 2026)
 
-GLM-5.3-Flash is served by Z.ai and by many third-party hosts at the same list price. The runner spreads load over every provider that has a key, with a client-side token bucket per provider (section 8.3). Artificial Analysis: $0.15 per 1M input, $0.50 per 1M output, $0.03 per 1M cache hits; 71 tokens/s per stream and 1.55 s to first token on Z.ai's API; a reasoning model (about 103k reasoning tokens per Artificial Analysis task); 1M context.
+GLM-5.3-Flash is 320B total, 18B active, MoE, MIT licence, released 26 Aug 2026. It is served by Z.ai and by many third-party hosts at the same list price. The runner spreads load over every provider that has a key, with a client-side token bucket per provider (section 8.3).
+
+**Figures from Artificial Analysis:**
+- Price: $0.15 per 1M input, $0.03 per 1M cache hits, $0.50 per 1M output.
+- Speed on Z.ai's API: 71.3 tokens/s per stream and 1.55 s to first token. Fireworks measures 179 tok/s and Together 154.
+- Context 1M tokens; maximum output 128k.
+- It is a reasoning model, and thinking cannot be turned off (`reasoning_effort` low/high/max, default max). Artificial Analysis needed 120M output tokens to run its whole index on it.
 
 | Provider | Price in / hit / out per 1M | Rate limit as documented | How to raise it | Source |
 |---|---|---|---|---|
-| Z.ai (general API) | $0.15 / $0.03 / $0.50 | Concurrency (requests in flight) per account and per model, not RPM or TPM. The number is shown only in the console (rate-limits page) and depends on the account's user-rights level. Over the limit: HTTP 429, code 1302. Code 1305 means Z.ai itself is overloaded. | Raise the account's rights level, or apply in the console ("rate limit adjustment"): model, extra concurrency, use case; reviewed within 10 working days. | [docs.bigmodel.cn rate limits](https://docs.bigmodel.cn/cn/api/rate-limit), [GLM-5.3-Flash page](https://docs.z.ai/guides/vlm/glm-5.3-flash) |
-| Z.ai GLM Coding Plan | subscription | Concurrency tied to the plan (Max > Pro > Lite), raised dynamically off-peak; no published number. Plan quota may only be used in officially supported tools, so it is **not used by `pbsd_run`**. | Not adjustable on request. | [Z.ai usage policy](https://web.archive.org/web/20260702110048/https:/docs.z.ai/devpack/usage-policy) |
+| Z.ai (general API) | $0.15 / $0.03 / $0.50 | Concurrency (requests in flight) per account and per model, not RPM or TPM. The number is shown only in the console. Over the limit: HTTP 429, code 1302. Code 1305 means Z.ai itself is overloaded. | Contact support (international API); rate-limit adjustment form on bigmodel.cn, reviewed in about 10 working days. | [docs.bigmodel.cn rate limits](https://docs.bigmodel.cn/cn/api/rate-limit), [GLM-5.3-Flash page](https://docs.z.ai/guides/vlm/glm-5.3-flash) |
+| Z.ai GLM Coding Plan | subscription | Concurrency tied to the plan; no published number. Plan quota may only be used in officially supported tools, so it is **not used by `pbsd_run`**. | Not adjustable on request. | [Z.ai usage policy](https://web.archive.org/web/20260702110048/https:/docs.z.ai/devpack/usage-policy) |
 | DeepInfra | $0.15 / $0.03 / $0.50 | 200 concurrent requests per model by default. | Apply for an increase in the dashboard. | [DeepInfra rate limits](https://docs.deepinfra.com/account/rate-limits) |
-| Fireworks (serverless) | $0.15 / $0.03 / $0.50 | Adaptive TPM per model. GLM-5.3-Flash is in the Small tier: ceilings 216M total prompt TPM, 54M uncached prompt TPM, 2.16M generated TPM. The limit starts lower and grows 25% at most every 15 minutes while use is above 50% of it. Account cap 6,000 RPM with credits. | Ramp traffic gradually; Priority tier; Elastic Burst for eligible accounts. | [Fireworks serverless rate limits](https://docs.fireworks.ai/serverless/rate-limits) |
-| Together | $0.15 / $0.03 / $0.50 | No fixed serverless limit since 2 Oct 2026; 429 or 503 under high demand. | Provisioned throughput (GLM-5.3-Flash is offered). | [Together changelog](https://docs.together.ai/docs/changelog), [usage limits](https://docs.together.ai/docs/billing-usage-limits) |
-| OpenRouter | from $0.031 / $0.03 / $0.085 (cheapest host) to $0.15 / $0.03 / $0.50; about 36 hosts | No platform limit on paid models: limits pass through from the hosts, with automatic fallback between them. Extra keys or accounts do not add capacity. | More hosts eligible in provider routing. | [OpenRouter model page](https://openrouter.ai/z-ai/glm-5.3-flash), [limits](https://openrouter.ai/docs/api_reference/limits), [pricing FAQ](https://openrouter.ai/pricing) |
+| Fireworks (serverless) | $0.15 / $0.03 / $0.50 (US region $0.225 / $0.75) | Adaptive TPM per model. For models under 800B: 216M total prompt TPM, 54M uncached prompt TPM and 2.16M generated TPM, **only at spend tier 3 ($500 spent)**. The limit grows 25% at most every 15 minutes while use is above 50%, and resets after 72 h idle. Account cap 6,000 RPM with a payment method. | Ramp traffic gradually; Priority tier; Elastic Burst is not guaranteed. | [Fireworks serverless rate limits](https://docs.fireworks.ai/serverless/rate-limits) |
+| Together | $0.15 / $0.03 / $0.50 | No fixed serverless limit since 2 Oct 2026; 429 or 503 under high demand. | Provisioned throughput. | [Together changelog](https://docs.together.ai/docs/changelog) |
+| OpenRouter | from $0.0269 input (Relace, fp4, about 51% uptime) to $0.15 / $0.03 / $0.50; 36 providers, 41 endpoints | No platform limit on paid models; limits pass through from the hosts, with automatic fallback. | More hosts in provider routing. | [OpenRouter model page](https://openrouter.ai/z-ai/glm-5.3-flash) |
+| Novita, GMI | $0.084 / $0.017 / $0.28 (Novita, fp8); $0.075 / $0.25 (GMI) | not checked | | OpenRouter endpoints list |
 
-Measured speeds per host on OpenRouter vary from about 20 to about 140 tokens/s (Baseten, Together, Parasail, Cohere at the top); Z.ai's own endpoint was about 40–70 tokens/s. The cheapest hosts on OpenRouter have lower uptime (Relace 80%) and some run fp4 quantisation; the runner's default list uses full-price hosts only.
-
-**Not verified:** Z.ai's actual concurrency number for a pay-as-you-go account (read it from the console before the run; one forum report says about 6 for GLM-5.3-Flash on an older coding plan and 50 on Max, which does not apply to the API); the model ids on DeepInfra, Fireworks and Together (check each catalog); Fireworks' starting adaptive limit.
+- **Host choice:** the runner's default list uses full-price, full-precision hosts. The OpenRouter entry pins `quantizations: [fp8, bf16]`, so it never routes to fp4 endpoints.
+- **Benchmarks** (independent, Vals):
+  - Terminal-Bench 2.1: 62.9; Z.ai's own figure is 84.3.
+  - SWE-bench Verified: 92.0.
+  - **ProofBench v1.1 (Lean 4 proofs): 21%.** GLM-5.3 scores 49%, and the best frontier models score 100%. That is why the Lean proofs go to a specialised local prover (section 10).
+- **Data:** Z.ai international is a Singapore entity. Its terms say API content is not used for training and not stored.
+- **Entity List:** Zhipu has been on the US Entity List since January 2025; check whether that matters to you. DeepInfra, Fireworks and Together serve the open weights without Zhipu in the data path.
+- **Not verified:**
+  - Z.ai's actual concurrency for a pay-as-you-go account; read it from the console before the run.
+  - The model ids on DeepInfra, Fireworks and Together; check each catalogue.
+  - The old plan's claim of "about 103k reasoning tokens per Artificial Analysis task". Artificial Analysis publishes only the index total.
 
 ### 7.2 What the API changes
 
-- No model in RAM: all 256 GB and all 32 cores are free for gates and tmpfs.
-- Throughput per agent is fixed by the provider (about 58 s per turn at 4,000 output tokens), so total model throughput scales with the number of agents in flight, up to the providers' limits.
-- Cost is per token and does not depend on the agent count (section 8.1).
-- The local GPUs are not needed for the run; section 8.4 uses them for cheap triage.
+- **No model in RAM:** all of the P920's memory and cores are free for gates and tmpfs. The RTX 3090 runs the Lean prover.
+- **Throughput:** per agent it is fixed by the provider, about 85 s per turn at 6,000 output tokens. Total model throughput scales with the number of agents in flight, up to the providers' limits.
+- **Cost:** it is per token and does not depend on the agent count (section 8.1).
 
 ## 8. Default schedule: GLM API, parallel agents, Odin's PC
 
-### 8.1 Where the bottleneck is (estimate, not measured)
+### 8.1 Where the bottleneck is, and what it costs (estimate, not measured)
 
-`pbsd_run cpath` and `pbsd_run estimate` compute this from `tasks.json` (rerun them with measured figures after calibration).
+`pbsd_run cpath` and `pbsd_run estimate [low|mid|high] [k=v ...]` compute everything in this section from `tasks.json` and the active config. Rerun them with measured figures after the pilot (section 8.5).
 
-**Critical path** (`pbsd_run cpath`): 8 tasks and 54 budgeted turns: `P0-01-IF → P0-FREEZE → P0-01-U001-SPEC → IMPL → PROOF → REVIEW → P0-01-INT → P6-01-INT`. The graph is 8 levels deep and very wide: level 4 alone has 5,154 tasks that can run at once. At about 62 s per turn the chain is about 6 hours, so the dependency graph never limits the run.
+**Critical path** (`pbsd_run cpath`): 15 tasks and 17 dependency levels. The chain is `P0-01-IF → P0-FREEZE → P0-02-MODEL → P0-02-U001-PROOF → REVIEW → P0-02-INT → P0-03-INT → P1-02-INT → P1-03-INT → P1-07-INT → P2-01-INT → P2-04-INT → P4-02-INT → P4-05-INT → P6-01-INT`. That is about 2.6 days at 1.5 attempts per task. The graph is very wide: 2,577 unit specs can run at once after the freeze.
 
-Assumptions (`pbsd_run estimate` defaults):
-- Tasks 12,964 × 1.3 (splits and retries) = 16,853; turns 77,790 × 1.3 = 101,127.
-- Per turn: 4,000 output tokens including reasoning, 40,000 input tokens of which 80% are cache hits.
-- API call: 1.55 s + 4,000 ÷ 71 tok/s = 57.9 s; plus 4 s of non-gate tool time.
-- Gates (from the earlier plan): proofs 2,700 proof-hours × 2 cores = 5,400 core-hours, compile 1,900, QEMU 400 = 7,700 core-hours × 1.3 = 10,010 core-hours. Each gate job holds 2 cores on average while the agent waits for it.
-- 28 of the 32 cores run gates; 4 stay for the OS, runner, git and tmpfs.
+**Assumptions** (`pbsd_run estimate` defaults):
+- **What a turn is:** one API request. The old estimate assumed about 6 per task; a coding agent needs 10–150 (read, write, build, read the error, fix, re-gate).
+- **Requests per attempt** are each task's `turns_budget`:
 
-Per agent-run of a task: API 101,127 × 57.9 s = 5.85M s; tools 0.40M s; gates 10,010 × 3,600 ÷ 2 = 18.0M s; total 24.3M agent-seconds. Bounds on wall clock:
-- agents: 24.3M s ÷ N
-- gate CPU: 10,010 core-hours ÷ 28 cores = 357 h = 14.9 days
-- API: 5.85M stream-seconds ÷ allowed concurrency
-- critical path: about 6 h
+| Task | Requests per attempt |
+|---|---|
+| Decomposer | 12 (`-IF` 20) |
+| Implementer | 30 |
+| Tester | 25 |
+| Reviewer | 10 |
+| Integrator | 60 (`P0-FREEZE` 80, `P6-01-INT` 200) |
+| Prover T0 | 6 |
+| Prover T1 | 400 (including `lean_prove` calls) |
+| Prover T2 | 150 |
+| Prover T3 | 50 |
+| Prover T4 | 20 |
 
-| Agents | Agent-bound | Gate CPU (28 cores) | Wall clock | Binding constraint | API requests in flight |
-|---|---|---|---|---|---|
-| 4 | 70.2 d | 14.9 d | 70.2 d | agents | 1 |
-| 8 | 35.1 d | 14.9 d | 35.1 d | agents | 2 |
-| 16 | 17.6 d | 14.9 d | 17.6 d | agents | 4 |
-| **24** | 11.7 d | 14.9 d | **14.9 d** | **gate CPU** | 5 |
-| 32 | 8.8 d | 14.9 d | 14.9 d | gate CPU | 5 |
-| 64+ | ≤4.4 d | 14.9 d | 14.9 d | gate CPU | 5 |
+- **Other inputs**, by class:
 
-With 64 cloud CI cores' worth of burst slots (128 cores, `config.glm-api-burst.json`, 156 cores in total):
+| Class | Input tokens per request | Output tokens per request (reasoning included) | Attempts | Gate runs per attempt × core-minutes per run |
+|---|---|---|---|---|
+| decomposer | 35k | 5k | 1.3 | 2 × 4 |
+| implementer | 55k | 6k | 1.5 | 6 × 10 |
+| tester | 50k | 5k | 1.4 | 6 × 10 |
+| reviewer | 60k | 5k | 1.3 | 1 × 10 |
+| integrator | 80k | 6k | 2.0 | 10 × 300 |
+| prover T1 | 90k | 10k | 2.5 | 100 × 5 |
+| prover T2 | 90k | 8k | 2.5 | 40 × 30 |
+| prover T3 | 70k | 6k | 1.6 | 15 × 15 |
+| prover T4 | 50k | 5k | 1.4 | 6 × 10 |
 
-| Agents | Agent-bound | Gate CPU (156 cores) | Wall clock | Binding constraint | API in flight | Output tok/min | Input tok/min |
-|---|---|---|---|---|---|---|---|
-| 32 | 8.8 d | 2.7 d | 8.8 d | agents | 8 | 32k | 0.32M |
-| 64 | 4.4 d | 2.7 d | 4.4 d | agents | 15 | 64k | 0.64M |
-| 96 | 2.9 d | 2.7 d | 2.9 d | agents | 23 | 96k | 0.96M |
-| **128** | 2.2 d | 2.7 d | **2.7 d** | **gate CPU** | 25 | 105k | 1.05M |
-| 192 | 1.5 d | 2.7 d | 2.7 d | gate CPU | 25 | 105k | 1.05M |
+- **Flash attempt factors:** attempts are multiplied by 1.15 for coding work and 1.6 for T1/T2 proofs, because Flash solves fewer agentic tasks (Terminal-Bench 62.9 against 71.5 for GLM-5.3) and far fewer proofs (21% against 49%).
+- **Cache hits:** 85%.
+- **Speed and gates:** 70 tok/s per stream, 2 s to first token, 5 s of tool time per turn, and 2 cores per gate job.
+- **Scenarios:**
+  - **Low:** requests × 0.6, output × 0.7, gate time × 0.6, 90% cache hits.
+  - **High:** requests × 1.8, output × 1.5, gate time × 2, 75% cache hits.
+- **Lean prover:** its own tokens are local and free. Only GLM's turns are billed.
 
-**The binding constraint is the gate CPU: builds, PRISM proofs and QEMU on the P920's 32 cores.** The model is not: at the gate-bound rate the run needs only about 5 requests in flight (about 25 with cloud burst), which Z.ai alone or DeepInfra's default 200 covers. Above about 20 agents, extra agents only wait for gate slots. The other candidates:
-- **API concurrency and rate limits:** about 5–25 in flight and about 1M input tokens per minute at most, well under DeepInfra's 200 concurrent and Fireworks' Small-tier ceilings. Binding only if Z.ai is the only provider and its console limit is below about 5 (local) or 25 (burst).
-- **Git and merges on the HDD:** about 101,000 turn commits and 16,853 task merges. On a single HDD (about 100–150 random IOPS) with `fsync` per ref update that is hours of serialised I/O spread over the run and would make agents stall during packs and `gc`; with the repository and worktrees in tmpfs it is negligible. The HDD only receives the 10-minute checkpoints (`git push --mirror` and an SQLite backup).
-- **Integrators:** 40 package merges, each serialised on `wp/<WP>`; minutes each, not binding.
-- **Runner overhead:** one thread per agent, a 1 s scheduling loop and a 2 s status query over 13k rows; negligible next to 58 s turns.
-- **Critical path:** about 6 h.
+Middle case:
 
-**USD cost (estimate):** input 101,127 × 40,000 = 4.05B tokens: 3.24B hits × $0.03 + 0.81B misses × $0.15 = $97 + $121; output 101,127 × 4,000 = 405M × $0.50 = $202. **Total about $420.** It does not depend on the agent count.
-
-| Case | Output/turn | Input/turn | Hits | API cost | Wall clock, 24 agents, PC only | Wall clock, 128 agents + burst |
+| Class | Tasks | Requests | Input tokens | Output tokens | Gate core-h | API US$ |
 |---|---|---|---|---|---|---|
-| Low | 2,000 | 20,000 | 80% | about $210 | about 15 d (gate-bound) | about 2.7 d |
-| Middle | 4,000 | 40,000 | 80% | about $420 | about 15 d | about 2.7 d |
-| High (long reasoning) | 8,000 | 80,000 | 70% | about $940 | about 15 d (23 agents saturate) | about 2.7 d at 128–160 agents, about 50 requests in flight |
+| decomposer | 2,616 | 47k | 1.66B | 237M | 521 | 198 |
+| implementer | 2,577 | 133k | 7.33B | 800M | 4,445 | 752 |
+| tester | 2,577 | 104k | 5.19B | 519M | 4,149 | 508 |
+| reviewer | 2,577 | 39k | 2.31B | 193M | 642 | 207 |
+| integrator | 40 | 6k | 0.47B | 35M | 4,600 | 40 |
+| prover T0 | 15 | 0.1k | – | – | 3 | 0 |
+| prover T1 | 12 | 19k | 1.73B | 192M | 400 | 179 |
+| prover T2 | 83 | 50k | 4.48B | 398M | 6,640 | 414 |
+| prover T3 | 837 | 77k | 5.39B | 462M | 5,775 | 490 |
+| prover T4 | 1,642 | 53k | 2.64B | 264M | 2,644 | 259 |
+| **Total** | **12,976** | **528k** | **31.2B** | **3.10B** | **29,820** | **3,049** |
 
-Cloud CI burst: 10,010 core-hours × 128 ÷ 156 = 8,210 core-hours on cloud machines at an assumed $0.02–0.04 per core-hour = **about $165–330** (price not checked against a specific provider). Electricity for the PC: about 400 W × 24 h × 15 days ≈ 145 kWh, about A$48 at A$0.33/kWh.
+| | Low | **Middle** | High |
+|---|---|---|---|
+| API requests | 317k | **528k** | 950k |
+| Tokens in / out | 18.7B / 1.30B | **31.2B / 3.10B** | 56.2B / 8.37B |
+| **API cost** | **$1,438** | **$3,049** | **$7,557** |
+| Gate CPU | 17.9k core-h | **29.8k core-h** | 59.6k core-h |
+| PC only (28 gate cores): wall clock, gate-bound | 27 d | **44 d** | 89 d |
+| Agents that saturate the PC | 23 | **27** | 30 |
+| PC + one GCP burst worker (208 cores): wall clock | 3.6 d | **6.0 d** | 11.9 d |
+| Agents that saturate PC + burst | 171 | **197** | 226 |
+| Cloud burst cost (87% of gate work, $0.0089/core-h + 25%) | $172 | **$287** | $574 |
+| PC electricity (450 W, A$0.33/kWh), PC only / with burst | $86 / $12 | **$144 / $19** | $287 / $38 |
+| **Total, PC only** | **US$1.5k (A$2.2k)** | **US$3.2k (A$4.6k)** | **US$7.8k (A$11.2k)** |
+| **Total, with burst** | **US$1.6k (A$2.3k)** | **US$3.4k (A$4.8k)** | **US$8.2k (A$11.7k)** |
 
-What moves the estimate most: gate core-hours per task (measure in the calibration batch), first-pass gate rate, and output tokens per turn (reasoning length).
+US$1 = A$1.4335 (RBA, 3 Nov 2026). Add about 30% to the wall clock for fix rounds and queueing.
+
+**Why this is higher than the previous estimate** (US$420 of API and 10,010 core-hours; the arithmetic was right, the inputs were not):
+1. **Requests:** 528k instead of 101k, because a turn is one API request.
+2. **Per request:** context is 59k tokens instead of 40k, because checker and build logs stay in the conversation. Output is 5.9k instead of 4k.
+3. **Proofs** now have to pass real checkers. Flash needs more attempts at them.
+4. **Gates:** agents run their gate several times per attempt. The old estimate counted one run per task at the proof time cap.
+
+**The binding constraint is the gate CPU.**
+- On the PC alone, about 27 agents saturate 28 cores, and the run takes about 6 weeks.
+- One GCP `c3d-highcpu-360` spot worker (180 cores, $1.60/h in Sydney) cuts that to about 6 days for about $290. With it, about 200 agents are needed, and about 88 requests are in flight at once. Z.ai plus DeepInfra's default 200 cover that.
+- **The other candidates:**
+  - **API concurrency and rate limits:** about 90 requests in flight and 3.6M input tokens per minute at the burst rate. That is within DeepInfra's 200 concurrent and Fireworks' ceilings. It binds only if Z.ai is the only provider and its console limit is below about 90.
+  - **Git and merges:** about 530k turn commits and 13k merges. With the repository and worktrees in tmpfs this is negligible. The HDD only receives the 10-minute checkpoints.
+  - **Integrators:** 40 package merges, now ordered by package dependency. They set the 2.6-day critical path, not the total.
+  - **Runner overhead:** one thread per agent, a 1 s scheduling loop, and per-turn SQLite writes. Negligible next to 85 s turns.
+
+**What moves the estimate most:**
+1. Requests per task and attempts, above all for proofs.
+2. Output tokens per request.
+3. Gate core-minutes per run.
+
+The pilot measures all three.
 
 ### 8.2 Settings that saturate the gates
 
-Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.json` (with cloud CI):
+Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.json` (with cloud workers):
 
 | Setting | PC only | With burst |
 |---|---|---|
-| Agents (`slots.agent.count`) | 24 (19 saturate the gates; +25% for queueing) | 128 |
+| Agents (`slots.agent.count`) | 32 (27 saturate the gates, plus about 15%) | 224 (197, plus about 15%) |
 | Compile and unit-test slots | 8 × 1 core, 3 GB, node 0 | same |
-| QEMU slots | 2 × 2 cores, 4 GB, node 0 | same |
-| PRISM slots | 9 × 2 cores, 12 GB, any node | same |
-| Cloud burst slots (`burst_slots`, `burst_cmd`) | 0 | 64 × 2 cores |
+| QEMU slots (KVM; never sent to workers without `kvm`) | 2 × 2 cores, 4 GB, node 0 | same |
+| Proof-check slots | 9 × 2 cores, 12 GB, any node | same |
+| Cloud workers (`workers_file`) | none | w1: 88 slots (no KVM on GCP AMD, so QEMU stays on the PC) |
 | Z.ai concurrency cap | 8 (set to the console value) | 8 |
-| DeepInfra cap | 32 | 48 |
-| Fireworks cap | 16, TPM 2M | 16 |
-| OpenRouter cap | 16 | 16 |
-| `api_max_tokens` | 16,384 | 16,384 |
-| Context budget (`ctx_per_slot`) | 131,072 | 131,072 |
+| DeepInfra / Fireworks / OpenRouter caps | 32 / 16 (TPM 2M) / 16 | 96 / 32 (TPM 2M) / 32 |
+| `api_max_tokens` | 32,768 (reasoning included; the old 16,384 could not hold an 800-line file plus reasoning) | same |
+| Context budget (`ctx_per_slot`) | 131,072 | same |
+| `role_max_turns` | decomposer 40, implementer 80, tester 70, prover 300, reviewer 30, integrator 160 | same |
+| Lean prover (`lean_prover_url`) | `http://127.0.0.1:8081/v1` (`tools/llama/lean-prover.sh`) | same |
+| Pinned gates (`gates_dir`) | `/opt/pbsd/gates` | same |
 | Checkpoints to the HDD | every 600 s | every 600 s |
 
-Gate slots use 8 + 4 + 18 = 30 cores' worth of jobs; with load admission at 34 the machine stays full without thrashing. RAM: gates 8 × 3 + 2 × 4 + 9 × 12 = 140 GB, task database, git and runner about 8 GB, tmpfs (repository, worktrees, build trees, ccache) the remaining 100 GB.
-
-Provider caps are client-side ceilings, not grants: set each one at or below the account's limit. Order providers by preference; the first is the default for a package (cache affinity) and the rest take overflow and failover.
+- **Cores:** gate slots use 8 + 4 + 18 = 30 cores' worth of jobs. With load admission at 34, the machine stays full without thrashing.
+- **RAM:** gates take 8 × 3 + 2 × 4 + 9 × 12 = 140 GB. The task database, git and runner take about 8 GB. tmpfs (repository, worktrees, build trees, ccache) takes the rest.
+- **Provider caps** are client-side ceilings, not grants: set each one at or below the account's limit.
 
 ### 8.3 Runner (`pbsd_run`, C++23)
 
 ```
 cp docs/plan/tools/runner/config.glm-api.json /mnt/d/pbsd-ckpt/config.json   # read from PBSD_CHECKPOINT after a reboot
+sudo mkdir -p /opt/pbsd && sudo cp -r docs/plan/tools/gates /opt/pbsd/gates # pinned gate scripts (gates_dir)
 export ZAI_API_KEY=...  DEEPINFRA_API_KEY=...  FIREWORKS_API_KEY=...  OPENROUTER_API_KEY=...   # any subset; _2.._9 add keys
 export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
 pbsd_run cpath      # critical path and graph width
-pbsd_run estimate   # wall clock, binding constraint, cost per agent count; k=v overrides, e.g. out=6000 burst_cores=128
+pbsd_run estimate   # wall clock, binding constraint, cost; "low"/"high", k=v overrides, e.g. cores=208 T2.attempts=4
 pbsd_run init && pbsd_run run
 ```
 
-- **Providers:** every provider with a key is used. Each has an in-flight cap, an RPM bucket and a TPM bucket (refilled continuously; a request reserves its prompt size plus `expected_out_tokens` and is charged the real usage when it returns).
-- **Cache-friendly prompts:** the compact layered prompt is used for the API too: global rules, role template, contract file list and task, byte-stable and in that order, with per-task data last. Tasks of one package go to the same provider first (affinity on the package id), so its prefix cache stays warm. Cache hits are read from `prompt_tokens_details.cached_tokens` and billed at that provider's hit price.
-- **Failover:** 429, 5xx and connection errors put that provider into a cooldown (Retry-After or exponential backoff with jitter) and the request moves to the next provider. 401/403 rotate to the provider's next key, then take the provider out for an hour. 402 takes only that provider out; the run stops only when every provider is out of credit. 400 returns to the agent (compaction).
-- **Gate admission:** gates wait for a slot of their kind, NUMA-pinned; when all local slots are busy, the gate goes to the least-busy cloud worker listed in `workers_file` (`<ssh-host> <slots>` per line, re-read every 30 s): the runner pushes the task commit to the git mirror as `refs/gates/<id>` and runs `ssh <host> -- /opt/pbsd/bin/pbsd-gate <role> <id> <sha>`, which runs the same `tools/gates/<role>.sh` in tmpfs. Renting and wiring the workers is in `CLOUD_SETUP.md`.
-- **RAM first, HDD for checkpoints:** the task database lives in `/run/pbsd/state` (tmpfs). Every `checkpoint_s` the runner copies it to `checkpoint_dir` with SQLite's online backup (temp file, then rename) and pushes the repository with `--mirror` to `checkpoint_repo` on the HDD. After a reboot the database is restored from the HDD copy automatically.
-- **Progress:** overall and per-phase bars, time left and finish time, cost so far and projected, gate slot use (`compile 8/8 qemu 2/2 proof 9/9 burst 41/64`), and one line per provider (in flight / cap, successes, 429s, errors, cooling).
+- **Providers:** every provider with a key is used. Each has an in-flight cap, an RPM bucket and a TPM bucket. A request reserves its prompt size plus `expected_out_tokens` and is charged the real usage when it returns.
+- **Cache-friendly prompts:** layered as in section 5, with package affinity per provider. Cache hits are read from `prompt_tokens_details.cached_tokens` and billed at that provider's hit price.
+- **Failover:**
+  - 429, 5xx and connection errors put that provider into a cooldown (Retry-After, or exponential backoff with jitter), and the request moves to the next provider.
+  - 401/403 rotate to the provider's next key, then take the provider out for an hour.
+  - 402 takes only that provider out; the run stops only when every provider is out of credit.
+  - An outage longer than the retries ends the attempt as `infra`, with no attempt charged.
+- **Merges:** passed tasks are merged by the runner (section 2).
+- **Gate admission:** gates wait for a slot of their kind, NUMA-pinned. When all local slots are busy, the gate goes to the least-busy worker in `workers_file` (`<ssh-host> <slots> [kvm]` per line, re-read every 30 s):
+  1. The runner commits with a `PBSD-Base` trailer, which the proof gate uses for the annotation-only check.
+  2. It pushes the commit to the git mirror as `refs/gates/<id>`.
+  3. It runs `ssh <host> -- /opt/pbsd/bin/pbsd-gate <role> <id> <sha> <proof-tier>`. That runs the pinned `/opt/pbsd/gates/<role>.sh` on the same sparse tree in tmpfs.
 
-```
-PBSD  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 2,601/12,964 (20.1%)
-  running 24  queued 3,980  blocked 6,320  failed 31  escalated 2  quarantined 0
-  throughput 36.2 tasks/h   time left 11d 22h 15m   ETA Mon 23 Nov 08:10 AEDT
-  API cost so far $81.40   projected total $406
-  slots  agent 24/24   RAM 78%  load 31.6
-  gates  compile 8/8  qemu 2/2  proof 9/9
-  model api GLM-5.3-Flash   70.4 tok/s out
-    zai          in flight 3/8  ok 18211  429 12  err 3
-    deepinfra    in flight 2/32  ok 9734  429 0  err 1
-```
-
-`pbsd_run selftest` covers the watchdog, job path, local server restart and chat, context compaction, the RPM/TPM buckets and in-flight cap, failover from a 429 provider to a second one with cache-hit billing, and gate slots with burst.
+  Renting and wiring the workers is in `CLOUD_SETUP.md`.
+- **RAM first, HDD for checkpoints:**
+  - The task database lives in `/run/pbsd/state` (tmpfs).
+  - Every `checkpoint_s` the runner copies it to `checkpoint_dir` with SQLite's online backup (temp file, then rename), and pushes the repository with `--mirror` to `checkpoint_repo` on the HDD.
+  - `backup_cmd` can add an off-machine copy.
+  - After a reboot the database is restored from the HDD copy automatically.
+- **Progress:**
+  - overall and per-phase bars, time left and finish time;
+  - cost so far and projected;
+  - gate slot use (`compile 8/8 qemu 2/2 proof 9/9 workers 1 (85/88 slots)`);
+  - one line per provider: tier, model, in flight / cap, successes, 429s, errors, cooling.
+- **Selftest:** `pbsd_run selftest` runs 22 checks:
+  - the watchdog and job path;
+  - local server restart and chat;
+  - context compaction;
+  - the RPM/TPM buckets and in-flight cap, and failover with cache-hit billing;
+  - gate slots, burst, the worker list, and QEMU only on KVM workers;
+  - ownership parsing and model tiers;
+  - **an end-to-end task on a scratch repository with a scripted model.** It checks that path escapes are refused, a write after a passing gate invalidates it, gates run without API keys, the task is merged into `wp/<WP>`, merges without a worktree work, conflicts are reported, a reviewer's "changes" reopens the unit, and an infra failure charges no attempt.
 
 ### 8.4 Mitigations, in order of effect
 
-1. **Cloud CI burst for gates** (`burst_cmd`, `burst_slots`): the only change that moves the bottleneck a lot: 14.9 → about 2.7 days for about $165–330. The cloud runners fetch the commit from a mirror pushed by the runner, so nothing but the gate result comes back.
-2. **Cut gate core-hours:** sccache/ccache shared across worktrees in tmpfs, keyed on contract version; incremental builds per package; PRISM caching of discharged obligations keyed on the file hash; QEMU boots only for integrator gates. Each 10% off gate core-hours is about 1.5 days off a PC-only run.
-3. **Gates in RAM:** repository, worktrees, build trees, ccache and QEMU images in tmpfs; the HDD only takes checkpoints. A gate on the HDD would also contend with git.
-4. **NUMA pinning and capped build parallelism:** each gate slot has a fixed core count and node, so builds never use `-j$(nproc)`; compile and QEMU on node 0, proofs spread. Run under Linux (or WSL2 with memory interleaving in the BIOS) as before.
-5. **Local GPUs for cheap triage:** Qwen 3.5 9B on the RTX 3090 (and the A4000) via `aux_url` reads gate logs and failing diffs, and pre-checks builds and formatting before a full gate is started. That cuts failed gate runs (the main cost of retries) and API tokens. Turn it on per role with `role_backend` after calibration shows it is reliable.
-6. **More API headroom when burst is on:** add DeepInfra (200 concurrent default) or ask Z.ai for a higher concurrency; ramp Fireworks traffic slowly because its limit grows 25% per 15 minutes.
+1. **Cloud burst for gates** (`workers_file`): the only change that moves the bottleneck a lot, from about 44 to about 6 days for about $290 in the middle case. The workers fetch the commit from a mirror pushed by the runner, so nothing but the gate result comes back.
+   - QEMU gates need KVM. GCP's AMD machines have none, so on GCP they stay on the PC.
+   - KVM-capable alternatives: AWS `.metal` spot (for example m7a.metal-48xl in eu-north-1, $1.18/h for 192 cores) and AWS Intel C8i with nested virtualization in Sydney ($0.0122 per core-hour).
+2. **Cut gate core-hours:**
+   - sccache/ccache shared across worktrees in tmpfs, keyed on contract version;
+   - incremental builds per package;
+   - proof results cached by file hash;
+   - QEMU boots only for integrator gates.
+
+   Each 10% off gate core-hours is about 4 days off a PC-only run.
+3. **Gates in RAM:** repository, worktrees, build trees, ccache and QEMU images in tmpfs; the HDD only takes checkpoints.
+4. **NUMA pinning and capped build parallelism:**
+   - Each gate slot has a fixed core count and node, so builds never use `-j$(nproc)`.
+   - Compile and QEMU go on node 0; proofs spread over both nodes.
+   - Run under Linux, or WSL2 with memory interleaving in the BIOS. WSL2 needs nested virtualization for KVM in the QEMU slots.
+5. **Local GPU for Lean proofs:** the RTX 3090 runs the Lean prover (`tools/llama/lean-prover.sh`). The A4000 can run a smaller prover or a log-triage model through `aux_url` / `role_backend`.
+6. **More API headroom with burst:** add DeepInfra (200 concurrent by default) or ask Z.ai for higher concurrency. Ramp Fireworks traffic slowly, because its limit grows 25% per 15 minutes.
 
 ### 8.5 Order of work
 
-1. Read Z.ai's concurrency on the console rate-limits page and set `providers[zai].concurrency`; top up credit on each provider used.
-2. `pbsd_run selftest`; write the gate scripts; run 50 Phase 0 tasks with 8 agents to measure gate core-hours per task, tokens per turn and first-pass rate; rerun `pbsd_run estimate` with those numbers.
-3. Set the agent count to the estimate's saturation figure plus 15–25%, and decide on cloud burst.
-4. Phase 0 contracts and freeze; Phase 1 core and first QEMU boot; Phases 2–5; large drivers; `P6-01` final merge and fix rounds.
+0. **Base branch.** The source tree that commit `bfa869fc1` deleted from `main` is restored on this branch (section 11). Run on a branch that has the full tree and this plan.
+1. **Toolchains and providers.**
+   - Install the toolchains on the PC (WSL2): GCC 16 (C++26 contracts), Clang, ESBMC, CBMC, GenMC, Lean (elan) and Apalache. `CLOUD_SETUP.md` step 6 has the commands.
+   - Clone Linux and Wine at pinned tags under `~/pbsd-ref`.
+   - Start the Lean prover.
+   - Read Z.ai's concurrency on the console rate-limits page and set `providers[zai].concurrency`.
+   - Top up credit on each provider used.
+2. **Selftest.** `pbsd_run selftest` (22 checks).
+3. **P0-07 first.** It pins the tool versions and sets the real gate commands (`PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE`). It also checks every checker flag in `proof_check.sh` against those versions.
+4. **Pilot (go/no-go).**
+   - Run all of Phase 0 with every package's `-IF` task, `P0-FREEZE`, and all of P1-02: 447 tasks, closed under their dependencies, including three package models and 29 T2 proofs.
+   - Measure requests, tokens and dollars per task class; the first-pass gate rate; **T1/T2 obligations proved per attempt**; and the 429 rate per provider.
+   - Rerun `pbsd_run estimate` with those numbers.
+   - Stop and decide if T2 proofs stay under about 50% after 3 attempts, or if the projected cost is over budget. Options:
+     - simpler specs and smaller verified units;
+     - a different Lean prover;
+     - escalating hard proof tasks to GLM-5.3 (`escalate_tier: frontier`).
+5. **Agent count and burst.** Set the agent count to the estimate's saturation figure plus 15–25%, and decide on cloud burst.
+6. **The run.** Phase 0 contracts and freeze; Phase 1 core and first QEMU boot; Phases 2–5; large drivers; `P6-01` final merge and fix rounds; proof campaigns for escalated T1/T2 tasks.
 
-When the run finishes, everything is merged on `pbsd-cutover`, proved, and booting in QEMU on amd64, arm64 and riscv64 with the acceptance suites green. Real-hardware tests on the P920 and the merge to `main` follow.
+When the run finishes:
+- everything is merged on `pbsd-cutover`;
+- the verified core is PROVED, and everything else is labelled BOUNDED or RUNTIME in the proof report;
+- the tree boots in QEMU on amd64, arm64 and riscv64 with the acceptance suites green, or with the open items listed.
+
+Real-hardware tests on the P920 and the merge to `main` follow.
 
 ## 9. Fault tolerance of the run
 
-The PC can lose power, run out of memory or crash, and any API provider can rate-limit, fail or run out of credit (llama-server can crash or hang when the local backend is used). The run has to resume where it stopped and never redo or corrupt finished work.
+The PC can lose power, run out of memory or crash. Any API provider can rate-limit, fail or run out of credit, and a spot worker can be reclaimed. The run has to resume where it stopped and never redo or corrupt finished work.
 
-- **Idempotent tasks.** A task's output is its branch `t/<id>` plus its status row. Rerunning a task starts again from the last commit on its branch. Gates are pure functions of the commit, so running a gate twice gives the same answer.
-- **Task database durability.** SQLite in WAL mode with `synchronous=FULL`, or Postgres with its own write-ahead log. Each state change is one transaction, written before the action it records. An `events` table is an append-only log of every lease, submit, gate result and message.
-- **Atomic commits.** Agents write into the tmpfs worktree. The harness commits and pushes to the bare repository only at the end of each turn, and a gate result is recorded only with the commit SHA it ran on. Bare repo writes use git's own atomic ref updates.
-- **RAM-to-HDD checkpoints.** At every turn end the harness commits each tmpfs worktree's work in progress, and every 10 minutes it updates a `wip/<id>` ref, which reaches the HDD with the next mirror push. It also saves each agent's conversation state (messages and tool results, so far) to `state/<id>.jsonl.zst`. After a crash, at most 10 minutes of work is lost per task.
+- **Idempotent tasks.** A task's output is its branch `t/<id>` plus its status row. Rerunning a task starts again from its last commit, merged with what its package has merged since. Gates are pure functions of the commit, and every gate result is recorded with the SHA it ran on.
+- **Task database durability.**
+  - SQLite in WAL mode with `synchronous=FULL`, or Postgres with its own write-ahead log.
+  - Each state change is one transaction, written before the action it records.
+  - An `event` table is an append-only log of every lease, gate result, merge, reopen and cost row.
+- **Atomic commits.**
+  - Agents write into the tmpfs worktree.
+  - The harness commits only the task's owned paths at the end of each turn.
+  - Merges are compare-and-swap ref updates, so a concurrent merge is never lost.
+- **RAM-to-HDD checkpoints.**
+  - Every 10 minutes the harness updates a `wip/<id>` ref, which reaches the HDD with the next mirror push.
+  - It also saves the agent's conversation state.
+  - After a crash, at most 10 minutes of work is lost per task.
 - **Resume after crash, power loss or OOM.** On start, the scheduler:
-  1. Marks every `leased` task whose lease has expired as `ready`.
-  2. Rebuilds worktrees from `wip/<id>` refs.
-  3. Reloads conversation state.
-  4. Reruns `git fsck` on the bare repo and `PRAGMA integrity_check` on SQLite.
+  1. Runs `PRAGMA quick_check` on SQLite (and `git fsck` if in doubt).
+  2. Marks every `leased` task whose lease has expired as `ready`.
+  3. Rebuilds worktrees from `wip/<id>` refs.
+  4. Reloads conversation state.
   5. Continues.
 
   A systemd unit (or rc.d script) starts the scheduler on boot.
-- **Local server failures.**
-  - Health check every 30 s on `/health`; 503 means the model is still loading and is waited for, not restarted.
-  - A crash or hang (no answer, or a connection error on a request) restarts llama-server with `server_cmd`; the Windows script kills any old `llama-server.exe` first.
-  - No new leases while it is down; in-flight turns retry with backoff, up to 6 tries, then the task is requeued from its last commit.
-  - Slot KV caches are lost on restart; the next turn recomputes the prompt, which costs time, not correctness.
-  - After `restart_max` restarts the runner stops leasing (or uses the API fallback if enabled) and the status line shows `[server down]`.
+- **Local server failures** (only with `backend: "local"`, Appendix D):
+  - Health check every 30 s; 503 means the model is still loading.
+  - On a crash or hang the runner restarts llama-server with `server_cmd`.
+  - No new leases while the server is down.
+  - After `restart_max` restarts the runner stops leasing, or uses the API fallback.
+  - The Lean prover is not supervised. If it is down, `lean_prove` returns "unavailable" and the agent retries later.
 - **API failures.**
-  - Timeout per request: 15 minutes (`api_timeout_s`).
-  - 429, 5xx and network errors put that provider into a cooldown (honouring `Retry-After`, else exponential backoff with jitter up to 5 minutes) and the request fails over to the next provider, up to 12 tries.
-  - Per-provider token buckets on RPM and TPM and an in-flight cap keep the run under each account's limits, so 429s are rare rather than routine.
-  - 401/403 rotate to the provider's next key (`ZAI_API_KEY_2` and so on), then take that provider out for an hour.
-  - 402 (out of credit) takes only that provider out; the run stops cleanly only when every provider is out.
-  - Local server failures matter only with `backend: "local"` (Appendix D).
+  - Timeout per request: 30 minutes (`api_timeout_s`).
+  - 429, 5xx and network errors put that provider into a cooldown and fail over to the next one, up to 12 tries. After that the attempt ends as `infra`, with no attempt charged.
+  - Per-provider RPM/TPM buckets and in-flight caps keep the run under each account's limits.
+  - 401/403 rotate keys. 402 takes only that provider out.
+- **Gate infrastructure failures.**
+  - A gate exiting 3 (a tool missing, a fetch failing) or a worker lost mid-gate (ssh 255) is retried up to 3 times, elsewhere if possible. After that the attempt ends as `infra`.
+  - 20 infra results in a row pause leasing for 5 minutes, so an outage does not cycle every task through it.
 - **Watchdogs.**
-  - Agent turn with no progress for 20 minutes: kill and requeue.
-  - Build over 30 minutes, test over 60 minutes, or proof over its budget: kill the job and record a timeout.
+  - Agent turn with no progress for 30 minutes: kill and requeue.
+  - Build over 30 minutes, test over 60 minutes, or a proof over its budget: kill the job and record a timeout.
   - QEMU guest with no console output for 10 minutes: kill it.
-- **Poison-task quarantine.** A task that crashes the harness, triggers OOM, or hits the watchdog 3 times goes to `quarantined`. It is not retried automatically. It appears in the daily escalation report with logs attached.
-- **Memory-pressure throttling.** See 8.2 and the scheduler in `tools/runner`. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
-- **RAM and HDD.** The task database, repository and worktrees live in tmpfs. Every 10 minutes the runner copies the database to the HDD (SQLite online backup to a temp file, then rename) and pushes the repository with `--mirror` to a bare repository on the HDD; on start it restores the database from the HDD if the tmpfs is empty.
-- **Daily backup.** At 04:00 Sydney time: the database copy, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
+- **Poison-task quarantine.** A task that crashes the harness 3 times, or hits 20 infra results, goes to `quarantined`. It appears in the daily escalation report with logs attached.
+- **Memory-pressure throttling.** Admission control on RAM, load and I/O pressure, and gates pause above the RAM pause level. Jobs get `oom_score_adj` 500, so QEMU and proof jobs are killed before the database or git.
+- **Security.**
+  - Agent-written code (builds, tests) never sees the API keys: local gates get a scrubbed environment, and workers hold no keys.
+  - `read_file` cannot leave the worktree, the main checkout and the reference trees.
+  - Workers block the instance metadata service for the gate user.
+- **Daily backup.** At 04:00 Sydney time, the database copy, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
+
+## 10. Proof stack (replaces PRISM)
+
+**Why PRISM is gone.** PRISM is a probabilistic model checker for Markov chains and MDPs. It reads only its own modelling language, has no C or C++ front end, and cannot check any property of PBSD code. The old proof gate also passed when a task wrote no proofs at all.
+
+This repository's own earlier tooling (`tools/verify`) used CBMC, ESBMC and the clang analyser. CBMC reached 749 of 4,737 units, so C++ support is a known limit.
+
+**Result labels.** Every result is **PROVED** (unbounded), **BOUNDED(k)**, **RUNTIME** or **TESTED**, and the proof report keeps them apart.
+
+| Tier | Where | Checker | Who writes the proof | Label | Tasks |
+|---|---|---|---|---|---|
+| T0 | build and infrastructure packages (P0-01, P0-07, P0-08) | `static_assert`/`consteval`, dialect lint | GLM-5.3-Flash | TESTED | 15 |
+| T1 | models of the 12 verified-core packages | **Lean 4** (kernel-checked); **TLA+ with Apalache** inductive invariants for the P1-06 and P2-01 protocols | GLM-5.3-Flash states lemmas; the **local Lean prover** writes the Lean proofs through `lean_prove` | PROVED | 12 |
+| T2 | verified-core code: allocator, page tables (W^X), capabilities, dispatcher, EEVDF core, ring core, path walk, IOMMU core, cap model, VFS interface | **ESBMC** function contracts and loop invariants in contract or k-induction mode. Each operation also proves `abs(s') == step(abs(s), op)` against the T1 model, transcribed as ghost functions in a locked header. | GLM-5.3-Flash | PROVED | 83 |
+| T3 | the rest of the kernel | ESBMC (C++) or CBMC (C) with unwinding assertions; **GenMC** (RC11/LKMM, 2–4 threads) for concurrent code | GLM-5.3-Flash | BOUNDED(k) | 837 |
+| T4 | drivers and imported foreign code (Linux drivers, DRM, Wine, ext4/NTFS/ZFS imports, translation) | CBMC/ESBMC harnesses at the gateway, plus generated runtime gateway checks. The real guarantee is the T1/T2 proof that IOMMU windows and capabilities confine the driver. | GLM-5.3-Flash | BOUNDED(k) + RUNTIME | 1,642 |
+
+**The local Lean prover:**
+- **Candidates:** any Lean-specialised model behind an OpenAI-compatible server. At 4-bit, a 32B model fits the RTX 3090.
+  - Goedel-Prover-V2-32B: about 88% on miniF2F at pass@32, per a secondary source.
+  - Pythagoras-Prover-32B: 93% at pass@2048 (arXiv 2606.12594).
+  - DeepSeek-Prover-V2.
+- **How `lean_prove` works:**
+  1. It samples `lean_samples` proofs (8 by default) for the statement appended to the owned `.lean` file.
+  2. It checks each with `lake env lean` in a scrubbed environment.
+  3. It keeps the first one Lean accepts.
+  4. If none passes, it feeds the best attempt's errors back for a second round (`lean_rounds`).
+  5. If that also fails, it tells GLM to split the statement into lemmas.
+- **What it refuses:** candidates that rewrite earlier text, and code that runs at elaboration time (`#eval`, `run_cmd`, `IO`, `unsafe`, `extern`).
+- **Its limit:** the prover proves Lean statements only. The link from the Lean model to the C++ code is the T2 refinement proof in ESBMC.
+
+**Dialect consequences** (frozen in P0-01):
+- **Contract syntax.** `[[expects]]/[[ensures]]/[[invariant]]` is the C++20 contracts design removed in 2019, and compilers silently ignore unknown attributes. Contracts are `PBSD_PRE/POST/ASSERT/INVARIANT/ASSIGNS/DECREASES` macros:
+  - **GCC 16 runtime build:** C++26 `pre`/`post`/`contract_assert` (P2900). GCC 16 implements them; Clang does not.
+  - **Verification build:** `__ESBMC_requires/ensures` or `__CPROVER_*`.
+  - **Clang:** runtime checks.
+  - **Vacuity build:** under `PBSD_VACUITY` an `assert(false)` after the preconditions.
+- **Verified-core subset:** no C++ modules, coroutines or virtual inheritance; concrete template instantiations; asm only in stubs with locked contracts. ESBMC's front end claims C++20, not C++23.
+- **Design for verification:** a finite syscall interface, bounded loops in kernel paths, and page-table entries written one at a time.
+
+**Anti-cheating gates** (`tools/gates/proof_check.sh`; flags are fixed by the gate, never by the agent):
+1. **Locked statements.** Lean and TLA+ statement files are hash-pinned at `P0-FREEZE`, and any change fails. A generated `example : Spec.X := Model.X` per theorem checks that each proved statement is the locked one.
+2. **Axiom audit.** `#print axioms` may list only `propext`, `Classical.choice` and `Quot.sound`. The gate also rejects `sorry`, `admit`, `axiom`, `native_decide`, `implemented_by`, `extern` and `debug.skipKernelTC`.
+3. **No assumptions in code or in T2/T3 obligations.** `__ESBMC_assume`, `__CPROVER_assume` and `__VERIFIER_assume` are rejected there. T4 harnesses may use them to constrain inputs, but every harness must end with `PBSD_REACHED();`.
+4. **Annotation-only diffs.** With the `PBSD_*` annotation lines removed, the code must equal the reviewed code at the task's `PBSD-Base` commit.
+5. **Vacuity, for T2, T3 and T4.** Under `PBSD_VACUITY`, an `assert(false)` after the preconditions, and at each `PBSD_REACHED()`, must fail. Zero verification conditions are rejected, and so is an empty obligation list.
+6. **Tier from the task.** The tier comes from `tasks.json` through the runner, never from a file the agent writes.
+7. **Integration re-check.** An integrator change to a proved unit re-runs that unit's proof.
+8. **Spec review.** Reviewers reject incomplete obligation lists and contracts weaker than the spec.
+
+Still to add in P0-07: mutation tests (seeded bugs must be rejected), two solver seeds, and cover checks.
+
+**Honest scope:**
+- **Published scale:** fully verified kernels so far are around 6–9 KLOC. seL4 took about 25 person-years; Atmosphere (Verus) under 2.5 person-years.
+- **This plan:** proves a verified core of roughly 10–20 KLOC and labels everything else BOUNDED or RUNTIME.
+- **No evidence yet:** there is no published benchmark for LLM-written C++ verification proofs, and none for GLM on any verification tool. The pilot measures it.
+
+## 11. Review of 4 Nov 2026
+
+The plan's arithmetic reproduced exactly: `pbsd_run estimate` gave $421, 14.9 days and 2.7 days. The problems were in its inputs and in the code. Every item is fixed except the two that need a decision (22, 23).
+
+| # | Problem | Fix |
+|---|---|---|
+| 1 | Commit `bfa869fc1` ("docs: add PBSD phased kernel plan…") deleted 116,056 files from `main`: `hbsd/`, `pbsd/`, `kde/`, `tools/`, `LICENSE` and more. The runner, tasks and gates read those trees. | Restored from its parent `4500833f7` (commit "Restore the source tree deleted by bfa869fc1") |
+| 2 | PRISM cannot check C++ code; the proof gate passed with no proofs | Tiered stack and `proof_check.sh` (section 10); local Lean prover through `lean_prove` |
+| 3 | `[[expects]]/[[ensures]]/[[invariant]]` is the removed C++20 design; compilers ignore it, so the promised runtime checks would not exist | `PBSD_*` macros over C++26 `pre/post` (GCC 16) and ESBMC/CBMC contracts |
+| 4 | About 6 turns per task, but a turn is one API request | Per-role request budgets; re-estimated (section 8.1) |
+| 5 | Gate CPU counted one run per task | Gate runs per attempt: 29.8k core-hours in the middle case |
+| 6 | `owns` was one comma-joined string; the runner treated it as one path, so every write was refused | `tasks.json` uses lists; the runner accepts both forms |
+| 7 | Every unit of a package owned the whole package directory, so parallel tasks could write the same file | Per-unit ownership |
+| 8 | Nothing merged a passed task, so dependants (IMPL after SPEC, PROOF after IMPL) never saw their dependencies' output | Deterministic merges into `wp/<WP>` and `pbsd-cutover` |
+| 9 | An agent could pass the gate, then edit and submit | Any write invalidates the gate |
+| 10 | Reviewer verdicts were never read | `submit(verdict, findings)` reopens the named tasks |
+| 11 | Messages were stored but never delivered | Inbox in the first prompt, plus `read_messages` |
+| 12 | API outages counted as attempts (8 → escalated) | `infra` result, no attempt charged, back-off |
+| 13 | Local gates ran on a sparse worktree, remote gates on a full checkout: different answers | One sparse pattern for both |
+| 14 | `read_file` could read any file on the PC, including the API keys, and gates inherited the keys | Path confinement; scrubbed gate environment; workers hold no keys; no network in remote gates |
+| 15 | Remote gates ran the gate script from the agent's own commit | Pinned `/opt/pbsd/gates` |
+| 16 | Package merges did not wait for upstream packages, so integration was big-bang at P6-01 | INT tasks depend on upstream INT tasks |
+| 17 | Linux sources ("linux:… part k/N") were not in the repository and could not be resolved | `ref_roots` plus deterministic slicing; Linux and Wine cloned at pinned tags |
+| 18 | GCP's AMD worker cannot run KVM, but QEMU gates could be sent to it | Workers carry a `kvm` flag; QEMU gates go only to the PC or `kvm` workers |
+| 19 | A 16k output cap including reasoning could not hold an 800-line file, and the harness had no edit tool | 32k cap, `edit_file`, `append` |
+| 20 | The documented tools (`grep`, `apply_patch`, `build`, `run_prism`, `read_messages`) were not in the harness | Documented tools now match the harness |
+| 21 | Price claims: GCP `c3d-highcpu-360` Sydney spot is $1.59984/h, not $1.518; OpenRouter's cheapest is now $0.0269; the "103k reasoning tokens per task" figure is unverified | Corrected (sections 7.1 and 8) |
+| 22 | Licensing: Linux code is GPL-2.0-only and PBSD's own code AGPL-3.0-or-later. A kernel binary combining ported GPL-2.0-only files with AGPL-3.0 files cannot be distributed under both. | **Needs Odin's decision** before ported Linux code ships; options in `PBSD_PLAN.md` section 9 |
+| 23 | Zhipu is on the US Entity List | **Check**; DeepInfra, Fireworks and Together serve the open weights without Zhipu in the data path |
+| 24 | Runtime task splitting is not implemented; the old 1.3× split allowance had nothing behind it | The allowance is removed. Large units are written as several files over more turns; splits stay a `handoff` message. |
+
+**Not changed on purpose:** the appendices below keep the older options. Their cost and time figures come from before this review and use its old assumptions: about 6 requests per task, PRISM, and one gate run per task.
 
 ## Appendix A. One-day run (optional, 24 hours wall clock)
 
@@ -409,7 +689,7 @@ Turn latency: Flash in thinking mode at about 10k output tokens per turn takes a
 |---|---|---|
 | Agent containers (tool execution, git worktrees) | 13,000 light containers at 0.25 vCPU, 1 GB | 3,300 |
 | Compile | about 5,000 builds per 5 minutes, about 30 s each on 4 vCPU, with sccache over shared object storage and remote execution (Bazel REAPI-style or distcc) | 6,000 |
-| PRISM | 2,577 provers, 8 vCPU each at about 50% duty | 10,000 |
+| Proof checks | 2,577 proof checkers, 8 vCPU each at about 50% duty | 10,000 |
 | QEMU test farm (amd64, arm64, riscv64) | about 500 VMs at 2 vCPU for differential and acceptance suites | 1,000 |
 | Coordination | Postgres task database, self-hosted git server (Gitea or plain git over SSH) on NVMe, object storage | 64 |
 | **Total** | | **about 20,000 vCPU, 60–80 TB-hours of RAM** |
@@ -438,7 +718,7 @@ In the day:
 - Every task either passed its gate or escalated.
 - `pbsd-cutover` builds for amd64, arm64 and riscv64 and boots in QEMU.
 - Every package acceptance suite that runs in QEMU is green: LTP, kyua, xfstests, liburing, blktests, packetdrill, binder selftests and virtio drivers.
-- PRISM obligations are proved, or listed as runtime checks with a reason.
+- T1/T2 proof obligations are proved, the rest labelled BOUNDED or RUNTIME (section 10).
 
 Not in the day:
 - Real-hardware validation: GPUs, NICs, Wi-Fi, USB, IOMMU attack tests and the performance benchmarks against Linux.
@@ -471,7 +751,7 @@ All 12,964 tasks take about 73,000 agent turns, including retries. At 5 minutes 
 |---|---|
 | Agent tool containers | 600 at 0.25 vCPU, 1 GB (150 vCPU) |
 | Compile, with sccache on shared storage | 256 vCPU |
-| PRISM | 512 vCPU |
+| proof-check | 512 vCPU |
 | QEMU test farm (amd64, arm64, riscv64) | 64 VMs, 128 vCPU |
 | Task database, git server, object storage | One 16 vCPU VM |
 | **Total** | **About 1,050 vCPU**, for example eight 128-vCPU spot machines plus one small VM |
@@ -494,7 +774,7 @@ These are estimates. `cost.jsonl` and the cloud bill after day 1 give the real r
 
 | Day | Work |
 |---|---|
-| 1 (Sat) | Dry run of P2-01 end to end to measure turn time, cache hit and build times. All 40 contract tasks, then `P0-FREEZE`. P0-07 build, CI, PRISM and differential harness green. |
+| 1 (Sat) | Dry run of P2-01 end to end to measure turn time, cache hit and build times. All 40 contract tasks, then `P0-FREEZE`. P0-07 build, CI, proof-check and differential harness green. |
 | 2 (Sun) | Phase 1 core: boot, allocator, VM, capabilities, scheduler, locks, processes, PSI, hardening. Specs, then ports, tests, proofs. |
 | 3 (Mon) | Phase 1 reviews and merges; first QEMU boot of the core on three architectures. Phase 2 specs start. |
 | 4 (Tue) | Phase 2 I/O: rings, blk-mq, VFS, sk_buff network, IPC and Binder; ports, tests, proofs. |
@@ -520,7 +800,7 @@ End of week 2 (day 14):
 - Every task passed or escalated.
 - `pbsd-cutover` builds and boots on three architectures with all packages merged.
 - QEMU acceptance suites green: LTP, kyua, xfstests, liburing, blktests, packetdrill, Binder.
-- PRISM proof report published.
+- Proof report published.
 - About 3 days of syzkaller run.
 - First Wine and Android results.
 - Escalations (about 250–650 tasks) triaged.
@@ -547,7 +827,7 @@ Assumptions per task: 4 turns, 60k input per turn at 80% cache hit, 10k output p
 - Output: 4 × 10k × 1.6 = 64k tokens ($0.038)
 - About $0.05 per task, about $650 for 12,963 tasks. Provers and big driver units run longer, so budget 3x: $1,500–2,500 off-peak in total, roughly double at peak. These are estimates; `cost.jsonl` gives the real figure after the first few hundred tasks.
 
-Timeline (superseded by section 8, the PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and PRISM capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
+Timeline (superseded by section 8, the PC run): the dependency graph is about 12 levels deep. With 2,400 requests in flight, the model work for one pass over every task is about 1–2 weeks. The real limits are build, test and proof-check capacity and tasks that fail repeatedly: expect 4–8 weeks to a first full integration on `pbsd-cutover`, and 3–6 months until the cutover acceptance matrix (real hardware, NT and Android personalities) is green.
 
 ### C.2 Schedule on the PC with the API
 
@@ -575,11 +855,11 @@ With 512 GB or more, the 32 cores are the limit, not RAM. Slots are pinned with 
 | Agents (wait on the API) | 48 | shared | 0.3 GB | any |
 | Compile and unit tests | 12 | 1 | 2 GB | 0 |
 | QEMU | 3 | 2 | 4 GB | 0 |
-| PRISM | 6 at 512 GB, 8 at 1–2 TB | 2 | 12 GB at 512 GB, 24 GB at 1 TB, 48 GB at 2 TB | 1 |
+| proof-check | 6 at 512 GB, 8 at 1–2 TB | 2 | 12 GB at 512 GB, 24 GB at 1 TB, 48 GB at 2 TB | 1 |
 | Task database, git server, scheduler | 1 | 2 | 8 GB | 0 |
 | tmpfs: repository, worktrees, builds, ccache, images, reference trees | — | — | about 250 GB at 512 GB; about 1.2 TB at 2 TB (the whole working set, HDD only for backups) | split |
 
-Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `$PBSD_STATE/config.json` (runner README) back to 12 compile, 4 PRISM at 4 GB and 3 QEMU.
+Node 0 gets builds and QEMU, which share ccache and the page cache. Node 1 gets the proofs. The scheduler also works on 64 GB: set the `SLOTS` table in `$PBSD_STATE/config.json` (runner README) back to 12 compile, 4 proof-check at 4 GB and 3 QEMU.
 
 **Fastest upgrade after RAM:** NVMe in one of the P920's two onboard M.2 slots for checkpoints and backups. With everything in RAM this matters much less.
 
@@ -633,9 +913,9 @@ Measured on the build box against the full `tasks.json`:
 | `init` | 0.26 s, 39 MB peak RSS | 0.34 s, 52 MB |
 | `status` | 0.01 s, 12 MB | 0.05 s, 23 MB |
 
-During a run, each C++ agent thread uses a few MB. The PRISM, compile and QEMU jobs dominate memory either way.
+During a run, each C++ agent thread uses a few MB. The proof-check, compile and QEMU jobs dominate memory either way.
 
-Gate commands live in the repository as `tools/gates/<role>.sh <task-id> <worktree>`. They are still to be written: build, tests including fault injection, PRISM and QEMU.
+Gate commands live in the repository as `tools/gates/<role>.sh <task-id> <worktree>`. They are still to be written: build, tests including fault injection, proof-check and QEMU.
 
 #### C.2.5 Order of work
 
@@ -731,11 +1011,11 @@ What moves the estimate most:
 | Agents = llama-server slots | 4 | (llama-server: 24 threads) | weights about 195 GB, KV on the GPU | both (`--numa distribute`) |
 | Compile and unit tests | 3 | 1 | 2 GB | 0 |
 | QEMU | 1 | 2 | 4 GB | 0 |
-| PRISM | 3 | 2 | 24 GB | 1 |
+| proof-check | 3 | 2 | 24 GB | 1 |
 | Task database, git server, scheduler | 1 | shared | 8 GB | 0 |
 | tmpfs: repository, worktrees, builds, ccache, images | — | — | the rest of RAM | split |
 
-With 64 GB and IQ2_XXS: 2 agents, 2 compile, 1 QEMU, 1 PRISM at 4 GB (`tools/llama/config.iq2xxs.json`).
+With 64 GB and IQ2_XXS: 2 agents, 2 compile, 1 QEMU, 1 proof-check at 4 GB (`tools/llama/config.iq2xxs.json`).
 
 ### D.7 Runner and progress
 

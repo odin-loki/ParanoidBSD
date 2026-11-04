@@ -7,6 +7,7 @@
 #include <poll.h>
 #include <sys/wait.h>
 #include <unistd.h>
+extern char** environ;
 #ifdef PBSD_HAVE_NUMA
 #include <numa.h>
 #endif
@@ -28,7 +29,22 @@ double load1() { double l[1]{}; return getloadavg(l, 1) == 1 ? l[0] : 0; }
 
 // Fork, pin to NUMA node (libnuma, else numactl), raise oom_score_adj so jobs die before the
 // database or git server, kill the whole process group on watchdog timeout.
-JobResult run_job(const std::vector<std::string>& argv, int node, int timeout_s, const std::string& cwd, int oom_adj) {
+// Environment for local gates: no API keys, cloud credentials or ssh agent reach agent-written code.
+std::vector<std::string> gate_env(const std::string& build_dir) {
+  std::vector<std::string> e{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "LANG=C.UTF-8", "LC_ALL=C.UTF-8"};
+  auto keep = [&](const char* k) { if (const char* v = getenv(k)) e.push_back(std::string(k) + "=" + v); };
+  for (auto k : {"HOME", "TMPDIR", "CCACHE_DIR", "SCCACHE_DIR", "TERM"}) keep(k);
+  // Gate hooks (tools/gates/lib.sh): PBSD_BUILD_CMD, PBSD_TEST_CMD, PBSD_PROOF_*, PBSD_QEMU_*, PBSD_JOBS ...
+  for (char** p = environ; *p; ++p) {
+    std::string kv = *p;
+    if (kv.starts_with("PBSD_") && kv.find("KEY") == std::string::npos && kv.find("TOKEN") == std::string::npos) e.push_back(kv);
+  }
+  if (!build_dir.empty()) e.push_back("PBSD_BUILD_DIR=" + build_dir);
+  return e;
+}
+
+JobResult run_job(const std::vector<std::string>& argv, int node, int timeout_s, const std::string& cwd, int oom_adj,
+                  const std::vector<std::string>* env) {
   int fd[2]; if (pipe(fd) != 0) return {-1, "pipe failed", false};
   pid_t pid = fork();
   if (pid < 0) return {-1, "fork failed", false};
@@ -45,6 +61,11 @@ JobResult run_job(const std::vector<std::string>& argv, int node, int timeout_s,
       a.insert(a.begin(), {"/usr/bin/numactl", "--cpunodebind=" + std::to_string(node), "--membind=" + std::to_string(node)});
 #endif
     std::vector<char*> c; for (auto& s : a) c.push_back(s.data()); c.push_back(nullptr);
+    if (env) {
+      std::vector<std::string> ev = *env; std::vector<char*> ep;
+      for (auto& s : ev) ep.push_back(s.data()); ep.push_back(nullptr);
+      execvpe(c[0], c.data(), ep.data()); _exit(127);
+    }
     execvp(c[0], c.data()); _exit(127);
   }
   close(fd[1]);
@@ -71,19 +92,32 @@ Config Config::load() {
   for (auto k : {"DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY_2"}) if (auto v = env(k); !v.empty()) c.keys.push_back(v);
   c.state_dir = env("PBSD_STATE", "/run/pbsd/state");   // tmpfs: the run lives in RAM
   c.checkpoint_dir = env("PBSD_CHECKPOINT", "");         // e.g. /mnt/d/pbsd-ckpt (the HDD)
-  // Built-in GLM-5.3-Flash providers; each is used only when its key variable is set. Limits are
-  // conservative starting caps: set them to what each account's console shows (AGENTS.md 8.2).
-  // Model ids other than Z.ai's and OpenRouter's are unverified: check each provider's catalog.
+  // Limits are conservative starting caps: set them to what each account allows (AGENTS.md 8.2).
+  // Model ids other than Z.ai's and OpenRouter's are unverified: check each provider's catalogue.
   auto prov = [&](std::string name, std::string url, std::string model, std::string key_env, int conc, int rpm, int64_t tpm) {
     Provider p; p.name = name; p.url = url; p.model = model; p.key_env = key_env; p.concurrency = conc; p.rpm = rpm; p.tpm = tpm;
     return p;
   };
+  // Built-in providers; each is used only when its key variable is set. GLM-5.3-Flash (tier "flash")
+  // serves every role by default; the GLM-5.3 entries (tier "frontier") are used only when role_tier
+  // or escalate_tier asks for them. Prices per 1M tokens checked 4 Nov 2026 (AGENTS.md section 7).
   std::vector<Provider> builtin{
       prov("zai", "https://api.z.ai/api/paas/v4/chat/completions", "glm-5.3-flash", "ZAI_API_KEY", 8, 0, 0),
       prov("deepinfra", "https://api.deepinfra.com/v1/openai/chat/completions", "zai-org/GLM-5.3-Flash", "DEEPINFRA_API_KEY", 64, 0, 0),
       prov("fireworks", "https://api.fireworks.ai/inference/v1/chat/completions", "accounts/fireworks/models/glm-5p3-flash", "FIREWORKS_API_KEY", 32, 0, 2'000'000),
       prov("together", "https://api.together.xyz/v1/chat/completions", "zai-org/GLM-5.3-Flash", "TOGETHER_API_KEY", 32, 0, 0),
-      prov("openrouter", "https://openrouter.ai/api/v1/chat/completions", "z-ai/glm-5.3-flash", "OPENROUTER_API_KEY", 32, 0, 0)};
+      prov("openrouter", "https://openrouter.ai/api/v1/chat/completions", "z-ai/glm-5.3-flash", "OPENROUTER_API_KEY", 32, 0, 0),
+      prov("zai-5.3", "https://api.z.ai/api/paas/v4/chat/completions", "glm-5.3", "ZAI_API_KEY", 8, 0, 0),
+      prov("together-5.3", "https://api.together.xyz/v1/chat/completions", "zai-org/GLM-5.3", "TOGETHER_API_KEY", 32, 0, 0),
+      prov("fireworks-5.3", "https://api.fireworks.ai/inference/v1/chat/completions", "accounts/fireworks/models/glm-5p3", "FIREWORKS_API_KEY", 16, 0, 2'000'000),
+      prov("openrouter-5.3", "https://openrouter.ai/api/v1/chat/completions", "z-ai/glm-5.3", "OPENROUTER_API_KEY", 16, 0, 0)};
+  for (size_t i = 0; i < builtin.size(); ++i) {
+    auto& p = builtin[i];
+    if (i < 5) { p.tier = "flash"; p.price_in = 0.15; p.price_hit = 0.03; p.price_out = 0.50; }
+    else { p.tier = "frontier"; p.price_in = 1.40; p.price_hit = 0.26; p.price_out = 4.40; }
+    if (p.name.starts_with("openrouter"))   // never route to fp4 endpoints
+      p.extra = json{{"provider", {{"quantizations", {"fp8", "bf16"}}, {"sort", "throughput"}, {"allow_fallbacks", true}}}};
+  }
   auto keys_of = [&](Provider& p) {
     p.keys.clear();
     if (auto v = env(p.key_env.c_str()); !v.empty()) p.keys.push_back(v);
@@ -96,6 +130,7 @@ Config Config::load() {
     c.providers.push_back(d);
   }
   c.backend = env("PBSD_BACKEND", c.backend.c_str());
+  c.lean_prover_url = env("PBSD_LEAN_PROVER_URL", c.lean_prover_url.c_str());
   c.local_url = env("PBSD_LOCAL_URL", c.local_url.c_str());
   // PBSD_CONFIG, else $PBSD_STATE/config.json, else the HDD checkpoint copy (tmpfs is empty after a reboot).
   std::string cfg = env("PBSD_CONFIG", "");
@@ -139,14 +174,35 @@ Config Config::load() {
           p.tpm = v.value("tpm", int64_t(0)); p.price_in = v.value("price_in", p.price_in); p.price_hit = v.value("price_hit", p.price_hit);
           p.price_out = v.value("price_out", p.price_out); p.peak_double = v.value("peak_double", false);
           p.offpeak_only = v.value("offpeak_only", false); if (v.contains("extra")) p.extra = v["extra"];
+          p.tier = v.value("tier", p.tier);
           keys_of(p);
           if (v.contains("keys")) for (auto& k : v["keys"]) p.keys.push_back(k.get<std::string>());   // tests only; use key_env
           if (!p.keys.empty() && !p.url.empty()) c.providers.push_back(p);
         }
       }
       if (j.contains("role_backend")) c.role_backend = j["role_backend"].get<std::map<std::string, std::string>>();
+      if (j.contains("role_tier")) c.role_tier = j["role_tier"].get<std::map<std::string, std::string>>();
+      c.default_tier = j.value("default_tier", c.default_tier); c.escalate_tier = j.value("escalate_tier", c.escalate_tier);
+      c.escalate_at = j.value("escalate_at", c.escalate_at);
+      if (j.contains("role_max_turns")) for (auto& [k, v] : j["role_max_turns"].items()) c.role_max_turns[k] = v.get<int>();
+      if (j.contains("wt_sparse")) c.wt_sparse = j["wt_sparse"].get<std::vector<std::string>>();
+      if (j.contains("ref_roots")) c.ref_roots = j["ref_roots"].get<std::map<std::string, std::string>>();
+      c.gates_dir = j.value("gates_dir", c.gates_dir);
+      if (j.contains("gate_wrap")) c.gate_wrap = j["gate_wrap"].get<std::vector<std::string>>();
+      c.gate_scrub_env = j.value("gate_scrub_env", c.gate_scrub_env);
+      c.gate_infra_retries = j.value("gate_infra_retries", c.gate_infra_retries);
+      c.merge_target = j.value("merge_target", c.merge_target);
+      if (j.contains("backup_cmd")) c.backup_cmd = j["backup_cmd"].get<std::vector<std::string>>();
+      c.backup_every_s = j.value("backup_every_s", c.backup_every_s);
+      c.lean_prover_url = j.value("lean_prover_url", c.lean_prover_url); c.lean_prover_model = j.value("lean_prover_model", c.lean_prover_model);
+      c.lean_samples = j.value("lean_samples", c.lean_samples); c.lean_rounds = j.value("lean_rounds", c.lean_rounds);
+      c.lean_max_tokens = j.value("lean_max_tokens", c.lean_max_tokens); c.lean_check_timeout_s = j.value("lean_check_timeout_s", c.lean_check_timeout_s);
+      c.max_attempts = j.value("max_attempts", c.max_attempts); c.quarantine_after = j.value("quarantine_after", c.quarantine_after);
+      c.build_watchdog_s = j.value("build_watchdog_s", c.build_watchdog_s); c.qemu_watchdog_s = j.value("qemu_watchdog_s", c.qemu_watchdog_s);
+      c.io_some_max = j.value("io_some_max", c.io_some_max);
     }
   }
+  if (c.gates_dir.empty()) c.gates_dir = env("PBSD_GATES", (c.repo + "/tools/gates").c_str());
   return c;
 }
 }  // namespace pbsd

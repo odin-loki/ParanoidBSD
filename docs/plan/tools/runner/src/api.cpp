@@ -128,26 +128,27 @@ Api::Api(const Config& c) : c_(c) {
 std::string Api::status_line() {
   double s = gen_s_.load();
   std::string b = c_.backend == "local" ? std::format("local {} @ {} ({} slots)", c_.local_model, c_.local_url, c_.local_slots)
-                                         : std::string("api GLM-5.3-Flash");
+                                         : std::string("api");
   b += std::format("   {:.1f} tok/s out", s > 0 ? out_tok_.load() / s : 0.0);
   if (c_.backend == "local") b += std::format("   restarts {}{}", local_->restarts(), local_->given_up() ? "  [server down]" : "");
   if (fallback_turns_) b += std::format("   API fallback turns {}", fallback_turns_.load());
   for (size_t i = 0; i < ps_.size(); ++i) {
     auto& p = *ps_[i];
-    b += std::format("\n    {:<12} in flight {}/{}  ok {}  429 {}  err {}{}", c_.providers[i].name, p.lim.in_flight(),
-                     p.lim.limit(), p.ok.load(), p.limited.load(), p.failed.load(), p.lim.cooling(now()) ? "  [cooling]" : "");
+    b += std::format("\n    {:<12} {:<8} {:<22} in flight {}/{}  ok {}  429 {}  err {}{}", c_.providers[i].name, c_.providers[i].tier,
+                     c_.providers[i].model, p.lim.in_flight(), p.lim.limit(), p.ok.load(), p.limited.load(), p.failed.load(),
+                     p.lim.cooling(now()) ? "  [cooling]" : "");
   }
   return b;
 }
 
 std::expected<json, std::string> Api::chat(const json& messages, const json& tools, Usage& u, const std::string& role, int slot,
-                                           const std::string& affinity) {
+                                           const std::string& affinity, const std::string& tier) {
   std::string be = c_.backend;
   if (auto it = c_.role_backend.find(role); it != c_.role_backend.end()) be = it->second;
   if (be == "aux" && !aux_) be = c_.backend;
   json body{{"messages", messages}};
   if (!tools.is_null() && !tools.empty()) body["tools"] = tools;
-  if (be == "api") return chat_api(body, u, affinity);
+  if (be == "api") return chat_api(body, u, affinity, tier);
   body["model"] = be == "aux" ? c_.aux_model : c_.local_model;
   body["max_tokens"] = c_.max_tokens;
   auto r = chat_local(be == "aux" ? c_.aux_url : c_.local_url, body, u, slot, be == "aux" ? aux_.get() : local_.get());
@@ -156,7 +157,7 @@ std::expected<json, std::string> Api::chat(const json& messages, const json& too
     json b2{{"messages", messages}};
     if (!tools.is_null() && !tools.empty()) b2["tools"] = tools;
     u.local = false;
-    return chat_api(b2, u, affinity);
+    return chat_api(b2, u, affinity, tier);
   }
   return r;
 }
@@ -189,9 +190,13 @@ std::expected<json, std::string> Api::chat_local(const std::string& url, json bo
 
 // Provider order for one request: start at hash(affinity) among the providers so a package keeps
 // hitting the same provider's prompt cache, then the rest in config order (failover).
-std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::string& affinity) {
+std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::string& affinity, const std::string& tier) {
   if (ps_.empty()) return std::unexpected("no API providers configured (set ZAI_API_KEY or providers in config.json)");
   std::mt19937 rng(std::random_device{}());
+  // Only providers serving the requested tier; if none is configured, any provider.
+  bool any_of_tier = false;
+  for (auto& p : c_.providers) any_of_tier = any_of_tier || (!tier.empty() && p.tier == tier);
+  auto eligible = [&](size_t i) { return !any_of_tier || c_.providers[i].tier == tier; };
   const size_t n = ps_.size(), first = affinity.empty() ? 0 : std::hash<std::string>{}(affinity) % n;
   const int64_t est = int64_t(body.dump().size() / 4) + c_.expected_out_tokens;
   std::string last_err = "no provider accepted the request";
@@ -201,6 +206,7 @@ std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::s
     for (double end = now() + 600; pick < 0 && now() < end; ) {
       for (size_t k = 0; k < n && pick < 0; ++k) {
         size_t i = (first + k) % n;
+        if (!eligible(i)) continue;
         if (c_.providers[i].offpeak_only && peak_now()) continue;
         if (c_.providers[i].keys.empty()) continue;
         if (ps_[i]->lim.try_acquire(est, now())) pick = int(i);
@@ -241,8 +247,8 @@ std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::s
       st.lim.cooldown(now() + 3600); ++st.failed; continue;
     }
     if (r.code == 402) { st.lim.cooldown(now() + 3600); ++st.failed;   // out of credit here: others carry on
-      bool any = false; for (size_t i = 0; i < n; ++i) any = any || !ps_[i]->lim.cooling(now());
-      if (!any) return std::unexpected("402: API balance exhausted on every provider"); continue; }
+      bool any = false; for (size_t i = 0; i < n; ++i) any = any || (eligible(i) && !ps_[i]->lim.cooling(now()));
+      if (!any) return std::unexpected("402: API balance exhausted on every provider of this tier"); continue; }
     if (r.code == 400 || r.code == 413) return std::unexpected(last_err);   // the request itself is bad
     // 429 / 5xx / connection: cool this provider (Retry-After or exponential), fail over to the next.
     if (r.code == 429) ++st.limited; else ++st.failed;

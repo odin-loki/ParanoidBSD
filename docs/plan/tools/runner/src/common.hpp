@@ -19,11 +19,12 @@ using Clock = std::chrono::system_clock;
 double now();                                      // seconds since epoch
 
 struct Slot { int count; int cores; double ram_gb; int node; };   // node -1 = any
-// One OpenAI-compatible endpoint serving GLM-5.3-Flash (Z.ai, DeepInfra, Fireworks, Together,
+// One OpenAI-compatible endpoint serving one GLM model (Z.ai, DeepInfra, Fireworks, Together,
 // OpenRouter, ...). Limits are client-side caps set at or below what the provider grants the account;
-// 0 = no cap of that kind. Prices are USD per 1M tokens.
+// 0 = no cap of that kind. Prices are USD per 1M tokens. `tier` says which model it serves:
+// "frontier" (the flagship GLM) or "flash" (GLM-5.3-Flash); roles pick a tier (Config::role_tier).
 struct Provider {
-  std::string name, url, model = "glm-5.3-flash", key_env;
+  std::string name, url, model = "glm-5.3-flash", key_env, tier = "flash";
   std::vector<std::string> keys;                 // from key_env, key_env_2, ... ; rotated on 401
   int concurrency = 8, rpm = 0;                  // in-flight cap, requests per minute
   int64_t tpm = 0;                               // input + output tokens per minute
@@ -69,6 +70,30 @@ struct Config {
   double load_max = 30, ram_admit = 0.85, ram_pause = 0.92, io_some_max = 40;
   int lease_s = 45 * 60, agent_watchdog_s = 20 * 60, build_watchdog_s = 30 * 60, qemu_watchdog_s = 60 * 60;
   int checkpoint_s = 600, max_attempts = 8, quarantine_after = 3, max_turns = 40;
+  // ---- model tiers. A role runs on role_tier[role] (else default_tier); from attempt escalate_at
+  // every role moves to escalate_tier. Providers of a tier fail over to each other only.
+  std::map<std::string, std::string> role_tier;
+  std::string default_tier = "flash", escalate_tier = "flash";   // GLM-5.3-Flash everywhere unless configured
+  int escalate_at = 3;
+  std::map<std::string, int> role_max_turns{{"decomposer", 30}, {"implementer", 60}, {"tester", 60},
+                                            {"prover", 100}, {"reviewer", 24}, {"integrator", 80}};
+  // ---- worktrees, references, gates and merges
+  // Sparse pattern for task worktrees (and gate checkouts): everything except the big read-only
+  // reference trees, which agents read through read_file("ref:<name>/...") or the main checkout.
+  std::vector<std::string> wt_sparse{"/*", "!/hbsd/", "!/kde/", "!/linux/", "!/docs/migration/", "!/docs/verify/", "!/docs/PORT_PLAN.md"};
+  std::map<std::string, std::string> ref_roots;  // e.g. {"linux": "/srv/ref/linux", "wine": "/srv/ref/wine"}
+  std::string gates_dir;                         // trusted gate scripts; default $PBSD_REPO/tools/gates
+  std::vector<std::string> gate_wrap;            // sandbox prefix for local gates, e.g. ["bwrap", ...]
+  bool gate_scrub_env = true;                    // local gates get no API keys or cloud credentials
+  int gate_infra_retries = 3;                    // a gate exiting 3 is retried, on another worker if any
+  std::string merge_target = "pbsd-cutover";     // integrators and -IF tasks merge into this branch
+  std::vector<std::string> backup_cmd;           // e.g. ["gsutil","-m","rsync","-r","/srv/pbsd/ckpt","gs://..."]
+  int backup_every_s = 3600;
+  // ---- local Lean prover (the lean_prove tool for T1 model tasks). A Lean-specialised model such
+  // as Goedel-Prover-V2 or DeepSeek-Prover-V2 behind an OpenAI-compatible server (llama-server, vLLM)
+  // on the PC's GPU. GLM states lemmas and calls lean_prove; the prover writes the proof; Lean checks it.
+  std::string lean_prover_url, lean_prover_model = "Goedel-Prover-V2-32B";
+  int lean_samples = 8, lean_rounds = 2, lean_max_tokens = 16384, lean_check_timeout_s = 600;
   static Config load();                            // env + optional $PBSD_STATE/config.json
 };
 
@@ -85,9 +110,17 @@ class Db {
   bool integrity_ok();
   void unblock();
   std::vector<json> lease(int n, int lease_s);
+  // result: passed | failed | crash | infra (no attempt charged) | changes (reviewer asked for changes)
   void finish(const std::string& id, const std::string& result, const Config& c);
+  // Reviewer findings or a contract change: tasks in `ready` go back to ready, tasks in `block` go
+  // back to blocked (and are released again by unblock() once their deps pass).
+  void reopen(const std::vector<std::string>& ready, const std::vector<std::string>& block);
+  // Typed messages between tasks (AGENTS.md section 2). `to` is a task id or a package id.
+  void post(const std::string& to, const std::string& from, const std::string& kind, const std::string& body);
+  std::vector<json> messages_for(const std::string& id, const std::string& wp, int limit = 30);
+  std::string state_of(const std::string& id);
   void event(const std::string& task, const std::string& kind, const json& data = {});
-  void cost(const std::string& task, int64_t hit, int64_t miss, int64_t out, double usd);
+  void cost(const std::string& task, int64_t hit, int64_t miss, int64_t out, double usd, const std::string& provider = "");
   void heartbeat(const std::string& id, int lease_s);
   struct Snapshot {
     std::map<std::string, int64_t> states;
@@ -158,14 +191,15 @@ class Api {
   // slot: llama-server slot to pin this conversation to, so its KV prefix cache is reused.
   // affinity: tasks with the same key (the work package) go to the same provider first, so the
   // provider's prompt cache keeps the shared prefix warm.
+  // tier: "frontier" or "flash"; only providers of that tier are used (any provider if none has it).
   std::expected<json, std::string> chat(const json& messages, const json& tools, Usage& u,
                                         const std::string& role = "", int slot = -1,
-                                        const std::string& affinity = "");
+                                        const std::string& affinity = "", const std::string& tier = "");
   static bool peak_now();
   LocalServer* local() { return local_.get(); }
   std::string status_line();                      // backend, tok/s, restarts
  private:
-  std::expected<json, std::string> chat_api(json body, Usage& u, const std::string& affinity);
+  std::expected<json, std::string> chat_api(json body, Usage& u, const std::string& affinity, const std::string& tier = "");
   struct ProvState { RateLimiter lim; size_t key = 0; std::atomic<int64_t> ok{0}, limited{0}, failed{0};
                      ProvState(const Provider& p) : lim(p.concurrency, p.rpm, p.tpm) {} };
   std::vector<std::unique_ptr<ProvState>> ps_;
@@ -188,16 +222,28 @@ double mem_used_frac();
 double io_pressure_some10();
 double load1();
 struct JobResult { int code; std::string tail; bool timed_out; };
+// env: when set, the job gets exactly this environment (KEY=VALUE strings) instead of the runner's.
 JobResult run_job(const std::vector<std::string>& argv, int node, int timeout_s, const std::string& cwd,
-                  int oom_adj = 500);
+                  int oom_adj = 500, const std::vector<std::string>* env = nullptr);
+std::vector<std::string> gate_env(const std::string& build_dir);   // PATH, HOME, locale, TMPDIR, PBSD_* only
 
 // ---- harness: one task end to end
-enum class Result { passed, failed, crash };
-struct TaskOutcome { Result r; std::vector<Usage> usage; };
+// infra: an API outage or a gate infrastructure error; the task is retried without charging an attempt.
+// changes: a reviewer asked for changes; the unit's tasks named in the findings are reopened.
+enum class Result { passed, failed, crash, infra, changes };
+struct TaskOutcome { Result r; std::vector<Usage> usage; std::string gate_sha; };
+// "a/, b/{x,y}/" or ["a/", ...] -> {"a/", "b/x/", "b/y/"}; "-" and free text ("toolchain flags") dropped.
+std::vector<std::string> owns_list(const json& task);
+std::string role_tier(const json& task, const Config& c);       // tier for this task and attempt
+// Merge branch src into dst without a working tree (git merge-tree --write-tree), with a
+// compare-and-swap ref update. Returns an empty string on success, else the conflict or error.
+std::string merge_branch(const Config& c, const std::string& dst, const std::string& src, const std::string& msg);
 TaskOutcome run_task(const json& task, Api& api, const Config& c, Db& db, int slot = -1);
 // Gate admission: counting slots per kind (compile, qemu, proof) plus optional cloud burst slots.
 struct GateLease { std::string kind; bool burst = false; std::string host; };
-struct Worker { std::string host; int slots = 0; };
+// workers_file line: "<ssh-host> <slots> [kvm]". QEMU gates go only to workers marked kvm (GCP's
+// AMD machines, for example, have no nested virtualization) or to the local qemu slots.
+struct Worker { std::string host; int slots = 0; bool kvm = false; };
 std::vector<Worker> load_workers(const std::string& path);
 GateLease gate_acquire(const std::string& kind, const Config& c);
 void gate_release(const GateLease& g);

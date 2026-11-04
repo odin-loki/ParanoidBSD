@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <algorithm>
 #include <stdexcept>
 #include <cstdio>
 
@@ -31,10 +32,12 @@ void Db::exec(const std::string& sql) {
 }
 void Db::init_schema() {
   exec(R"(CREATE TABLE IF NOT EXISTS task(id TEXT PRIMARY KEY, wp TEXT, phase INT, role TEXT, priority INT,
-      state TEXT, attempts INT DEFAULT 0, crashes INT DEFAULT 0, lease_until REAL, started REAL, finished REAL, body TEXT);
+      state TEXT, attempts INT DEFAULT 0, crashes INT DEFAULT 0, infra INT DEFAULT 0, lease_until REAL, started REAL, finished REAL, body TEXT);
     CREATE TABLE IF NOT EXISTS dep(task TEXT, dep TEXT, PRIMARY KEY(task, dep));
     CREATE TABLE IF NOT EXISTS event(ts REAL, task TEXT, kind TEXT, data TEXT);
-    CREATE TABLE IF NOT EXISTS cost(ts REAL, task TEXT, hit INT, miss INT, out INT, usd REAL);
+    CREATE TABLE IF NOT EXISTS cost(ts REAL, task TEXT, hit INT, miss INT, out INT, usd REAL, provider TEXT);
+    CREATE TABLE IF NOT EXISTS message(ts REAL, to_task TEXT, from_task TEXT, kind TEXT, body TEXT);
+    CREATE INDEX IF NOT EXISTS ix_msg ON message(to_task, ts);
     CREATE INDEX IF NOT EXISTS ix_state ON task(state, priority, phase);
     CREATE INDEX IF NOT EXISTS ix_dep ON dep(dep);
     CREATE INDEX IF NOT EXISTS ix_ev ON event(kind, ts);)");
@@ -52,9 +55,9 @@ size_t Db::load_tasks(const json& tasks) {
   for (auto& t : tasks) {
     int64_t pri = t.contains("priority") ? t["priority"].get<int64_t>() : (t.value("month1", true) ? 0 : 1);
     ins.b(1, t["id"].get<std::string>()).b(2, t["wp"].get<std::string>()).b(3, int64_t(phase_num(t["phase"])))
-       .b(4, t["role"].get<std::string>()).b(5, pri).b(6, std::string(t["deps"].empty() ? "ready" : "blocked")).b(7, t.dump());
+       .b(4, t["role"].get<std::string>()).b(5, pri).b(6, std::string(t.value("deps", json::array()).empty() ? "ready" : "blocked")).b(7, t.dump());
     ins.step(); ins.reset();
-    for (auto& d : t["deps"]) { dep.b(1, t["id"].get<std::string>()).b(2, d.get<std::string>()); dep.step(); dep.reset(); }
+    for (auto& d : t.value("deps", json::array())) { dep.b(1, t["id"].get<std::string>()).b(2, d.get<std::string>()); dep.step(); dep.reset(); }
   }
   exec("COMMIT");
   return tasks.size();
@@ -90,7 +93,6 @@ std::vector<json> Db::lease(int n, int lease_s) {
       e.b(1, now()).b(2, id); e.step(); e.reset();
       out.push_back(std::move(j));
     }
-    Stmt a(h_, "SELECT id, attempts FROM task WHERE state='leased' AND started>=?");
   }
   exec("COMMIT");
   for (auto& j : out) {   // attempt number lets the harness use a fresh context at 3 and split at 5
@@ -106,24 +108,56 @@ void Db::heartbeat(const std::string& id, int lease_s) {
 void Db::finish(const std::string& id, const std::string& result, const Config& c) {
   std::lock_guard g(m_);
   exec("BEGIN IMMEDIATE");
-  Stmt q(h_, "SELECT attempts, crashes FROM task WHERE id=?"); q.b(1, id);
-  int64_t att = 0, cr = 0; if (q.step()) { att = q.i(0); cr = q.i(1); }
+  Stmt q(h_, "SELECT attempts, crashes, infra FROM task WHERE id=?"); q.b(1, id);
+  int64_t att = 0, cr = 0, inf = 0; if (q.step()) { att = q.i(0); cr = q.i(1); inf = q.i(2); }
   std::string st;
   if (result == "passed") st = "passed";
   else if (result == "crash") { ++cr; st = cr >= c.quarantine_after ? "quarantined" : "ready"; }
+  else if (result == "infra") {   // not the task's fault: no attempt charged; quarantined if it never clears
+    ++inf; st = inf >= 20 ? "quarantined" : "ready"; att = std::max<int64_t>(0, att - 1); }
+  else if (result == "changes") st = "blocked";    // waits for the reopened unit tasks to pass again
   else st = att >= c.max_attempts ? "escalated" : "ready";
-  Stmt u(h_, "UPDATE task SET state=?, crashes=?, finished=? WHERE id=?");
-  u.b(1, st).b(2, cr).b(3, now()).b(4, id); u.step();
+  Stmt u(h_, "UPDATE task SET state=?, crashes=?, finished=?, attempts=?, infra=? WHERE id=?");
+  u.b(1, st).b(2, cr).b(3, now()).b(4, att).b(5, inf).b(6, id); u.step();
   Stmt e(h_, "INSERT INTO event VALUES(?,?,?,?)"); e.b(1, now()).b(2, id).b(3, st).b(4, result); e.step();
   exec("COMMIT");
+}
+void Db::reopen(const std::vector<std::string>& ready, const std::vector<std::string>& block) {
+  std::lock_guard g(m_);
+  exec("BEGIN IMMEDIATE");
+  Stmt r(h_, "UPDATE task SET state='ready', lease_until=NULL WHERE id=? AND state IN ('passed','failed','blocked','ready')");
+  Stmt b(h_, "UPDATE task SET state='blocked', lease_until=NULL WHERE id=? AND state IN ('passed','failed','ready','blocked')");
+  Stmt e(h_, "INSERT INTO event VALUES(?,?,'reopened',?)");
+  for (auto& id : ready) { r.b(1, id); r.step(); r.reset(); e.b(1, now()).b(2, id).b(3, std::string("ready")); e.step(); e.reset(); }
+  for (auto& id : block) { b.b(1, id); b.step(); b.reset(); e.b(1, now()).b(2, id).b(3, std::string("blocked")); e.step(); e.reset(); }
+  exec("COMMIT");
+}
+void Db::post(const std::string& to, const std::string& from, const std::string& kind, const std::string& body) {
+  std::lock_guard g(m_);
+  Stmt s(h_, "INSERT INTO message VALUES(?,?,?,?,?)");
+  s.b(1, now()).b(2, to).b(3, from).b(4, kind).b(5, body); s.step();
+}
+std::vector<json> Db::messages_for(const std::string& id, const std::string& wp, int limit) {
+  std::lock_guard g(m_);
+  std::vector<json> out;
+  Stmt q(h_, "SELECT ts, to_task, from_task, kind, body FROM message WHERE to_task=? OR to_task=? ORDER BY ts DESC LIMIT ?");
+  q.b(1, id).b(2, wp).b(3, int64_t(limit));
+  while (q.step()) out.insert(out.begin(), json{{"to", q.t(1)}, {"from", q.t(2)}, {"kind", q.t(3)}, {"body", q.t(4)}});
+  return out;
+}
+std::string Db::state_of(const std::string& id) {
+  std::lock_guard g(m_);
+  Stmt q(h_, "SELECT state FROM task WHERE id=?"); q.b(1, id);
+  return q.step() ? q.t(0) : "";
 }
 void Db::event(const std::string& task, const std::string& kind, const json& data) {
   std::lock_guard g(m_);
   Stmt e(h_, "INSERT INTO event VALUES(?,?,?,?)"); e.b(1, now()).b(2, task).b(3, kind).b(4, data.dump()); e.step();
 }
-void Db::cost(const std::string& task, int64_t hit, int64_t miss, int64_t out, double usd) {
+void Db::cost(const std::string& task, int64_t hit, int64_t miss, int64_t out, double usd, const std::string& provider) {
   std::lock_guard g(m_);
-  Stmt e(h_, "INSERT INTO cost VALUES(?,?,?,?,?,?)"); e.b(1, now()).b(2, task).b(3, hit).b(4, miss).b(5, out).b(6, usd); e.step();
+  Stmt e(h_, "INSERT INTO cost VALUES(?,?,?,?,?,?,?)");
+  e.b(1, now()).b(2, task).b(3, hit).b(4, miss).b(5, out).b(6, usd).b(7, provider); e.step();
 }
 Db::Snapshot Db::snapshot() {
   std::lock_guard g(m_);

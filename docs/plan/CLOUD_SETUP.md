@@ -1,73 +1,59 @@
 # PBSD cloud burst: setup guide
 
-This is the step-by-step guide for running PBSD with GLM-5.3-Flash through the API, with the gates
-(builds, PRISM proofs, QEMU tests) spread over Odin's P920 and rented cloud cores. The plan is in
-`AGENTS.md`; the runner is `tools/runner` (C++), the gate scripts are in `tools/gates` and the
-cloud scripts are in `tools/cloud`.
+This is the step-by-step guide for running PBSD with GLM-5.3-Flash through the API, with the gates (builds, proof checks, QEMU tests) spread over Odin's P920 and rented cloud cores.
 
-Every price below was read from the linked page on 4 Nov 2026 (AEDT). Spot prices move daily, so check
-them again on the day you rent. Conversions use the RBA rate of 3 Nov 2026: **US$1 = A$1.43**
-([RBA](https://www.rba.gov.au/statistics/frequency/exchange-rates.html)). Run times and token costs are
-estimates from `pbsd_run estimate`, not measurements, until the step 10 calibration run.
+- The plan is in `AGENTS.md`.
+- The runner is `tools/runner` (C++), the gate scripts are in `tools/gates`, and the cloud and PC setup scripts are in `tools/cloud`.
+
+**About the figures:**
+- Every price below was read from the provider's own price feed or page on 4 Nov 2026 (AEDT). Spot prices move daily, so check them again on the day you rent.
+- Conversions use the RBA rate of 3 Nov 2026: **US$1 = A$1.4335** ([RBA](https://www.rba.gov.au/statistics/frequency/exchange-rates.html)).
+- Run times and token costs are estimates from `pbsd_run estimate` (AGENTS.md section 8.1), not measurements, until the step 10 pilot.
 
 ## 1. What to rent and why
 
-The bottleneck is **gate CPU**: about 10,000 core-hours of builds, PRISM and QEMU for 16,853 task
-attempts (12,964 tasks × 1.3 for splits and retries). The API is not the limit: Z.ai alone covers
-the request rate. So the money goes on **CPU cores, not GPUs**.
+The bottleneck is **gate CPU**: about 30,000 core-hours of builds, proof checks and QEMU in the middle case (17,900–59,600; AGENTS.md section 8.1). The API is not the limit, so the money goes on **CPU cores, not GPUs**. The PC's own RTX 3090 runs the Lean prover.
 
 ### Recommended setup
 
 | Role | Machine | Cores | Why |
 |---|---|---|---|
-| Runner, git checkpoints, 19 local gate slots | Odin's P920 (WSL2) | 28 free | already owned |
-| Gate worker **w1** + git mirror | **1 × GCP `c3d-highcpu-360` Spot, `australia-southeast1` (Sydney)** | 180 physical (360 vCPU), 708 GiB RAM | cheapest per core found today, and it is in Sydney (a few ms from the PC) |
-| Fallback if GCP Spot is unavailable or preempted for long | 1 × AWS `c7a.48xlarge` Spot, `us-west-1` or `eu-north-1` | 192 physical (no SMT), 384 GiB | about the same price, but overseas (adds ~150–250 ms per gate push, which is negligible against a multi-minute gate) |
+| Runner, git checkpoints, 19 local gate slots (compile, proof, and **all QEMU gates**) | Odin's P920 (WSL2, nested virtualization on for KVM) | 28 free | already owned; the only machine here with KVM |
+| Gate worker **w1** + git mirror | **1 × GCP `c3d-highcpu-360` Spot, `australia-southeast1` (Sydney)** | 180 physical (360 vCPU), 720 GB RAM | cheapest per core found in Sydney, a few ms from the PC. **No KVM** (GCP AMD machines have no nested virtualization), so it takes compile and proof gates only |
+| Fallback, or a second worker with KVM | AWS `m7a.metal-48xl` Spot, `eu-north-1` (or `c7a.metal-48xl`) | 192 physical, 768 / 384 GB, KVM | cheaper per core than GCP Sydney. Overseas, which adds ~300 ms per gate push, negligible against a multi-minute gate. Metal is needed for KVM on AMD |
 
-One big box is simpler than several small ones: one bootstrap, one mirror, one ssh connection
-(multiplexed) and one thing to delete at the end. 708 GiB of RAM lets the whole worker run in tmpfs.
+**Why one big box:** it is simpler than several small ones. One bootstrap, one mirror, one multiplexed ssh connection, and one thing to delete at the end. 720 GB of RAM lets the whole worker run in tmpfs.
 
-With w1 (88 gate slots) plus the PC (19), the run has about 208 cores against 10,000 core-hours,
-so the gate work takes about **2.2–2.7 days** of wall clock (the plan's 128-core figure was 2.7 days;
-180 cores gets a little under that). Set `slots.agent.count` to about 144 (already done in
-`config.glm-api-burst.json`); above that, agents only wait for gate slots.
+**Run length:** w1 (88 gate slots) plus the PC (19 slots) give about 208 cores against about 30,000 core-hours. The gate work then takes about **6 days** of wall clock (3.6–12 days). The PC alone would take about 44 days.
+
+**Agents:** set `slots.agent.count` to about 224 (already done in `config.glm-api-burst.json`). Above about 200, agents only wait for gate slots.
 
 ### CPU prices found (USD per hour unless marked)
 
-| Provider / machine | Cores | Price | US$/core-hour | Source |
-|---|---|---|---|---|
-| **GCP c3d-highcpu-360 Spot, Sydney** | 180 (360 vCPU) | **$1.518/h** (on-demand $16.81) | 0.0084 | [Usage AI](https://instances.usage.ai/gcp/compute/c3d-highcpu-360) |
-| GCP c3d-highcpu-360 Spot, Iowa/Oregon | 180 | $3.09–3.25/h | 0.018 | [Google Spot pricing](https://cloud.google.com/spot-vms/pricing), [Usage AI](https://instances.usage.ai/gcp/compute/c3d-highcpu-360) |
-| AWS c7a.48xlarge Spot, us-west-1 | 192 (no SMT) | $1.23/h | 0.0064 | [aws-pricing.com](https://aws-pricing.com/c7a.48xlarge.html), [Usage AI](https://instances.usage.ai/aws/ec2/c7a.48xlarge) |
-| AWS c7a.48xlarge Spot, eu-north-1 / Singapore | 192 | $1.25–1.41 / $1.91 | 0.007–0.010 | same |
-| AWS c7a in Sydney | – | not offered in ap-southeast-2 | – | same |
-| AWS c7i.48xlarge Spot, Sydney | 96 (192 vCPU) | $4.22/h | 0.044 | [Vantage](https://instances.vantage.sh/aws/ec2/c7i.48xlarge) |
-| Hetzner AX162-1 dedicated (EPYC 9454P) | 48 (96 threads) | €1.171/h incl. VAT **+ €361.76 setup** | ≈0.03 + setup | [Hetzner Robot](https://robot.hetzner.com/order), [price list](https://docs.hetzner.com/general/infrastructure-and-availability/price-adjustment/) |
-| Hetzner AX162-1-LTD (limited stock) | 48 | €0.608/h incl. VAT + €46.41 setup | ≈0.015 + setup | [Hetzner Robot](https://robot.hetzner.com/order) |
-| Hetzner Cloud CCX63 | 24 (48 vCPU) | €1.368/h net | ≈0.064 | [Hetzner price list](https://docs.hetzner.com/general/infrastructure-and-availability/price-adjustment/) |
-| Vultr Optimized Cloud 96 vCPU, Sydney | 48 | $5.714/h | ≈0.12 | [Vultr pricing](https://www.vultr.com/pricing/) |
-| OVH | – | monthly dedicated only (Sydney from A$283/mo + equal install fee; 96-core Scale-a6 from $1,249/mo) | not hourly | [OVH AU](https://www.ovhcloud.com/en-au/bare-metal/prices/), [OVH US](https://us.ovhcloud.com/bare-metal/prices/) |
+| Provider / machine | Cores | Price | US$/core-hour | KVM | Source |
+|---|---|---|---|---|---|
+| **GCP c3d-highcpu-360 Spot, Sydney** | 180 (360 vCPU) | **$1.59984/h** (on-demand $16.86645) | 0.0089 | no | [Google Spot pricing](https://cloud.google.com/spot-vms/pricing) |
+| GCP c3d-highcpu-360 Spot, Iowa/Oregon/S. Carolina | 180 | $3.0924/h | 0.0172 | no | same |
+| AWS c7a.48xlarge Spot, us-west-1 | 192 (no SMT) | $1.2287/h | 0.0064 | no (metal only) | [AWS spot feed](https://aws.amazon.com/ec2/spot/pricing/) |
+| AWS c7a.48xlarge Spot, eu-north-1 | 192 | $1.5306/h | 0.0080 | no | same |
+| **AWS c7a.metal-48xl Spot, eu-north-1** | 192 | **$1.0548/h** | **0.0055** | **yes** | same |
+| **AWS m7a.metal-48xl Spot, eu-north-1** (interruption band under 5%) | 192 | **$1.1823/h** | **0.0062** | **yes** | same |
+| AWS c8i.48xlarge Spot, Sydney (Intel, nested virtualization) | 96 (192 vCPU) | $1.1748/h | 0.0122 | yes | same |
+| AWS c7a in Sydney | – | not offered in ap-southeast-2 | – | | same |
+| Hetzner AX162-1 dedicated (EPYC 9454P) | 48 (96 threads) | €1.171/h incl. 19% VAT (€0.984 net, cap €614/month) **+ €361.76 setup** | ≈0.02 + setup | yes | [Hetzner](https://www.hetzner.com/dedicated-rootserver/matrix-ax/) |
+| Hetzner Cloud CCX63 | 24 (48 vCPU) | €1.3686/h net | ≈0.064 | | [Hetzner price list](https://docs.hetzner.com/general/infrastructure-and-availability/price-adjustment/) |
+| OVH | – | monthly dedicated only (setup fee equal to a month without commitment) | not hourly | | [OVH](https://www.ovhcloud.com/en-au/bare-metal/prices/) |
 
-Hetzner's June 2026 price rise and setup fees make it poor value for a 3-day run; Vultr and AWS
-in Sydney cost 5–15× more per core. OVH bills monthly.
-
-**Spot caveat:** Spot machines can be reclaimed at any time. The runner treats a lost worker as an
-infrastructure error (exit 3 / ssh failure), the task's gate is retried, and no work is lost because
-all commits live on the PC. Keep the PC's own 19 gate slots running throughout.
+- **Hetzner:** the June 2026 price rise and setup fees make it poor value for a run of under a week.
+- **Vultr:** no VM of 96+ vCPU is listed in Sydney today.
+- **Spot caveat:** spot machines can be reclaimed at any time. The runner treats a lost worker as an infrastructure error (ssh exit 255): the gate is retried elsewhere, no attempt is charged, and no work is lost, because all commits live on the PC. Keep the PC's own 19 gate slots running throughout.
+- **Quotas:** new AWS accounts start with a spot quota of 5 vCPUs per region. Ask early (step 2).
 
 ### GPU: does renting one help?
 
-**No, not for the bottleneck. It is optional and I recommend skipping it.**
+**No, not for the bottleneck.** The gates are compilers, proof checkers (ESBMC, CBMC, GenMC, Lean, Apalache) and QEMU, and none of them use a GPU.
 
-- The gates are compilers, PRISM and QEMU. PRISM is a CPU (Java/C) model checker; none of them
-  use a GPU. A GPU does not shorten the 10,000 core-hours at all.
-- The model work goes to GLM-5.3-Flash through the API, which is not the limit.
-- Proof-search models like Goedel-Prover generate **Lean 4** proofs. PBSD's proofs are PRISM
-  models, so they would not plug in without a separate Lean track, which is not in the plan.
-- A small local triage model (for example classifying gate logs) fits on the PC's RTX 3090 already.
-
-If you still want one for experiments, prices found (Sep 2026 snapshot,
-[hostalu](https://hostalu.com/en/gpu-cloud/), [RunPod](https://www.runpod.io/pricing)):
+**The one GPU job is the local Lean prover.** It runs on the PC's RTX 3090 (`tools/llama/lean-prover.sh`): a 32B Lean prover at 4-bit is about 20 GB. Rent a GPU only if you want the prover off the PC. Prices found (Sep 2026 snapshot, [hostalu](https://hostalu.com/en/gpu-cloud/), [RunPod](https://www.runpod.io/pricing)):
 
 | GPU | RunPod community / secure | Vast.ai median | Lambda |
 |---|---|---|---|
@@ -76,21 +62,20 @@ If you still want one for experiments, prices found (Sep 2026 snapshot,
 | A100 80 GB | $1.19–1.39 / $1.59 | $0.83 (SXM) | – |
 | H100 80 GB | $1.99–2.69 / $2.89–3.49 | $2.77 | $3.29–3.99 |
 
-A 4090 on RunPod community for the whole run would be about 65 h × $0.34 ≈ **US$22 (A$32)**.
-
 ### Budget
 
 | Item | Expected | Range | Source |
 |---|---|---|---|
-| GLM-5.3-Flash API (all providers) | US$420 | $210–940 | `pbsd_run estimate`, see AGENTS.md §8 |
-| w1: GCP c3d-highcpu-360 Spot Sydney, 65 h | US$99 | $99 at $1.518/h up to $211 at the US spot rate of $3.25/h | Usage AI, Google |
-| w1 boot disk (100 GB pd-balanced, 3 days) and egress | under US$10 | | small; gate traffic is a few GB |
-| Calibration run (step 10), ~3 h of w1 + API | US$15 | $10–25 | |
-| GPU | US$0 | $22 if you insist | RunPod |
-| **Total expected** | **≈ US$545 (A$780)** | | |
-| **Budget to set aside (worst API case + double cloud + 15%)** | **US$1,300 (A$1,860)** | | |
+| GLM-5.3-Flash API (all providers) | US$3,049 | $1,438–7,557 | `pbsd_run estimate`, AGENTS.md section 8.1 |
+| w1: GCP c3d-highcpu-360 Spot Sydney, about 6 days, 87% of the gate work | US$287 | $172–574 | Google spot price; includes 25% for idle and boot time |
+| w1 boot disk (100 GB pd-balanced) and egress | under US$15 | | small; gate traffic is a few GB |
+| Pilot (step 10), 447 tasks | US$280 of API | $130–680 | part of the run, not extra: pilot work is kept |
+| PC electricity, about 8 days at 450 W | US$19 | | A$0.33/kWh |
+| GPU | US$0 | | the Lean prover runs on the PC's RTX 3090 |
+| **Total expected** | **≈ US$3,370 (A$4,830)** | | |
+| **Budget to set aside (high case + 15%)** | **US$9,400 (A$13,500)** | | |
 
-Set billing alerts at A$300 on the cloud account and a hard spend limit on every API key (step 3).
+Set billing alerts at A$300 and A$800 on the cloud account and a hard spend limit on every API key (step 3).
 
 ## 2. Step by step
 
@@ -99,19 +84,13 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 1. **Create accounts.**
    - Google Cloud (console.cloud.google.com): create a project `pbsd`, add a billing account (AUD card).
    - Z.ai developer platform (z.ai): the main GLM-5.3-Flash provider.
-   - Fallback providers, any subset: DeepInfra, Fireworks, OpenRouter. (The runner fails over
-     between whichever keys are set.)
-   - Optional fallback for CPUs: AWS.
+   - Fallback providers, any subset: DeepInfra, Fireworks, OpenRouter. The runner fails over between whichever keys are set.
+   - Optional, for a KVM worker or a GCP fallback: AWS.
 2. **Ask for capacity now; these take time.**
-   - **Z.ai:** in the console, request a higher concurrency limit for `glm-5.3-flash` (ask for
-     64 concurrent requests). Their review has taken about 10 working days, so do this first.
-   - **GCP quotas:** IAM & Admin → Quotas, region `australia-southeast1`: raise
-     "C3D CPUs" and "Preemptible CPUs" to at least 400. New projects start far below that, and the
-     machine will not start until this is approved. Also request the same in `us-central1` as a backup.
-   - **AWS (if used):** Service Quotas → EC2 → "All Standard Spot Instance Requests" to 192 vCPUs in
-     `us-west-1`.
-3. **Make API keys and set spend limits.** Create one key per provider, set a monthly cap on each
-   (Z.ai A$700, each fallback A$300), and keep them in your password manager.
+   - **Z.ai:** ask support for higher concurrency for `glm-5.3-flash` (ask for 96 concurrent requests). The burst run needs about 90 in flight across providers, so with DeepInfra's default 200 a smaller Z.ai limit also works.
+   - **GCP quotas:** IAM & Admin → Quotas, region `australia-southeast1`. Raise "C3D CPUs" and "Preemptible CPUs" to at least 400. New projects start far below that, and the machine will not start until the request is approved. Also request the same in `us-central1` as a backup.
+   - **AWS (if used):** Service Quotas → EC2 → "All Standard Spot Instance Requests" to 400 vCPUs in `eu-north-1` (the default is 5).
+3. **Make API keys and set spend limits.** Create one key per provider and set a monthly cap on each (Z.ai A$4,000, each fallback A$2,000; raise after the pilot). Keep them in your password manager.
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
    export ZAI_API_KEY=...
@@ -121,16 +100,20 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
-   Add `. ~/.pbsd/env` to `~/.bashrc`. Run `pbsd_run health` to see each provider answer.
-5. **Make the runner's ssh key** (WSL2): `ssh-keygen -t ed25519 -f ~/.ssh/pbsd_runner -N ''`.
-   Paste `~/.ssh/pbsd_runner.pub` into `tools/cloud/cloud-init.yaml` where it says REPLACE
-   (keep that edited copy outside the repo).
-6. **Install the gate scripts into the PBSD tree.** Copy `docs/plan/tools/gates/*.sh` to
-   `tools/gates/` in the PBSD repository the runner works on (`PBSD_REPO`) and commit. Set the real
-   commands once the build layout is fixed: `PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_PROOF_CMD`
-   (default: `prism_check.sh` over `proofs/*.pm` + `.props`), `PBSD_QEMU_IMAGE`, `PBSD_QEMU_MARKER`.
-   Each gate exits 0 pass, 1 fail, 3 infrastructure error.
-7. **Rent w1** (only when steps 2's quota is approved and you are ready to run).
+   Add `. ~/.pbsd/env` to `~/.bashrc`. The gates never see these variables, because the runner scrubs the gate environment.
+5. **Make the runner's ssh key** (WSL2): `ssh-keygen -t ed25519 -f ~/.ssh/pbsd_runner -N ''`. Paste `~/.ssh/pbsd_runner.pub` into `tools/cloud/cloud-init.yaml` where it says REPLACE, and keep that edited copy outside the repo.
+6. **Toolchains, proof tools, pinned gates and reference trees on the PC.**
+   ```bash
+   sudo LINUX_TAG=<newest longterm tag on kernel.org> WINE_TAG=<current Wine stable tag> PBSD_USER=$USER \
+        bash docs/plan/tools/cloud/pc-tools.sh
+   ```
+   It installs the build toolchain, QEMU for three architectures, ESBMC, CBMC, GenMC, Apalache and Lean (elan). It also copies the **pinned** gate scripts to `/opt/pbsd/gates` (`gates_dir`) and the task list to `/opt/pbsd/tasks.json`, and clones Linux and Wine at the tags you give under `~/pbsd-ref` (`ref_roots`).
+   - **Tags:** write the two tags down. Every worker must use the same ones, because they are the behavioural reference for every port.
+   - **KVM:** for QEMU gates with KVM under WSL2, set `nestedVirtualization=true` in `%UserProfile%\.wslconfig`.
+   - **Gate hooks:** set the real build commands once the P0-07 tasks have passed: `PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE` and `PBSD_QEMU_MARKER`. The proof hook defaults to `proof_check.sh`, with the tier taken from the task.
+   - **Exit codes:** each gate exits 0 pass, 1 fail, 3 infrastructure error.
+   - **Lean prover:** start it on the RTX 3090 with `docs/plan/tools/llama/lean-prover.sh`. It serves `http://127.0.0.1:8081/v1`, the default `lean_prover_url`.
+7. **Rent w1** (only when step 2's quota is approved and you are ready to run).
    ```bash
    gcloud compute instances create pbsd-w1 --project pbsd --zone australia-southeast1-b \
      --machine-type c3d-highcpu-360 --provisioning-model SPOT --instance-termination-action DELETE \
@@ -138,66 +121,85 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
      --labels pbsd=1 --metadata-from-file user-data=$HOME/.pbsd/cloud-init.yaml
    gcloud compute firewall-rules create pbsd-wg --allow udp:51820 --target-tags pbsd   # only if using WireGuard
    ```
-   Bootstrap runs by itself via cloud-init (log: `/var/log/pbsd-bootstrap.log`): it installs the
-   toolchain, QEMU and PRISM, creates user `pbsd` with your key, mounts a tmpfs at `/run/pbsd`
-   (70% of RAM), creates the bare mirror `/srv/pbsd/pbsd.git` and installs `/opt/pbsd/bin/pbsd-gate`.
-   Without cloud-init: `scp -r docs/plan/tools root@w1:/root/pbsd-tools` then
-   `sudo PBSD_PUBKEY="$(cat ~/.ssh/pbsd_runner.pub)" bash /root/pbsd-tools/cloud/bootstrap.sh`.
-8. **Connect the PC to w1.** Plain ssh with key-only login is enough. WireGuard is optional and gives a
-   private 10.66.0.0/24 network, so nothing on your home router needs opening (the PC dials out):
-   - In WSL2: `sudo apt install wireguard-tools`, then fill in `tools/cloud/wg-pc.conf.example` →
-     `/etc/wireguard/wg0.conf` and `sudo wg-quick up wg0`. Put `wg-worker.conf.example` on w1 the same way.
-     (WSL2 kernels since 5.6 include WireGuard. If yours does not, use the Windows WireGuard app with the same file.)
-   - Append `tools/cloud/ssh_config.example` to `~/.ssh/config` (aliases `w1` and `pbsd-mirror`, with
-     connection multiplexing so ~90 gates share one connection). Test: `ssh w1 nproc`.
+   Bootstrap runs by itself via cloud-init (log: `/var/log/pbsd-bootstrap.log`). It:
+   - installs the toolchain, QEMU, ESBMC, CBMC, GenMC, Apalache and Lean;
+   - creates user `pbsd` with your key;
+   - mounts a tmpfs at `/run/pbsd` (70% of RAM);
+   - creates the bare mirror `/srv/pbsd/pbsd.git`;
+   - clones the Linux and Wine reference trees;
+   - installs the pinned gates in `/opt/pbsd/gates` and the entry point `/opt/pbsd/bin/pbsd-gate`;
+   - lets gates run in a network namespace without network, and blocks the metadata service for `pbsd`;
+   - prints which tools are present.
+
+   A missing tool makes its gates exit 3 (retried), never pass. Without cloud-init: `scp -r docs/plan/tools docs/plan/tasks.json root@w1:/root/pbsd-plan/`, then `sudo PBSD_PUBKEY="$(cat ~/.ssh/pbsd_runner.pub)" LINUX_TAG=... WINE_TAG=... bash /root/pbsd-plan/tools/cloud/bootstrap.sh`.
+8. **Connect the PC to w1.** Plain ssh with key-only login is enough. WireGuard is optional: it gives a private 10.66.0.0/24 network, so nothing on your home router needs opening, because the PC dials out.
+   - In WSL2: `sudo apt install wireguard-tools`, then fill in `tools/cloud/wg-pc.conf.example` as `/etc/wireguard/wg0.conf` and run `sudo wg-quick up wg0`. Put `wg-worker.conf.example` on w1 the same way. WSL2 kernels since 5.6 include WireGuard; if yours does not, use the Windows WireGuard app with the same file.
+   - Append `tools/cloud/ssh_config.example` to `~/.ssh/config`. It defines the aliases `w1` and `pbsd-mirror`, with connection multiplexing so ~90 gates share one connection. Test with `ssh w1 nproc`.
 9. **Seed the mirror and register the worker.**
    ```bash
-   tools/cloud/mirror-setup.sh $PBSD_REPO pbsd-mirror   # pushes the full history once
-   tools/cloud/register.sh w1                            # adds "w1 88" to ~/.pbsd/workers.txt
+   tools/cloud/mirror-setup.sh $PBSD_REPO pbsd-mirror <base-branch>   # pushes the full history once, then builds w1's hbsd/kde reference trees
+   tools/cloud/register.sh w1                                         # adds "w1 88" to ~/.pbsd/workers.txt ("kvm" is added only where /dev/kvm exists)
    ```
-   The runner re-reads `workers.txt` every 30 s, so workers can be added or removed while it runs.
-   For each gate on a worker, the runner commits the task tree, pushes it to the mirror as
-   `refs/gates/<task>`, and runs `ssh w1 -- /opt/pbsd/bin/pbsd-gate <role> <task> <sha>`, which checks
-   the commit out in tmpfs and runs the same `tools/gates/<role>.sh`.
-10. **Calibration run: 50 tasks.** Measure before spending the big money.
+   - **Updates:** the runner re-reads `workers.txt` every 30 s, so workers can be added or removed while it runs.
+   - **What happens per gate on a worker:**
+     1. The runner commits the task's owned files with a `PBSD-Base` trailer.
+     2. It pushes the commit to the mirror as `refs/gates/<task>`.
+     3. It runs `ssh w1 -- /opt/pbsd/bin/pbsd-gate <role> <task> <sha> <proof-tier>`.
+     4. That checks the commit out in tmpfs with the same sparse pattern as the PC's worktrees, and runs the pinned `/opt/pbsd/gates/<role>.sh`.
+   - **QEMU gates** never go to w1, because it has no KVM.
+10. **Pilot: 447 tasks, go/no-go.** Measure before spending the big money. The pilot runs in the real database, so its work is kept for the full run.
     ```bash
-    # The first 50 tasks by priority whose dependencies are all inside the set (covers all 6 roles),
-    # in a separate state dir so the real run starts clean.
-    jq 'reduce (sort_by(.priority)[]) as $t ({ids:{}, out:[]}; . as $s | if ($s.out|length) < 50 and all(($t.deps // [])[]; $s.ids[.] != null) then .ids[$t.id] = true | .out += [$t] else . end) | .out' docs/plan/tasks.json > ~/.pbsd/tasks.calib.json
-    PBSD_TASKS=~/.pbsd/tasks.calib.json PBSD_STATE=/run/pbsd/calib pbsd_run init
-    PBSD_TASKS=~/.pbsd/tasks.calib.json PBSD_STATE=/run/pbsd/calib pbsd_run run
-    PBSD_STATE=/run/pbsd/calib pbsd_run status
+    # All of Phase 0 with every package's -IF task, P0-FREEZE and all of P1-02: 447 tasks, closed under their
+    # dependencies, including three package models (Lean prover) and 29 T2 proofs.
+    jq '[.[] | select((.wp|test("^P0|^P1-02")) or (.id|endswith("-IF")))]' docs/plan/tasks.json > ~/.pbsd/tasks.pilot.json
+    PBSD_TASKS=~/.pbsd/tasks.pilot.json pbsd_run init
+    PBSD_TASKS=~/.pbsd/tasks.pilot.json pbsd_run run       # inside tmux
+    pbsd_run status
+    sqlite3 $PBSD_STATE/tasks.db "select t.role, json_extract(t.body,'$.proof_tier'), count(distinct c.task), round(sum(c.usd),2) from cost c join task t on t.id=c.task group by 1,2"
     ```
-    Check: gates pass on w1 as well as on the PC; real core-minutes per gate; tokens and US$ per task;
-    429 rate per provider. Then `pbsd_run estimate burst_cores=180` with the measured numbers. If the
-    estimated total is over the budget, stop and adjust before step 11.
-11. **Full run.** `pbsd_run run` inside `tmux` so it survives the terminal closing. It resumes from
-    the tmpfs database or the HDD checkpoint after any crash or reboot.
-12. **Monitor.** `pbsd_run status` (or the live screen) shows overall and per-phase progress bars,
-    time left and finish time, cost so far and projected, gate slots (`compile 8/8 qemu 2/2 proof 9/9
-    w1 85/88`) and one line per provider. Check twice a day:
+    **Check:**
+    - gates pass on w1 as well as on the PC;
+    - real core-minutes per gate;
+    - tokens and US$ per task class;
+    - **T1/T2 obligations proved per attempt**;
+    - review rejection rate;
+    - 429 rate per provider.
+
+    Then rerun `pbsd_run estimate cores=208` with the measured numbers, for example `implementer.attempts=1.9 T2.attempts=5 hit=0.8`. **Stop and decide** if:
+    - T2 proofs stay under about 50% after 3 attempts;
+    - the estimate is over budget;
+    - review rejections exceed 30%.
+
+    The options are in AGENTS.md section 8.5, step 4.
+11. **Full run.** `pbsd_run run` inside `tmux` (it loads the full task list, keeping the passed pilot tasks), so it survives the terminal closing. It resumes from the tmpfs database or the HDD checkpoint after any crash or reboot.
+12. **Monitor.** `pbsd_run status` (or the live screen) shows:
+    - overall and per-phase progress bars, time left and finish time;
+    - cost so far and projected;
+    - gate slots (`compile 8/8 qemu 2/2 proof 9/9 workers 1 (85/88 slots)`);
+    - one line per provider.
+
+    Check twice a day:
     - GCP console → Billing → Reports; Z.ai and fallback usage pages.
-    - If w1 is preempted: `gcloud compute instances list --filter=labels.pbsd=1`. Recreate it with the
-      step 7 command (same name), rerun steps 9's `mirror-setup.sh` and `register.sh`. The tasks that
-      were gating there are retried automatically.
-    - If Spot in Sydney keeps getting reclaimed, rent the AWS fallback and register it as `w2`.
+    - **If w1 is preempted:** `gcloud compute instances list --filter=labels.pbsd=1`. Recreate it with the step 7 command (same name), then rerun step 9's `mirror-setup.sh` and `register.sh`. The tasks that were gating there were already retried elsewhere, with no attempt charged.
+    - **If Spot in Sydney keeps getting reclaimed:** rent the AWS fallback (step 7 with the AWS CLI, or the console; same cloud-init file) and register it as `w2`. Metal types register with `kvm`, so they also take QEMU gates.
+    - **Escalated tasks:** `sqlite3 $PBSD_STATE/tasks.db "select id from task where state='escalated'"`. Their messages and last gate logs are in the `message` and `event` tables.
 13. **Stop.** Ctrl-C the runner (it checkpoints on exit), or let it finish.
-14. **Tear down so billing stops.** Same day the run ends:
+14. **Tear down so billing stops.** The same day the run ends:
     ```bash
     tools/cloud/teardown.sh                                         # drains workers, lists what still bills
     gcloud compute instances delete pbsd-w1 --zone australia-southeast1-b --quiet
     gcloud compute disks list --filter=name~pbsd                    # delete anything left
     aws ec2 terminate-instances --instance-ids <id>                 # only if you used AWS
     ```
-    Nothing on w1 needs saving: every commit lives on the PC and its HDD checkpoint.
-    Then revoke or lower the API key spend caps.
+    Nothing on w1 needs saving: every commit lives on the PC and its HDD checkpoint. Then revoke or lower the API key spend caps.
 
 ## 3. Cost checklist
 
-- [ ] Billing alert on GCP at A$300 and A$600; spend cap on every API key.
-- [ ] Spot price for `c3d-highcpu-360` in `australia-southeast1` checked on the day (expect about US$1.52/h).
-- [ ] Calibration run (step 10) done and the estimate re-run with measured numbers.
-- [ ] Only one big worker running unless the calibration says the PC + w1 cannot keep the agents busy.
-- [ ] No GPU rented (it does not speed up the gates).
-- [ ] After the run: `teardown.sh` shows nothing, the instance and its disk are deleted, and the next
-      day's billing report shows no compute charges.
+- [ ] Billing alert on GCP at A$300 and A$800; spend cap on every API key.
+- [ ] Spot price for `c3d-highcpu-360` in `australia-southeast1` checked on the day (expect about US$1.60/h).
+- [ ] `pc-tools.sh` run; the Linux and Wine tags written down and passed to every worker.
+- [ ] Lean prover answering at `http://127.0.0.1:8081/v1`.
+- [ ] `pbsd_run selftest`: 22 checks ok.
+- [ ] Pilot (step 10) done and the estimate re-run with measured numbers; go/no-go decided.
+- [ ] Only one big worker running, unless the pilot says the PC + w1 cannot keep the agents busy.
+- [ ] After the run: `teardown.sh` shows nothing, the instance and its disk are deleted, and the next day's billing report shows no compute charges.

@@ -1,36 +1,131 @@
 {
   "backend": "api",
   "providers": [
-    {"name": "zai", "url": "https://api.z.ai/api/paas/v4/chat/completions", "model": "glm-5.3-flash",
-     "key_env": "ZAI_API_KEY", "concurrency": 8, "rpm": 0, "tpm": 0,
-     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50},
-    {"name": "deepinfra", "url": "https://api.deepinfra.com/v1/openai/chat/completions", "model": "zai-org/GLM-5.3-Flash",
-     "key_env": "DEEPINFRA_API_KEY", "concurrency": 32, "rpm": 0, "tpm": 0,
-     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50},
-    {"name": "fireworks", "url": "https://api.fireworks.ai/inference/v1/chat/completions", "model": "accounts/fireworks/models/glm-5p3-flash",
-     "key_env": "FIREWORKS_API_KEY", "concurrency": 16, "rpm": 0, "tpm": 2000000,
-     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50},
-    {"name": "openrouter", "url": "https://openrouter.ai/api/v1/chat/completions", "model": "z-ai/glm-5.3-flash",
-     "key_env": "OPENROUTER_API_KEY", "concurrency": 16, "rpm": 0, "tpm": 0,
-     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50,
-     "extra": {"provider": {"sort": "throughput", "allow_fallbacks": true}}}
+    {
+      "name": "zai",
+      "url": "https://api.z.ai/api/paas/v4/chat/completions",
+      "model": "glm-5.3-flash",
+      "key_env": "ZAI_API_KEY",
+      "concurrency": 8,
+      "rpm": 0,
+      "tpm": 0,
+      "price_in": 0.15,
+      "price_hit": 0.03,
+      "price_out": 0.5,
+      "tier": "flash"
+    },
+    {
+      "name": "deepinfra",
+      "url": "https://api.deepinfra.com/v1/openai/chat/completions",
+      "model": "zai-org/GLM-5.3-Flash",
+      "key_env": "DEEPINFRA_API_KEY",
+      "concurrency": 32,
+      "rpm": 0,
+      "tpm": 0,
+      "price_in": 0.15,
+      "price_hit": 0.03,
+      "price_out": 0.5,
+      "tier": "flash"
+    },
+    {
+      "name": "fireworks",
+      "url": "https://api.fireworks.ai/inference/v1/chat/completions",
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "key_env": "FIREWORKS_API_KEY",
+      "concurrency": 16,
+      "rpm": 0,
+      "tpm": 2000000,
+      "price_in": 0.15,
+      "price_hit": 0.03,
+      "price_out": 0.5,
+      "tier": "flash"
+    },
+    {
+      "name": "openrouter",
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "model": "z-ai/glm-5.3-flash",
+      "key_env": "OPENROUTER_API_KEY",
+      "concurrency": 16,
+      "rpm": 0,
+      "tpm": 0,
+      "price_in": 0.15,
+      "price_hit": 0.03,
+      "price_out": 0.5,
+      "extra": {
+        "provider": {
+          "quantizations": [
+            "fp8",
+            "bf16"
+          ],
+          "sort": "throughput",
+          "allow_fallbacks": true
+        }
+      },
+      "tier": "flash"
+    }
   ],
-  "api_max_tokens": 16384,
-  "expected_out_tokens": 4000,
+  "api_max_tokens": 32768,
+  "expected_out_tokens": 8000,
   "ctx_per_slot": 131072,
   "tool_result_chars": 48000,
   "compact_prompt": true,
-  "lease_s": 10800,
+  "lease_s": 21600,
   "agent_watchdog_s": 1800,
   "slots": {
-    "agent":   {"count": 24},
-    "compile": {"count": 8, "cores": 1, "ram_gb": 3, "node": 0},
-    "qemu":    {"count": 2, "cores": 2, "ram_gb": 4, "node": 0},
-    "proof":   {"count": 9, "cores": 2, "ram_gb": 12, "node": -1}
+    "agent": {
+      "count": 32
+    },
+    "compile": {
+      "count": 8,
+      "cores": 1,
+      "ram_gb": 3,
+      "node": 0
+    },
+    "qemu": {
+      "count": 2,
+      "cores": 2,
+      "ram_gb": 4,
+      "node": 0
+    },
+    "proof": {
+      "count": 9,
+      "cores": 2,
+      "ram_gb": 12,
+      "node": -1
+    }
   },
-  "load_max": 34, "ram_admit": 0.85, "ram_pause": 0.92,
+  "load_max": 34,
+  "ram_admit": 0.85,
+  "ram_pause": 0.92,
   "checkpoint_dir": "/mnt/d/pbsd-ckpt",
   "checkpoint_repo": "/mnt/d/pbsd-ckpt/pbsd.git",
   "checkpoint_s": 600,
-  "role_backend": {}
+  "role_backend": {},
+  "default_tier": "flash",
+  "escalate_tier": "flash",
+  "escalate_at": 3,
+  "role_tier": {},
+  "api_timeout_s": 1800,
+  "max_attempts": 8,
+  "role_max_turns": {
+    "decomposer": 40,
+    "implementer": 80,
+    "tester": 70,
+    "prover": 300,
+    "reviewer": 30,
+    "integrator": 160
+  },
+  "gates_dir": "/opt/pbsd/gates",
+  "gate_scrub_env": true,
+  "merge_target": "pbsd-cutover",
+  "ref_roots": {
+    "linux": "/home/odin/pbsd-ref/linux",
+    "wine": "/home/odin/pbsd-ref/wine",
+    "hbsd": "/run/pbsd/repo/hbsd",
+    "kde": "/run/pbsd/repo/kde"
+  },
+  "lean_prover_url": "http://127.0.0.1:8081/v1",
+  "lean_prover_model": "Goedel-Prover-V2-32B",
+  "lean_samples": 8,
+  "lean_rounds": 2
 }

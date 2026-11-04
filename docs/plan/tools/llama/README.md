@@ -8,6 +8,7 @@ GLM-5.3-Flash (320B total, 18B active, MoE) runs on the P920 under llama.cpp bui
 | `glm-server.sh` | Linux boot or WSL2 with the model on ext4. Adds `--numa distribute` and `numactl --interleave=all`. |
 | `config.iq2xxs.json` | `$PBSD_STATE/config.json` for 64 GB with IQ2_XXS: 2 slots, calibration only. |
 | `config.q4km.json` | `$PBSD_STATE/config.json` for 512 GB–2 TB with Q4_K_M: 4 slots, the run. |
+| `lean-prover.sh` | The local Lean prover on the RTX 3090 at `http://127.0.0.1:8081/v1` (`lean_prover_url` in the runner config). It is used by the default API plan too: GLM-5.3-Flash states the lemmas, and this model writes the Lean proofs (AGENTS.md section 10). |
 
 ## Layout on Windows
 

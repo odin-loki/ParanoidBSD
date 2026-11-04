@@ -1,9 +1,9 @@
 # PBSD architecture and implementation plan
 
-Execution: every task runs on GLM-5.3-Flash through its API, spread over several providers (Z.ai first, plus DeepInfra, Fireworks, Together or OpenRouter), with 24 parallel agents on Odin's PC (Lenovo P920) or 128 with cloud CI burst, and no time limit. Builds, tests, PRISM proofs and QEMU run on the P920 in RAM with the HDD for checkpoints only; these gates, not the model, are the bottleneck (AGENTS.md section 8.1: about 15 days on the PC alone, about 2.7 days with cloud CI burst, about $420 of API tokens, all estimates). The live progress runner is `tools/runner` (C++23). Running the model locally under llama-server is an optional backend (AGENTS.md Appendix D); the DeepSeek plan is Appendix C and cloud options are Appendices A and B. The atomic task graph, coordination, harness, prompts and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
-Status: draft, November 2026. Supersedes the stage plan in `docs/plans/cxx23-port-master-plan.md` for the kernel; that plan's per-file pipeline (stages A–H), handle set, envelopes and userland waves remain in force for userland.
+Execution: every task runs on GLM-5.3-Flash through its API, spread over several providers (Z.ai first, plus DeepInfra, Fireworks, Together or OpenRouter), with 32 parallel agents on Odin's PC (Lenovo P920) or about 224 with one cloud burst worker, and no time limit. Lean proofs come from a local Lean-specialised prover model on the P920's GPU, called by the agents; code proofs use ESBMC, CBMC and GenMC (PRISM is no longer used: it cannot check code). Builds, tests, proof checks and QEMU run on the P920 in RAM with the HDD for checkpoints only, plus the burst worker; these gates, not the model, are the bottleneck (AGENTS.md section 8.1, middle case: about 44 days on the PC alone, about 6 days with one burst worker, about US$3.0k of API tokens and US$3.4k in total, all estimates until the pilot). The live progress runner is `tools/runner` (C++23). Running the model locally under llama-server is an optional backend (AGENTS.md Appendix D); the DeepSeek plan is Appendix C and cloud options are Appendices A and B. The atomic task graph, coordination, harness, prompts, proof stack and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
+Status: draft, reviewed and fixed 4 Nov 2026 (AGENTS.md section 11). Supersedes the stage plan in `docs/plans/cxx23-port-master-plan.md` for the kernel; that plan's per-file pipeline (stages A–H), handle set, envelopes and userland waves remain in force for userland.
 ## 1. Direction
-- The kernel core is rewritten clean-slate in a verified memory-safe C++23 subset, proved by PRISM as it is written. Old HBSD is not proved first as an oracle.
+- The kernel core is rewritten clean-slate in a verified memory-safe C++23 subset, proved as it is written (Lean 4 package models and ESBMC contract proofs; AGENTS.md section 10). Old HBSD is not proved first as an oracle.
 - Everything converges on one branch and lands in one cutover. Packages run in parallel against frozen interfaces.
 - Reuse beats rewrite: Linux and HBSD code is imported directly, adapted into C++, wrapped behind a verified gateway, or used as reference, per package.
 - `hbsd/` stays untouched as the build and behaviour reference; HBSD on `main` stays bootable until cutover.
@@ -33,7 +33,7 @@ Status: draft, November 2026. Supersedes the stage plan in `docs/plans/cxx23-por
 2. Each package owns its directories exclusively (see `OWNERSHIP.md`). An agent never edits outside its paths; CI enforces this.
 3. Packages code against headers plus mocks from P0-07, so phase 1–4 packages mostly run at once; the dependency list says when real integration is needed.
 4. Every package lands on its own branch `wp/<id>` and merges into `pbsd-cutover`, never into `main`.
-5. Done means: compiles under the dialect profile, PRISM obligations discharged, acceptance tests green, differential run green.
+5. Done means: compiles under the dialect profile, the proof obligations of its tier met (PROVED for the verified core, BOUNDED or RUNTIME elsewhere, never relabelled), acceptance tests green, differential run green.
 ### Waves that can run simultaneously
 
 - Wave A: P0-01, then P0-02..P0-08 in parallel.
@@ -42,11 +42,12 @@ Status: draft, November 2026. Supersedes the stage plan in `docs/plans/cxx23-por
 - Wave D: P5 packages, then P6-01.
 ## 5. Verification approach
 
-- Verified core (allocator, VM, capabilities, scheduler, rings, VFS path walk, dispatcher, gateways): PRISM proofs from contracts, required to merge.
-- Adapted Linux/HBSD code inside the core: contracts at every function boundary; PRISM proves the boundary; inside bodies, sanitizers and fuzzing.
-- Foreign code (Linux modules, NT drivers, translated binaries): IOMMU isolation plus generated runtime checks (P4-07).
+- Verified core (allocator, VM, capabilities, scheduler, rings, VFS path walk, dispatcher, IOMMU, gateways): a Lean 4 (or TLA+/Apalache) package model whose locked theorems are proved (T1; Lean proofs by the local prover model), and ESBMC contract proofs that each operation refines the model (T2); required to merge, labelled PROVED.
+- Adapted Linux/HBSD code elsewhere in the kernel: contracts at every function boundary, checked by ESBMC (C++) or CBMC (C) with unwinding assertions and GenMC for concurrent code (T3, labelled BOUNDED); sanitizers and fuzzing inside bodies.
+- Foreign code (Linux drivers, DRM, Wine/NT, translated binaries, imported filesystems): CBMC/ESBMC harnesses at the gateway (T4, BOUNDED) plus generated runtime checks (P4-07); the real guarantee is the T1/T2 proof that IOMMU windows and capabilities confine it.
 - Differential: same workload on stock Linux, HBSD and PBSD; compare syscall traces, outputs, performance (LTP, kyua, xfstests, liburing, blktests, packetdrill, igt, Wine tests, Android CTS).
 - Fuzzing: syzkaller with Linux, BSD and NT descriptions from P0-07 onward.
+- Proofs are judged only by machine checkers with locked flags; the anti-cheating gates (locked statements, axiom audit, no assumptions, annotation-only diffs, vacuity checks) are in AGENTS.md section 10. Verified-core code uses a checker-friendly subset: no C++ modules, coroutines or virtual inheritance, concrete template instantiations, bounded loops, asm only in stubs with locked contracts.
 ## 6. Phases and work packages
 
 ### Phase 0: Interface freeze and infrastructure
@@ -55,21 +56,21 @@ Status: draft, November 2026. Supersedes the stage plan in `docs/plans/cxx23-por
 
 - Owns: `pbsd/kernel/base/, docs/specs/KERNEL_CXX_ABI.md`
 - Depends on: none
-- Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contract attributes [[expects]]/[[ensures]]/[[invariant]] lowered to PRISM annotations plus runtime checks in debug builds, typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
+- Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contracts written as PBSD_PRE/PBSD_POST/PBSD_ASSERT/PBSD_INVARIANT/PBSD_ASSIGNS/PBSD_DECREASES macros that expand to C++26 pre/post/contract_assert in the GCC 16 runtime build, to ESBMC/CBMC contracts in the verification build and to runtime checks under Clang (the C++20 [[expects]]/[[ensures]] attribute design was removed from the standard and is ignored by compilers), typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
 - Reuse:
   - pbsd/core, pbsd/handles, docs/specs/HANDLES.md — adapt
   - Linux include/linux/compiler*.h — reference
-- Acceptance: clang-tidy profile bans raw new/delete/malloc and pointer arithmetic outside pbsd/kernel/base/unsafe/; PRISM parses every contract form; 100% of existing pbsd/core compiles under the profile.
+- Acceptance: clang-tidy profile bans raw new/delete/malloc and pointer arithmetic outside pbsd/kernel/base/unsafe/; every contract form expands in the runtime build and the verification build; 100% of existing pbsd/core compiles under the profile.
 - Agent brief:
 
 ```text
 You are implementing PBSD work package P0-01 (Kernel C++ dialect and contract macros) in github.com/odin-loki/ParanoidBSD on branch wp/P0-01.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: pbsd/kernel/base/, docs/specs/KERNEL_CXX_ABI.md.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P0-01.md.
-Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contract attributes [[expects]]/[[ensures]]/[[invariant]] lowered to PRISM annotations plus runtime checks in debug builds, typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
+Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contracts written as PBSD_PRE/PBSD_POST/PBSD_ASSERT/PBSD_INVARIANT/PBSD_ASSIGNS/PBSD_DECREASES macros that expand to C++26 pre/post/contract_assert in the GCC 16 runtime build, to ESBMC/CBMC contracts in the verification build and to runtime checks under Clang (the C++20 [[expects]]/[[ensures]] attribute design was removed from the standard and is ignored by compilers), typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
 Reuse first: pbsd/core, pbsd/handles, docs/specs/HANDLES.md (adapt); Linux include/linux/compiler*.h (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: clang-tidy profile bans raw new/delete/malloc and pointer arithmetic outside pbsd/kernel/base/unsafe/; PRISM parses every contract form; 100% of existing pbsd/core compiles under the profile. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: clang-tidy profile bans raw new/delete/malloc and pointer arithmetic outside pbsd/kernel/base/unsafe/; every contract form expands in the runtime build and the verification build; 100% of existing pbsd/core compiles under the profile. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-02 Capability object model header
@@ -80,7 +81,7 @@ Done when: clang-tidy profile bans raw new/delete/malloc and pointer arithmetic 
 - Reuse:
   - hbsd/src/sys/kern/sys_capability.c, sys/sys/capsicum.h, docs/specs/CAPSICUM_LINEAGE.md, pbsd/rights, pbsd/lineage — adapt
   - seL4 capability derivation tree — reference
-- Acceptance: Header compiles; PRISM proves rights-monotonicity and revocation-completeness lemmas on the reference model.
+- Acceptance: Header compiles; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that rights-monotonicity and revocation-completeness lemmas on the reference model.
 - Agent brief:
 
 ```text
@@ -90,7 +91,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: One header set: capability token type, rights mask (only narrows on derive), revocation lineage, object kinds (memory, file, socket, device, IRQ, DMA window, process, personality object). Mapping table from POSIX mode bits, NT security descriptors and Android app UIDs to capability sets.
 Reuse first: hbsd/src/sys/kern/sys_capability.c, sys/sys/capsicum.h, docs/specs/CAPSICUM_LINEAGE.md, pbsd/rights, pbsd/lineage (adapt); seL4 capability derivation tree (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Header compiles; PRISM proves rights-monotonicity and revocation-completeness lemmas on the reference model. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Header compiles; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that rights-monotonicity and revocation-completeness lemmas on the reference model. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-03 Memory and DMA interface headers
@@ -111,7 +112,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Freeze page allocator, slab, vmalloc, kmap and DMA mapping APIs with Linux-identical C signatures on the outside and capability-typed C++ on the inside.
 Reuse first: Linux include/linux/gfp.h, mm.h, vmalloc.h, highmem.h, dma-mapping.h (adapt signatures); hbsd/src/sys/compat/linuxkpi/common/include/linux/*.h (direct import of shim signatures).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: linuxkpi headers compile against it unchanged; signature diff vs Linux 6.x headers is empty for the listed functions. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: linuxkpi headers compile against it unchanged; signature diff vs Linux 6.x headers is empty for the listed functions. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-04 Device model interface headers
@@ -132,7 +133,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: struct device, struct pci_dev, struct device_driver, probe/remove, sysfs attribute ABI, IRQ and MSI-X request APIs.
 Reuse first: Linux include/linux/device.h, pci.h, kobject.h, sysfs.h (adapt); hbsd linuxkpi linux/device.h, linux/pci.h (direct import).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: drm-kmod and three NIC drivers compile against headers with zero edits. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: drm-kmod and three NIC drivers compile against headers with zero edits. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-05 Scheduler, I/O ring, block and network interface headers
@@ -154,7 +155,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Freeze user ABI of the I/O rings (byte-compatible with Linux io_uring), scheduler entity and sched_attr, blk-mq tag set and request, sk_buff and net_device layouts.
 Reuse first: Linux include/uapi/linux/io_uring.h (direct import (ABI)); Linux include/linux/blk-mq.h, skbuff.h, netdevice.h (adapt); Linux include/uapi/linux/sched/types.h (sched_attr) (direct import).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: liburing test suite compiles unchanged against the uapi header. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: liburing test suite compiles unchanged against the uapi header. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-06 Personality dispatch and VFS object interface
@@ -166,7 +167,7 @@ Done when: liburing test suite compiles unchanged against the uapi header. Run P
   - hbsd/src/sys/compat/linux/linux_sysvec.c tables, sys/kern/syscalls.master — adapt
   - Wine/ReactOS ntdll syscall tables — reference
   - Linux drivers/android/binder.c uapi — direct import (ABI)
-- Acceptance: Generated tables for all three personalities compile; dispatcher contract verified in PRISM.
+- Acceptance: Generated tables for all three personalities compile; dispatcher totality and uniqueness checked at compile time (static_assert) and by ESBMC.
 - Agent brief:
 
 ```text
@@ -176,28 +177,28 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Per-process personality tag, trap entry contract, syscall table format, VFS node interface carrying capability objects, path namespace mapping (drive letters, / root, Android app data).
 Reuse first: hbsd/src/sys/compat/linux/linux_sysvec.c tables, sys/kern/syscalls.master (adapt); Wine/ReactOS ntdll syscall tables (reference); Linux drivers/android/binder.c uapi (direct import (ABI)).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Generated tables for all three personalities compile; dispatcher contract verified in PRISM. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Generated tables for all three personalities compile; dispatcher totality and uniqueness checked at compile time (static_assert) and by ESBMC. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
-#### P0-07 Build, CI, PRISM pipeline and differential harness
+#### P0-07 Build, CI, proof pipeline and differential harness
 
-- Owns: `CMake/ninja under pbsd/, tools/prism/, .github/workflows/, tests/diff/`
+- Owns: `CMake/ninja under pbsd/, tools/proof/, .github/workflows/, tests/diff/`
 - Depends on: P0-01
-- Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); PRISM runs per-commit on changed TUs; differential runners compare syscall traces against stock Linux and HBSD.
+- Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); the proof checkers (ESBMC, CBMC, GenMC, Lean 4, Apalache) run per commit on changed units at pinned versions, and the gate hooks in tools/gates are set; differential runners compare syscall traces against stock Linux and HBSD.
 - Reuse:
   - existing tools/, pbsd.py, scripts/, core-gates — adapt
   - Linux tools/testing/selftests, LTP, syzkaller, xfstests, liburing tests, FreeBSD kyua tests — direct import as test oracles
-- Acceptance: Empty kernel boots to serial banner on all three arches in CI; PRISM job green on P0 headers.
+- Acceptance: Empty kernel boots to serial banner on all three arches in CI; proof job (Lean, ESBMC, CBMC, GenMC) green on P0 headers.
 - Agent brief:
 
 ```text
-You are implementing PBSD work package P0-07 (Build, CI, PRISM pipeline and differential harness) in github.com/odin-loki/ParanoidBSD on branch wp/P0-07.
-Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: CMake/ninja under pbsd/, tools/prism/, .github/workflows/, tests/diff/.
+You are implementing PBSD work package P0-07 (Build, CI, proof pipeline and differential harness) in github.com/odin-loki/ParanoidBSD on branch wp/P0-07.
+Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: CMake/ninja under pbsd/, tools/proof/, .github/workflows/, tests/diff/.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P0-07.md.
-Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); PRISM runs per-commit on changed TUs; differential runners compare syscall traces against stock Linux and HBSD.
+Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); the proof checkers (ESBMC, CBMC, GenMC, Lean 4, Apalache) run per commit on changed units at pinned versions, and the gate hooks in tools/gates are set; differential runners compare syscall traces against stock Linux and HBSD.
 Reuse first: existing tools/, pbsd.py, scripts/, core-gates (adapt); Linux tools/testing/selftests, LTP, syzkaller, xfstests, liburing tests, FreeBSD kyua tests (direct import as test oracles).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Empty kernel boots to serial banner on all three arches in CI; PRISM job green on P0 headers. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Empty kernel boots to serial banner on all three arches in CI; proof job (Lean, ESBMC, CBMC, GenMC) green on P0 headers. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-08 Ownership map and merge rules
@@ -216,7 +217,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Assign every directory below to exactly one package; headers under pbsd/kernel/include/ become read-only after freeze except via a change request package.
 Reuse first: none.
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: CI rejects a PR touching paths outside its package's ownership. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: CI rejects a PR touching paths outside its package's ownership. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ### Phase 1: Verified core
@@ -240,7 +241,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Keep the HBSD loader and EFI path; new C++ early init; per-function section randomisation at boot via relocation table.
 Reuse first: hbsd/src/stand/ (loader, EFI), sys/amd64/amd64/locore.S, mpboot.S (direct import of asm; wrap C in C++); hbsd/src/sys/hardenedbsd/hbsd_pax_aslr.c (adapt); Linux arch/x86/boot/compressed/kaslr.c, FGKASLR patch series (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Boots on QEMU/real hardware; two boots show distinct function layout; ROP gadget offsets differ. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Boots on QEMU/real hardware; two boots show distinct function layout; ROP gadget offsets differ. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-02 Physical page allocator and slab
@@ -251,7 +252,7 @@ Done when: Boots on QEMU/real hardware; two boots show distinct function layout;
 - Reuse:
   - hbsd/src/sys/vm/vm_phys.c, uma_core.c, pbsd/kernel/vm — adapt algorithms into C++
   - Linux mm/page_alloc.c, mm/slub.c — reference for alloc_pages/GFP semantics
-- Acceptance: PRISM proves no double allocation and free-list integrity; stress + KASAN-equivalent clean; linuxkpi memory selftests pass.
+- Acceptance: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that no double allocation and free-list integrity; stress + KASAN-equivalent clean; linuxkpi memory selftests pass.
 - Agent brief:
 
 ```text
@@ -261,7 +262,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Buddy allocator with per-CPU lists, zero-on-free, typed slab caches; implements alloc_pages, __get_free_pages, kmalloc, kmem_cache_*.
 Reuse first: hbsd/src/sys/vm/vm_phys.c, uma_core.c, pbsd/kernel/vm (adapt algorithms into C++); Linux mm/page_alloc.c, mm/slub.c (reference for alloc_pages/GFP semantics).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: PRISM proves no double allocation and free-list integrity; stress + KASAN-equivalent clean; linuxkpi memory selftests pass. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that no double allocation and free-list integrity; stress + KASAN-equivalent clean; linuxkpi memory selftests pass. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-03 Virtual memory, vmalloc, kmap, W^X
@@ -273,7 +274,7 @@ Done when: PRISM proves no double allocation and free-list integrity; stress + K
   - hbsd/src/sys/vm/vm_map.c, vm_fault.c, vm_object.c, pmap.c (amd64/arm64/riscv) — adapt
   - hbsd_pax_noexec.c (PAGEEXEC/MPROTECT) — adapt
   - Linux mm/vmalloc.c, mm/highmem.c — reference
-- Acceptance: PRISM invariant: no PTE both W and X; HBSD paxtest suite passes; mmap fuzzing clean.
+- Acceptance: Machine-checked invariant (Lean model + ESBMC on every PTE writer): no PTE both W and X; HBSD paxtest suite passes; mmap fuzzing clean.
 - Agent brief:
 
 ```text
@@ -283,7 +284,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Page tables per arch, address-space objects, vmalloc/kmap, enforced W^X on every mapping, RO-after-init.
 Reuse first: hbsd/src/sys/vm/vm_map.c, vm_fault.c, vm_object.c, pmap.c (amd64/arm64/riscv) (adapt); hbsd_pax_noexec.c (PAGEEXEC/MPROTECT) (adapt); Linux mm/vmalloc.c, mm/highmem.c (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: PRISM invariant: no PTE both W and X; HBSD paxtest suite passes; mmap fuzzing clean. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Machine-checked invariant (Lean model + ESBMC on every PTE writer): no PTE both W and X; HBSD paxtest suite passes; mmap fuzzing clean. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-04 Capability tokens and in-kernel compartments
@@ -294,7 +295,7 @@ Done when: PRISM invariant: no PTE both W and X; HBSD paxtest suite passes; mmap
 - Reuse:
   - hbsd/src/sys/kern/sys_capability.c, subr_capability.c, pbsd/rights, pbsd/lineage — adapt
   - hbsd/src/sys/security/mac/ — reference for hook points
-- Acceptance: PRISM proves non-forgeability and revocation; fault injection in one domain cannot write another's pages (MPK/PKS or separate page tables).
+- Acceptance: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that non-forgeability and revocation; fault injection in one domain cannot write another's pages (MPK/PKS or separate page tables).
 - Agent brief:
 
 ```text
@@ -304,28 +305,28 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Token table, derivation and revocation tree, per-domain memory pools so the network, VFS, IPC and credential domains share no mutable globals; cross-domain calls only through typed gateways.
 Reuse first: hbsd/src/sys/kern/sys_capability.c, subr_capability.c, pbsd/rights, pbsd/lineage (adapt); hbsd/src/sys/security/mac/ (reference for hook points).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: PRISM proves non-forgeability and revocation; fault injection in one domain cannot write another's pages (MPK/PKS or separate page tables). Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that non-forgeability and revocation; fault injection in one domain cannot write another's pages (MPK/PKS or separate page tables). Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-05 Scheduler: EEVDF and loadable verified policies
 
 - Owns: `pbsd/kernel/sched/`
 - Depends on: P0-05, P1-02
-- Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting PRISM-verified policies.
+- Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting only policies that carry a passing ESBMC proof of the extension contract.
 - Reuse:
   - Linux kernel/sched/fair.c (EEVDF), kernel/sched/ext.c, pelt.c, topology.c — adapt algorithm into C++
   - hbsd/src/sys/kern/sched_ule.c, kern_switch.c — reference for BSD thread integration
-- Acceptance: Differential: hackbench, schbench, cyclictest within 5% of Linux; PRISM proves bounded lag.
+- Acceptance: Differential: hackbench, schbench, cyclictest within 5% of Linux; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that bounded lag.
 - Agent brief:
 
 ```text
 You are implementing PBSD work package P1-05 (Scheduler: EEVDF and loadable verified policies) in github.com/odin-loki/ParanoidBSD on branch wp/P1-05.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: pbsd/kernel/sched/.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P1-05.md.
-Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting PRISM-verified policies.
+Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting only policies that carry a passing ESBMC proof of the extension contract.
 Reuse first: Linux kernel/sched/fair.c (EEVDF), kernel/sched/ext.c, pelt.c, topology.c (adapt algorithm into C++); hbsd/src/sys/kern/sched_ule.c, kern_switch.c (reference for BSD thread integration).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Differential: hackbench, schbench, cyclictest within 5% of Linux; PRISM proves bounded lag. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Differential: hackbench, schbench, cyclictest within 5% of Linux; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that bounded lag. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-06 Synchronisation, epoch, per-CPU
@@ -336,7 +337,7 @@ Done when: Differential: hackbench, schbench, cyclictest within 5% of Linux; PRI
 - Reuse:
   - pbsd/kernel/sync (existing), cxx23 plan envelopes A/B/C — keep
   - Linux kernel/locking/, kernel/rcu/tree.c, include/linux/workqueue.h + kernel/workqueue.c — adapt (spinlock, mutex, RCU, workqueue, completion)
-- Acceptance: TLA+/PRISM model of epoch reclamation; lockdep-equivalent clean on full test run.
+- Acceptance: TLA+ model (Apalache inductive invariant) of epoch reclamation; lockdep-equivalent clean on full test run.
 - Agent brief:
 
 ```text
@@ -346,7 +347,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Spinlocks, mutexes, RCU/epoch, completions, workqueues with Linux semantics for driver use.
 Reuse first: pbsd/kernel/sync (existing), cxx23 plan envelopes A/B/C (keep); Linux kernel/locking/, kernel/rcu/tree.c, include/linux/workqueue.h + kernel/workqueue.c (adapt (spinlock, mutex, RCU, workqueue, completion)).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: TLA+/PRISM model of epoch reclamation; lockdep-equivalent clean on full test run. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: TLA+ model (Apalache inductive invariant) of epoch reclamation; lockdep-equivalent clean on full test run. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-07 Processes, threads, signals, ELF exec
@@ -367,7 +368,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Process as capability container; clone-style thread creation; ELF loader with PaX flags; signals.
 Reuse first: hbsd/src/sys/kern/kern_fork.c, kern_exec.c, kern_sig.c, imgact_elf.c, pbsd/kernel/process, pbsd/kernel/signal (adapt); Linux kernel/fork.c (clone3 flags) (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: FreeBSD kyua kern tests and LTP process tests pass via respective personalities. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: FreeBSD kyua kern tests and LTP process tests pass via respective personalities. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-08 PSI telemetry and resource control
@@ -388,7 +389,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Pressure stall accounting for CPU, memory, I/O; cgroup-v2-compatible control files.
 Reuse first: Linux kernel/sched/psi.c, cgroup v2 memory/io/cpu controllers (adapt); hbsd/src/sys/kern/kern_racct.c, kern_rctl.c (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: /proc/pressure output matches Linux format; stress tests show expected stall ratios. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: /proc/pressure output matches Linux format; stress tests show expected stall ratios. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P1-09 Hardening: CFI, PAC/BTI, shadow stack, stack protector
@@ -409,7 +410,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Clang kCFI on every indirect call, PAC+BTI on arm64, IBT+shadow stack on x86, zero-init stack, saturating refcounts.
 Reuse first: hbsd/src/sys/hardenedbsd/*, HBSD SafeStack/CFI build glue (adapt); Linux arch/arm64 PAC/BTI, x86 IBT/CET shadow stack code (adapt).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Exploit regression suite (lkdtm-equivalent) traps every case. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Exploit regression suite (lkdtm-equivalent) traps every case. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ### Phase 2: I/O, storage, network, IPC
@@ -432,7 +433,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Shared SQ/CQ rings, SQPOLL, fixed buffers/files as capabilities, zero-copy send/recv, registered rings for NVMe passthrough.
 Reuse first: Linux io_uring/ (io_uring.c, sqpoll.c, rsrc.c, net.c, rw.c, poll.c) (adapt into C++ behind capability checks); hbsd/src/sys/kern/vfs_aio.c, kern_event.c (kqueue) (reference; kqueue kept as consumer).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: liburing test suite passes; fio io_uring engine within 5% of Linux IOPS. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: liburing test suite passes; fio io_uring engine within 5% of Linux IOPS. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P2-02 Block multiqueue layer
@@ -453,7 +454,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Per-CPU software queues to hardware queues, tag sets, schedulers, bio; adapter so ZFS/UFS still see a disk device.
 Reuse first: Linux block/blk-mq.c, blk-mq-tag.c, blk-core.c, bio.c, mq-deadline.c, kyber (adapt); hbsd/src/sys/geom/, sys/cam/ (reference; GEM classes for ZFS compatibility via adapter).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: fio random 4k read on NVMe matches Linux; blktests pass. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: fio random 4k read on NVMe matches Linux; blktests pass. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P2-03 Unified VFS and capability object store
@@ -466,7 +467,7 @@ Done when: fio random 4k read on NVMe matches Linux; blktests pass. Run PRISM an
   - Linux fs/namei.c, dcache.c, inode.c, fs/super.c — reference for dentry semantics
   - hbsd/src/sys/contrib/openzfs — direct import, wrapped
   - hbsd/src/sys/ufs, fs/tmpfs, fs/fuse — direct import, wrapped
-- Acceptance: xfstests generic group passes; FreeBSD fs tests pass; PRISM proves path-walk cannot widen rights.
+- Acceptance: xfstests generic group passes; FreeBSD fs tests pass; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that path-walk cannot widen rights.
 - Agent brief:
 
 ```text
@@ -476,7 +477,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Vnode/dentry layer where every open file is a capability; permission translation from POSIX modes, NT security descriptors, Android UIDs to one object model; ZFS, UFS, tmpfs, FUSE, ext4 (from Linux fs/ext4), NTFS (from Linux fs/ntfs3).
 Reuse first: hbsd/src/sys/kern/vfs_*.c, pbsd/kernel/vfs (adapt); Linux fs/namei.c, dcache.c, inode.c, fs/super.c (reference for dentry semantics); hbsd/src/sys/contrib/openzfs (direct import, wrapped); hbsd/src/sys/ufs, fs/tmpfs, fs/fuse (direct import, wrapped).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: xfstests generic group passes; FreeBSD fs tests pass; PRISM proves path-walk cannot widen rights. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: xfstests generic group passes; FreeBSD fs tests pass; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that path-walk cannot widen rights. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P2-04 Network stack on native sk_buff
@@ -498,7 +499,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: sk_buff as first-class buffer, NAPI, GRO/GSO, socket layer with BSD and Linux APIs, pf firewall kept, network domain isolated.
 Reuse first: Linux net/core/skbuff.c, dev.c, net/ipv4, net/ipv6, net/sched (qdisc), XDP (net/core/filter.c) (adapt); hbsd/src/sys/netinet, netinet6, netpfil/pf (reference; pf ported as packet filter on sk_buff); pbsd/kernel/net, mbuf, ifnet, socket (replace).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: packetdrill and LTP net tests; iperf3 line-rate on 100GbE equivalent to Linux; syzkaller net fuzzing clean. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: packetdrill and LTP net tests; iperf3 line-rate on 100GbE equivalent to Linux; syzkaller net fuzzing clean. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P2-05 IPC: pipes, Unix sockets, Binder
@@ -519,7 +520,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Zero-copy pipes, Unix domain sockets with capability passing, Binder driver and binderfs.
 Reuse first: hbsd/src/sys/kern/sys_pipe.c, uipc_usrreq.c (adapt); Linux drivers/android/binder.c, binder_alloc.c, binderfs (adapt).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Android binder kernel selftests pass; AOSP servicemanager runs. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Android binder kernel selftests pass; AOSP servicemanager runs. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ### Phase 3: Linux device model and drivers
@@ -543,7 +544,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: kobject/sysfs, bus/driver matching, PCI enumeration, BARs, MSI/MSI-X, ACPI and device tree.
 Reuse first: Linux drivers/base/ (core.c, bus.c, driver.c, dd.c), drivers/pci/ (probe.c, pci.c, msi/) (adapt); hbsd/src/sys/dev/pci, sys/contrib/dev/acpica (direct import of ACPICA; PCI reference); hbsd linuxkpi linux_pci.c (adapt).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: lspci/sysfs output matches Linux on same machine; hotplug works under QEMU. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: lspci/sysfs output matches Linux on same machine; hotplug works under QEMU. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P3-02 IOMMU and unified DMA API
@@ -554,7 +555,7 @@ Done when: lspci/sysfs output matches Linux on same machine; hotplug works under
 - Reuse:
   - hbsd/src/sys/x86/iommu (DMAR), sys/dev/iommu — adapt
   - Linux drivers/iommu/ (intel/, amd/, arm-smmu-v3/), kernel/dma/ — adapt
-- Acceptance: PRISM proves a device can only reach its own windows; DMA attack test (PCILeech-style) fails.
+- Acceptance: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that a device can only reach its own windows; DMA attack test (PCILeech-style) fails.
 - Agent brief:
 
 ```text
@@ -564,7 +565,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Per-device IOMMU domains, dma_alloc_coherent/dma_map_* backed by capability-typed DMA windows, strict mode default.
 Reuse first: hbsd/src/sys/x86/iommu (DMAR), sys/dev/iommu (adapt); Linux drivers/iommu/ (intel/, amd/, arm-smmu-v3/), kernel/dma/ (adapt).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: PRISM proves a device can only reach its own windows; DMA attack test (PCILeech-style) fails. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that a device can only reach its own windows; DMA attack test (PCILeech-style) fails. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P3-03 Linux driver host, fast path
@@ -585,7 +586,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Load unmodified Linux .ko-built-from-source modules in-kernel behind IOMMU and typed gateways; module loader with symbol versioning.
 Reuse first: hbsd/src/sys/compat/linuxkpi (458 files) (direct import, extended to full parity); Linux include/linux/* (import headers as needed).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: nvme, ixgbe/ice/mlx5, virtio drivers built from Linux tree pass their selftests. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: nvme, ixgbe/ice/mlx5, virtio drivers built from Linux tree pass their selftests. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P3-04 Linux driver host, sandboxed restartable path
@@ -607,7 +608,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Run USB, Wi-Fi, quirky drivers in a separate domain/process with zero-copy shared rings; supervisor restarts in milliseconds.
 Reuse first: Linux UIO/VFIO (drivers/vfio) (adapt); pbsd/uda descriptors (keep as descriptor format); NetBSD rump kernel (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Kill driver mid-transfer: device recovers in under 100 ms without kernel fault. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Kill driver mid-transfer: device recovers in under 100 ms without kernel fault. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P3-05 Graphics: DRM/KMS, GEM, TTM
@@ -628,7 +629,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Full DRM core, GEM and TTM over new mm, dma-buf, syncobj; KWin from kde/ runs on it.
 Reuse first: drm-kmod (freebsd/drm-kmod repo, amdgpu/i915/radeon) (direct import); Linux drivers/gpu/drm/ (core, ttm, scheduler, nouveau, xe) (direct import).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: igt-gpu-tools core tests pass; Plasma Wayland session runs on AMD and Intel. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: igt-gpu-tools core tests pass; Plasma Wayland session runs on AMD and Intel. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P3-06 Storage, NIC, USB, input, audio, Wi-Fi driver sets
@@ -649,7 +650,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Split into parallel sub-packages per class; each picks fast or sandboxed path per the rule (bandwidth-critical fast, else sandboxed).
 Reuse first: Linux drivers/nvme, net/ethernet, usb (xhci), input, sound (ALSA), net/wireless + mac80211 (direct import via linux driver host); hbsd/src/sys/dev/* (e.g. dev/nvme, dev/virtio, dev/usb) (fallback where Linux driver absent).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Per class: vendor selftests; hardware lab matrix. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Per class: vendor selftests; hardware lab matrix. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ### Phase 4: Personalities, translation, gateways
@@ -661,7 +662,7 @@ Done when: Per class: vendor selftests; hardware lab matrix. Run PRISM and the p
 - Scope: Per-thread personality tag chosen at exec; dispatcher routes to Linux, BSD, NT or Binder handlers; one shared capability, memory, ring, scheduler core.
 - Reuse:
   - hbsd/src/sys/kern/subr_syscall.c, sys/amd64/amd64/trap.c, compat/linux sysvec — adapt
-- Acceptance: PRISM proves each trap reaches exactly one handler; syscall latency within 2% of native.
+- Acceptance: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that each trap reaches exactly one handler; syscall latency within 2% of native.
 - Agent brief:
 
 ```text
@@ -671,7 +672,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Per-thread personality tag chosen at exec; dispatcher routes to Linux, BSD, NT or Binder handlers; one shared capability, memory, ring, scheduler core.
 Reuse first: hbsd/src/sys/kern/subr_syscall.c, sys/amd64/amd64/trap.c, compat/linux sysvec (adapt).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: PRISM proves each trap reaches exactly one handler; syscall latency within 2% of native. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that each trap reaches exactly one handler; syscall latency within 2% of native. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P4-02 Linux syscall personality
@@ -693,7 +694,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Full Linux syscall surface incl. epoll, eventfd, signalfd, futex2, namespaces, cgroups, seccomp-bpf, eBPF, /proc and /sys.
 Reuse first: hbsd/src/sys/compat/linux (linuxulator) (adapt and complete); Linux kernel/*.c, fs/*.c syscall entry semantics (reference); gVisor syscall coverage table (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: LTP syscalls group ≥98% pass; Docker/Podman containers run. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: LTP syscalls group ≥98% pass; Docker/Podman containers run. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P4-03 BSD syscall personality
@@ -714,7 +715,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Keep FreeBSD/HBSD ABI so the existing userland and ports keep working.
 Reuse first: hbsd/src/sys/kern/syscalls.master and handlers (adapt); pbsd/kernel/syscall (replace).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: FreeBSD kyua test suite parity with HBSD baseline. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: FreeBSD kyua test suite parity with HBSD baseline. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P4-04 Windows NT personality
@@ -736,7 +737,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: NT syscalls, object manager on capability objects, IRP dispatch for kernel-mode drivers inside IOMMU sandbox, security descriptors mapped to capabilities.
 Reuse first: Wine dlls/ntdll, server/ (wineserver objects) (adapt: move wineserver object model into kernel); ReactOS ntoskrnl (Io, Ob, Se, Mm) (reference for IRP and object manager); pbsd bifrost (VM fallback) (keep).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Wine conformance tests pass; selected Windows apps and a WDM sample driver run. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Wine conformance tests pass; selected Windows apps and a WDM sample driver run. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P4-05 Android personality
@@ -757,7 +758,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Android app sandbox UIDs mapped to capabilities; runs AOSP system image in a container.
 Reuse first: AOSP bionic, ART, servicemanager (direct import userland); Linux binder from P2-05, ashmem/memfd (reuse).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: CTS subset for core APIs passes. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: CTS subset for core APIs passes. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P4-06 Cross-architecture binary translation
@@ -779,17 +780,17 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: In-dispatcher JIT for x86_64/ARM64/RISC-V user binaries; W^X-safe JIT using dual mappings.
 Reuse first: FEX-Emu (x86→ARM64) (direct import); QEMU tcg / linux-user (direct import); Box64 (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Run x86_64 test suites on ARM64 host; JIT never maps W and X simultaneously. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Run x86_64 test suites on ARM64 host; JIT never maps W and X simultaneously. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P4-07 Runtime assertion bridge around foreign code
 
 - Owns: `pbsd/kernel/gateway/`
 - Depends on: P3-03, P4-04
-- Scope: PRISM-generated checks at every gateway: bounds, ownership, capability, lock state; KFENCE-style sampled guards inside foreign modules.
+- Scope: Checks generated from the gateway contracts at every gateway: bounds, ownership, capability, lock state; KFENCE-style sampled guards inside foreign modules.
 - Reuse:
   - Linux KASAN/KFENCE, kernel/kcsan — adapt
-  - PRISM boundary spec generator — new
+  - gateway contract-to-check generator — new
 - Acceptance: Injected faults in foreign drivers are caught at the gateway 100% in fuzz runs.
 - Agent brief:
 
@@ -797,10 +798,10 @@ Done when: Run x86_64 test suites on ARM64 host; JIT never maps W and X simultan
 You are implementing PBSD work package P4-07 (Runtime assertion bridge around foreign code) in github.com/odin-loki/ParanoidBSD on branch wp/P4-07.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: pbsd/kernel/gateway/.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P4-07.md.
-Scope: PRISM-generated checks at every gateway: bounds, ownership, capability, lock state; KFENCE-style sampled guards inside foreign modules.
-Reuse first: Linux KASAN/KFENCE, kernel/kcsan (adapt); PRISM boundary spec generator (new).
+Scope: Checks generated from the gateway contracts at every gateway: bounds, ownership, capability, lock state; KFENCE-style sampled guards inside foreign modules.
+Reuse first: Linux KASAN/KFENCE, kernel/kcsan (adapt); gateway contract-to-check generator (new).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Injected faults in foreign drivers are caught at the gateway 100% in fuzz runs. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Injected faults in foreign drivers are caught at the gateway 100% in fuzz runs. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ### Phase 5: Userland, desktop, hypervisor
@@ -822,7 +823,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Finish existing port waves 2 and 9 against the new kernel ABI; rtld-elf hardening.
 Reuse first: existing pbsd.py C++23 port pipeline and hbsd/src userland (keep).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Owned-C purge gate green. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Owned-C purge gate green. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P5-02 Desktop on new graphics stack
@@ -842,7 +843,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: Plasma Wayland on DRM/KMS; GPU acceleration.
 Reuse first: kde/ Plasma 6, KWin drm backend (direct import).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Plasma session daily-driver test. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Plasma session daily-driver test. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P5-03 Hypervisor merge
@@ -862,7 +863,7 @@ Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop a
 Scope: VMs as capability objects on new core; Windows guest fallback.
 Reuse first: pbsd/bifrost (existing), hbsd/src/sys/amd64/vmm (bhyve) (keep and rebase onto new mm/IOMMU).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Windows guest boots; nested paging tests. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: Windows guest boots; nested paging tests. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ### Phase 6: Convergence and cutover
@@ -871,19 +872,19 @@ Done when: Windows guest boots; nested paging tests. Run PRISM and the package t
 
 - Owns: `branch pbsd-cutover`
 - Depends on: all
-- Scope: Merge all packages on the cutover branch; full differential and PRISM run; switch main build to the new kernel in one commit; old kernel kept bootable as alternate boot entry for one release.
+- Scope: Merge all packages on the cutover branch; full differential run and full proof re-check; switch main build to the new kernel in one commit; old kernel kept bootable as alternate boot entry for one release.
 - Reuse:
-- Acceptance: All acceptance suites green on amd64/arm64/riscv64; PRISM proof obligations closed for every verified-core TU.
+- Acceptance: All acceptance suites green on amd64/arm64/riscv64; every T1/T2 obligation PROVED and every T3/T4 result recorded as BOUNDED or RUNTIME in the proof report.
 - Agent brief:
 
 ```text
 You are implementing PBSD work package P6-01 (Integration and single cutover) in github.com/odin-loki/ParanoidBSD on branch wp/P6-01.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: branch pbsd-cutover.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P6-01.md.
-Scope: Merge all packages on the cutover branch; full differential and PRISM run; switch main build to the new kernel in one commit; old kernel kept bootable as alternate boot entry for one release.
+Scope: Merge all packages on the cutover branch; full differential run and full proof re-check; switch main build to the new kernel in one commit; old kernel kept bootable as alternate boot entry for one release.
 Reuse first: none.
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: All acceptance suites green on amd64/arm64/riscv64; PRISM proof obligations closed for every verified-core TU. Run PRISM and the package tests in CI before opening the PR into pbsd-cutover. Do not name new components.
+Done when: All acceptance suites green on amd64/arm64/riscv64; every T1/T2 obligation PROVED and every T3/T4 result recorded as BOUNDED or RUNTIME in the proof report. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 ## 6a. Fault tolerance in PBSD itself
@@ -916,7 +917,7 @@ Every work package carries a `fault_tolerance` requirement in `tasks.yaml`, and 
 ## 8. Cutover
 
 1. Freeze `pbsd-cutover`; run full acceptance matrix on three arches and hardware lab.
-2. Close all PRISM obligations; publish proof report.
+2. Close every T1/T2 proof obligation; publish the proof report with every result labelled PROVED, BOUNDED(k), RUNTIME or TESTED.
 3. Merge to `main` in one commit; old kernel stays as alternate boot entry for one release, then removed with dead code listed in section 3.
 
 ## 9. Risks
@@ -928,5 +929,8 @@ Every work package carries a `fault_tolerance` requirement in `tasks.yaml`, and 
 | Proof cost on adapted code | Prove boundaries first, bodies over time; sanitizers meanwhile |
 | Big-bang integration failure | Continuous integration of every wp branch into pbsd-cutover nightly; old kernel kept bootable |
 | NT personality scope | Userland first via Wine object model; kernel-mode drivers last; VM fallback |
-| Performance regressions from checks | Checks compiled out where PRISM proved them; benchmarks per package |
-| Merge conflicts across many agents | Exclusive ownership, CODEOWNERS, CI path guard |
+| Performance regressions from checks | Checks compiled out only where they are PROVED (T1/T2); benchmarks per package |
+| Merge conflicts across many agents | Per-unit ownership, deterministic merges by the runner, CI path guard |
+| The verified-core proofs do not converge (GLM-5.3-Flash scores 21% on an independent Lean benchmark; nothing is published for LLM-written C++ verification proofs) | Lean proofs by a local Lean-specialised prover; go/no-go pilot on P0 and P1-02 before the full run; smaller verified units and simpler specs; proof campaigns; open obligations listed, never relabelled; optional escalation of hard proof tasks to GLM-5.3 |
+| Specs or theorem statements too weak, so proofs pass but mean little | Statements locked and hash-pinned at P0-FREEZE; vacuity and mutation checks; reviewers reject weak contracts and incomplete obligation lists |
+| Licence conflict: Linux code is GPL-2.0-only, PBSD's own code AGPL-3.0-or-later; a kernel binary cannot combine both | Decide before ported Linux code ships: keep Linux-derived code in separately licensed GPL-2.0 modules loaded through the driver host, license the kernel parts that link them as GPL-2.0, or prefer HBSD/BSD-licensed sources |
