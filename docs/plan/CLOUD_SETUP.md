@@ -66,14 +66,14 @@ The bottleneck is **gate CPU**: about 30,000 core-hours of builds, proof checks 
 
 | Item | Expected | Range | Source |
 |---|---|---|---|
-| GLM-5.3-Flash API (fp8 hosts through OpenRouter, Z.ai for overflow) | US$1,658 | $788–4,074 | `pbsd_run estimate`, AGENTS.md sections 7.3 and 8.1 |
+| GLM-5.3-Flash API (GMI Cloud direct, fp8) | US$1,524 | $719–3,778 | `pbsd_run estimate`, AGENTS.md sections 7.3 and 8.1 |
 | w1: GCP c3d-highcpu-360 Spot Sydney, about 6 days, 87% of the gate work | US$287 | $172–574 | Google spot price; includes 25% for idle and boot time |
 | w1 boot disk (100 GB pd-balanced) and egress | under US$15 | | small; gate traffic is a few GB |
-| Pilot (step 10), 447 tasks | US$150 of API | $71–368 | part of the run, not extra: pilot work is kept |
+| Pilot (step 10), 447 tasks | US$140 of API | $65–341 | part of the run, not extra: pilot work is kept |
 | PC electricity, about 8 days at 450 W | US$19 | | A$0.33/kWh |
 | GPU | US$0 | | the Lean prover runs on the PC's RTX 3090 |
-| **Total expected** | **≈ US$1,970 (A$2,820)** | | |
-| **Budget to set aside (high case + 15%)** | **US$5,400 (A$7,700)** | | |
+| **Total expected** | **≈ US$1,850 (A$2,650)** | | |
+| **Budget to set aside (high case + 15%)** | **US$5,100 (A$7,300)** | | |
 
 Set billing alerts at A$300 and A$800 on the cloud account and a hard spend limit on every API key (step 3).
 
@@ -83,36 +83,34 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 
 1. **Create accounts.**
    - Google Cloud (console.cloud.google.com): create a project `pbsd`, add a billing account (AUD card).
-   - OpenRouter (openrouter.ai): one key for the three primary hosts, GMI Cloud, Morph and Novita (AGENTS.md section 7.3). Buy credit there. OpenRouter adds 5.5% to each purchase, already counted in the budget.
-   - Z.ai developer platform (z.ai): overflow and failover, with a small top-up.
+   - GMI Cloud (console.gmicloud.ai): the only model provider (AGENTS.md section 7.3). Add credit, then create an API key under Settings → API Keys.
    - Optional, for a KVM worker or a GCP fallback: AWS.
 2. **Ask for capacity now; these take time.**
-   - **Z.ai:** optional. Z.ai is only the overflow provider now, so its default concurrency is enough. Ask support for more if the pilot shows the three primary hosts throttling.
+   - **GMI Cloud:** under Inference → Model Hub, open GLM-5.3-Flash and note three things: its model id, its input / cached / output prices, and your account's concurrency limit.
+     - The burst run needs about 90 requests in flight, so if the limit is lower, ask GMI (contact sales) for about 100.
+     - The pilot needs far fewer, so it can start before the answer arrives.
    - **GCP quotas:** IAM & Admin → Quotas, region `australia-southeast1`. Raise "C3D CPUs" and "Preemptible CPUs" to at least 400. New projects start far below that, and the machine will not start until the request is approved. Also request the same in `us-central1` as a backup.
    - **AWS (if used):** Service Quotas → EC2 → "All Standard Spot Instance Requests" to 400 vCPUs in `eu-north-1` (the default is 5).
-3. **Make API keys and set spend limits.**
-   - **OpenRouter:** create a key with a credit limit (A$3,000 to start; raise after the pilot if needed). Buy about US$300 of credit for the pilot.
-   - **Z.ai:** top up about A$100 and set a cap of A$500.
+3. **Make the API key and set a spend limit.**
+   - **GMI Cloud:** add about US$200 of credit for the pilot, and more after it. Set a spending limit if the console offers one; otherwise keep the credit balance as the limit.
+   - **Config:** put the model id and the three prices from the Model Hub into both configs (`providers[0]` in `config.glm-api*.json`). The shipped values are `zai-org/GLM-5.3-Flash-FP8` and $0.075 / $0.015 / $0.25.
 
-   Keep both keys in your password manager.
+   Keep the key in your password manager.
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
-   export OPENROUTER_API_KEY=...     # GMI Cloud, Morph and Novita, pinned per host (AGENTS.md 7.3)
-   export ZAI_API_KEY=...            # overflow and failover
+   export GMI_API_KEY=...            # GMI Cloud, the only model provider (AGENTS.md 7.3)
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
    Add `. ~/.pbsd/env` to `~/.bashrc`. The gates never see these variables, because the runner scrubs the gate environment.
 
-   **Check that each pinned host answers.** Each command below should print a short reply. Unless OpenRouter changed the endpoint names, `gmicloud/fp8`, `morph/fp8` and `novita/fp8` are the tags it lists for this model.
+   **Check that GMI answers.** The command below should print a short reply. Use the model id from the Model Hub.
    ```bash
-   for h in gmicloud/fp8 morph/fp8 novita/fp8; do
-     curl -s https://openrouter.ai/api/v1/chat/completions -H "Authorization: Bearer $OPENROUTER_API_KEY" -H 'Content-Type: application/json' \
-       -d "{\"model\":\"z-ai/glm-5.3-flash\",\"max_tokens\":200,\"provider\":{\"order\":[\"$h\"],\"allow_fallbacks\":false},\"messages\":[{\"role\":\"user\",\"content\":\"Say ok\"}]}" \
-       | jq -r --arg h "$h" '"\($h): " + (.choices[0].message.content // .error.message)'
-   done
+   curl -s https://api.gmi-serving.com/v1/chat/completions -H "Authorization: Bearer $GMI_API_KEY" -H 'Content-Type: application/json' \
+     -d '{"model":"zai-org/GLM-5.3-Flash-FP8","max_tokens":200,"messages":[{"role":"user","content":"Say ok"}]}' \
+     | jq -r '.choices[0].message.content // .error.message // .message, (.usage | tostring)'
    ```
-   If one host fails, remove it from the config (or set its `weight` to 0) and run with the others.
+   The second line shows the `usage` block. Check whether it has `prompt_tokens_details.cached_tokens`, which the runner uses to bill cache hits.
 5. **Make the runner's ssh key** (WSL2): `ssh-keygen -t ed25519 -f ~/.ssh/pbsd_runner -N ''`. Paste `~/.ssh/pbsd_runner.pub` into `tools/cloud/cloud-init.yaml` where it says REPLACE, and keep that edited copy outside the repo.
 6. **Toolchains, proof tools, pinned gates and reference trees on the PC.**
    ```bash
@@ -172,10 +170,10 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
     **Check:**
     - gates pass on w1 as well as on the PC;
     - real core-minutes per gate;
-    - tokens and US$ per task class, and per host;
+    - tokens and US$ per task class;
     - **T1/T2 obligations proved per attempt**;
     - review rejection rate;
-    - 429 rate per host. Adjust `concurrency` and `weight` in the config if one host throttles.
+    - GMI's 429 rate. If it throttles, lower `concurrency` in the config or ask GMI for more.
 
     Then rerun `pbsd_run estimate cores=208` with the measured numbers, for example `implementer.attempts=1.9 T2.attempts=5 hit=0.8`. **Stop and decide** if:
     - T2 proofs stay under about 50% after 3 attempts;

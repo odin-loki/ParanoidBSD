@@ -24,7 +24,7 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
 
 **`backend`** in the config (or `PBSD_BACKEND`):
 - **`api` (default):** GLM-5.3-Flash over every provider that has a key.
-  - Built in: Z.ai (`ZAI_API_KEY`), DeepInfra (`DEEPINFRA_API_KEY`), Fireworks (`FIREWORKS_API_KEY`), Together (`TOGETHER_API_KEY`), OpenRouter (`OPENROUTER_API_KEY`).
+  - Built in: GMI Cloud (`GMI_API_KEY`) as the default. Z.ai (`ZAI_API_KEY`), Fireworks (`FIREWORKS_API_KEY`), Together (`TOGETHER_API_KEY`) and OpenRouter (`OPENROUTER_API_KEY`) are weight-0 fallbacks, used only if their keys are set.
   - `<VAR>_2` … `<VAR>_9` add keys.
   - GLM-5.3 entries for the same keys serve the optional `frontier` tier.
   - DeepSeek (`DEEPSEEK_API_KEY`) is a last-resort, off-peak-only provider.
@@ -32,7 +32,7 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
 
 **`providers`:** a `providers` array in the config replaces the built-in list. Fields: `name`, `url`, `model`, `key_env`, `tier` (`flash` or `frontier`), `weight`, `concurrency`, `rpm`, `tpm`, `price_in`, `price_hit`, `price_out`, `peak_double`, `offpeak_only`, and `extra` (merged into the request body).
 - **`weight`:** the share of packages that start on that provider (default 1). A package keeps its provider for the prompt cache. Weight 0 means overflow and failover only.
-- **Shipped configs:** they use GMI Cloud (weight 3), Morph (1) and Novita (1) at fp8, each pinned through OpenRouter with `extra.provider.order` and `allow_fallbacks: false`. Z.ai direct has weight 0 (AGENTS.md section 7.3). Prices include OpenRouter's 5.5% credit fee.
+- **Shipped configs:** they use one provider, GMI Cloud direct (`GMI_API_KEY`, fp8; AGENTS.md section 7.3). Confirm the model id and prices in GMI's console Model Hub. `_optional_fallback` shows a weight-0 Z.ai entry to copy into `providers` if you want failover.
 - **Estimates:** `pbsd_run estimate` prices each tier at the weighted average of the configured providers.
 
 **Model tiers:**

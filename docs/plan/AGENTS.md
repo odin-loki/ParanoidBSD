@@ -3,7 +3,7 @@
 Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what was done about it.
 
 **Who does the work:**
-- **GLM-5.3-Flash** does every task through its API: decomposition, porting, tests, proof work, reviews and merges. It is served by the cheapest hosts that run it at fp8, the precision Z.ai itself serves: GMI Cloud, Morph and Novita, each pinned through OpenRouter. Z.ai direct takes overflow and failover (section 7.3).
+- **GLM-5.3-Flash** does every task through its API: decomposition, porting, tests, proof work, reviews and merges. It is served by **one provider, GMI Cloud, called directly** (no OpenRouter). GMI serves the model at fp8, the precision Z.ai itself uses, at half Z.ai's price (section 7.3).
 - **Lean proofs** come from a **local Lean-specialised prover model** on the P920's RTX 3090, for example Goedel-Prover-V2-32B. GLM-5.3-Flash states each lemma and calls the runner's `lean_prove` tool; the prover writes the proof; Lean checks it.
 - **Code-level proofs** use ESBMC, CBMC and GenMC (section 10). PRISM is gone, because it cannot check code.
 
@@ -16,9 +16,9 @@ Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what 
 **Task graph:** the 40 work packages in `PBSD_PLAN.md` are broken into 12,976 atomic tasks in `tasks.yaml` / `tasks.json`.
 
 **Middle-case estimate:**
-- About **US$1.7k of API**, and **US$2.0k (A$2.8k)** in total with cloud burst.
+- About **US$1.5k of API**, and **US$1.85k (A$2.6k)** in total with cloud burst.
 - About **6 days** of wall clock on the PC plus one GCP burst worker, or about 44 days on the PC alone.
-- The range is US$0.9k–4.7k (A$1.3k–6.7k; section 8.1).
+- The range is US$0.9k–4.4k (A$1.3k–6.3k; section 8.1).
 
 ## 1. Task breakdown
 
@@ -141,8 +141,9 @@ The tier mechanism (`role_tier`, `escalate_at`, `escalate_tier`) can move hard t
 - `pbsd_run` (C++23, `tools/runner`) sends each turn to GLM-5.3-Flash over the OpenAI-compatible chat API of the configured providers (section 7.3). **A turn is one API request carrying the whole conversation so far.**
 - **Providers and failover:**
   - Each provider has its own in-flight cap and RPM/TPM token buckets.
-  - Each package starts on one provider, chosen in proportion to the provider `weight`s. Providers with weight 0 (Z.ai direct) take only overflow and failover.
+  - Each package starts on one provider, chosen in proportion to the provider `weight`s. Providers with weight 0 take only overflow and failover.
   - A failed or rate-limited request fails over to the next provider.
+  - **The shipped configs use one provider (GMI Cloud),** so there is nowhere to fail over to. A GMI outage ends attempts as `infra`: no attempts are charged, and leasing pauses until GMI answers again. `_optional_fallback` in the config shows the one entry that adds a fallback.
   - `backend: "local"` uses llama-server instead (Appendix D). DeepSeek Flash is a last-resort provider when `DEEPSEEK_API_KEY` is set (Appendix C).
 - **Tools** (they match the harness exactly):
 
@@ -171,7 +172,7 @@ The tier mechanism (`role_tier`, `escalate_at`, `escalate_tier`) can move hard t
 
 ### Cache strategy
 
-Every provider bills an identical prompt prefix at the cache-hit rate, about a fifth of the normal input price ($0.0158 instead of $0.0791 per 1M on GMI Cloud). The whole conversation is resent each turn, so input is about 90% of the token volume.
+Every provider bills an identical prompt prefix at the cache-hit rate, about a fifth of the normal input price ($0.015 instead of $0.075 per 1M on GMI Cloud). The whole conversation is resent each turn, so input is about 90% of the token volume.
 
 Every request is laid out in this order:
 1. Global prefix, identical for every agent: dialect rules, naming rules, tool schemas.
@@ -296,26 +297,33 @@ Cost of the middle-case run at each host's price (26.5B cached + 4.7B uncached i
 
 | Host (fp8 unless noted) | In / cached / out per 1M | Run cost | Uptime, last day | Notes | Decision |
 |---|---|---|---|---|---|
-| **GMI Cloud** | $0.075 / $0.015 / $0.25 | $1,524 | 99.9% | tools; prompt caching | **Primary, weight 3** |
-| **Morph** | $0.047 / $0.020 / $0.268 | $1,581 | 100% | tools, full `tool_choice`; caching | **Primary, weight 1** |
-| **Novita** | $0.084 / $0.0168 / $0.28 | $1,707 | 100% | tools; caching; US company | **Primary, weight 1** |
+| **GMI Cloud** | $0.075 / $0.015 / $0.25 | $1,524 | 99.9% | tools; prompt caching | **Used: the only provider, called directly** |
+| Morph | $0.047 / $0.020 / $0.268 | $1,581 | 100% | tools, full `tool_choice`; caching | Not used (one provider); a good fallback |
+| Novita | $0.084 / $0.0168 / $0.28 | $1,707 | 100% | tools; caching; US company | Not used (one provider); a good fallback |
 | Tenstorrent | $0.075 / $0.015 / $0.25 | $1,524 | 100% | no `tool_choice` support listed; 262k context | Not used |
 | StreamLake | $0.0885 / $0.0177 / $0.295 | $1,798 | 99.5% | Kuaishou's cloud: data path through China | Not used |
 | Near AI | $0.08 / $0.012 / $0.50 | $2,243 | 100% | | Not used (output price) |
-| **Z.ai (direct)** | $0.15 / $0.03 / $0.50 | $3,048 | 100% | the model's maker; reference quality | **Overflow and failover, weight 0** |
+| Z.ai (direct) | $0.15 / $0.03 / $0.50 | $3,048 | 100% | the model's maker; reference quality | Not used; the optional fallback in the configs |
 | Fireworks, Together, DigitalOcean and others | $0.11–0.15 input | $2,485–3,048 | 99.9–100% | precision not published | Not used |
 | OpenInference, Darkbloom, Wafer, Relace (fp4/nvfp4) | $0.027–0.065 input | $1,180–1,280 | 53–100% | 4-bit | Not used |
 
-**How it is wired:**
-- Each primary host is its own runner provider through OpenRouter, pinned with `provider.order: ["<host>/fp8"]`, `allow_fallbacks: false`, `quantizations: ["fp8"]` and `require_parameters: true`. A package therefore stays on one host, and its prompt cache stays warm.
-- OpenRouter passes the hosts' prices through and charges **5.5% on credit purchases**. That fee is folded into the configured prices, so the cost display is exact.
-- One OpenRouter key covers all three hosts.
+**How it is wired (Odin's choice: one provider):**
+- **Endpoint:** GMI Cloud's own OpenAI-compatible API at `https://api.gmi-serving.com/v1/chat/completions`, with `Authorization: Bearer $GMI_API_KEY`.
+- **No OpenRouter:** that means no 5.5% fee, and one account for the model.
+- **What to confirm in GMI's console:** GMI publishes prices and rate limits only there (Inference → Model Hub). Before the pilot, check three things:
+  - the exact model id (the configs use `zai-org/GLM-5.3-Flash-FP8`, following GMI's naming for other GLM models);
+  - the three prices (the configs use OpenRouter's listing for GMI: $0.075 / $0.015 / $0.25);
+  - the account's concurrency.
+- **Concurrency:** the burst run needs about 90 requests in flight, so ask GMI for about 100 if the account allows less.
+- **No failover:** with one provider, an outage pauses the run (no work lost, no attempts charged). Adding Morph, Novita or Z.ai later is one entry in the config, with `weight: 0` for failover only.
 
 **Result:**
-- **Cost:** the blended price is $0.0751 in / $0.0172 cached / $0.274 out per 1M. That cuts the middle-case API cost from US$3,049 to **US$1,658 (−46%)**.
-- **Data path:** Zhipu is out of the data path except for overflow.
+- **Cost:** the middle-case API cost is **US$1,524**, half of the US$3,049 at Z.ai's own prices.
+- **Data path:** Zhipu is not in it.
 
-**Not verified:** each host's own capacity behind OpenRouter. The configured caps (96 / 48 / 48 in flight with burst) are starting points. The pilot shows the 429 rate per host, and the caps and weights can be changed in the config without code changes.
+**Not verified:**
+- GMI's model id, cached-input price and account limits; all three are console-only.
+- Whether GMI reports cache hits in `prompt_tokens_details.cached_tokens`. The cost display assumes it does; if it does not, the display shows every input token at the full price, but GMI's bill does not change.
 
 ## 8. Default schedule: GLM API, parallel agents, Odin's PC
 
@@ -368,23 +376,23 @@ Middle case:
 
 | Class | Tasks | Requests | Input tokens | Output tokens | Gate core-h | API US$ |
 |---|---|---|---|---|---|---|
-| decomposer | 2,616 | 47k | 1.66B | 237M | 521 | 108 |
-| implementer | 2,577 | 133k | 7.33B | 800M | 4,445 | 409 |
-| tester | 2,577 | 104k | 5.19B | 519M | 4,149 | 276 |
-| reviewer | 2,577 | 39k | 2.31B | 193M | 642 | 113 |
-| integrator | 40 | 6k | 0.47B | 35M | 4,600 | 22 |
+| decomposer | 2,616 | 47k | 1.66B | 237M | 521 | 99 |
+| implementer | 2,577 | 133k | 7.33B | 800M | 4,445 | 376 |
+| tester | 2,577 | 104k | 5.19B | 519M | 4,149 | 254 |
+| reviewer | 2,577 | 39k | 2.31B | 193M | 642 | 104 |
+| integrator | 40 | 6k | 0.47B | 35M | 4,600 | 20 |
 | prover T0 | 15 | 0.1k | – | – | 3 | 0 |
-| prover T1 | 12 | 19k | 1.73B | 192M | 400 | 97 |
-| prover T2 | 83 | 50k | 4.48B | 398M | 6,640 | 225 |
-| prover T3 | 837 | 77k | 5.39B | 462M | 5,775 | 266 |
-| prover T4 | 1,642 | 53k | 2.64B | 264M | 2,644 | 141 |
-| **Total** | **12,976** | **528k** | **31.2B** | **3.10B** | **29,820** | **1,658** |
+| prover T1 | 12 | 19k | 1.73B | 192M | 400 | 89 |
+| prover T2 | 83 | 50k | 4.48B | 398M | 6,640 | 207 |
+| prover T3 | 837 | 77k | 5.39B | 462M | 5,775 | 245 |
+| prover T4 | 1,642 | 53k | 2.64B | 264M | 2,644 | 130 |
+| **Total** | **12,976** | **528k** | **31.2B** | **3.10B** | **29,820** | **1,524** |
 
 | | Low | **Middle** | High |
 |---|---|---|---|
 | API requests | 317k | **528k** | 950k |
 | Tokens in / out | 18.7B / 1.30B | **31.2B / 3.10B** | 56.2B / 8.37B |
-| **API cost** (blended host prices, section 7.3) | **$788** | **$1,658** | **$4,074** |
+| **API cost** (GMI Cloud prices, section 7.3) | **$719** | **$1,524** | **$3,778** |
 | Gate CPU | 17.9k core-h | **29.8k core-h** | 59.6k core-h |
 | PC only (28 gate cores): wall clock, gate-bound | 27 d | **44 d** | 89 d |
 | Agents that saturate the PC | 23 | **27** | 30 |
@@ -392,12 +400,12 @@ Middle case:
 | Agents that saturate PC + burst | 171 | **197** | 226 |
 | Cloud burst cost (87% of gate work, $0.0089/core-h + 25%) | $172 | **$287** | $574 |
 | PC electricity (450 W, A$0.33/kWh), PC only / with burst | $86 / $12 | **$144 / $19** | $287 / $38 |
-| **Total, PC only** | **US$0.87k (A$1.25k)** | **US$1.8k (A$2.6k)** | **US$4.4k (A$6.3k)** |
-| **Total, with burst** | **US$0.97k (A$1.4k)** | **US$2.0k (A$2.8k)** | **US$4.7k (A$6.7k)** |
+| **Total, PC only** | **US$0.81k (A$1.15k)** | **US$1.7k (A$2.4k)** | **US$4.1k (A$5.8k)** |
+| **Total, with burst** | **US$0.90k (A$1.3k)** | **US$1.8k (A$2.6k)** | **US$4.4k (A$6.3k)** |
 
 US$1 = A$1.4335 (RBA, 3 Nov 2026). Add about 30% to the wall clock for fix rounds and queueing.
 
-**Why this is higher than the previous estimate** (US$420 of API and 10,010 core-hours; the arithmetic was right, the inputs were not). At Z.ai's own prices the middle case would be US$3,049; the host choice in section 7.3 brings it to US$1,658:
+**Why this is higher than the previous estimate** (US$420 of API and 10,010 core-hours; the arithmetic was right, the inputs were not). At Z.ai's own prices the middle case would be US$3,049; GMI Cloud's prices (section 7.3) bring it to US$1,524:
 1. **Requests:** 528k instead of 101k, because a turn is one API request.
 2. **Per request:** context is 59k tokens instead of 40k, because checker and build logs stay in the conversation. Output is 5.9k instead of 4k.
 3. **Proofs** now have to pass real checkers. Flash needs more attempts at them.
@@ -407,7 +415,7 @@ US$1 = A$1.4335 (RBA, 3 Nov 2026). Add about 30% to the wall clock for fix round
 - On the PC alone, about 27 agents saturate 28 cores, and the run takes about 6 weeks.
 - One GCP `c3d-highcpu-360` spot worker (180 cores, $1.60/h in Sydney) cuts that to about 6 days for about $290. With it, about 200 agents are needed, and about 88 requests are in flight at once. Z.ai plus DeepInfra's default 200 cover that.
 - **The other candidates:**
-  - **API concurrency and rate limits:** about 90 requests in flight and 3.6M input tokens per minute at the burst rate, spread over three hosts with Z.ai as overflow. Each host's real capacity behind OpenRouter is unverified until the pilot.
+  - **API concurrency and rate limits:** about 90 requests in flight and 3.6M input tokens per minute at the burst rate, all on GMI Cloud. The account's limit is shown only in GMI's console. Ask for about 100 concurrent requests; the pilot shows the 429 rate.
   - **Git and merges:** about 530k turn commits and 13k merges. With the repository and worktrees in tmpfs this is negligible. The HDD only receives the 10-minute checkpoints.
   - **Integrators:** 40 package merges, now ordered by package dependency. They set the 2.6-day critical path, not the total.
   - **Runner overhead:** one thread per agent, a 1 s scheduling loop, and per-turn SQLite writes. Negligible next to 85 s turns.
@@ -430,7 +438,7 @@ Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.j
 | QEMU slots (KVM; never sent to workers without `kvm`) | 2 × 2 cores, 4 GB, node 0 | same |
 | Proof-check slots | 9 × 2 cores, 12 GB, any node | same |
 | Cloud workers (`workers_file`) | none | w1: 88 slots (no KVM on GCP AMD, so QEMU stays on the PC) |
-| Providers (section 7.3), in-flight caps | GMI 16, Morph 8, Novita 8 (through OpenRouter); Z.ai 8 (overflow) | GMI 96, Morph 48, Novita 48; Z.ai 32 (overflow) |
+| Provider (section 7.3), in-flight cap | GMI Cloud direct, 32 | GMI Cloud direct, 112 (ask GMI for about 100 concurrent requests) |
 | `api_max_tokens` | 32,768 (reasoning included; the old 16,384 could not hold an 800-line file plus reasoning) | same |
 | Context budget (`ctx_per_slot`) | 131,072 | same |
 | `role_max_turns` | decomposer 40, implementer 80, tester 70, prover 300, reviewer 30, integrator 160 | same |
@@ -447,7 +455,7 @@ Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.j
 ```
 cp docs/plan/tools/runner/config.glm-api.json /mnt/d/pbsd-ckpt/config.json   # read from PBSD_CHECKPOINT after a reboot
 sudo mkdir -p /opt/pbsd && sudo cp -r docs/plan/tools/gates /opt/pbsd/gates # pinned gate scripts (gates_dir)
-export OPENROUTER_API_KEY=...  ZAI_API_KEY=...   # OpenRouter: the three primary hosts; Z.ai: overflow and failover; _2.._9 add keys
+export GMI_API_KEY=...   # GMI Cloud, the only model provider (AGENTS.md 7.3); GMI_API_KEY_2.._9 add keys
 export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
 pbsd_run cpath      # critical path and graph width
 pbsd_run estimate   # wall clock, binding constraint, cost; "low"/"high", k=v overrides, e.g. cores=208 T2.attempts=4
@@ -515,8 +523,7 @@ pbsd_run init && pbsd_run run
    - Install the toolchains on the PC (WSL2): GCC 16 (C++26 contracts), Clang, ESBMC, CBMC, GenMC, Lean (elan) and Apalache. `CLOUD_SETUP.md` step 6 has the commands.
    - Clone Linux and Wine at pinned tags under `~/pbsd-ref`.
    - Start the Lean prover.
-   - Buy OpenRouter credit (5.5% fee) and top up Z.ai for overflow. Check each pinned host answers (`CLOUD_SETUP.md` step 4).
-   - Read Z.ai's concurrency on the console rate-limits page and set `providers[zai].concurrency`.
+   - Add GMI Cloud credit. In the console's Model Hub, read GLM-5.3-Flash's model id, prices and your concurrency, and put them in the config. Check that it answers (`CLOUD_SETUP.md` step 4).
 2. **Selftest.** `pbsd_run selftest` (23 checks).
 3. **P0-07 first.** It pins the tool versions and sets the real gate commands (`PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE`). It also checks every checker flag in `proof_check.sh` against those versions.
 4. **Pilot (go/no-go).**
@@ -573,6 +580,7 @@ The PC can lose power, run out of memory or crash. Any API provider can rate-lim
   - 429, 5xx and network errors put that provider into a cooldown and fail over to the next one, up to 12 tries. After that the attempt ends as `infra`, with no attempt charged.
   - Per-provider RPM/TPM buckets and in-flight caps keep the run under each account's limits.
   - 401/403 rotate keys. 402 takes only that provider out.
+  - With the single-provider configs, there is no other provider to fail over to: an outage pauses leasing until GMI answers, and no work is lost.
 - **Gate infrastructure failures.**
   - A gate exiting 3 (a tool missing, a fetch failing) or a worker lost mid-gate (ssh 255) is retried up to 3 times, elsewhere if possible. After that the attempt ends as `infra`.
   - 20 infra results in a row pause leasing for 5 minutes, so an outage does not cycle every task through it.
@@ -674,7 +682,7 @@ The plan's arithmetic reproduced exactly: `pbsd_run estimate` gave $421, 14.9 da
 | 22 | Licensing: Linux code is GPL-2.0-only and PBSD's own code AGPL-3.0-or-later. A kernel binary combining ported GPL-2.0-only files with AGPL-3.0 files cannot be distributed under both. | **Needs Odin's decision** before ported Linux code ships; options in `PBSD_PLAN.md` section 9 |
 | 23 | Zhipu is on the US Entity List | **Check**; DeepInfra, Fireworks and Together serve the open weights without Zhipu in the data path |
 | 24 | Runtime task splitting is not implemented; the old 1.3× split allowance had nothing behind it | The allowance is removed. Large units are written as several files over more turns; splits stay a `handoff` message. |
-| 25 | The provider list included DeepInfra, which serves this model at fp4, and spread packages evenly over full-price hosts | fp8 hosts at about half Z.ai's price, pinned through OpenRouter; provider weights; Z.ai for overflow (section 7.3) |
+| 25 | The provider list included DeepInfra, which serves this model at fp4, and spread packages evenly over full-price hosts | One provider at fp8, GMI Cloud direct, at half Z.ai's price (Odin's choice, section 7.3); provider weights in the runner for optional fallbacks |
 
 **Not changed on purpose:** the appendices below keep the older options. Their cost and time figures come from before this review and use its old assumptions: about 6 requests per task, PRISM, and one gate run per task.
 

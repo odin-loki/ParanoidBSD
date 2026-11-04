@@ -98,12 +98,12 @@ Config Config::load() {
     Provider p; p.name = name; p.url = url; p.model = model; p.key_env = key_env; p.concurrency = conc; p.rpm = rpm; p.tpm = tpm;
     return p;
   };
-  // Built-in providers; each is used only when its key variable is set. GLM-5.3-Flash (tier "flash")
-  // serves every role by default; the GLM-5.3 entries (tier "frontier") are used only when role_tier
-  // or escalate_tier asks for them. Prices per 1M tokens checked 4 Nov 2026 (AGENTS.md section 7).
+  // Built-in providers; each is used only when its key variable is set. GMI Cloud serves GLM-5.3-Flash
+  // (tier "flash") for every role by default; the other flash entries are overflow and failover only
+  // (weight 0); the GLM-5.3 entries (tier "frontier") are used only when role_tier or escalate_tier asks. Prices per 1M tokens checked 4 Nov 2026 (AGENTS.md section 7).
   std::vector<Provider> builtin{
+      prov("gmi", "https://api.gmi-serving.com/v1/chat/completions", "zai-org/GLM-5.3-Flash-FP8", "GMI_API_KEY", 32, 0, 0),
       prov("zai", "https://api.z.ai/api/paas/v4/chat/completions", "glm-5.3-flash", "ZAI_API_KEY", 8, 0, 0),
-      prov("deepinfra", "https://api.deepinfra.com/v1/openai/chat/completions", "zai-org/GLM-5.3-Flash", "DEEPINFRA_API_KEY", 64, 0, 0),
       prov("fireworks", "https://api.fireworks.ai/inference/v1/chat/completions", "accounts/fireworks/models/glm-5p3-flash", "FIREWORKS_API_KEY", 32, 0, 2'000'000),
       prov("together", "https://api.together.xyz/v1/chat/completions", "zai-org/GLM-5.3-Flash", "TOGETHER_API_KEY", 32, 0, 0),
       prov("openrouter", "https://openrouter.ai/api/v1/chat/completions", "z-ai/glm-5.3-flash", "OPENROUTER_API_KEY", 32, 0, 0),
@@ -113,7 +113,8 @@ Config Config::load() {
       prov("openrouter-5.3", "https://openrouter.ai/api/v1/chat/completions", "z-ai/glm-5.3", "OPENROUTER_API_KEY", 16, 0, 0)};
   for (size_t i = 0; i < builtin.size(); ++i) {
     auto& p = builtin[i];
-    if (i < 5) { p.tier = "flash"; p.price_in = 0.15; p.price_hit = 0.03; p.price_out = 0.50; }
+    if (i == 0) { p.tier = "flash"; p.price_in = 0.075; p.price_hit = 0.015; p.price_out = 0.25; }   // GMI Cloud (fp8): the default provider
+    else if (i < 5) { p.tier = "flash"; p.price_in = 0.15; p.price_hit = 0.03; p.price_out = 0.50; p.weight = 0; }   // fallbacks: overflow only
     else { p.tier = "frontier"; p.price_in = 1.40; p.price_hit = 0.26; p.price_out = 4.40; }
     if (p.name.starts_with("openrouter"))   // never route to fp4 endpoints
       p.extra = json{{"provider", {{"quantizations", {"fp8", "bf16"}}, {"sort", "throughput"}, {"allow_fallbacks", true}}}};

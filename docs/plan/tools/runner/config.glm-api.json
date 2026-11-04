@@ -4,94 +4,16 @@
     {
       "name": "gmi",
       "tier": "flash",
-      "weight": 3,
-      "url": "https://openrouter.ai/api/v1/chat/completions",
-      "model": "z-ai/glm-5.3-flash",
-      "key_env": "OPENROUTER_API_KEY",
-      "concurrency": 16,
-      "rpm": 0,
-      "tpm": 0,
-      "price_in": 0.0791,
-      "price_hit": 0.0158,
-      "price_out": 0.2637,
-      "extra": {
-        "provider": {
-          "order": [
-            "gmicloud/fp8"
-          ],
-          "allow_fallbacks": false,
-          "quantizations": [
-            "fp8"
-          ],
-          "require_parameters": true
-        }
-      }
-    },
-    {
-      "name": "morph",
-      "tier": "flash",
       "weight": 1,
-      "url": "https://openrouter.ai/api/v1/chat/completions",
-      "model": "z-ai/glm-5.3-flash",
-      "key_env": "OPENROUTER_API_KEY",
-      "concurrency": 8,
+      "url": "https://api.gmi-serving.com/v1/chat/completions",
+      "model": "zai-org/GLM-5.3-Flash-FP8",
+      "key_env": "GMI_API_KEY",
+      "concurrency": 32,
       "rpm": 0,
       "tpm": 0,
-      "price_in": 0.0496,
-      "price_hit": 0.0211,
-      "price_out": 0.2827,
-      "extra": {
-        "provider": {
-          "order": [
-            "morph/fp8"
-          ],
-          "allow_fallbacks": false,
-          "quantizations": [
-            "fp8"
-          ],
-          "require_parameters": true
-        }
-      }
-    },
-    {
-      "name": "novita",
-      "tier": "flash",
-      "weight": 1,
-      "url": "https://openrouter.ai/api/v1/chat/completions",
-      "model": "z-ai/glm-5.3-flash",
-      "key_env": "OPENROUTER_API_KEY",
-      "concurrency": 8,
-      "rpm": 0,
-      "tpm": 0,
-      "price_in": 0.0886,
-      "price_hit": 0.0177,
-      "price_out": 0.2954,
-      "extra": {
-        "provider": {
-          "order": [
-            "novita/fp8"
-          ],
-          "allow_fallbacks": false,
-          "quantizations": [
-            "fp8"
-          ],
-          "require_parameters": true
-        }
-      }
-    },
-    {
-      "name": "zai",
-      "tier": "flash",
-      "weight": 0,
-      "url": "https://api.z.ai/api/paas/v4/chat/completions",
-      "model": "glm-5.3-flash",
-      "key_env": "ZAI_API_KEY",
-      "concurrency": 8,
-      "rpm": 0,
-      "tpm": 0,
-      "price_in": 0.15,
-      "price_hit": 0.03,
-      "price_out": 0.5
+      "price_in": 0.075,
+      "price_hit": 0.015,
+      "price_out": 0.25
     }
   ],
   "api_max_tokens": 32768,
@@ -158,5 +80,18 @@
   "lean_prover_model": "Goedel-Prover-V2-32B",
   "lean_samples": 8,
   "lean_rounds": 2,
-  "_providers_note": "Chosen 4 Nov 2026 (AGENTS.md section 7.3): the cheapest hosts that serve GLM-5.3-Flash at fp8, the precision Z.ai itself serves, each pinned through OpenRouter so a conversation stays on one host and keeps its prompt cache. Z.ai direct (weight 0) takes overflow and failover only. Prices include OpenRouter's 5.5% credit fee."
+  "_providers_note": "Odin's choice (4 Nov 2026, AGENTS.md section 7.3): one model provider, GMI Cloud, called directly (no OpenRouter, so no 5.5% fee). GLM-5.3-Flash at fp8. Prices and limits are shown only in the GMI console (Inference > Model Hub): confirm 'model', the three prices and the account's concurrency there before the pilot.",
+  "_optional_fallback": {
+    "note": "Not used. To add a failover provider, copy this object into 'providers' (weight 0 = only when GMI is busy or down).",
+    "name": "zai",
+    "tier": "flash",
+    "weight": 0,
+    "url": "https://api.z.ai/api/paas/v4/chat/completions",
+    "model": "glm-5.3-flash",
+    "key_env": "ZAI_API_KEY",
+    "concurrency": 32,
+    "price_in": 0.15,
+    "price_hit": 0.03,
+    "price_out": 0.5
+  }
 }
