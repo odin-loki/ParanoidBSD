@@ -22,33 +22,29 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
 
 ## Backends
 
-`backend` in `$PBSD_STATE/config.json` (or `PBSD_BACKEND`):
-- `local` (default): llama-server at `local_url` (default `http://127.0.0.1:8080/v1`, or `PBSD_LOCAL_URL`). Ready-made configs for both quants and the launch scripts are in `../llama/`. Keys: `local_model`, `local_slots`, `ctx_per_slot`, `max_tokens`, `tool_result_chars`, `request_timeout_s`, `health_every_s`, `load_timeout_s`, `restart_max`, `server_cmd`, `compact_prompt`, `aux_url`, `aux_model`, `role_backend`.
-- `api`: DeepSeek Flash (needs `DEEPSEEK_API_KEY`). With `fallback_api: true`, a local run uses the API only while llama-server is down.
+`backend` in the config (or `PBSD_BACKEND`):
+- `api` (default): GLM-5.3-Flash over every provider that has a key. Built in: Z.ai (`ZAI_API_KEY`), DeepInfra (`DEEPINFRA_API_KEY`), Fireworks (`FIREWORKS_API_KEY`), Together (`TOGETHER_API_KEY`), OpenRouter (`OPENROUTER_API_KEY`); `<VAR>_2` … `<VAR>_9` add keys; DeepSeek (`DEEPSEEK_API_KEY`) is a last-resort, off-peak-only provider. A `providers` array in the config replaces the built-in list; fields: `name`, `url`, `model`, `key_env`, `concurrency`, `rpm`, `tpm`, `price_in`, `price_hit`, `price_out`, `peak_double`, `offpeak_only`, `extra` (merged into the request body). Other keys: `api_max_tokens`, `api_timeout_s`, `expected_out_tokens`, `ctx_per_slot`, `tool_result_chars`.
+- `local`: llama-server at `local_url` (configs and launch scripts in `../llama/`; AGENTS.md Appendix D). With `fallback_api: true`, turns go to the API providers while the server is down.
 
-`pbsd_run health` checks the server. `pbsd_run selftest` starts a stand-in server (`pbsd_run fake-server PORT`) to test the restart, chat and context-compaction paths.
+Ready-made configs: `config.glm-api.json` (24 agents, PC only) and `config.glm-api-burst.json` (128 agents, 64 gate slots on cloud CI through `burst_cmd`). Set each provider's `concurrency` at or below the account's real limit (Z.ai: console rate-limits page).
+
+Config file: `PBSD_CONFIG`, else `$PBSD_STATE/config.json`, else `$PBSD_CHECKPOINT/config.json`.
 
 ## Use
 
 ```
-cp ../llama/config.q4km.json $PBSD_STATE/config.json   # local GLM-5.3-Flash (default)
-export DEEPSEEK_API_KEY=...            # only for backend=api or fallback_api; optional DEEPSEEK_API_KEY_2
-export PBSD_REPO=/path/to/bare-or-main-clone PBSD_WT=/run/pbsd/wt PBSD_STATE=~/.pbsd
-pbsd_run init       # load docs/plan/tasks.json into SQLite (WAL, synchronous=FULL); safe to rerun
-pbsd_run run        # start or resume; live progress bars, ETA, cost
+export ZAI_API_KEY=... DEEPINFRA_API_KEY=...          # any subset of providers
+export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
+cp config.glm-api.json $PBSD_CHECKPOINT/config.json
+pbsd_run cpath      # critical path and width of the task graph
+pbsd_run estimate   # wall clock, binding constraint and cost per agent count (k=v overrides, e.g. burst_cores=128 out=6000)
+pbsd_run init       # load docs/plan/tasks.json into SQLite (WAL); safe to rerun
+pbsd_run run        # start or resume; live progress bars, ETA, cost, gate slots, providers
 pbsd_run status     # print progress once
-pbsd_run health     # is llama-server up
-pbsd_run selftest   # watchdog, job path, server restart, local chat, context compaction
+pbsd_run selftest   # watchdog, jobs, local server restart and chat, compaction, RPM/TPM buckets, failover, gate slots
 ```
 
-To change slot counts, NUMA nodes and limits, write `$PBSD_STATE/config.json`, for example:
-
-```json
-{"slots": {"agent": {"count": 48}, "compile": {"count": 12, "cores": 1, "ram_gb": 2, "node": 0},
-           "qemu": {"count": 3, "cores": 2, "ram_gb": 4, "node": 0},
-           "proof": {"count": 8, "cores": 2, "ram_gb": 48, "node": 1}},
- "ram_admit": 0.85, "ram_pause": 0.92, "load_max": 30}
-```
+The task database lives in `PBSD_STATE` (tmpfs by default). Every `checkpoint_s` it is copied to `checkpoint_dir` on the HDD and the repository is pushed with `--mirror` to `checkpoint_repo`; after a reboot the database is restored from the HDD copy.
 
 ## Features
 
@@ -60,7 +56,8 @@ To change slot counts, NUMA nodes and limits, write `$PBSD_STATE/config.json`, f
   - A commit at every turn end, and a `wip/<id>` ref plus saved conversation state every 10 minutes.
   - Resume from the checkpoint, with a fresh context from attempt 3 and a split suggestion from attempt 5.
   - Escalation at attempt 8, and quarantine after 3 crashes.
-- **API:** off-peak only, so no requests during peak hours. Retries use exponential backoff with jitter and honour Retry-After. A circuit breaker trips after 20 failures in a minute, the runner rotates to the second key on 401, and it stops cleanly on 402.
+- **API:** per-provider in-flight cap and RPM/TPM token buckets; package affinity for prompt-cache hits; on 429/5xx/connection errors the provider cools down (Retry-After or exponential backoff with jitter) and the request fails over to the next provider; 401/403 rotate keys; 402 removes only that provider, and the run stops cleanly when all are out of credit.
+- **Gates:** counting slots per kind (compile, QEMU, proof) so gates never oversubscribe the cores, with optional cloud CI burst slots (`burst_cmd`, `burst_slots`).
 - **Jobs:**
   - NUMA pinning through libnuma (or numactl).
   - Each job runs in its own process group and is killed on watchdog timeout. Proofs use the task's `proof_budget_minutes`.

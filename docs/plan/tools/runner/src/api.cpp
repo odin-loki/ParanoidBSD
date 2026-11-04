@@ -1,4 +1,5 @@
-// Model backends: llama-server on this PC (default) and the DeepSeek API (optional fallback).
+// Model backends: GLM-5.3-Flash over one or more API providers (default) with per-provider rate
+// limiting and failover, and llama-server on this PC (optional, appendix plan).
 #include "common.hpp"
 #include <curl/curl.h>
 #include <format>
@@ -9,9 +10,37 @@
 #include <unistd.h>
 
 namespace pbsd {
-// USD per 1M tokens, off-peak; peak is double. Local turns cost nothing.
-static constexpr double kHit = 0.003, kMiss = 0.15, kOut = 0.60;
-double Usage::usd() const { return local ? 0 : (peak ? 2 : 1) * (hit * kHit + miss * kMiss + out * kOut) / 1e6; }
+// USD per 1M tokens from the provider that served the turn; peak doubles (DeepSeek only). Local is free.
+double Usage::usd() const { return local ? 0 : (peak ? 2 : 1) * (hit * p_hit + miss * p_in + out * p_out) / 1e6; }
+
+// ---- token buckets: RPM and TPM refill continuously; capacity = one minute of budget.
+RateLimiter::RateLimiter(int conc, int rpm, int64_t tpm)
+    : conc_(conc), rpm_(rpm), tpm_(tpm), req_tokens_(rpm), tok_tokens_(double(tpm)) {}
+void RateLimiter::refill(double t) {
+  if (last_ == 0) last_ = t;
+  double dt = std::max(0.0, t - last_); last_ = t;
+  if (rpm_ > 0) req_tokens_ = std::min<double>(rpm_, req_tokens_ + dt * rpm_ / 60.0);
+  if (tpm_ > 0) tok_tokens_ = std::min<double>(double(tpm_), tok_tokens_ + dt * double(tpm_) / 60.0);
+}
+bool RateLimiter::try_acquire(int64_t est, double t) {
+  if (cooling(t)) return false;
+  std::lock_guard g(m_);
+  refill(t);
+  if (conc_ > 0 && inflight_ >= conc_) return false;
+  if (rpm_ > 0 && req_tokens_ < 1) return false;
+  // A single request larger than the whole bucket may go once the bucket is full.
+  if (tpm_ > 0 && tok_tokens_ < std::min<double>(double(est), double(tpm_))) return false;
+  ++inflight_;
+  if (rpm_ > 0) req_tokens_ -= 1;
+  if (tpm_ > 0) tok_tokens_ -= double(est);
+  return true;
+}
+void RateLimiter::release(int64_t est, int64_t actual, double t) {
+  std::lock_guard g(m_);
+  refill(t);
+  --inflight_;
+  if (tpm_ > 0 && actual > 0) tok_tokens_ = std::min<double>(double(tpm_), tok_tokens_ + double(est - actual));
+}
 
 // Peak: 01:00-04:00 and 06:00-10:00 UTC on weekdays (12:00-15:00 and 17:00-21:00 Sydney, AEDT).
 bool Api::peak_now() {
@@ -93,34 +122,41 @@ Api::Api(const Config& c) : c_(c) {
   curl_global_init(CURL_GLOBAL_DEFAULT);
   local_ = std::make_unique<LocalServer>(c.local_url, c.server_cmd, c.load_timeout_s, c.restart_max);
   if (!c.aux_url.empty()) aux_ = std::make_unique<LocalServer>(c.aux_url, std::vector<std::string>{}, c.load_timeout_s, 0);
+  for (auto& p : c.providers) ps_.push_back(std::make_unique<ProvState>(p));
 }
 
 std::string Api::status_line() {
   double s = gen_s_.load();
   std::string b = c_.backend == "local" ? std::format("local {} @ {} ({} slots)", c_.local_model, c_.local_url, c_.local_slots)
-                                         : "api " + c_.model;
+                                         : std::string("api GLM-5.3-Flash");
   b += std::format("   {:.1f} tok/s out", s > 0 ? out_tok_.load() / s : 0.0);
   if (c_.backend == "local") b += std::format("   restarts {}{}", local_->restarts(), local_->given_up() ? "  [server down]" : "");
   if (fallback_turns_) b += std::format("   API fallback turns {}", fallback_turns_.load());
+  for (size_t i = 0; i < ps_.size(); ++i) {
+    auto& p = *ps_[i];
+    b += std::format("\n    {:<12} in flight {}/{}  ok {}  429 {}  err {}{}", c_.providers[i].name, p.lim.in_flight(),
+                     p.lim.limit(), p.ok.load(), p.limited.load(), p.failed.load(), p.lim.cooling(now()) ? "  [cooling]" : "");
+  }
   return b;
 }
 
-std::expected<json, std::string> Api::chat(const json& messages, const json& tools, Usage& u, const std::string& role, int slot) {
+std::expected<json, std::string> Api::chat(const json& messages, const json& tools, Usage& u, const std::string& role, int slot,
+                                           const std::string& affinity) {
   std::string be = c_.backend;
   if (auto it = c_.role_backend.find(role); it != c_.role_backend.end()) be = it->second;
   if (be == "aux" && !aux_) be = c_.backend;
   json body{{"messages", messages}};
   if (!tools.is_null() && !tools.empty()) body["tools"] = tools;
-  if (be == "api") { body["model"] = c_.model; return chat_api(body.dump(), u); }
+  if (be == "api") return chat_api(body, u, affinity);
   body["model"] = be == "aux" ? c_.aux_model : c_.local_model;
   body["max_tokens"] = c_.max_tokens;
   auto r = chat_local(be == "aux" ? c_.aux_url : c_.local_url, body, u, slot, be == "aux" ? aux_.get() : local_.get());
-  if (!r && c_.fallback_api && !c_.keys.empty()) {
+  if (!r && c_.fallback_api && !c_.providers.empty()) {
     ++fallback_turns_;
-    json b2{{"model", c_.model}, {"messages", messages}};
+    json b2{{"messages", messages}};
     if (!tools.is_null() && !tools.empty()) b2["tools"] = tools;
     u.local = false;
-    return chat_api(b2.dump(), u);
+    return chat_api(b2, u, affinity);
   }
   return r;
 }
@@ -151,37 +187,69 @@ std::expected<json, std::string> Api::chat_local(const std::string& url, json bo
   return std::unexpected("local server failed after 6 tries");
 }
 
-std::expected<json, std::string> Api::chat_api(const std::string& payload, Usage& u) {
-  if (c_.keys.empty()) return std::unexpected("DEEPSEEK_API_KEY not set");
+// Provider order for one request: start at hash(affinity) among the providers so a package keeps
+// hitting the same provider's prompt cache, then the rest in config order (failover).
+std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::string& affinity) {
+  if (ps_.empty()) return std::unexpected("no API providers configured (set ZAI_API_KEY or providers in config.json)");
   std::mt19937 rng(std::random_device{}());
-  for (int attempt = 0; attempt < 8; ++attempt) {
-    while (now() < open_until_.load()) std::this_thread::sleep_for(std::chrono::seconds(5));
-    while (peak_now()) std::this_thread::sleep_for(std::chrono::minutes(1));   // off-peak only
-    std::string key; { std::lock_guard g(m_); key = c_.keys[std::min(key_, c_.keys.size() - 1)]; }
+  const size_t n = ps_.size(), first = affinity.empty() ? 0 : std::hash<std::string>{}(affinity) % n;
+  const int64_t est = int64_t(body.dump().size() / 4) + c_.expected_out_tokens;
+  std::string last_err = "no provider accepted the request";
+  for (int attempt = 0; attempt < 12; ++attempt) {
+    // Wait (up to 10 min) for a provider with room in its buckets; first choice by affinity.
+    int pick = -1;
+    for (double end = now() + 600; pick < 0 && now() < end; ) {
+      for (size_t k = 0; k < n && pick < 0; ++k) {
+        size_t i = (first + k) % n;
+        if (c_.providers[i].offpeak_only && peak_now()) continue;
+        if (c_.providers[i].keys.empty()) continue;
+        if (ps_[i]->lim.try_acquire(est, now())) pick = int(i);
+      }
+      if (pick < 0) std::this_thread::sleep_for(std::chrono::milliseconds(200 + rng() % 300));
+    }
+    if (pick < 0) return std::unexpected("API: all providers saturated or cooling for 10 min");
+    const Provider& p = c_.providers[pick];
+    ProvState& st = *ps_[pick];
+    json b = body;
+    b["model"] = p.model;
+    b["max_tokens"] = c_.api_max_tokens;
+    for (auto& [k, v] : p.extra.items()) b[k] = v;
+    std::string key; { std::lock_guard g(m_); key = p.keys[std::min(st.key, p.keys.size() - 1)]; }
     double t0 = now();
-    Http r = http_post(c_.api_url, payload, key, 900);
+    Http r = http_post(p.url, b.dump(), key, c_.api_timeout_s);
     if (!r.conn_error && r.code == 200) {
       json j = json::parse(r.body, nullptr, false);
-      if (j.is_discarded()) continue;
+      if (j.is_discarded() || !j.contains("choices")) { st.lim.release(est, 0, now()); ++st.failed; last_err = p.name + ": bad body"; continue; }
       auto us = j.value("usage", json::object());
-      u.hit += us.value("prompt_cache_hit_tokens", 0);
-      u.miss += us.value("prompt_cache_miss_tokens", us.value("prompt_tokens", 0) - us.value("prompt_cache_hit_tokens", 0));
-      u.out += us.value("completion_tokens", 0); u.peak = peak_now();
-      if (c_.backend == "api") { out_tok_ += us.value("completion_tokens", 0); gen_s_ = gen_s_.load() + (now() - t0); }
+      int64_t prompt = us.value("prompt_tokens", int64_t(0)), out = us.value("completion_tokens", int64_t(0));
+      int64_t hit = us.value("prompt_cache_hit_tokens", int64_t(0));
+      if (!hit && us.contains("prompt_tokens_details") && us["prompt_tokens_details"].is_object())
+        hit = us["prompt_tokens_details"].value("cached_tokens", int64_t(0));
+      st.lim.release(est, prompt + out, now());
+      ++st.ok;
+      u.hit += hit; u.miss += std::max<int64_t>(0, prompt - hit); u.out += out;
+      u.p_in = p.price_in; u.p_hit = p.price_hit; u.p_out = p.price_out; u.provider = p.name;
+      u.peak = p.peak_double && peak_now(); u.local = false;
+      if (c_.backend == "api") { out_tok_ += out; prompt_tok_ += prompt; gen_s_ = gen_s_.load() + (now() - t0); }
       return j;
     }
-    if (r.code == 402) return std::unexpected("402: API balance exhausted");
-    if (r.code == 401) { std::lock_guard g(m_); if (key_ + 1 < c_.keys.size()) { ++key_; continue; } return std::unexpected("401: bad key"); }
-    {
+    st.lim.release(est, 0, now());
+    last_err = std::format("{}: {}", p.name, r.conn_error ? std::string("connection error") : std::to_string(r.code) + " " + r.body.substr(0, 200));
+    if (r.code == 401 || r.code == 403) {   // bad key: rotate, else take this provider out for an hour
       std::lock_guard g(m_);
-      double t = now(); fails_.push_back(t);
-      std::erase_if(fails_, [t](double f) { return f < t - 60; });
-      if (fails_.size() > 20) { open_until_ = t + 300; fails_.clear(); }   // circuit breaker
+      if (st.key + 1 < p.keys.size()) { ++st.key; continue; }
+      st.lim.cooldown(now() + 3600); ++st.failed; continue;
     }
-    double back = std::min(600.0, double(1 << attempt)) * std::uniform_real_distribution<>(0.5, 1.5)(rng);
-    std::this_thread::sleep_for(std::chrono::duration<double>(std::max(back, r.retry_after)));
+    if (r.code == 402) { st.lim.cooldown(now() + 3600); ++st.failed;   // out of credit here: others carry on
+      bool any = false; for (size_t i = 0; i < n; ++i) any = any || !ps_[i]->lim.cooling(now());
+      if (!any) return std::unexpected("402: API balance exhausted on every provider"); continue; }
+    if (r.code == 400 || r.code == 413) return std::unexpected(last_err);   // the request itself is bad
+    // 429 / 5xx / connection: cool this provider (Retry-After or exponential), fail over to the next.
+    if (r.code == 429) ++st.limited; else ++st.failed;
+    double back = std::min(300.0, 2.0 * (1 << std::min(attempt, 7))) * std::uniform_real_distribution<>(0.5, 1.5)(rng);
+    st.lim.cooldown(now() + std::max(back, r.retry_after));
   }
-  return std::unexpected("API failed after 8 tries");
+  return std::unexpected("API failed after 12 tries: " + last_err);
 }
 
 // ---- context management

@@ -1,0 +1,36 @@
+{
+  "backend": "api",
+  "providers": [
+    {"name": "zai", "url": "https://api.z.ai/api/paas/v4/chat/completions", "model": "glm-5.3-flash",
+     "key_env": "ZAI_API_KEY", "concurrency": 8, "rpm": 0, "tpm": 0,
+     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50},
+    {"name": "deepinfra", "url": "https://api.deepinfra.com/v1/openai/chat/completions", "model": "zai-org/GLM-5.3-Flash",
+     "key_env": "DEEPINFRA_API_KEY", "concurrency": 32, "rpm": 0, "tpm": 0,
+     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50},
+    {"name": "fireworks", "url": "https://api.fireworks.ai/inference/v1/chat/completions", "model": "accounts/fireworks/models/glm-5p3-flash",
+     "key_env": "FIREWORKS_API_KEY", "concurrency": 16, "rpm": 0, "tpm": 2000000,
+     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50},
+    {"name": "openrouter", "url": "https://openrouter.ai/api/v1/chat/completions", "model": "z-ai/glm-5.3-flash",
+     "key_env": "OPENROUTER_API_KEY", "concurrency": 16, "rpm": 0, "tpm": 0,
+     "price_in": 0.15, "price_hit": 0.03, "price_out": 0.50,
+     "extra": {"provider": {"sort": "throughput", "allow_fallbacks": true}}}
+  ],
+  "api_max_tokens": 16384,
+  "expected_out_tokens": 4000,
+  "ctx_per_slot": 131072,
+  "tool_result_chars": 48000,
+  "compact_prompt": true,
+  "lease_s": 10800,
+  "agent_watchdog_s": 1800,
+  "slots": {
+    "agent":   {"count": 24},
+    "compile": {"count": 8, "cores": 1, "ram_gb": 3, "node": 0},
+    "qemu":    {"count": 2, "cores": 2, "ram_gb": 4, "node": 0},
+    "proof":   {"count": 9, "cores": 2, "ram_gb": 12, "node": -1}
+  },
+  "load_max": 34, "ram_admit": 0.85, "ram_pause": 0.92,
+  "checkpoint_dir": "/mnt/d/pbsd-ckpt",
+  "checkpoint_repo": "/mnt/d/pbsd-ckpt/pbsd.git",
+  "checkpoint_s": 600,
+  "role_backend": {}
+}

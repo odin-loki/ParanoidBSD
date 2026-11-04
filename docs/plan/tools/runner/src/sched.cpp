@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <iostream>
 #include <thread>
+#include <filesystem>
 #include <unistd.h>
 
 namespace pbsd {
@@ -14,6 +15,26 @@ int run(const Config& c) {
   if (!db.integrity_ok()) { std::cerr << "task database integrity check failed\n"; return 2; }
   if (int n = db.recover()) db.event("", "recovered", n);
   Api api(c);
+  if (c.backend == "api" && c.providers.empty()) {
+    std::cerr << "no API provider has a key: set ZAI_API_KEY (and optionally DEEPINFRA_API_KEY, FIREWORKS_API_KEY, "
+                 "TOGETHER_API_KEY, OPENROUTER_API_KEY) or list providers in config.json\n";
+    return 4;
+  }
+  // HDD checkpoints: the database and the git mirror live in RAM; copy them to the disk every checkpoint_s.
+  double last_ck = now();
+  static std::atomic<bool> ck_busy{false};
+  auto checkpoint = [&] {
+    if (ck_busy.exchange(true)) return;
+    if (!c.checkpoint_dir.empty()) {
+      std::filesystem::create_directories(c.checkpoint_dir);
+      if (!db.backup_to(c.checkpoint_dir + "/tasks.db")) db.event("", "checkpoint_failed", "db");
+    }
+    if (!c.checkpoint_repo.empty()) {
+      auto r = run_job({"git", "-C", c.repo, "push", "-q", "--mirror", c.checkpoint_repo}, -1, 1800, c.repo, 0);
+      if (r.code != 0) db.event("", "checkpoint_failed", r.tail.substr(0, 400));
+    }
+    ck_busy = false;
+  };
   const bool local = c.backend == "local";
   // Agents = llama-server slots when local (one conversation per slot keeps its KV prefix).
   const int agent_slots = local ? c.local_slots : c.slots.at("agent").count;
@@ -22,7 +43,7 @@ int run(const Config& c) {
   if (local) {
     std::cout << "checking llama-server at " << c.local_url << " ...\n" << std::flush;
     server_ok = api.local()->ensure_up();
-    if (!server_ok && !(c.fallback_api && !c.keys.empty())) {
+    if (!server_ok && !(c.fallback_api && !c.providers.empty())) {
       std::cerr << "llama-server is not healthy and cannot be restarted (set server_cmd or start it: docs/plan/tools/llama/)\n";
       return 4;
     }
@@ -43,7 +64,7 @@ int run(const Config& c) {
     db.unblock();
     double ram = mem_used_frac();
     int free_slots; { std::lock_guard g(m); free_slots = agent_slots - running["agent"]; }
-    bool admit = ram < c.ram_admit && load1() < c.load_max && io_pressure_some10() < c.io_some_max && (local ? (server_ok || (c.fallback_api && !c.keys.empty())) : !Api::peak_now());
+    bool admit = ram < c.ram_admit && load1() < c.load_max && io_pressure_some10() < c.io_some_max && (local ? (server_ok || (c.fallback_api && !c.providers.empty())) : true);
     if (ram > c.ram_pause) admit = false;       // jobs themselves are paused by run_job's caller (harness)
     if (admit && free_slots > 0) {
       for (auto& t : db.lease(free_slots, c.lease_s)) {
@@ -71,14 +92,16 @@ int run(const Config& c) {
     if (now() - last > 2) {
       last = now();
       std::map<std::string, int> r; { std::lock_guard g(m); r = running; }
-      std::string s = render(db.snapshot(), r, c, start) + "  model " + api.status_line() + "\n";
+      std::string s = render(db.snapshot(), r, c, start) + gate_status(c) + "  model " + api.status_line() + "\n";
       std::cout << (tty ? "\033[H\033[J" : "") << s << std::flush;
     }
+    if (now() - last_ck > c.checkpoint_s) { last_ck = now(); std::thread(checkpoint).detach(); }
     int busy; { std::lock_guard g(m); busy = running["agent"]; }
-    if (db.remaining() == 0 && busy == 0) { std::cout << render(db.snapshot(), {}, c, start) << "run complete\n"; return 0; }
+    if (db.remaining() == 0 && busy == 0) { checkpoint(); std::cout << render(db.snapshot(), {}, c, start) << "run complete\n"; return 0; }
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
-  std::cout << "\nstopping: leases will expire and tasks resume on next run\n";
+  std::cout << "\nstopping: checkpointing to disk; leases will expire and tasks resume on next run\n";
+  checkpoint();
   return fatal ? 3 : 0;
 }
 }  // namespace pbsd

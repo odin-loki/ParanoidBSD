@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include <stdexcept>
+#include <cstdio>
 
 namespace pbsd {
 namespace {
@@ -138,5 +139,18 @@ Db::Snapshot Db::snapshot() {
 int64_t Db::remaining() {
   std::lock_guard g(m_);
   Stmt q(h_, "SELECT COUNT(*) FROM task WHERE state NOT IN ('passed','escalated','quarantined')"); q.step(); return q.i(0);
+}
+bool Db::backup_to(const std::string& path) {
+  // Write to a temp file, then rename, so a crash mid-copy never leaves a broken checkpoint.
+  std::string tmp = path + ".tmp";
+  sqlite3* d = nullptr;
+  if (sqlite3_open(tmp.c_str(), &d) != SQLITE_OK) { sqlite3_close(d); return false; }
+  bool ok = false;
+  { std::lock_guard g(m_);
+    if (sqlite3_backup* b = sqlite3_backup_init(d, "main", h_, "main")) {
+      ok = sqlite3_backup_step(b, -1) == SQLITE_DONE; sqlite3_backup_finish(b);
+    } }
+  sqlite3_close(d);
+  return ok && std::rename(tmp.c_str(), path.c_str()) == 0;
 }
 }  // namespace pbsd

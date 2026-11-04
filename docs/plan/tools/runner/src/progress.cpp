@@ -38,12 +38,12 @@ std::string render(const Db::Snapshot& s, const std::map<std::string, int>& runn
   o += std::format("  throughput {:.1f} tasks/h   time left {}   ETA {}\n", rate, dur(eta), clock_at(eta));
   if (c.backend == "api" || s.cost > 0)
     o += std::format("  API cost so far ${:.2f}   projected total ${:.0f}{}\n", s.cost, s.cost + per * left,
-                     c.backend == "api" && Api::peak_now() ? "   [API paused: peak hours]" : "");
+                     "");
   for (auto& [p, n, d] : s.phases) o += std::format("  P{} {} {}/{}\n", p, bar(n ? double(d) / n : 0, 30), num(d), num(n));
   if (!running.empty()) {
     o += "  slots";
     for (auto& [k, v] : running)
-      o += std::format("  {} {}/{}", k, v, k == "agent" && c.backend == "local" ? c.local_slots : c.slots.at(k).count);
+      o += std::format("  {} {}/{}", k, v, k == "agent" && c.backend == "local" ? c.local_slots : (c.slots.count(k) ? c.slots.at(k).count : 0));
     o += std::format("   RAM {:.0f}%  load {:.1f}\n", 100 * mem_used_frac(), load1());
   }
   return o;

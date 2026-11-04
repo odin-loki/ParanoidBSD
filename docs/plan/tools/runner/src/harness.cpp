@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <condition_variable>
+#include <format>
 
 namespace fs = std::filesystem;
 namespace pbsd {
@@ -44,6 +46,33 @@ json tools_schema() {
 }
 }  // namespace
 
+// ---- gate admission. Without it, 100+ agents would start 100+ builds and proofs on 32 cores.
+namespace {
+std::mutex g_gm; std::condition_variable g_gcv;
+std::map<std::string, int> g_gbusy; int g_burst_busy = 0;
+}
+GateLease gate_acquire(const std::string& kind, const Config& c) {
+  std::unique_lock l(g_gm);
+  const int cap = c.slots.count(kind) ? c.slots.at(kind).count : 1;
+  for (;;) {
+    if (g_gbusy[kind] < cap) { ++g_gbusy[kind]; return {kind, false}; }
+    if (!c.burst_cmd.empty() && g_burst_busy < c.burst_slots) { ++g_burst_busy; return {kind, true}; }
+    g_gcv.wait_for(l, std::chrono::seconds(5));
+  }
+}
+void gate_release(const GateLease& g) {
+  { std::lock_guard l(g_gm); if (g.burst) --g_burst_busy; else --g_gbusy[g.kind]; }
+  g_gcv.notify_all();
+}
+std::string gate_status(const Config& c) {
+  std::lock_guard l(g_gm);
+  std::string s = "  gates";
+  for (const char* k : {"compile", "qemu", "proof"})
+    if (c.slots.count(k)) s += std::format("  {} {}/{}", k, g_gbusy[k], c.slots.at(k).count);
+  if (c.burst_slots) s += std::format("  burst {}/{}", g_burst_busy, c.burst_slots);
+  return s + "\n";
+}
+
 TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot) {
   TaskOutcome out{Result::failed, {}};
   const std::string id = t["id"], role = t["role"], branch = "t/" + id;
@@ -68,7 +97,9 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
   // Full prompt (API, large context) or compact prompt (local model, ctx_per_slot tokens): the
   // compact one sends the role template, the task and file lists; the agent reads what it needs.
   const size_t ctx_chars = size_t(c.ctx_per_slot) * 4;
-  const bool compact = c.backend != "api" && c.compact_prompt;
+  // Compact for both backends: with the API it keeps every request's stable prefix small and
+  // byte-identical (cache hits bill at $0.03/1M instead of $0.15/1M); agents open headers on demand.
+  const bool compact = c.compact_prompt;
   std::string global, agents;
   if (compact) {   // AGENTS.md section 6: the shared prefix and this role's template only
     std::string all = slurp(plan / "AGENTS.md", 400000);
@@ -107,9 +138,10 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
     db.heartbeat(id, c.lease_s);
     Usage u;
     // Leave room for the reply inside this slot's context.
-    if (int n = compact_history(msgs, size_t(c.ctx_per_slot - c.max_tokens - 1024) * (c.backend == "api" ? 8 : 1)))
+    const int reply = c.backend == "api" ? c.api_max_tokens : c.max_tokens;
+    if (int n = compact_history(msgs, size_t(std::max(4096, c.ctx_per_slot - reply - 1024))))
       db.event(id, "compacted", n);
-    auto r = api.chat(msgs, tools, u, role, slot);
+    auto r = api.chat(msgs, tools, u, role, slot, t.value("wp", std::string()));
     out.usage.push_back(u);
     if (!r) { db.event(id, "api_error", r.error()); if (r.error().starts_with("402")) throw std::runtime_error(r.error()); return out; }
     json m = (*r)["choices"][0]["message"];
@@ -120,7 +152,7 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
       std::string fnm = call["function"]["name"];
       json a = json::parse(call["function"].value("arguments", "{}"), nullptr, false);
       std::string res;
-      if (fnm == "read_file") res = slurp(wt / a.value("path", ""), c.backend == "api" ? 200000 : size_t(c.tool_result_chars));
+      if (fnm == "read_file") res = slurp(wt / a.value("path", ""), size_t(c.tool_result_chars));
       else if (fnm == "list_dir") { for (auto& e : fs::directory_iterator(wt / a.value("path", "."), fs::directory_options::skip_permission_denied)) res += e.path().filename().string() + "\n"; }
       else if (fnm == "write_file") {
         std::string p = a.value("path", "");
@@ -130,7 +162,12 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
         while (mem_used_frac() > c.ram_pause) std::this_thread::sleep_for(std::chrono::seconds(10));  // memory throttle
         // Gate script per role; must include the fault-injection tests in task.accept.
         fs::path gate = fs::path(c.repo) / "tools/gates" / (role + ".sh");
-        auto g = run_job({"sh", gate.string(), id, wt.string()}, node, gate_timeout(t, kind, c), wt.string());
+        // Wait for a gate slot of this kind (local, NUMA-pinned) or a cloud burst slot.
+        GateLease gl = gate_acquire(kind, c);
+        std::vector<std::string> argv{"sh", gate.string(), id, wt.string()};
+        if (gl.burst) argv.insert(argv.begin(), c.burst_cmd.begin(), c.burst_cmd.end());
+        auto g = run_job(argv, gl.burst ? -1 : node, gate_timeout(t, kind, c), wt.string());
+        gate_release(gl);
         gate_ok = g.code == 0;
         db.event(id, "gate", json{{"code", g.code}, {"timeout", g.timed_out}});
         std::string tail = g.tail.size() > size_t(c.tool_result_chars) ? g.tail.substr(g.tail.size() - c.tool_result_chars) : g.tail;

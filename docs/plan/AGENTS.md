@@ -1,6 +1,6 @@
-# PBSD agent execution: GLM-5.3-Flash on Odin's PC
+# PBSD agent execution: GLM-5.3-Flash API, parallel agents, Odin's PC
 
-Every task in PBSD is done by GLM-5.3-Flash (320B total, 18B active, mixture of experts) running locally under llama.cpp's `llama-server` on Odin's Lenovo P920, through its OpenAI-compatible API at `http://127.0.0.1:8080/v1`. No IDE agents. The DeepSeek Flash API is kept only as an optional fallback (`fallback_api` in the runner config); the previous API-only plan is Appendix C. The 40 work packages in `PBSD_PLAN.md` are broken into 12,963 atomic tasks in `tasks.yaml` / `tasks.json`.
+Every task in PBSD is done by GLM-5.3-Flash (320B total, 18B active, mixture of experts) through its API, spread over several providers (Z.ai first, plus DeepInfra, Fireworks, Together or OpenRouter when keys are set), with many agents in parallel. The builds, tests, PRISM proofs and QEMU gates run on Odin's Lenovo P920, in RAM, with the HDD for checkpoints only. No IDE agents. Running the model locally under llama-server is kept as an optional backend (Appendix D); the DeepSeek Flash plan is Appendix C. The 40 work packages in `PBSD_PLAN.md` are broken into 12,964 atomic tasks in `tasks.yaml` / `tasks.json`.
 
 ## 1. Task breakdown
 
@@ -95,27 +95,27 @@ All roles are the same model (`deepseek-flash`) with different system prompts an
 
 ## 5. Harness
 
-- `pbsd_run` (C++23, `tools/runner`) against llama-server's OpenAI-compatible endpoint `http://127.0.0.1:8080/v1/chat/completions`. Each agent is pinned to one llama-server slot (`id_slot`, `cache_prompt`) so its prompt prefix stays in that slot's KV cache. The DeepSeek endpoint is used only when `backend` is `api` or `fallback_api` is on.
-- Tools via function calling: `read_file(path, range)`, `list_dir`, `grep`, `write_file(path, content)` (rejected outside `owns`), `apply_patch`, `build(target)`, `run_tests(filter)`, `run_prism(file)`, `post_message(to, type, body)`, `read_messages()`, `submit()`. Each task runs in its own container with its branch checked out.
-- Concurrency: one agent per llama-server slot (2 with IQ2_XXS, 4 with Q4_K_M; section 7). Leases are 3 hours because a local turn can take tens of minutes.
-- Build, test and PRISM capacity is the real bottleneck: size the builder farm so a `build` call waits under ~60 s, and share object caches (sccache) keyed on contract version.
-- Every response's `usage` block goes to `cost.jsonl` (hit, miss, output tokens, peak flag) for live cost tracking.
+- `pbsd_run` (C++23, `tools/runner`) sends every turn to GLM-5.3-Flash over the OpenAI-compatible chat API of the configured providers (section 8.3): Z.ai first, then DeepInfra, Fireworks, Together or OpenRouter when their keys are set. Each provider has its own in-flight cap and RPM/TPM token buckets, and a failed or rate-limited request fails over to the next provider. `backend: "local"` uses llama-server instead (Appendix D); DeepSeek Flash is a last-resort provider when `DEEPSEEK_API_KEY` is set (Appendix C).
+- Tools via function calling: `read_file(path, range)`, `list_dir`, `grep`, `write_file(path, content)` (rejected outside `owns`), `apply_patch`, `build(target)`, `run_tests(filter)`, `run_prism(file)`, `post_message(to, type, body)`, `read_messages()`, `submit()`. Each task runs in its own tmpfs worktree with its branch checked out.
+- Concurrency: `slots.agent.count` agents (24 on the PC alone, 128 with cloud CI burst; section 8.2). Leases are 3 hours.
+- Build, test and PRISM capacity is the bottleneck (section 8.1): gates wait for a slot of their kind, NUMA-pinned, so the 32 cores are never oversubscribed; overflow can go to cloud CI through `burst_cmd`.
+- Every response's `usage` block (input, cache hits, output, provider) is billed at that provider's prices and stored in the task database for live cost tracking.
 
 ### Cache strategy
 
-Locally, a prefix that is already in the agent's llama-server slot is not recomputed, and prompt processing on the CPU is the second-largest cost after generation (section 7.3), so the same layout matters. With the API, DeepSeek bills an identical prompt prefix at the cache-hit rate (50x cheaper). Every request is laid out in this order:
+Every provider bills an identical prompt prefix at the cache-hit rate ($0.03 instead of $0.15 per 1M input tokens), and the whole conversation is resent each turn, so input tokens are most of the volume. Every request is laid out in this order:
 
 1. Global prefix, identical for every agent: dialect rules, naming rules, tool schemas.
 2. Role prefix, identical per role.
-3. Package prefix: frozen contract headers for the package, sorted and byte-stable.
+3. Package prefix: the frozen contract header list for the package, sorted and byte-stable (agents open headers with `read_file`).
 4. Unit prefix: the source slice being ported and its spec.
 5. Variable tail: task instructions, messages, tool results.
 
-Nothing that changes per task (ids, timestamps, attempt counts) goes above layer 5. The scheduler runs tasks of the same package back to back so layers 1–3 stay warm. Target hit rate is 75–85% of input tokens.
+Nothing that changes per task (ids, timestamps, attempt counts) goes above layer 5. The scheduler runs tasks of the same package back to back, and the runner sends all tasks of one package to the same provider first (affinity), so layers 1–3 stay warm in that provider's cache. Target hit rate is 75–85% of input tokens.
 
-### Off-peak scheduling (API backend only)
+### Peak hours
 
-Local runs ignore peak hours. With the API, peak is 01:00–04:00 and 06:00–10:00 UTC Monday to Friday (12:00–15:00 and 17:00–21:00 Sydney summer time). The scheduler drops to 10% concurrency in peak windows (critical-path retries only) and runs flat out the rest of the time and all weekend, which keeps more than 95% of tokens at off-peak rates.
+GLM-5.3-Flash API prices have no peak surcharge, so the run goes flat out at all hours. Only the DeepSeek fallback provider is restricted to off-peak hours (`offpeak_only`).
 
 ## 6. Prompt templates
 
@@ -171,136 +171,172 @@ Merge every reviewed unit branch of {{wp}} into wp/{{wp}}, regenerate shared fil
 Acceptance: {{accept}}
 ```
 
-## 7. Local model: GLM-5.3-Flash on the P920
+## 7. Model: GLM-5.3-Flash over the API
 
-### 7.1 Two stages
+### 7.1 Providers, prices and limits (checked 4 Nov 2026)
 
-| Stage | RAM | Quant | Model file (estimate) | Slots | Use |
-|---|---|---|---|---|---|
-| Now | 64 GB | IQ2_XXS | about 85 GB (320B × 2.06 bits ÷ 8) | 2 | Harness calibration on about 50 tasks. The file is bigger than RAM, so part of it is read from disk every token: expect well under 1 token/s. |
-| After the upgrade | 512 GB–2 TB (16 slots; memory table in Appendix C.2) | Q4_K_M | about 195 GB (320B × 4.85 bits ÷ 8) | 4 | The run. Weights locked in RAM, the rest is tmpfs and gates. |
+GLM-5.3-Flash is served by Z.ai and by many third-party hosts at the same list price. The runner spreads load over every provider that has a key, with a client-side token bucket per provider (section 8.3). Artificial Analysis: $0.15 per 1M input, $0.50 per 1M output, $0.03 per 1M cache hits; 71 tokens/s per stream and 1.55 s to first token on Z.ai's API; a reasoning model (about 103k reasoning tokens per Artificial Analysis task); 1M context.
 
-Files are in `D:\models\GLM-5.3-Flash`. Qwen 3.5 9B can run as a second, faster local model (`aux_url`, `role_backend` in the runner config) for roles that turn out not to need GLM; this is off until calibration shows it passes reviewer or tester gates at a similar rate.
-
-### 7.2 Server, slots and context
-
-Launch scripts and both configs are in `tools/llama/` (README there):
-- `-ngl 999 --n-cpu-moe 999`: attention, shared weights and the KV cache on the RTX 3090; the routed experts in system RAM. Each token only touches 18B active weights, so memory bandwidth, not core count, sets the speed.
-- `--parallel 4 --ctx-size 131072`: 4 slots of 32k tokens. More slots give more total tokens/s with diminishing returns, because every slot reads the same expert weights.
-- `--threads 24`: 8 cores stay free for builds, proofs and QEMU.
-- `--numa distribute` on Linux. On Windows llama.cpp has no NUMA placement, so enable memory interleaving in the BIOS, or boot Linux for the run (faster, and the gates need Linux anyway).
-
-`pbsd_run` and the gates run in WSL2 (or on Linux) and reach the server at `127.0.0.1:8080`.
-
-### 7.3 Task granularity and context
-
-The API plan put the whole plan, the agent guide and every contract header (up to about 120k tokens) into every request, and ran 2,400 agents at once. Locally there are 4 agents, each with 32k tokens. The runner's compact prompt mode (`compact_prompt`, on by default for the local backend) changes this:
-
-| Item | API plan | Local plan |
-|---|---|---|
-| Start of each task | plan + guide + contract bodies, about 60–120k tokens | shared prefix + one role template + task + contract file list, about 4–8k tokens; the agent opens headers with `read_file` |
-| Tool results | up to 200 kB | up to 24,000 chars (about 6k tokens); gate logs keep the tail |
-| History | unbounded | older tool results, then older replies, elided to stay under 32k − 4k − 1k |
-| Reply cap | none | 4,096 tokens (`max_tokens`) |
-| Unit size | split above ~800 output lines | split above ~300, so one file write fits in one reply |
-| Order | by package | by package, so consecutive tasks share the prefix already in the slot |
-| Leases and watchdog | 45 min, 20 min per turn | 3 h, 60 min per turn |
-
-Splitting above 300 lines means decomposers will add tasks at run time. The estimate below allows 1.3× for that and for retries.
-
-## 8. Default schedule: Odin's PC, no time limit
-
-### 8.1 Run-time estimate (estimate, not measured)
-
-Only measured number: about 7 tokens/s generation, single stream, CPU only, on a newer 48-core machine. Everything else is assumed and gets replaced by the runner's live figures after calibration.
-
-Assumptions:
-- Turns: about 73,000 planned turns (sum of `turns_budget` is 77,790) × 1.3 for splits and retries = **95,000 turns**.
-- Output: 900 tokens per turn on average (cap 4,096) → 95,000 × 900 = **85.5M tokens generated**.
-- Prompt processing that is not already cached in the slot: 8k tokens at the start of each task (12,964 × 1.3 × 8k = 135M) plus 2.5k new tokens per turn (95,000 × 2.5k = 237M) → **about 372M tokens**.
-- Q4_K_M with 512 GB or more, 4 slots, the RTX 3090 holding attention and KV. Generation and prompt processing share the same CPUs and memory bandwidth, so their times add.
-
-| Case | Generation, total tok/s over 4 slots | Prompt processing tok/s | Generation time | Prompt time | Total |
-|---|---|---|---|---|---|
-| Optimistic | 12 | 200 | 85.5M ÷ 12 = 7.1M s = 82 days | 372M ÷ 200 = 1.9M s = 22 days | **about 104 days (3.5 months)** |
-| Middle | 8 | 120 | 85.5M ÷ 8 = 10.7M s = 124 days | 372M ÷ 120 = 3.1M s = 36 days | **about 160 days (5.3 months)** |
-| Pessimistic | 5 | 60 | 85.5M ÷ 5 = 17.1M s = 198 days | 372M ÷ 60 = 6.2M s = 72 days | **about 270 days (9 months)** |
-
-Gates on the 8 free cores: proofs about 2,700 proof-hours × 2 cores + compile about 1,900 core-hours + QEMU about 400 core-hours ≈ 7,700 core-hours ÷ 8 cores ≈ 40 days. They run while the model works, so the model sets the length: **about 3.5–9 months, most likely about 5**, plus fix rounds. At 64 GB with IQ2_XXS the run is not practical (the model does not fit in RAM); use it only for calibration.
-
-Electricity: about 500 W × 24 h × 160 days ≈ 1,900 kWh, about A$650 at A$0.33/kWh (estimate). No API cost unless the fallback is used.
-
-What moves the estimate most:
-1. Measured generation speed with 4 slots on the P920 (`llama-bench`, then the calibration batch).
-2. Average output per turn, especially if the model's thinking is long. `max_tokens` caps it.
-3. First-pass gate rate: each failed attempt repeats turns.
-
-### 8.2 Slots and NUMA
-
-| Slot | Count (Q4_K_M) | Cores | RAM each | Node |
+| Provider | Price in / hit / out per 1M | Rate limit as documented | How to raise it | Source |
 |---|---|---|---|---|
-| Agents = llama-server slots | 4 | (llama-server: 24 threads) | weights about 195 GB, KV on the GPU | both (`--numa distribute`) |
-| Compile and unit tests | 3 | 1 | 2 GB | 0 |
-| QEMU | 1 | 2 | 4 GB | 0 |
-| PRISM | 3 | 2 | 24 GB | 1 |
-| Task database, git server, scheduler | 1 | shared | 8 GB | 0 |
-| tmpfs: repository, worktrees, builds, ccache, images | — | — | the rest of RAM | split |
+| Z.ai (general API) | $0.15 / $0.03 / $0.50 | Concurrency (requests in flight) per account and per model, not RPM or TPM. The number is shown only in the console (rate-limits page) and depends on the account's user-rights level. Over the limit: HTTP 429, code 1302. Code 1305 means Z.ai itself is overloaded. | Raise the account's rights level, or apply in the console ("rate limit adjustment"): model, extra concurrency, use case; reviewed within 10 working days. | [docs.bigmodel.cn rate limits](https://docs.bigmodel.cn/cn/api/rate-limit), [GLM-5.3-Flash page](https://docs.z.ai/guides/vlm/glm-5.3-flash) |
+| Z.ai GLM Coding Plan | subscription | Concurrency tied to the plan (Max > Pro > Lite), raised dynamically off-peak; no published number. Plan quota may only be used in officially supported tools, so it is **not used by `pbsd_run`**. | Not adjustable on request. | [Z.ai usage policy](https://web.archive.org/web/20260702110048/https:/docs.z.ai/devpack/usage-policy) |
+| DeepInfra | $0.15 / $0.03 / $0.50 | 200 concurrent requests per model by default. | Apply for an increase in the dashboard. | [DeepInfra rate limits](https://docs.deepinfra.com/account/rate-limits) |
+| Fireworks (serverless) | $0.15 / $0.03 / $0.50 | Adaptive TPM per model. GLM-5.3-Flash is in the Small tier: ceilings 216M total prompt TPM, 54M uncached prompt TPM, 2.16M generated TPM. The limit starts lower and grows 25% at most every 15 minutes while use is above 50% of it. Account cap 6,000 RPM with credits. | Ramp traffic gradually; Priority tier; Elastic Burst for eligible accounts. | [Fireworks serverless rate limits](https://docs.fireworks.ai/serverless/rate-limits) |
+| Together | $0.15 / $0.03 / $0.50 | No fixed serverless limit since 2 Oct 2026; 429 or 503 under high demand. | Provisioned throughput (GLM-5.3-Flash is offered). | [Together changelog](https://docs.together.ai/docs/changelog), [usage limits](https://docs.together.ai/docs/billing-usage-limits) |
+| OpenRouter | from $0.031 / $0.03 / $0.085 (cheapest host) to $0.15 / $0.03 / $0.50; about 36 hosts | No platform limit on paid models: limits pass through from the hosts, with automatic fallback between them. Extra keys or accounts do not add capacity. | More hosts eligible in provider routing. | [OpenRouter model page](https://openrouter.ai/z-ai/glm-5.3-flash), [limits](https://openrouter.ai/docs/api_reference/limits), [pricing FAQ](https://openrouter.ai/pricing) |
 
-With 64 GB and IQ2_XXS: 2 agents, 2 compile, 1 QEMU, 1 PRISM at 4 GB (`tools/llama/config.iq2xxs.json`).
+Measured speeds per host on OpenRouter vary from about 20 to about 140 tokens/s (Baseten, Together, Parasail, Cohere at the top); Z.ai's own endpoint was about 40–70 tokens/s. The cheapest hosts on OpenRouter have lower uptime (Relace 80%) and some run fp4 quantisation; the runner's default list uses full-price hosts only.
 
-### 8.3 Runner and progress
+**Not verified:** Z.ai's actual concurrency number for a pay-as-you-go account (read it from the console before the run; one forum report says about 6 for GLM-5.3-Flash on an older coding plan and 50 on Max, which does not apply to the API); the model ids on DeepInfra, Fireworks and Together (check each catalog); Fireworks' starting adaptive limit.
 
-`pbsd_run` (C++23, `tools/runner`, README there) now has a local backend:
+### 7.2 What the API changes
+
+- No model in RAM: all 256 GB and all 32 cores are free for gates and tmpfs.
+- Throughput per agent is fixed by the provider (about 58 s per turn at 4,000 output tokens), so total model throughput scales with the number of agents in flight, up to the providers' limits.
+- Cost is per token and does not depend on the agent count (section 8.1).
+- The local GPUs are not needed for the run; section 8.4 uses them for cheap triage.
+
+## 8. Default schedule: GLM API, parallel agents, Odin's PC
+
+### 8.1 Where the bottleneck is (estimate, not measured)
+
+`pbsd_run cpath` and `pbsd_run estimate` compute this from `tasks.json` (rerun them with measured figures after calibration).
+
+**Critical path** (`pbsd_run cpath`): 8 tasks and 54 budgeted turns: `P0-01-IF → P0-FREEZE → P0-01-U001-SPEC → IMPL → PROOF → REVIEW → P0-01-INT → P6-01-INT`. The graph is 8 levels deep and very wide: level 4 alone has 5,154 tasks that can run at once. At about 62 s per turn the chain is about 6 hours, so the dependency graph never limits the run.
+
+Assumptions (`pbsd_run estimate` defaults):
+- Tasks 12,964 × 1.3 (splits and retries) = 16,853; turns 77,790 × 1.3 = 101,127.
+- Per turn: 4,000 output tokens including reasoning, 40,000 input tokens of which 80% are cache hits.
+- API call: 1.55 s + 4,000 ÷ 71 tok/s = 57.9 s; plus 4 s of non-gate tool time.
+- Gates (from the earlier plan): proofs 2,700 proof-hours × 2 cores = 5,400 core-hours, compile 1,900, QEMU 400 = 7,700 core-hours × 1.3 = 10,010 core-hours. Each gate job holds 2 cores on average while the agent waits for it.
+- 28 of the 32 cores run gates; 4 stay for the OS, runner, git and tmpfs.
+
+Per agent-run of a task: API 101,127 × 57.9 s = 5.85M s; tools 0.40M s; gates 10,010 × 3,600 ÷ 2 = 18.0M s; total 24.3M agent-seconds. Bounds on wall clock:
+- agents: 24.3M s ÷ N
+- gate CPU: 10,010 core-hours ÷ 28 cores = 357 h = 14.9 days
+- API: 5.85M stream-seconds ÷ allowed concurrency
+- critical path: about 6 h
+
+| Agents | Agent-bound | Gate CPU (28 cores) | Wall clock | Binding constraint | API requests in flight |
+|---|---|---|---|---|---|
+| 4 | 70.2 d | 14.9 d | 70.2 d | agents | 1 |
+| 8 | 35.1 d | 14.9 d | 35.1 d | agents | 2 |
+| 16 | 17.6 d | 14.9 d | 17.6 d | agents | 4 |
+| **24** | 11.7 d | 14.9 d | **14.9 d** | **gate CPU** | 5 |
+| 32 | 8.8 d | 14.9 d | 14.9 d | gate CPU | 5 |
+| 64+ | ≤4.4 d | 14.9 d | 14.9 d | gate CPU | 5 |
+
+With 64 cloud CI cores' worth of burst slots (128 cores, `config.glm-api-burst.json`, 156 cores in total):
+
+| Agents | Agent-bound | Gate CPU (156 cores) | Wall clock | Binding constraint | API in flight | Output tok/min | Input tok/min |
+|---|---|---|---|---|---|---|---|
+| 32 | 8.8 d | 2.7 d | 8.8 d | agents | 8 | 32k | 0.32M |
+| 64 | 4.4 d | 2.7 d | 4.4 d | agents | 15 | 64k | 0.64M |
+| 96 | 2.9 d | 2.7 d | 2.9 d | agents | 23 | 96k | 0.96M |
+| **128** | 2.2 d | 2.7 d | **2.7 d** | **gate CPU** | 25 | 105k | 1.05M |
+| 192 | 1.5 d | 2.7 d | 2.7 d | gate CPU | 25 | 105k | 1.05M |
+
+**The binding constraint is the gate CPU: builds, PRISM proofs and QEMU on the P920's 32 cores.** The model is not: at the gate-bound rate the run needs only about 5 requests in flight (about 25 with cloud burst), which Z.ai alone or DeepInfra's default 200 covers. Above about 20 agents, extra agents only wait for gate slots. The other candidates:
+- **API concurrency and rate limits:** about 5–25 in flight and about 1M input tokens per minute at most, well under DeepInfra's 200 concurrent and Fireworks' Small-tier ceilings. Binding only if Z.ai is the only provider and its console limit is below about 5 (local) or 25 (burst).
+- **Git and merges on the HDD:** about 101,000 turn commits and 16,853 task merges. On a single HDD (about 100–150 random IOPS) with `fsync` per ref update that is hours of serialised I/O spread over the run and would make agents stall during packs and `gc`; with the repository and worktrees in tmpfs it is negligible. The HDD only receives the 10-minute checkpoints (`git push --mirror` and an SQLite backup).
+- **Integrators:** 40 package merges, each serialised on `wp/<WP>`; minutes each, not binding.
+- **Runner overhead:** one thread per agent, a 1 s scheduling loop and a 2 s status query over 13k rows; negligible next to 58 s turns.
+- **Critical path:** about 6 h.
+
+**USD cost (estimate):** input 101,127 × 40,000 = 4.05B tokens: 3.24B hits × $0.03 + 0.81B misses × $0.15 = $97 + $121; output 101,127 × 4,000 = 405M × $0.50 = $202. **Total about $420.** It does not depend on the agent count.
+
+| Case | Output/turn | Input/turn | Hits | API cost | Wall clock, 24 agents, PC only | Wall clock, 128 agents + burst |
+|---|---|---|---|---|---|---|
+| Low | 2,000 | 20,000 | 80% | about $210 | about 15 d (gate-bound) | about 2.7 d |
+| Middle | 4,000 | 40,000 | 80% | about $420 | about 15 d | about 2.7 d |
+| High (long reasoning) | 8,000 | 80,000 | 70% | about $940 | about 15 d (23 agents saturate) | about 2.7 d at 128–160 agents, about 50 requests in flight |
+
+Cloud CI burst: 10,010 core-hours × 128 ÷ 156 = 8,210 core-hours on cloud machines at an assumed $0.02–0.04 per core-hour = **about $165–330** (price not checked against a specific provider). Electricity for the PC: about 400 W × 24 h × 15 days ≈ 145 kWh, about A$48 at A$0.33/kWh.
+
+What moves the estimate most: gate core-hours per task (measure in the calibration batch), first-pass gate rate, and output tokens per turn (reasoning length).
+
+### 8.2 Settings that saturate the gates
+
+Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.json` (with cloud CI):
+
+| Setting | PC only | With burst |
+|---|---|---|
+| Agents (`slots.agent.count`) | 24 (19 saturate the gates; +25% for queueing) | 128 |
+| Compile and unit-test slots | 8 × 1 core, 3 GB, node 0 | same |
+| QEMU slots | 2 × 2 cores, 4 GB, node 0 | same |
+| PRISM slots | 9 × 2 cores, 12 GB, any node | same |
+| Cloud burst slots (`burst_slots`, `burst_cmd`) | 0 | 64 × 2 cores |
+| Z.ai concurrency cap | 8 (set to the console value) | 8 |
+| DeepInfra cap | 32 | 48 |
+| Fireworks cap | 16, TPM 2M | 16 |
+| OpenRouter cap | 16 | 16 |
+| `api_max_tokens` | 16,384 | 16,384 |
+| Context budget (`ctx_per_slot`) | 131,072 | 131,072 |
+| Checkpoints to the HDD | every 600 s | every 600 s |
+
+Gate slots use 8 + 4 + 18 = 30 cores' worth of jobs; with load admission at 34 the machine stays full without thrashing. RAM: gates 8 × 3 + 2 × 4 + 9 × 12 = 140 GB, task database, git and runner about 8 GB, tmpfs (repository, worktrees, build trees, ccache) the remaining 100 GB.
+
+Provider caps are client-side ceilings, not grants: set each one at or below the account's limit. Order providers by preference; the first is the default for a package (cache affinity) and the rest take overflow and failover.
+
+### 8.3 Runner (`pbsd_run`, C++23)
 
 ```
-cp docs/plan/tools/llama/config.q4km.json $PBSD_STATE/config.json
-pbsd_run health    # GET /health on the configured server
-pbsd_run init
-pbsd_run run       # checks the server, restarts it if needed, then starts
-pbsd_run selftest  # watchdog, job path, server restart, local chat, context compaction
+cp docs/plan/tools/runner/config.glm-api.json /mnt/d/pbsd-ckpt/config.json   # read from PBSD_CHECKPOINT after a reboot
+export ZAI_API_KEY=...  DEEPINFRA_API_KEY=...  FIREWORKS_API_KEY=...  OPENROUTER_API_KEY=...   # any subset; _2.._9 add keys
+export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
+pbsd_run cpath      # critical path and graph width
+pbsd_run estimate   # wall clock, binding constraint, cost per agent count; k=v overrides, e.g. out=6000 burst_cores=128
+pbsd_run init && pbsd_run run
 ```
 
-- **Endpoint and slots:** `local_url` (default `http://127.0.0.1:8080/v1`), `local_model`, `local_slots` (must equal `--parallel`), `ctx_per_slot`, `max_tokens`, `tool_result_chars`, `request_timeout_s`.
-- **Health check and restart:** a supervisor thread polls `/health` every `health_every_s`. On a failure it runs `server_cmd` (for example the Windows launch script via `powershell.exe`), waits up to `load_timeout_s` for the model to load (`/health` returns 503 while loading), and gives up after `restart_max` restarts. A failed request also triggers the check. While the server is down no new tasks are leased; running agents retry.
-- **Fallback:** with `fallback_api: true` and `DEEPSEEK_API_KEY` set, turns go to the DeepSeek API while the local server is down. `backend: "api"` restores the old plan (Appendix C).
-
-The display adds a model line:
+- **Providers:** every provider with a key is used. Each has an in-flight cap, an RPM bucket and a TPM bucket (refilled continuously; a request reserves its prompt size plus `expected_out_tokens` and is charged the real usage when it returns).
+- **Cache-friendly prompts:** the compact layered prompt is used for the API too: global rules, role template, contract file list and task, byte-stable and in that order, with per-task data last. Tasks of one package go to the same provider first (affinity on the package id), so its prefix cache stays warm. Cache hits are read from `prompt_tokens_details.cached_tokens` and billed at that provider's hit price.
+- **Failover:** 429, 5xx and connection errors put that provider into a cooldown (Retry-After or exponential backoff with jitter) and the request moves to the next provider. 401/403 rotate to the provider's next key, then take the provider out for an hour. 402 takes only that provider out; the run stops only when every provider is out of credit. 400 returns to the agent (compaction).
+- **Gate admission:** gates wait for a slot of their kind, NUMA-pinned; when all local slots are busy and `burst_cmd` is set, up to `burst_slots` gates run through it (for example `ssh pbsd-ci --`, where the same gate script runs against the pushed commit).
+- **RAM first, HDD for checkpoints:** the task database lives in `/run/pbsd/state` (tmpfs). Every `checkpoint_s` the runner copies it to `checkpoint_dir` with SQLite's online backup (temp file, then rename) and pushes the repository with `--mirror` to `checkpoint_repo` on the HDD. After a reboot the database is restored from the HDD copy automatically.
+- **Progress:** overall and per-phase bars, time left and finish time, cost so far and projected, gate slot use (`compile 8/8 qemu 2/2 proof 9/9 burst 41/64`), and one line per provider (in flight / cap, successes, 429s, errors, cooling).
 
 ```
-PBSD  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1,296/12,964 (10.0%)
-  running 4  queued 61  blocked 11,580  failed 14  escalated 6  quarantined 1
-  throughput 3.4 tasks/h   time left 143d 2h 10m   ETA Thu 26 Mar 09:40 AEDT
-  P0 ██████████████████████████████ 292/292
-  ...
-  slots  agent 4/4   RAM 71%  load 29.8
-  model local GLM-5.3-Flash @ http://127.0.0.1:8080/v1 (4 slots)   8.1 tok/s out   restarts 0
+PBSD  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 2,601/12,964 (20.1%)
+  running 24  queued 3,980  blocked 6,320  failed 31  escalated 2  quarantined 0
+  throughput 36.2 tasks/h   time left 11d 22h 15m   ETA Mon 23 Nov 08:10 AEDT
+  API cost so far $81.40   projected total $406
+  slots  agent 24/24   RAM 78%  load 31.6
+  gates  compile 8/8  qemu 2/2  proof 9/9
+  model api GLM-5.3-Flash   70.4 tok/s out
+    zai          in flight 3/8  ok 18211  429 12  err 3
+    deepinfra    in flight 2/32  ok 9734  429 0  err 1
 ```
 
-Time left is the remaining tasks divided by the tasks passed in the last 24 hours.
+`pbsd_run selftest` covers the watchdog, job path, local server restart and chat, context compaction, the RPM/TPM buckets and in-flight cap, failover from a 429 provider to a second one with cache-hit billing, and gate slots with burst.
 
-### 8.4 Order of work
+### 8.4 Mitigations, in order of effect
 
-1. **Now, 64 GB:** build llama.cpp from PR #27752 (CUDA), run `llama-bench` on IQ2_XXS, start the server with `config.iq2xxs.json`, run `pbsd_run selftest`, write the gate scripts, run about 50 Phase 0 tasks to check tool calling and the compact prompt.
-2. **After the RAM upgrade:** switch to Q4_K_M and `config.q4km.json`, run `llama-bench` with 1, 2, 4 and 6 slots, and keep the slot count with the best total tok/s.
-3. Phase 0 contracts and freeze.
-4. Phase 1 core; first QEMU boot.
-5. Phase 2 I/O.
-6. Phase 3 device model and common drivers.
-7. Phase 4 personalities.
-8. Phase 5 userland and hypervisor.
-9. Large drivers (mlx5, ice, iwlwifi, drm/xe).
-10. `P6-01` final merge and fix rounds.
+1. **Cloud CI burst for gates** (`burst_cmd`, `burst_slots`): the only change that moves the bottleneck a lot: 14.9 → about 2.7 days for about $165–330. The cloud runners fetch the commit from a mirror pushed by the runner, so nothing but the gate result comes back.
+2. **Cut gate core-hours:** sccache/ccache shared across worktrees in tmpfs, keyed on contract version; incremental builds per package; PRISM caching of discharged obligations keyed on the file hash; QEMU boots only for integrator gates. Each 10% off gate core-hours is about 1.5 days off a PC-only run.
+3. **Gates in RAM:** repository, worktrees, build trees, ccache and QEMU images in tmpfs; the HDD only takes checkpoints. A gate on the HDD would also contend with git.
+4. **NUMA pinning and capped build parallelism:** each gate slot has a fixed core count and node, so builds never use `-j$(nproc)`; compile and QEMU on node 0, proofs spread. Run under Linux (or WSL2 with memory interleaving in the BIOS) as before.
+5. **Local GPUs for cheap triage:** Qwen 3.5 9B on the RTX 3090 (and the A4000) via `aux_url` reads gate logs and failing diffs, and pre-checks builds and formatting before a full gate is started. That cuts failed gate runs (the main cost of retries) and API tokens. Turn it on per role with `role_backend` after calibration shows it is reliable.
+6. **More API headroom when burst is on:** add DeepInfra (200 concurrent default) or ask Z.ai for a higher concurrency; ramp Fireworks traffic slowly because its limit grows 25% per 15 minutes.
+
+### 8.5 Order of work
+
+1. Read Z.ai's concurrency on the console rate-limits page and set `providers[zai].concurrency`; top up credit on each provider used.
+2. `pbsd_run selftest`; write the gate scripts; run 50 Phase 0 tasks with 8 agents to measure gate core-hours per task, tokens per turn and first-pass rate; rerun `pbsd_run estimate` with those numbers.
+3. Set the agent count to the estimate's saturation figure plus 15–25%, and decide on cloud burst.
+4. Phase 0 contracts and freeze; Phase 1 core and first QEMU boot; Phases 2–5; large drivers; `P6-01` final merge and fix rounds.
 
 When the run finishes, everything is merged on `pbsd-cutover`, proved, and booting in QEMU on amd64, arm64 and riscv64 with the acceptance suites green. Real-hardware tests on the P920 and the merge to `main` follow.
 
 ## 9. Fault tolerance of the run
 
-The PC can lose power, run out of memory or crash, llama-server can crash or hang, and the API (when used) can fail. The run has to resume where it stopped and never redo or corrupt finished work.
+The PC can lose power, run out of memory or crash, and any API provider can rate-limit, fail or run out of credit (llama-server can crash or hang when the local backend is used). The run has to resume where it stopped and never redo or corrupt finished work.
 
 - **Idempotent tasks.** A task's output is its branch `t/<id>` plus its status row. Rerunning a task starts again from the last commit on its branch. Gates are pure functions of the commit, so running a gate twice gives the same answer.
 - **Task database durability.** SQLite in WAL mode with `synchronous=FULL`, or Postgres with its own write-ahead log. Each state change is one transaction, written before the action it records. An `events` table is an append-only log of every lease, submit, gate result and message.
 - **Atomic commits.** Agents write into the tmpfs worktree. The harness commits and pushes to the bare repository only at the end of each turn, and a gate result is recorded only with the commit SHA it ran on. Bare repo writes use git's own atomic ref updates.
-- **RAM-to-HDD checkpoints.** Every 10 minutes, and at every turn end, the harness commits each tmpfs worktree's work-in-progress to a `wip/<id>` ref on the HDD. It also saves each agent's conversation state (messages and tool results, so far) to `state/<id>.jsonl.zst`. After a crash, at most 10 minutes of work is lost per task.
+- **RAM-to-HDD checkpoints.** At every turn end the harness commits each tmpfs worktree's work in progress, and every 10 minutes it updates a `wip/<id>` ref, which reaches the HDD with the next mirror push. It also saves each agent's conversation state (messages and tool results, so far) to `state/<id>.jsonl.zst`. After a crash, at most 10 minutes of work is lost per task.
 - **Resume after crash, power loss or OOM.** On start, the scheduler:
   1. Marks every `leased` task whose lease has expired as `ready`.
   2. Rebuilds worktrees from `wip/<id>` refs.
@@ -315,20 +351,21 @@ The PC can lose power, run out of memory or crash, llama-server can crash or han
   - No new leases while it is down; in-flight turns retry with backoff, up to 6 tries, then the task is requeued from its last commit.
   - Slot KV caches are lost on restart; the next turn recomputes the prompt, which costs time, not correctness.
   - After `restart_max` restarts the runner stops leasing (or uses the API fallback if enabled) and the status line shows `[server down]`.
-- **API failures (fallback only).**
-  - Timeout per request: 15 minutes.
-  - Retries with exponential backoff and jitter on 429, 5xx and network errors, up to 8 tries.
-  - The client honours `Retry-After` headers.
-  - A circuit breaker halves concurrency after 20 failures in a minute and backs off for 5 minutes.
-  - A balance check stops the run cleanly when the API returns 402 (out of credit).
-  - An optional second key is used only if the first is revoked.
+- **API failures.**
+  - Timeout per request: 15 minutes (`api_timeout_s`).
+  - 429, 5xx and network errors put that provider into a cooldown (honouring `Retry-After`, else exponential backoff with jitter up to 5 minutes) and the request fails over to the next provider, up to 12 tries.
+  - Per-provider token buckets on RPM and TPM and an in-flight cap keep the run under each account's limits, so 429s are rare rather than routine.
+  - 401/403 rotate to the provider's next key (`ZAI_API_KEY_2` and so on), then take that provider out for an hour.
+  - 402 (out of credit) takes only that provider out; the run stops cleanly only when every provider is out.
+  - Local server failures matter only with `backend: "local"` (Appendix D).
 - **Watchdogs.**
   - Agent turn with no progress for 20 minutes: kill and requeue.
   - Build over 30 minutes, test over 60 minutes, or proof over its budget: kill the job and record a timeout.
   - QEMU guest with no console output for 10 minutes: kill it.
 - **Poison-task quarantine.** A task that crashes the harness, triggers OOM, or hits the watchdog 3 times goes to `quarantined`. It is not retried automatically. It appears in the daily escalation report with logs attached.
 - **Memory-pressure throttling.** See 8.2 and the scheduler in `tools/runner`. The scheduler also sets an `oom_score_adj` so QEMU and PRISM jobs are killed before the database or git server.
-- **Daily backup.** At 04:00 Sydney time, during the API pause: the database dump, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
+- **RAM and HDD.** The task database, repository and worktrees live in tmpfs. Every 10 minutes the runner copies the database to the HDD (SQLite online backup to a temp file, then rename) and pushes the repository with `--mirror` to a bare repository on the HDD; on start it restores the database from the HDD if the tmpfs is empty.
+- **Daily backup.** At 04:00 Sydney time: the database copy, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
 
 ## Appendix A. One-day run (optional, 24 hours wall clock)
 
@@ -621,3 +658,126 @@ When the run finishes:
 
 Real-hardware tests on the P920 and the merge to `main` follow.
 
+## Appendix D. Local GLM-5.3-Flash on the P920 (optional backend)
+
+The previous default: GLM-5.3-Flash under llama-server on the P920 (`backend: "local"`, configs in `tools/llama/`). Kept as an option, for example once the API run is done or for calibration without API cost.
+
+### D.1 Two stages
+
+| Stage | RAM | Quant | Model file (estimate) | Slots | Use |
+|---|---|---|---|---|---|
+| Now | 64 GB | IQ2_XXS | about 85 GB (320B × 2.06 bits ÷ 8) | 2 | Harness calibration on about 50 tasks. The file is bigger than RAM, so part of it is read from disk every token: expect well under 1 token/s. |
+| After the upgrade | 512 GB–2 TB (16 slots; memory table in Appendix C.2) | Q4_K_M | about 195 GB (320B × 4.85 bits ÷ 8) | 4 | The run. Weights locked in RAM, the rest is tmpfs and gates. |
+
+Files are in `D:\models\GLM-5.3-Flash`. Qwen 3.5 9B can run as a second, faster local model (`aux_url`, `role_backend` in the runner config) for roles that turn out not to need GLM; this is off until calibration shows it passes reviewer or tester gates at a similar rate.
+
+### D.2 Server, slots and context
+
+Launch scripts and both configs are in `tools/llama/` (README there):
+- `-ngl 999 --n-cpu-moe 999`: attention, shared weights and the KV cache on the RTX 3090; the routed experts in system RAM. Each token only touches 18B active weights, so memory bandwidth, not core count, sets the speed.
+- `--parallel 4 --ctx-size 131072`: 4 slots of 32k tokens. More slots give more total tokens/s with diminishing returns, because every slot reads the same expert weights.
+- `--threads 24`: 8 cores stay free for builds, proofs and QEMU.
+- `--numa distribute` on Linux. On Windows llama.cpp has no NUMA placement, so enable memory interleaving in the BIOS, or boot Linux for the run (faster, and the gates need Linux anyway).
+
+`pbsd_run` and the gates run in WSL2 (or on Linux) and reach the server at `127.0.0.1:8080`.
+
+### D.3 Task granularity and context
+
+The API plan put the whole plan, the agent guide and every contract header (up to about 120k tokens) into every request, and ran 2,400 agents at once. Locally there are 4 agents, each with 32k tokens. The runner's compact prompt mode (`compact_prompt`, on by default for the local backend) changes this:
+
+| Item | API plan | Local plan |
+|---|---|---|
+| Start of each task | plan + guide + contract bodies, about 60–120k tokens | shared prefix + one role template + task + contract file list, about 4–8k tokens; the agent opens headers with `read_file` |
+| Tool results | up to 200 kB | up to 24,000 chars (about 6k tokens); gate logs keep the tail |
+| History | unbounded | older tool results, then older replies, elided to stay under 32k − 4k − 1k |
+| Reply cap | none | 4,096 tokens (`max_tokens`) |
+| Unit size | split above ~800 output lines | split above ~300, so one file write fits in one reply |
+| Order | by package | by package, so consecutive tasks share the prefix already in the slot |
+| Leases and watchdog | 45 min, 20 min per turn | 3 h, 60 min per turn |
+
+Splitting above 300 lines means decomposers will add tasks at run time. The estimate below allows 1.3× for that and for retries.
+
+### D.4 Schedule with the local model
+
+### D.5 Run-time estimate (estimate, not measured)
+
+Only measured number: about 7 tokens/s generation, single stream, CPU only, on a newer 48-core machine. Everything else is assumed and gets replaced by the runner's live figures after calibration.
+
+Assumptions:
+- Turns: about 73,000 planned turns (sum of `turns_budget` is 77,790) × 1.3 for splits and retries = **95,000 turns**.
+- Output: 900 tokens per turn on average (cap 4,096) → 95,000 × 900 = **85.5M tokens generated**.
+- Prompt processing that is not already cached in the slot: 8k tokens at the start of each task (12,964 × 1.3 × 8k = 135M) plus 2.5k new tokens per turn (95,000 × 2.5k = 237M) → **about 372M tokens**.
+- Q4_K_M with 512 GB or more, 4 slots, the RTX 3090 holding attention and KV. Generation and prompt processing share the same CPUs and memory bandwidth, so their times add.
+
+| Case | Generation, total tok/s over 4 slots | Prompt processing tok/s | Generation time | Prompt time | Total |
+|---|---|---|---|---|---|
+| Optimistic | 12 | 200 | 85.5M ÷ 12 = 7.1M s = 82 days | 372M ÷ 200 = 1.9M s = 22 days | **about 104 days (3.5 months)** |
+| Middle | 8 | 120 | 85.5M ÷ 8 = 10.7M s = 124 days | 372M ÷ 120 = 3.1M s = 36 days | **about 160 days (5.3 months)** |
+| Pessimistic | 5 | 60 | 85.5M ÷ 5 = 17.1M s = 198 days | 372M ÷ 60 = 6.2M s = 72 days | **about 270 days (9 months)** |
+
+Gates on the 8 free cores: proofs about 2,700 proof-hours × 2 cores + compile about 1,900 core-hours + QEMU about 400 core-hours ≈ 7,700 core-hours ÷ 8 cores ≈ 40 days. They run while the model works, so the model sets the length: **about 3.5–9 months, most likely about 5**, plus fix rounds. At 64 GB with IQ2_XXS the run is not practical (the model does not fit in RAM); use it only for calibration.
+
+Electricity: about 500 W × 24 h × 160 days ≈ 1,900 kWh, about A$650 at A$0.33/kWh (estimate). No API cost unless the fallback is used.
+
+What moves the estimate most:
+1. Measured generation speed with 4 slots on the P920 (`llama-bench`, then the calibration batch).
+2. Average output per turn, especially if the model's thinking is long. `max_tokens` caps it.
+3. First-pass gate rate: each failed attempt repeats turns.
+
+### D.6 Slots and NUMA
+
+| Slot | Count (Q4_K_M) | Cores | RAM each | Node |
+|---|---|---|---|---|
+| Agents = llama-server slots | 4 | (llama-server: 24 threads) | weights about 195 GB, KV on the GPU | both (`--numa distribute`) |
+| Compile and unit tests | 3 | 1 | 2 GB | 0 |
+| QEMU | 1 | 2 | 4 GB | 0 |
+| PRISM | 3 | 2 | 24 GB | 1 |
+| Task database, git server, scheduler | 1 | shared | 8 GB | 0 |
+| tmpfs: repository, worktrees, builds, ccache, images | — | — | the rest of RAM | split |
+
+With 64 GB and IQ2_XXS: 2 agents, 2 compile, 1 QEMU, 1 PRISM at 4 GB (`tools/llama/config.iq2xxs.json`).
+
+### D.7 Runner and progress
+
+`pbsd_run` (C++23, `tools/runner`, README there) now has a local backend:
+
+```
+cp docs/plan/tools/llama/config.q4km.json $PBSD_STATE/config.json
+pbsd_run health    # GET /health on the configured server
+pbsd_run init
+pbsd_run run       # checks the server, restarts it if needed, then starts
+pbsd_run selftest  # watchdog, job path, server restart, local chat, context compaction
+```
+
+- **Endpoint and slots:** `local_url` (default `http://127.0.0.1:8080/v1`), `local_model`, `local_slots` (must equal `--parallel`), `ctx_per_slot`, `max_tokens`, `tool_result_chars`, `request_timeout_s`.
+- **Health check and restart:** a supervisor thread polls `/health` every `health_every_s`. On a failure it runs `server_cmd` (for example the Windows launch script via `powershell.exe`), waits up to `load_timeout_s` for the model to load (`/health` returns 503 while loading), and gives up after `restart_max` restarts. A failed request also triggers the check. While the server is down no new tasks are leased; running agents retry.
+- **Fallback:** with `fallback_api: true` and `DEEPSEEK_API_KEY` set, turns go to the DeepSeek API while the local server is down. `backend: "api"` restores the old plan (Appendix C).
+
+The display adds a model line:
+
+```
+PBSD  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1,296/12,964 (10.0%)
+  running 4  queued 61  blocked 11,580  failed 14  escalated 6  quarantined 1
+  throughput 3.4 tasks/h   time left 143d 2h 10m   ETA Thu 26 Mar 09:40 AEDT
+  P0 ██████████████████████████████ 292/292
+  ...
+  slots  agent 4/4   RAM 71%  load 29.8
+  model local GLM-5.3-Flash @ http://127.0.0.1:8080/v1 (4 slots)   8.1 tok/s out   restarts 0
+```
+
+Time left is the remaining tasks divided by the tasks passed in the last 24 hours.
+
+### D.8 Order of work
+
+1. **Now, 64 GB:** build llama.cpp from PR #27752 (CUDA), run `llama-bench` on IQ2_XXS, start the server with `config.iq2xxs.json`, run `pbsd_run selftest`, write the gate scripts, run about 50 Phase 0 tasks to check tool calling and the compact prompt.
+2. **After the RAM upgrade:** switch to Q4_K_M and `config.q4km.json`, run `llama-bench` with 1, 2, 4 and 6 slots, and keep the slot count with the best total tok/s.
+3. Phase 0 contracts and freeze.
+4. Phase 1 core; first QEMU boot.
+5. Phase 2 I/O.
+6. Phase 3 device model and common drivers.
+7. Phase 4 personalities.
+8. Phase 5 userland and hypervisor.
+9. Large drivers (mlx5, ice, iwlwifi, drm/xe).
+10. `P6-01` final merge and fix rounds.
+
+When the run finishes, everything is merged on `pbsd-cutover`, proved, and booting in QEMU on amd64, arm64 and riscv64 with the acceptance suites green. Real-hardware tests on the P920 and the merge to `main` follow.

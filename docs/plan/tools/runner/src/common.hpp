@@ -19,14 +19,34 @@ using Clock = std::chrono::system_clock;
 double now();                                      // seconds since epoch
 
 struct Slot { int count; int cores; double ram_gb; int node; };   // node -1 = any
+// One OpenAI-compatible endpoint serving GLM-5.3-Flash (Z.ai, DeepInfra, Fireworks, Together,
+// OpenRouter, ...). Limits are client-side caps set at or below what the provider grants the account;
+// 0 = no cap of that kind. Prices are USD per 1M tokens.
+struct Provider {
+  std::string name, url, model = "glm-5.3-flash", key_env;
+  std::vector<std::string> keys;                 // from key_env, key_env_2, ... ; rotated on 401
+  int concurrency = 8, rpm = 0;                  // in-flight cap, requests per minute
+  int64_t tpm = 0;                               // input + output tokens per minute
+  double price_in = 0.15, price_hit = 0.03, price_out = 0.50;
+  bool peak_double = false, offpeak_only = false;   // DeepSeek-style peak pricing
+  json extra = json::object();                   // merged into the request body (reasoning, routing)
+};
 struct Config {
   std::string state_dir, tasks_json, repo, api_url = "https://api.deepseek.com/chat/completions",
               model = "deepseek-flash";
-  std::vector<std::string> keys;
-  // Backend. "local" (default): llama-server's OpenAI-compatible API on this PC. "api": DeepSeek.
-  // fallback_api: when the local server stays down after restart_max restarts and a key is set,
-  // send turns to the API until the local server is healthy again.
-  std::string backend = "local", local_url = "http://127.0.0.1:8080/v1", local_model = "GLM-5.3-Flash";
+  std::vector<std::string> keys;                 // legacy DeepSeek keys (provider "deepseek" if set)
+  // Backend. "api" (default): GLM-5.3-Flash over the providers below, with per-provider token
+  // buckets and failover. "local": llama-server on this PC (appendix plan). fallback_api: a local
+  // run sends turns to the API providers while llama-server is down.
+  std::vector<Provider> providers;
+  int api_max_tokens = 16384;                    // output cap per API turn (reasoning included)
+  int api_timeout_s = 900;
+  int expected_out_tokens = 4000;                // TPM reservation per request before usage is known
+  std::string checkpoint_dir;                    // HDD copy of the DB and the git mirror (empty = off)
+  std::string checkpoint_repo;                   // bare repo on the HDD, pushed with --mirror
+  std::vector<std::string> burst_cmd;            // prefix for gates on cloud CI, e.g. ["ssh","ci1","--"]
+  int burst_slots = 0;                           // gates that may run through burst_cmd at once
+  std::string backend = "api", local_url = "http://127.0.0.1:8080/v1", local_model = "GLM-5.3-Flash";
   std::vector<std::string> server_cmd;           // how to (re)start llama-server; empty = never restart
   int local_slots = 4;                           // must equal llama-server --parallel
   int ctx_per_slot = 32768;                      // llama-server --ctx-size / --parallel
@@ -38,7 +58,7 @@ struct Config {
   std::map<std::string, std::string> role_backend;   // e.g. {"reviewer": "aux"}; default = backend
   std::string aux_url, aux_model;                // optional second local model (Qwen 3.5 9B)
   std::map<std::string, Slot> slots{
-      {"agent", {4, 0, 0.3, -1}}, {"compile", {4, 1, 2, 0}}, {"qemu", {1, 2, 4, 0}}, {"proof", {2, 2, 12, 1}}};
+      {"agent", {32, 0, 0.3, -1}}, {"compile", {8, 1, 3, 0}}, {"qemu", {2, 2, 4, 0}}, {"proof", {9, 2, 12, -1}}};
   double load_max = 30, ram_admit = 0.85, ram_pause = 0.92, io_some_max = 40;
   int lease_s = 45 * 60, agent_watchdog_s = 20 * 60, build_watchdog_s = 30 * 60, qemu_watchdog_s = 60 * 60;
   int checkpoint_s = 600, max_attempts = 8, quarantine_after = 3, max_turns = 40;
@@ -69,13 +89,38 @@ class Db {
   };
   Snapshot snapshot();
   int64_t remaining();
+  bool backup_to(const std::string& path);         // online copy (sqlite3 backup API) to the HDD
  private:
   sqlite3* h_ = nullptr;
   std::mutex m_;
 };
 
 // ---- DeepSeek client with retry, backoff, Retry-After, breaker, key rotation
-struct Usage { int64_t hit = 0, miss = 0, out = 0; bool peak = false, local = false; double usd() const; };
+struct Usage {
+  int64_t hit = 0, miss = 0, out = 0; bool peak = false, local = false;
+  double p_in = 0.15, p_hit = 0.03, p_out = 0.50;  // set from the provider that served the turn
+  std::string provider;
+  double usd() const;
+};
+
+// Client-side limiter for one provider: in-flight cap plus token buckets on RPM and TPM, and a
+// cooldown after 429/5xx. try_acquire never blocks; Api::chat_api waits and retries across providers.
+class RateLimiter {
+ public:
+  RateLimiter(int concurrency, int rpm, int64_t tpm);
+  bool try_acquire(int64_t est_tokens, double t);
+  void release(int64_t est_tokens, int64_t actual_tokens, double t);   // refunds or charges the difference
+  void cooldown(double until) { double c = until_.load(); while (until > c && !until_.compare_exchange_weak(c, until)) {} }
+  bool cooling(double t) const { return t < until_.load(); }
+  int in_flight() const { return inflight_; }
+  int limit() const { return conc_; }
+ private:
+  void refill(double t);
+  std::mutex m_;
+  int conc_, inflight_ = 0, rpm_; int64_t tpm_;
+  double req_tokens_, tok_tokens_, last_ = 0;
+  std::atomic<double> until_{0};
+};
 struct Http { long code; std::string body; double retry_after; bool conn_error; };
 Http http_post(const std::string& url, const std::string& payload, const std::string& bearer, long timeout_s);
 Http http_get(const std::string& url, long timeout_s);
@@ -104,20 +149,23 @@ class Api {
  public:
   explicit Api(const Config& c);
   // slot: llama-server slot to pin this conversation to, so its KV prefix cache is reused.
+  // affinity: tasks with the same key (the work package) go to the same provider first, so the
+  // provider's prompt cache keeps the shared prefix warm.
   std::expected<json, std::string> chat(const json& messages, const json& tools, Usage& u,
-                                        const std::string& role = "", int slot = -1);
+                                        const std::string& role = "", int slot = -1,
+                                        const std::string& affinity = "");
   static bool peak_now();
   LocalServer* local() { return local_.get(); }
   std::string status_line();                      // backend, tok/s, restarts
  private:
-  std::expected<json, std::string> chat_api(const std::string& payload, Usage& u);
+  std::expected<json, std::string> chat_api(json body, Usage& u, const std::string& affinity);
+  struct ProvState { RateLimiter lim; size_t key = 0; std::atomic<int64_t> ok{0}, limited{0}, failed{0};
+                     ProvState(const Provider& p) : lim(p.concurrency, p.rpm, p.tpm) {} };
+  std::vector<std::unique_ptr<ProvState>> ps_;
   std::expected<json, std::string> chat_local(const std::string& url, json body, Usage& u, int slot,
                                               LocalServer* srv);
   const Config& c_;
   std::mutex m_;
-  std::vector<double> fails_;
-  std::atomic<double> open_until_{0};
-  size_t key_ = 0;
   std::unique_ptr<LocalServer> local_, aux_;
   std::atomic<int64_t> out_tok_{0}, prompt_tok_{0};
   std::atomic<double> gen_s_{0};
@@ -140,6 +188,15 @@ JobResult run_job(const std::vector<std::string>& argv, int node, int timeout_s,
 enum class Result { passed, failed, crash };
 struct TaskOutcome { Result r; std::vector<Usage> usage; };
 TaskOutcome run_task(const json& task, Api& api, const Config& c, Db& db, int slot = -1);
+// Gate admission: counting slots per kind (compile, qemu, proof) plus optional cloud burst slots.
+struct GateLease { std::string kind; bool burst = false; };
+GateLease gate_acquire(const std::string& kind, const Config& c);
+void gate_release(const GateLease& g);
+std::string gate_status(const Config& c);
+
+// ---- plan analysis (pbsd_run cpath / estimate)
+int cpath(const Config& c);
+int estimate(const Config& c, int argc, char** argv);
 
 // ---- progress
 std::string render(const Db::Snapshot& s, const std::map<std::string, int>& running, const Config& c,

@@ -28,7 +28,7 @@ endif()
 find_package(CURL REQUIRED)
 find_library(NUMA_LIB numa)   # optional; numactl fallback otherwise
 
-add_executable(pbsd_run src/main.cpp src/db.cpp src/api.cpp src/sched.cpp src/progress.cpp src/harness.cpp src/sys.cpp)
+add_executable(pbsd_run src/main.cpp src/db.cpp src/api.cpp src/sched.cpp src/progress.cpp src/harness.cpp src/sys.cpp src/plan.cpp)
 target_link_libraries(pbsd_run PRIVATE nlohmann_json::nlohmann_json ${SQLITE_TARGET} CURL::libcurl pthread)
 if(NUMA_LIB)
   target_link_libraries(pbsd_run PRIVATE ${NUMA_LIB})
