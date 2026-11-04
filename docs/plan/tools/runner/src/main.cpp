@@ -123,6 +123,18 @@ int pbsd::selftest(const Config& base) {
   check("qemu gates only on KVM workers", q1.host == "w-k" && load_workers(wf).at(1).kvm && !load_workers(wf).at(0).kvm);
   gate_release(q1);
 
+  // Provider order: weight-0 providers only after the weighted ones; the start follows the weights.
+  {
+    std::vector<Provider> ps(3);
+    ps[0].name = "cheap"; ps[0].weight = 3; ps[1].name = "cheap2"; ps[1].weight = 1; ps[2].name = "official"; ps[2].weight = 0;
+    int first_cheap = 0, official_first = 0;
+    for (int k = 0; k < 400; ++k) {
+      auto o = provider_order(ps, "P" + std::to_string(k), "flash");
+      if (o.size() != 3 || o.back() != 2) official_first++;
+      if (o.front() == 0) first_cheap++;
+    }
+    check("provider weights and overflow order", official_first == 0 && first_cheap > 240 && first_cheap < 360);
+  }
   // Ownership parsing: comma-separated string, braces, free text and "-" dropped.
   {
     auto o = owns_list(json{{"owns", "pbsd/kernel/include/{sched,ring}/, docs/x.md, toolchain flags, -"}});

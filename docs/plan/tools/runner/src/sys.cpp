@@ -123,7 +123,7 @@ Config Config::load() {
     if (auto v = env(p.key_env.c_str()); !v.empty()) p.keys.push_back(v);
     for (int i = 2; i < 10; ++i) if (auto v = env((p.key_env + "_" + std::to_string(i)).c_str()); !v.empty()) p.keys.push_back(v);
   };
-  for (auto& p : builtin) { keys_of(p); if (!p.keys.empty()) c.providers.push_back(p); }
+  for (auto& p : builtin) { keys_of(p); c.catalog.push_back(p); if (!p.keys.empty()) c.providers.push_back(p); }
   if (!c.keys.empty()) {   // DeepSeek Flash kept as a last-resort provider (Appendix C prices, off-peak only)
     Provider d = prov("deepseek", c.api_url, c.model, "DEEPSEEK_API_KEY", 64, 0, 0);
     d.keys = c.keys; d.price_in = 0.15; d.price_hit = 0.003; d.price_out = 0.60; d.peak_double = true; d.offpeak_only = true;
@@ -167,16 +167,17 @@ Config Config::load() {
       // "providers" replaces the built-in list. Fields: name, url, model, key_env, concurrency, rpm,
       // tpm, price_in, price_hit, price_out, peak_double, offpeak_only, extra.
       if (j.contains("providers") && j["providers"].is_array()) {
-        c.providers.clear();
+        c.providers.clear(); c.catalog.clear();
         for (auto& v : j["providers"]) {
           Provider p; p.name = v.value("name", "provider"); p.url = v.value("url", ""); p.model = v.value("model", p.model);
           p.key_env = v.value("key_env", ""); p.concurrency = v.value("concurrency", p.concurrency); p.rpm = v.value("rpm", 0);
           p.tpm = v.value("tpm", int64_t(0)); p.price_in = v.value("price_in", p.price_in); p.price_hit = v.value("price_hit", p.price_hit);
           p.price_out = v.value("price_out", p.price_out); p.peak_double = v.value("peak_double", false);
           p.offpeak_only = v.value("offpeak_only", false); if (v.contains("extra")) p.extra = v["extra"];
-          p.tier = v.value("tier", p.tier);
+          p.tier = v.value("tier", p.tier); p.weight = v.value("weight", p.weight);
           keys_of(p);
           if (v.contains("keys")) for (auto& k : v["keys"]) p.keys.push_back(k.get<std::string>());   // tests only; use key_env
+          if (!p.url.empty()) c.catalog.push_back(p);
           if (!p.keys.empty() && !p.url.empty()) c.providers.push_back(p);
         }
       }

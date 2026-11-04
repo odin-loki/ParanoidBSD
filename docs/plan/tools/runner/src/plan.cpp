@@ -89,6 +89,13 @@ int estimate(const Config& c, int argc, char** argv) {
       // Attempts on GLM-5.3-Flash relative to GLM-5.3: Flash solves fewer agentic tasks (Terminal-Bench
       // 2.1: 62.9 vs 71.5) and far fewer Lean proofs (ProofBench: 21% vs 49%). Guesses until the pilot.
       {"flash_attempts", 1.15}, {"flash_proof_attempts", 1.6}};
+  // Prices per tier: the weighted average over the configured providers with weight > 0, so the
+  // estimate follows the config (explicit p_* overrides on the command line still win).
+  for (const char* tier : {"flash", "frontier"}) {
+    double w = 0, pin = 0, phit = 0, pout = 0;
+    for (auto& p : c.catalog) if (p.tier == tier && p.weight > 0) { w += p.weight; pin += p.weight * p.price_in; phit += p.weight * p.price_hit; pout += p.weight * p.price_out; }
+    if (w > 0) { a[std::string("p_in_") + tier] = pin / w; a[std::string("p_hit_") + tier] = phit / w; a[std::string("p_out_") + tier] = pout / w; }
+  }
   std::string scenario = "mid";
   for (int i = 2; i < argc; ++i) {
     std::string s = argv[i]; auto e = s.find('=');
@@ -141,7 +148,9 @@ int estimate(const Config& c, int argc, char** argv) {
     return (1 - r.esc) * price(base, r.in, r.out) + r.esc * price(c.escalate_tier, r.in, r.out);
   };
   double REQ = 0, IN = 0, OUT = 0, CORE_H = 0, API_S = 0, USD = 0, TOOL_S = 0;
-  std::cout << std::format("ESTIMATE, {} case (assumptions, not measurements; AGENTS.md section 8)\n\n", scenario)
+  std::cout << std::format("ESTIMATE, {} case (assumptions, not measurements; AGENTS.md section 8)\n"
+                           "prices per 1M tokens, flash in/hit/out ${:.4f}/${:.4f}/${:.4f}, frontier ${:.2f}/${:.2f}/${:.2f}\n\n", scenario,
+                           a["p_in_flash"], a["p_hit_flash"], a["p_out_flash"], a["p_in_frontier"], a["p_hit_frontier"], a["p_out_frontier"])
             << "| class | tasks | tier | requests | input tokens | output tokens | gate core-h | API US$ |\n|---|---|---|---|---|---|---|---|\n";
   for (auto& [k, r] : rows) {
     double usd = usd_row(r);

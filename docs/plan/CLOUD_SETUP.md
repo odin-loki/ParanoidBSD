@@ -66,14 +66,14 @@ The bottleneck is **gate CPU**: about 30,000 core-hours of builds, proof checks 
 
 | Item | Expected | Range | Source |
 |---|---|---|---|
-| GLM-5.3-Flash API (all providers) | US$3,049 | $1,438–7,557 | `pbsd_run estimate`, AGENTS.md section 8.1 |
+| GLM-5.3-Flash API (fp8 hosts through OpenRouter, Z.ai for overflow) | US$1,658 | $788–4,074 | `pbsd_run estimate`, AGENTS.md sections 7.3 and 8.1 |
 | w1: GCP c3d-highcpu-360 Spot Sydney, about 6 days, 87% of the gate work | US$287 | $172–574 | Google spot price; includes 25% for idle and boot time |
 | w1 boot disk (100 GB pd-balanced) and egress | under US$15 | | small; gate traffic is a few GB |
-| Pilot (step 10), 447 tasks | US$280 of API | $130–680 | part of the run, not extra: pilot work is kept |
+| Pilot (step 10), 447 tasks | US$150 of API | $71–368 | part of the run, not extra: pilot work is kept |
 | PC electricity, about 8 days at 450 W | US$19 | | A$0.33/kWh |
 | GPU | US$0 | | the Lean prover runs on the PC's RTX 3090 |
-| **Total expected** | **≈ US$3,370 (A$4,830)** | | |
-| **Budget to set aside (high case + 15%)** | **US$9,400 (A$13,500)** | | |
+| **Total expected** | **≈ US$1,970 (A$2,820)** | | |
+| **Budget to set aside (high case + 15%)** | **US$5,400 (A$7,700)** | | |
 
 Set billing alerts at A$300 and A$800 on the cloud account and a hard spend limit on every API key (step 3).
 
@@ -83,24 +83,36 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 
 1. **Create accounts.**
    - Google Cloud (console.cloud.google.com): create a project `pbsd`, add a billing account (AUD card).
-   - Z.ai developer platform (z.ai): the main GLM-5.3-Flash provider.
-   - Fallback providers, any subset: DeepInfra, Fireworks, OpenRouter. The runner fails over between whichever keys are set.
+   - OpenRouter (openrouter.ai): one key for the three primary hosts, GMI Cloud, Morph and Novita (AGENTS.md section 7.3). Buy credit there. OpenRouter adds 5.5% to each purchase, already counted in the budget.
+   - Z.ai developer platform (z.ai): overflow and failover, with a small top-up.
    - Optional, for a KVM worker or a GCP fallback: AWS.
 2. **Ask for capacity now; these take time.**
-   - **Z.ai:** ask support for higher concurrency for `glm-5.3-flash` (ask for 96 concurrent requests). The burst run needs about 90 in flight across providers, so with DeepInfra's default 200 a smaller Z.ai limit also works.
+   - **Z.ai:** optional. Z.ai is only the overflow provider now, so its default concurrency is enough. Ask support for more if the pilot shows the three primary hosts throttling.
    - **GCP quotas:** IAM & Admin → Quotas, region `australia-southeast1`. Raise "C3D CPUs" and "Preemptible CPUs" to at least 400. New projects start far below that, and the machine will not start until the request is approved. Also request the same in `us-central1` as a backup.
    - **AWS (if used):** Service Quotas → EC2 → "All Standard Spot Instance Requests" to 400 vCPUs in `eu-north-1` (the default is 5).
-3. **Make API keys and set spend limits.** Create one key per provider and set a monthly cap on each (Z.ai A$4,000, each fallback A$2,000; raise after the pilot). Keep them in your password manager.
+3. **Make API keys and set spend limits.**
+   - **OpenRouter:** create a key with a credit limit (A$3,000 to start; raise after the pilot if needed). Buy about US$300 of credit for the pilot.
+   - **Z.ai:** top up about A$100 and set a cap of A$500.
+
+   Keep both keys in your password manager.
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
-   export ZAI_API_KEY=...
-   export DEEPINFRA_API_KEY=...      # optional
-   export FIREWORKS_API_KEY=...      # optional
-   export OPENROUTER_API_KEY=...     # optional
+   export OPENROUTER_API_KEY=...     # GMI Cloud, Morph and Novita, pinned per host (AGENTS.md 7.3)
+   export ZAI_API_KEY=...            # overflow and failover
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
    Add `. ~/.pbsd/env` to `~/.bashrc`. The gates never see these variables, because the runner scrubs the gate environment.
+
+   **Check that each pinned host answers.** Each command below should print a short reply. Unless OpenRouter changed the endpoint names, `gmicloud/fp8`, `morph/fp8` and `novita/fp8` are the tags it lists for this model.
+   ```bash
+   for h in gmicloud/fp8 morph/fp8 novita/fp8; do
+     curl -s https://openrouter.ai/api/v1/chat/completions -H "Authorization: Bearer $OPENROUTER_API_KEY" -H 'Content-Type: application/json' \
+       -d "{\"model\":\"z-ai/glm-5.3-flash\",\"max_tokens\":200,\"provider\":{\"order\":[\"$h\"],\"allow_fallbacks\":false},\"messages\":[{\"role\":\"user\",\"content\":\"Say ok\"}]}" \
+       | jq -r --arg h "$h" '"\($h): " + (.choices[0].message.content // .error.message)'
+   done
+   ```
+   If one host fails, remove it from the config (or set its `weight` to 0) and run with the others.
 5. **Make the runner's ssh key** (WSL2): `ssh-keygen -t ed25519 -f ~/.ssh/pbsd_runner -N ''`. Paste `~/.ssh/pbsd_runner.pub` into `tools/cloud/cloud-init.yaml` where it says REPLACE, and keep that edited copy outside the repo.
 6. **Toolchains, proof tools, pinned gates and reference trees on the PC.**
    ```bash
@@ -160,10 +172,10 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
     **Check:**
     - gates pass on w1 as well as on the PC;
     - real core-minutes per gate;
-    - tokens and US$ per task class;
+    - tokens and US$ per task class, and per host;
     - **T1/T2 obligations proved per attempt**;
     - review rejection rate;
-    - 429 rate per provider.
+    - 429 rate per host. Adjust `concurrency` and `weight` in the config if one host throttles.
 
     Then rerun `pbsd_run estimate cores=208` with the measured numbers, for example `implementer.attempts=1.9 T2.attempts=5 hit=0.8`. **Stop and decide** if:
     - T2 proofs stay under about 50% after 3 attempts;
@@ -199,7 +211,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 - [ ] Spot price for `c3d-highcpu-360` in `australia-southeast1` checked on the day (expect about US$1.60/h).
 - [ ] `pc-tools.sh` run; the Linux and Wine tags written down and passed to every worker.
 - [ ] Lean prover answering at `http://127.0.0.1:8081/v1`.
-- [ ] `pbsd_run selftest`: 22 checks ok.
+- [ ] `pbsd_run selftest`: 23 checks ok.
 - [ ] Pilot (step 10) done and the estimate re-run with measured numbers; go/no-go decided.
 - [ ] Only one big worker running, unless the pilot says the PC + w1 cannot keep the agents busy.
 - [ ] After the run: `teardown.sh` shows nothing, the instance and its disk are deleted, and the next day's billing report shows no compute charges.

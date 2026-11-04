@@ -27,6 +27,7 @@ struct Provider {
   std::string name, url, model = "glm-5.3-flash", key_env, tier = "flash";
   std::vector<std::string> keys;                 // from key_env, key_env_2, ... ; rotated on 401
   int concurrency = 8, rpm = 0;                  // in-flight cap, requests per minute
+  double weight = 1;                             // share of packages that start here; 0 = overflow and failover only
   int64_t tpm = 0;                               // input + output tokens per minute
   double price_in = 0.15, price_hit = 0.03, price_out = 0.50;
   bool peak_double = false, offpeak_only = false;   // DeepSeek-style peak pricing
@@ -40,6 +41,7 @@ struct Config {
   // buckets and failover. "local": llama-server on this PC (appendix plan). fallback_api: a local
   // run sends turns to the API providers while llama-server is down.
   std::vector<Provider> providers;
+  std::vector<Provider> catalog;                 // every configured provider, with or without a key (for estimate)
   int api_max_tokens = 16384;                    // output cap per API turn (reasoning included)
   int api_timeout_s = 900;
   int expected_out_tokens = 4000;                // TPM reservation per request before usage is known
@@ -212,6 +214,11 @@ class Api {
   std::atomic<double> gen_s_{0};
   std::atomic<int64_t> fallback_turns_{0};
 };
+
+// Order in which providers are tried for one request: the providers of the tier with weight > 0,
+// starting at a weighted choice by the affinity key (a package keeps its provider, so its prompt
+// cache stays warm), then the weight-0 providers (overflow and failover only), in config order.
+std::vector<size_t> provider_order(const std::vector<Provider>& ps, const std::string& affinity, const std::string& tier);
 
 // Keep a conversation inside the slot's context: older tool results are elided first.
 size_t approx_tokens(const json& msgs);

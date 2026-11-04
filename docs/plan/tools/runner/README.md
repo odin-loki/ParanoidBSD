@@ -30,7 +30,10 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
   - DeepSeek (`DEEPSEEK_API_KEY`) is a last-resort, off-peak-only provider.
 - **`local`:** llama-server at `local_url` (configs and launch scripts in `../llama/`; AGENTS.md Appendix D). With `fallback_api: true`, turns go to the API providers while the server is down.
 
-**`providers`:** a `providers` array in the config replaces the built-in list. Fields: `name`, `url`, `model`, `key_env`, `tier` (`flash` or `frontier`), `concurrency`, `rpm`, `tpm`, `price_in`, `price_hit`, `price_out`, `peak_double`, `offpeak_only`, and `extra` (merged into the request body).
+**`providers`:** a `providers` array in the config replaces the built-in list. Fields: `name`, `url`, `model`, `key_env`, `tier` (`flash` or `frontier`), `weight`, `concurrency`, `rpm`, `tpm`, `price_in`, `price_hit`, `price_out`, `peak_double`, `offpeak_only`, and `extra` (merged into the request body).
+- **`weight`:** the share of packages that start on that provider (default 1). A package keeps its provider for the prompt cache. Weight 0 means overflow and failover only.
+- **Shipped configs:** they use GMI Cloud (weight 3), Morph (1) and Novita (1) at fp8, each pinned through OpenRouter with `extra.provider.order` and `allow_fallbacks: false`. Z.ai direct has weight 0 (AGENTS.md section 7.3). Prices include OpenRouter's 5.5% credit fee.
+- **Estimates:** `pbsd_run estimate` prices each tier at the weighted average of the configured providers.
 
 **Model tiers:**
 - A role runs on `role_tier[role]`, else `default_tier` (`flash`).
@@ -59,7 +62,7 @@ pbsd_run estimate   # cost, gate CPU, wall clock per agent count: "low"/"mid"/"h
 pbsd_run init       # load docs/plan/tasks.json into SQLite (WAL); safe to rerun, keeps existing states
 pbsd_run run        # start or resume; live progress bars, ETA, cost, gate slots, providers
 pbsd_run status     # print progress once
-pbsd_run selftest   # 22 checks, including an end-to-end task with a scripted model
+pbsd_run selftest   # 23 checks, including an end-to-end task with a scripted model
 ```
 
 The task database lives in `PBSD_STATE` (tmpfs by default). Every `checkpoint_s` it is copied to `checkpoint_dir` on the HDD, and the repository is pushed with `--mirror` to `checkpoint_repo`. After a reboot the database is restored from the HDD copy. `backup_cmd` adds an off-machine copy every `backup_every_s`.

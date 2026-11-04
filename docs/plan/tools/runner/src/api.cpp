@@ -188,8 +188,29 @@ std::expected<json, std::string> Api::chat_local(const std::string& url, json bo
   return std::unexpected("local server failed after 6 tries");
 }
 
-// Provider order for one request: start at hash(affinity) among the providers so a package keeps
-// hitting the same provider's prompt cache, then the rest in config order (failover).
+std::vector<size_t> provider_order(const std::vector<Provider>& ps, const std::string& affinity, const std::string& tier) {
+  bool any_of_tier = false;
+  for (auto& p : ps) any_of_tier = any_of_tier || (!tier.empty() && p.tier == tier);
+  std::vector<size_t> primary, overflow;
+  for (size_t i = 0; i < ps.size(); ++i) {
+    if (any_of_tier && ps[i].tier != tier) continue;
+    (ps[i].weight > 0 ? primary : overflow).push_back(i);
+  }
+  if (primary.empty()) std::swap(primary, overflow);
+  std::vector<size_t> out;
+  if (!primary.empty()) {
+    double total = 0; for (size_t i : primary) total += ps[i].weight > 0 ? ps[i].weight : 1;
+    // Weighted choice of the first provider, stable for a given affinity key.
+    double x = affinity.empty() ? 0 : double(std::hash<std::string>{}(affinity) % 1000003) / 1000003.0 * total;
+    size_t start = 0;
+    for (size_t k = 0; k < primary.size(); ++k) { x -= ps[primary[k]].weight > 0 ? ps[primary[k]].weight : 1; if (x < 0) { start = k; break; } }
+    for (size_t k = 0; k < primary.size(); ++k) out.push_back(primary[(start + k) % primary.size()]);
+  }
+  out.insert(out.end(), overflow.begin(), overflow.end());
+  return out;
+}
+
+// Provider order for one request: provider_order() (weighted affinity, then overflow providers).
 std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::string& affinity, const std::string& tier) {
   if (ps_.empty()) return std::unexpected("no API providers configured (set ZAI_API_KEY or providers in config.json)");
   std::mt19937 rng(std::random_device{}());
@@ -197,7 +218,8 @@ std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::s
   bool any_of_tier = false;
   for (auto& p : c_.providers) any_of_tier = any_of_tier || (!tier.empty() && p.tier == tier);
   auto eligible = [&](size_t i) { return !any_of_tier || c_.providers[i].tier == tier; };
-  const size_t n = ps_.size(), first = affinity.empty() ? 0 : std::hash<std::string>{}(affinity) % n;
+  const std::vector<size_t> order = provider_order(c_.providers, affinity, tier);
+  const size_t n = order.size();
   const int64_t est = int64_t(body.dump().size() / 4) + c_.expected_out_tokens;
   std::string last_err = "no provider accepted the request";
   for (int attempt = 0; attempt < 12; ++attempt) {
@@ -205,7 +227,7 @@ std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::s
     int pick = -1;
     for (double end = now() + 600; pick < 0 && now() < end; ) {
       for (size_t k = 0; k < n && pick < 0; ++k) {
-        size_t i = (first + k) % n;
+        size_t i = order[k];
         if (!eligible(i)) continue;
         if (c_.providers[i].offpeak_only && peak_now()) continue;
         if (c_.providers[i].keys.empty()) continue;
@@ -247,7 +269,7 @@ std::expected<json, std::string> Api::chat_api(json body, Usage& u, const std::s
       st.lim.cooldown(now() + 3600); ++st.failed; continue;
     }
     if (r.code == 402) { st.lim.cooldown(now() + 3600); ++st.failed;   // out of credit here: others carry on
-      bool any = false; for (size_t i = 0; i < n; ++i) any = any || (eligible(i) && !ps_[i]->lim.cooling(now()));
+      bool any = false; for (size_t i : order) any = any || (eligible(i) && !ps_[i]->lim.cooling(now()));
       if (!any) return std::unexpected("402: API balance exhausted on every provider of this tier"); continue; }
     if (r.code == 400 || r.code == 413) return std::unexpected(last_err);   // the request itself is bad
     // 429 / 5xx / connection: cool this provider (Retry-After or exponential), fail over to the next.

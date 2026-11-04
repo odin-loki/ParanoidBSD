@@ -3,7 +3,7 @@
 Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what was done about it.
 
 **Who does the work:**
-- **GLM-5.3-Flash** does every task through its API: decomposition, porting, tests, proof work, reviews and merges. It is served by several providers: Z.ai first, plus DeepInfra, Fireworks, Together or OpenRouter when keys are set.
+- **GLM-5.3-Flash** does every task through its API: decomposition, porting, tests, proof work, reviews and merges. It is served by the cheapest hosts that run it at fp8, the precision Z.ai itself serves: GMI Cloud, Morph and Novita, each pinned through OpenRouter. Z.ai direct takes overflow and failover (section 7.3).
 - **Lean proofs** come from a **local Lean-specialised prover model** on the P920's RTX 3090, for example Goedel-Prover-V2-32B. GLM-5.3-Flash states each lemma and calls the runner's `lean_prove` tool; the prover writes the proof; Lean checks it.
 - **Code-level proofs** use ESBMC, CBMC and GenMC (section 10). PRISM is gone, because it cannot check code.
 
@@ -16,9 +16,9 @@ Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what 
 **Task graph:** the 40 work packages in `PBSD_PLAN.md` are broken into 12,976 atomic tasks in `tasks.yaml` / `tasks.json`.
 
 **Middle-case estimate:**
-- About **US$3.0k of API**, and **US$3.4k** in total with cloud burst.
+- About **US$1.7k of API**, and **US$2.0k (A$2.8k)** in total with cloud burst.
 - About **6 days** of wall clock on the PC plus one GCP burst worker, or about 44 days on the PC alone.
-- The range is US$1.5k–8.2k (section 8.1).
+- The range is US$0.9k–4.7k (A$1.3k–6.7k; section 8.1).
 
 ## 1. Task breakdown
 
@@ -138,9 +138,10 @@ The tier mechanism (`role_tier`, `escalate_at`, `escalate_tier`) can move hard t
 
 ## 5. Harness
 
-- `pbsd_run` (C++23, `tools/runner`) sends each turn to GLM-5.3-Flash over the OpenAI-compatible chat API of the configured providers. **A turn is one API request carrying the whole conversation so far.**
+- `pbsd_run` (C++23, `tools/runner`) sends each turn to GLM-5.3-Flash over the OpenAI-compatible chat API of the configured providers (section 7.3). **A turn is one API request carrying the whole conversation so far.**
 - **Providers and failover:**
   - Each provider has its own in-flight cap and RPM/TPM token buckets.
+  - Each package starts on one provider, chosen in proportion to the provider `weight`s. Providers with weight 0 (Z.ai direct) take only overflow and failover.
   - A failed or rate-limited request fails over to the next provider.
   - `backend: "local"` uses llama-server instead (Appendix D). DeepSeek Flash is a last-resort provider when `DEEPSEEK_API_KEY` is set (Appendix C).
 - **Tools** (they match the harness exactly):
@@ -170,7 +171,7 @@ The tier mechanism (`role_tier`, `escalate_at`, `escalate_tier`) can move hard t
 
 ### Cache strategy
 
-Every provider bills an identical prompt prefix at the cache-hit rate: $0.03 instead of $0.15 per 1M input tokens. The whole conversation is resent each turn, so input is about 90% of the token volume.
+Every provider bills an identical prompt prefix at the cache-hit rate, about a fifth of the normal input price ($0.0158 instead of $0.0791 per 1M on GMI Cloud). The whole conversation is resent each turn, so input is about 90% of the token volume.
 
 Every request is laid out in this order:
 1. Global prefix, identical for every agent: dialect rules, naming rules, tool schemas.
@@ -263,13 +264,13 @@ GLM-5.3-Flash is 320B total, 18B active, MoE, MIT licence, released 26 Aug 2026.
 |---|---|---|---|---|
 | Z.ai (general API) | $0.15 / $0.03 / $0.50 | Concurrency (requests in flight) per account and per model, not RPM or TPM. The number is shown only in the console. Over the limit: HTTP 429, code 1302. Code 1305 means Z.ai itself is overloaded. | Contact support (international API); rate-limit adjustment form on bigmodel.cn, reviewed in about 10 working days. | [docs.bigmodel.cn rate limits](https://docs.bigmodel.cn/cn/api/rate-limit), [GLM-5.3-Flash page](https://docs.z.ai/guides/vlm/glm-5.3-flash) |
 | Z.ai GLM Coding Plan | subscription | Concurrency tied to the plan; no published number. Plan quota may only be used in officially supported tools, so it is **not used by `pbsd_run`**. | Not adjustable on request. | [Z.ai usage policy](https://web.archive.org/web/20260702110048/https:/docs.z.ai/devpack/usage-policy) |
-| DeepInfra | $0.15 / $0.03 / $0.50 | 200 concurrent requests per model by default. | Apply for an increase in the dashboard. | [DeepInfra rate limits](https://docs.deepinfra.com/account/rate-limits) |
+| DeepInfra | $0.15 / $0.03 / $0.50, **served at fp4** | 200 concurrent requests per model by default. | Apply for an increase in the dashboard. | [DeepInfra rate limits](https://docs.deepinfra.com/account/rate-limits) |
 | Fireworks (serverless) | $0.15 / $0.03 / $0.50 (US region $0.225 / $0.75) | Adaptive TPM per model. For models under 800B: 216M total prompt TPM, 54M uncached prompt TPM and 2.16M generated TPM, **only at spend tier 3 ($500 spent)**. The limit grows 25% at most every 15 minutes while use is above 50%, and resets after 72 h idle. Account cap 6,000 RPM with a payment method. | Ramp traffic gradually; Priority tier; Elastic Burst is not guaranteed. | [Fireworks serverless rate limits](https://docs.fireworks.ai/serverless/rate-limits) |
 | Together | $0.15 / $0.03 / $0.50 | No fixed serverless limit since 2 Oct 2026; 429 or 503 under high demand. | Provisioned throughput. | [Together changelog](https://docs.together.ai/docs/changelog) |
 | OpenRouter | from $0.0269 input (Relace, fp4, about 51% uptime) to $0.15 / $0.03 / $0.50; 36 providers, 41 endpoints | No platform limit on paid models; limits pass through from the hosts, with automatic fallback. | More hosts in provider routing. | [OpenRouter model page](https://openrouter.ai/z-ai/glm-5.3-flash) |
 | Novita, GMI | $0.084 / $0.017 / $0.28 (Novita, fp8); $0.075 / $0.25 (GMI) | not checked | | OpenRouter endpoints list |
 
-- **Host choice:** the runner's default list uses full-price, full-precision hosts. The OpenRouter entry pins `quantizations: [fp8, bf16]`, so it never routes to fp4 endpoints.
+- **Host choice:** see section 7.3.
 - **Benchmarks** (independent, Vals):
   - Terminal-Bench 2.1: 62.9; Z.ai's own figure is 84.3.
   - SWE-bench Verified: 92.0.
@@ -286,6 +287,35 @@ GLM-5.3-Flash is 320B total, 18B active, MoE, MIT licence, released 26 Aug 2026.
 - **No model in RAM:** all of the P920's memory and cores are free for gates and tmpfs. The RTX 3090 runs the Lean prover.
 - **Throughput:** per agent it is fixed by the provider, about 85 s per turn at 6,000 output tokens. Total model throughput scales with the number of agents in flight, up to the providers' limits.
 - **Cost:** it is per token and does not depend on the agent count (section 8.1).
+
+### 7.3 Provider choice (4 Nov 2026)
+
+OpenRouter's live endpoint list for `z-ai/glm-5.3-flash` shows 41 endpoints from 36 hosts. Z.ai serves the model at **fp8**, and the choice keeps to hosts at that precision. Hosts at fp4/nvfp4 (including DeepInfra) are cheaper, but 4-bit quantisation risks reasoning and tool-call quality, and that is exactly what proofs and builds depend on.
+
+Cost of the middle-case run at each host's price (26.5B cached + 4.7B uncached input, 3.1B output):
+
+| Host (fp8 unless noted) | In / cached / out per 1M | Run cost | Uptime, last day | Notes | Decision |
+|---|---|---|---|---|---|
+| **GMI Cloud** | $0.075 / $0.015 / $0.25 | $1,524 | 99.9% | tools; prompt caching | **Primary, weight 3** |
+| **Morph** | $0.047 / $0.020 / $0.268 | $1,581 | 100% | tools, full `tool_choice`; caching | **Primary, weight 1** |
+| **Novita** | $0.084 / $0.0168 / $0.28 | $1,707 | 100% | tools; caching; US company | **Primary, weight 1** |
+| Tenstorrent | $0.075 / $0.015 / $0.25 | $1,524 | 100% | no `tool_choice` support listed; 262k context | Not used |
+| StreamLake | $0.0885 / $0.0177 / $0.295 | $1,798 | 99.5% | Kuaishou's cloud: data path through China | Not used |
+| Near AI | $0.08 / $0.012 / $0.50 | $2,243 | 100% | | Not used (output price) |
+| **Z.ai (direct)** | $0.15 / $0.03 / $0.50 | $3,048 | 100% | the model's maker; reference quality | **Overflow and failover, weight 0** |
+| Fireworks, Together, DigitalOcean and others | $0.11–0.15 input | $2,485–3,048 | 99.9–100% | precision not published | Not used |
+| OpenInference, Darkbloom, Wafer, Relace (fp4/nvfp4) | $0.027–0.065 input | $1,180–1,280 | 53–100% | 4-bit | Not used |
+
+**How it is wired:**
+- Each primary host is its own runner provider through OpenRouter, pinned with `provider.order: ["<host>/fp8"]`, `allow_fallbacks: false`, `quantizations: ["fp8"]` and `require_parameters: true`. A package therefore stays on one host, and its prompt cache stays warm.
+- OpenRouter passes the hosts' prices through and charges **5.5% on credit purchases**. That fee is folded into the configured prices, so the cost display is exact.
+- One OpenRouter key covers all three hosts.
+
+**Result:**
+- **Cost:** the blended price is $0.0751 in / $0.0172 cached / $0.274 out per 1M. That cuts the middle-case API cost from US$3,049 to **US$1,658 (−46%)**.
+- **Data path:** Zhipu is out of the data path except for overflow.
+
+**Not verified:** each host's own capacity behind OpenRouter. The configured caps (96 / 48 / 48 in flight with burst) are starting points. The pilot shows the 429 rate per host, and the caps and weights can be changed in the config without code changes.
 
 ## 8. Default schedule: GLM API, parallel agents, Odin's PC
 
@@ -338,23 +368,23 @@ Middle case:
 
 | Class | Tasks | Requests | Input tokens | Output tokens | Gate core-h | API US$ |
 |---|---|---|---|---|---|---|
-| decomposer | 2,616 | 47k | 1.66B | 237M | 521 | 198 |
-| implementer | 2,577 | 133k | 7.33B | 800M | 4,445 | 752 |
-| tester | 2,577 | 104k | 5.19B | 519M | 4,149 | 508 |
-| reviewer | 2,577 | 39k | 2.31B | 193M | 642 | 207 |
-| integrator | 40 | 6k | 0.47B | 35M | 4,600 | 40 |
+| decomposer | 2,616 | 47k | 1.66B | 237M | 521 | 108 |
+| implementer | 2,577 | 133k | 7.33B | 800M | 4,445 | 409 |
+| tester | 2,577 | 104k | 5.19B | 519M | 4,149 | 276 |
+| reviewer | 2,577 | 39k | 2.31B | 193M | 642 | 113 |
+| integrator | 40 | 6k | 0.47B | 35M | 4,600 | 22 |
 | prover T0 | 15 | 0.1k | – | – | 3 | 0 |
-| prover T1 | 12 | 19k | 1.73B | 192M | 400 | 179 |
-| prover T2 | 83 | 50k | 4.48B | 398M | 6,640 | 414 |
-| prover T3 | 837 | 77k | 5.39B | 462M | 5,775 | 490 |
-| prover T4 | 1,642 | 53k | 2.64B | 264M | 2,644 | 259 |
-| **Total** | **12,976** | **528k** | **31.2B** | **3.10B** | **29,820** | **3,049** |
+| prover T1 | 12 | 19k | 1.73B | 192M | 400 | 97 |
+| prover T2 | 83 | 50k | 4.48B | 398M | 6,640 | 225 |
+| prover T3 | 837 | 77k | 5.39B | 462M | 5,775 | 266 |
+| prover T4 | 1,642 | 53k | 2.64B | 264M | 2,644 | 141 |
+| **Total** | **12,976** | **528k** | **31.2B** | **3.10B** | **29,820** | **1,658** |
 
 | | Low | **Middle** | High |
 |---|---|---|---|
 | API requests | 317k | **528k** | 950k |
 | Tokens in / out | 18.7B / 1.30B | **31.2B / 3.10B** | 56.2B / 8.37B |
-| **API cost** | **$1,438** | **$3,049** | **$7,557** |
+| **API cost** (blended host prices, section 7.3) | **$788** | **$1,658** | **$4,074** |
 | Gate CPU | 17.9k core-h | **29.8k core-h** | 59.6k core-h |
 | PC only (28 gate cores): wall clock, gate-bound | 27 d | **44 d** | 89 d |
 | Agents that saturate the PC | 23 | **27** | 30 |
@@ -362,12 +392,12 @@ Middle case:
 | Agents that saturate PC + burst | 171 | **197** | 226 |
 | Cloud burst cost (87% of gate work, $0.0089/core-h + 25%) | $172 | **$287** | $574 |
 | PC electricity (450 W, A$0.33/kWh), PC only / with burst | $86 / $12 | **$144 / $19** | $287 / $38 |
-| **Total, PC only** | **US$1.5k (A$2.2k)** | **US$3.2k (A$4.6k)** | **US$7.8k (A$11.2k)** |
-| **Total, with burst** | **US$1.6k (A$2.3k)** | **US$3.4k (A$4.8k)** | **US$8.2k (A$11.7k)** |
+| **Total, PC only** | **US$0.87k (A$1.25k)** | **US$1.8k (A$2.6k)** | **US$4.4k (A$6.3k)** |
+| **Total, with burst** | **US$0.97k (A$1.4k)** | **US$2.0k (A$2.8k)** | **US$4.7k (A$6.7k)** |
 
 US$1 = A$1.4335 (RBA, 3 Nov 2026). Add about 30% to the wall clock for fix rounds and queueing.
 
-**Why this is higher than the previous estimate** (US$420 of API and 10,010 core-hours; the arithmetic was right, the inputs were not):
+**Why this is higher than the previous estimate** (US$420 of API and 10,010 core-hours; the arithmetic was right, the inputs were not). At Z.ai's own prices the middle case would be US$3,049; the host choice in section 7.3 brings it to US$1,658:
 1. **Requests:** 528k instead of 101k, because a turn is one API request.
 2. **Per request:** context is 59k tokens instead of 40k, because checker and build logs stay in the conversation. Output is 5.9k instead of 4k.
 3. **Proofs** now have to pass real checkers. Flash needs more attempts at them.
@@ -377,7 +407,7 @@ US$1 = A$1.4335 (RBA, 3 Nov 2026). Add about 30% to the wall clock for fix round
 - On the PC alone, about 27 agents saturate 28 cores, and the run takes about 6 weeks.
 - One GCP `c3d-highcpu-360` spot worker (180 cores, $1.60/h in Sydney) cuts that to about 6 days for about $290. With it, about 200 agents are needed, and about 88 requests are in flight at once. Z.ai plus DeepInfra's default 200 cover that.
 - **The other candidates:**
-  - **API concurrency and rate limits:** about 90 requests in flight and 3.6M input tokens per minute at the burst rate. That is within DeepInfra's 200 concurrent and Fireworks' ceilings. It binds only if Z.ai is the only provider and its console limit is below about 90.
+  - **API concurrency and rate limits:** about 90 requests in flight and 3.6M input tokens per minute at the burst rate, spread over three hosts with Z.ai as overflow. Each host's real capacity behind OpenRouter is unverified until the pilot.
   - **Git and merges:** about 530k turn commits and 13k merges. With the repository and worktrees in tmpfs this is negligible. The HDD only receives the 10-minute checkpoints.
   - **Integrators:** 40 package merges, now ordered by package dependency. They set the 2.6-day critical path, not the total.
   - **Runner overhead:** one thread per agent, a 1 s scheduling loop, and per-turn SQLite writes. Negligible next to 85 s turns.
@@ -400,8 +430,7 @@ Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.j
 | QEMU slots (KVM; never sent to workers without `kvm`) | 2 × 2 cores, 4 GB, node 0 | same |
 | Proof-check slots | 9 × 2 cores, 12 GB, any node | same |
 | Cloud workers (`workers_file`) | none | w1: 88 slots (no KVM on GCP AMD, so QEMU stays on the PC) |
-| Z.ai concurrency cap | 8 (set to the console value) | 8 |
-| DeepInfra / Fireworks / OpenRouter caps | 32 / 16 (TPM 2M) / 16 | 96 / 32 (TPM 2M) / 32 |
+| Providers (section 7.3), in-flight caps | GMI 16, Morph 8, Novita 8 (through OpenRouter); Z.ai 8 (overflow) | GMI 96, Morph 48, Novita 48; Z.ai 32 (overflow) |
 | `api_max_tokens` | 32,768 (reasoning included; the old 16,384 could not hold an 800-line file plus reasoning) | same |
 | Context budget (`ctx_per_slot`) | 131,072 | same |
 | `role_max_turns` | decomposer 40, implementer 80, tester 70, prover 300, reviewer 30, integrator 160 | same |
@@ -418,7 +447,7 @@ Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.j
 ```
 cp docs/plan/tools/runner/config.glm-api.json /mnt/d/pbsd-ckpt/config.json   # read from PBSD_CHECKPOINT after a reboot
 sudo mkdir -p /opt/pbsd && sudo cp -r docs/plan/tools/gates /opt/pbsd/gates # pinned gate scripts (gates_dir)
-export ZAI_API_KEY=...  DEEPINFRA_API_KEY=...  FIREWORKS_API_KEY=...  OPENROUTER_API_KEY=...   # any subset; _2.._9 add keys
+export OPENROUTER_API_KEY=...  ZAI_API_KEY=...   # OpenRouter: the three primary hosts; Z.ai: overflow and failover; _2.._9 add keys
 export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
 pbsd_run cpath      # critical path and graph width
 pbsd_run estimate   # wall clock, binding constraint, cost; "low"/"high", k=v overrides, e.g. cores=208 T2.attempts=4
@@ -449,12 +478,13 @@ pbsd_run init && pbsd_run run
   - cost so far and projected;
   - gate slot use (`compile 8/8 qemu 2/2 proof 9/9 workers 1 (85/88 slots)`);
   - one line per provider: tier, model, in flight / cap, successes, 429s, errors, cooling.
-- **Selftest:** `pbsd_run selftest` runs 22 checks:
+- **Selftest:** `pbsd_run selftest` runs 23 checks:
   - the watchdog and job path;
   - local server restart and chat;
   - context compaction;
   - the RPM/TPM buckets and in-flight cap, and failover with cache-hit billing;
   - gate slots, burst, the worker list, and QEMU only on KVM workers;
+  - provider weights (overflow providers only after the weighted ones);
   - ownership parsing and model tiers;
   - **an end-to-end task on a scratch repository with a scripted model.** It checks that path escapes are refused, a write after a passing gate invalidates it, gates run without API keys, the task is merged into `wp/<WP>`, merges without a worktree work, conflicts are reported, a reviewer's "changes" reopens the unit, and an infra failure charges no attempt.
 
@@ -485,9 +515,9 @@ pbsd_run init && pbsd_run run
    - Install the toolchains on the PC (WSL2): GCC 16 (C++26 contracts), Clang, ESBMC, CBMC, GenMC, Lean (elan) and Apalache. `CLOUD_SETUP.md` step 6 has the commands.
    - Clone Linux and Wine at pinned tags under `~/pbsd-ref`.
    - Start the Lean prover.
+   - Buy OpenRouter credit (5.5% fee) and top up Z.ai for overflow. Check each pinned host answers (`CLOUD_SETUP.md` step 4).
    - Read Z.ai's concurrency on the console rate-limits page and set `providers[zai].concurrency`.
-   - Top up credit on each provider used.
-2. **Selftest.** `pbsd_run selftest` (22 checks).
+2. **Selftest.** `pbsd_run selftest` (23 checks).
 3. **P0-07 first.** It pins the tool versions and sets the real gate commands (`PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE`). It also checks every checker flag in `proof_check.sh` against those versions.
 4. **Pilot (go/no-go).**
    - Run all of Phase 0 with every package's `-IF` task, `P0-FREEZE`, and all of P1-02: 447 tasks, closed under their dependencies, including three package models and 29 T2 proofs.
@@ -644,6 +674,7 @@ The plan's arithmetic reproduced exactly: `pbsd_run estimate` gave $421, 14.9 da
 | 22 | Licensing: Linux code is GPL-2.0-only and PBSD's own code AGPL-3.0-or-later. A kernel binary combining ported GPL-2.0-only files with AGPL-3.0 files cannot be distributed under both. | **Needs Odin's decision** before ported Linux code ships; options in `PBSD_PLAN.md` section 9 |
 | 23 | Zhipu is on the US Entity List | **Check**; DeepInfra, Fireworks and Together serve the open weights without Zhipu in the data path |
 | 24 | Runtime task splitting is not implemented; the old 1.3× split allowance had nothing behind it | The allowance is removed. Large units are written as several files over more turns; splits stay a `handoff` message. |
+| 25 | The provider list included DeepInfra, which serves this model at fp4, and spread packages evenly over full-price hosts | fp8 hosts at about half Z.ai's price, pinned through OpenRouter; provider weights; Z.ai for overflow (section 7.3) |
 
 **Not changed on purpose:** the appendices below keep the older options. Their cost and time figures come from before this review and use its old assumptions: about 6 requests per task, PRISM, and one gate run per task.
 
