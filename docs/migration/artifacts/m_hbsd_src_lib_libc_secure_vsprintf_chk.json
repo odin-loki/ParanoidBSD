@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_secure_vsprintf_chk",
+  "verified": "2026-07-30T09:26:22Z",
+  "evidence": "mechanical port of vsprintf_chk.c, IR-identical for all 1 functions, 3 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/vsprintf_chk.c": "63db6fd27ff679a7"
+  }
+}

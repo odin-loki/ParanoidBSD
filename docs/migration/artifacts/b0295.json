@@ -1,0 +1,13 @@
+{
+  "batch": "b0295",
+  "verified": "2026-08-09T00:22:56Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 3/3: tcpflags, printtunable, printlog)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction          cases    fails\ntcpflags         200026        0\nprinttunable     200009        0\nprintlog         200081        0\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/v6ionames.c": "df7a26f096a2c233",
+    "hbsd/src/sbin/ipf/libipf/tcpflags.c": "bf05431a9e7f4522",
+    "hbsd/src/sbin/ipf/libipf/printtunable.c": "20c749f682428307",
+    "hbsd/src/sbin/ipf/libipf/printlog.c": "86b949bafc361398"
+  }
+}

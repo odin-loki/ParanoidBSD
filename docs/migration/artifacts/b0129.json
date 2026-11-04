@@ -1,0 +1,11 @@
+{
+  "batch": "b0129",
+  "verified": "2026-08-08T11:45:22Z",
+  "evidence": "harness green + 5/5 mutations killed (IR: IR differs for 1/1: gai_strerror)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0129 (lib/libc/net) differential results\n  function                        cases     failures  status\n  gai_strerror                   251370            0  ok\n  TOTAL                          251370            0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/net/getproto.c": "c6588b3f8b0612ce",
+    "hbsd/src/lib/libc/net/gai_strerror.c": "daedd3140dbc2d94"
+  }
+}

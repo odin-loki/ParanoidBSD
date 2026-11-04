@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_w_proc_compare",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of proc_compare.c, IR-identical for all 1 functions, 27 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/w/proc_compare.c": "0f5393db7371d4bb"
+  }
+}

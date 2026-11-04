@@ -1,0 +1,12 @@
+{
+  "batch": "b0239",
+  "verified": "2026-08-08T22:58:51Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases     failures\n--------                      -----     --------\nswab                         200740            0\nstrndup                      221345            0\n__timingsafe_bcmp            201281            0\nTOTAL                        623366            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/swab.c": "92a71b90d9de725b",
+    "hbsd/src/lib/libc/string/strndup.c": "54a0b54fd29352d4",
+    "hbsd/src/lib/libc/string/timingsafe_bcmp.c": "0990838fea8c5142"
+  }
+}

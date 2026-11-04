@@ -1,0 +1,8 @@
+conv_tab.c: data-only translation tables; no callable functions in source file
+dd.c: main — program entry requiring full hosted runtime and capability mode
+dd.c: setup — requires open(2), capsicum, ioctl, malloc, and clock_gettime
+dd.c: getfdtype — requires fstat, ioctl, and lseek
+dd.c: speed_limit — requires usleep and secs_elapsed
+dd.c: dd_in — requires read(2) and full I/O state machine
+dd.c: dd_close — requires ftruncate, fsync, and fdatasync
+dd.c: dd_out — requires write(2), lseek, and sparse-file handling

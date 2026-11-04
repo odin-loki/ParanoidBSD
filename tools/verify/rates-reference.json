@@ -1,0 +1,23 @@
+{
+ "units": 54,
+ "scopes": [
+  "lib/libutil",
+  "lib/libsysdecode"
+ ],
+ "jobs": 8,
+ "per_unit": {
+  "classify": 0.1462962962962963,
+  "cbmc": 2.411111111111111,
+  "fusebmc": 0.22407407407407406,
+  "analyze": 0.29074074074074074,
+  "tidy": 0.24629629629629632,
+  "cppcheck": 0.17037037037037037,
+  "coccinelle": 0.35185185185185186,
+  "warnings": 0.10740740740740741
+ },
+ "fixed": {
+  "universe": 11.9
+ },
+ "_note": "A REFERENCE profile, measured on somebody else's machine - a 4-core container, clang 18.1.3, cbmc 5.95.1. It is here so a first run gets an estimate instead of nothing, and it is NOT your machine. Run `sweep_all.py --profile' on a small scope to replace it; the result lands in <out>/rates.json and takes precedence.",
+ "_host": "4 cores, container, clang 18.1.3, cppcheck 2.13.0, spatch 1.1.1"
+}

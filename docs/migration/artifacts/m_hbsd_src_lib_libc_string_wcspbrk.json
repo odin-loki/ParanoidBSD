@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_wcspbrk",
+  "verified": "2026-07-30T09:25:28Z",
+  "evidence": "mechanical port of wcspbrk.c, IR-identical for all 1 functions, 3 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wcspbrk.c": "48837dec17bc5ee5"
+  }
+}

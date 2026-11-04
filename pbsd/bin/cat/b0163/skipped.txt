@@ -1,0 +1,7 @@
+cat.c:main: depends on getopt, capsicum, casper, caph_*, scanfiles, and exit(3); not portable in isolation
+cat.c:usage: calls fprintf(stderr) and exit(1); not portable in isolation
+cat.c:init_casper: depends on cap_init, fileargs_cinit, and cap_close; not portable in isolation
+cat.c:init_casper_net: depends on cap_service_open and cap_net_*; not portable in isolation
+cat.c:scanfiles: depends on fileargs_open, cook_cat, in_kernel_copy, raw_cat, and udom_open orchestration; not portable in isolation
+cat.c:cook_cat: accesses FILE->_mbstate (FreeBSD stdio internal) and wide-character stdio; not portable in isolation
+cat.c:udom_open: depends on cap_getaddrinfo, cap_connect, and caph_rights_limit; not portable in isolation

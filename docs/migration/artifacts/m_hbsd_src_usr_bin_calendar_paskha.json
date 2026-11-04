@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_calendar_paskha",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of paskha.c, IR-identical for all 2 functions, 16 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/calendar/paskha.c": "2001d4af4162e90f"
+  }
+}

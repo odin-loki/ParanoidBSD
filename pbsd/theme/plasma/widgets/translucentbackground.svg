@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-trans" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#78a8e8" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#1e4078" stop-opacity="0.58"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#aero-trans)" rx="6"/>
+  <rect x="1" y="1" width="62" height="10" fill="#ffffff" fill-opacity="0.18" rx="5"/>
+</svg>

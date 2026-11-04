@@ -1,0 +1,12 @@
+{
+  "batch": "b0247",
+  "verified": "2026-08-08T23:03:32Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/3: cap_sandboxed)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                                  cases     failures\n_thread_init_stub                        200004            0\n_thread_autoinit_dummy_decl_stub         200004            0\n_pthread_mutex_init_calloc_cb_stub       200006            0\ncap_sandboxed                            200006            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/_thread_init.c": "1c3cf6f74d7f63e5",
+    "hbsd/src/lib/libc/gen/__pthread_mutex_init_calloc_cb_stub.c": "2b515c0b13664530",
+    "hbsd/src/lib/libc/gen/cap_sandboxed.c": "53f7556de626c43a"
+  }
+}

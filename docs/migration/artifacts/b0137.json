@@ -1,0 +1,12 @@
+{
+  "batch": "b0137",
+  "verified": "2026-08-08T11:48:29Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/3: wcsrchr)",
+  "ir_equivalent": false,
+  "harness_output": "b0137 differential test (wchar_t is 4 bytes)\n\n  function              cases       failures   status\n  ------------ -------------- --------------   ------\n  wcsrchr              342530              0   ok\n  wcsdup               200717              0   ok\n  wcscasecmp           227137              0   ok\n  ------------ -------------- --------------   ------\n  TOTAL                770384              0   ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wcsrchr.c": "601c8bf06d568f20",
+    "hbsd/src/lib/libc/string/wcsdup.c": "c077f4383cbf824c",
+    "hbsd/src/lib/libc/string/wcscasecmp.c": "31272ca6db060960"
+  }
+}

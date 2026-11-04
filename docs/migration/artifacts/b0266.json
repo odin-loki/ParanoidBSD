@@ -1,0 +1,11 @@
+{
+  "batch": "b0266",
+  "verified": "2026-08-09T00:09:13Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases     failures\n--------                      -----     --------\nsched_getaffinity            100014            0\n__freebsd11_dirname          100014            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/sched_getaffinity.c": "50bc7c4a65ed27c5",
+    "hbsd/src/lib/libc/gen/dirname_compat.c": "e3249abd4a54173f"
+  }
+}

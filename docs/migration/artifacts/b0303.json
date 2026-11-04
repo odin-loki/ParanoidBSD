@@ -1,0 +1,12 @@
+{
+  "batch": "b0303",
+  "verified": "2026-08-09T02:31:18Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\n__signbit           50940            0\n__signbitf          50106            0\n__signbitl          50828            0\natanhl              56184            0\ncproj               50808            0\n------------ ------------ ------------\nTOTAL              258866            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_signbit.c": "8fa70eb7601f76d4",
+    "hbsd/src/lib/msun/src/e_atanhl.c": "73636c7ddba45bf6",
+    "hbsd/src/lib/msun/src/s_cproj.c": "7ba74b0cd24a7c74"
+  }
+}

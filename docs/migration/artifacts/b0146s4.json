@@ -1,0 +1,10 @@
+{
+  "batch": "b0146s4",
+  "verified": "2026-08-08T23:08:05Z",
+  "evidence": "harness green + 3/3 mutations killed (IR: IR differs for 15/19: sema_init, sema_destroy, _sema_post, ctr6)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nsema_init                   28919            0\n_sema_post                  29042            0\n_sema_wait                  30522            0\n_sema_timedwait             35581            0\n_sema_trywait               28858            0\nsema_value                  29177            0\nsema_destroy                29129            0\n-------------------- ------------ ------------\nTOTAL                      211228            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/kern/kern_sema.c": "82b15e3d76bbc77c"
+  }
+}

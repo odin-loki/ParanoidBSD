@@ -1,0 +1,21 @@
+# PBSD with an external toolchain.
+#
+# Include this *in addition to* src.conf.pbsd:
+#     make SRCCONF=.../src.conf.pbsd __MAKE_CONF=/dev/null \
+#          CROSS_TOOLCHAIN=.../hbsd/toolchains/llvm21.mk ...
+# or point SRCCONF at a file that includes both.
+#
+# MK_TOOLCHAIN=no cascades in share/mk/src.opts.mk:544 to MK_CLANG, MK_LLD,
+# MK_LLDB and MK_LLVM_BINUTILS. The world stops building and shipping a
+# compiler; the build itself uses the one named by CROSS_TOOLCHAIN.
+#
+# What this costs: the installed system cannot rebuild itself. That is a real
+# property to give up and should be given up on purpose. What it buys is that
+# 14,337 files stop being compiled to build a system that does not need them
+# at runtime, and an LLVM upgrade becomes a package version rather than a
+# merge against 6,846 modified files.
+
+WITHOUT_TOOLCHAIN=YES
+WITHOUT_CLANG_BOOTSTRAP=YES
+WITHOUT_LLD_BOOTSTRAP=YES
+WITHOUT_ELFTOOLCHAIN_BOOTSTRAP=YES

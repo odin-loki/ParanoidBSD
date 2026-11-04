@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_bin_pwd_pwd",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of pwd.c, IR-identical for all 1 functions, 40 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/bin/pwd/pwd.c": "1264a70cee461b31"
+  }
+}

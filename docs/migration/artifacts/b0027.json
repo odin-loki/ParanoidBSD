@@ -1,0 +1,13 @@
+{
+  "batch": "b0027",
+  "verified": "2026-08-08T09:25:04Z",
+  "evidence": "harness green + IR-identical for all 6 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n--------------------------------------\nread               201324            0\nwrite              202243            0\nmsync              201202            0\nwait4              201568            0\n--------------------------------------\nTOTAL              806337            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/read.c": "9aa0d47bd54b7d06",
+    "hbsd/src/lib/libc/sys/msync.c": "860e69649143d7b1",
+    "hbsd/src/lib/libc/sys/write.c": "53ebbbb93505f023",
+    "hbsd/src/lib/libc/sys/wait4.c": "8e394bd223ccde39"
+  }
+}

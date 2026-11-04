@@ -1,0 +1,12 @@
+{
+  "batch": "b0161",
+  "verified": "2026-08-08T12:07:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 3/4: stub_reset, procfs_doprocnote, procfs_doosrel)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\nprocfs_doprocnote            200007            0\nprocfs_doosrel               200019            0\nprocfs_doprocmem             200008            0\n",
+  "input_hashes": {
+    "hbsd/src/sys/fs/procfs/procfs_note.c": "94b2d70e490c1eb7",
+    "hbsd/src/sys/fs/procfs/procfs_osrel.c": "c8a9330e54d2e1a5",
+    "hbsd/src/sys/fs/procfs/procfs_mem.c": "de7a7900e7c62633"
+  }
+}

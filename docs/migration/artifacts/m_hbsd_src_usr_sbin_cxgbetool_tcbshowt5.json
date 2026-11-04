@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_cxgbetool_tcbshowt5",
+  "verified": "2026-08-08T08:40:45Z",
+  "evidence": "mechanical port of tcbshowt5.c, IR-identical for all 4 functions, 86 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/cxgbetool/tcbshowt5.c": "bddc231f9dae362a"
+  }
+}

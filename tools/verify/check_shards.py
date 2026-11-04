@@ -1,0 +1,327 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
+"""Every directory the sweep should analyse is in a shard of BOTH matrices.
+
+Two checks. Under sys/, every directory must be covered. Above sys/, every
+top-level directory of the tree must be EITHER covered OR listed in
+UNANALYSED below with a reason -- so a directory nobody analyses is a
+decision somebody wrote down, not a gap nobody noticed.
+
+The second check exists because of libexec/rtld-elf. The run-time linker
+is the first C code every dynamically linked process runs, and it was in
+no shard at all: the scope list was sys/ plus lib/libc plus lib/msun, and
+that was never stated as a choice anywhere. rtld.c held a read of an
+uninitialised automatic that clang deletes the enclosing function over,
+and it cost thirty-seven boot runs. The analyser finds it in under a
+minute -- once the file is in a scope, resolves its headers, and is
+compiled with the -DHARDENEDBSD the real build uses. All three were
+missing, and any one of them alone was enough to hide it.
+
+The sweep runs as one script on a workstation and as a sharded pipeline on
+a 4-core runner, and the shards are written out by hand because analyze.py
+takes scopes and not exclusions. Hand-written means a directory can be left
+out, and a directory left out is a scope that reports ZERO FINDINGS while
+looking exactly like one that is clean.
+
+The first version of the shard list missed fourteen, including
+sys/hardenedbsd - which is PBSD's own code, and the last place a silent
+gap belongs. So this is a gate rather than a comment.
+
+BOTH matrices, since the model checker was sharded too. That job used to
+take `--scope sys` and could not have a gap; now it has four shards and
+can, which is a new instance of the old hazard rather than a new hazard.
+Checking one matrix and not the other would be the same mistake this
+tree keeps writing up: the guard on one of a pair.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+WF = ROOT / ".github/workflows/pbsd-verify.yml"
+SRC = ROOT / "hbsd/src"
+SYS = SRC / "sys"
+
+# Top-level directories that are deliberately NOT in a shard, and why.
+# A directory here is a decision on the record; a directory in neither
+# this table nor a shard fails the gate.
+# Five of these said "third-party source PBSD does not maintain", which
+# was one sentence covering five different situations and false for two
+# of them. cddl and secure ship dtrace(1), libdtrace, libctf, the ZFS
+# userland tools and libcrypt's DES and Blowfish - all of it maintained
+# here, and none of it read by any sweep until the `vendor' shard. The
+# reason each of the rest is out is now the reason it is actually out,
+# checked against the Makefile that decides it.
+UNANALYSED = {
+    "contrib":    "third-party source PBSD does not maintain. 11,635 "
+                  "translation units, and 4,366 of them are not in this "
+                  "repository at all -- .gitignore:150-162 excludes "
+                  "contrib/llvm-project's llvm/, lldb/ and most of "
+                  "clang/, with the re-fetch recipe in the comment. A "
+                  "shard over it would glob a different file set on CI "
+                  "than on a developer machine that ran the re-fetch. "
+                  "One thing under it is NOT third-party and is named "
+                  "here so the sentence above is not read as covering "
+                  "it: contrib/hardenedbsd/liblattzfs is HardenedBSD's "
+                  "own, and nothing in the tree builds it -- it has a "
+                  "Makefile of its own and no parent SUBDIR reaches it, "
+                  "because contrib/ has no Makefile at all",
+    "crypto":     "measured, and not viable as a whole yet: 1,608 of "
+                  "3,890 translation units compile. crypto/openssh is "
+                  "in a shard of its own -- see `whole' below, which is "
+                  "why naming a subdirectory does not make this entry a "
+                  "lie. The rest is openssl at 1,252 of 1,663, MIT krb5 "
+                  "at 90 of 1,010, libecc at 82 of 109, and heimdal at "
+                  "4 of 811. heimdal is the Kerberos this tree does NOT "
+                  "build -- kerberos5/Makefile.inc is the only thing in "
+                  "the tree that references it, and MK_MITKRB5 keeps "
+                  "the build out of kerberos5 -- so its 811 are dead "
+                  "weight rather than an unread scope. What stops the "
+                  "other three is the inventory: most of their ERROR "
+                  "set is code the build NAMES, which no entry in "
+                  "expected_errors.py can honestly excuse",
+    "gnu":        "no C at all - two Makefiles and a usr.bin wrapper",
+    "kerberos5":  "Heimdal, and this tree builds MIT. MITKRB5 is in "
+                  "src.opts.mk's __DEFAULT_YES_OPTIONS and "
+                  "Makefile.inc1:436-442 is `.if ${MK_MITKRB5} != \"no\" / "
+                  "SUBDIR+=krb5 / .else / SUBDIR+=kerberos5', so a default "
+                  "build never enters it. Nor can it be read: "
+                  "src.libnames.mk:952 stops bmake dead in "
+                  "lib/libgssapi_krb5 because _DP_gssapi_krb5 is defined "
+                  "to MIT's dependency list under the same option",
+    "krb5":       "MIT krb5, and every one of its 992 sources is under "
+                  "crypto/krb5 - this directory is Makefiles and .PATH, "
+                  "with no C of its own",
+    "sys":        "checked directory-by-directory above, not as a whole",
+    "tests":      "not yet - exercises the tree rather than being it",
+    "tools":      "build tooling, not shipped code",
+    "release":    "build tooling, not shipped code",
+    "share":      "73 C files, every one an example: share/examples, "
+                  "share/doc/psd and one screenmap generator. "
+                  "share/examples/Makefile installs them with FILESDIR, "
+                  "it does not compile them, so nothing here is in a "
+                  "shipped binary",
+    "targets":    "build tooling, not shipped code",
+    "etc":        "configuration, not C",
+    "include":    "headers only; they are checked through their users",
+    "rescue":     "no C at all - a Makefile that crunchgens bin/ and sbin/",
+}
+
+# The same, for the model checker only. bin, sbin, usr.bin and usr.sbin
+# joined the ANALYSE shards in sweep 18 and are not in a model-check
+# shard: CBMC over 1,862 more translation units is a different order of
+# cost from clang over them, and the analyse shard has to earn its
+# --check-errors first.
+#
+# They were in UNANALYSED, which is checked against both jobs, and stayed
+# there for a while after the analyse shard existed - which is exactly
+# the stale-exemption shape this script was written to catch, in the
+# script itself. The `in both' check below is new because of it.
+UNCHECKED = {
+    # The ANALYSE shard covers all of lib as of the pass that reconciled
+    # its 55 ERROR translation units; the MODEL-CHECK shard still names
+    # lib/libc and lib/msun only, and CBMC over 539 more translation
+    # units is a different order of cost from clang over them.
+    "lib":        "analysed as a whole; model-checked as lib/libc + "
+                  "lib/msun only",
+    "bin":        "analysed since sweep 18; not model-checked yet",
+    "sbin":       "analysed since sweep 18; not model-checked yet",
+    "usr.bin":    "analysed since sweep 18; not model-checked yet",
+    "usr.sbin":   "analysed since sweep 18; not model-checked yet",
+}
+
+# Analyse shards deliberately run WITHOUT --check-errors, and why. A
+# shard missing the flag and missing from this table fails the gate.
+#
+# It was `progs' for two sweeps, while 133 of its 1,862 translation units
+# did not compile and an inventory of them would have gone stale faster
+# than it was written. The table is empty because that hole is filled --
+# and because of what turned up the moment the flag went on: sweep 19
+# failed on usr.sbin/gssd/gssd.c, which had never compiled in eighteen
+# sweeps, and nothing else had noticed. A shard without this flag is a
+# shard where a file that does not compile reads exactly like a clean
+# one, which is the same lie this whole script exists to catch, one level
+# down.
+UNGATED: dict[str, str] = {}
+
+
+def main() -> int:
+    if not WF.is_file() or not SYS.is_dir():
+        print(f"FAIL  cannot find {WF} or {SYS}")
+        return 1
+    text = WF.read_text()
+    top = {f"sys/{p.name}" for p in SYS.iterdir() if p.is_dir()}
+    # (job name, the slice of the file its matrix lives in)
+    blocks = {
+        "analyse": text.split("\n  analyze:", 1)[-1].split("\n  lints:", 1)[0],
+        "model-check": text.split("\n  sweep:", 1)[-1].split("\n  analyze:", 1)[0],
+    }
+    bad = False
+    for job, block in blocks.items():
+        # Not \S+: the last scope on a quoted YAML line is `sys/cddl' }`
+        # and \S+ takes the quote with it, so three directories that were
+        # covered read as missing on this script's first run.
+        covered = set(re.findall(r"--scope\s+([^\s'\"}]+)", block))
+        missing = sorted(
+            d for d in top
+            if d not in covered and "sys" not in covered
+            and not any(d.startswith(c + "/") for c in covered))
+        if missing:
+            bad = True
+            print(f"FAIL  {len(missing)} directory(ies) under sys/ are in no "
+                  f"{job} shard:")
+            for d in missing:
+                print(f"      {d}")
+        else:
+            print(f"ok    all {len(top)} directories under sys/ are in a "
+                  f"{job} shard")
+    # And above sys/: covered, or on the record as not covered.
+    tree = sorted(p.name for p in SRC.iterdir() if p.is_dir()
+                  and not p.name.startswith("."))
+    for job, block in blocks.items():
+        covered = set(re.findall(r"--scope\s+([^\s'\"}]+)", block))
+        roots = {c.split("/", 1)[0] for c in covered}
+        excused = UNANALYSED | (UNCHECKED if job == "model-check" else {})
+        undecided = [d for d in tree
+                     if d not in roots and d not in excused]
+        # A directory that is BOTH in a shard and excused from it is a
+        # lie in the other direction, and the version of this script that
+        # only looked for the first kind carried four of them.
+        #
+        # WHOLE, not roots: `--scope lib/libc' puts `lib' in roots, and
+        # lib's UNANALYSED entry says "lib/libc and lib/msun are sharded;
+        # the rest is not yet", which is true and not a stale exemption.
+        # Only a scope naming the top-level directory ITSELF - `--scope
+        # bin' - makes an entry for it a lie. sys is the same case.
+        whole = {c for c in covered if "/" not in c}
+        both = sorted(d for d in tree if d in whole and d in excused)
+        if both:
+            bad = True
+            print(f"FAIL  {len(both)} directory(ies) are in a {job} shard "
+                  f"AND excused from it:")
+            for d in both:
+                print(f"      {d}")
+        if undecided:
+            bad = True
+            print(f"FAIL  {len(undecided)} top-level directory(ies) are in "
+                  f"no {job} shard and not in UNANALYSED:")
+            for d in undecided:
+                print(f"      {d}")
+        else:
+            print(f"ok    every top-level directory is in a {job} shard or "
+                  f"on the record ({len(excused)} listed)")
+
+    # Every analyse shard carries --check-errors, or says why not.
+    shards = re.findall(r"\{\s*name:\s*(\w+),.*?check:\s*'([^']*)'",
+                        blocks["analyse"])
+    if not shards:
+        bad = True
+        print("FAIL  no analyse shard matched: the matrix shape changed "
+              "and this check is reading nothing")
+    ungated = sorted(n for n, c in shards
+                     if "--check-errors" not in c and n not in UNGATED)
+    if ungated:
+        bad = True
+        print(f"FAIL  {len(ungated)} analyse shard(s) run without "
+              f"--check-errors and are not in UNGATED:")
+        for n in ungated:
+            print(f"      {n}")
+    else:
+        print(f"ok    all {len(shards)} analyse shards carry "
+              f"--check-errors ({len(UNGATED)} excused)")
+    stale = sorted(n for n in UNGATED
+                   if any(x == n and "--check-errors" in c
+                          for x, c in shards))
+    if stale:
+        bad = True
+        print(f"FAIL  {len(stale)} UNGATED entry(ies) name a shard that "
+              f"DOES carry the flag: {', '.join(stale)}")
+
+    # The model-check corpus is what the PLAN can deliver, not what the
+    # shard names.
+    #
+    # classify.py reads docs/port_plan.json and skips any record with no
+    # `functions' list; cbmc_driver.py and fusebmc.py take their work from
+    # what classify.py produced.  port_plan.py used to omit that list for
+    # a SKIP-VENDOR or SKIP-TESTS file and for one over --max-func-lines,
+    # which are answers to "do we plan to rewrite this?" and not to "what
+    # is there to check?".  So 2,465 of the six model-check shards' 8,721
+    # translation units were invisible to every model checker -- 1,879 on
+    # the tag alone, 534 of them OpenZFS and 868 sys/contrib/dev.  The
+    # shard NAMED the scope, the scope reported zero units, and the run
+    # was green.
+    #
+    # The two checks above gate the shard list against the DIRECTORY
+    # TREE, which is why neither saw it: sys/contrib was in the `rest'
+    # shard the whole time.
+    #
+    # The rule now is exact rather than a floor: a file in a model-check
+    # scope may be absent from the corpus for ONE reason, that the
+    # function reader finds nothing in it, and this recomputes that for
+    # every absent file rather than trusting the record.  Any second
+    # filter re-introduced anywhere between here and port_plan.py makes
+    # this fail and names the files.
+    plan = ROOT / "docs" / "port_plan.json"
+    if not plan.is_file():
+        print("  n/a  the model-check corpus covers its shards' scopes "
+              "(docs/port_plan.json is generated by the `plan' job and "
+              "is not in the tree)")
+    else:
+        import json
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from port_plan import functions as _fns
+
+        recs = json.loads(plan.read_text())["records"]
+        have = {r["path"] for r in recs
+                if r.get("path", "").endswith(".c") and r.get("functions")}
+        block = blocks["model-check"]
+        scoped = set()
+        for sc in re.findall(r"--scope\s+([^\s'\"}]+)", block):
+            base = SRC / sc
+            if base.is_dir():
+                scoped |= {q.relative_to(SRC).as_posix()
+                           for q in base.rglob("*.c")}
+        dropped = []
+        for rel in sorted(scoped - have):
+            try:
+                text = (SRC / rel).read_text(errors="replace")
+            except OSError:
+                continue
+            if _fns(text):
+                dropped.append(rel)
+        if dropped:
+            bad = True
+            print(f"FAIL  {len(dropped)} translation unit(s) in a "
+                  f"model-check scope have functions the reader can see "
+                  f"and are NOT in the corpus:")
+            for rel in dropped[:20]:
+                print(f"      {rel}")
+            if len(dropped) > 20:
+                print(f"      ... and {len(dropped) - 20} more")
+        else:
+            print(f"ok    the model-check corpus covers its shards' "
+                  f"scopes ({len(scoped & have):,} of {len(scoped):,} "
+                  f"translation units; the rest have no function the "
+                  f"reader can see)")
+
+    # A stale UNANALYSED entry is its own kind of lie.
+    gone = sorted(d for d in (UNANALYSED | UNCHECKED)
+                  if not (SRC / d).is_dir())
+    if gone:
+        bad = True
+        print(f"FAIL  {len(gone)} UNANALYSED entry(ies) name a directory "
+              f"that does not exist: {', '.join(gone)}")
+
+    if bad:
+        print("\n      A scope nobody checks reports zero findings and")
+        print("      looks exactly like one that is clean. Add it to the")
+        print("      right shard in .github/workflows/pbsd-verify.yml, or")
+        print("      to UNANALYSED here with the reason it is skipped.")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

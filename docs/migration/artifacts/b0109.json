@@ -1,0 +1,13 @@
+{
+  "batch": "b0109",
+  "verified": "2026-08-08T12:28:56Z",
+  "evidence": "harness green + IR-identical for all 7 functions",
+  "ir_equivalent": true,
+  "harness_output": "function                cases       failures\n-------------- -------------- --------------\nfgetc                  200733              0\nputwc                  200314              0\nputwc_l                200328              0\nswprintf               200484              0\nswprintf_l             200592              0\nrewind                 200047              0\n-------------- -------------- --------------\nTOTAL                 1202498              0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fgetc.c": "9bfabbe165d42e3d",
+    "hbsd/src/lib/libc/stdio/putwc.c": "b9a28fe4dc0dc525",
+    "hbsd/src/lib/libc/stdio/swprintf.c": "09d755b1136ab2fc",
+    "hbsd/src/lib/libc/stdio/rewind.c": "2192871253411331"
+  }
+}

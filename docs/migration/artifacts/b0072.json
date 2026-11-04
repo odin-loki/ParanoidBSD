@@ -1,0 +1,13 @@
+{
+  "batch": "b0072",
+  "verified": "2026-08-08T11:22:48Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nFUNCTION                            CASES     FAILURES RESULT\n---------------------------- ------------ ------------ ------\niconv_open_into                    200128            0 PASS\n__iconv                            212320            0 PASS\niconv                              200308            0 PASS\n_citrus_string_hash_func           200175            0 PASS\nTOTAL                              812931            0 PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/iconv/iconv_open_into.c": "09e88206d258e719",
+    "hbsd/src/lib/libc/iconv/__iconv.c": "357e4259fda156e9",
+    "hbsd/src/lib/libc/iconv/iconv.c": "e9bd199cfd3f67ab",
+    "hbsd/src/lib/libc/iconv/citrus_hash.c": "a5ec8a5e255963d8"
+  }
+}

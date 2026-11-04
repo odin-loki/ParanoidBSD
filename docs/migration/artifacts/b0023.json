@@ -1,0 +1,13 @@
+{
+  "batch": "b0023",
+  "verified": "2026-08-08T09:20:23Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: IR differs for 2/3: __gdtoa_locks_size, __gdtoa_locks_elemsize)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases     failures\n--------------------------------------------\n__gdtoa_locks            100001            0\nstrtold_l                200514            0\n--------------------------------------------\nTOTAL                    300515            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gdtoa/glue.c": "fbd0a36e12e4007c",
+    "hbsd/src/lib/libc/gdtoa/machdep_ldisd.c": "89abefd79a95a33c",
+    "hbsd/src/lib/libc/gdtoa/machdep_ldisQ.c": "0c34df305deaf7ae",
+    "hbsd/src/lib/libc/gdtoa/machdep_ldisx.c": "a455fcf8badad1c9"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0156s3",
+  "verified": "2026-08-08T22:57:13Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 3/11: _EUC_mbsinit, _EUC_mbrtowc_impl, _EUC_wcrtomb_impl)",
+  "ir_equivalent": false,
+  "harness_output": "b0156s3: euc.c -- port vs. oracle differential test\n\n\nfunction                      cases   failures  result\n---------------------- ------------ ----------  ------\n_EUC_mbsinit                 200240          0  ok\n_EUC_mbrtowc_impl            225129          0  ok\n_EUC_wcrtomb_impl            200780          0  ok\n_EUC_CN_mbrtowc              205838          0  ok\n_EUC_JP_mbrtowc              206085          0  ok\n_EUC_KR_mbrtowc              205183          0  ok\n_EUC_TW_mbrtowc              206120          0  ok\n_EUC_CN_wcrtomb              200065          0  ok\n_EUC_JP_wcrtomb              200065          0  ok\n_EUC_KR_wcrtomb              200065          0  ok\n_EUC_TW_wcrtomb              200065          0  ok\n---------------------- ------------ ----------  ------\nTOTAL                       2249635          0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/euc.c": "bf1c714846b969e1"
+  }
+}

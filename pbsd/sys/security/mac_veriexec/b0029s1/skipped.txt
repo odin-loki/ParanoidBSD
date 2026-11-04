@@ -1,0 +1,1 @@
+mac_veriexec_sha384.c — no function definitions; only the kernel MAC_VERIEXEC_FPMOD registration macro.

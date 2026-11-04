@@ -1,0 +1,11 @@
+{
+  "batch": "b0226",
+  "verified": "2026-08-09T01:53:28Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases   failures\n--------                      -----   --------\nmpool_open                        4          0\nmpool_filter                      1          0\nmpool_new                         2          0\nmpool_get                         4          0\nmpool_put                         2          0\nmpool_delete                      1          0\nmpool_close                       1          0\nmpool_sync                        2          0\n__mpool_new__44bsd                1          0\nmpool_eviction                    1          0\nmpool_overflow_abort              1          0\nmpool_hashkey_edges               1          0\nsweep                        200000          0\nTOTAL                        200021          0\nmpool_new: page allocation overflow.\nmpool_new: page allocation overflow.\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/mpool/mpool-compat.c": "4677728a4898aac8",
+    "hbsd/src/lib/libc/db/mpool/mpool.c": "71d082827e2d73c0"
+  }
+}

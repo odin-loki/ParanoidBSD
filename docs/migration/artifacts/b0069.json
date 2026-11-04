@@ -1,0 +1,13 @@
+{
+  "batch": "b0069",
+  "verified": "2026-08-08T11:18:33Z",
+  "evidence": "harness green + IR-identical for all 8 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nbatch b0069 differential results\nfunction          cases   failures status\natoi             262225          0 ok\natoi_l           262225          0 ok\natol             262225          0 ok\natol_l           262225          0 ok\natof             262225          0 ok\natof_l           262225          0 ok\natoll            262225          0 ok\natoll_l          262225          0 ok\nTOTAL           2097800          0 ok\n\nno buffer-writing, pointer-returning or stateful iterator functions in this batch;\nevery case still runs on two independent 0x7f-guarded buffers whose full contents\nare compared afterwards.\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/atoi.c": "c85748dae9c4e65d",
+    "hbsd/src/lib/libc/stdlib/atol.c": "3cb6082bc716ff63",
+    "hbsd/src/lib/libc/stdlib/atof.c": "896ada10e8e2eded",
+    "hbsd/src/lib/libc/stdlib/atoll.c": "caadeb6b35c89371"
+  }
+}

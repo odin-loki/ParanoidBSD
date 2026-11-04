@@ -1,0 +1,13 @@
+{
+  "batch": "b0001",
+  "verified": "2026-08-08T09:15:34Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\n  function              cases       failures   result\n  ------------------------------------------------------\n  lrintf              2006160              0   PASS\n  llrint              2006160              0   PASS\n  llrintf             2006160              0   PASS\n  signgam                  13              0   PASS\n\n  total 6018493 cases, 0 failures: OK\n\n  branch coverage of \"if (fetestexcept(FE_INVALID)) feclearexcept(FE_INEXACT);\"\n  function         FE_INVALID     FE_INEXACT   both (taken)\n  --------------------------------------------------------------------\n  lrintf               186681         502147              0\n  llrint               257325         664126              0\n  llrintf              186681         502147              0\n\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_signgam.c": "a9e9e644b1fe9622",
+    "hbsd/src/lib/msun/src/s_lrintf.c": "50afaa72779e084d",
+    "hbsd/src/lib/msun/src/s_llrint.c": "82071952645d5755",
+    "hbsd/src/lib/msun/src/s_llrintf.c": "0bf38648f8edc0ce"
+  }
+}

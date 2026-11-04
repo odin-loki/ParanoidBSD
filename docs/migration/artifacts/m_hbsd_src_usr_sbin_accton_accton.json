@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_accton_accton",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of accton.c, IR-identical for all 2 functions, 7 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/accton/accton.c": "de7daf2906af01f7"
+  }
+}

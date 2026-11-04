@@ -1,0 +1,10 @@
+{
+  "batch": "b0019",
+  "verified": "2026-07-30T09:36:51Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: uuid_enc_le, uuid_dec_le, uuid_enc_be, uuid_dec_be)",
+  "ir_equivalent": false,
+  "harness_output": "\n  function                cases       failures  result\n  ---------------------------------------------------------\n  uuid_enc_le            283296              0  PASS\n  uuid_dec_le            283296              0  PASS\n  uuid_enc_be            283296              0  PASS\n  uuid_dec_be            283296              0  PASS\n  ---------------------------------------------------------\n  TOTAL                 1133184              0  PASS\n\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/uuid/uuid_stream.c": "1b6647b23225b073"
+  }
+}

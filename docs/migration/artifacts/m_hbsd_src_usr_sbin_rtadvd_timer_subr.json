@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_rtadvd_timer_subr",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of timer_subr.c, IR-identical for all 2 functions, 13 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/rtadvd/timer_subr.c": "bffd0651b99f1d35"
+  }
+}

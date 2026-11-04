@@ -1,0 +1,10 @@
+{
+  "batch": "b0213",
+  "verified": "2026-08-08T13:30:26Z",
+  "evidence": "harness green + 5/5 mutations killed (IR: IR differs for 3/8: dead_getwritemount, dead_lookup, dead_poll)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures  result\n-------------------------------------------------------------------\ndead_getwritemount             250044            0  PASS\ndead_lookup                    250044            0  PASS\ndead_open                      250116            0  PASS\ndead_close                     250116            0  PASS\ndead_read                      250180            0  PASS\ndead_write                     250116            0  PASS\ndead_poll                      250759            0  PASS\ndead_unset_text                250044            0  PASS\n-------------------------------------------------------------------\nTOTAL                         2001419            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/fs/deadfs/dead_vnops.c": "377aea64f1d240e6"
+  }
+}

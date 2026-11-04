@@ -1,0 +1,10 @@
+{
+  "batch": "b0156s1",
+  "verified": "2026-08-08T22:21:48Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures\n_DefaultRuneLocale             200088            0\n_CurrentRuneLocale             400002            0\n__runes_for_locale             760032            0\nport.cppm:358:27: warning: \u2018_CurrentRuneLocale\u2019 initialized and declared \u2018extern\u2019\n  358 | extern const _RuneLocale *_CurrentRuneLocale = &_DefaultRuneLocale;\n      |                           ^~~~~~~~~~~~~~~~~~\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/table.c": "402a55f2530a810c"
+  }
+}

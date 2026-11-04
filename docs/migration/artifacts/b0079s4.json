@@ -1,0 +1,10 @@
+{
+  "batch": "b0079s4",
+  "verified": "2026-08-08T11:22:00Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\ncopysignf          269460            0\n------------ ------------ ------------\nTOTAL              269460            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_copysignf.c": "5e4aafcd3063a7a6"
+  }
+}

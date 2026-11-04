@@ -1,0 +1,581 @@
+{
+ "class_coverage": {
+  "paper": {
+   "classes_in_scope": 52,
+   "covered": 46,
+   "partial": 6,
+   "gap": 0,
+   "fraction_covered": 0.8846153846153846,
+   "fraction_covered_or_partial": 1.0,
+   "classes_out_of_scope": 8,
+   "tools_counted": "all"
+  },
+  "available": {
+   "classes_in_scope": 52,
+   "covered": 45,
+   "partial": 7,
+   "gap": 0,
+   "fraction_covered": 0.8653846153846154,
+   "fraction_covered_or_partial": 1.0,
+   "classes_out_of_scope": 8,
+   "tools_counted": [
+    "cbmc",
+    "clang-analyze",
+    "clang-tidy",
+    "coccinelle",
+    "compiler-warnings",
+    "cppcheck",
+    "esbmc",
+    "frontier-model",
+    "fusebmc",
+    "pbsd-lints",
+    "sanitizers"
+   ]
+  },
+  "present_instruments": [
+   "cbmc",
+   "clang-analyze",
+   "clang-tidy",
+   "coccinelle",
+   "compiler-warnings",
+   "cppcheck",
+   "esbmc",
+   "frontier-model",
+   "fusebmc",
+   "pbsd-lints",
+   "sanitizers"
+  ],
+  "missing": [
+   "codeql",
+   "infer"
+  ]
+ },
+ "cbmc": {
+  "n": 10868,
+  "status": {
+   "PROVED": 6237,
+   "FAILED": 2538,
+   "BOUNDED": 512,
+   "ERROR": 328,
+   "TIMEOUT": 1253
+  },
+  "failed_buckets": {
+   "pointer/memory (a missing precondition, not a bug)": 1481,
+   "EXPORTED, arithmetic - READ THESE": 337,
+   "an INDEX out of its array's range - READ THESE": 36,
+   "static (callers constrain the domain - deferred)": 380,
+   "CBMC could not model it (not a property that failed)": 4,
+   "extern-driven (an unmodelled return, unconstrained)": 18,
+   "STATIC but its address is taken - READ THESE": 62,
+   "float div-by-zero (IEEE-754 defines it; msun depends on it)": 88,
+   "a per-CPU read CBMC cannot model (the model's null, not the code's)": 132
+  },
+  "read_these": 435,
+  "read_these_untriaged": 423,
+  "exported_arithmetic": 337,
+  "exported_arithmetic_already_read": 25,
+  "exported_arithmetic_sample": [
+   "bin/dd/misc.c:secs_elapsed",
+   "bin/ed/buf.c:get_addressed_line_node",
+   "bin/ed/main.c:copy_lines",
+   "bin/ed/main.c:delete_lines",
+   "bin/ed/main.c:handle_hup",
+   "bin/ed/main.c:handle_int",
+   "bin/ed/main.c:handle_winch",
+   "bin/ed/main.c:move_lines",
+   "bin/ed/main.c:signal_hup",
+   "bin/ed/main.c:signal_int",
+   "bin/sh/memalloc.c:growstackstr",
+   "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/pid/tst.weak1.c:go",
+   "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.bigstack.c:grow1",
+   "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c:bar",
+   "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c:baz",
+   "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c:foo",
+   "contrib/bmake/parse.c:CurFile_CondMinDepth",
+   "contrib/bmake/parse.c:Parse_GuardElse",
+   "contrib/bmake/parse.c:Parse_GuardEndif",
+   "contrib/bmake/var.c:EvalStack_Pop",
+   "contrib/bsddialog/lib/theme.c:bsddialog_color",
+   "contrib/bsddialog/utility/bsddialog.c:set_exit_code",
+   "contrib/byacc/test/btyacc/btyacc_calc1.tab.c:vdiv",
+   "contrib/byacc/test/btyacc/calc1.tab.c:vdiv",
+   "contrib/byacc/test/btyacc/varsyntax_calc1.tab.c:vdiv",
+   "contrib/byacc/test/yacc/calc1.tab.c:vdiv",
+   "contrib/byacc/test/yacc/varsyntax_calc1.tab.c:vdiv",
+   "contrib/bzip2/unzcrash.c:flip_bit",
+   "contrib/ee/ee.c:leave_op",
+   "contrib/ee/ee.c:len_char",
+   "contrib/ee/ee.c:tabshift",
+   "contrib/flex/src/ccl.c:range_covers_case",
+   "contrib/flex/src/misc.c:allocate_array",
+   "contrib/flex/src/misc.c:dataend",
+   "contrib/flex/src/misc.c:dataflush",
+   "contrib/flex/src/misc.c:mk2data",
+   "contrib/flex/src/misc.c:mkdata",
+   "contrib/flex/src/misc.c:transition_struct_out",
+   "contrib/flex/src/nfa.c:mkbranch",
+   "contrib/less/brac.c:match_brac",
+   "contrib/less/cmdbuf.c:init_cmdhist",
+   "contrib/less/forwback.c:back",
+   "contrib/less/forwback.c:backward",
+   "contrib/less/forwback.c:forward",
+   "contrib/less/forwback.c:get_back_scroll",
+   "contrib/less/forwback.c:overlay_header",
+   "contrib/less/jump.c:jump_forw",
+   "contrib/less/jump.c:jump_forw_buffered",
+   "contrib/less/jump.c:jump_line_loc",
+   "contrib/less/jump.c:jump_loc",
+   "contrib/less/jump.c:jump_percent",
+   "contrib/less/jump.c:repaint",
+   "contrib/less/line.c:line_pfx_width",
+   "contrib/less/line.c:longest_line_width",
+   "contrib/less/line.c:pdone",
+   "contrib/less/line.c:pwidth",
+   "contrib/less/line.c:rrshift",
+   "contrib/less/optfunc.c:calc_jump_sline",
+   "contrib/less/optfunc.c:get_swindow",
+   "contrib/less/os.c:percent_pos",
+   "contrib/less/position.c:sindex_from_sline",
+   "contrib/less/search.c:clear_attn",
+   "contrib/less/search.c:repaint_hilite",
+   "contrib/less/search.c:search_pos",
+   "contrib/less/search.c:undo_search",
+   "contrib/libarchive/libarchive/archive_version_details.c:archive_version_details",
+   "contrib/llvm-project/compiler-rt/lib/builtins/absvti2.c:__absvti2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ashldi3.c:__ashldi3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ashlti3.c:__ashlti3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ashrdi3.c:__ashrdi3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ashrti3.c:__ashrti3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/clzti2.c:__clzti2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ctzti2.c:__ctzti2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfdi.c:__fixunsxfdi",
+   "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfsi.c:__fixunsxfsi",
+   "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfti.c:__fixunsxfti",
+   "contrib/llvm-project/compiler-rt/lib/builtins/fixxfdi.c:__fixxfdi",
+   "contrib/llvm-project/compiler-rt/lib/builtins/fixxfti.c:__fixxfti",
+   "contrib/llvm-project/compiler-rt/lib/builtins/floattixf.c:__floattixf",
+   "contrib/llvm-project/compiler-rt/lib/builtins/floatuntixf.c:__floatuntixf",
+   "contrib/llvm-project/compiler-rt/lib/builtins/lshrdi3.c:__lshrdi3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/lshrti3.c:__lshrti3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/mulvti3.c:__mulvti3",
+   "contrib/llvm-project/compiler-rt/lib/builtins/negvti2.c:__negvti2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/popcountti2.c:__popcountti2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/powidf2.c:__powidf2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/powisf2.c:__powisf2",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ppc/fixtfti.c:__fixtfti",
+   "contrib/llvm-project/compiler-rt/lib/builtins/ppc/fixunstfti.c:__fixunstfti",
+   "contrib/llvm-project/compiler-rt/lib/profile/InstrProfilingBuffer.c:__llvm_profile_get_size_for_buffer",
+   "contrib/lua/src/lobject.c:luaO_hexavalue",
+   "contrib/mandoc/dba_array.c:dba_array_new",
+   "contrib/mandoc/dba_write.c:dba_align",
+   "contrib/netbsd-tests/usr.bin/xlint/lint1/d_c99_decls_after_stmt3.c:sample",
+   "contrib/ntp/libntp/audio.c:audio_gain",
+   "contrib/ntp/libntp/ntp_worker.c:close_all_beyond",
+   "contrib/ntp/libntp/statestr.c:statustoa",
+   "contrib/ntp/libntp/systime.c:adj_systime",
+   "contrib/ntp/libntp/timetoa.c:format_time_fraction",
+   "contrib/ntp/libntp/ymd2yd.c:ymd2yd",
+   "contrib/ntp/sntp/unity/unity.c:UnityPrintFail",
+   "contrib/ntp/sntp/unity/unity.c:UnityPrintOk",
+   "contrib/ntp/util/ntptime.c:pll_trap",
+   "contrib/openbsm/bin/auditd/auditd.c:auditd_handle_trigger",
+   "contrib/openbsm/bin/auditd/auditd.c:auditd_terminate",
+   "contrib/openbsm/bin/auditdistd/pjdlog.c:pjdlog_debug_get",
+   "contrib/openbsm/bin/auditdistd/pjdlog.c:pjdlog_debug_set",
+   "contrib/openbsm/bin/auditdistd/pjdlog.c:pjdlog_fini",
+   "contrib/openbsm/bin/auditdistd/pjdlog.c:pjdlog_init",
+   "contrib/openbsm/bin/auditdistd/pjdlog.c:pjdlog_mode_get",
+   "contrib/openbsm/bin/auditdistd/pjdlog.c:pjdlog_mode_set",
+   "contrib/openbsm/libauditd/auditd_lib.c:audit_quick_stop",
+   "contrib/pnpinfo/pnpinfo.c:DELAY",
+   "contrib/pnpinfo/pnpinfo.c:pnp_readw",
+   "contrib/telnet/libtelnet/encrypt.c:findencryption",
+   "contrib/tnftp/src/cmds.c:proxabort",
+   "contrib/tnftp/src/util.c:crankrate",
+   "contrib/unbound/services/listen_dnsport.c:set_ip_dscp",
+   "contrib/unbound/util/config_file.c:config_apply_max_rtt",
+   "contrib/unbound/validator/val_anchor.c:anchors_create"
+  ]
+ },
+ "esbmc": {
+  "n": 10868,
+  "status": {
+   "ERROR": 10868
+  }
+ },
+ "fusebmc": {
+  "n": 292752,
+  "status": {
+   "ERROR": 258497,
+   "NOFUNC": 6102,
+   "NOSEED": 26770,
+   "NORETURN": 1188,
+   "CLEAN": 182,
+   "CRASH": 13
+  }
+ },
+ "analyze": {
+  "tus": 22212,
+  "tu_status": {
+   "ERROR": 6324,
+   "OK": 15885,
+   "TIMEOUT": 3
+  },
+  "findings": 2901,
+  "top_checkers": {
+   "core.NullDereference": 953,
+   "unix.Malloc": 511,
+   "core.CallAndMessage": 437,
+   "core.UndefinedBinaryOperatorResult": 313,
+   "core.BitwiseShift": 164,
+   "unix.cstring.NullArg": 155,
+   "core.uninitialized.Assign": 143,
+   "core.DivideZero": 108,
+   "core.uninitialized.UndefReturn": 39,
+   "unix.MallocSizeof": 32,
+   "core.uninitialized.Branch": 24,
+   "core.uninitialized.ArraySubscript": 13,
+   "core.StackAddressEscape": 7,
+   "core.VLASize": 2
+  }
+ },
+ "tidy": {
+  "tus": 22212,
+  "tu_status": {
+   "OK": 15886,
+   "ERROR": 6324,
+   "TIMEOUT": 2
+  },
+  "findings": 16410,
+  "top_checkers": {
+   "bugprone-implicit-widening-of-multiplication-result": 7149,
+   "cert-err34-c": 2301,
+   "bugprone-signed-char-misuse": 897,
+   "clang-analyzer-core.NullDereference": 854,
+   "cert-msc24-c": 526,
+   "bugprone-inc-dec-in-conditions": 521,
+   "clang-analyzer-unix.Malloc": 463,
+   "bugprone-too-small-loop-variable": 453,
+   "clang-analyzer-core.CallAndMessage": 437,
+   "clang-analyzer-core.UndefinedBinaryOperatorResult": 311,
+   "misc-redundant-expression": 302,
+   "bugprone-suspicious-realloc-usage": 258,
+   "bugprone-suspicious-include": 249,
+   "clang-analyzer-core.BitwiseShift": 160,
+   "clang-analyzer-unix.cstring.NullArg": 155,
+   "clang-analyzer-core.uninitialized.Assign": 143,
+   "misc-non-private-member-variables-in-classes": 128,
+   "bugprone-suspicious-semicolon": 112,
+   "clang-analyzer-core.DivideZero": 108,
+   "cert-env33-c": 104,
+   "clang-analyzer-optin.portability.UnixAPI": 87,
+   "cert-fio38-c": 52,
+   "bugprone-misplaced-widening-cast": 51,
+   "bugprone-unused-return-value": 42,
+   "cert-dcl58-cpp": 41
+  }
+ },
+ "cppcheck": {
+  "tus": 22212,
+  "tu_status": {
+   "OK": 17572,
+   "ERROR": 4636,
+   "TIMEOUT": 4
+  },
+  "findings": 7938,
+  "top_checkers": {
+   "nullPointer": 1190,
+   "shiftTooManyBits": 715,
+   "nullPointerRedundantCheck": 695,
+   "shiftTooManyBitsSigned": 407,
+   "invalidFunctionArg": 386,
+   "invalidScanfArgType_int": 311,
+   "truncLongCastAssignment": 252,
+   "unusedVariable": 216,
+   "allocaCalled": 208,
+   "unreachableCode": 196,
+   "duplicateBranch": 194,
+   "bitwiseOnBoolean": 184,
+   "uninitvar": 183,
+   "badBitmaskCheck": 166,
+   "duplicateExpression": 163,
+   "memleak": 153,
+   "arithOperationsOnVoidPointer": 152,
+   "uselessAssignmentPtrArg": 129,
+   "memleakOnRealloc": 111,
+   "incorrectStringBooleanError": 106,
+   "arrayIndexOutOfBounds": 95,
+   "invalidPointerCast": 71,
+   "returnImplicitInt": 71,
+   "uselessAssignmentArg": 66,
+   "nullPointerArithmeticRedundantCheck": 63
+  }
+ },
+ "cocci": {
+  "tus": 22212,
+  "tu_status": {
+   "OK": 22158,
+   "ERROR": 51,
+   "TIMEOUT": 3
+  },
+  "findings": 4882,
+  "top_checkers": {
+   "shift-into-sign": 3329,
+   "onesided-index": 1025,
+   "realloc-self": 285,
+   "masked-index": 120,
+   "shift-bit31": 116,
+   "nowait-deref": 3,
+   "tautological-bound": 2,
+   "realloc-self-kflags": 1,
+   "masked-loop-bound": 1
+  }
+ },
+ "warnings": {
+  "tus": 22212,
+  "tu_status": {
+   "OK": 15888,
+   "ERROR": 6324
+  },
+  "findings": 192383,
+  "top_checkers": {
+   "-Wsign-conversion": 118057,
+   "-Wimplicit-int-conversion": 23132,
+   "-Wshorten-64-to-32": 20224,
+   "-Wcast-align": 13902,
+   "-Wpointer-sign": 5444,
+   "-Wimplicit-float-conversion": 2987,
+   "-Wconversion": 2678,
+   "-Wshadow": 1527,
+   "-Waddress-of-packed-member": 817,
+   "-Wimplicit-int-float-conversion": 720,
+   "-Wformat-extra-args": 359,
+   "-Wformat": 276,
+   "-Wmissing-braces": 273,
+   "-Wfloat-conversion": 266,
+   "-Wformat-invalid-specifier": 238,
+   "-Wunused-but-set-variable": 232,
+   "-Winitializer-overrides": 201,
+   "-Wpointer-to-int-cast": 182,
+   "-Wunused-variable": 173,
+   "-Wstring-conversion": 104,
+   "-Wnull-pointer-subtraction": 76,
+   "-Wdeprecated-non-prototype": 73,
+   "-Wunknown-pragmas": 47,
+   "-Wunused-value": 40,
+   "-Wvoid-pointer-to-int-cast": 32
+  }
+ },
+ "cxx_analyze": {
+  "tus": 1392,
+  "tu_status": {
+   "OK": 6,
+   "ERROR": 1386
+  },
+  "findings": 0,
+  "top_checkers": {}
+ },
+ "cxx_tidy": {
+  "tus": 1392,
+  "tu_status": {
+   "OK": 6,
+   "ERROR": 1386
+  },
+  "findings": 0,
+  "top_checkers": {}
+ },
+ "matrix": {
+  "rows_loaded": 335855,
+  "rows": 335855,
+  "strength": {
+   "SCANNED": 274786,
+   "PROVED": 6237,
+   "CHECKED": 3050,
+   "UNTOUCHED": 51782
+  },
+  "touched": 284073,
+  "touched_frac": 0.8458203689092019,
+  "untouched_why": {
+   "attempted-no-answer": 8679,
+   "never-attempted": 43103
+  },
+  "trees": {
+   "hbsd": 297212,
+   "kde": 22901,
+   "pbsd": 15742
+  },
+  "per_engine": {
+   "fusebmc": {
+    "ERROR": 286650,
+    "NOFUNC": 6102
+   },
+   "clang-analyze": {
+    "TU-CLEAN": 217022,
+    "REPORTED": 1607,
+    "TU-ERROR": 68045
+   },
+   "clang-tidy": {
+    "TU-CLEAN": 218793,
+    "TU-ERROR": 67881
+   },
+   "cppcheck": {
+    "TU-CLEAN": 176713,
+    "TU-ERROR": 109961
+   },
+   "coccinelle": {
+    "TU-CLEAN": 277890,
+    "TU-ERROR": 8784
+   },
+   "compiler-warnings": {
+    "TU-CLEAN": 223991,
+    "TU-ERROR": 62683
+   },
+   "cbmc": {
+    "PROVED": 6237,
+    "TIMEOUT": 1253,
+    "FAILED": 2538,
+    "ERROR": 328,
+    "BOUNDED": 512
+   },
+   "esbmc": {
+    "ERROR": 10868
+   }
+  },
+  "by_scope_depth1": {
+   "hbsd/bin": {
+    "SCANNED": 965,
+    "PROVED": 73,
+    "CHECKED": 28
+   },
+   "hbsd/cddl": {
+    "CHECKED": 46,
+    "SCANNED": 1591,
+    "PROVED": 55,
+    "UNTOUCHED": 8
+   },
+   "hbsd/contrib": {
+    "SCANNED": 75810,
+    "PROVED": 1379,
+    "CHECKED": 653,
+    "UNTOUCHED": 606
+   },
+   "hbsd/crypto": {
+    "SCANNED": 36605,
+    "PROVED": 590,
+    "UNTOUCHED": 53,
+    "CHECKED": 150
+   },
+   "hbsd/kerberos5": {
+    "UNTOUCHED": 29
+   },
+   "hbsd/lib": {
+    "UNTOUCHED": 2671,
+    "SCANNED": 9106,
+    "PROVED": 787,
+    "CHECKED": 390
+   },
+   "hbsd/libexec": {
+    "SCANNED": 763,
+    "PROVED": 56,
+    "CHECKED": 32
+   },
+   "hbsd/sbin": {
+    "PROVED": 144,
+    "SCANNED": 3808,
+    "CHECKED": 92,
+    "UNTOUCHED": 25
+   },
+   "hbsd/secure": {
+    "SCANNED": 18
+   },
+   "hbsd/share": {
+    "UNTOUCHED": 161
+   },
+   "hbsd/stand": {
+    "SCANNED": 2483,
+    "PROVED": 203,
+    "CHECKED": 87
+   },
+   "hbsd/sys": {
+    "PROVED": 2178,
+    "SCANNED": 131530,
+    "CHECKED": 1198,
+    "UNTOUCHED": 5075
+   },
+   "hbsd/tests": {
+    "UNTOUCHED": 1595
+   },
+   "hbsd/tools": {
+    "UNTOUCHED": 2675
+   },
+   "hbsd/usr.bin": {
+    "SCANNED": 3797,
+    "PROVED": 263,
+    "CHECKED": 132,
+    "UNTOUCHED": 31
+   },
+   "hbsd/usr.sbin": {
+    "SCANNED": 8310,
+    "PROVED": 509,
+    "CHECKED": 242,
+    "UNTOUCHED": 210
+   },
+   "kde/frameworks": {
+    "UNTOUCHED": 9739
+   },
+   "kde/kwin": {
+    "UNTOUCHED": 11010
+   },
+   "kde/plasma-desktop": {
+    "UNTOUCHED": 2152
+   },
+   "pbsd/.mechdiag": {
+    "UNTOUCHED": 15
+   },
+   "pbsd/analyser": {
+    "UNTOUCHED": 17
+   },
+   "pbsd/bin": {
+    "UNTOUCHED": 3124
+   },
+   "pbsd/build": {
+    "UNTOUCHED": 2
+   },
+   "pbsd/kernel": {
+    "UNTOUCHED": 7
+   },
+   "pbsd/lib": {
+    "UNTOUCHED": 10427
+   },
+   "pbsd/sbin": {
+    "UNTOUCHED": 390
+   },
+   "pbsd/sys": {
+    "UNTOUCHED": 1272
+   },
+   "pbsd/tests": {
+    "UNTOUCHED": 120
+   },
+   "pbsd/theme": {
+    "UNTOUCHED": 11
+   },
+   "pbsd/userland": {
+    "UNTOUCHED": 103
+   },
+   "pbsd/usr.bin": {
+    "UNTOUCHED": 155
+   },
+   "pbsd/usr.sbin": {
+    "UNTOUCHED": 99
+   }
+  }
+ },
+ "cxx_matrix": {
+  "rows_loaded": 335853,
+  "rows": 335853,
+  "strength": {
+   "UNTOUCHED": 335853
+  },
+  "touched": 0
+ }
+}

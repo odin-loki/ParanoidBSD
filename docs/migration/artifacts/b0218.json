@@ -1,0 +1,10 @@
+{
+  "batch": "b0218",
+  "verified": "2026-08-08T13:35:00Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "PBSD batch b0218 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\nechocmd                                200041            0       PASS\n-------------------------------- ------------ ------------ ----------\nTOTAL                                  200041            0       PASS\n\n200041 case(s) run, 0 failure(s).\n",
+  "input_hashes": {
+    "hbsd/src/bin/sh/bltin/echo.c": "03e8008358ef4b24"
+  }
+}

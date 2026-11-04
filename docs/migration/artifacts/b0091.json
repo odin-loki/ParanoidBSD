@@ -1,0 +1,12 @@
+{
+  "batch": "b0091",
+  "verified": "2026-08-08T12:17:04Z",
+  "evidence": "harness green + IR-identical for all 5 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nb0091  port vs oracle  (utf8 locale: C.UTF-8, locale-sensitive: yes)\nfunction              cases   failures  result\n-------------- ------------ ----------  ------\nfsetpos              200376          0  ok\ngetwchar             225427          0  ok\ngetwchar_l           254763          0  ok\nputwchar             200322          0  ok\nputwchar_l           224917          0  ok\nTOTAL               1105805          0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fsetpos.c": "b7f7f1fd372d1c59",
+    "hbsd/src/lib/libc/stdio/getwchar.c": "e5a214ce75cdf7a2",
+    "hbsd/src/lib/libc/stdio/putwchar.c": "5b96753aa311ae9a"
+  }
+}

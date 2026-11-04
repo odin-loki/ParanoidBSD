@@ -1,0 +1,3 @@
+fgetwc.c: requires namespace.h, libc_private.h, local.h, mblocal.h, xlocale_private.h, FLOCKFILE/ORIENT, __fgetwc, and __srefill unavailable outside libc.
+snprintf.c: requires local.h, xlocale_private.h, FAKE_FILE, and __vfprintf unavailable outside libc.
+gets_s.c: requires namespace.h, libc_private.h, local.h, ssp/ssp.h, ORIENT, __sgetc, and __throw_constraint_handler_s unavailable outside libc.

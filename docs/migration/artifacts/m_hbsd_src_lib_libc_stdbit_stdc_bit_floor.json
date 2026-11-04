@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdbit_stdc_bit_floor",
+  "verified": "2026-07-30T09:25:55Z",
+  "evidence": "mechanical port of stdc_bit_floor.c, IR-identical for all 5 functions, 35 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdbit/stdc_bit_floor.c": "b1936627a90f7fe5"
+  }
+}

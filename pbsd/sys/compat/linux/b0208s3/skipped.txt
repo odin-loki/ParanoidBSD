@@ -1,0 +1,1 @@
+linux_elf64.c: defines __ELF_WORD_SIZE and includes linux_elf.c; contains no functions

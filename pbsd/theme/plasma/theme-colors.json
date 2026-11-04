@@ -1,0 +1,52 @@
+{
+  "themeId": "pbsd-aero",
+  "colorScheme": "PBSDAero",
+  "version": "0.8.0",
+  "accent": {
+    "primary": "#5082c8",
+    "primaryLight": "#78a8e8",
+    "primaryDark": "#2a5088",
+    "highlight": "#b8d8ff",
+    "hover": "#78a8e8",
+    "focusRing": "#5082c8",
+    "shutdownHover": "#e87830",
+    "glassTint": [0.12, 0.22, 0.40, 0.65]
+  },
+  "panel": {
+    "height": 40,
+    "opacity": 0.72,
+    "blurRadius": 24,
+    "glassAsset": "panel/panel-glass.svg",
+    "searchAsset": "panel/search-box.svg"
+  },
+  "decoration": {
+    "titleBarHeight": 36,
+    "cornerRadius": 8,
+    "buttonSize": 28,
+    "glowActiveAsset": "decoration/glow-active.svg",
+    "glowInactiveAsset": "decoration/glow-inactive.svg",
+    "borderAssets": ["decoration/border-top.svg", "decoration/border-right.svg", "decoration/border-bottom.svg"]
+  },
+  "assets": {
+    "widgets": ["background", "button", "frame", "notification", "slider", "scrollbar", "tab", "checkbox", "radiobutton", "tasks", "tooltip", "menuitem", "progress", "spinner", "hover-highlight", "combobox", "listbox", "treeview", "header", "footer", "badge", "pin", "volume", "battery", "wifi", "bluetooth", "dropdown", "editbox", "groupbox", "splitter"],
+    "panel": ["taskbar", "start-button", "start-menu", "start-menu-frame", "applications", "system-tray", "clock", "show-desktop", "quick-launch", "separator", "search-box", "shutdown", "user-tile", "sidebar", "panel-glass", "documents", "pictures", "control-panel", "music", "videos", "games", "computer", "network", "devices", "favorites", "recent", "all-programs", "power-button", "lock", "sleep", "restart", "logoff", "help", "settings", "run", "search"],
+    "dialogs": ["background", "messagebox", "filedialog", "progress", "wizard", "properties", "about", "inputbox", "conflict"],
+    "decoration": ["titlebar-active", "titlebar-inactive", "close", "maximize", "minimize", "shade", "restore", "border-left", "border-top", "border-right", "border-bottom", "resize-grip", "glow-active", "glow-inactive", "caption-icon"]
+  },
+  "startMenu": {
+    "width": 480,
+    "height": 560,
+    "searchHeight": 36,
+    "itemHeight": 32,
+    "sidebarWidth": 240,
+    "userTileHeight": 64,
+    "frameAsset": "panel/start-menu-frame.svg",
+    "searchAsset": "panel/search-box.svg",
+    "shutdownAsset": "panel/shutdown.svg",
+    "userTileAsset": "panel/user-tile.svg",
+    "sidebarAsset": "panel/sidebar.svg",
+    "systemLinks": ["documents", "pictures", "control-panel", "music", "videos", "games", "computer", "network", "devices"],
+    "powerActions": ["lock", "sleep", "restart", "logoff", "shutdown"],
+    "notes": "panel/start-menu.md"
+  }
+}

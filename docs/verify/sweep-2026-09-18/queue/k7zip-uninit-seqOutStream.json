@@ -1,0 +1,13 @@
+{
+  "status": "read",
+  "verdict": "defect-upstream-karchive",
+  "not_in_pbsd_tree": true,
+  "function": "K7Zip::K7ZipPrivate::readAndDecodePackedStreams",
+  "file": "/home/odin/kde-src/karchive-618/src/k7zip.cpp",
+  "line": 1803,
+  "checker": "core.CallAndMessage",
+  "msg": "1st function call argument is an uninitialized value",
+  "note": "int seqOutStream; getOutStream(...) ignored; seqOutStreams.append(seqOutStream). getOutStream can return false without writing the out-ref. Contrast seqInStream = 0. karchive is a KF 6.18 cmake unpack under kde-src, not vendored in ParanoidBSD kde/frameworks. Not UB_FINDINGS: not this tree, not UBSan-reproduced.",
+  "in_stream_initialized": true,
+  "out_stream_initialized": false
+}

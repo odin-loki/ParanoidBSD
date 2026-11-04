@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_s_logb",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of s_logb.c, IR-identical for all 1 functions, 13 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_logb.c": "d4c13e8678659ef6"
+  }
+}

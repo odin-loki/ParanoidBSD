@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_strncat",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of strncat.c, IR-identical for all 1 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/strncat.c": "9b20115d91b13414"
+  }
+}

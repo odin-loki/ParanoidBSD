@@ -1,0 +1,10 @@
+{
+  "batch": "b0020s1",
+  "verified": "2026-08-08T09:25:34Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\npdwait                 256048            0\n\nRESULT: PASS (all 256048 cases matched)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/pdwait.c": "7079088940b13bc5"
+  }
+}

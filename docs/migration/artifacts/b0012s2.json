@@ -1,0 +1,10 @@
+{
+  "batch": "b0012s2",
+  "verified": "2026-07-30T07:59:43Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: __ledf2)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nledf2 (__ledf2)            566955            0\nfloat64_le                 566955            0\nextractFloat64Frac         566955            0\nextractFloat64Exp          566955            0\nextractFloat64Sign         566955            0\n\nPASS: 0 failure(s)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/ledf2.c": "2bcc1616852099c8"
+  }
+}

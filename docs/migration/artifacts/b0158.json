@@ -1,0 +1,12 @@
+{
+  "batch": "b0158",
+  "verified": "2026-08-08T12:00:25Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: wcstok)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n--------            -----     --------\nwcstok             681220            0\nTOTAL              681220            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wcstok.c": "aa405fd54c100706",
+    "hbsd/src/lib/libc/string/strcasecmp.c": "a694fa6ca41aa971",
+    "hbsd/src/lib/libc/string/strxfrm.c": "2c1de5e533370d3a"
+  }
+}

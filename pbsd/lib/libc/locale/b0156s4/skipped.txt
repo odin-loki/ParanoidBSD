@@ -1,0 +1,5 @@
+hbsd/src/lib/libc/locale/collate.c:destruct_collate - only munmaps/frees an mmap'ed locale table; nothing observable to diff without the mmap'ed LC_COLLATE files.
+hbsd/src/lib/libc/locale/collate.c:__collate_load - depends on xlocale_release()/calloc'ed component destructors and on __collate_load_tables_l, which needs an on-disk locale database.
+hbsd/src/lib/libc/locale/collate.c:__collate_load_tables - thin wrapper over __collate_load_tables_l, which is skipped.
+hbsd/src/lib/libc/locale/collate.c:__collate_load_tables_l - needs _PathLocale, _open/_fstat/mmap of a real LC_COLLATE database and libc-private _LDP_* codes; not reproducible as a self-contained differential test.
+hbsd/src/lib/libc/locale/collate.c:__xlocale_global_collate/__xlocale_C_collate/__xlocale_POSIX_collate/__xlocale_CUTF8_collate - data definitions consumed only by the skipped loader functions.

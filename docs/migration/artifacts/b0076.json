@@ -1,0 +1,11 @@
+{
+  "batch": "b0076",
+  "verified": "2026-08-08T11:19:35Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                            cases   failures\n------------------------------ ---------- ----------\nhtonl                              252148          0\nhtons                              315592          0\nntohl                              252148          0\nntohs                              315592          0\nin6addr_any                            17          0\nin6addr_loopback                       17          0\nin6addr_nodelocal_allnodes             17          0\nin6addr_linklocal_allnodes             17          0\nTOTAL                             1135548          0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/net/ntoh.c": "f03bc17d195a3e4d",
+    "hbsd/src/lib/libc/net/vars.c": "bcde74aa446e361b"
+  }
+}

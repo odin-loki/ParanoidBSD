@@ -1,0 +1,2 @@
+strcasecmp.c: requires xlocale_private.h (locale_t, FIX_LOCALE, __get_locale, tolower_l) unavailable in isolation
+strxfrm.c: requires collate.h, xlocale_collate, mbstowcs_l, _collate_sxfrm, and locale infrastructure unavailable in isolation

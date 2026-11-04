@@ -1,0 +1,13 @@
+{
+  "batch": "b0212",
+  "verified": "2026-08-08T13:19:26Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "batch b0212 differential results\nfunction              cases     failures\nmergesort_b           50010            0\nbsearch_b             50009            0\nheapsort_b            50004            0\nlsearch               25002            0\nlfind                 25004            0\nTOTAL                200029            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/mergesort_b.c": "89ec53ed72365448",
+    "hbsd/src/lib/libc/stdlib/bsearch_b.c": "62e7223b2477a8ce",
+    "hbsd/src/lib/libc/stdlib/heapsort_b.c": "5a9f9dbaf23b67e4",
+    "hbsd/src/lib/libc/stdlib/lsearch.c": "6343446b29edab84"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "batch": "b0320",
+  "verified": "2026-08-09T03:04:31Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                          cases     failures\nmac_get_fd                        50008            0\nmac_get_file                      50013            0\nmac_get_link                      50013            0\nmac_get_peer                      50008            0\nmac_get_pid                       50012            0\nmac_get_proc                      50008            0\nacl_init                          50012            0\nacl_dup                           50005            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/posix1e/mac_get.c": "788f7a57b36c7210",
+    "hbsd/src/lib/libc/posix1e/acl_init.c": "3a71f3dabc91946d"
+  }
+}

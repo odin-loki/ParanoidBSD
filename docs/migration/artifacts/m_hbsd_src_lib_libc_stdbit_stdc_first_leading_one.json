@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdbit_stdc_first_leading_one",
+  "verified": "2026-07-30T09:25:55Z",
+  "evidence": "mechanical port of stdc_first_leading_one.c, IR-identical for all 5 functions, 29 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdbit/stdc_first_leading_one.c": "2d632d67d4e76738"
+  }
+}

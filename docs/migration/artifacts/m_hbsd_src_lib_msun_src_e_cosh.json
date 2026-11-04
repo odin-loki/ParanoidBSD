@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_e_cosh",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of e_cosh.c, IR-identical for all 1 functions, 14 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_cosh.c": "e457c54c1a2c6a1f"
+  }
+}

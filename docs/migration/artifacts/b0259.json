@@ -1,0 +1,12 @@
+{
+  "batch": "b0259",
+  "verified": "2026-08-09T00:08:16Z",
+  "evidence": "harness green + 1/1 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                          cases     failures\nacl_free                         200003            0\nmac_execve                       200006            0\n__oldacl_get_perm_np             200019            0\n__oldacl_add_perm                200019            0\n__oldacl_delete_perm             200019            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/posix1e/acl_free.c": "f50b12d5c44bf1ae",
+    "hbsd/src/lib/libc/posix1e/mac_exec.c": "7ce0dcb57baeb470",
+    "hbsd/src/lib/libc/posix1e/acl_compat.c": "1a2a7c26b7112f89"
+  }
+}

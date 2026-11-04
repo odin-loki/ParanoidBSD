@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_wcsncmp",
+  "verified": "2026-07-30T09:25:28Z",
+  "evidence": "mechanical port of wcsncmp.c, IR-identical for all 1 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wcsncmp.c": "f633a4d6e4ffdc28"
+  }
+}

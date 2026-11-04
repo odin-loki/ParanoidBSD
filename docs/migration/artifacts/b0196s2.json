@@ -1,0 +1,10 @@
+{
+  "batch": "b0196s2",
+  "verified": "2026-08-08T22:43:21Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: des_crypt_call)",
+  "ir_equivalent": false,
+  "harness_output": "\n=== b0196s2 differential test results ===\n_des_crypt_call   cases=200020  failures=0\nTOTAL failures: 0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/crypt_client.c": "d916de85339ec9db"
+  }
+}

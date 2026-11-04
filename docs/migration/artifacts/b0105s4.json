@@ -1,0 +1,10 @@
+{
+  "batch": "b0105s4",
+  "verified": "2026-08-08T22:10:28Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\n+-----------+--------------+--------------+--------+\n| function  |        cases |     failures | result |\n+-----------+--------------+--------------+--------+\n| wcslcpy   |       200476 |            0 | PASS   |\n+-----------+--------------+--------------+--------+\n| TOTAL     |       200476 |            0 | PASS   |\n+-----------+--------------+--------------+--------+\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wcslcpy.c": "de90267161ac8b19"
+  }
+}

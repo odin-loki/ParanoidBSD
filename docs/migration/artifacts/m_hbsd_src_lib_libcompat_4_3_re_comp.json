@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libcompat_4_3_re_comp",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of re_comp.c, IR-identical for all 2 functions, 17 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libcompat/4.3/re_comp.c": "462be6acc3dcce06"
+  }
+}

@@ -1,0 +1,111 @@
+# Ports proved IR-equivalent AND exporting the same symbols as their C
+# original, on a FreeBSD host.
+#
+# The older floor next to this one counts semantic equivalence only, and
+# normalize_ir() demangles names to get it: @_Z9usage_msgv compares equal to
+# @usage_msg. That is right for "does this compute the same thing" and wrong
+# for "can this ship". A function declared in a header keeps C linkage
+# through __BEGIN_DECLS; one that is external but declared nowhere is
+# mangled, and libm cannot ship a symbol under a new name.
+#
+# So this is the number that decides whether a port is committable, and it is
+# a separate ratchet rather than a redefinition of the old one, because the
+# old one still measures something worth not regressing.
+#
+# Run 12 (commit 96c555238, FreeBSD 15.1, clang 19.1.7, scope lib/msun):
+# 74 ABI-equal against 88 IR-equal. The 14 in the gap are real: msun's
+# __kernel_cosl, __kernel_sinl and __kernel_tanl in both ld80 and ld128
+# compute the right answer and export _Z13__kernel_coslee instead of
+# __kernel_cosl. lib/msun/src/math_private.h declares them with no
+# __BEGIN_DECLS, so under C++ they get C++ linkage. Those ports are correct
+# and unshippable, which is exactly the distinction this floor exists to
+# make.
+#
+# Run 13 (commit fc34304a3, same host and scope): 88, equal to the IR
+# floor. The gap closed entirely - adding __BEGIN_DECLS to
+# lib/msun/src/math_private.h converted all 14 at once, which is what a
+# single missing linkage guard being the whole cause looks like.
+#
+# 88 of 120 ports are now both semantically identical to their C original
+# and exporting the same symbols. That is the committable set.
+
+# Run 21 (commit 0c7f5735a, same host and scope): 174, from the same
+# --ir-limit raise described in the sibling floor. 199 ports are IR-equal
+# and 174 of those are ABI-equal, so the gap is back to 25 - and all 25 are
+# one family:
+#
+#   C only  : fmaximum          C++ only: _Z8fmaximumdd
+#   C only  : fmaximum_mag      C++ only: _Z12fmaximum_magdd
+#   ... fminimum, _num, _mag_num, and the f/l variants
+#
+# Not the same cause as the 14 that closed in run 13, and the cause is
+# still unknown. Two explanations have been proposed and both were refuted:
+#
+#   1. the __ISO_C_VISIBLE >= 2023 guard those declarations sit behind in
+#      lib/msun/src/math.h. Refuted: the macro evaluates to 2023 under
+#      -std=c++23 exactly as under -std=c17, and the declarations are
+#      already inside __BEGIN_DECLS.
+#   2. oracle_include_flags() adding the tree's headers with -idirafter
+#      rather than -I, so the host's math.h wins. A bare probe on the
+#      FreeBSD runner agreed - host header alone does not declare fmaximum,
+#      -I lib/msun/src does, -idirafter does not. Refuted anyway: the
+#      oracle ALSO passes -I{src.parent}, and s_fmaximum.c sits in the same
+#      directory as math.h, so the tree's header was reachable the whole
+#      time. That probe was describing a command line nobody runs.
+#
+# Both wrong the same way - a question asked that was not the question the
+# oracle asks. So the diagnostic no longer probes an imagined command line:
+# tools/pbsd_passes/why_mangled.py runs the oracle's own include and target
+# flags over the real source and its real staged port and prints the symbol
+# tables each side defines, plus whether <math.h> under those same flags
+# declares the name.
+#
+# This floor stays at the measured 174 until that says something.
+
+# Run 27 (commit 7f5782656): 210 ABI-equal + 1 committed = 211, up from
+# 174, and the gap this comment was written about is gone. 211 verified
+# against 210 ABI-equal is a gap of one, where it was 25.
+#
+# The cause was neither of the two guesses above. oracle_include_flags()
+# named lib/msun/src on -I (as src.parent) and again on -idirafter, and
+# clang deduplicates its search list keeping the LATER entry - so the
+# directory moved behind the system headers and `#include <math.h>` in
+# s_fmaximum.c resolved to the host's. The fmaximum/fminimum family is
+# declared only in the tree's newer header, so it was declared on neither
+# side; C emitted a plain symbol and C++ mangled the identical definition.
+# clang says "duplicate directory ... is ignored"; -Wno-everything, the
+# first flag the oracle passes, suppressed it.
+#
+# why_mangled.py now reports `C++ defines: fminimum` and `-> same symbols`
+# for the file that produced _Z8fminimumdd, which is the fix confirmed on
+# the same file that showed the fault.
+#
+# 204 ports are committable under the target flags - IR-equal, ABI-equal,
+# and measured with -ffp-exception-behavior=maytrap -fno-math-errno. That
+# is the set to take the next port from.
+# THE SUM GAINED A THIRD TERM (run 36)
+#
+# lib/msun has no such removal on the record; the term is here because the ratchets are
+# the same code and the next deletion may be in this scope.
+#
+# Run 34, the last green one, reported 122 verified + 1 committed = 123.
+# Run 36 reported 96 verified + 26 committed = 122 and failed the floor by
+# one. Twenty-five ports landed in between and verified fell by twenty-six,
+# so exactly one file left the candidate set without becoming a port:
+# hbsd/src/lib/libc/amd64/string/strnlen.c, which run 34 named in its
+# committable list - IR-equal AND ABI-equal - and which commit 4f926059c
+# deleted along with ten other arch-string sources that shadowed their
+# machine-independent originals through .PATH and called assembly that was
+# already gone. The ABI figures moved by the same one, for the same file.
+#
+# So a source has three ways out of the candidate set, not two: it can be
+# ported (counted by `+ committed'), it can regress (which is what this
+# floor is for), or it can be DELETED - neither a .c that verifies nor a
+# .cpp that shipped. The third was not accounted for, and the honest fix is
+# to complete the invariant rather than to move the number: this floor is
+# unchanged, and docs/migration/freebsd_oracle_removed.txt names the
+# deletion with the commit that made it. tools/check_oracle_removed.py
+# holds every entry to what git says, so the term cannot become a way to
+# hold a floor up over a file that is back.
+
+211

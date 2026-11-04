@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160" height="80" viewBox="0 0 160 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6496dc" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#1e3c6e" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="160" height="80" rx="6" fill="url(#aero-frame)"/>
+  <rect x="1" y="1" width="158" height="18" fill="#ffffff" fill-opacity="0.16" rx="5"/>
+  <rect x="0" y="0" width="160" height="1" fill="#9ec8ff" fill-opacity="0.5"/>
+</svg>

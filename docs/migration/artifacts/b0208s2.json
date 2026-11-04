@@ -1,0 +1,10 @@
+{
+  "batch": "b0208s2",
+  "verified": "2026-08-08T22:44:31Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "=== b0208s2 differential test results ===\nfunction     cases      failures\n(none \u2014 batch skipped; see skipped.txt)\n--------------------------------------\nTOTAL        0          0\n",
+  "input_hashes": {
+    "hbsd/src/sys/compat/linux/linux_elf32.c": "e102b1937eb14576"
+  }
+}

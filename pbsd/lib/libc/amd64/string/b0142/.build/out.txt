@@ -1,0 +1,4 @@
+PBSD batch b0142 differential test
+  __archlevel_resolve        200030 cases         0 failures
+----------------------------------------
+  TOTAL                      200030 cases         0 failures

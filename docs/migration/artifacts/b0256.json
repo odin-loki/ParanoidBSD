@@ -1,0 +1,11 @@
+{
+  "batch": "b0256",
+  "verified": "2026-08-08T23:07:48Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases     failures\n__unvis_44bsd                200016            0\nkqueue1                      200010            0\nport.cppm:3: warning: \"_GNU_SOURCE\" redefined\n    3 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\nharness.cpp:7: warning: \"_GNU_SOURCE\" redefined\n    7 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/unvis-compat.c": "08579c6668c57732",
+    "hbsd/src/lib/libc/gen/kqueue1.c": "60b9b312a50fa7eb"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_net_ip6opt",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of ip6opt.c, IR-identical for all 13 functions, 257 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/net/ip6opt.c": "16a10555e4751b70"
+  }
+}

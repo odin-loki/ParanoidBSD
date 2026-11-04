@@ -1,0 +1,17 @@
+{
+  "KPackageStructure": "Plasma/Theme",
+  "KPlugin": {
+    "Authors": [{"Name": "Odin Loch", "Email": "pbsd@local"}],
+    "Category": "Windows 7 style",
+    "Description": "ParanoidBSD Windows 7 Aero Plasma theme — glass panels, blue chrome, soft gradients",
+    "EnabledByDefault": true,
+    "FormFactors": ["desktop"],
+    "Id": "pbsd-aero",
+    "License": "Proprietary",
+    "Name": "PBSD Aero",
+    "Version": "0.8.0",
+    "Website": "https://paranoidbsd.local/theme/pbsd-aero"
+  },
+  "X-Plasma-API": "5.0",
+  "X-Plasma-ColorScheme": "PBSDAero"
+}

@@ -1,0 +1,12 @@
+{
+  "batch": "b0248",
+  "verified": "2026-08-08T23:03:26Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases     failures\n__ttyslot                    200002            0\nfreebsd11_devname            200059            0\nfreebsd11_devname_r          200205            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/ttyslot.c": "06f632af03fb537c",
+    "hbsd/src/lib/libc/gen/devname-compat11.c": "b2b8e30f9c2fc06b",
+    "hbsd/src/lib/libc/gen/eventfd.c": "73428878320d8e7d"
+  }
+}

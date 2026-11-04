@@ -1,0 +1,10 @@
+{
+  "batch": "b0020s2",
+  "verified": "2026-07-30T09:49:48Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                        cases     failures\nclosefrom                      259014            0\nTOTAL                          259014            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/closefrom.c": "1a4b6da43550d4ec"
+  }
+}

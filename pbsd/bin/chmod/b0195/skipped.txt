@@ -1,0 +1,17 @@
+Batch b0195 -- bin/chmod/chmod.c
+
+Functions omitted from port.cppm and oracle.c:
+
+main
+	Not portable to this toolchain: needs FreeBSD-only SIGINFO,
+	setmode(3)/getmode(3)/strmode(3) (libbsd is not installed) and the
+	__dead2 usage() exit path, and its behaviour is an fts(3) walk that
+	calls fchmodat(2) on the live filesystem, so it has no differentially
+	testable pure form.
+
+may_have_nfs4acl
+	Not portable to this toolchain: needs lpathconf(2) and _PC_ACL_NFS4,
+	neither of which exists outside FreeBSD, plus NODEV; providing either
+	one would be inventing behaviour rather than porting it.
+
+Ported and differentially tested: siginfo_handler, usage.

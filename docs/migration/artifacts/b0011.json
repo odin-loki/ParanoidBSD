@@ -1,0 +1,13 @@
+{
+  "batch": "b0011",
+  "verified": "2026-08-08T09:25:37Z",
+  "evidence": "harness green + 4/4 mutations killed (IR: IR differs for 3/4: __eqdf2, __gesf2, __lesf2)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures   distinct   result\n__eqdf2            521360            0          2     PASS\n__negdf2           254128            0        256     PASS\n__gesf2            283792            0          2     PASS\n__lesf2            283792            0          2     PASS\n\nb0011: all cases matched the oracle\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/eqdf2.c": "e73981915aa8e503",
+    "hbsd/src/lib/libc/softfloat/negdf2.c": "f038252a7a9af2ae",
+    "hbsd/src/lib/libc/softfloat/gesf2.c": "dc0cafe3b731d874",
+    "hbsd/src/lib/libc/softfloat/lesf2.c": "3b0e9adfec708cdf"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0095s1",
+  "verified": "2026-08-08T22:12:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: powl)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD b0095s1 differential test (msun/ld80: e_powl.c)\n\n  function          cases     failures  status\n  ---------- ------------ ------------  ------\n  powl             277037            0  ok\n\n  total failures: 0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld80/e_powl.c": "c149affaed71c533"
+  }
+}

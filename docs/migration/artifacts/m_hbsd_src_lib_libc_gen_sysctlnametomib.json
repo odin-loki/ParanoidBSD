@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_sysctlnametomib",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of sysctlnametomib.c, IR-identical for all 1 functions, 2 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/sysctlnametomib.c": "c97d5ac3d57ffce7"
+  }
+}

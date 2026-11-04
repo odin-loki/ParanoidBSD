@@ -1,0 +1,10 @@
+{
+  "batch": "b0171",
+  "verified": "2026-08-08T22:38:16Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: main)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0171 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\nmain                                   200024            0       PASS\n-------------------------------- ------------ ------------ ----------\nTOTAL                                  200024            0       PASS\n\n200024 case(s) run, 0 failure(s).\nport.cppm:7: warning: \"_GNU_SOURCE\" redefined\n    7 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\nharness.cpp:9: warning: \"_GNU_SOURCE\" redefined\n    9 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\nharness.cpp:401:20: warning: \u2018__malloc_hook\u2019 initialized and declared \u2018extern\u2019\n  401 | extern \"C\" void *(*__malloc_hook)(size_t) = nullptr;\n      |                    ^~~~~~~~~~~~~\nmalloc\nmalloc\nmalloc\nmalloc\n",
+  "input_hashes": {
+    "hbsd/src/bin/echo/echo.c": "1b9a5964347dacd9"
+  }
+}

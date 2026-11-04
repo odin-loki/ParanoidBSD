@@ -1,0 +1,11 @@
+{
+  "batch": "b0315",
+  "verified": "2026-08-09T02:57:46Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "b0315 differential harness\nfunction                  cases   failures\npS0                           2          0\npS1                           2          0\npS2                           2          0\npS3                           2          0\npS4                           2          0\npS5                           2          0\npS6                           2          0\nqS1                           2          0\nqS2                           2          0\nqS3                           2          0\nqS4                           2          0\nqS5                           2          0\natanhi                        8          0\natanlo                        8          0\naT                           26          0\npi_lo                         2          0\nlayout                        4          0\nedge_boundaries               5          0\nguard_window                  2          0\nrandom_sweep             100000          0\nTOTAL                    100079          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/i387/invtrig.c": "5fc7bba19cec7a03",
+    "hbsd/src/lib/msun/i387/fenv.c": "296a8acb02775838"
+  }
+}

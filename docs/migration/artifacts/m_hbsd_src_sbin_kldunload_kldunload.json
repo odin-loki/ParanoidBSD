@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sbin_kldunload_kldunload",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of kldunload.c, IR-identical for all 1 functions, 15 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sbin/kldunload/kldunload.c": "3b849cdc318a336c"
+  }
+}

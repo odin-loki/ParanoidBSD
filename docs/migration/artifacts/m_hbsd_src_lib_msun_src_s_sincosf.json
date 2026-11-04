@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_s_sincosf",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of s_sincosf.c, IR-identical for all 1 functions, 33 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_sincosf.c": "e27a2a9cdc6530cf"
+  }
+}

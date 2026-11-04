@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_ffs",
+  "verified": "2026-07-30T09:25:28Z",
+  "evidence": "mechanical port of ffs.c, IR-identical for all 1 functions, 5 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/ffs.c": "388f51e0181b62f3"
+  }
+}

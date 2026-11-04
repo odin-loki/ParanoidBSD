@@ -1,0 +1,1 @@
+{"v": 1, "file": "lib/libc/stdlib/abs.c", "instrument": "codeql", "status": "SMOKE-OK", "create_rc": 0, "query_rc": 0, "note": "CodeQL 2.27.0 extractor saw abs() via include_flags(); not a tree taint run"}

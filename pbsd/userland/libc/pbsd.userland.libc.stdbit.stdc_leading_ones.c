@@ -1,0 +1,3 @@
+/* Reference logic from hbsd/src/lib/libc/stdbit/stdc_leading_ones.c (dual-world). */
+
+/* stub */

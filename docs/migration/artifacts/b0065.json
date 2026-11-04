@@ -1,0 +1,13 @@
+{
+  "batch": "b0065",
+  "verified": "2026-08-08T11:17:31Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "build.sh: CC=cc CXX=c++ module flags: -fmodules-ts\n\n  function            cases       failures  status\n  ---------------------------------------------------\n  strtoq             217742              0  ok\n  strtouq            217742              0  ok\n  div                661979              0  ok\n  ldiv               662549              0  ok\n  ---------------------------------------------------\n  TOTAL             1760012              0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/strtoq.c": "0913c22e9d375ad2",
+    "hbsd/src/lib/libc/stdlib/strtouq.c": "b260cad4ff66bbe8",
+    "hbsd/src/lib/libc/stdlib/div.c": "c1620e5f7dbd6236",
+    "hbsd/src/lib/libc/stdlib/ldiv.c": "142b795c801d93d7"
+  }
+}

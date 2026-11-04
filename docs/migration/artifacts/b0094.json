@@ -1,0 +1,13 @@
+{
+  "batch": "b0094",
+  "verified": "2026-08-08T11:30:45Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "pbsd batch b0094 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function                  cases   failures   result\n  ------------------------------------------------------\n  __kernel_tanl            205864          0   PASS\n  __exp__D                 400146          0   PASS\n  expl                     200073          0   PASS\n  expm1l                   200073          0   PASS\n  exp2l                    200073          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld80/k_tanl.c": "54fd4560c41f64c5",
+    "hbsd/src/lib/msun/ld80/b_expl.c": "78eded8945699f28",
+    "hbsd/src/lib/msun/ld80/s_expl.c": "9a0c220b3e744544",
+    "hbsd/src/lib/msun/ld80/s_exp2l.c": "67397b3f53763341"
+  }
+}

@@ -1,0 +1,2 @@
+uexterr_gettext.c: requires libc_private.h, exterrctl/__uexterr_format, and __libc_interposing constructor machinery unavailable in this harness.
+scandir_b.c: includes scandir.c which requires block_abi.h, _GENERIC_DIRSIZ, and live directory syscalls unavailable in this harness.

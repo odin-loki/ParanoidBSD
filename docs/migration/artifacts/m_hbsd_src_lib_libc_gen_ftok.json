@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_ftok",
+  "verified": "2026-07-30T09:26:22Z",
+  "evidence": "mechanical port of ftok.c, IR-identical for all 1 functions, 6 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/ftok.c": "29e546cd26aee6df"
+  }
+}

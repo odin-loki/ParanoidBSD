@@ -1,0 +1,12 @@
+{
+  "batch": "b0145",
+  "verified": "2026-08-08T11:54:02Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0145 differential results\nfunction                                cases   failures status\nwcstoul                                406764          0 ok\nwcstoul_l                              813528          0 ok\nwcstoumax                              406764          0 ok\nwcstoumax_l                            813528          0 ok\n__numeric_load_locale                  200004          0 ok\n__numeric_load                         200002          0 ok\n__get_current_numeric_locale           200002          0 ok\nTOTAL                                 3040592          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wcstoul.c": "fcb6ac390689b282",
+    "hbsd/src/lib/libc/locale/wcstoumax.c": "4930f8eac7169202",
+    "hbsd/src/lib/libc/locale/lnumeric.c": "beb4f8c2138f90e2"
+  }
+}

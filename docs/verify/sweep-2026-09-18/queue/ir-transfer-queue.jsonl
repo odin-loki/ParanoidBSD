@@ -1,0 +1,41 @@
+{"_meta": true, "proved_functions": 6237, "proved_files": 3003, "counts": {"none": 2963, "fn_none": 6188, "hbsd_cpp": 40, "fn_hbsd_cpp": 49}}
+{"file": "lib/libc/gen/isatty.cpp", "proved_functions": 1, "functions": ["isatty"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/gen/isatty.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/libc/gen/isinf.cpp", "proved_functions": 3, "functions": ["__isinf", "__isinff", "__isinfl"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/gen/isinf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/libc/gen/lrand48.cpp", "proved_functions": 1, "functions": ["lrand48"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/gen/lrand48.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/libc/gen/mrand48.cpp", "proved_functions": 1, "functions": ["mrand48"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/gen/mrand48.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/libc/gen/srand48.cpp", "proved_functions": 1, "functions": ["srand48"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/gen/srand48.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/libc/stdio/fcloseall.cpp", "proved_functions": 1, "functions": ["__fcloseall"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/stdio/fcloseall.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/libc/string/ffsll.cpp", "proved_functions": 1, "functions": ["ffsll"], "twin": {"hbsd_cpp": "hbsd/src/lib/libc/string/ffsll.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_atan2.cpp", "proved_functions": 1, "functions": ["atan2"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_atan2.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_atan2f.cpp", "proved_functions": 1, "functions": ["atan2f"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_atan2f.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_expf.cpp", "proved_functions": 1, "functions": ["expf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_expf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_gamma.cpp", "proved_functions": 1, "functions": ["gamma"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_gamma.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_gammaf.cpp", "proved_functions": 1, "functions": ["gammaf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_gammaf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_hypot.cpp", "proved_functions": 1, "functions": ["hypot"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_hypot.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_hypotf.cpp", "proved_functions": 1, "functions": ["hypotf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_hypotf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_lgamma.cpp", "proved_functions": 1, "functions": ["lgamma"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_lgamma.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_lgammaf.cpp", "proved_functions": 1, "functions": ["lgammaf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_lgammaf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/e_lgammaf_r.cpp", "proved_functions": 1, "functions": ["sin_pif"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/e_lgammaf_r.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/k_cos.cpp", "proved_functions": 1, "functions": ["__kernel_cos"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/k_cos.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/k_sin.cpp", "proved_functions": 1, "functions": ["__kernel_sin"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/k_sin.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_asinhf.cpp", "proved_functions": 1, "functions": ["asinhf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_asinhf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_atan.cpp", "proved_functions": 1, "functions": ["atan"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_atan.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_atanf.cpp", "proved_functions": 1, "functions": ["atanf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_atanf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_cbrtf.cpp", "proved_functions": 1, "functions": ["cbrtf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_cbrtf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_erff.cpp", "proved_functions": 2, "functions": ["erff", "erfcf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_erff.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_expm1f.cpp", "proved_functions": 1, "functions": ["expm1f"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_expm1f.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_fmaximum_num.cpp", "proved_functions": 1, "functions": ["fmaximum_num"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_fmaximum_num.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_fmaximum_numf.cpp", "proved_functions": 1, "functions": ["fmaximum_numf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_fmaximum_numf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_fmin.cpp", "proved_functions": 1, "functions": ["fmin"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_fmin.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_fminf.cpp", "proved_functions": 1, "functions": ["fminf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_fminf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_fminimum_num.cpp", "proved_functions": 1, "functions": ["fminimum_num"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_fminimum_num.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_fminimum_numf.cpp", "proved_functions": 1, "functions": ["fminimum_numf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_fminimum_numf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_isfinite.cpp", "proved_functions": 3, "functions": ["__isfinite", "__isfinitef", "__isfinitel"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_isfinite.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_isnormal.cpp", "proved_functions": 3, "functions": ["__isnormal", "__isnormalf", "__isnormall"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_isnormal.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_nextafter.cpp", "proved_functions": 1, "functions": ["nextafter"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_nextafter.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_nextafterf.cpp", "proved_functions": 1, "functions": ["nextafterf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_nextafterf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_nexttowardf.cpp", "proved_functions": 1, "functions": ["nexttowardf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_nexttowardf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_round.cpp", "proved_functions": 1, "functions": ["round"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_round.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_roundf.cpp", "proved_functions": 1, "functions": ["roundf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_roundf.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_signbit.cpp", "proved_functions": 3, "functions": ["__signbit", "__signbitf", "__signbitl"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_signbit.cpp"}, "kind": "hbsd_cpp"}
+{"file": "lib/msun/src/s_tgammaf.cpp", "proved_functions": 1, "functions": ["tgammaf"], "twin": {"hbsd_cpp": "hbsd/src/lib/msun/src/s_tgammaf.cpp"}, "kind": "hbsd_cpp"}

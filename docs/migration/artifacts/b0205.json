@@ -1,0 +1,10 @@
+{
+  "batch": "b0205",
+  "verified": "2026-08-08T22:43:19Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 6/6: fifo_cleanup, fifo_open, fifo_close, fifo_printinfo)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases     failures\n------------------ ------------ ------------\nfifo_cleanup             200450            0\nfifo_open                560042            0\nfifo_close               206300            0\nfifo_printinfo           200512            0\nfifo_print               200512            0\nfifo_advlock             200132            0\n------------------ ------------ ------------\nTOTAL                   1567948            0\n\nPASS: port matches oracle on every case\n",
+  "input_hashes": {
+    "hbsd/src/sys/fs/fifofs/fifo_vnops.c": "bae2b714ac7b1193"
+  }
+}

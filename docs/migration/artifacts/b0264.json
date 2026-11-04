@@ -1,0 +1,12 @@
+{
+  "batch": "b0264",
+  "verified": "2026-08-09T00:07:58Z",
+  "evidence": "harness green + IR-identical for all 6 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                            cases     failures\n__getcontextx_size                 200001            0\n__fillcontextx2                    200004            0\n__fillcontextx                     200004            0\n__getcontextx                      200004            0\n__pause                            200004            0\n__ssp_real_gethostname             200011            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/trivial-getcontextx.c": "e4765d5ceecc2833",
+    "hbsd/src/lib/libc/gen/pause.c": "d5756d89e25443f2",
+    "hbsd/src/lib/libc/gen/gethostname.c": "5a1137b449722bb3"
+  }
+}

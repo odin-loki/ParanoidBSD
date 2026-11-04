@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sys_fs_procfs_procfs_type",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of procfs_type.c, IR-identical for all 1 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sys/fs/procfs/procfs_type.c": "ba69a89b4651614c"
+  }
+}

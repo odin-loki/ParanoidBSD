@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sbin_rcorder_ealloc",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of ealloc.c, IR-identical for all 4 functions, 4 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sbin/rcorder/ealloc.c": "5587045df3f18eaf"
+  }
+}

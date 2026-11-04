@@ -1,0 +1,1 @@
+gen.c: main — program entry writing to stdout; not a callable unit under differential test

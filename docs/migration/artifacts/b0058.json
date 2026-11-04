@@ -1,0 +1,13 @@
+{
+  "batch": "b0058",
+  "verified": "2026-08-08T11:24:01Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/10: reset_locale_states)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n--------                -----     --------\nmbrtoc32_l             200017            0\nmbrtoc32               200017            0\nwcrtomb_l              200016            0\nwcrtomb                200016            0\nwctob_l                200015            0\nwctob                  200015            0\nmbrlen_l               200020            0\nmbrlen                 200020            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/mbrtoc32.c": "bd787fd11eba35e1",
+    "hbsd/src/lib/libc/locale/wcrtomb.c": "cb8ed56c29da9ede",
+    "hbsd/src/lib/libc/locale/wctob.c": "a48842e3877217ad",
+    "hbsd/src/lib/libc/locale/mbrlen.c": "075763014b559e6f"
+  }
+}

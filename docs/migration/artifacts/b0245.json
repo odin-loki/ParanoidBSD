@@ -1,0 +1,13 @@
+{
+  "batch": "b0245",
+  "verified": "2026-08-08T23:03:30Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                 cases     failures\n---------------------------------------------\nvadvise                 200265            0\npdfork                  200370            0\n__sys_pipe              200272            0\nnanosleep               202050            0\n---------------------------------------------\nTOTAL                   802957            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/vadvise.c": "4917b032e76d8d22",
+    "hbsd/src/lib/libc/sys/pdfork.c": "e33a05bf37438f2f",
+    "hbsd/src/lib/libc/sys/pipe.c": "b807827aa207eb1e",
+    "hbsd/src/lib/libc/sys/nanosleep.c": "461da1b7ef1acf9e"
+  }
+}

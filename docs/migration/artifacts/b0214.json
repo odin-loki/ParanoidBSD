@@ -1,0 +1,13 @@
+{
+  "batch": "b0214",
+  "verified": "2026-08-08T13:22:36Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0214 differential results\nfunction              cases   failures status\nbsearch              248550          0 ok\ngrantpt              200003          0 ok\nunlockpt             200002          0 ok\nptsname_r            200010          0 ok\nptsname              200003          0 ok\nstrtoumax_l          201110          0 ok\nstrtoumax            201110          0 ok\nstrtoul_l            201110          0 ok\nstrtoul              201110          0 ok\nTOTAL               1853008          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/bsearch.c": "171860b1d60c0e43",
+    "hbsd/src/lib/libc/stdlib/ptsname.c": "6af03913976c8bd1",
+    "hbsd/src/lib/libc/stdlib/strtoumax.c": "f3f8a50c8875273f",
+    "hbsd/src/lib/libc/stdlib/strtoul.c": "fdadb585c88d2a46"
+  }
+}

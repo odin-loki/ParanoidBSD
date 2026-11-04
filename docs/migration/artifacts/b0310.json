@@ -1,0 +1,11 @@
+{
+  "batch": "b0310",
+  "verified": "2026-08-09T02:57:57Z",
+  "evidence": "harness green + 3/3 mutations killed (IR: IR differs for 1/7: fdclosedir)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases   failures\n------------------------ ---------- ----------\n_atomic_lock_stub             50114          0\n_atomic_lock                  50114          0\n_spinlock                     50016          0\n_spinunlock                   50016          0\n__libc_spinlock_stub          50016          0\n__libc_spinunlock_stub        50016          0\nfdclosedir                    50960          0\nclosedir                      50960          0\n------------------------ ---------- ----------\nTOTAL                        402212          0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/_spinlock_stub.c": "3080a8d66044fc7c",
+    "hbsd/src/lib/libc/gen/closedir.c": "daeac4fdf045e38e"
+  }
+}

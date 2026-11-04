@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_locale_rpmatch",
+  "verified": "2026-07-30T09:26:09Z",
+  "evidence": "mechanical port of rpmatch.c, IR-identical for all 1 functions, 20 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/rpmatch.c": "88a473f28ff02c4d"
+  }
+}

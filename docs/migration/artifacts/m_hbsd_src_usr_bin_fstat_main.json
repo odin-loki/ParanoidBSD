@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_fstat_main",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of main.c, IR-identical for all 1 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/fstat/main.c": "846563c2d085dde1"
+  }
+}

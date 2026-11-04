@@ -1,0 +1,13 @@
+{
+  "batch": "b0024",
+  "verified": "2026-08-08T09:20:44Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nFUNCTION                        CASES     FAILURES RESULT\n------------------------ ------------ ------------ ------\nstat                           200084            0 PASS\nlstat                          200084            0 PASS\nmknod                          203200            0 PASS\n_Fork                          200064            0 PASS\nTOTAL                          803432            0 PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/stat.c": "ac1853efbc58a9f6",
+    "hbsd/src/lib/libc/sys/mknod.c": "71bdc7268c787381",
+    "hbsd/src/lib/libc/sys/lstat.c": "537f34a6e91b9c14",
+    "hbsd/src/lib/libc/sys/POSIX2x_Fork.c": "a07e16d2d0533478"
+  }
+}

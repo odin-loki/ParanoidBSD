@@ -1,0 +1,11 @@
+{
+  "batch": "b0267",
+  "verified": "2026-08-09T00:11:50Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\ncopysignl          200104            0\nsincos             200044            0\noracle.c: In function \u2018ref_sincos\u2019:\noracle.c:142:13: warning: implicit declaration of function \u2018__ieee754_rem_pio2\u2019 [-Wimplicit-function-declaration]\n  142 |         n = __ieee754_rem_pio2(x, y);\n      |             ^~~~~~~~~~~~~~~~~~\n/tmp/tmp.NfxOoO486I/e_rem_pio2.c: In function \u2018__ieee754_rem_pio2\u2019:\n/tmp/tmp.NfxOoO486I/e_rem_pio2.c:173:15: warning: implicit declaration of function \u2018__kernel_rem_pio2\u2019; did you mean \u2018__ieee754_rem_pio2\u2019? [-Wimplicit-function-declaration]\n  173 |         n  =  __kernel_rem_pio2(tx,ty,e0,nx,1);\n      |               ^~~~~~~~~~~~~~~~~\n      |               __ieee754_rem_pio2\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_copysignl.c": "ed8b5910146e525d",
+    "hbsd/src/lib/msun/src/s_sincos.c": "ce1c3ba95accb805"
+  }
+}

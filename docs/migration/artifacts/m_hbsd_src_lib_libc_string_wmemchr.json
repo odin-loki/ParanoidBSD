@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_wmemchr",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of wmemchr.c, IR-identical for all 1 functions, 5 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wmemchr.c": "30fab1889d27ba59"
+  }
+}

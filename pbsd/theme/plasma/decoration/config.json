@@ -1,0 +1,30 @@
+{
+  "KPlugin": {
+    "Id": "pbsd_aero",
+    "Name": "PBSD Aero Decoration",
+    "Description": "Windows 7 Aero window chrome for KWin",
+    "Version": "0.8.0"
+  },
+  "titleBarHeight": 36,
+  "buttonSize": 28,
+  "borderWidth": 1,
+  "cornerRadius": 8,
+  "blurEnabled": true,
+  "colorScheme": "PBSDAero",
+  "glowEnabled": true,
+  "assets": {
+    "titleBarActive": "titlebar-active.svg",
+    "titleBarInactive": "titlebar-inactive.svg",
+    "close": "close.svg",
+    "maximize": "maximize.svg",
+    "minimize": "minimize.svg",
+    "shade": "shade.svg",
+    "restore": "restore.svg",
+    "borderLeft": "border-left.svg",
+    "borderTop": "border-top.svg",
+    "borderRight": "border-right.svg",
+    "borderBottom": "border-bottom.svg",
+    "glowActive": "glow-active.svg",
+    "glowInactive": "glow-inactive.svg"
+  }
+}

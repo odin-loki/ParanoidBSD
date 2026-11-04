@@ -1,0 +1,406 @@
+{
+ "n": 172,
+ "sample": [
+  {
+   "file": "lib/libc/compat-43/killpg.c",
+   "function": "killpg",
+   "detail": "line 51 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/gen/alarm.c",
+   "function": "alarm",
+   "detail": "line 50 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/gen/cap_sandboxed.c",
+   "function": "cap_sandboxed",
+   "detail": "line 43 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/gen/clock.c",
+   "function": "clock",
+   "detail": "line 50 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/gen/elf_utils.c",
+   "function": "__pthread_map_stacks_exec",
+   "detail": "line 87 array bounds violated: array `__libc_interposing' upper bound"
+  },
+  {
+   "file": "lib/libc/gen/getutxent.c",
+   "function": "getutxent",
+   "detail": "line 159 dereference failure: forgotten memory: dynamic_1_value"
+  },
+  {
+   "file": "lib/libc/gen/getutxent.c",
+   "function": "setutxent",
+   "detail": "line 95 dereference failure: forgotten memory: dynamic_1_value"
+  },
+  {
+   "file": "lib/libc/gen/kqueue1.c",
+   "function": "kqueue1",
+   "detail": "line 44 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/gen/libc_interposing_table.c",
+   "function": "__libc_interposing_slot",
+   "detail": "line 52 array bounds violated: array `__libc_interposing' lower bound"
+  },
+  {
+   "file": "lib/libc/gen/nice.c",
+   "function": "nice",
+   "detail": "line 48 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/gen/readpassphrase.c",
+   "function": "handler",
+   "detail": "line 199 array bounds violated: array `signo' lower bound"
+  },
+  {
+   "file": "lib/libc/gen/sysconf.c",
+   "function": "sysconf",
+   "detail": "line 626 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/gen/ulimit.c",
+   "function": "ulimit",
+   "detail": "line 67 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/net/gethostbyht.c",
+   "function": "gethostent",
+   "detail": "line 180 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/net/getnetbyht.c",
+   "function": "getnetent",
+   "detail": "line 183 dereference failure: forgotten memory: dynamic_1_value"
+  },
+  {
+   "file": "lib/libc/net/getproto.c",
+   "function": "getprotobynumber",
+   "detail": "line 115 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/net/ip6opt.c",
+   "function": "inet6_option_space",
+   "detail": "line 71 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_acl_brand_as",
+   "detail": "line 64 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_acl_brand_may_be",
+   "detail": "line 64 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_entry_brand_as",
+   "detail": "line 52 undefined behavior on shift operation shl"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_entry_brand_may_be",
+   "detail": "line 52 undefined behavior on shift operation shl"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_delete_entry.c",
+   "function": "acl_delete_entry_np",
+   "detail": "line 137 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_strip.c",
+   "function": "_nfs4_acl_strip_np",
+   "detail": "line 53 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_strip.c",
+   "function": "acl_strip_np",
+   "detail": "line 144 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/resolv/h_errno.c",
+   "function": "__h_errno_set",
+   "detail": "line 48 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/rpc/svc_run.c",
+   "function": "svc_run",
+   "detail": "line 65 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/softfloat/gedf2.c",
+   "function": "__gedf2",
+   "detail": "line 18 arithmetic overflow on sub"
+  },
+  {
+   "file": "lib/libc/softfloat/gesf2.c",
+   "function": "__gesf2",
+   "detail": "line 18 arithmetic overflow on sub"
+  },
+  {
+   "file": "lib/libc/softfloat/ledf2.c",
+   "function": "__ledf2",
+   "detail": "line 18 arithmetic overflow on sub"
+  },
+  {
+   "file": "lib/libc/softfloat/lesf2.c",
+   "function": "__lesf2",
+   "detail": "line 18 arithmetic overflow on sub"
+  },
+  {
+   "file": "lib/libc/softfloat/ltdf2.c",
+   "function": "__ltdf2",
+   "detail": "line 18 arithmetic overflow on neg"
+  },
+  {
+   "file": "lib/libc/softfloat/ltsf2.c",
+   "function": "__ltsf2",
+   "detail": "line 18 arithmetic overflow on neg"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_one.c",
+   "function": "stdc_first_trailing_one_uc",
+   "detail": "line 15 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_one.c",
+   "function": "stdc_first_trailing_one_ui",
+   "detail": "line 33 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_one.c",
+   "function": "stdc_first_trailing_one_ul",
+   "detail": "line 42 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_one.c",
+   "function": "stdc_first_trailing_one_ull",
+   "detail": "line 51 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_one.c",
+   "function": "stdc_first_trailing_one_us",
+   "detail": "line 24 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_zero.c",
+   "function": "stdc_first_trailing_zero_uc",
+   "detail": "line 16 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_zero.c",
+   "function": "stdc_first_trailing_zero_ui",
+   "detail": "line 34 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_zero.c",
+   "function": "stdc_first_trailing_zero_ul",
+   "detail": "line 43 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_zero.c",
+   "function": "stdc_first_trailing_zero_ull",
+   "detail": "line 52 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/stdbit/stdc_first_trailing_zero.c",
+   "function": "stdc_first_trailing_zero_us",
+   "detail": "line 25 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/string/ffs.c",
+   "function": "ffs",
+   "detail": "line 44 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/string/ffsl.c",
+   "function": "ffsl",
+   "detail": "line 44 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/string/ffsll.cpp",
+   "function": "ffsll",
+   "detail": "line 44 arithmetic overflow on add"
+  },
+  {
+   "file": "lib/libc/sys/close.c",
+   "function": "close",
+   "detail": "line 41 dereference failure: invalid pointer"
+  },
+  {
+   "file": "lib/libc/sys/fcntl.c",
+   "function": "fcntl",
+   "detail": "line 52 dereference failure: invalid pointer"
+  },
+  {
+   "file": "lib/libc/sys/fdatasync.c",
+   "function": "fdatasync",
+   "detail": "line 40 dereference failure: invalid pointer"
+  },
+  {
+   "file": "lib/libc/sys/fork.c",
+   "function": "fork",
+   "detail": "line 40 dereference failure: invalid pointer"
+  },
+  {
+   "file": "lib/libc/sys/fsync.c",
+   "function": "fsync",
+   "detail": "line 40 dereference failure: invalid pointer"
+  },
+  {
+   "file": "lib/libc/sys/lockf.c",
+   "function": "lockf",
+   "detail": "line 76 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libc/tests/sys/mlock_helper.c",
+   "function": "restore_vm_max_wired",
+   "detail": "line 55 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libcalendar/calendar.c",
+   "function": "firstweek",
+   "detail": "line 153 arithmetic overflow on mul"
+  },
+  {
+   "file": "lib/libcalendar/easter.c",
+   "function": "easterodn",
+   "detail": "line 126 array bounds violated: array `ns' lower bound"
+  },
+  {
+   "file": "lib/libcam/tests/libcam_test.c",
+   "function": "cam_has_error",
+   "detail": "line 92 dereference failure: array bounds violated"
+  },
+  {
+   "file": "lib/libexecinfo/tests/sigtramp_test.c",
+   "function": "handler",
+   "detail": "line 36 dereference failure: invalid pointer"
+  },
+  {
+   "file": "lib/libnv/tests/nvlist_get_test.c",
+   "function": "main",
+   "detail": "line 117 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libsys/x86/pkru.c",
+   "function": "x86_pkru_set_perm_hw",
+   "detail": "line 91 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libsys/x86/pkru.c",
+   "function": "x86_pkru_set_perm_unsup",
+   "detail": "line 81 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libveriexec/veriexec_check.c",
+   "function": "check_fd_mode",
+   "detail": "line 51 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libveriexec/veriexec_check.c",
+   "function": "veriexec_check_fd",
+   "detail": "line 65 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/libveriexec/veriexec_check.c",
+   "function": "veriexec_check_fd_mode",
+   "detail": "line 65 dereference failure: Incorrect alignment when accessing data object"
+  },
+  {
+   "file": "lib/msun/bsdsrc/b_tgamma.c",
+   "function": "large_gam",
+   "detail": "line 123 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/ld128/k_cosl.c",
+   "function": "__kernel_cosl",
+   "detail": "line 49 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/ld128/k_sinl.c",
+   "function": "__kernel_sinl",
+   "detail": "line 49 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/ld128/s_logl.c",
+   "function": "log10l",
+   "detail": "line 468 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/ld128/s_logl.c",
+   "function": "log2l",
+   "detail": "line 468 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/ld128/s_logl.c",
+   "function": "logl",
+   "detail": "line 468 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/ld80/e_powl.c",
+   "function": "powil",
+   "detail": "line 605 arithmetic overflow on mul"
+  },
+  {
+   "file": "lib/msun/ld80/k_cosl.c",
+   "function": "__kernel_cosl",
+   "detail": "line 69 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/ld80/k_sinl.c",
+   "function": "__kernel_sinl",
+   "detail": "line 53 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/ld80/s_tanpil.c",
+   "function": "tanpil",
+   "detail": "line 93 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/src/catrig.c",
+   "function": "f",
+   "detail": "line 138 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/src/catrig.c",
+   "function": "real_part_reciprocal",
+   "detail": "line 550 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/src/catrig.c",
+   "function": "sum_squares",
+   "detail": "line 513 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/src/catrigf.c",
+   "function": "clog_for_large_values",
+   "detail": "line 5 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/src/catrigf.c",
+   "function": "f",
+   "detail": "line 83 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/src/catrigf.c",
+   "function": "real_part_reciprocal",
+   "detail": "line 330 arithmetic overflow on floating-point ieee_div"
+  },
+  {
+   "file": "lib/msun/src/catrigf.c",
+   "function": "sum_squares",
+   "detail": "line 307 arithmetic overflow on floating-point ieee_mul"
+  },
+  {
+   "file": "lib/msun/src/catrigl.c",
+   "function": "catanhl",
+   "detail": "line 350 arithmetic overflow on floating-point ieee_div"
+  }
+ ],
+ "note": "truncated to first 80 of 172"
+}

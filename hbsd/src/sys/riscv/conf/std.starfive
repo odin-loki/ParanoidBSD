@@ -1,0 +1,24 @@
+#
+# StarFive SoC support
+#
+
+device		uart_snps	# DesignWare Synopsis UART driver
+
+device		eqos
+
+# MMC/SD/SDIO Card slot support
+device		dwmmc
+device		dwmmc_starfive
+
+# DTBs
+makeoptions	MODULES_EXTRA+="dtb/starfive"
+
+# HardenedBSD ASLR toggles. These are tuned down to account for a smaller
+# address space (RISC-V SV-48).
+options 	PAX_ASLR_DELTA_MMAP_DEF_LEN=14
+options 	PAX_ASLR_DELTA_RTLD_DEF_LEN=14
+options 	PAX_ASLR_DELTA_STACK_DEF_LEN=14
+options 	PAX_ASLR_DELTA_EXEC_DEF_LEN=14
+options 	PAX_ASLR_DELTA_VDSO_DEF_LEN=8
+
+files		"../starfive/files.starfive"

@@ -1,0 +1,10 @@
+{
+  "batch": "b0300",
+  "verified": "2026-08-09T02:25:06Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nasinhf              61978            0\n------------ ------------ ------------\nTOTAL               61978            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_asinhf.c": "1bbd28f04437f53c"
+  }
+}

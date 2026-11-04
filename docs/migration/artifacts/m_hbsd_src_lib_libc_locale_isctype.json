@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_locale_isctype",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of isctype.c, IR-identical for all 23 functions, 2 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/isctype.c": "0ef4d06e85f31f0c"
+  }
+}

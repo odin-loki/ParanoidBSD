@@ -1,0 +1,13 @@
+{
+  "batch": "b0314",
+  "verified": "2026-08-09T02:41:33Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures\ngetmntinfo                      50012            0\nfreebsd11_getmntinfo            50008            0\nsched_setaffinity               50016            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/getmntinfo.c": "2d7ea232d0fe4149",
+    "hbsd/src/lib/libc/gen/getmntinfo-compat11.c": "d86c1682df83b2fc",
+    "hbsd/src/lib/libc/gen/sched_setaffinity.c": "da42bca3ebb2ef6e",
+    "hbsd/src/lib/libc/gen/ftw-compat11.c": "3ae325e3a84137ce"
+  }
+}

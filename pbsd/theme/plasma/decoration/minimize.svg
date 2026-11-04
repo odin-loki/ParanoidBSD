@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="46" height="30" viewBox="0 0 46 30" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="min-btn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#88b8f0"/>
+      <stop offset="1" stop-color="#5082c8"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="46" height="30" fill="url(#min-btn)"/>
+  <rect x="12" y="18" width="22" height="3" fill="#ffffff" rx="1"/>
+</svg>

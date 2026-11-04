@@ -1,0 +1,12 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/effects/pbsd_aero_blur/">
+  <file>contents/shaders/vertex.vert</file>
+  <file>contents/shaders/downsample.frag</file>
+  <file>contents/shaders/upsample.frag</file>
+  <file>contents/shaders/onscreen.frag</file>
+  <file>contents/shaders/onscreen_rounded.frag</file>
+  <file>contents/shaders/onscreen_rounded.vert</file>
+  <file>contents/shaders/noise.frag</file>
+  <file>contents/shaders/composite.frag</file>
+</qresource>
+</RCC>

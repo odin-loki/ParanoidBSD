@@ -1,0 +1,10 @@
+{
+  "batch": "b0079s1",
+  "verified": "2026-08-08T11:22:02Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nlgammaf            200920            0\n------------ ------------ ------------\nTOTAL              200920            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_lgammaf.c": "c1fafbc94b2c814e"
+  }
+}

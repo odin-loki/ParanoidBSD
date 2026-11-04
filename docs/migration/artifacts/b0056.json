@@ -1,0 +1,13 @@
+{
+  "batch": "b0056",
+  "verified": "2026-08-08T11:20:05Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0056 with cc / c++ (gcc modules)\n\nfunction                  cases     failures\n--------------------------------------------\nfpsetround               200042            0\nfpsetprec                200018            0\nfpsetmask                200054            0\n__infinity               400018            0\n__nan                    400010            0\n--------------------------------------------\nTOTAL                   1400142            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/amd64/gen/fpsetround.c": "a424d78f3a02ef2b",
+    "hbsd/src/lib/libc/amd64/gen/fpsetprec.c": "784eb7815e1ae5e5",
+    "hbsd/src/lib/libc/amd64/gen/fpsetmask.c": "b56716e26e69a06d",
+    "hbsd/src/lib/libc/amd64/gen/infinity.c": "208f5ab0b55e772d"
+  }
+}

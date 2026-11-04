@@ -1,0 +1,13 @@
+{
+  "batch": "b0290",
+  "verified": "2026-08-09T00:19:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\n=== b0290 differential test results ===\nfunction                cases     failures\ninet_ntop              412724            0\ninet_pton              412692            0\ninet_cidr_pton         412566            0\ninet_cidr_ntop         414343            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/inet/inet_ntop.c": "9a60d260d0843cd4",
+    "hbsd/src/lib/libc/inet/inet_pton.c": "20ce6da587385d93",
+    "hbsd/src/lib/libc/inet/inet_cidr_pton.c": "b7ebcea5baedae48",
+    "hbsd/src/lib/libc/inet/inet_cidr_ntop.c": "3adc464f4f2610ec"
+  }
+}

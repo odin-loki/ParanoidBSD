@@ -1,0 +1,14 @@
+{
+  "shaders": [
+    {"name": "vertex", "file": "vertex.vert", "stage": "vertex"},
+    {"name": "downsample", "file": "downsample.frag", "stage": "fragment"},
+    {"name": "upsample", "file": "upsample.frag", "stage": "fragment"},
+    {"name": "onscreen", "file": "onscreen.frag", "stage": "fragment"},
+    {"name": "onscreen_rounded", "file": "onscreen_rounded.frag", "stage": "fragment", "vertex": "onscreen_rounded.vert"},
+    {"name": "noise", "file": "noise.frag", "stage": "fragment"},
+    {"name": "composite", "file": "composite.frag", "stage": "fragment"}
+  ],
+  "passes": ["downsample", "upsample", "onscreen", "noise", "composite"],
+  "defaultTint": [0.12, 0.22, 0.40, 0.65],
+  "cornerRadius": 8
+}

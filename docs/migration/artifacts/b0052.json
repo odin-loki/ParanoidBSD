@@ -1,0 +1,13 @@
+{
+  "batch": "b0052",
+  "verified": "2026-08-08T11:18:21Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "function        cases  failures\nfpgetsticky    109319        0\nfpgetround     109319        0\nfpsetmask     2363441        0\nfpsetround    2363441        0\ntotal           4945520\nrandom sweep     200000 (>= 200000 required)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/fpgetsticky.c": "f63e7be7e3b2c3b1",
+    "hbsd/src/lib/libc/softfloat/fpgetround.c": "ab070def5dc8f437",
+    "hbsd/src/lib/libc/softfloat/fpsetmask.c": "a2faf807842e2ab8",
+    "hbsd/src/lib/libc/softfloat/fpsetround.c": "0519d85899a482c7"
+  }
+}

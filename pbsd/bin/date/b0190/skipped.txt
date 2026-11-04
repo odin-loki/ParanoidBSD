@@ -1,0 +1,1 @@
+date.c: main, printdate, printisodate, setthetime, badformat, iso8601_usage, multipleformats, and usage depend on privileged syscalls, utmpx, syslog, and noreturn process exit

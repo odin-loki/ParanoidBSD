@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_sort_mem",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of mem.c, IR-identical for all 5 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/sort/mem.c": "371b4afd5a782254"
+  }
+}

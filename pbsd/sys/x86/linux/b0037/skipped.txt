@@ -1,0 +1,1 @@
+linux_dummy_x86.c — DUMMY() expands to linux_* syscall stubs requiring struct thread, proc state, and linux_msg(); not portable in isolation.

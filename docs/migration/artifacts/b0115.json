@@ -1,0 +1,13 @@
+{
+  "batch": "b0115",
+  "verified": "2026-08-08T11:39:03Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                    cases     failures\n--------                    -----     --------\n__memmove_chk              200013            0\n__memcpy_chk               200011            0\n__vsnprintf_chk            200015            0\n__strncpy_chk              200010            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/memmove_chk.c": "5fbc4ca7eadac6d9",
+    "hbsd/src/lib/libc/secure/memcpy_chk.c": "9ab0c2685852cf48",
+    "hbsd/src/lib/libc/secure/vsnprintf_chk.c": "45dfd8f8c02134ab",
+    "hbsd/src/lib/libc/secure/strncpy_chk.c": "38a2860ee5cdab3c"
+  }
+}

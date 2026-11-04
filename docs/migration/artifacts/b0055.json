@@ -1,0 +1,13 @@
+{
+  "batch": "b0055",
+  "verified": "2026-08-08T11:46:32Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                cases       failures     result\n---------------------------------------------------------\nfpgetprec              347120              0         ok\nfpgetround             347120              0         ok\nfpgetmask              347120              0         ok\nfpgetsticky            412656              0         ok\n---------------------------------------------------------\nTOTAL                 1454016              0       PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/amd64/gen/fpgetprec.c": "d33e5545292d4d22",
+    "hbsd/src/lib/libc/amd64/gen/fpgetround.c": "a1958221f0372c2b",
+    "hbsd/src/lib/libc/amd64/gen/fpgetmask.c": "9ad4df93883bab43",
+    "hbsd/src/lib/libc/amd64/gen/fpgetsticky.c": "61d76178ee54835f"
+  }
+}

@@ -1,0 +1,3670 @@
+{
+ "EXPORTED, arithmetic - READ THESE": [
+  {
+   "file": "lib/libc/gen/alarm.c",
+   "function": "alarm",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 50 arithmetic overflow on signed + in oitv.it_value.tv_sec + 1l"
+   ]
+  },
+  {
+   "file": "lib/libc/gen/cap_sandboxed.c",
+   "function": "cap_sandboxed",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 43 assertion errno == ENOSYS",
+    "line 46 assertion mode == 0 || mode == 1"
+   ]
+  },
+  {
+   "file": "lib/libc/gen/clock.c",
+   "function": "clock",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 50 arithmetic overflow on signed * in ru.ru_utime.tv_sec * (signed long int)128",
+    "line 50 arithmetic overflow on signed + in ru.ru_utime.tv_sec * (signed long int)128 + ru.ru_utime.tv_usec / (signed long int)(1000000 / 128)"
+   ]
+  },
+  {
+   "file": "lib/libc/net/ip6opt.c",
+   "function": "inet6_option_space",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 70 arithmetic overflow on signed + in nbytes + 2",
+    "line 71 arithmetic overflow on signed + in nbytes + 7"
+   ]
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_entry_brand_as",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 104 assertion _acl_brand_may_be(acl, brand)"
+   ]
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_acl_brand_as",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 104 assertion _acl_brand_may_be(acl, brand)"
+   ]
+  },
+  {
+   "file": "lib/libc/posix1e/acl_strip.c",
+   "function": "acl_strip_np",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 73 assertion _acl_brand(aclp) == ACL_BRAND_POSIX",
+    "line 79 assertion _acl_brand(acl_old) == ACL_BRAND_POSIX"
+   ]
+  },
+  {
+   "file": "lib/libc/rpc/svc_run.c",
+   "function": "svc_run",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 65 arithmetic overflow on signed + in svc_maxfd + 1"
+   ]
+  },
+  {
+   "file": "lib/libc/stdlib/abs.c",
+   "function": "abs",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 37 arithmetic overflow on signed unary minus in -j"
+   ]
+  },
+  {
+   "file": "lib/libc/stdlib/div.c",
+   "function": "div",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 42 division by zero in numer / denom",
+    "line 42 arithmetic overflow on signed division in numer / denom"
+   ]
+  },
+  {
+   "file": "lib/libc/stdlib/labs.cpp",
+   "function": "labs",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 37 arithmetic overflow on signed unary minus in -j"
+   ]
+  },
+  {
+   "file": "lib/libc/stdlib/llabs.cpp",
+   "function": "llabs",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 34 arithmetic overflow on signed unary minus in -j"
+   ]
+  },
+  {
+   "file": "lib/libc/stdlib/ldiv.cpp",
+   "function": "ldiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 42 division by zero in numer / denom",
+    "line 42 arithmetic overflow on signed division in numer / denom"
+   ]
+  },
+  {
+   "file": "lib/libc/stdlib/lldiv.cpp",
+   "function": "lldiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 37 division by zero in numer / denom",
+    "line 37 arithmetic overflow on signed division in numer / denom"
+   ]
+  },
+  {
+   "file": "lib/libcasper/libcasper/libcasper.c",
+   "function": "cap_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 116 assertion ret"
+   ]
+  },
+  {
+   "file": "lib/libgeom/geom_stats.c",
+   "function": "geom_stats_open",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 division by zero in mediasize / (signed long int)pagesize",
+    "line 85 arithmetic overflow on signed division in mediasize / (signed long int)pagesize"
+   ]
+  },
+  {
+   "file": "lib/libmp/mpasbn.c",
+   "function": "mp_itom",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 173 free argument has offset zero"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_mode_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 325 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_fini",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 267 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_mode_set",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 291 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 296 assertion mode == PJDLOG_MODE_STD || mode == PJDLOG_MODE_SYSLOG"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_debug_set",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 370 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 371 assertion level >= 0"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_debug_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 384 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_prefix_pop",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 472 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 473 assertion pjdlog_prefix_current > 0"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_prefix_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 430 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "lib/libpjdlog/pjdlog.c",
+   "function": "pjdlog_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 230 assertion mode == PJDLOG_MODE_STD || mode == PJDLOG_MODE_SYSLOG"
+   ]
+  },
+  {
+   "file": "lib/libpfctl/libpfctl.c",
+   "function": "pfctl_set_keepcounters",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1817 free argument has offset zero"
+   ]
+  },
+  {
+   "file": "lib/libthr/thread/thr_sig.c",
+   "function": "pthread_signals_block_np",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 98 arithmetic overflow on signed + in curthread->sigblock + 1"
+   ]
+  },
+  {
+   "file": "lib/libthr/thread/thr_sig.c",
+   "function": "pthread_signals_unblock_np",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 108 arithmetic overflow on signed - in curthread->sigblock - 1"
+   ]
+  },
+  {
+   "file": "lib/libthr/thread/thr_stack.c",
+   "function": "__thr_map_stacks_exec",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 177 arithmetic overflow on signed + in curthread->locklevel + 1"
+   ]
+  },
+  {
+   "file": "lib/libvgl/main.c",
+   "function": "VGLSetSegment",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 471 division by zero in (unsigned long int)offset / VGLAdpInfo.va_window_size",
+    "line 473 division by zero in (unsigned long int)offset / VGLAdpInfo.va_window_size"
+   ]
+  },
+  {
+   "file": "lib/libvgl/mouse.c",
+   "function": "VGLMouseMode",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 196 arithmetic overflow on signed unary minus in -VGLMouseAndMask->VYsize"
+   ]
+  },
+  {
+   "file": "lib/libthr/thread/thr_spec.c",
+   "function": "_thread_cleanupspecific",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 116 arithmetic overflow on signed + in curthread->locklevel + 1"
+   ]
+  },
+  {
+   "file": "lib/libthr/thread/thr_resume_np.c",
+   "function": "_thr_resume_all_np",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 73 arithmetic overflow on signed + in curthread->locklevel + 1"
+   ]
+  },
+  {
+   "file": "lib/libthr/thread/thr_suspend_np.c",
+   "function": "_thr_suspend_all_np",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 78 arithmetic overflow on signed + in curthread->locklevel + 1"
+   ]
+  },
+  {
+   "file": "lib/msun/src/k_exp.c",
+   "function": "__ldexp_exp",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 80 arithmetic overflow on signed + in expt + ex_expt",
+    "line 81 arithmetic overflow on signed + in 0x3FF + expt"
+   ]
+  },
+  {
+   "file": "lib/msun/src/k_expf.c",
+   "function": "__ldexp_expf",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 63 arithmetic overflow on signed + in expt + ex_expt",
+    "line 64 arithmetic overflow on signed + in 0x7F + expt"
+   ]
+  },
+  {
+   "file": "lib/msun/src/e_jnf.cpp",
+   "function": "ynf",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 183 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_cos.cpp",
+   "function": "cos",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 184 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_cosl.c",
+   "function": "cosl",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 147 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_cosf.cpp",
+   "function": "cosf",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 73 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_sin.cpp",
+   "function": "sin",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 184 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_tan.cpp",
+   "function": "tan",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 184 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_fma.c",
+   "function": "fma",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 125 arithmetic overflow on signed - in -((signed int)(hibits >> 52) & 0x7FF) - scale",
+    "line 125 arithmetic overflow on signed + in (-((signed int)(hibits >> 52) & 0x7FF) - scale) + 1"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_sinl.c",
+   "function": "sinl",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 147 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_tanl.c",
+   "function": "tanl",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 147 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_sinf.cpp",
+   "function": "sinf",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 73 arithmetic overflow on signed unary minus in -n"
+   ]
+  },
+  {
+   "file": "libexec/rpc.rstatd/rstat_proc.c",
+   "function": "stat_init",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 239 arithmetic overflow on signed - in tm.tv_sec - btm.tv_sec",
+    "line 239 arithmetic overflow on signed * in (signed long int)hz * (tm.tv_sec - btm.tv_sec)"
+   ]
+  },
+  {
+   "file": "libexec/rpc.rstatd/rstat_proc.c",
+   "function": "updatestat",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 239 arithmetic overflow on signed - in tm.tv_sec - btm.tv_sec",
+    "line 239 arithmetic overflow on signed * in (signed long int)hz * (tm.tv_sec - btm.tv_sec)"
+   ]
+  },
+  {
+   "file": "libexec/tftpd/tftp-io.c",
+   "function": "send_error",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 151 arithmetic overflow on signed - in error - 100"
+   ]
+  },
+  {
+   "file": "libexec/tftpd/tftp-utils.c",
+   "function": "settimeouts",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 77 arithmetic overflow on signed + in i + 5"
+   ]
+  },
+  {
+   "file": "libexec/rtld-elf/tests/libpythagoras/pythagoras.c",
+   "function": "pythagorean_theorem",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 4 division by zero in 1.0 / 0.0",
+    "line 95 division by zero in 0.0 / 0.0"
+   ]
+  },
+  {
+   "file": "bin/dd/misc.c",
+   "function": "secs_elapsed",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 63 arithmetic overflow on signed - in end.tv_sec - st.start.tv_sec",
+    "line 64 arithmetic overflow on signed - in end.tv_nsec - st.start.tv_nsec"
+   ]
+  },
+  {
+   "file": "bin/ed/buf.c",
+   "function": "get_addressed_line_node",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 163 arithmetic overflow on signed + in mutex + 1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "signal_hup",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1355 arithmetic overflow on signed - in signo - 1",
+    "line 1355 arithmetic overflow on signed shl in 1 << signo - 1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "delete_lines",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1187 arithmetic overflow on signed + in to + (signed long int)1",
+    "line 1187 arithmetic overflow on signed + in to + (signed long int)1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "signal_int",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1375 arithmetic overflow on signed - in signo - 1",
+    "line 1375 arithmetic overflow on signed shl in 1 << signo - 1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "copy_lines",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1154 arithmetic overflow on signed + in current_addr + (signed long int)1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "handle_int",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1375 arithmetic overflow on signed - in signo - 1",
+    "line 1375 arithmetic overflow on signed shl in 1 << signo - 1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "handle_winch",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1393 arithmetic overflow on signed - in signo - 1",
+    "line 1393 arithmetic overflow on signed shl in 1 << signo - 1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "handle_hup",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1355 arithmetic overflow on signed - in signo - 1",
+    "line 1355 arithmetic overflow on signed shl in 1 << signo - 1"
+   ]
+  },
+  {
+   "file": "bin/ed/main.c",
+   "function": "move_lines",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1111 arithmetic overflow on signed + in addr + (signed long int)1",
+    "line 1111 arithmetic overflow on signed + in addr + (signed long int)1"
+   ]
+  },
+  {
+   "file": "bin/sh/memalloc.c",
+   "function": "growstackstr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 146 arithmetic overflow on signed + in suppressint + 1l",
+    "line 153 arithmetic overflow on signed - in suppressint - 1l"
+   ]
+  },
+  {
+   "file": "lib/msun/src/s_fmal.c",
+   "function": "fmal",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 114 arithmetic overflow on signed - in -((signed int)byte_extract_little_endian(u, 0l, struct).exp) - scale",
+    "line 114 arithmetic overflow on signed + in (-((signed int)byte_extract_little_endian(u, 0l, struct).exp) - scale) + 1"
+   ]
+  },
+  {
+   "file": "sbin/fsck_ffs/fsutil.c",
+   "function": "blerase",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 942 arithmetic overflow on signed * in blk * dev_bsize"
+   ]
+  },
+  {
+   "file": "sbin/fsck_ffs/setup.c",
+   "function": "readsb",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 405 arithmetic overflow on signed + in readcnt[(signed long int)sblk.b_type] + 1l",
+    "line 410 arithmetic overflow on signed * in bflag * dev_bsize"
+   ]
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_fini",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 185 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_mode_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 233 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_debug_set",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 246 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 247 assertion level >= 0"
+   ]
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_debug_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 259 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_mode_set",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 208 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 209 assertion mode == PJDLOG_MODE_STD || mode == PJDLOG_MODE_SYSLOG"
+   ]
+  },
+  {
+   "file": "sbin/hastd/pjdlog.c",
+   "function": "pjdlog_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 154 assertion mode == PJDLOG_MODE_STD || mode == PJDLOG_MODE_SYSLOG"
+   ]
+  },
+  {
+   "file": "sbin/geom/misc/subr.c",
+   "function": "g_lcm",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 86 division by zero in (a * b) / return_value_gcd"
+   ]
+  },
+  {
+   "file": "sbin/routed/if.c",
+   "function": "ifwithindex",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 665 arithmetic overflow on signed + in now.tv_sec + (signed long int)(supplier != 0 ? 30 : 300)"
+   ]
+  },
+  {
+   "file": "sbin/routed/trace.c",
+   "function": "addrname",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 118 strcpy src/dst overlap"
+   ]
+  },
+  {
+   "file": "sbin/fsck_ffs/fsutil.c",
+   "function": "finalIOstats",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 823 arithmetic overflow on signed + in (&totalreadtime[(signed long int)i])->tv_sec + (&readtime[(signed long int)i])->tv_sec",
+    "line 823 arithmetic overflow on signed + in (&totalreadtime[(signed long int)i])->tv_nsec + (&readtime[(signed long int)i])->tv_nsec"
+   ]
+  },
+  {
+   "file": "usr.bin/calendar/ostern.c",
+   "function": "easter",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 58 division by zero in 29 / (H + 1)",
+    "line 59 arithmetic overflow on signed + in year + year / 4"
+   ]
+  },
+  {
+   "file": "sbin/fsck_ffs/inode.c",
+   "function": "chkrange",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 385 arithmetic overflow on signed - in (&(*byte_extract_little_endian(sblk.b_un, 0l, struct fs *)))->fs_frag - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/gprof/printgprof.c",
+   "function": "flatprofheader",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/mail/lex.c",
+   "function": "incfile",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 470 arithmetic overflow on signed + in sz + 1"
+   ]
+  },
+  {
+   "file": "usr.bin/mail/tty.c",
+   "function": "ttyint",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/mail/tty.c",
+   "function": "ttystop",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/mkimg/image.c",
+   "function": "image_copyout_region",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 609 arithmetic overflow on signed * in size * (signed long int)secsz"
+   ]
+  },
+  {
+   "file": "usr.bin/netstat/route.c",
+   "function": "routepr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 125 arithmetic overflow on signed - in numfibs - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/gprof/printgprof.c",
+   "function": "gprofheader",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/systat/proc.c",
+   "function": "procshow",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 217 arithmetic overflow on signed + in lcol + 1",
+    "line 217 arithmetic overflow on signed + in y + 1"
+   ]
+  },
+  {
+   "file": "usr.bin/systat/pigs.c",
+   "function": "initpigs",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 129 division by zero in (double)ccpu / (double)fscale"
+   ]
+  },
+  {
+   "file": "usr.bin/systat/vmstat.c",
+   "function": "putint",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 644 arithmetic overflow on signed - in w - 1",
+    "line 655 arithmetic overflow on signed - in w - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/talk/init_disp.c",
+   "function": "sig_sent",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 175 arithmetic overflow on signed - in his_win.x_nlines - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/talk/init_disp.c",
+   "function": "quit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 175 arithmetic overflow on signed - in his_win.x_nlines - 1"
+   ]
+  },
+  {
+   "file": "usr.bin/talk/invite.c",
+   "function": "re_invite",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 121 arithmetic overflow on signed - in my_win.x_nlines - 1",
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/top/display.c",
+   "function": "u_message",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1347 arithmetic overflow on signed + in setup_buffer_bufsiz + addlen",
+    "line 1347 arithmetic overflow on signed + in setup_buffer_bufsiz + addlen + 2"
+   ]
+  },
+  {
+   "file": "usr.sbin/autofs/common.c",
+   "function": "rpc_umntall",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1214 assertion f != NULL"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/acpi.c",
+   "function": "dsdt_indent",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 203 assertion dsdt_indent_level >= 0"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/acpi.c",
+   "function": "dsdt_unindent",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 210 assertion dsdt_indent_level >= levels",
+    "line 211 arithmetic overflow on signed - in dsdt_indent_level - levels"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pirq_read",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 94 assertion pin > 0 && pin <= NPIRQS",
+    "line 95 arithmetic overflow on signed - in pin - 1"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pci_irq_reserve",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 120 assertion irq >= 0 && irq < NIRQ_COUNTS",
+    "line 122 assertion irq_counts[irq] == 0 || irq_counts[irq] == IRQ_DISABLED"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pci_irq_use",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 130 assertion irq >= 0 && irq < NIRQ_COUNTS",
+    "line 132 assertion irq_counts[irq] != IRQ_DISABLED"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/amd64/pci_irq.c",
+   "function": "pirq_irq",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 249 assertion pin > 0 && pin <= NPIRQS",
+    "line 250 arithmetic overflow on signed - in pin - 1"
+   ]
+  },
+  {
+   "file": "usr.sbin/bluetooth/bthidd/btuinput.c",
+   "function": "uinput_rep_leds",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 443 arithmetic overflow on signed - in elapsed - 1l",
+    "line 562 assertion fd >= 0"
+   ]
+  },
+  {
+   "file": "usr.sbin/lpr/common_source/common.c",
+   "function": "delay",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "usr.sbin/pkg/config.c",
+   "function": "config_get_repositories",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 194 arithmetic overflow on signed - in variable_string - oldval"
+   ]
+  },
+  {
+   "file": "usr.sbin/pmcstat/pmcstat.c",
+   "function": "pmcstat_kill_process",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 237 assertion args.pa_flags & FLAG_HAS_COMMANDLINE",
+    "line 244 assertion pt != NULL"
+   ]
+  },
+  {
+   "file": "usr.sbin/virtual_oss/virtual_oss/virtual_oss.c",
+   "function": "virtual_oss_delay_ns",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 61 division by zero in delay / (unsigned long int)voss_dsp_sample_rate"
+   ]
+  },
+  {
+   "file": "usr.sbin/virtual_oss/virtual_oss/virtual_oss.c",
+   "function": "virtual_oss_wait",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 61 division by zero in delay / (unsigned long int)voss_dsp_sample_rate",
+    "line 76 division by zero in nsec % delay"
+   ]
+  },
+  {
+   "file": "stand/common/bcache.c",
+   "function": "bcache_allocate",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 137 arithmetic overflow on signed - in return_value_fls - 1",
+    "line 138 arithmetic overflow on signed shl in 1 << i"
+   ]
+  },
+  {
+   "file": "stand/ficl/math64.c",
+   "function": "m64FlooredDivI",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 106 arithmetic overflow on signed unary minus in -den",
+    "line 115 arithmetic overflow on signed unary minus in -qr.quot"
+   ]
+  },
+  {
+   "file": "stand/ficl/math64.c",
+   "function": "m64MulI",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 176 arithmetic overflow on signed unary minus in -x",
+    "line 182 arithmetic overflow on signed unary minus in -y"
+   ]
+  },
+  {
+   "file": "stand/ficl/math64.c",
+   "function": "m64SymmetricDivI",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 201 arithmetic overflow on signed + in x.lo + 1l",
+    "line 203 arithmetic overflow on signed + in x.hi + 1l"
+   ]
+  },
+  {
+   "file": "stand/ficl/stack.c",
+   "function": "stackCreate",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 119 assertion nCells != 0",
+    "line 120 assertion pStack != NULL"
+   ]
+  },
+  {
+   "file": "stand/ficl/aarch64/sysdep.c",
+   "function": "ficlLongDiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 45 division by zero in qx / y",
+    "line 46 division by zero in qx % y"
+   ]
+  },
+  {
+   "file": "stand/ficl/amd64/sysdep.c",
+   "function": "ficlLongDiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 47 division by zero in qx / y",
+    "line 48 division by zero in qx % y"
+   ]
+  },
+  {
+   "file": "stand/ficl/arm/sysdep.c",
+   "function": "ficlLongDiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 45 division by zero in qx / (unsigned long long int)y",
+    "line 46 division by zero in qx % (unsigned long long int)y"
+   ]
+  },
+  {
+   "file": "stand/ficl/i386/sysdep.c",
+   "function": "ficlLongDiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 47 division by zero in qx / (unsigned long long int)y",
+    "line 48 division by zero in qx % (unsigned long long int)y"
+   ]
+  },
+  {
+   "file": "stand/ficl/riscv/sysdep.c",
+   "function": "ficlLongDiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 45 division by zero in qx / y",
+    "line 46 division by zero in qx % y"
+   ]
+  },
+  {
+   "file": "stand/i386/common/cons.c",
+   "function": "getc",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 94 arithmetic overflow on signed shl in fn << 8",
+    "line 94 shift operand is negative in fn << 8"
+   ]
+  },
+  {
+   "file": "stand/i386/libi386/biospci.c",
+   "function": "biospci_write_config",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 367 arithmetic overflow on signed + in 0xB10B + width"
+   ]
+  },
+  {
+   "file": "stand/kboot/kboot/main.c",
+   "function": "delay",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 480 arithmetic overflow on signed * in tvi.tv_sec * (signed long int)1000000",
+    "line 480 arithmetic overflow on signed + in tvi.tv_sec * (signed long int)1000000 + tvi.tv_usec"
+   ]
+  },
+  {
+   "file": "sys/amd64/amd64/machdep.c",
+   "function": "spinlock_exit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1733 arithmetic overflow on signed - in td->td_md.md_spinlock_count - 1"
+   ]
+  },
+  {
+   "file": "sys/amd64/amd64/pmap.c",
+   "function": "pmap_invalidate_cache",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 179 arithmetic overflow on signed + in return_value___curthread->td_pinned + 1"
+   ]
+  },
+  {
+   "file": "sys/amd64/amd64/pmap.c",
+   "function": "pmap_qremove",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 3984 arithmetic overflow on signed - in count - 1"
+   ]
+  },
+  {
+   "file": "sys/amd64/amd64/pmap.c",
+   "function": "pmap_kenter_temporary",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 7836 arithmetic overflow on signed * in i * (1 << 12)"
+   ]
+  },
+  {
+   "file": "sys/amd64/pci/pci_cfgreg.c",
+   "function": "pci_cfgregread",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 116 shift distance is negative in 1u << slot",
+    "line 116 shift distance too large in 1u << slot"
+   ]
+  },
+  {
+   "file": "sys/amd64/pci/pci_cfgreg.c",
+   "function": "pci_cfgregwrite",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 167 shift distance is negative in 1u << slot",
+    "line 167 shift distance too large in 1u << slot"
+   ]
+  },
+  {
+   "file": "sys/amd64/vmm/vmm_instruction_emul.c",
+   "function": "vie_alignment_check",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1853 arithmetic overflow on signed - in size - 1"
+   ]
+  },
+  {
+   "file": "sys/amd64/vmm/vmm_mem_machdep.c",
+   "function": "vmm_mem_maxaddr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 120 arithmetic overflow on signed shl in Maxmem << 12",
+    "line 120 shift operand is negative in Maxmem << 12"
+   ]
+  },
+  {
+   "file": "sys/arm/arm/identcpu-v6.c",
+   "function": "identify_arm_cpu",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 260 arithmetic overflow on signed + in hw_buf_idx + len",
+    "line 260 arithmetic overflow on signed + in hw_buf_idx + len + 2"
+   ]
+  },
+  {
+   "file": "sys/cddl/contrib/opensolaris/uts/common/zmod/zmod.c",
+   "function": "z_strerror",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 132 arithmetic overflow on signed - in 2 - err"
+   ]
+  },
+  {
+   "file": "sys/cddl/dev/dtrace/aarch64/dtrace_isa.c",
+   "function": "dtrace_getstackdepth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 313 arithmetic overflow on signed - in depth - aframes"
+   ]
+  },
+  {
+   "file": "sys/cddl/dev/dtrace/i386/dtrace_isa.c",
+   "function": "dtrace_getstackdepth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 480 arithmetic overflow on signed + in aframes + 1"
+   ]
+  },
+  {
+   "file": "sys/cddl/dev/dtrace/riscv/dtrace_isa.c",
+   "function": "dtrace_getstackdepth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 315 arithmetic overflow on signed - in depth - aframes"
+   ]
+  },
+  {
+   "file": "sys/cddl/dev/dtrace/amd64/dtrace_isa.c",
+   "function": "dtrace_getstackdepth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 451 arithmetic overflow on signed + in aframes + 1"
+   ]
+  },
+  {
+   "file": "sys/compat/linux/linux.c",
+   "function": "linux_to_bsd_signal",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 155 arithmetic overflow on signed + in 65 + sig",
+    "line 155 arithmetic overflow on signed - in (65 + sig) - 32"
+   ]
+  },
+  {
+   "file": "sys/compat/linux/linux.c",
+   "function": "bsd_to_linux_signal",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 182 arithmetic overflow on signed - in sig - 1"
+   ]
+  },
+  {
+   "file": "sys/compat/linux/linux_file.c",
+   "function": "linux_common_openflags",
+   "already_in_ub_findings": false,
+   "failures": [
+    "file /home/odin/ParanoidBSD/hbsd/src/sys/compat/linux/linux_file.c line 95 arithmetic overflow on signed shl in 34 << 26"
+   ]
+  },
+  {
+   "file": "sys/compat/linuxkpi/common/src/linux_idr.c",
+   "function": "idr_preload_end",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 188 arithmetic overflow on signed - in return_value___curthread$0->td_pinned - 1"
+   ]
+  },
+  {
+   "file": "sys/compat/linuxkpi/common/src/linux_page.c",
+   "function": "linux_alloc_kmem",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 224 shift distance too large in (size_t)(1 << 12) << order"
+   ]
+  },
+  {
+   "file": "sys/compat/linuxkpi/common/src/linux_page.c",
+   "function": "linux_alloc_pages",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 104 shift distance too large in 1ul << order"
+   ]
+  },
+  {
+   "file": "sys/compat/linuxkpi/common/src/linux_page.c",
+   "function": "linux_free_kmem",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 167 shift distance too large in (size_t)(1 << 12) << order",
+    "line 176 shift distance too large in 1ul << order"
+   ]
+  },
+  {
+   "file": "sys/compat/linuxkpi/common/src/linux_tasklet.c",
+   "function": "local_bh_enable",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 188 arithmetic overflow on signed - in return_value___curthread$0->td_pinned - 1"
+   ]
+  },
+  {
+   "file": "sys/compat/linuxkpi/common/src/linux_tasklet.c",
+   "function": "local_bh_disable",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 179 arithmetic overflow on signed + in return_value___curthread->td_pinned + 1"
+   ]
+  },
+  {
+   "file": "sys/compat/x86bios/x86bios.c",
+   "function": "x86bios_get_intr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 200 arithmetic overflow on signed * in intno * 4",
+    "line 200 arithmetic overflow on signed + in intno * 4 + 4 * 1024 * 1024"
+   ]
+  },
+  {
+   "file": "sys/compat/x86bios/x86bios.c",
+   "function": "x86bios_set_intr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 207 arithmetic overflow on signed * in intno * 4",
+    "line 207 arithmetic overflow on signed + in intno * 4 + 4 * 1024 * 1024"
+   ]
+  },
+  {
+   "file": "sys/contrib/dev/acpica/components/utilities/uthex.c",
+   "function": "AcpiUtAsciiCharToHex",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 251 arithmetic overflow on signed - in HexChar - 48"
+   ]
+  },
+  {
+   "file": "sys/contrib/dev/broadcom/brcm80211/brcmfmac/xtlv.c",
+   "function": "brcmf_xtlv_data_size",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 36 arithmetic overflow on signed + in dlen + hsz",
+    "line 36 arithmetic overflow on signed + in dlen + hsz + (4 - 1)"
+   ]
+  },
+  {
+   "file": "sys/contrib/dev/broadcom/brcm80211/brcmsmac/phy/phy_qmath.c",
+   "function": "qm_shl32",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 45 arithmetic overflow on signed + in op1 + op2"
+   ]
+  },
+  {
+   "file": "sys/contrib/dev/broadcom/brcm80211/brcmsmac/phy/phy_qmath.c",
+   "function": "qm_shr16",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 149 arithmetic overflow on signed unary minus in -shift"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/lua/lobject.c",
+   "function": "luaO_fb2int",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 47 arithmetic overflow on signed shl in (x & 7) + 8 << e - 1"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/lua/lobject.c",
+   "function": "luaO_hexavalue",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 84 arithmetic overflow on signed - in c - 48",
+    "line 85 arithmetic overflow on signed - in (c | 65 ^ 97) - 97"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/lua/lobject.c",
+   "function": "luaO_arith",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 71 arithmetic overflow on signed + in v1 + v2",
+    "line 72 arithmetic overflow on signed - in v1 - v2"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/fse_compress.c",
+   "function": "FSE_createCTable",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 310 shift distance too large in 1 << tableLog - (unsigned int)1"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/fse_compress.c",
+   "function": "FSE_optimalTableLog_internal",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 148 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/fse_compress.c",
+   "function": "FSE_optimalTableLog",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 148 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_estimateCDictSize",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 4243 arithmetic overflow on signed unary minus in -compressionLevel"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_getCParams",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 4243 arithmetic overflow on signed unary minus in -compressionLevel"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_getParams",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 4243 arithmetic overflow on signed unary minus in -compressionLevel"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_estimateCCtxSize",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 4243 arithmetic overflow on signed unary minus in -compressionLevel"
+   ]
+  },
+  {
+   "file": "sys/contrib/zlib/inflate.c",
+   "function": "inflatePrime",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 233 shift distance too large in (unsigned long int)value << state->bits"
+   ]
+  },
+  {
+   "file": "sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_estimateCStreamSize",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 4243 arithmetic overflow on signed unary minus in -compressionLevel"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/fse_compress.c",
+   "function": "FSE_optimalTableLog_internal",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/fse_compress.c",
+   "function": "FSE_optimalTableLog",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/huf_compress.c",
+   "function": "HUF_minTableLog",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_adjustCParams",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_estimateCDictSize",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/ddb/db_access.c",
+   "function": "db_get_value",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 88 arithmetic overflow on signed - in size - 1"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_getCParams",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/contrib/zstd/lib/compress/zstd_compress.c",
+   "function": "ZSTD_getParams",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 count leading zeros is undefined for value zero in __builtin_clz(val)"
+   ]
+  },
+  {
+   "file": "sys/dev/ata/ata-all.c",
+   "function": "ata_atapi",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 698 arithmetic overflow on signed shl in 0x10000 << target",
+    "line 698 shift distance is negative in 0x10000 << target"
+   ]
+  },
+  {
+   "file": "sys/dev/ath/ath_hal/ah.c",
+   "function": "ath_computedur_ht",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 422 arithmetic overflow on signed * in streams * 4"
+   ]
+  },
+  {
+   "file": "sys/dev/atkbdc/atkbdc.c",
+   "function": "write_controller_data",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 396 arithmetic overflow on signed + in q->tail + 1"
+   ]
+  },
+  {
+   "file": "sys/dev/atkbdc/atkbdc.c",
+   "function": "write_controller_command",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 396 arithmetic overflow on signed + in q->tail + 1"
+   ]
+  },
+  {
+   "file": "sys/dev/atkbdc/atkbdc.c",
+   "function": "empty_kbd_buffer",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 396 arithmetic overflow on signed + in q->tail + 1"
+   ]
+  },
+  {
+   "file": "sys/dev/atkbdc/atkbdc.c",
+   "function": "empty_aux_buffer",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 396 arithmetic overflow on signed + in q->tail + 1"
+   ]
+  },
+  {
+   "file": "sys/dev/atkbdc/atkbdc.c",
+   "function": "write_kbd_command",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 396 arithmetic overflow on signed + in q->tail + 1"
+   ]
+  },
+  {
+   "file": "sys/dev/atkbdc/atkbdc.c",
+   "function": "write_aux_command",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 396 arithmetic overflow on signed + in q->tail + 1"
+   ]
+  },
+  {
+   "file": "sys/dev/dpaa2/dpaa2_swp.c",
+   "function": "dpaa2_swp_set_cfg",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 338 arithmetic overflow on signed shl in sd << 5",
+    "line 338 shift operand is negative in sd << 5"
+   ]
+  },
+  {
+   "file": "sys/dev/etherswitch/arswitch/arswitch_reg.c",
+   "function": "arswitch_readreg_msb",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 200 arithmetic overflow on signed + in addr + 2"
+   ]
+  },
+  {
+   "file": "sys/dev/etherswitch/arswitch/arswitch_reg.c",
+   "function": "arswitch_writereg_msb",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 214 arithmetic overflow on signed + in addr + 2"
+   ]
+  },
+  {
+   "file": "sys/dev/firmware/arm/scmi_shmem.c",
+   "function": "scmi_shmem_get",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 191 arithmetic overflow on signed * in index * (signed int)4u"
+   ]
+  },
+  {
+   "file": "sys/dev/iavf/iavf_lib.c",
+   "function": "iavf_msec_pause",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 481 arithmetic overflow on signed * in tick_sbt * (signed long int)timo"
+   ]
+  },
+  {
+   "file": "sys/dev/ixgbe/if_sriov.c",
+   "function": "ixgbe_vf_que_index",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 150 arithmetic overflow on signed * in vfnum * return_value_ixgbe_vf_queues",
+    "line 150 arithmetic overflow on signed + in vfnum * return_value_ixgbe_vf_queues + num"
+   ]
+  },
+  {
+   "file": "sys/dev/mlx4/mlx4_ib/mlx4_ib_alias_GUID.c",
+   "function": "mlx4_ib_get_aguid_comp_mask_from_ix",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 125 arithmetic overflow on signed + in 4 + index",
+    "line 125 shift distance is negative in 1ull << 4 + index"
+   ]
+  },
+  {
+   "file": "sys/dev/qat/qat_common/adf_clock.c",
+   "function": "adf_clock_get_current_time",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 198 arithmetic overflow on signed * in ts->tv_sec * (signed long int)1000"
+   ]
+  },
+  {
+   "file": "sys/dev/syscons/scvtb.c",
+   "function": "sc_vtb_size",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 114 arithmetic overflow on signed * in cols * rows"
+   ]
+  },
+  {
+   "file": "sys/dev/videomode/pickmode.c",
+   "function": "pick_mode_by_ref",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 77 division by zero in (this->dot_clock * 1000) / (this->htotal * this->vtotal)",
+    "line 77 arithmetic overflow on signed * in this->dot_clock * 1000"
+   ]
+  },
+  {
+   "file": "sys/fs/nfs/nfs_commonsubs.c",
+   "function": "newnfs_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 981 arithmetic overflow on signed * in hz * 500",
+    "line 981 arithmetic overflow on signed + in hz * 500 + 500"
+   ]
+  },
+  {
+   "file": "sys/i386/pci/pci_cfgreg.c",
+   "function": "pci_cfgregwrite",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 242 shift distance is negative in 1u << slot",
+    "line 242 shift distance too large in 1u << slot"
+   ]
+  },
+  {
+   "file": "sys/i386/pci/pci_cfgreg.c",
+   "function": "pci_cfgregread",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 196 shift distance is negative in 1u << slot",
+    "line 196 shift distance too large in 1u << slot"
+   ]
+  },
+  {
+   "file": "sys/i386/i386/machdep.c",
+   "function": "spinlock_exit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1807 arithmetic overflow on signed - in td->td_md.md_spinlock_count - 1"
+   ]
+  },
+  {
+   "file": "sys/kern/kern_mbuf.c",
+   "function": "debugnet_mbuf_reinit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 621 arithmetic overflow on signed - in nmbuf - 1",
+    "line 625 arithmetic overflow on signed - in nclust - 1"
+   ]
+  },
+  {
+   "file": "sys/kern/kern_pmc.c",
+   "function": "pmc_cpu_is_present",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 173 array.__bits upper bound in (&all_cpus)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * (unsigned "
+   ]
+  },
+  {
+   "file": "sys/kern/kern_pmc.c",
+   "function": "pmc_cpu_is_primary",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 183 array.__bits upper bound in (&logical_cpus_mask)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * ("
+   ]
+  },
+  {
+   "file": "sys/kern/kern_pmc.c",
+   "function": "pmc_cpu_is_disabled",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 156 array.__bits upper bound in (&hlt_cpus_mask)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * (unsi",
+    "line 173 array.__bits upper bound in (&all_cpus)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * (unsigned "
+   ]
+  },
+  {
+   "file": "sys/kern/kern_pmc.c",
+   "function": "pmc_cpu_is_active",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 156 array.__bits upper bound in (&hlt_cpus_mask)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * (unsi",
+    "line 173 array.__bits upper bound in (&all_cpus)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * (unsigned "
+   ]
+  },
+  {
+   "file": "sys/kern/kern_sharedpage.c",
+   "function": "shared_page_alloc",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 82 division by zero in (shared_page_free + (align - 1)) / align",
+    "line 82 arithmetic overflow on signed - in align - 1"
+   ]
+  },
+  {
+   "file": "sys/kern/kern_tc.c",
+   "function": "tc_ticktock",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1356 arithmetic overflow on signed * in (th->th_adjustment / (signed long int)1024) * (signed long int)2199",
+    "line 1357 division by zero in scale / th->th_counter->tc_frequency"
+   ]
+  },
+  {
+   "file": "sys/kern/subr_blist.c",
+   "function": "blist_create",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 216 arithmetic overflow on signed - in blocks - (signed long int)1"
+   ]
+  },
+  {
+   "file": "sys/kern/subr_param.c",
+   "function": "init_param2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 283 arithmetic overflow on signed * in physpages * (signed long int)((1 << 12) / 1024)",
+    "line 308 arithmetic overflow on signed * in 16 * maxusers"
+   ]
+  },
+  {
+   "file": "sys/net/if.c",
+   "function": "link_alloc_sdl",
+   "already_in_ub_findings": false,
+   "failures": [
+    "file /home/odin/ParanoidBSD/hbsd/src/sys/net/if.c line 2393 arithmetic overflow on signed shl in 1 << 31"
+   ]
+  },
+  {
+   "file": "sys/net/if.c",
+   "function": "ifa_alloc",
+   "already_in_ub_findings": false,
+   "failures": [
+    "file /home/odin/ParanoidBSD/hbsd/src/sys/net/if.c line 2393 arithmetic overflow on signed shl in 1 << 31"
+   ]
+  },
+  {
+   "file": "sys/kern/subr_smr.c",
+   "function": "smr_poll",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 233 arithmetic overflow on signed - in t - byte_extract_little_endian(s_wr, 0l, struct).ticks"
+   ]
+  },
+  {
+   "file": "sys/net/if.c",
+   "function": "if_allocdescr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "file /home/odin/ParanoidBSD/hbsd/src/sys/net/if.c line 2393 arithmetic overflow on signed shl in 1 << 31"
+   ]
+  },
+  {
+   "file": "sys/net/altq/altq_subr.c",
+   "function": "init_machclk",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 922 division by zero in machclk_freq / (unsigned int)hz"
+   ]
+  },
+  {
+   "file": "sys/net/altq/altq_subr.c",
+   "function": "read_machclk",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 991 arithmetic overflow on signed - in tv.tv_sec - boottime.tv_sec"
+   ]
+  },
+  {
+   "file": "sys/net80211/ieee80211_phy.c",
+   "function": "ieee80211_compute_duration_ht",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 614 arithmetic overflow on signed * in streams * 4"
+   ]
+  },
+  {
+   "file": "sys/netpfil/ipfw/ip_fw_sockopt.c",
+   "function": "ipfw_destroy_sopt_handler",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 3096 arithmetic overflow on signed - in (ctl3_handlers + (signed long int)ctl3_hsize) - (h + (signed long int)1)"
+   ]
+  },
+  {
+   "file": "sys/riscv/riscv/machdep.c",
+   "function": "spinlock_exit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 263 arithmetic overflow on signed - in td->td_md.md_spinlock_count - 1"
+   ]
+  },
+  {
+   "file": "sys/riscv/riscv/mp_machdep.c",
+   "function": "cpu_mp_start",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 426 shift distance too large in 1ul << (1 != 0 && ((unsigned long int)16 + (sizeof(unsigned long int) /*8ul*/  * (unsigned long int)8 - (unsigned long int)"
+   ]
+  },
+  {
+   "file": "sys/riscv/riscv/mp_machdep.c",
+   "function": "ipi_cpu",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 511 shift distance too large in 1ul << (1 != 0 && ((unsigned long int)16 + (sizeof(unsigned long int) /*8ul*/  * (unsigned long int)8 - (unsigned long int)"
+   ]
+  },
+  {
+   "file": "sys/riscv/riscv/pmap.c",
+   "function": "pmap_qremove",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1096 shift distance too large in 1ul << tmp_if_expr$0"
+   ]
+  },
+  {
+   "file": "sys/riscv/riscv/pmap.c",
+   "function": "pmap_kenter",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1096 shift distance too large in 1ul << tmp_if_expr$0"
+   ]
+  },
+  {
+   "file": "sys/vm/vm_page.c",
+   "function": "vm_page_bits",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 5336 arithmetic overflow on signed + in base + size",
+    "line 5345 arithmetic overflow on signed + in base + size"
+   ]
+  },
+  {
+   "file": "sys/x86/iommu/iommu_utils.c",
+   "function": "pglvl_pgtbl_pte_off",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 691 arithmetic overflow on signed - in pglvl - lvl",
+    "line 691 arithmetic overflow on signed - in (pglvl - lvl) - 1"
+   ]
+  },
+  {
+   "file": "sys/x86/iommu/iommu_utils.c",
+   "function": "pglvl_page_size",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 750 arithmetic overflow on signed - in total_pglvl - lvl",
+    "line 750 arithmetic overflow on signed - in (total_pglvl - lvl) - 1"
+   ]
+  },
+  {
+   "file": "sys/x86/iommu/iommu_utils.c",
+   "function": "pglvl_pgtbl_get_pindex",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 691 arithmetic overflow on signed - in pglvl - lvl",
+    "line 691 arithmetic overflow on signed - in (pglvl - lvl) - 1"
+   ]
+  },
+  {
+   "file": "sys/vm/vm_phys.c",
+   "function": "vm_phys_avail_size",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1862 arithmetic overflow on signed + in i + 1"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/cpu_machdep.c",
+   "function": "cpu_reset",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 599 array.__bits upper bound in (&map)->__bits[(signed long int)tmp_if_expr]"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/delay.c",
+   "function": "cpu_lock_delay",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 179 arithmetic overflow on signed + in return_value___curthread->td_pinned + 1"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/delay.c",
+   "function": "DELAY",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 179 arithmetic overflow on signed + in return_value___curthread->td_pinned + 1"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mptable.c",
+   "function": "mptable_pci_route_interrupt",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1146 arithmetic overflow on signed - in pin - 1"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mp_x86.c",
+   "function": "ipi_nmi_handler",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1552 array.__bits upper bound in (&started_cpus)->__bits[(signed long int)(1 != 0 && ((unsigned long int)1024 + (sizeof(unsigned long int) /*8ul*/  * (unsi"
+   ]
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/pid/tst.weak1.c",
+   "function": "go",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 42 arithmetic overflow on signed + in a + 1"
+   ]
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.bigstack.c",
+   "function": "grow1",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 51 arithmetic overflow on signed + in frame + 1"
+   ]
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c",
+   "function": "baz",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 43 arithmetic overflow on signed + in a + 1"
+   ]
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c",
+   "function": "bar",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 52 arithmetic overflow on signed + in a + 1",
+    "line 43 arithmetic overflow on signed + in a + 1"
+   ]
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/ustack/tst.spin.c",
+   "function": "foo",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 52 arithmetic overflow on signed + in a + 1",
+    "line 43 arithmetic overflow on signed + in a + 1"
+   ]
+  },
+  {
+   "file": "crypto/krb5/src/util/et/com_err.c",
+   "function": "reset_com_err_hook",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 376 assertion r == 0",
+    "line 388 assertion r == 0"
+   ]
+  },
+  {
+   "file": "crypto/krb5/src/util/et/error_message.c",
+   "function": "com_err_finish_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 308 assertion k5int_i->did_run != 0"
+   ]
+  },
+  {
+   "file": "crypto/openssh/auth2.c",
+   "function": "auth2_read_banner",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 130 free argument has offset zero"
+   ]
+  },
+  {
+   "file": "crypto/openssh/readconf.c",
+   "function": "kex_default_pk_alg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 351 free argument has offset zero"
+   ]
+  },
+  {
+   "file": "crypto/openssl/apps/lib/apps.c",
+   "function": "app_tminterval",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 2871 division by zero in (double)(now - tmstart) / (double)tck"
+   ]
+  },
+  {
+   "file": "crypto/openssl/crypto/bio/bio_sock.c",
+   "function": "BIO_socket_wait",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 473 arithmetic overflow on signed - in max_time - now",
+    "line 473 arithmetic overflow on signed * in (signed int)(max_time - now) * 1000"
+   ]
+  },
+  {
+   "file": "crypto/openssl/crypto/bn/bn_lib.c",
+   "function": "BN_set_params",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 45 arithmetic overflow on signed shl in 1 << mult",
+    "line 51 arithmetic overflow on signed shl in 1 << high"
+   ]
+  },
+  {
+   "file": "contrib/bmake/parse.c",
+   "function": "CurFile_CondMinDepth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 334 assertion i < includes.len"
+   ]
+  },
+  {
+   "file": "contrib/bmake/parse.c",
+   "function": "Parse_GuardElse",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 334 assertion i < includes.len"
+   ]
+  },
+  {
+   "file": "contrib/bmake/parse.c",
+   "function": "Parse_GuardEndif",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 334 assertion i < includes.len"
+   ]
+  },
+  {
+   "file": "contrib/bsddialog/lib/theme.c",
+   "function": "bsddialog_color",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 258 arithmetic overflow on signed * in (signed int)foreground * 8",
+    "line 258 arithmetic overflow on signed + in (signed int)foreground * 8 + (signed int)background"
+   ]
+  },
+  {
+   "file": "contrib/bmake/var.c",
+   "function": "EvalStack_Pop",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 391 assertion evalStack.len > 0"
+   ]
+  },
+  {
+   "file": "contrib/bsddialog/utility/bsddialog.c",
+   "function": "set_exit_code",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 73 arithmetic overflow on signed + in lib_retval + 1"
+   ]
+  },
+  {
+   "file": "contrib/byacc/test/btyacc/btyacc_calc1.tab.c",
+   "function": "vdiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 323 division by zero in a / v.hi",
+    "line 323 division by zero in a / v.lo"
+   ]
+  },
+  {
+   "file": "contrib/byacc/test/btyacc/calc1.tab.c",
+   "function": "vdiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 304 division by zero in a / v.hi",
+    "line 304 division by zero in a / v.lo"
+   ]
+  },
+  {
+   "file": "contrib/byacc/test/btyacc/varsyntax_calc1.tab.c",
+   "function": "vdiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 306 division by zero in a / v.hi",
+    "line 306 division by zero in a / v.lo"
+   ]
+  },
+  {
+   "file": "contrib/byacc/test/yacc/calc1.tab.c",
+   "function": "vdiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 304 division by zero in a / v.hi",
+    "line 304 division by zero in a / v.lo"
+   ]
+  },
+  {
+   "file": "contrib/byacc/test/yacc/varsyntax_calc1.tab.c",
+   "function": "vdiv",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 306 division by zero in a / v.hi",
+    "line 306 division by zero in a / v.lo"
+   ]
+  },
+  {
+   "file": "contrib/bzip2/unzcrash.c",
+   "function": "flip_bit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 68 shift distance is negative in 1 << bitno"
+   ]
+  },
+  {
+   "file": "contrib/ee/ee.c",
+   "function": "len_char",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 919 arithmetic overflow on signed + in temp_int + 1"
+   ]
+  },
+  {
+   "file": "contrib/ee/ee.c",
+   "function": "tabshift",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 919 arithmetic overflow on signed + in temp_int + 1"
+   ]
+  },
+  {
+   "file": "contrib/ee/ee.c",
+   "function": "leave_op",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "allocate_array",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "dataend",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 277 arithmetic overflow on signed + in dataline + 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "dataflush",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 277 arithmetic overflow on signed + in dataline + 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "mkdata",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 277 arithmetic overflow on signed + in dataline + 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "mk2data",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 277 arithmetic overflow on signed + in dataline + 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/misc.c",
+   "function": "transition_struct_out",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 820 arithmetic overflow on signed + in datapos + 14",
+    "line 825 arithmetic overflow on signed + in dataline + 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/nfa.c",
+   "function": "mkbranch",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 592 arithmetic overflow on signed + in lastnfa + 1",
+    "line 593 arithmetic overflow on signed + in current_mns + 1000"
+   ]
+  },
+  {
+   "file": "contrib/less/brac.c",
+   "function": "match_brac",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 63 arithmetic overflow on signed - in n - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/cmdbuf.c",
+   "function": "init_cmdhist",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1488 free argument has offset zero",
+    "line 1543 free argument has offset zero"
+   ]
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "overlay_header",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 140 arithmetic overflow on signed + in pfx + return_value_line_pfx_width",
+    "line 190 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "back",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 388 arithmetic overflow on signed - in sc_height - 1",
+    "line 390 arithmetic overflow on signed - in n - 1"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/ccl.c",
+   "function": "range_covers_case",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 283 arithmetic overflow on signed + in i + 1"
+   ]
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "get_back_scroll",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 518 arithmetic overflow on signed - in sc_height - 2"
+   ]
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "backward",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 388 arithmetic overflow on signed - in sc_height - 1",
+    "line 390 arithmetic overflow on signed - in n - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_forw_buffered",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 81 arithmetic overflow on signed - in sc_height - 1",
+    "line 244 arithmetic overflow on signed - in nline - sindex"
+   ]
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "repaint",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 244 arithmetic overflow on signed - in nline - sindex",
+    "line 248 arithmetic overflow on signed unary minus in -nline"
+   ]
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_percent",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 244 arithmetic overflow on signed - in nline - sindex",
+    "line 248 arithmetic overflow on signed unary minus in -nline"
+   ]
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_loc",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 244 arithmetic overflow on signed - in nline - sindex",
+    "line 248 arithmetic overflow on signed unary minus in -nline"
+   ]
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_line_loc",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 244 arithmetic overflow on signed - in nline - sindex",
+    "line 248 arithmetic overflow on signed unary minus in -nline"
+   ]
+  },
+  {
+   "file": "contrib/less/jump.c",
+   "function": "jump_forw",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 193 arithmetic overflow on signed + in last_msg + (signed long int)1",
+    "line 39 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "line_pfx_width",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 455 arithmetic overflow on signed + in linenum_width + 1",
+    "line 455 arithmetic overflow on signed + in width + linenum_width + 1"
+   ]
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "pwidth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 484 arithmetic overflow on signed + in w + bo_s_width",
+    "line 486 arithmetic overflow on signed + in w + bl_s_width"
+   ]
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "pdone",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1443 arithmetic overflow on signed - in sc_width - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/forwback.c",
+   "function": "forward",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 242 arithmetic overflow on signed - in sc_height - 1",
+    "line 243 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "longest_line_width",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1929 arithmetic overflow on signed - in sc_height - 1",
+    "line 1932 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "rrshift",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1929 arithmetic overflow on signed - in sc_height - 1",
+    "line 1932 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/optfunc.c",
+   "function": "calc_jump_sline",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 243 arithmetic overflow on signed + in jump_sline + sc_height",
+    "line 246 arithmetic overflow on signed + in header_lines + 1"
+   ]
+  },
+  {
+   "file": "contrib/less/optfunc.c",
+   "function": "get_swindow",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1281 arithmetic overflow on signed - in sc_height - header_lines",
+    "line 1281 arithmetic overflow on signed + in (sc_height - header_lines) + swindow"
+   ]
+  },
+  {
+   "file": "contrib/less/os.c",
+   "function": "percent_pos",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 536 arithmetic overflow on signed * in percent * 1000000",
+    "line 536 arithmetic overflow on signed + in (signed long int)(percent * 1000000) + fraction"
+   ]
+  },
+  {
+   "file": "contrib/less/position.c",
+   "function": "sindex_from_sline",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 233 arithmetic overflow on signed + in sline + sc_height",
+    "line 240 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "repaint_hilite",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 286 arithmetic overflow on signed - in (0 + sc_height) - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "clear_attn",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 329 arithmetic overflow on signed - in (0 + sc_height) - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "undo_search",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 286 arithmetic overflow on signed - in (0 + sc_height) - 1"
+   ]
+  },
+  {
+   "file": "contrib/less/search.c",
+   "function": "search_pos",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1129 arithmetic overflow on signed - in sc_height - 1",
+    "line 1140 arithmetic overflow on signed - in sc_height - 1"
+   ]
+  },
+  {
+   "file": "contrib/libarchive/libarchive/archive_version_details.c",
+   "function": "archive_version_details",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 203 arithmetic overflow on signed - in sep - p"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/absvti2.c",
+   "function": "__absvti2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 26 arithmetic overflow on signed - in (a ^ s) - s"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashldi3.c",
+   "function": "__ashldi3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 26 shift distance is negative in byte_extract_little_endian(input, 0l, struct).low << b - bits_in_word",
+    "line 26 shift distance too large in byte_extract_little_endian(input, 0l, struct).low << b - bits_in_word"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashlti3.c",
+   "function": "__ashlti3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 28 shift distance is negative in byte_extract_little_endian(input, 0l, struct).low << b - bits_in_dword",
+    "line 28 shift distance too large in byte_extract_little_endian(input, 0l, struct).low << b - bits_in_dword"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashrdi3.c",
+   "function": "__ashrdi3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 27 shift distance is negative in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_word",
+    "line 27 shift distance too large in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_word"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ashrti3.c",
+   "function": "__ashrti3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 29 shift distance is negative in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_dword",
+    "line 29 shift distance too large in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_dword"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/clzti2.c",
+   "function": "__clzti2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 25 count leading zeros is undefined for value zero in __builtin_clz((unsigned long int)(byte_extract_little_endian(x, 0l, struct).high & ~f) | byte_extract"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ctzti2.c",
+   "function": "__ctzti2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 25 count trailing zeros is undefined for value zero in __builtin_ctz((unsigned long int)(byte_extract_little_endian(x, 0l, struct).high & f) | byte_extract"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfdi.c",
+   "function": "__fixunsxfdi",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 43 shift distance is negative in byte_extract_little_endian(byte_extract_little_endian(fb, 0l, uqwords).low, 0l, du_int) >> 63 - e"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfsi.c",
+   "function": "__fixunsxfsi",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 43 shift distance is negative in byte_extract_little_endian(byte_extract_little_endian(fb, 0l, uqwords).low, 0l, struct).high >> 31 - e"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixunsxfti.c",
+   "function": "__fixunsxfti",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 40 shift distance too large in r >> 63 - e"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixxfdi.c",
+   "function": "__fixxfdi",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 47 arithmetic overflow on signed - in (r ^ s) - s"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/fixxfti.c",
+   "function": "__fixxfti",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 42 shift distance too large in r >> 63 - e"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/floatuntixf.c",
+   "function": "__floatuntixf",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 31 arithmetic overflow on signed - in sd - 1",
+    "line 47 shift distance too large in a >> sd - (64 + 2)"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/floattixf.c",
+   "function": "__floattixf",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 31 arithmetic overflow on signed - in (a ^ s) - s",
+    "line 33 arithmetic overflow on signed - in sd - 1"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/lshrdi3.c",
+   "function": "__lshrdi3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 26 shift distance is negative in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_word",
+    "line 26 shift distance too large in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_word"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/lshrti3.c",
+   "function": "__lshrti3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 28 shift distance is negative in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_dword",
+    "line 28 shift distance too large in byte_extract_little_endian(input, 0l, struct).high >> b - bits_in_dword"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/mulvti3.c",
+   "function": "__mulvti3",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 34 arithmetic overflow on signed - in (a ^ sa) - sa",
+    "line 36 arithmetic overflow on signed - in (b ^ sb) - sb"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/negvti2.c",
+   "function": "__negvti2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 25 arithmetic overflow on signed unary minus in -a"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/popcountti2.c",
+   "function": "__popcountti2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 23 shift distance too large in (unsigned int)0x5555555555555555ull << 64",
+    "line 26 shift distance too large in (unsigned int)0x3333333333333333ull << 64"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ppc/fixtfti.c",
+   "function": "__fixtfti",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 32 arithmetic overflow on signed unary minus in -((__int128_t)result)"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/ppc/fixunstfti.c",
+   "function": "__fixunstfti",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 99 shift distance too large in loResult << shift"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/profile/InstrProfilingBuffer.c",
+   "function": "__llvm_profile_get_size_for_buffer",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 127 arithmetic overflow on signed - in End - Begin"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/powisf2.c",
+   "function": "__powisf2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 28 division by zero in (float)1 / r"
+   ]
+  },
+  {
+   "file": "contrib/lua/src/lobject.c",
+   "function": "luaO_hexavalue",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 136 arithmetic overflow on signed + in c + 1",
+    "line 136 arithmetic overflow on signed - in c - 48"
+   ]
+  },
+  {
+   "file": "contrib/mandoc/dba_array.c",
+   "function": "dba_array_new",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 48 assertion ea > 0"
+   ]
+  },
+  {
+   "file": "contrib/mandoc/dba_write.c",
+   "function": "dba_align",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 85 arithmetic overflow on signed + in pos + 1",
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "contrib/netbsd-tests/usr.bin/xlint/lint1/d_c99_decls_after_stmt3.c",
+   "function": "sample",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 3 arithmetic overflow on signed + in i + 1"
+   ]
+  },
+  {
+   "file": "contrib/llvm-project/compiler-rt/lib/builtins/powidf2.c",
+   "function": "__powidf2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 28 division by zero in (double)1 / r"
+   ]
+  },
+  {
+   "file": "contrib/ntp/libntp/audio.c",
+   "function": "audio_gain",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 398 arithmetic overflow on signed * in 100 * gain",
+    "line 407 arithmetic overflow on signed shl in r << 8"
+   ]
+  },
+  {
+   "file": "contrib/ntp/libntp/ntp_worker.c",
+   "function": "close_all_beyond",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 107 arithmetic overflow on signed + in keep_fd + 1"
+   ]
+  },
+  {
+   "file": "contrib/ntp/libntp/timetoa.c",
+   "function": "format_time_fraction",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 69 argument to abs must not be INT_MIN",
+    "line 84 arithmetic overflow on signed - in qr.quot - 1l"
+   ]
+  },
+  {
+   "file": "contrib/ntp/libntp/ymd2yd.c",
+   "function": "ymd2yd",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 25 arithmetic overflow on signed - in y - 1",
+    "line 25 arithmetic overflow on signed - in m - 1"
+   ]
+  },
+  {
+   "file": "contrib/ntp/libntp/systime.c",
+   "function": "adj_systime",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 351 arithmetic overflow on signed unary minus in -adjtv.tv_sec"
+   ]
+  },
+  {
+   "file": "contrib/ntp/libntp/statestr.c",
+   "function": "statustoa",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 374 arithmetic overflow on signed - in lim - pch"
+   ]
+  },
+  {
+   "file": "contrib/ntp/sntp/unity/unity.c",
+   "function": "UnityPrintOk",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "contrib/ntp/sntp/unity/unity.c",
+   "function": "UnityPrintFail",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 474 arithmetic overflow on signed - in _p->_w - 1"
+   ]
+  },
+  {
+   "file": "contrib/ntp/util/ntptime.c",
+   "function": "pll_trap",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 14 siglongjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_fini",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 191 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_mode_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 239 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_debug_set",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 252 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 253 assertion level >= 0"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_mode_set",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 214 assertion pjdlog_initialized == PJDLOG_INITIALIZED",
+    "line 215 assertion mode == PJDLOG_MODE_STD || mode == PJDLOG_MODE_SYSLOG"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_debug_get",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 265 assertion pjdlog_initialized == PJDLOG_INITIALIZED"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditdistd/pjdlog.c",
+   "function": "pjdlog_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 158 assertion mode == PJDLOG_MODE_STD || mode == PJDLOG_MODE_SYSLOG"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/libauditd/auditd_lib.c",
+   "function": "audit_quick_stop",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1277 arithmetic overflow on signed + in len + 1",
+    "line 1285 memcpy src/dst overlap"
+   ]
+  },
+  {
+   "file": "contrib/pnpinfo/pnpinfo.c",
+   "function": "pnp_readw",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 68 arithmetic overflow on signed + in d + 1"
+   ]
+  },
+  {
+   "file": "contrib/pnpinfo/pnpinfo.c",
+   "function": "DELAY",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 94 arithmetic overflow on signed * in i * 4",
+    "line 97 arithmetic overflow on signed * in t.tv_sec * (signed long int)1000000"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditd/auditd.c",
+   "function": "auditd_terminate",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 181 memcpy src/dst overlap"
+   ]
+  },
+  {
+   "file": "contrib/telnet/libtelnet/encrypt.c",
+   "function": "findencryption",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 145 arithmetic overflow on signed shl in 1 << type - 1",
+    "line 145 shift distance too large in 1 << type - 1"
+   ]
+  },
+  {
+   "file": "contrib/tnftp/src/cmds.c",
+   "function": "proxabort",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 14 siglongjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/tnftp/src/util.c",
+   "function": "crankrate",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 954 arithmetic overflow on signed + in rate_get + rate_get_incr",
+    "line 956 arithmetic overflow on signed + in rate_put + rate_put_incr"
+   ]
+  },
+  {
+   "file": "contrib/unbound/services/listen_dnsport.c",
+   "function": "set_ip_dscp",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 950 arithmetic overflow on signed shl in dscp << 2",
+    "line 950 shift operand is negative in dscp << 2"
+   ]
+  },
+  {
+   "file": "contrib/unbound/validator/val_anchor.c",
+   "function": "anchors_create",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 149 free argument has offset zero",
+    "line 151 double free"
+   ]
+  },
+  {
+   "file": "contrib/unbound/util/config_file.c",
+   "function": "config_apply_max_rtt",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 536 arithmetic overflow on signed * in max_rtt * 4"
+   ]
+  },
+  {
+   "file": "contrib/wpa/src/common/ieee802_11_common.c",
+   "function": "get_6ghz_sec_channel",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 2971 arithmetic overflow on signed - in channel - 1"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditd/auditd.c",
+   "function": "auditd_handle_trigger",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 181 memcpy src/dst overlap"
+   ]
+  }
+ ],
+ "an INDEX out of its array's range - READ THESE": [
+  {
+   "file": "lib/libc/gen/libc_interposing_table.c",
+   "function": "__libc_interposing_slot",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 52 array '__libc_interposing' lower bound in __libc_interposing[(signed long int)interposno]",
+    "line 52 array '__libc_interposing' upper bound in __libc_interposing[(signed long int)interposno]"
+   ]
+  },
+  {
+   "file": "lib/libc/gen/readpassphrase.c",
+   "function": "handler",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 199 array 'signo' lower bound in signo[(signed long int)s]",
+    "line 199 array 'signo' upper bound in signo[(signed long int)s]"
+   ]
+  },
+  {
+   "file": "libexec/rtld-elf/rtld.c",
+   "function": "ld_get_env_var",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 495 array 'ld_env_vars' lower bound in ld_env_vars[(signed long int)idx]",
+    "line 495 array 'ld_env_vars' upper bound in ld_env_vars[(signed long int)idx]"
+   ]
+  },
+  {
+   "file": "bin/sh/options.c",
+   "function": "setoptionbyindex",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 293 array 'optval' lower bound in optval[(signed long int)idx]",
+    "line 293 array 'optval' upper bound in optval[(signed long int)idx]"
+   ]
+  },
+  {
+   "file": "usr.bin/procstat/procstat_rlimit.c",
+   "function": "humanize_rlimit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 82 array 'rlimit_param' lower bound in rlimit_param[(signed long int)indx]",
+    "line 82 array 'rlimit_param' upper bound in rlimit_param[(signed long int)indx]"
+   ]
+  },
+  {
+   "file": "usr.bin/systat/vmstat.c",
+   "function": "cputime",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 620 array 's'.time lower bound in s.time[(signed long int)indx]",
+    "line 620 array 's'.time upper bound in s.time[(signed long int)indx]"
+   ]
+  },
+  {
+   "file": "usr.sbin/acpi/acpidump/acpi.c",
+   "function": "spcr_interface_type",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1495 array 'if_names' lower bound in if_names[(signed long int)ift]",
+    "line 1497 array 'if_names' lower bound in if_names[(signed long int)ift]"
+   ]
+  },
+  {
+   "file": "usr.sbin/acpi/acpidump/acpi.c",
+   "function": "spcr_terminal_type",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1532 array 'term_names' lower bound in term_names[(signed long int)type]",
+    "line 1534 array 'term_names' lower bound in term_names[(signed long int)type]"
+   ]
+  },
+  {
+   "file": "usr.sbin/lpr/common_source/displayq.c",
+   "function": "prank",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 620 array 'r' lower bound in r[(signed long int)(n % 10)]"
+   ]
+  },
+  {
+   "file": "usr.sbin/moused/msconvd/msconvd.c",
+   "function": "r_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1285 array 'rodentcflags' lower bound in rodentcflags[(signed long int)rodent.rtype]"
+   ]
+  },
+  {
+   "file": "usr.sbin/newsyslog/ptimes.c",
+   "function": "days_pmonth",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 94 array 'mtab' lower bound in mtab[(signed long int)month]",
+    "line 94 array 'mtab' upper bound in mtab[(signed long int)month]"
+   ]
+  },
+  {
+   "file": "usr.sbin/pkg/config.c",
+   "function": "pkg_get_myabi",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 164 array 'machine_arch' upper bound in machine_arch[(signed long int)len]"
+   ]
+  },
+  {
+   "file": "usr.sbin/ppp/ccp.c",
+   "function": "protoname",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 137 array 'cftypes' upper bound in cftypes[(signed long int)proto]",
+    "line 143 array 'cftypes' upper bound in cftypes[(signed long int)proto]"
+   ]
+  },
+  {
+   "file": "usr.sbin/ppp/lcp.c",
+   "function": "protoname",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 149 array 'cftypes' upper bound in cftypes[(signed long int)proto]",
+    "line 152 array 'cftypes' upper bound in cftypes[(signed long int)proto]"
+   ]
+  },
+  {
+   "file": "usr.sbin/route6d/route6d.c",
+   "function": "plen2mask",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 3408 array 'pl2m' lower bound in pl2m[(signed long int)n]"
+   ]
+  },
+  {
+   "file": "sys/amd64/vmm/vmm_instruction_emul.c",
+   "function": "vie_size2mask",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1880 array 'size2mask' lower bound in size2mask[(signed long int)size]",
+    "line 1880 array 'size2mask' upper bound in size2mask[(signed long int)size]"
+   ]
+  },
+  {
+   "file": "sys/arm64/arm64/disassem.c",
+   "function": "arm64_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 457 array 'w_reg' lower bound in w_reg[(signed long int)num]",
+    "line 457 array 'w_reg' upper bound in w_reg[(signed long int)num]"
+   ]
+  },
+  {
+   "file": "sys/arm64/arm64/disassem.c",
+   "function": "arm64_disasm_reg_width",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 457 array 'w_reg' lower bound in w_reg[(signed long int)num]",
+    "line 457 array 'w_reg' upper bound in w_reg[(signed long int)num]"
+   ]
+  },
+  {
+   "file": "sys/cddl/dev/dtrace/i386/dtrace_subr.c",
+   "function": "dtrace_gethrtime",
+   "already_in_ub_findings": true,
+   "failures": [
+    "line 343 array 'tsc_skew' upper bound in tsc_skew[(signed int)tmp_statement_expression]"
+   ]
+  },
+  {
+   "file": "sys/compat/linux/linux_errno.c",
+   "function": "bsd_to_linux_errno",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 17 array 'linux_errtbl' lower bound in linux_errtbl[(signed long int)error]",
+    "line 17 array 'linux_errtbl' upper bound in linux_errtbl[(signed long int)error]"
+   ]
+  },
+  {
+   "file": "sys/contrib/dev/iwlwifi/fw/rs.c",
+   "function": "iwl_fw_rate_idx_to_plcp",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 66 array 'fw_rate_idx_to_plcp' lower bound in fw_rate_idx_to_plcp[(signed long int)idx]",
+    "line 66 array 'fw_rate_idx_to_plcp' upper bound in fw_rate_idx_to_plcp[(signed long int)idx]"
+   ]
+  },
+  {
+   "file": "sys/contrib/dev/iwlwifi/mvm/scan.c",
+   "function": "rate_to_scan_rate_flag",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1033 array 'rate_to_scan_rate' upper bound in rate_to_scan_rate[(signed long int)rate]"
+   ]
+  },
+  {
+   "file": "sys/ddb/db_access.c",
+   "function": "db_put_value",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 114 array 'data' upper bound in data[(signed long int)i]"
+   ]
+  },
+  {
+   "file": "sys/dev/bwn/if_bwn.c",
+   "function": "bwn_dma_base",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 2792 array 'map64' lower bound in map64[(signed long int)controller_idx]",
+    "line 2792 array 'map64' upper bound in map64[(signed long int)controller_idx]"
+   ]
+  },
+  {
+   "file": "sys/dev/evdev/evdev_utils.c",
+   "function": "evdev_hid2key",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 223 array 'evdev_usb_scancodes' lower bound in evdev_usb_scancodes[(signed long int)scancode]",
+    "line 223 array 'evdev_usb_scancodes' upper bound in evdev_usb_scancodes[(signed long int)scancode]"
+   ]
+  },
+  {
+   "file": "sys/dev/hwpmc/hwpmc_cmn600.c",
+   "function": "cmn600_init_pmc_units",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 699 array 'cmn600_pmcs' upper bound in cmn600_pmcs[(signed long int)i]"
+   ]
+  },
+  {
+   "file": "sys/dev/liquidio/base/lio_device.c",
+   "function": "oct_set_config_info",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 190 array 'oct_conf_info' lower bound in oct_conf_info[(signed long int)oct_id]",
+    "line 190 array 'oct_conf_info' upper bound in oct_conf_info[(signed long int)oct_id]"
+   ]
+  },
+  {
+   "file": "sys/kern/kern_event.c",
+   "function": "kqueue_del_filteropts",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1609 array 'sysfilt_ops' lower bound in sysfilt_ops[(signed long int)~filt]",
+    "line 1610 array 'sysfilt_ops' lower bound in sysfilt_ops[(signed long int)~filt]"
+   ]
+  },
+  {
+   "file": "sys/kern/kern_cpuset.c",
+   "function": "domainset_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 515 array.ds_order dynamic object upper bound in domain->ds_order[(signed long int)tmp_post_j]"
+   ]
+  },
+  {
+   "file": "contrib/flex/src/tblcmp.c",
+   "function": "mv2front",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 731 array 'protprev' lower bound in protprev[(signed long int)lastprot]",
+    "line 731 array 'protprev' upper bound in protprev[(signed long int)lastprot]"
+   ]
+  },
+  {
+   "file": "contrib/hyperv/tools/hv_kvp_daemon.c",
+   "function": "kvp_acquire_lock",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 167 array 'kvp_pools' lower bound in kvp_pools[(signed long int)pool]",
+    "line 167 array 'kvp_pools' upper bound in kvp_pools[(signed long int)pool]"
+   ]
+  },
+  {
+   "file": "contrib/hyperv/tools/hv_kvp_daemon.c",
+   "function": "kvp_release_lock",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 181 array 'kvp_pools' lower bound in kvp_pools[(signed long int)pool]",
+    "line 181 array 'kvp_pools' upper bound in kvp_pools[(signed long int)pool]"
+   ]
+  },
+  {
+   "file": "contrib/less/line.c",
+   "function": "set_pfx",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 367 array 'linebuf'.pfx upper bound in linebuf.pfx[(signed long int)n]",
+    "line 368 array 'linebuf'.pfx_attr upper bound in linebuf.pfx_attr[(signed long int)n]"
+   ]
+  },
+  {
+   "file": "contrib/libarchive/libarchive/test/test_write_format_mtree_classic.c",
+   "function": "test_write_format_mtree_sub",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 151 array 'buff' upper bound in buff[(signed long int)used]"
+   ]
+  },
+  {
+   "file": "contrib/libarchive/libarchive/test/test_write_format_mtree_classic_indent.c",
+   "function": "test_write_format_mtree_sub",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 153 array 'buff' upper bound in buff[(signed long int)used]"
+   ]
+  },
+  {
+   "file": "contrib/openbsm/bin/auditd/auditd_fbsd.c",
+   "function": "auditd_relay_signal",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 270 array 'signaled' lower bound in signaled[(signed long int)signo]",
+    "line 270 array 'signaled' upper bound in signaled[(signed long int)signo]"
+   ]
+  }
+ ],
+ "STATIC but its address is taken - READ THESE": [
+  {
+   "file": "lib/libsys/x86/pkru.c",
+   "function": "x86_pkru_set_perm_hw",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 96 arithmetic overflow on signed shl in 3 << keyidx",
+    "line 100 arithmetic overflow on signed shl in 2 << keyidx"
+   ]
+  },
+  {
+   "file": "libexec/rtld-elf/rtld_lock.c",
+   "function": "def_lock_create",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 106 free argument has offset zero"
+   ]
+  },
+  {
+   "file": "sbin/ifconfig/ifconfig.c",
+   "function": "printifnamemaybe",
+   "already_in_ub_findings": false,
+   "failures": [
+    "file /home/odin/ParanoidBSD/hbsd/src/sbin/ifconfig/ifconfig.c line 2158 arithmetic overflow on signed shl in 1 << 31"
+   ]
+  },
+  {
+   "file": "sbin/shutdown/shutdown.c",
+   "function": "timeout",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "sbin/fsck_ffs/suj.c",
+   "function": "blk_free_visit",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 325 arithmetic overflow on signed - in fs->fs_frag - 1",
+    "line 244 division by zero in blk / (signed long int)fs->fs_fpg"
+   ]
+  },
+  {
+   "file": "usr.bin/login/login.c",
+   "function": "timedout",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/login/login.c",
+   "function": "bail_sig",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 1012 arithmetic overflow on signed + in 128 + signo"
+   ]
+  },
+  {
+   "file": "usr.bin/msgs/msgs.c",
+   "function": "onsusp",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/biz22.c",
+   "function": "sigALRM",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/courier.c",
+   "function": "sigALRM",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/df.c",
+   "function": "alrm_timeout",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/dn11.c",
+   "function": "alarmtr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/hayes.c",
+   "function": "sigALRM",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tftp/main.c",
+   "function": "intr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/t3000.c",
+   "function": "sigALRM",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/v3451.c",
+   "function": "alarmtr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/v831.c",
+   "function": "alarmtr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/libacu/ventel.c",
+   "function": "sigALRM",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/tip/hunt.c",
+   "function": "dead",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/tip/tip.c",
+   "function": "intprompt",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/tip/tipout.c",
+   "function": "intIOT",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/tip/tipout.c",
+   "function": "intSYS",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.bin/tip/tip/cmds.c",
+   "function": "intcopy",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.sbin/bhyve/mevent.c",
+   "function": "mevent_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 140 assertion mfd > 0"
+   ]
+  },
+  {
+   "file": "usr.sbin/moused/moused/moused.c",
+   "function": "reset",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.sbin/moused/msconvd/msconvd.c",
+   "function": "hup",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "usr.sbin/ppp/sig.c",
+   "function": "signal_recorder",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 52 arithmetic overflow on signed - in sig - 1",
+    "line 52 arithmetic overflow on signed + in caused[(signed long int)(sig - 1)] + 1"
+   ]
+  },
+  {
+   "file": "usr.sbin/rpc.ypupdated/ypupdated_main.c",
+   "function": "reaper",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 174 arithmetic overflow on signed - in children - 1"
+   ]
+  },
+  {
+   "file": "usr.sbin/rpc.ypxfrd/ypxfrd_main.c",
+   "function": "reaper",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 178 arithmetic overflow on signed - in children - 1"
+   ]
+  },
+  {
+   "file": "usr.sbin/ypserv/yp_main.c",
+   "function": "reaper",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 206 arithmetic overflow on signed - in children - 1"
+   ]
+  },
+  {
+   "file": "stand/efi/libefi/efi_console.c",
+   "function": "efi_cons_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 926 arithmetic overflow on signed - in return_value_ffs - 1",
+    "line 927 arithmetic overflow on signed - in return_value_ffs$0 - 1"
+   ]
+  },
+  {
+   "file": "sys/arm/allwinner/aw_thermal.c",
+   "function": "h3_to_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 245 arithmetic overflow on signed * in val * 8253",
+    "line 245 arithmetic overflow on signed - in 1794000 - val * 8253"
+   ]
+  },
+  {
+   "file": "sys/arm/allwinner/aw_thermal.c",
+   "function": "h5_to_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 299 arithmetic overflow on signed - in 233832448 - (val << 20)",
+    "line 299 shift operand is negative in val << 20"
+   ]
+  },
+  {
+   "file": "sys/arm64/arm64/nexus.c",
+   "function": "nexus_fdt_pcib_release_msix",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 206 arithmetic overflow on signed + in retval + return_value_printf"
+   ]
+  },
+  {
+   "file": "sys/dev/lge/if_lge.c",
+   "function": "lge_miibus_writereg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 306 arithmetic overflow on signed shl in phy << 8"
+   ]
+  },
+  {
+   "file": "sys/dev/lge/if_lge.c",
+   "function": "lge_miibus_readreg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 276 arithmetic overflow on signed shl in phy << 8"
+   ]
+  },
+  {
+   "file": "sys/dev/mvs/mvs_soc.c",
+   "function": "mvs_edma",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 234 arithmetic overflow on signed * in unit * 2",
+    "line 234 arithmetic overflow on signed shl in (1 << 1) << unit * 2"
+   ]
+  },
+  {
+   "file": "sys/dev/random/fortuna.c",
+   "function": "random_fortuna_pre_read",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 145 arithmetic overflow on signed shl in (sbintime_t)_bt.sec << 32",
+    "line 145 shift operand is negative in (sbintime_t)_bt.sec << 32"
+   ]
+  },
+  {
+   "file": "sys/dev/random/fortuna.c",
+   "function": "random_fortuna_seeded",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 145 arithmetic overflow on signed shl in (sbintime_t)_bt.sec << 32",
+    "line 145 shift operand is negative in (sbintime_t)_bt.sec << 32"
+   ]
+  },
+  {
+   "file": "sys/dev/usb/net/if_ure.c",
+   "function": "ure_miibus_readreg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 411 arithmetic overflow on signed * in reg * 2",
+    "line 411 arithmetic overflow on signed + in 0xA400 + reg * 2"
+   ]
+  },
+  {
+   "file": "sys/kern/vfs_bio.c",
+   "function": "buf_daemon",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 3546 arithmetic overflow on signed * in tick_sbt * (signed long int)hz"
+   ]
+  },
+  {
+   "file": "sys/netinet/cc/cc_htcp.c",
+   "function": "htcp_mod_init",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 356 arithmetic overflow on signed * in 100 * 32 * hz"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_status_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 200 arithmetic overflow on signed * in bank * 4",
+    "line 200 arithmetic overflow on signed + in 0x401 + bank * 4"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_ctl_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 218 arithmetic overflow on signed * in 0x10 * bank"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_addr_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 206 arithmetic overflow on signed * in bank * 4",
+    "line 206 arithmetic overflow on signed + in 0x402 + bank * 4"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_misc_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 212 arithmetic overflow on signed * in bank * 4",
+    "line 212 arithmetic overflow on signed + in 0x403 + bank * 4"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_ia32_ctl_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 194 arithmetic overflow on signed * in bank * 4",
+    "line 194 arithmetic overflow on signed + in 0x400 + bank * 4"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_status_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 224 arithmetic overflow on signed * in 0x10 * bank"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_addr_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 230 arithmetic overflow on signed * in 0x10 * bank"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mca.c",
+   "function": "mca_smca_misc_reg",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 236 arithmetic overflow on signed * in 0x10 * bank"
+   ]
+  },
+  {
+   "file": "sys/x86/x86/mptable.c",
+   "function": "mptable_probe",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 310 arithmetic overflow on signed + in x + 4 * 1024 * 1024"
+   ]
+  },
+  {
+   "file": "cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/io/tst.fds.c",
+   "function": "interrupt",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 14 siglongjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/blocklist/bin/blacklistd.c",
+   "function": "sigusr1",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 87 arithmetic overflow on signed + in debug + 1"
+   ]
+  },
+  {
+   "file": "contrib/blocklist/bin/blacklistd.c",
+   "function": "sigusr2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 93 arithmetic overflow on signed - in debug - 1"
+   ]
+  },
+  {
+   "file": "contrib/blocklist/bin/blocklistd.c",
+   "function": "sigusr1",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 87 arithmetic overflow on signed + in debug + 1"
+   ]
+  },
+  {
+   "file": "contrib/blocklist/bin/blocklistd.c",
+   "function": "sigusr2",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 93 arithmetic overflow on signed - in debug - 1"
+   ]
+  },
+  {
+   "file": "contrib/libdiff/lib/diff_atomize_text.c",
+   "function": "diff_data_signal_handler",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 14 siglongjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/ntp/ntpd/ntp_loopfilter.c",
+   "function": "pll_trap",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 14 siglongjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/pf/libevent/signal.c",
+   "function": "evsignal_handler",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 155 arithmetic overflow on signed + in evsigcaught[(signed long int)sig] + 1l"
+   ]
+  },
+  {
+   "file": "contrib/tcp_wrappers/rfc931.c",
+   "function": "timeout",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  },
+  {
+   "file": "contrib/telnet/libtelnet/encrypt.c",
+   "function": "finddecryption",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 157 arithmetic overflow on signed shl in 1 << type - 1",
+    "line 157 shift distance too large in 1 << type - 1"
+   ]
+  },
+  {
+   "file": "contrib/telnet/telnet/sys_bsd.c",
+   "function": "intr",
+   "already_in_ub_findings": false,
+   "failures": [
+    "line 12 longjmp requires instrumentation"
+   ]
+  }
+ ]
+}

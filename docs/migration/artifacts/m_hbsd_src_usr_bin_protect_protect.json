@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_protect_protect",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of protect.c, IR-identical for all 1 functions, 23 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/protect/protect.c": "50496c10ad5876ab"
+  }
+}

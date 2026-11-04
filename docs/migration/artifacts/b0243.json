@@ -1,0 +1,13 @@
+{
+  "batch": "b0243",
+  "verified": "2026-08-08T23:01:12Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                 cases     failures\n---------------------------------------------\nselect                  201602            0\nsigsuspend              200271            0\nsigwaitinfo             200286            0\npoll                    201378            0\n---------------------------------------------\nTOTAL                   803537            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/select.c": "837891ce355f3366",
+    "hbsd/src/lib/libc/sys/sigsuspend.c": "e5d59d27915ae6ed",
+    "hbsd/src/lib/libc/sys/sigwaitinfo.c": "5db6f4153001d78b",
+    "hbsd/src/lib/libc/sys/poll.c": "9fd2fb4bef8f61d7"
+  }
+}

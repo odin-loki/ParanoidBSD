@@ -1,0 +1,10 @@
+{
+  "batch": "b0012s3",
+  "verified": "2026-08-08T11:16:37Z",
+  "evidence": "harness green + 2/2 mutations killed (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n__negxf2               252114            0\nTOTAL                  252114            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/negxf2.c": "0a8c2debf7c51fc0"
+  }
+}

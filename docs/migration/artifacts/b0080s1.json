@@ -1,0 +1,10 @@
+{
+  "batch": "b0080s1",
+  "verified": "2026-08-08T11:21:32Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0080s1 differential test\n\n\n  function              cases   failures   result\n  ----------------------------------------------------\n  conjf                255488          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_conjf.c": "d3e089c247e7c1d2"
+  }
+}

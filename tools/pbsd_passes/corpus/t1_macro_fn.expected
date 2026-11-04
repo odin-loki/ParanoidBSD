@@ -1,0 +1,3 @@
+@@constexpr auto ADD
+@@constexpr auto SQR
+@@#define BAD

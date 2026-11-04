@@ -1,0 +1,13 @@
+{
+  "batch": "b0045",
+  "verified": "2026-08-08T09:27:06Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/8: wcstol_l, wcstoull_l, wcstoimax_l, wcstoll_l)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0045 differential results\nfunction              cases   failures status\nwcstol               407348          0 ok\nwcstol_l             814696          0 ok\nwcstoull             407348          0 ok\nwcstoull_l           814696          0 ok\nwcstoimax            407348          0 ok\nwcstoimax_l          814696          0 ok\nwcstoll              407348          0 ok\nwcstoll_l            814696          0 ok\nTOTAL               4888176          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wcstol.c": "a7fd8f96925a2117",
+    "hbsd/src/lib/libc/locale/wcstoull.c": "34cd1f15e9c9cdb5",
+    "hbsd/src/lib/libc/locale/wcstoimax.c": "fd1609d6bdfdb4d9",
+    "hbsd/src/lib/libc/locale/wcstoll.c": "137b13cbc7fb2138"
+  }
+}

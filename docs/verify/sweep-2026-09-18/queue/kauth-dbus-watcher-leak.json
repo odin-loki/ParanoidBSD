@@ -1,0 +1,11 @@
+{
+  "status": "read",
+  "verdict": "not-a-defect",
+  "not_in_pbsd_tree": true,
+  "function": "DBusHelperProxy::executeAction",
+  "file": "/home/odin/kde-src/kauth/src/backends/dbus/DBusHelperProxy.cpp",
+  "line": 142,
+  "checker": "cplusplus.NewDeleteLeaks",
+  "msg": "Potential leak of memory pointed to by 'watcher'",
+  "note": "auto watcher = new QDBusPendingCallWatcher(pendingCall, this); finished lambda calls watcher->deleteLater(). Parented QObject plus deleteLater; clang NewDeleteLeaks false positive. kauth unpack under kde-src, not vendored in ParanoidBSD kde/."
+}

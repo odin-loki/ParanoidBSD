@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_ypldap_log",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of log.c, IR-identical for all 9 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/ypldap/log.c": "e79aa1cef6deb45d"
+  }
+}

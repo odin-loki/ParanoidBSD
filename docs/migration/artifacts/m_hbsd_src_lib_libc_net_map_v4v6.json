@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_net_map_v4v6",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of map_v4v6.c, IR-identical for all 2 functions, 11 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/net/map_v4v6.c": "76b8650c760f61f5"
+  }
+}

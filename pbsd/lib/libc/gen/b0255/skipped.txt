@@ -1,0 +1,1 @@
+raise.c: __raise() depends on libc_private.h thread syscalls (__sys_thr_self, __sys_thr_kill) unavailable outside HardenedBSD libc.

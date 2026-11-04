@@ -1,0 +1,13 @@
+{
+  "batch": "b0131",
+  "verified": "2026-08-08T11:49:56Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n__bt_free          142870            0\n__bt_new           114308            0\n__bt_get            60726            0\n__bt_close          14391            0\n__bt_sync           57160            0\n__bt_pgin           28575            0\n__bt_pgout          28574            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/btree/bt_page.c": "c9f72b13dfca0a99",
+    "hbsd/src/lib/libc/db/btree/bt_get.c": "0c279984496d4435",
+    "hbsd/src/lib/libc/db/btree/bt_close.c": "0913d8c4d02d8dac",
+    "hbsd/src/lib/libc/db/btree/bt_conv.c": "5fab157f0527572a"
+  }
+}

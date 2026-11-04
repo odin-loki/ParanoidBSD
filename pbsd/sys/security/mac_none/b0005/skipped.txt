@@ -1,0 +1,5 @@
+hbsd/src/sys/security/mac_none/mac_none.c: contains no functions -- only an empty
+	static `struct mac_policy_ops none_ops = {}` initializer and the kernel-only
+	MAC_POLICY_SET() registration macro, whose struct layout and expansion live in
+	<security/mac/mac_policy.h>, which is not part of this batch; porting it would
+	require fabricating that header and yields no callable behaviour to test.

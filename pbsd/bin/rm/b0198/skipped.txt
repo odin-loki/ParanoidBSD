@@ -1,0 +1,5 @@
+hbsd/src/bin/rm/rm.c:main - drives getopt/geteuid/signal(SIGINFO) and exits the process; SIGINFO does not exist on the build platform and the function cannot be re-entered for a differential comparison.
+hbsd/src/bin/rm/rm.c:rm_tree - depends on <fts.h> FTS_WHITEOUT, struct stat::st_flags, UF_APPEND/SF_IMMUTABLE, lchflags() and undelete(), none of which exist outside FreeBSD/HardenedBSD.
+hbsd/src/bin/rm/rm.c:rm_file - depends on struct stat::st_flags, S_ISWHT, lchflags() and undelete(), which are FreeBSD/HardenedBSD-only.
+hbsd/src/bin/rm/rm.c:check - depends on strmode(), fflagstostr(), user_from_uid(), group_from_gid() and struct stat::st_flags, which are FreeBSD/HardenedBSD-only.
+hbsd/src/bin/rm/rm.c:usage - unconditionally calls exit(EX_USAGE), so it cannot be invoked repeatedly in-process for a differential sweep.

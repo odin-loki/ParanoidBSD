@@ -1,0 +1,46 @@
+{
+  "ts": "2026-09-19T23:09:19",
+  "source_jsonl": "/home/odin/cxx-sweep/cxx_analyze_ccdb.jsonl",
+  "filtered_jsonl": "/home/odin/cxx-sweep/cxx_analyze_ccdb_only.jsonl",
+  "mode": "filter_existing_mixed_run",
+  "compile_commands_only": true,
+  "note": "Existing mixed cxx_analyze_ccdb.jsonl already had 148/149 compile_commands OK; filtered flagsrc=compile_commands into cxx_analyze_ccdb_only.jsonl. Guessed moc/TUs are NOT counted as KDE-clean.",
+  "mixed_run": {
+    "lines": 491,
+    "flagsrc": {
+      "compile_commands": 149,
+      "guess": 341
+    },
+    "status": {
+      "OK": 182,
+      "ERROR": 308
+    },
+    "combo": {
+      "compile_commands/OK": 148,
+      "guess/OK": 34,
+      "guess/ERROR": 307,
+      "compile_commands/ERROR": 1
+    },
+    "guessed_units": 341,
+    "guessed_ok": 34,
+    "guessed_error": 307,
+    "guessed_not_kde_clean": true
+  },
+  "units": 149,
+  "flagsrc_counts": {
+    "compile_commands": 149
+  },
+  "OK": 148,
+  "ERROR": 1,
+  "ok_error": "148/149",
+  "error_example": {
+    "file": "kwindowsystem/src/qml/KWindowSystem_org_kde_kwindowsystemPlugin.cpp",
+    "flagsrc": "compile_commands",
+    "status": "ERROR",
+    "detail": "/kwindowsystem/src/qml/KWindowSystem_org_kde_kwindowsystemPlugin.cpp:26:10: fatal error: 'KWindowSystem_org_kde_kwindowsystemPlugin.moc' file not found\n   26 | #include \"KWindowSystem_org_kde_kwindowsystemPlugin.moc\"\n      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n1 error generated.",
+    "flags": "0f335300d9d7"
+  },
+  "root": "/home/odin/kde-compile-db-build",
+  "compile_commands": "/home/odin/kde-compile-db-build/compile_commands.json",
+  "jobs_note": "re-run skipped; mixed run already 148/149 compile_commands OK"
+}

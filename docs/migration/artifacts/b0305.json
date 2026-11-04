@@ -1,0 +1,13 @@
+{
+  "batch": "b0305",
+  "verified": "2026-08-09T02:31:33Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/4: fmax, fmin)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n-------------- ------------ ------------\nlrint                 51080            0\nfmax                  55196            0\nfmin                  55196            0\nfminimum_magl        181752            0\n-------------- ------------ ------------\nTOTAL                343224            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_lrint.c": "7e87de5329f8747a",
+    "hbsd/src/lib/msun/src/s_fmax.c": "dbdde1d995e3845d",
+    "hbsd/src/lib/msun/src/s_fmin.c": "e4474513b273cb72",
+    "hbsd/src/lib/msun/src/s_fminimum_magl.c": "2ff478658c072614"
+  }
+}

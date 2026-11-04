@@ -1,0 +1,13 @@
+{
+  "batch": "b0147",
+  "verified": "2026-08-08T11:53:39Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\nBIG5_init                         1            0\nBIG5_mbsinit                      4            0\nbig5_check                   200020            0\nBIG5_mbrtowc                 200013            0\nBIG5_wcrtomb                 200005            0\nBIG5_mbsnrtowcs              200040            0\nBIG5_wcsnrtombs              200035            0\nGBK_init                          1            0\nGBK_mbsinit                       4            0\ngbk_check                    200020            0\nGBK_mbrtowc                  200013            0\nGBK_wcrtomb                  200005            0\nGBK_mbsnrtowcs               200040            0\nGBK_wcsnrtombs               200035            0\nascii_init                        1            0\nascii_mbsinit                     4            0\nascii_mbrtowc                200004            0\nascii_wcrtomb                200005            0\nascii_mbsnrtowcs             200040            0\nascii_wcsnrtombs             200035            0\nMSKanji_init                      1            0\nMSKanji_mbsinit                   4            0\nMSKanji_mbrtowc              200015            0\nMSKanji_wcrtomb              200007            0\nMSKanji_mbsnrtowcs           200040            0\nMSKanji_wcsnrtombs           200035            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/big5.c": "aa47a0362e9cdc34",
+    "hbsd/src/lib/libc/locale/gbk.c": "c9b88a47160004b5",
+    "hbsd/src/lib/libc/locale/ascii.c": "fada332f9c0731df",
+    "hbsd/src/lib/libc/locale/mskanji.c": "ce9be5d76a95efd6"
+  }
+}

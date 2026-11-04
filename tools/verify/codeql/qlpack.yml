@@ -1,0 +1,4 @@
+name: pbsd-codeql-smoke
+version: 0.0.2
+dependencies:
+  codeql/cpp-all: "*"

@@ -1,0 +1,4 @@
+hbsd/src/bin/timeout/timeout.c:usage() - terminates the process via exit(3) and formats with getprogname(3), which this platform's libc does not provide; no observable value to diff.
+hbsd/src/bin/timeout/timeout.c:send_sig() - built on FreeBSD-only procctl(2)/struct procctl_reaper_kill and sys_signame[], and its whole effect is delivering real signals to live processes.
+hbsd/src/bin/timeout/timeout.c:kill_self() - needs sys_signame[], drops RLIMIT_CORE and raises a fatal signal at the caller, so it cannot return to a differential harness.
+hbsd/src/bin/timeout/timeout.c:main() - process driver over fork(2)/execvp(3)/waitid(2)/pipe2(2)/sigsuspend(2)/procctl(2), plus FreeBSD-only sys_nsig and str2sig(3); not a pure function.

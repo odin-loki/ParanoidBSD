@@ -1,0 +1,11 @@
+#
+# HARDENEDBSD -- Main HardenedBSD kernel configuration for arm.
+#
+# The hardening policy is sys/conf/std.hardenedbsd and is the same on every
+# architecture. Anything below the include is an overload for arm
+# specifically, and has to justify itself as such.
+
+include GENERIC
+include "std.hardenedbsd"
+
+ident		HARDENEDBSD

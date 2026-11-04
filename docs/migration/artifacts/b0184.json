@@ -1,0 +1,12 @@
+{
+  "batch": "b0184",
+  "verified": "2026-08-08T12:30:27Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "PBSD batch b0184 differential test\n(oracle.c is the specification)\n\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\nmy_hash                                200026            0       PASS\n-------------------------------- ------------ ------------ ----------\nTOTAL                                  200026            0       PASS\n\n200026 case(s) run, 0 failure(s).\nThree main() routines skipped; see skipped.txt.\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/test/hash.tests/driver2.c": "1688fc08acb9dcc6",
+    "hbsd/src/lib/libc/db/test/hash.tests/tdel.c": "76226e1d42155e8b",
+    "hbsd/src/lib/libc/db/test/hash.tests/thash4.c": "8792df05621e3fd8"
+  }
+}

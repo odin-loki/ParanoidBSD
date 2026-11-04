@@ -1,0 +1,13 @@
+{
+  "batch": "b0123",
+  "verified": "2026-08-08T11:38:00Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nfamilyname         200024            0   PASS\nftov               200024            0   PASS\nvtof               200021            0   PASS\nfreembt            200004            0   PASS\n------------ ------------ ------------   ------\nTOTAL              800073            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/familyname.c": "1d17a7d4a64dd608",
+    "hbsd/src/sbin/ipf/libipf/ftov.c": "ebab7dd0a1062013",
+    "hbsd/src/sbin/ipf/libipf/vtof.c": "f75aa30bc25ae013",
+    "hbsd/src/sbin/ipf/libipf/freembt.c": "1246597e9b9d8409"
+  }
+}

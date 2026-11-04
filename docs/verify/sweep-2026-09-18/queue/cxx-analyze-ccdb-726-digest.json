@@ -1,0 +1,49 @@
+{
+  "status": "finished",
+  "units": 726,
+  "OK": 685,
+  "ERROR": 39,
+  "TIMEOUT": 2,
+  "flagsrc_compile_commands": 726,
+  "guessed": 0,
+  "findings": 72,
+  "findings_qt": 62,
+  "findings_kde_frameworks_tree": 0,
+  "findings_kde_src": 10,
+  "timeout_files": [
+    "kde/frameworks/kwayland/src/client/registry.cpp",
+    "kde-src/ki18n/src/i18n/klocalizedcontext.cpp"
+  ],
+  "error_buckets_from_log": {
+    "missing_private_qtx11extras_p.h": 14,
+    "kjobwidgets_builddir_path_gone": 5,
+    "kwindowsystem_autogen_path_gone": 5,
+    "solid_c99_as_cxx": 2,
+    "missing_moc_or_autogen_headers": "remainder (moc_generator, moc_kwindowshadow, plugin.moc, kwaylandScanner autogen, qml plugin .moc, kjobwidgets moc, …)"
+  },
+  "qtx11extras_note": "DB never had QtGuiPrivate -I; header exists at QtGui/6.10.3/QtGui/private/qtx11extras_p.h. Driver did not strip -I.",
+  "kde_src_defects_read": [
+    "karchive-618 k7zip.cpp:1803 uninitialized seqOutStream (not vendored)",
+    "kguiaddons-618 klocalimagecacheimpl.cpp:90 new QPixmap dropped when caching off (not vendored)"
+  ],
+  "kde_src_not_a_defect": [
+    "DBusHelperProxy.cpp:142 parented watcher deleteLater",
+    "klineedit.cpp:1233/1279 completionBox clang FP",
+    "kzoneallocator.cpp:312/314 free_since precondition",
+    "kupdatelaunchenvironmentjob.cpp:52 parented watcher deleteLater",
+    "notifybypopup.cpp:359 unparented watcher deleteLater on finished"
+  ],
+  "do_not_quote": "KDE is clean. 685 OK is TU compile+analyze, not a proof column. 62 findings in Qt headers are not KDE source defects.",
+  "note": "726-TU kde-compile-db-build compile_commands.json; NOT the old 148/149 ingest. --compile-commands-only, guessed=0. Pid 4980 exited after [726/726]. Did not --retry-status. Did not kill CBMC pid 887.",
+  "jobs": 1,
+  "timeout": 90,
+  "root": "/home/odin/kde-compile-db-build",
+  "compile_commands": "/home/odin/kde-compile-db-build/compile_commands.json",
+  "compile_commands_only": true,
+  "out": "/home/odin/cxx-sweep/cxx_analyze_ccdb_726.jsonl",
+  "log": "/home/odin/cxx-sweep/cxx_analyze_ccdb_726.log",
+  "old_ingest_quote": "148/149 is the OLD ingest (cxx_analyze_ccdb_only.jsonl). This run is the 726-TU DB.",
+  "started_utc": "2026-09-19T22:23:19Z",
+  "finished": true,
+  "pid_4980": "dead after [726/726]"
+}

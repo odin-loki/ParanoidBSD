@@ -1,0 +1,10 @@
+{
+  "batch": "b0201",
+  "verified": "2026-08-08T12:44:23Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 18/18: test_set_fpcr, test_set_fpsr, test_get_fpcr, test_get_fpsr)",
+  "ir_equivalent": false,
+  "harness_output": "function          cases      fails\n------------------------------------\nfeclearexcept        14755         0\nfegetexceptflag      14699         0\nfesetexceptflag      14808         0\nferaiseexcept        14959         0\nfetestexcept         14598         0\nfegetround           14270         0\nfesetround           14554         0\nfegetenv             14310         0\nfeholdexcept         14495         0\nfesetenv             14233         0\nfeupdateenv          14337         0\nfeenableexcept       14757         0\nfedisableexcept      14795         0\nfegetexcept          14330         0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/aarch64/fenv.c": "4c497eb27f76a3cc"
+  }
+}

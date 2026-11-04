@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_secure_stpcpy_chk",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of stpcpy_chk.c, IR-identical for all 1 functions, 3 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/stpcpy_chk.c": "5fb15ce8428f27f8"
+  }
+}

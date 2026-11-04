@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-btn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#78a8e8"/>
+      <stop offset="0.5" stop-color="#5082c8"/>
+      <stop offset="1" stop-color="#325ca0"/>
+    </linearGradient>
+    <linearGradient id="aero-btn-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="0.4" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="120" height="40" rx="4" fill="url(#aero-btn)"/>
+  <rect x="1" y="1" width="118" height="16" rx="3" fill="url(#aero-btn-shine)"/>
+  <rect x="0" y="0" width="120" height="1" fill="#b8d8ff" fill-opacity="0.65"/>
+</svg>

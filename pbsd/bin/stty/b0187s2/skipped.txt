@@ -1,0 +1,4 @@
+bin/stty/stty.c:main() - requires stty.h/extern.h plus print(), gprint(),
+gread(), ksearch(), csearch(), msearch() and checkredirect() from other
+translation units and a live tty (tcgetattr, TIOCGETD, TIOCGWINSZ), so it
+cannot be compiled or differentially tested in this batch; omitted, not stubbed.

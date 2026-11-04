@@ -1,0 +1,380 @@
+name: PBSD boot image
+
+# Builds PBSD from hbsd/src on a FreeBSD VM and uploads what it produces.
+#
+# Manual by default. A buildworld is hours, and the kernel stage alone is
+# tens of minutes, so this is not something to run on every push.
+#
+# The stages are a ladder: kernel proves the config compiles, world proves
+# the userland does, and only then is an image worth attempting. Start at
+# kernel and climb once each rung is green.
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'kernel | world | vm | memstick | iso'
+        required: true
+        default: 'kernel'
+        type: choice
+        options: [kernel, world, vm, memstick, iso]
+      kernconf:
+        description: 'kernel config'
+        required: true
+        default: 'HARDENEDBSD-MINIMAL'
+        type: string
+      toolchain:
+        description: >-
+          internal builds clang from contrib/llvm-project as part of the
+          world. external uses the packaged clang21 and turns off
+          MK_TOOLCHAIN, so 14,337 files stop being compiled and the world
+          stops shipping a compiler - at the cost of self-hosting.
+        required: false
+        default: 'external'
+        type: choice
+        options: [external, internal]
+      loader_set:
+        description: >-
+          Extra loader variables for the boot test, space separated, e.g.
+          "boot_verbose=YES boot_single=YES". Each becomes a `set NAME="VALUE"`
+          at the loader prompt before boot. boot_verbose makes start_init()
+          name each init it tries; boot_single makes init exec a shell instead
+          of running rc, which separates a broken init from a broken rc.
+        required: false
+        default: ''
+        type: string
+      loader_conf:
+        description: >-
+          Lines to append to /boot/loader.conf INSIDE the built image, e.g.
+          boot_single="YES". Semicolons separate lines.
+
+          Note what this does NOT do. Run 27 put
+          init_path="/rescue/sh:/sbin/init" here, read it back out of the
+          mounted image, and the kernel still printed
+          `start_init: trying /sbin/init` - so loader.conf does not reach
+          kern_getenv() either, exactly as a `set` at the interactive prompt
+          does not. The earlier note here claiming it does, "that is where
+          vfs.root.mountfrom comes from", was wrong twice over:
+          release/Makefile writes only three lines into this file and
+          vfs.root.mountfrom is not one of them, and the loader sets that
+          variable itself in stand/common/boot.c from the device it loaded
+          the kernel off.
+
+          What loader.conf DOES reach is the twelve variables in
+          sys/kern/subr_boot.c's howto_names - boot_single, boot_verbose,
+          boot_serial, boot_askname and the rest - because the loader turns
+          those into boothowto bits itself (bi_getboothowto) rather than
+          passing them through the kernel environment.
+        required: false
+        default: ''
+        type: string
+      init_swap:
+        description: >-
+          rescue moves /sbin/init aside inside the built image, so the kernel
+          falls through its COMPILED-IN init_path - "/sbin/init:/sbin/oinit:
+          /sbin/init.bak:/rescue/init", sys/kern/init_main.c:716 - to
+          /rescue/init.
+
+          That is the control run 31 asks for. rescue/rescue/Makefile builds
+          its crunched binary with MK_CFI=no MK_PIE=no NO_SHARED=yes and
+          MK_SAFESTACK=no, and init is in CRUNCH_PROGS_sbin, so /rescue/init
+          is static with no PIE, no SafeStack, no CFI and no rtld, where
+          /sbin/init has all four. Run 31 left init running in userland and
+          producing nothing; if the static one talks, the cause is in that
+          set and src_conf=none bisects it.
+
+          It uses ENOENT fall-through, which is the only mechanism in this
+          area ever demonstrated to work - unlike init_path, which five runs
+          failed to deliver.
+        required: false
+        default: 'none'
+        type: choice
+        options: [none, rescue]
+      src_conf:
+        description: >-
+          Which build options to use.
+
+          pbsd (default) is hbsd/src.conf.pbsd: WITHOUT_MACHDEP_OPTIMIZATIONS,
+          WITH_PIE, WITH_RELRO, WITH_BIND_NOW, WITH_BRANCH_PROTECTION, and on
+          amd64/arm64/i386 also WITH_SAFESTACK and WITH_CFI.
+
+          none is FreeBSD's defaults - it passes SRCCONF= and so gives up ALL
+          of the above at once, not just one of them. This input was called
+          machdep_asm and described as the assembly switch, which is what its
+          true branch was used for and about a sixth of what it did. Its real
+          use is as a bisection handle: a system that behaves differently
+          under `none` has the cause somewhere in that list, and a system
+          that behaves the same does not.
+
+          nosanitizer is hbsd/src.conf.pbsd-nosanitizer: everything pbsd has
+          EXCEPT SAFESTACK and CFI. Run 41 put the cause inside the hardening
+          set - /rescue/init talks and /sbin/init does not - and those two
+          are the suspects, because both make clang link a compiler-rt
+          archive that this build finds through a symlink papering over an
+          x86_64-portbld-freebsd15.0 vs x86_64-unknown-freebsd15.1 triple
+          mismatch, and because SafeStack runs before main. This narrows six
+          options to two, or rules them out and leaves four.
+
+          nobindnow is hbsd/src.conf.pbsd-nobindnow: everything pbsd has
+          EXCEPT BIND_NOW. Run 43's debugger output puts pid 1 in USERLAND,
+          spinning at one instruction inside ld-elf.so.1 with no shared
+          library mapped yet - so the question is which option breaks the
+          RUN-TIME LINKER, and /rescue/init gets past it by being
+          NO_SHARED. The rtld's own Makefile already forces MK_CFI=no and
+          NOPIE=yes, rtld-libc/Makefile.inc names the generic C string
+          functions explicitly, and run 43 ruled out SafeStack, which
+          leaves RELRO and BIND_NOW. -z relro alone is partial relro;
+          -z relro with -z now is FULL relro, and the rtld relocates itself
+          before anything exists to do it for it.
+        required: false
+        default: 'pbsd'
+        type: choice
+        options: [pbsd, none, nosanitizer, nobindnow, norelro]
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exec-bit precondition
+        # The tree shipped with no executable bits at all, which stopped the
+        # build at contrib/bmake/configure. Fail here with a clear message
+        # rather than an hour in with a permission error.
+        run: python3 tools/check_exec_bits.py
+
+      - name: Vendor-completeness preconditions
+        # Two ways the tree can be missing source that the build needs, both
+        # cheap to check here and both expensive to hit inside the VM:
+        #
+        #   * a SUBDIR entry pointing at a directory that is not there. That
+        #     is how usr.bin/id was lost - usr.bin/Makefile still listed it.
+        #   * a file an ignore rule matched during import. That is how
+        #     sys/dev/hpt27xx/amd64-elf.hpt27xx_lib.o was lost, and
+        #     buildkernel stopped on it with "don't know how to make".
+        run: |
+          python3 tools/check_vendor_manifest.py
+          python3 tools/check_subdirs.py hbsd/src --fail-on-missing
+          python3 tools/check_mk_options.py hbsd/src --fail-on-undefined
+          python3 tools/check_clang_srcs.py hbsd/src --fail-on-missing
+          python3 tools/check_toolchain_version.py
+          python3 tools/check_pbsd_marks.py
+          python3 tools/check_c_linkage.py hbsd/src --require-guarded
+          python3 tools/check_kernconf_parity.py hbsd/src --fail-on-difference
+
+      - name: Stage the init swap
+        run: printf '%s' "${{ inputs.init_swap || 'none' }}" > .init_swap
+
+      - name: Stage the loader.conf additions
+        # Written from the environment, never interpolated into the script:
+        # a ${{ }} expansion is pasted in before the shell runs. The file
+        # travels into the VM with the workspace, which is more dependable
+        # than relying on the action to forward an environment variable.
+        env:
+          LOADER_CONF: ${{ inputs.loader_conf }}
+        run: |
+          printf '%s' "$LOADER_CONF" > .loader_conf_extra
+          echo "loader.conf additions:"
+          sed 's/^/  /' .loader_conf_extra
+          echo "(empty means the image is left alone)"
+
+      - name: Build on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: true
+          mem: 8192
+          prepare: |
+            pkg install -y python311
+            if [ "${{ inputs.toolchain || 'external' }}" != "internal" ]; then
+              pkg install -y llvm21
+            fi
+          # The VM is a separate machine over ssh, so a step-level `env:`
+          # never reaches it - the first run silently built HARDENEDBSD
+          # instead of the config that was asked for. Set it in the command.
+          # SRCCONF is set to hbsd/src.conf.pbsd by the script itself. An
+          # empty SRCCONF means FreeBSD's defaults - which gives up every
+          # option in that file, not only the assembly one.
+          run: |
+            # One place decides which src.conf this run uses, and both the
+            # diagnostics and the build read it.
+            #
+            # They used to disagree. The two show_ scripts were hardcoded to
+            # src.conf.pbsd while the build below branched on src_conf, so a
+            # nosanitizer run printed "SAFESTACK yes" and then built with
+            # SafeStack off, and a none run printed PBSD's whole hardening
+            # set for a build that had none of it. The step whose job is to
+            # say what the build will actually do was answering about a
+            # different build - the same shape of mistake as run 40, where a
+            # correct verdict was on screen and the wrong thing was read.
+            case "${{ inputs.src_conf }}" in
+            none)        SRCCONF="" ;;
+            nosanitizer) SRCCONF="$PWD/hbsd/src.conf.pbsd-nosanitizer" ;;
+            nobindnow)   SRCCONF="$PWD/hbsd/src.conf.pbsd-nobindnow" ;;
+            norelro)     SRCCONF="$PWD/hbsd/src.conf.pbsd-norelro" ;;
+            *)           SRCCONF="$PWD/hbsd/src.conf.pbsd" ;;
+            esac
+            # The gate belongs on `pbsd` and on nothing else.
+            #
+            # Every other value of src_conf turns hardening OFF on purpose -
+            # that is what a bisect is - so a table showing an option off is
+            # the run working. Run 44 died two minutes in because this
+            # condition named `none` alone: `nobindnow` turns off BIND_NOW,
+            # which show_hardening.sh lists as REQUIRED, and the gate killed
+            # the run it was dispatched for. `nosanitizer` only escaped it
+            # because SAFESTACK and CFI are in EXPECTED rather than
+            # REQUIRED - luck, not design.
+            if [ "${{ inputs.src_conf }}" = "pbsd" ] || \
+               [ -z "${{ inputs.src_conf }}" ]; then
+              REQUIRE_HARDENING=1
+            else
+              REQUIRE_HARDENING=0
+            fi
+            export REQUIRE_HARDENING
+
+            # Ask the build system what hardening it will actually use. This
+            # is where the external toolchain silently turning off SafeStack
+            # would have been caught, and was not.
+            sh tools/ci/show_hardening.sh "${{ inputs.target || 'amd64' }}" \
+               "$SRCCONF" \
+               "$([ "${{ inputs.toolchain || 'external' }}" != internal ] && \
+                  echo "$PWD/hbsd/toolchains/llvm21.mk" || true)"
+            sh tools/ci/show_cxx_config.sh "${{ inputs.target || 'amd64' }}" \
+               "$SRCCONF"
+
+            # SRCCONF is exported deliberately empty for `none`;
+            # build_boot_image.sh reads it with ${SRCCONF-...} so that an
+            # explicitly-empty value survives instead of being replaced.
+            KERNCONF="${{ inputs.kernconf }}" SRCCONF="$SRCCONF" \
+            TOOLCHAIN="${{ inputs.toolchain }}" \
+              sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
+
+      - name: Collect image
+        if: inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso'
+        run: |
+          # build_boot_image.sh copies the image into out/ itself, because it
+          # is the only thing that knows where release/ built it - the objdir,
+          # not the source tree. This step used to search hbsd/src/release and
+          # find nothing, which is how run 12 built a memstick and skipped the
+          # boot test anyway.
+          mkdir -p out
+          ls -lh out/ || echo "no image produced"
+
+      - name: Boot it
+        if: inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso'
+        # Everything before this proves the tree compiles. This is the only
+        # step that proves the result runs. It is on the Linux runner, not in
+        # the FreeBSD VM: the image is built on FreeBSD because release/ wants
+        # a FreeBSD host, but booting it is just QEMU and does not.
+        #
+        # qemu-system-x86 is already installed - the freebsd-vm action needs
+        # it and put it there.
+        # LOADER_SET comes through the environment rather than being
+        # interpolated into the script. A ${{ }} expansion is pasted into
+        # the shell before it runs, so a workflow input containing shell
+        # metacharacters would execute; an environment variable is data.
+        env:
+          LOADER_SET: ${{ inputs.loader_set }}
+        run: |
+          img=$(ls out/vm.ufs.raw out/*.img out/*.iso 2>/dev/null | head -1)
+          if [ -z "$img" ]; then
+            echo "no image to boot"; exit 1
+          fi
+          # One --loader-set per word, so the input stays a plain string.
+          set --
+          for kv in $LOADER_SET; do
+            set -- "$@" --loader-set "$kv"
+          done
+          echo "loader sets: $*"
+          # memstick and iso boot to bsdinstall's menu and cannot be asked
+          # anything. vm.ufs.raw has a login, so that is where the
+          # interrogation runs - and the answers are the only place several
+          # open questions in this repository can be settled.
+          #
+          # --reboot-ok for the vm image only: release/ gives it a swap
+          # partition, which means growfs_enable and /firstboot, which means
+          # its first boot resizes the root filesystem and reboots. With
+          # -no-reboot QEMU would exit there and the login never arrive.
+          case "$img" in
+          *vm.ufs.raw)
+            python3 tools/ci/boot_test.py "$img" \
+              --target amd64 --timeout 600 --shell-timeout 180 \
+              --reboot-ok --log out/boot.log "$@" \
+              --run 'uname=uname -a' \
+              --run 'hardening=sysctl hardening' \
+              --run 'setuid=find / -xdev -type f \( -perm -4000 -o -perm -2000 \) -exec ls -l {} +' \
+              --run 'kldstat=kldstat -v | head -50' \
+              --run 'pax=sysctl -a | grep -c ^hardening'
+            ;;
+          *)
+            # --ddb-on-hang: the memstick has stopped at the same place in
+            # every run since 20 - one `start_init: trying` line and then
+            # nothing - and that has exactly two readings, kern_execve()
+            # never returning or init running and unable to write. No boot
+            # log separates them, because both are silence. amd64's
+            # HARDENEDBSD has options KDB, DDB and ALT_BREAK_TO_DEBUGGER, so
+            # once the pokes are spent the console is asked directly.
+            # Run 31 answered the first question: pid 1 exists, it is
+            # runnable on CPU 0, and the interrupt frame under the
+            # backtrace has a userland rip. kern_execve() returned and
+            # init is running. What is left is WHERE it is running, so
+            # `show procvm 1` prints its vm_map for the rip to fall in,
+            # and two rounds say whether the rip moves between them - a
+            # tight spin, a loop and slow progress are the same picture
+            # from one backtrace.
+            # build_boot_image.sh saved `nm -n` of the run-time linker
+            # beside the image. Run 43's rip was a user address inside
+            # ld-elf.so.1 and there was nothing to look it up in; with
+            # this, the same hang names its function.
+            # Run 56 named `_rtld+0x10` from a 32-byte symbol, and
+            # _rtld() is 534 lines of C - so the name was the closest
+            # label and not the function. The disassembly answers what
+            # the symbol table only guesses at.
+            sym=""
+            [ -f out/ld-elf.so.1.nm ] && sym="--symbols out/ld-elf.so.1.nm"
+            [ -f out/ld-elf.so.1.dis ] && \
+                sym="$sym --disasm out/ld-elf.so.1.dis"
+            # shellcheck disable=SC2086
+            python3 tools/ci/boot_test.py "$img" \
+              --target amd64 --timeout 480 --log out/boot.log \
+              --ddb-on-hang --ddb-rounds 2 --ddb-gap 15 \
+              --ddb-cmd 'bt 1' \
+              --ddb-cmd 'bt' \
+              --ddb-cmd 'show registers' \
+              --ddb-cmd 'show procvm 1' \
+              $sym "$@"
+            ;;
+          esac
+
+      # The compiled-in defaults, against the kernel that just booted. This
+      # is the check that show_hardening.sh cannot make.
+      # The setuid inventory reads Makefiles; this is the other half, and
+      # it is the half that catches a binary nobody declared.
+      - name: setuid inventory, against the image that just booted
+        if: always() && inputs.stage == 'vm'
+        run: |
+          if [ -f out/setuid.txt ]; then
+            python3 tools/setuid_inventory.py --check out/setuid.txt
+          else
+            echo "::warning title=No setuid listing::The boot did not get far enough to produce one."
+          fi
+
+      - name: Hardening sysctls, against a running kernel
+        if: always() && inputs.stage == 'vm'
+        run: |
+          if [ -f out/hardening.txt ]; then
+            python3 tools/hardening_sysctls.py --check out/hardening.txt \
+              --kernconf "${{ inputs.kernconf }}" --arch "${{ inputs.target || 'amd64' }}"
+          else
+            echo "::warning title=No sysctl dump::The boot did not get far enough to produce one."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        # always(): a failed boot is exactly when the log is wanted.
+        if: always() && (inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso')
+        with:
+          name: pbsd-${{ inputs.stage }}-${{ inputs.kernconf }}
+          path: out/*
+          retention-days: 14
+          if-no-files-found: warn

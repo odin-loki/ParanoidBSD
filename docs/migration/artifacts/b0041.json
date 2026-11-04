@@ -1,0 +1,13 @@
+{
+  "batch": "b0041",
+  "verified": "2026-08-08T11:21:47Z",
+  "evidence": "harness green + IR-identical for all 9 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                cases     failures\n--------                -----     --------\nwcstombs_l             200019            0\nwcstombs               200019            0\nwctomb_l               200414            0\nwctomb                 200419            0\nbtowc_l                200012            0\nbtowc                  200012            0\nmblen_l                200019            0\nmblen                  200019            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wcstombs.c": "c1dd583d57901a36",
+    "hbsd/src/lib/libc/locale/wctomb.c": "f7b9a65dff12db78",
+    "hbsd/src/lib/libc/locale/btowc.c": "c286eb27fe25c54a",
+    "hbsd/src/lib/libc/locale/mblen.c": "bf2c97be6efab4b7"
+  }
+}

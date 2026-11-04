@@ -1,0 +1,13 @@
+{
+  "batch": "b0185",
+  "verified": "2026-08-08T12:30:34Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0185 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\n(no functions in batch)                     -            -          -\n-------------------------------- ------------ ------------ ----------\nTOTAL                                       0            0       PASS\n\n0 function(s) ported, 0 case(s) run, 0 failure(s).\ntseq.c, tcreat3.c, tread2.c, and tverify.c depend on db(3) hash-table integration infrastructure; see skipped.txt.\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/test/hash.tests/tseq.c": "6e1a3505e3c794d4",
+    "hbsd/src/lib/libc/db/test/hash.tests/tcreat3.c": "9d85df1bb9dbe538",
+    "hbsd/src/lib/libc/db/test/hash.tests/tread2.c": "1fbf24cb54313c67",
+    "hbsd/src/lib/libc/db/test/hash.tests/tverify.c": "b28f0b3746705497"
+  }
+}

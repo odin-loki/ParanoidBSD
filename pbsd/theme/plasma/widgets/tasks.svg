@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180" height="48" viewBox="0 0 180 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-task-active" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#88b8f0" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#3c6cb4" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="aero-task-idle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5082c8" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#284878" stop-opacity="0.65"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="4" width="88" height="40" rx="3" fill="url(#aero-task-active)"/>
+  <rect x="92" y="4" width="88" height="40" rx="3" fill="url(#aero-task-idle)"/>
+  <rect x="0" y="4" width="88" height="8" fill="#ffffff" fill-opacity="0.22" rx="3"/>
+</svg>

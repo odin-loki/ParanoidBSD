@@ -1,0 +1,10 @@
+{
+  "batch": "b0111",
+  "verified": "2026-08-08T11:30:50Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "Function            Cases    Failures\n------------------  -------  --------\n__thr_setup_tsd     200016   0       \n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/arch/amd64/amd64/thr_machdep.c": "a26c4a439ec208fb"
+  }
+}

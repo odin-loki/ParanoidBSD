@@ -1,0 +1,13 @@
+{
+  "batch": "b0231",
+  "verified": "2026-08-09T00:15:00Z",
+  "evidence": "harness green + IR-identical for all 21 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction              cases   failures\n--------              -----   --------\nnamecmp                9527          0\nrevnamecmp             9527          0\nverscmp                9527          0\nrevverscmp             9527          0\nmodcmp                 9533          0\nrevmodcmp              9533          0\nacccmp                 9533          0\nrevacccmp              9533          0\nbirthcmp               9533          0\nrevbirthcmp            9533          0\nstatcmp                9533          0\nrevstatcmp             9533          0\nsizecmp                9526          0\nrevsizecmp             9526          0\nprn_normal             9534          0\nprn_printable          9534          0\nlen_octal              9532          0\nprn_octal              9544          0\nprintname              9564          0\nprinttype              9533          0\nmastercmp              9531          0\nTOTAL                200196          0\nport.cppm:71: warning: \"_GNU_SOURCE\" redefined\n   71 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\nharness.cpp:5: warning: \"_GNU_SOURCE\" redefined\n    5 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\n",
+  "input_hashes": {
+    "hbsd/src/bin/ls/cmp.c": "0c5ef4204147f995",
+    "hbsd/src/bin/ls/util.c": "4424c37e6b53f17a",
+    "hbsd/src/bin/ls/print.c": "837907b08c1798cd",
+    "hbsd/src/bin/ls/ls.c": "43ff492be1c9080f"
+  }
+}

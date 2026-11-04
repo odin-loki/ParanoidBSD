@@ -1,0 +1,1 @@
+eventfd.c: depends on libc_private.h and internal __sys___specialfd/_read/_write wrappers unavailable for isolated linking

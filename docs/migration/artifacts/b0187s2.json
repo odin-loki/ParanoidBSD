@@ -1,0 +1,10 @@
+{
+  "batch": "b0187s2",
+  "verified": "2026-08-08T22:38:17Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                        cases     failures  result\n------------------------ ------------ ------------  ------\nusage                          204320            0  PASS\n\ntotal: 204320 cases, 0 failures\nskipped: bin/stty/stty.c:main (see skipped.txt)\n",
+  "input_hashes": {
+    "hbsd/src/bin/stty/stty.c": "3b88247e31c92c39"
+  }
+}

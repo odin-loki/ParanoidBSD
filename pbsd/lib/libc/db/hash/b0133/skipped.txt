@@ -1,0 +1,2 @@
+ndbm.c — requires DBM/HTAB, __hash_open, and live db(3) hash table state not present in this batch.
+hash_buf.c — requires HTAB/BUFHEAD, __get_page/__put_page, and buffer-pool infrastructure not present in this batch.

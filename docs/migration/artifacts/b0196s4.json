@@ -1,0 +1,10 @@
+{
+  "batch": "b0196s4",
+  "verified": "2026-08-08T23:02:54Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                                      cases     failures\n------------------------------------------------------------------\ncbc_crypt                                    152342            0\necb_crypt                                    151626            0\ncommon_crypt (via cbc_crypt/ecb_crypt)       303968            0\n------------------------------------------------------------------\nTOTAL                                        303968            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/des_crypt.c": "190212ac5e16cc9b"
+  }
+}

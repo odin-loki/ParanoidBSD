@@ -1,0 +1,3 @@
+driver2.c:main: depends on dbopen, ndbm.h, live DB_HASH table, and file I/O; not portable in isolation
+tdel.c:main: depends on dbopen, stdin, db->put/del, and live hash table state; not portable in isolation
+thash4.c:main: depends on dbopen, stdin, db->put/get, and live hash table state; not portable in isolation

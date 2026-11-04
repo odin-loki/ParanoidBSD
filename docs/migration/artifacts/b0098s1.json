@@ -1,0 +1,10 @@
+{
+  "batch": "b0098s1",
+  "verified": "2026-08-08T22:16:31Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures  result\n------------------------------------------------------\nvwscanf            201760            0  ok\n------------------------------------------------------\nTOTAL              201760            0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/vwscanf.c": "4fccf71f4de5ee37"
+  }
+}

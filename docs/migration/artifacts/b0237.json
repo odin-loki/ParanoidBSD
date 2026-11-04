@@ -1,0 +1,13 @@
+{
+  "batch": "b0237",
+  "verified": "2026-08-08T13:35:52Z",
+  "evidence": "harness green + 2/2 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nsignificandf       261944            0\nsignificand        269168            0\ngamma_r            269104            0\nlgamma             269104            0\n------------ ------------ ------------\nTOTAL             1069320            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_significandf.c": "17a8597729775614",
+    "hbsd/src/lib/msun/src/s_significand.c": "bd020a72355f576c",
+    "hbsd/src/lib/msun/src/e_gamma_r.c": "1ae18af3a3068d9e",
+    "hbsd/src/lib/msun/src/e_lgamma.c": "5489ebe84052fe79"
+  }
+}

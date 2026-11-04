@@ -1,0 +1,4 @@
+g_uzip_wrkthr.c — kernel worker thread loop requiring mtx_lock, msleep, kproc_exit, bioq_takefirst, and GEOM softc; not portable in isolation.
+g_uzip_zlib.c — zlib inflate decoder backend requiring contrib/zlib, kernel malloc(M_GEOM_UZIP), and g_uzip_dapi; not portable in isolation.
+g_uzip_lzma.c — xz-embedded decoder backend requiring contrib/xz-embedded, kernel malloc, and g_uzip_dapi; not portable in isolation.
+g_uzip_zstd.c — zstd decoder backend requiring contrib/zstd ZSTD_decompressDCtx, kernel malloc, KASSERT, and g_uzip_dapi; not portable in isolation.

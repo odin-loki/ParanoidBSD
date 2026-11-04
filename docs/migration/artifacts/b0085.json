@@ -1,0 +1,10 @@
+{
+  "batch": "b0085",
+  "verified": "2026-08-08T11:30:17Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "table                         cases     failures\nt4vf_sge_regs                 25017            0\nt5vf_sge_regs                 24997            0\nt4vf_mps_regs                 24956            0\nt4vf_pl_regs                  25193            0\nt5vf_pl_regs                  25092            0\nt6vf_pl_regs                  25096            0\nt4vf_cim_regs                 24941            0\nt4vf_mbdata_regs              24982            0\n",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/cxgbetool/reg_defs_t4vf.c": "5a142976d4743607"
+  }
+}

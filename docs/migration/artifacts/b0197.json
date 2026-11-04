@@ -1,0 +1,10 @@
+{
+  "batch": "b0197",
+  "verified": "2026-08-08T13:37:35Z",
+  "evidence": "harness green + IR-identical for all 5 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd b0197 timeout(1) differential harness\n\nfunction                        cases     failures\n------------------------------------------------\nlogv                           252880            0\nparse_duration                 251850            0\nsig_handler                    254825            0\nset_interval                   252510            0\nlog_termination                253527            0\n------------------------------------------------\nTOTAL                         1265592            0\n",
+  "input_hashes": {
+    "hbsd/src/bin/timeout/timeout.c": "abcb44a17958a717"
+  }
+}

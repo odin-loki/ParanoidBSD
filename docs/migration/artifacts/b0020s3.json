@@ -1,0 +1,10 @@
+{
+  "batch": "b0020s3",
+  "verified": "2026-08-08T09:17:48Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "function            cases     failures\n------------ ------------ ------------\nsigwait            250795            0\nTOTAL              250795            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/sigwait.c": "527453a31776ca25"
+  }
+}

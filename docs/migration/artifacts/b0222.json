@@ -1,0 +1,11 @@
+{
+  "batch": "b0222",
+  "verified": "2026-08-08T22:59:58Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0222 with cc / c++ (gcc modules)\n\nfunction                  cases   failures\n--------------------------------------------------\n__getcontextx_size       200001          0\n__fillcontextx2          200003          0\n__fillcontextx           200002          0\n__getcontextx            200003          0\n__makecontext            200201          0\nctx_done                 200002          0\n--------------------------------------------------\nTOTAL                   1200212          0\n/home/odin/pbsd/pbsd/lib/libc/aarch64/gen/b0222/port.cppm: In function \u2018void pbsd::lib_libc_aarch64_gen::b0222::__makecontext(ucontext_t*, void (*)(), int, ...)\u2019:\n/home/odin/pbsd/pbsd/lib/libc/aarch64/gen/b0222/port.cppm:234:52: warning: pointer of type \u2018void *\u2019 used in arithmetic [-Wpointer-arith]\n  234 |         gp->gp_sp = STACKALIGN(ucp->uc_stack.ss_sp + ucp->uc_stack.ss_size);\n      |                                ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~\n/home/odin/pbsd/pbsd/lib/libc/aarch64/gen/b0222/port.cppm:76:42: note: in definition of macro \u2018STACKALIGN\u2019\n   76 | #define STACKALIGN(p)   ((std::uint64_t)(p) & ~STACKALIGNBYTES)\n      |                                          ^\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/aarch64/gen/getcontextx.c": "e579e3ce06c1825b",
+    "hbsd/src/lib/libc/aarch64/gen/makecontext.c": "99349786ee337cca"
+  }
+}

@@ -1,0 +1,471 @@
+if(NOT TARGET pbsd_compositor_wayland)
+add_library(pbsd_compositor_wayland)
+target_sources(pbsd_compositor_wayland PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.cppm)
+target_link_libraries(pbsd_compositor_wayland PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_layer)
+add_library(pbsd_compositor_wayland_layer)
+target_sources(pbsd_compositor_wayland_layer PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.layer.cppm)
+target_link_libraries(pbsd_compositor_wayland_layer PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_layer PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_seat)
+add_library(pbsd_compositor_wayland_seat)
+target_sources(pbsd_compositor_wayland_seat PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.seat.cppm)
+target_link_libraries(pbsd_compositor_wayland_seat PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_seat PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_xdg)
+add_library(pbsd_compositor_wayland_xdg)
+target_sources(pbsd_compositor_wayland_xdg PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.xdg.cppm)
+target_link_libraries(pbsd_compositor_wayland_xdg PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_xdg PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_output)
+add_library(pbsd_compositor_wayland_output)
+target_sources(pbsd_compositor_wayland_output PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.output.cppm)
+target_link_libraries(pbsd_compositor_wayland_output PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_output PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_buffer)
+add_library(pbsd_compositor_wayland_buffer)
+target_sources(pbsd_compositor_wayland_buffer PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.buffer.cppm)
+target_link_libraries(pbsd_compositor_wayland_buffer PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_buffer PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_presentation)
+add_library(pbsd_compositor_wayland_presentation)
+target_sources(pbsd_compositor_wayland_presentation PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.presentation.cppm)
+target_link_libraries(pbsd_compositor_wayland_presentation PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_presentation PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_cursor_shape)
+add_library(pbsd_compositor_wayland_cursor_shape)
+target_sources(pbsd_compositor_wayland_cursor_shape PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.cursor_shape.cppm)
+target_link_libraries(pbsd_compositor_wayland_cursor_shape PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_cursor_shape PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_fractional_scale)
+add_library(pbsd_compositor_wayland_fractional_scale)
+target_sources(pbsd_compositor_wayland_fractional_scale PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.fractional_scale.cppm)
+target_link_libraries(pbsd_compositor_wayland_fractional_scale PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_fractional_scale PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_content_type)
+add_library(pbsd_compositor_wayland_content_type)
+target_sources(pbsd_compositor_wayland_content_type PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.content_type.cppm)
+target_link_libraries(pbsd_compositor_wayland_content_type PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_content_type PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_alpha_modifier)
+add_library(pbsd_compositor_wayland_alpha_modifier)
+target_sources(pbsd_compositor_wayland_alpha_modifier PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.alpha_modifier.cppm)
+target_link_libraries(pbsd_compositor_wayland_alpha_modifier PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_alpha_modifier PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_viewporter)
+add_library(pbsd_compositor_wayland_viewporter)
+target_sources(pbsd_compositor_wayland_viewporter PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.viewporter.cppm)
+target_link_libraries(pbsd_compositor_wayland_viewporter PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_viewporter PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_subcompositor)
+add_library(pbsd_compositor_wayland_subcompositor)
+target_sources(pbsd_compositor_wayland_subcompositor PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.subcompositor.cppm)
+target_link_libraries(pbsd_compositor_wayland_subcompositor PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_subcompositor PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_region)
+add_library(pbsd_compositor_wayland_region)
+target_sources(pbsd_compositor_wayland_region PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.region.cppm)
+target_link_libraries(pbsd_compositor_wayland_region PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_region PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_textinput_v3)
+add_library(pbsd_compositor_wayland_textinput_v3)
+target_sources(pbsd_compositor_wayland_textinput_v3 PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.textinput_v3.cppm)
+target_link_libraries(pbsd_compositor_wayland_textinput_v3 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_textinput_v3 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_keyboard_shortcuts_inhibit)
+add_library(pbsd_compositor_wayland_keyboard_shortcuts_inhibit)
+target_sources(pbsd_compositor_wayland_keyboard_shortcuts_inhibit PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.keyboard_shortcuts_inhibit.cppm)
+target_link_libraries(pbsd_compositor_wayland_keyboard_shortcuts_inhibit PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_keyboard_shortcuts_inhibit PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_xdg_decoration)
+add_library(pbsd_compositor_wayland_xdg_decoration)
+target_sources(pbsd_compositor_wayland_xdg_decoration PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.xdg_decoration.cppm)
+target_link_libraries(pbsd_compositor_wayland_xdg_decoration PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_xdg_decoration PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_server_decoration)
+add_library(pbsd_compositor_wayland_server_decoration)
+target_sources(pbsd_compositor_wayland_server_decoration PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.server_decoration.cppm)
+target_link_libraries(pbsd_compositor_wayland_server_decoration PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_server_decoration PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_blur_contrast)
+add_library(pbsd_compositor_wayland_blur_contrast)
+target_sources(pbsd_compositor_wayland_blur_contrast PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.blur_contrast.cppm)
+target_link_libraries(pbsd_compositor_wayland_blur_contrast PUBLIC pbsd_core
+    pbsd_compositor_wayland)
+target_compile_options(pbsd_compositor_wayland_blur_contrast PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_abstract_data_source)
+add_library(pbsd_compositor_wayland_abstract_data_source)
+target_sources(pbsd_compositor_wayland_abstract_data_source PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.abstract_data_source.cppm)
+target_link_libraries(pbsd_compositor_wayland_abstract_data_source PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_abstract_data_source PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_abstract_drop_handler)
+add_library(pbsd_compositor_wayland_abstract_drop_handler)
+target_sources(pbsd_compositor_wayland_abstract_drop_handler PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.abstract_drop_handler.cppm)
+target_link_libraries(pbsd_compositor_wayland_abstract_drop_handler PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_abstract_drop_handler PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_fixes)
+add_library(pbsd_compositor_wayland_fixes)
+target_sources(pbsd_compositor_wayland_fixes PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.fixes.cppm)
+target_link_libraries(pbsd_compositor_wayland_fixes PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_fixes PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_pointerwarp_v1)
+add_library(pbsd_compositor_wayland_pointerwarp_v1)
+target_sources(pbsd_compositor_wayland_pointerwarp_v1 PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.pointerwarp_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_pointerwarp_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_pointerwarp_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_xdgtopleveltag_v1)
+add_library(pbsd_compositor_wayland_xdgtopleveltag_v1)
+target_sources(pbsd_compositor_wayland_xdgtopleveltag_v1 PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.xdgtopleveltag_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_xdgtopleveltag_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_xdgtopleveltag_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_idle_inhibit)
+add_library(pbsd_compositor_wayland_idle_inhibit)
+target_sources(pbsd_compositor_wayland_idle_inhibit PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.idle_inhibit.cppm)
+target_link_libraries(pbsd_compositor_wayland_idle_inhibit PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_idle_inhibit PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_data_device)
+add_library(pbsd_compositor_wayland_data_device)
+target_sources(pbsd_compositor_wayland_data_device PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.data_device.cppm)
+target_link_libraries(pbsd_compositor_wayland_data_device PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_data_device PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_primary_selection)
+add_library(pbsd_compositor_wayland_primary_selection)
+target_sources(pbsd_compositor_wayland_primary_selection PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.primary_selection.cppm)
+target_link_libraries(pbsd_compositor_wayland_primary_selection PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_primary_selection PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_single_pixel_buffer)
+add_library(pbsd_compositor_wayland_single_pixel_buffer)
+target_sources(pbsd_compositor_wayland_single_pixel_buffer PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.single_pixel_buffer.cppm)
+target_link_libraries(pbsd_compositor_wayland_single_pixel_buffer PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_single_pixel_buffer PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_xdg_activation)
+add_library(pbsd_compositor_wayland_xdg_activation)
+target_sources(pbsd_compositor_wayland_xdg_activation PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.xdg_activation.cppm)
+target_link_libraries(pbsd_compositor_wayland_xdg_activation PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_xdg_activation PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_tablet_v2)
+add_library(pbsd_compositor_wayland_tablet_v2)
+target_sources(pbsd_compositor_wayland_tablet_v2 PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.tablet_v2.cppm)
+target_link_libraries(pbsd_compositor_wayland_tablet_v2 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_tablet_v2 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_linux_dmabuf)
+add_library(pbsd_compositor_wayland_linux_dmabuf)
+target_sources(pbsd_compositor_wayland_linux_dmabuf PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.linux_dmabuf.cppm)
+target_link_libraries(pbsd_compositor_wayland_linux_dmabuf PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_linux_dmabuf PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_shm)
+add_library(pbsd_compositor_wayland_shm)
+target_sources(pbsd_compositor_wayland_shm PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.shm.cppm)
+target_link_libraries(pbsd_compositor_wayland_shm PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_shm PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_foreign_toplevel)
+add_library(pbsd_compositor_wayland_foreign_toplevel)
+target_sources(pbsd_compositor_wayland_foreign_toplevel PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.foreign_toplevel.cppm)
+target_link_libraries(pbsd_compositor_wayland_foreign_toplevel PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_foreign_toplevel PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_tearing_control_v1)
+add_library(pbsd_compositor_wayland_tearing_control_v1)
+target_sources(pbsd_compositor_wayland_tearing_control_v1 PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.tearing_control_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_tearing_control_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_tearing_control_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_xdg_toplevel_icon_v1)
+add_library(pbsd_compositor_wayland_xdg_toplevel_icon_v1)
+target_sources(pbsd_compositor_wayland_xdg_toplevel_icon_v1 PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.xdg_toplevel_icon_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_xdg_toplevel_icon_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_xdg_toplevel_icon_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_pointer_constraints)
+add_library(pbsd_compositor_wayland_pointer_constraints)
+target_sources(pbsd_compositor_wayland_pointer_constraints PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.pointer_constraints.cppm)
+target_link_libraries(pbsd_compositor_wayland_pointer_constraints PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_pointer_constraints PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_relative_pointer)
+add_library(pbsd_compositor_wayland_relative_pointer)
+target_sources(pbsd_compositor_wayland_relative_pointer PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.relative_pointer.cppm)
+target_link_libraries(pbsd_compositor_wayland_relative_pointer PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_relative_pointer PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_security_context)
+add_library(pbsd_compositor_wayland_security_context)
+target_sources(pbsd_compositor_wayland_security_context PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.security_context.cppm)
+target_link_libraries(pbsd_compositor_wayland_security_context PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_security_context PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_color_management)
+add_library(pbsd_compositor_wayland_color_management)
+target_sources(pbsd_compositor_wayland_color_management PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.color_management.cppm)
+target_link_libraries(pbsd_compositor_wayland_color_management PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_color_management PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_fifo)
+add_library(pbsd_compositor_wayland_fifo)
+target_sources(pbsd_compositor_wayland_fifo PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.fifo.cppm)
+target_link_libraries(pbsd_compositor_wayland_fifo PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_fifo PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_data_control)
+add_library(pbsd_compositor_wayland_data_control)
+target_sources(pbsd_compositor_wayland_data_control PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.data_control.cppm)
+target_link_libraries(pbsd_compositor_wayland_data_control PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_data_control PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_layer_popup)
+add_library(pbsd_compositor_wayland_layer_popup)
+target_sources(pbsd_compositor_wayland_layer_popup PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.wayland.layer.popup.cppm)
+target_link_libraries(pbsd_compositor_wayland_layer_popup PUBLIC pbsd_core
+    pbsd_compositor_wayland_layer)
+target_compile_options(pbsd_compositor_wayland_layer_popup PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_layer_configure)
+add_library(pbsd_compositor_wayland_layer_configure)
+target_sources(pbsd_compositor_wayland_layer_configure PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.layer.configure.cppm)
+target_link_libraries(pbsd_compositor_wayland_layer_configure PUBLIC pbsd_core pbsd_compositor_wayland_layer)
+target_compile_options(pbsd_compositor_wayland_layer_configure PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_layer_margin)
+add_library(pbsd_compositor_wayland_layer_margin)
+target_sources(pbsd_compositor_wayland_layer_margin PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.layer.margin.cppm)
+target_link_libraries(pbsd_compositor_wayland_layer_margin PUBLIC pbsd_core pbsd_compositor_wayland_layer)
+target_compile_options(pbsd_compositor_wayland_layer_margin PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_layer_keyboard)
+add_library(pbsd_compositor_wayland_layer_keyboard)
+target_sources(pbsd_compositor_wayland_layer_keyboard PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.layer.keyboard.cppm)
+target_link_libraries(pbsd_compositor_wayland_layer_keyboard PUBLIC pbsd_core pbsd_compositor_wayland_layer)
+target_compile_options(pbsd_compositor_wayland_layer_keyboard PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_color_management_v1)
+add_library(pbsd_compositor_wayland_color_management_v1)
+target_sources(pbsd_compositor_wayland_color_management_v1 PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.color_management_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_color_management_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_color_management_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_xdg_dialog_v1)
+add_library(pbsd_compositor_wayland_xdg_dialog_v1)
+target_sources(pbsd_compositor_wayland_xdg_dialog_v1 PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.xdg_dialog_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_xdg_dialog_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_xdg_dialog_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_wp_commit_timing_v1)
+add_library(pbsd_compositor_wayland_wp_commit_timing_v1)
+target_sources(pbsd_compositor_wayland_wp_commit_timing_v1 PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.wp_commit_timing_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_wp_commit_timing_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_wp_commit_timing_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_wayland_ext_workspace_v1)
+add_library(pbsd_compositor_wayland_ext_workspace_v1)
+target_sources(pbsd_compositor_wayland_ext_workspace_v1 PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.wayland.ext_workspace_v1.cppm)
+target_link_libraries(pbsd_compositor_wayland_ext_workspace_v1 PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_wayland_ext_workspace_v1 PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_frame_pacing)
+add_library(pbsd_compositor_frame_pacing)
+target_sources(pbsd_compositor_frame_pacing PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.frame.pacing.cppm)
+target_link_libraries(pbsd_compositor_frame_pacing PUBLIC pbsd_core
+    pbsd_compositor_wayland_presentation)
+target_compile_options(pbsd_compositor_frame_pacing PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_layer_sync)
+add_library(pbsd_compositor_layer_sync)
+target_sources(pbsd_compositor_layer_sync PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.layer.sync.cppm)
+target_link_libraries(pbsd_compositor_layer_sync PUBLIC pbsd_core
+    pbsd_compositor_wayland_layer pbsd_kde_plasma_aero pbsd_kde_kwin_aero)
+target_compile_options(pbsd_compositor_layer_sync PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_drm)
+add_library(pbsd_compositor_drm)
+target_sources(pbsd_compositor_drm PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.drm.cppm)
+target_link_libraries(pbsd_compositor_drm PUBLIC pbsd_core)
+target_compile_options(pbsd_compositor_drm PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_kde_bridge)
+add_library(pbsd_compositor_kde_bridge)
+target_sources(pbsd_compositor_kde_bridge PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.kde.bridge.cppm)
+target_link_libraries(pbsd_compositor_kde_bridge PUBLIC pbsd_core pbsd_compositor_wayland
+    pbsd_compositor_wayland_layer pbsd_kde_plasma_aero pbsd_kde_kwin_aero)
+target_compile_features(pbsd_compositor_kde_bridge PUBLIC cxx_std_23)
+target_compile_options(pbsd_compositor_kde_bridge PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor_aero)
+add_library(pbsd_compositor_aero)
+target_sources(pbsd_compositor_aero PUBLIC FILE_SET CXX_MODULES FILES
+    pbsd.compositor.aero.cppm
+    pbsd.compositor.theme.sync.cppm)
+target_link_libraries(pbsd_compositor_aero PUBLIC pbsd_core pbsd_compositor_wayland
+    pbsd_theme_plasma_aero pbsd_kde_plasma_aero)
+target_compile_features(pbsd_compositor_aero PUBLIC cxx_std_23)
+target_compile_options(pbsd_compositor_aero PUBLIC ${PBSD_FS_CXX})
+endif()
+
+if(NOT TARGET pbsd_compositor)
+add_library(pbsd_compositor)
+target_sources(pbsd_compositor PUBLIC FILE_SET CXX_MODULES FILES pbsd.compositor.cppm)
+target_link_libraries(pbsd_compositor PUBLIC pbsd_handles pbsd_compositor_wayland
+    pbsd_compositor_wayland_layer pbsd_compositor_wayland_seat pbsd_compositor_wayland_xdg
+    pbsd_compositor_wayland_output pbsd_compositor_wayland_buffer
+    pbsd_compositor_wayland_presentation
+    pbsd_compositor_wayland_cursor_shape pbsd_compositor_wayland_fractional_scale
+    pbsd_compositor_wayland_content_type pbsd_compositor_wayland_alpha_modifier
+    pbsd_compositor_wayland_viewporter pbsd_compositor_wayland_subcompositor
+    pbsd_compositor_wayland_region pbsd_compositor_wayland_textinput_v3
+    pbsd_compositor_wayland_keyboard_shortcuts_inhibit
+    pbsd_compositor_wayland_xdg_decoration pbsd_compositor_wayland_server_decoration
+    pbsd_compositor_wayland_blur_contrast
+    pbsd_compositor_wayland_abstract_data_source
+    pbsd_compositor_wayland_abstract_drop_handler
+    pbsd_compositor_wayland_fixes
+    pbsd_compositor_wayland_pointerwarp_v1
+    pbsd_compositor_wayland_xdgtopleveltag_v1
+    pbsd_compositor_wayland_idle_inhibit
+    pbsd_compositor_wayland_data_device
+    pbsd_compositor_wayland_primary_selection
+    pbsd_compositor_wayland_single_pixel_buffer
+    pbsd_compositor_wayland_xdg_activation
+    pbsd_compositor_wayland_tablet_v2 pbsd_compositor_wayland_linux_dmabuf
+    pbsd_compositor_wayland_shm pbsd_compositor_wayland_foreign_toplevel
+    pbsd_compositor_wayland_tearing_control_v1
+    pbsd_compositor_wayland_xdg_toplevel_icon_v1
+    pbsd_compositor_wayland_pointer_constraints pbsd_compositor_wayland_relative_pointer
+    pbsd_compositor_wayland_security_context pbsd_compositor_wayland_color_management
+    pbsd_compositor_wayland_fifo pbsd_compositor_wayland_data_control
+    pbsd_compositor_wayland_layer_popup
+    pbsd_compositor_frame_pacing pbsd_compositor_layer_sync
+    pbsd_compositor_wayland_ext_workspace_v1
+    pbsd_compositor_wayland_wp_commit_timing_v1
+    pbsd_compositor_wayland_xdg_dialog_v1
+    pbsd_compositor_wayland_color_management_v1
+    pbsd_compositor_wayland_layer_keyboard
+    pbsd_compositor_wayland_layer_margin
+    pbsd_compositor_wayland_layer_configure
+    pbsd_compositor_drm pbsd_compositor_kde_bridge pbsd_compositor_aero)
+target_compile_features(pbsd_compositor PUBLIC cxx_std_23)
+# BMI consumers importing handles must match -fno-exceptions -fno-rtti (see pbsd/CMakeLists.txt).
+target_compile_options(pbsd_compositor PUBLIC ${PBSD_FS_CXX})
+endif()

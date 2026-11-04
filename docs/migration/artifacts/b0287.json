@@ -1,0 +1,13 @@
+{
+  "batch": "b0287",
+  "verified": "2026-08-09T02:22:59Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/4: remquo, log2)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0287 differential test\n  function              cases     fails   status\n  remquo                 201817          0   PASS\n  log2                   200055          0   PASS\n  atan2                  201787          0   PASS\n  fmodl                  201235          0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_remquo.c": "d4f225909a147e32",
+    "hbsd/src/lib/msun/src/e_log2.c": "1e79fb6b4e4fc117",
+    "hbsd/src/lib/msun/src/e_atan2.c": "46946bf0e9e29614",
+    "hbsd/src/lib/msun/src/e_fmodl.c": "cce4899c6f90a4dd"
+  }
+}

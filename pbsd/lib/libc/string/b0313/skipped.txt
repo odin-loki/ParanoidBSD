@@ -1,0 +1,1 @@
+wcsxfrm.c: requires collate.h, xlocale_collate, _collate_wxfrm, and locale infrastructure unavailable in isolation

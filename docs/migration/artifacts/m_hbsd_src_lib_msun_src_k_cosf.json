@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_k_cosf",
+  "verified": "2026-07-30T09:25:28Z",
+  "evidence": "mechanical port of k_cosf.c, IR-identical for all 1 functions, 12 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/k_cosf.c": "483369fe4873f7b4"
+  }
+}

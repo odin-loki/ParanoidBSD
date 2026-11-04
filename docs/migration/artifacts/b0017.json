@@ -1,0 +1,13 @@
+{
+  "batch": "b0017",
+  "verified": "2026-07-30T09:42:27Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction      cases    failures\n------------------------------------\nmrand48        744649           0\nlcong48        225484           0\nsrand48        250523           0\nseed48         250076           0\n------------------------------------\nTOTAL         1470732           0\n\ncoverage: mrand48 return <0=363288 >0=381110 ==0=251\ncoverage: state add==0=7983 mult==0=214 mult==1=95 seed==0=292\ncoverage: state seed>>32!=0=1425474 mult>>32!=0=1463849\n\nRESULT: PASS (1470732 cases, 0 failures)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/mrand48.c": "f044989a9c025532",
+    "hbsd/src/lib/libc/gen/lcong48.c": "9f5f81923ddfd14f",
+    "hbsd/src/lib/libc/gen/srand48.c": "7ed38f77dc9ce001",
+    "hbsd/src/lib/libc/gen/seed48.c": "ff9ce5dc96ab1526"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0106s3",
+  "verified": "2026-08-08T22:15:07Z",
+  "evidence": "harness green + 3/3 mutations killed (IR: IR differs for 2/2: vsprintf_l, vsprintf)",
+  "ir_equivalent": false,
+  "harness_output": "function     cases      failures\n--------------------------------\nvsprintf_l       200028          0\nvsprintf         200020          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/vsprintf.c": "2fc5677d41c6dc7c"
+  }
+}

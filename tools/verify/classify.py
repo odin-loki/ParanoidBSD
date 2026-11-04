@@ -1,0 +1,397 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
+"""Which functions can be model-checked SOUNDLY with no precondition.
+
+CBMC started at an arbitrary function makes that function's parameters
+nondeterministic. For a function whose parameters are all scalars that is
+exactly right: every int is a possible int, and a property that holds is a
+property that holds for all inputs.
+
+For a POINTER parameter it is wrong, and the first run of this over
+lib/libc/string showed how wrong:
+
+    FAILED lib/libc/string/strcat.c:strcat
+        line 41 pointer arithmetic: pointer NULL in s + 1l
+
+strcat(3) requires a valid, NUL-terminated, non-overlapping buffer. A
+nondeterministic `char *` includes NULL, includes a dangling pointer, and
+includes a pointer to an unterminated array - so CBMC reports the ABSENCE
+OF A PRECONDITION as a defect, on a function that has none. Every string
+routine in the library fails that way, and none of those failures is real.
+
+So the corpus splits, and the split is decidable from the signature:
+
+  SCALAR    every parameter is an integer, float, enum or bool, and so is
+            anything it returns by value. Unguarded modular checking is
+            SOUND: the results mean what they say.
+  POINTER   at least one pointer or array parameter. Needs a harness that
+            establishes the callee's precondition before the call, and the
+            result is then only as good as the precondition written. Those
+            are done separately and recorded with the harness that produced
+            them, because a proof under an assumption is a different claim.
+  VOID      no parameters. Sound, same as SCALAR.
+
+Types come from CBMC's own goto model rather than from parsing C, because
+the goto model is what CBMC is going to check and a regex over C
+declarators is not it.
+
+Emits JSON: {file: {"ok": bool, "error": str, "functions": {name: class}}}
+"""
+
+from __future__ import annotations
+
+import argparse
+import itertools
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import userland_names  # noqa: E402
+from includes import include_flags, is_kernel_tu, lang_flags  # noqa: E402
+from includes import USERLAND_TOP  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "hbsd" / "src"
+
+# goto-instrument prints, IN THIS ORDER:
+#
+#   Symbol......: xtob
+#   Pretty name.: xtob
+#   ...
+#   Type........: char (signed int c)
+#   Value.......: irep(...)
+#   Flags.......: lvalue file_local
+#   Location....: file ... line 36
+#
+# Flags comes AFTER Type. The first version of this regex captured only
+# what lay BETWEEN Symbol and Type and looked for file_local there, so it
+# never saw a flag at all: 26,548 of 26,607 kernel functions came back
+# "exported", in a kernel that is mostly static, and the 59 exceptions were
+# a previous symbol's Flags line landing in the gap. md5c.c's rol32 and
+# subr_blist.c's bitrange - both `static inline` - were triaged as exported
+# API on the strength of it.
+SYM_RE = re.compile(
+    r"^Symbol\.+:\s*(?P<sym>\S+)\s*$"
+    r"(?P<mid>.*?)"
+    r"^Type\.+:\s*(?P<type>.*?)$"
+    r"(?P<tail>.*?)"
+    r"(?=^Symbol\.+:|\Z)",
+    re.M | re.S,
+)
+
+# A parameter list is the text inside the outermost parentheses of the type.
+SCALAR_WORDS = (
+    "signed int", "unsigned int", "signed long", "unsigned long",
+    "signed char", "unsigned char", "signed short", "unsigned short",
+    "float", "double", "bool", "c_bool", "__CPROVER", "signed __int128",
+    "unsigned __int128", "long double", "empty",
+)
+
+
+def _params(type_str: str) -> str | None:
+    """The parameter list of a function type, or None if it is not one."""
+    i = type_str.find("(")
+    if i < 0:
+        return None
+    depth = 0
+    for j in range(i, len(type_str)):
+        if type_str[j] == "(":
+            depth += 1
+        elif type_str[j] == ")":
+            depth -= 1
+            if depth == 0:
+                return type_str[i + 1:j]
+    return None
+
+
+PTR_GLOBAL_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def classify_type(type_str: str) -> str:
+    p = _params(type_str)
+    if p is None:
+        return "NOTFN"
+    p = p.strip()
+    if p in ("", "void", "empty"):
+        return "VOID"
+    if "*" in p or "[" in p:
+        return "POINTER"
+    # struct/union by value: CBMC handles it, but a nondeterministic struct
+    # with a pointer field is the same trap one level down.
+    if "struct" in p or "union" in p:
+        return "POINTER"
+    if any(w in p for w in SCALAR_WORDS):
+        return "SCALAR"
+    return "OTHER"
+
+
+def model_one(job: dict) -> dict:
+    src, rel, outdir = job["src"], job["rel"], job["outdir"]
+    gb = Path(outdir) / (rel.replace("/", "__") + ".gb")
+    gb.parent.mkdir(parents=True, exist_ok=True)
+    cc = shutil.which("goto-cc") or "goto-cc"
+    sp = Path(src)
+    inc = include_flags(sp, job.get("arch", "amd64"), cc="goto-cc")
+    # A landed port is a PURE RENAME - byte-identical to the .c - and
+    # CBMC's C++ front end is much weaker than its C one (`parse error
+    # before 'noexcept'`, and 96 files on a __char16_t typedef). Since the
+    # bytes are the same, compile it as C: that is the same translation
+    # unit, and it is the side the IR oracle's certificate transfers FROM.
+    lang = lang_flags(sp, rel, as_c=True)
+    try:
+        p = subprocess.run(
+            [cc, *lang, *inc, "-Wno-everything", src, "-o", str(gb)],
+            capture_output=True, text=True, timeout=job["timeout"],
+        )
+    except subprocess.TimeoutExpired:
+        return {"file": rel, "ok": False, "error": "goto-cc timeout"}
+    except OSError as e:
+        return {"file": rel, "ok": False, "error": str(e)}
+    if p.returncode != 0 or not gb.is_file():
+        return {"file": rel, "ok": False,
+                "error": (p.stderr or p.stdout or "").strip()[-400:]}
+
+    gi = shutil.which("goto-instrument") or "goto-instrument"
+    try:
+        q = subprocess.run([gi, "--show-symbol-table", str(gb)],
+                           capture_output=True, timeout=job["timeout"])
+        q_out = q.stdout.decode("utf-8", "replace")
+    except (subprocess.TimeoutExpired, OSError) as e:
+        return {"file": rel, "ok": False, "error": f"symbol table: {e}"}
+
+    fns: dict[str, str] = {}
+    linkage: dict[str, str] = {}
+    extern_ptrs: set[str] = set()
+    for m in SYM_RE.finditer(q_out):
+        sym, ty = m.group("sym"), m.group("type").strip()
+        if "::" in sym:          # a parameter or local, not a function
+            continue
+        cls = classify_type(ty)
+        if cls != "NOTFN":
+            fns[sym] = cls
+            # `static` shows in the goto symbol table as file_local, and it
+            # decides how a finding must be read.
+            #
+            # A modular check gives a function's WHOLE signature domain. For
+            # an exported function that is the right domain - it is the
+            # contract callers are entitled to, so UB anywhere in it is a
+            # defect. stdc_leading_ones_uc(unsigned char) is UB for every x
+            # >= 128 and rint(double) for every negative x; both were real.
+            #
+            # For a static helper it is the wrong domain, because the only
+            # callers are in the same file and they constrain it.
+            # nsap_addr.c's xtob(int c) subtracts '0' or '7' and overflows
+            # at INT_MIN - and its one caller passes an isxdigit() char.
+            # Reporting that as a defect needs the callers, which a modular
+            # check does not have.
+            linkage[sym] = ("static"
+                            if "file_local" in (m.group("tail") or "")
+                            else "exported")
+        elif "*" in ty:
+            # A file-scope POINTER defined in another translation unit.
+            # CBMC has no value for it, so it is nondeterministic - which
+            # means NULL, and dangling, exactly like an unconstrained
+            # pointer parameter.
+            extern_ptrs.add(sym)
+
+    # Which functions touch one. getchar() takes no arguments and still
+    # came back `dereference failure: pointer NULL`, because its body is
+    #     CALL _flockfile(__stdinp)
+    # and __stdinp lives in another unit. A function like that is no more
+    # soundly checkable unguarded than one taking a char *.
+    if extern_ptrs and fns:
+        try:
+            g = subprocess.run([gi, "--show-goto-functions", str(gb)],
+                               capture_output=True, timeout=job["timeout"])
+            # String literals reach this output as raw source bytes, so it
+            # is not necessarily UTF-8. Only identifiers are being read.
+            bodies = _split_bodies(g.stdout.decode("utf-8", "replace"))
+            for name in list(fns):
+                if fns[name] in ("SCALAR", "VOID"):
+                    used = PTR_GLOBAL_RE.findall(bodies.get(name, ""))
+                    if extern_ptrs.intersection(used):
+                        fns[name] = "GLOBALPTR"
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+
+    return {"file": rel, "ok": True, "gb": str(gb), "functions": fns,
+            "linkage": linkage}
+
+
+def _split_bodies(text: str) -> dict[str, str]:
+    """goto-instrument prints `name /* pretty */` then an indented body."""
+    out: dict[str, str] = {}
+    cur, buf = None, []
+    for line in text.splitlines():
+        if line and not line[0].isspace() and "/*" in line:
+            if cur:
+                out[cur] = "\n".join(buf)
+            cur, buf = line.split(None, 1)[0], []
+        elif cur is not None:
+            buf.append(line)
+    if cur:
+        out[cur] = "\n".join(buf)
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--plan", default=str(ROOT / "docs" / "port_plan.json"))
+    ap.add_argument("--scope", action="append", default=[])
+    ap.add_argument("--resume", action="store_true",
+                    help="continue from <out>.partial.jsonl, which is "
+                         "written as each translation unit finishes")
+    ap.add_argument("--refresh-gb", action="store_true",
+                    help="re-run goto-cc for resumed TUs whose .gb is "
+                         "missing (tmp wipe). The class split is kept; "
+                         "only the binary is rebuilt, under --outdir")
+    ap.add_argument("--outdir", default=None,
+                    help="goto-cc output directory. Default: <out>/../goto "
+                         "so a sweep's classes.json keeps binaries next to "
+                         "it instead of in /tmp")
+    ap.add_argument("--out", default="verify_classes.json")
+    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
+    ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--limit", type=int)
+    ap.add_argument("--arch", default="amd64")
+    args = ap.parse_args()
+    if args.outdir is None:
+        args.outdir = str(Path(args.out).resolve().parent / "goto")
+
+    d = json.loads(Path(args.plan).read_text())
+    jobs = []
+    for rec in d["records"]:
+        path = rec.get("path") or ""
+        if args.scope and not any(path.startswith(s) for s in args.scope):
+            continue
+        if not rec.get("functions"):
+            continue
+        if not is_kernel_tu(path):      # includes.NOT_KERNEL
+            continue
+        cand = SRC / path
+        if not cand.is_file():
+            cand = cand.with_suffix(".cpp")
+            if not cand.is_file():
+                continue
+        jobs.append({"src": str(cand), "rel": path, "arch": args.arch,
+                     "outdir": args.outdir, "timeout": args.timeout})
+    if args.limit:
+        jobs = jobs[:args.limit]
+    all_jobs = list(jobs)
+
+    # One line of JSON per translation unit, appended as it finishes.
+    #
+    # --out is a single JSON object written at the end, which means a run
+    # that is killed leaves nothing at all - and this stage got long enough
+    # to be killed once the kernel corpus stopped failing to compile: the
+    # interface-header fix took `sys` from a few hundred usable translation
+    # units to thousands. A 64-job sweep of that was enough to have WSL2's
+    # VM reclaimed out from under it.
+    #
+    # So the work is journalled beside --out, and --resume reads it back.
+    part = Path(str(args.out) + ".partial.jsonl")
+    results: dict[str, dict] = {}
+    if args.resume and part.is_file():
+        for line in part.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+                results[r["file"]] = r
+            except (ValueError, KeyError):
+                pass
+        before = len(jobs)
+        jobs = [j for j in jobs if j["rel"] not in results]
+        print(f"resuming: {len(results)} already modelled, "
+              f"{before - len(jobs)} skipped", flush=True)
+
+    # /tmp/pbsd_goto does not survive a reboot. A resumed class split
+    # with no goto binary is not a model CBMC can check.
+    if args.refresh_gb:
+        stale = []
+        for rel, r in list(results.items()):
+            gb = r.get("gb")
+            if not r.get("ok"):
+                continue
+            if gb and Path(gb).is_file():
+                continue
+            stale.append(rel)
+            del results[rel]
+        if stale:
+            back = [j for j in all_jobs if j["rel"] in set(stale)]
+            jobs.extend(back)
+            print(f"refresh-gb: {len(back)} TUs lost their goto binary; "
+                  f"rebuilding under {args.outdir}", flush=True)
+
+    print(f"{len(jobs)} translation units to model", flush=True)
+    counts: dict[str, int] = {}
+    for r in results.values():
+        if r.get("ok"):
+            for c in r["functions"].values():
+                counts[c] = counts.get(c, 0) + 1
+        else:
+            counts["TU-ERROR"] = counts.get("TU-ERROR", 0) + 1
+    # The same cold-cache race analyze.py warms against: builders() is
+    # 1.1MB of JSON and every forked worker would build it independently
+    # and write it over the top of the others. Warmed here, in the
+    # parent, it is a plain file read in each of them -- and only when
+    # this scope has userland in it, because a kernel-only shard never
+    # asks builders() anything.
+    if any(j["rel"].split("/")[0] in USERLAND_TOP for j in jobs):
+        userland_names.warm((args.arch,))
+    t0 = time.time()
+    done = 0
+    # Submitted in bounded batches rather than all at once. Handing an
+    # executor nineteen thousand futures keeps every result alive in the
+    # parent until the loop reaches it; a window of four per worker is
+    # enough to keep them all fed.
+    window = max(args.jobs * 4, 64)
+    with ProcessPoolExecutor(max_workers=args.jobs) as ex, \
+            part.open("a") as jf:
+        it = iter(jobs)
+        futs = {ex.submit(model_one, j) for j in itertools.islice(it, window)}
+        while futs:
+            for fut in as_completed(list(futs)):
+                futs.discard(fut)
+                r = fut.result()
+                results[r["file"]] = r
+                jf.write(json.dumps(r) + "\n")
+                if r["ok"]:
+                    for c in r["functions"].values():
+                        counts[c] = counts.get(c, 0) + 1
+                else:
+                    counts["TU-ERROR"] = counts.get("TU-ERROR", 0) + 1
+                done += 1
+                if done % 250 == 0 or done == len(jobs):
+                    jf.flush()
+                    print(f"  [{done}/{len(jobs)}] "
+                          f"{done/max(1e-9,time.time()-t0):.1f}/s  "
+                          + "  ".join(f"{k}={v}"
+                                      for k, v in sorted(counts.items())),
+                          flush=True)
+                nxt = next(it, None)
+                if nxt is not None:
+                    futs.add(ex.submit(model_one, nxt))
+                break
+
+    Path(args.out).write_text(json.dumps(results, indent=1))
+    ok = sum(1 for r in results.values() if r["ok"])
+    print(f"\n{ok}/{len(results)} translation units modelled")
+    for k, v in sorted(counts.items()):
+        print(f"  {k:9s} {v}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

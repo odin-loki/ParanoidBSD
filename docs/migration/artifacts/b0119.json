@@ -1,0 +1,13 @@
+{
+  "batch": "b0119",
+  "verified": "2026-08-08T11:44:15Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures   result\n-------------- ------------ ------------   ------\nis_number             70039            0   PASS\nstrtoarith_t          70038            0   PASS\nyylex                264455            0   PASS\n-------------- ------------ ------------   ------\nTOTAL                404532            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/bin/sh/mystring.c": "7ec48a632be5ca31",
+    "hbsd/src/bin/sh/mail.c": "6a81febc988e281b",
+    "hbsd/src/bin/sh/error.c": "ea958d567c7eeaf9",
+    "hbsd/src/bin/sh/arith_yylex.c": "3e30b73399df0c03"
+  }
+}

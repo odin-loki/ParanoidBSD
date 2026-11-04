@@ -1,0 +1,2 @@
+mail.c — requires shell mailbox path variables, stack allocator, and output routines
+error.c — requires longjmp exception handler, signal handling, and shell globals

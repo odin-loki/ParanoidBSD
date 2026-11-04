@@ -1,0 +1,10 @@
+{
+  "batch": "b0080s4",
+  "verified": "2026-08-08T11:23:14Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0080s4 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function              cases   failures   result\n  ----------------------------------------------------\n  remainderl           260464          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_remainderl.c": "0fdcd657cd5851e9"
+  }
+}

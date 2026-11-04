@@ -1,0 +1,10 @@
+{
+  "batch": "b0193s3",
+  "verified": "2026-08-08T23:08:13Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/7: mark_line_node, dup_line_node)",
+  "ir_equivalent": false,
+  "harness_output": "\nPBSD b0193s3 -- bin/ed/main.c differential test\n  function                    cases   failures  status\n  ----------------------------------------------------------\n  check_addr_range           291360          0  ok\n  mark_line_node             204701          0  ok\n  unmark_line_node           201428          0  ok\n  dup_line_node              200238          0  ok\n  has_trailing_escape        203905          0  ok\n  strip_escapes              200983          0  ok\n  is_legal_filename          220602          0  ok\n  ----------------------------------------------------------\n  TOTAL                     1523217          0  ok\n",
+  "input_hashes": {
+    "hbsd/src/bin/ed/main.c": "2060986a0a8c81b4"
+  }
+}

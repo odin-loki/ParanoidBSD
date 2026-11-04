@@ -1,0 +1,13 @@
+{
+  "batch": "b0014",
+  "verified": "2026-07-30T09:44:19Z",
+  "evidence": "harness green + IR-identical for all 18 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                            cases   failures\n---------------------------- ------------ ----------\n__nexf2                            302743          0\n__gttf2                            303821          0\n__netf2                            303821          0\n__eqtf2                            303821          0\nfloat128_eq                        301764          0\nfloat128_lt                        301764          0\nfloatx80_eq                        301225          0\nfloat128_is_signaling_nan          600042          0\nfloatx80_is_signaling_nan          600035          0\nextractFloat128Exp                 600042          0\nextractFloat128Frac0               600042          0\nextractFloat128Frac1               600042          0\nextractFloat128Sign                600042          0\nextractFloatx80Exp                 600035          0\nextractFloatx80Frac                600035          0\nextractFloatx80Sign                600035          0\nlt128                              306561          0\nTOTAL                             7825870          0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/nexf2.c": "30f10568906e1c81",
+    "hbsd/src/lib/libc/softfloat/gttf2.c": "9a8a13450ffae487",
+    "hbsd/src/lib/libc/softfloat/netf2.c": "360dd993e0cb7765",
+    "hbsd/src/lib/libc/softfloat/eqtf2.c": "4e32c5857eab4ff4"
+  }
+}

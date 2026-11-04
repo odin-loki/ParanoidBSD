@@ -1,0 +1,27 @@
+hbsd/src/bin/ed/main.c -- ported in part; the following functions were left out
+because each one's observable behaviour is defined by symbols that live outside
+this batch (buf.c, io.c, re.c, glbl.c, undo.c) or by process-wide side effects
+that cannot be exercised in-process.
+
+main                     - drives getopt/signal/setjmp and calls quit(); not a callable unit.
+extract_addr_range       - calls next_addr(), which reaches into re.c/buf.c.
+next_addr                - needs get_compiled_pattern(), get_matching_node_addr(), get_marked_node_addr(), STRTOL.
+exec_command             - dispatches to the whole editor (io.c, buf.c, re.c, glbl.c, undo.c).
+get_matching_node_addr   - needs get_addressed_line_node(), get_sbuf_line(), regexec over live buffer state.
+get_filename             - needs get_extended_line(), get_shell_command() and stdin state.
+get_shell_command        - reads stdin via get_extended_line(); mutates the process shell buffer.
+append_lines             - needs get_tty_line(), put_sbuf_line(), push_undo_stack().
+join_lines               - needs get_sbuf_line(), put_sbuf_line(), delete_lines(), push_undo_stack().
+move_lines               - needs get_addressed_line_node(), push_undo_stack(), REQUE over the live line queue.
+copy_lines               - needs get_addressed_line_node(), add_line_node(), push_undo_stack().
+delete_lines             - needs push_undo_stack(), get_addressed_line_node(), unset_active_nodes().
+display_lines            - needs get_addressed_line_node(), get_sbuf_line(), put_tty_line().
+get_marked_node_addr     - needs get_line_node_addr() from buf.c.
+signal_hup / signal_int  - the untaken branch calls handle_hup()/handle_int(), which terminate the process.
+handle_hup               - calls write_file() and quit(); terminates the process.
+handle_int               - siglongjmp()s out of a jmp_buf that only main() ever sets.
+handle_winch             - result depends on ioctl(TIOCGWINSZ) against the real controlling terminal.
+
+Ported and differentially tested: check_addr_range, mark_line_node,
+unmark_line_node, dup_line_node, has_trailing_escape, strip_escapes,
+is_legal_filename.

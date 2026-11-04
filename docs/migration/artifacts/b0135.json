@@ -1,0 +1,13 @@
+{
+  "batch": "b0135",
+  "verified": "2026-08-08T11:47:38Z",
+  "evidence": "harness green + 3/3 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nscalbnf            243836            0\nfabsf              211944            0\ncopysign           216146            0\ngammaf             211912            0\n------------ ------------ ------------\nTOTAL              883838            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_scalbnf.c": "cdda8d796ec1942a",
+    "hbsd/src/lib/msun/src/s_fabsf.c": "ce77c12e12f04160",
+    "hbsd/src/lib/msun/src/s_copysign.c": "b18a92cb6c264e9e",
+    "hbsd/src/lib/msun/src/e_gammaf.c": "a47fb33f14987ed2"
+  }
+}

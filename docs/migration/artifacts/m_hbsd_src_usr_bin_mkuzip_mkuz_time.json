@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_mkuzip_mkuz_time",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of mkuz_time.c, IR-identical for all 1 functions, 5 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/mkuzip/mkuz_time.c": "589fefd28b80fd9a"
+  }
+}

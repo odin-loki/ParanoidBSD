@@ -1,0 +1,1 @@
+hbsd/src/bin/pkill/pkill.c:main - drives getopt(3), kvm(3) process enumeration, regex(3) matching over the live kernel process list, and exit(STATUS_*); it is not re-entrant and requires FreeBSD kinfo_proc/kvm interfaces absent on this platform.

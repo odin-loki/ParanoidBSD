@@ -1,0 +1,2 @@
+memcpy_resolver.c: DEFINE_UIFUNC ifunc resolver (machine/ifunc.h, ifunc_arg->_hwcap2, HWCAP2_MOPS) that only selects between the aarch64 assembly routines __memcpy_aarch64_mops/__memcpy_aarch64_simd; the machinery and both callees are aarch64 assembly/rtld-private, so there is nothing portable or observable to port or diff.
+memmove_resolver.c: identical DEFINE_UIFUNC ifunc resolver for __memmove_aarch64_mops/__memmove_aarch64_simd; same reason.

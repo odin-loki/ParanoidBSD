@@ -1,0 +1,10 @@
+{
+  "batch": "b0156s4",
+  "verified": "2026-08-09T00:06:20Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 12/13: set_collate, substsearch, chainsearch, largesearch)",
+  "ir_equivalent": false,
+  "harness_output": "b0156s4: collate.c differential test\nfixtures: 32\nphase: substsearch\nphase: chainsearch\nphase: largesearch\nphase: xfrm\nphase: _collate_lookup\nphase: _collate_wxfrm\nphase: _collate_sxfrm\nphase: __collate_equiv_value\nphase: multibyte routines in the C locale\nphase: multibyte routines in C.UTF-8\n\nfunction                              cases     failures\n------------------------------ ------------ ------------\nsubstsearch                          201171            0\nchainsearch                          200920            0\nlargesearch                          200437            0\nxfrm                                 204160            0\n_collate_lookup                      209637            0\n_collate_wxfrm                       215652            0\n_collate_sxfrm                       217888            0\n__collate_equiv_value                203046            0\n__collate_collating_symbol           204949            0\n__collate_equiv_class                208835            0\n__collate_equiv_match                209398            0\n------------------------------ ------------ ------------\nTOTAL                               2276093            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/collate.c": "e216851e067dc715"
+  }
+}

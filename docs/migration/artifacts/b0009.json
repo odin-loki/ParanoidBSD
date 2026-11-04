@@ -1,0 +1,13 @@
+{
+  "batch": "b0009",
+  "verified": "2026-07-28T08:33:43Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: negsf2, gtsf2, gtdf2, nesf2)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0009 with cc / c++ (gcc modules)\nPBSD batch b0009 differential test\n(oracle.c is the specification; guard byte 0x7f)\n\n\nfunction                cases     failures     result\n---------------- ------------ ------------ ----------\n__negsf2               251256            0       PASS\n__gtsf2                278224            0       PASS\n__gtdf2                277556            0       PASS\n__nesf2                278224            0       PASS\n---------------- ------------ ------------ ----------\nTOTAL                 1085260            0       PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/negsf2.c": "7665e0df5a2a10a9",
+    "hbsd/src/lib/libc/softfloat/gtsf2.c": "2e9ec1b1d800087d",
+    "hbsd/src/lib/libc/softfloat/gtdf2.c": "989d1303973d7550",
+    "hbsd/src/lib/libc/softfloat/nesf2.c": "818583fa77af7164"
+  }
+}

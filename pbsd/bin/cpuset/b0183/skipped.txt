@@ -1,0 +1,3 @@
+hbsd/src/bin/cpuset/cpuset.c:printaffinity - body is only cpuset_getaffinity(2)/cpuset_getdomain(2) plus err(3); those syscalls do not exist off FreeBSD, so no oracle can be built or linked.
+hbsd/src/bin/cpuset/cpuset.c:printsetid    - body is only cpuset_getid(2) plus err(3); syscall unavailable on the port host, no oracle possible.
+hbsd/src/bin/cpuset/cpuset.c:main          - needs jail_getid(3), cpuset_parselist(3), domainset_parselist(3), cpuset(2), cpuset_setid(2), cpuset_setaffinity(2), cpuset_setdomain(2) and execvp(3); none link on the port host and every path terminates the process.

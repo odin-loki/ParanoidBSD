@@ -1,0 +1,1 @@
+ferror.c: requires namespace.h, libc_private.h, FLOCKFILE/FUNLOCKFILE, and __sferror unavailable outside libc.

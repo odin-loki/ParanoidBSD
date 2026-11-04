@@ -1,0 +1,13 @@
+{
+  "batch": "b0040",
+  "verified": "2026-08-08T09:25:02Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "=== compiling oracle.c (cc -std=c11 -O2)\n=== compiling port.cppm (c++ -std=c++23 -O2 -fmodules-ts)\n=== compiling harness.cpp\n=== linking\n=== running\nb0040 differential test: 788 edge values, 620944 edge pairs, 87 shift values, 250000 random iterations\n\n  function                    cases     failures   status\n  -------------------- ------------ ------------   ------\n  __adddi3                   870955            0   ok\n  __ashldi3                  318680            0   ok\n  __lshldi3                  318680            0   ok\n  __floatdidf                500808            0   ok\n\n  total: 2009123 cases, 0 failures\n  RESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/quad/adddi3.c": "3dad6de9945687a8",
+    "hbsd/src/lib/libc/quad/ashldi3.c": "f54e1d4f33332420",
+    "hbsd/src/lib/libc/quad/lshldi3.c": "f8bbbaba3271462d",
+    "hbsd/src/lib/libc/quad/floatdidf.c": "929545ed2228f14e"
+  }
+}

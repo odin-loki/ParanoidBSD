@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_rpcgen_rpc_tblout",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of rpc_tblout.c, IR-identical for all 2 functions, 25 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/rpcgen/rpc_tblout.c": "c6a873e55892c22c"
+  }
+}

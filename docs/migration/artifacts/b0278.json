@@ -1,0 +1,13 @@
+{
+  "batch": "b0278",
+  "verified": "2026-08-09T00:45:04Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 3/11: _pthread_setaffinity_np, _pthread_getaffinity_np, _pthread_setschedparam)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0278 differential results\nfunction                                cases   failures status\n_pthread_setaffinity_np                 18374          0 ok\n_pthread_getaffinity_np                 18057          0 ok\n_pthread_rwlockattr_destroy             18109          0 ok\n_pthread_rwlockattr_getpshared          17976          0 ok\n_pthread_rwlockattr_init                36405          0 ok\n_pthread_rwlockattr_setpshared          18127          0 ok\n_pthread_barrierattr_destroy            18267          0 ok\n_pthread_barrierattr_init               18066          0 ok\n_pthread_barrierattr_setpshared         18198          0 ok\n_pthread_barrierattr_getpshared         18162          0 ok\n_pthread_setschedparam                  18423          0 ok\nTOTAL                                  218164          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/thread/thr_affinity.c": "3e78ff41190ac814",
+    "hbsd/src/lib/libthr/thread/thr_rwlockattr.c": "3dc1f306bb11a574",
+    "hbsd/src/lib/libthr/thread/thr_barrierattr.c": "3dfd61d68f45ad53",
+    "hbsd/src/lib/libthr/thread/thr_setschedparam.c": "4e6d1760b296887e"
+  }
+}

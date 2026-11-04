@@ -1,0 +1,13 @@
+{
+  "batch": "b0022",
+  "verified": "2026-08-08T09:20:11Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0022 with cc / c++ (gcc modules)\n\nglobal                    cases     failures\n--------------------------------------------\n__infinity               400282            0\n__nan                    400274            0\n--------------------------------------------\nTOTAL                    800556            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/aarch64/gen/infinity.c": "208f5ab0b55e772d",
+    "hbsd/src/lib/libc/aarch64/gen/fpgetmask.c": "81c6e4eb36001308",
+    "hbsd/src/lib/libc/aarch64/gen/flt_rounds.c": "14b981aae22807e2",
+    "hbsd/src/lib/libc/aarch64/gen/fpsetmask.c": "98e0f1bd5d2da3a1"
+  }
+}

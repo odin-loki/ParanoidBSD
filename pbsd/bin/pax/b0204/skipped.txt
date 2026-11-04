@@ -1,0 +1,4 @@
+buf_subs.c — depends on archive I/O (ar_open, ar_read, ar_write, buf_fill) and process globals; not unit-testable in isolation.
+pat_rep.c — rep_add, pat_add, pat_chk, pat_sel, pat_match, mod_name, tty_rename, set_dest, rep_name depend on malloc, regex lists, tty I/O and global pattern state.
+tar.c — tar_endwr, tar_opt, tar_wr, ustar_strd, ustar_stwr, ustar_wr depend on wr_rdbuf, wr_skip, opt_next and uid/gid tables.
+cpio.c — cpio_strd, com_rd, cpio_endwr, rd_nm, rd_ln_nm, cpio_rd, cpio_stwr, cpio_wr, crc_strd, vcpio_rd, crc_stwr, vcpio_wr, bcpio_rd, bcpio_wr depend on rd_wrbuf, wr_rdbuf, rd_skip, lnk_start, dev_start and map_dev.

@@ -1,0 +1,10 @@
+{
+  "batch": "b0106s2",
+  "verified": "2026-08-08T22:12:54Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n----------------------------------------------\nfputs_unlocked       200016            0\nfputs                200016            0\n----------------------------------------------\nTOTAL                400032            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fputs.c": "69dc956644608cab"
+  }
+}

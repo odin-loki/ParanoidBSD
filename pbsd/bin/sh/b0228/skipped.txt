@@ -1,0 +1,2 @@
+main.c — requires full shell runtime (setjmp, trap_init, evaltree, jobs, profiles)
+redir.c — requires union node AST, forkshell, and live file descriptor manipulation

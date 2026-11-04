@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_bin_setfacl_mask",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of mask.c, IR-identical for all 1 functions, 15 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/bin/setfacl/mask.c": "97eb653c2b64eb5c"
+  }
+}

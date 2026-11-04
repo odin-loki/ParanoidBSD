@@ -1,0 +1,1 @@
+fdopendir.c: depends on libc-internal _fcntl and __opendir_common (gen-private.h/telldir.h) unavailable for isolated linking.

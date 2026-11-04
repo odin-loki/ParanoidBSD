@@ -1,0 +1,10 @@
+{
+  "batch": "b0134",
+  "verified": "2026-08-08T11:44:41Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0134 with cc / c++ (gcc modules)\nPBSD batch b0134 differential test\n(oracle.c is the specification; guard byte 0x7f)\n\n\nfunction                    cases     failures     result\n-------------------- ------------ ------------ ----------\nifunc_init                 200140            0       PASS\ncrt1_handle_rela           200144            0       PASS\n-------------------- ------------ ------------ ----------\nTOTAL                      400284            0       PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/csu/amd64/reloc.c": "a43fa96670237bff"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdlib_reallocarray",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of reallocarray.c, IR-identical for all 1 functions, 6 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/reallocarray.c": "557030ea9d22f7b4"
+  }
+}

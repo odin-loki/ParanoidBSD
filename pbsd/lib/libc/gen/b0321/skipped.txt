@@ -1,0 +1,2 @@
+getvfsbyname.c: requires FreeBSD sysctl vfs.conflist and struct xvfsconf; success-path branches cannot be exercised on this harness platform.
+ttyname.c: requires libc-internal fdevname_r, thr_*, and __ssp_real machinery unavailable for isolated linking in this harness.

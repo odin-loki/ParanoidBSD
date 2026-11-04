@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_bin_setfacl_util",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of util.c, IR-identical for all 4 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/bin/setfacl/util.c": "220077564a6fd9b2"
+  }
+}

@@ -1,0 +1,15 @@
+freebsd32_ioctl.c - every function copies fields between 32-bit and native
+    ABI structs (mem_range_op32/mem_range_op, pci_bar_mmap32/pci_bar_mmap,
+    sg_io_hdr32/sg_io_hdr) and derives ioctl command numbers from their sizes
+    (_IOC_NEWTYPE, MEMRANGE_GET32, SG_IO_32, PCIOCBARMMAP_32).  Those layouts
+    live in headers that are not part of this batch (compat/freebsd32/
+    freebsd32_ioctl.h, sys/memrange.h, sys/pciio.h), so a port would have to
+    invent the ABI it is supposed to preserve; behaviour could not be shown
+    faithful.  Left out entirely rather than stubbed.
+
+freebsd32_capability.c, "#else /* !CAPABILITIES */" variants of
+    freebsd32_cap_ioctls_limit()/freebsd32_cap_ioctls_get() - these are the
+    same two symbols compiled for a kernel without options CAPABILITIES and
+    cannot coexist with the ported ones.  The CAPABILITIES configuration (the
+    one with actual behaviour) is what port.cppm and oracle.c build; the
+    #else bodies are still present, unmodified and #ifdef'd out, in oracle.c.

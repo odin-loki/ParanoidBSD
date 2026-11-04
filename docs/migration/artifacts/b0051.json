@@ -1,0 +1,13 @@
+{
+  "batch": "b0051",
+  "verified": "2026-08-08T11:18:36Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/5: __udivdi3, __umoddi3)",
+  "ir_equivalent": false,
+  "harness_output": "=== compiling oracle.c (cc -std=c11 -O2)\n=== compiling port.cppm (c++ -std=c++23 -O2 -fmodules-ts)\n=== compiling harness.cpp\n=== linking\n=== running\nb0051 differential test: 1136 edge quads, 200000 random iterations\n\n  function                    cases     failures   status\n  -------------------- ------------ ------------   ------\n  __udivdi3                 1481202            0   ok\n  __umoddi3                 1481202            0   ok\n  __anddi3                  1490860            0   ok\n  __xordi3                  1490860            0   ok\n\n  total: 5944124 cases, 0 failures\n  RESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/quad/udivdi3.c": "c235ccbc54659780",
+    "hbsd/src/lib/libc/quad/umoddi3.c": "130be32f4342307f",
+    "hbsd/src/lib/libc/quad/anddi3.c": "640f4d883e398af1",
+    "hbsd/src/lib/libc/quad/xordi3.c": "d261f47b7696ab9c"
+  }
+}

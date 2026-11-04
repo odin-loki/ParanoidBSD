@@ -1,0 +1,13 @@
+{
+  "batch": "b0206",
+  "verified": "2026-08-08T22:43:46Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 3/3: freebsd32_abort2, freebsd32_cap_ioctls_limit, freebsd32_cap_ioctls_get)",
+  "ir_equivalent": false,
+  "harness_output": "function                            cases   failures  result\n------------------------------ ---------- ----------  ------\nfreebsd32_abort2                   205184          0  ok\nfreebsd32_cap_ioctls_limit         200880          0  ok\nfreebsd32_cap_ioctls_get           231104          0  ok\nfreebsd32_syscallnames                604          0  ok\nTOTAL                              637772          0  ok\n",
+  "input_hashes": {
+    "hbsd/src/sys/compat/freebsd32/freebsd32_abort2.c": "7d61bd46492d9161",
+    "hbsd/src/sys/compat/freebsd32/freebsd32_capability.c": "3abff6e81fba9b21",
+    "hbsd/src/sys/compat/freebsd32/freebsd32_ioctl.c": "63ffd766bbe8ba82",
+    "hbsd/src/sys/compat/freebsd32/freebsd32_syscalls.c": "ff54f6cdf029c156"
+  }
+}

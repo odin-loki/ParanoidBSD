@@ -1,0 +1,10 @@
+{
+  "batch": "b0195",
+  "verified": "2026-08-08T13:27:22Z",
+  "evidence": "harness green + 2/2 mutations killed (IR: IR differs for 1/5: usage_call)",
+  "ir_equivalent": false,
+  "harness_output": "pbsd b0195 bin/chmod -- differential harness\n\n\n  function                    cases     failures  result\n  -------------------- ------------ ------------  ------\n  siginfo_handler            250418            0  ok\n  usage                       20007            0  ok\n\n  total cases   : 270425\n  total failures: 0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/bin/chmod/chmod.c": "dbcc0d5f62c60b54"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "batch": "b0030",
+  "verified": "2026-08-08T09:23:02Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0030 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function          cases   failures   result\n  --------------------------------------------------\n  logbl            315762          0   PASS\n  rintf            252058          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_logbl.c": "9d4cd83aa3e8f3c2",
+    "hbsd/src/lib/msun/src/s_rintf.c": "463ec0056732f2f4"
+  }
+}

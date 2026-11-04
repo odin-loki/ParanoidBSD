@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_bsdinstall_runconsoles_common",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of common.c, IR-identical for all 1 functions, 6 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/bsdinstall/runconsoles/common.c": "9dec4ac0374b4ebb"
+  }
+}

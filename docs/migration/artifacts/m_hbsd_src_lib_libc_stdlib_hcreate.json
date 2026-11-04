@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdlib_hcreate",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of hcreate.c, IR-identical for all 3 functions, 6 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/hcreate.c": "06bacd8d74d2c511"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "batch": "b0317",
+  "verified": "2026-08-09T03:00:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "function                   cases      failures\n------------------------------------------------\ntempnam                         50010          0\nvsnprintf_l                     50016          0\nvsnprintf                       50007          0\n__printf_arginfo_quote          50003          0\n__printf_render_quote           50012          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/tempnam.c": "a85d58f984f8301d",
+    "hbsd/src/lib/libc/stdio/vsnprintf.c": "57b20e0fb2f0e606",
+    "hbsd/src/lib/libc/stdio/xprintf_quote.c": "17b46e2410481c21"
+  }
+}

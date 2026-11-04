@@ -1,0 +1,10 @@
+{
+  "batch": "b0153s1",
+  "verified": "2026-08-08T22:39:12Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/2: localeconv_l)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n---------------- ------------ ------------\nlocaleconv_l           475484            0\nlocaleconv             147718            0\n---------------- ------------ ------------\nTOTAL                  623202            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/localeconv.c": "293bd2bf3bc68515"
+  }
+}

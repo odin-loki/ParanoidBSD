@@ -1,0 +1,12 @@
+{
+  "batch": "b0220",
+  "verified": "2026-08-08T13:28:26Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 11/26: f_bs, f_conv, f_ibs, f_if)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n--------                    -----     --------\nparity                      20256            0\nswapbytes                   40006            0\npostfix_to_mult             20255            0\nc_arg                       20006            0\nc_conv                      20004            0\nc_iflag                     20003            0\nc_oflag                     20003            0\nget_num                     50027            0\nget_off_t                   40009            0\nf_bs                            2            0\nf_cbs                           1            0\nf_count                         2            0\nf_files                         1            0\nf_fillchar                      3            0\nf_ibs                           2            0\nf_if                            1            0\nf_iflag                         2            0\nf_obs                           1            0\nf_of                            1            0\nf_oflag                         1            0\nf_seek                          1            0\nf_skip                          1            0\nf_speed                         1            0\nf_status                        3            0\nf_conv                          2            0\njcl                         50011            0\n",
+  "input_hashes": {
+    "hbsd/src/bin/dd/args.c": "5a4d9baa3979c5e2",
+    "hbsd/src/bin/dd/conv_tab.c": "3d76767ab5e6367b",
+    "hbsd/src/bin/dd/dd.c": "b1518231016f475c"
+  }
+}

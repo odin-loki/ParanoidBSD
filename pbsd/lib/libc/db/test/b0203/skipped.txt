@@ -1,0 +1,4 @@
+lib/libc/db/test/dbtest.c:main() - program entry point; it drives getopt(3), a
+stdin script parser and dbopen(3) from libdb, which does not exist on this
+host, so it can be neither linked nor compared differentially.  Every other
+function in the file is ported and tested.

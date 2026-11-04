@@ -1,0 +1,2 @@
+fputwc.c: depends on FreeBSD libc internals (FILE->_mbstate, __sputc, xlocale_ctype->__wcrtomb, FIX_LOCALE, ORIENT)
+vsprintf.c: depends on FreeBSD libc internals (FAKE_FILE, __vfprintf, FILE->_flags/_p/_bf)

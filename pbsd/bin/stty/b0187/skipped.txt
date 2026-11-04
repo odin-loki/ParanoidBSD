@@ -1,0 +1,1 @@
+stty.c:main depends on ksearch, msearch, print, gprint, gread, tcgetattr, ioctl, and other symbols outside this batch

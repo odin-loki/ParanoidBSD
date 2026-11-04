@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160" height="32" viewBox="0 0 160 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-heading" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5082c8" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#284878" stop-opacity="0.65"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="32" fill="url(#aero-heading)" rx="4"/>
+  <rect x="0" y="0" width="160" height="10" fill="#ffffff" fill-opacity="0.18"/>
+</svg>

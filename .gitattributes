@@ -1,0 +1,7 @@
+# Never translate line endings. The tree mixes them deliberately - the
+# vendored FreeBSD sources under hbsd/ are LF, several tools/ files are CRLF -
+# and a checkout that "helpfully" converts either way rewrites thousands of
+# lines and buries the real diff. I normalised three files by accident today
+# reading and rewriting them with Python's text mode; this makes that a
+# no-op at the git layer regardless.
+* -text

@@ -1,0 +1,13 @@
+{
+  "batch": "b0249",
+  "verified": "2026-08-08T23:07:39Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                 cases     failures\n---------------------------------------------\nsetcontext              200271            0\nrecvfrom                225346            0\nkevent                  228930            0\nopen                    211600            0\n---------------------------------------------\nTOTAL                   866147            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/setcontext.c": "f0647caa11a6af2f",
+    "hbsd/src/lib/libc/sys/recvfrom.c": "997c4822f5a78ca4",
+    "hbsd/src/lib/libc/sys/kevent.c": "82643e7e9bbdfccc",
+    "hbsd/src/lib/libc/sys/open.c": "75957ccb751aa917"
+  }
+}

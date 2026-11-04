@@ -1,0 +1,13 @@
+{
+  "batch": "b0128",
+  "verified": "2026-08-08T11:43:59Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 5/15: reset_malloc, set_malloc_fail_at, reset_locale_states, mbrtoc16_l)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n--------                -----     --------\nwcstof_l               200025            0\nwcstof                 200025            0\nwcstold_l              200012            0\nwcstold                200011            0\ntowctrans_l            200009            0\ntowctrans              200009            0\nwctrans_l              200007            0\nwctrans                200007            0\nmbrtoc16_l             200026            0\nmbrtoc16               200026            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wcstof.c": "22f5d15d10096b59",
+    "hbsd/src/lib/libc/locale/wcstold.c": "8cd23271f324bd4a",
+    "hbsd/src/lib/libc/locale/wctrans.c": "547611ef322a04c0",
+    "hbsd/src/lib/libc/locale/mbrtoc16.c": "ec7abf4ce2aab467"
+  }
+}

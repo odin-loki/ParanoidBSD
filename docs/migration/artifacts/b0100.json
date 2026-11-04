@@ -1,0 +1,12 @@
+{
+  "batch": "b0100",
+  "verified": "2026-08-08T11:34:32Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\nwprintf                      200026            0\nwprintf_l                    200016            0\nclearerr                     200040            0\nclearerr_unlocked            200040            0\nfeof                         200040            0\nfeof_unlocked                200040            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/wprintf.c": "7bbb386d6fdc479e",
+    "hbsd/src/lib/libc/stdio/clrerr.c": "029a639f323b893e",
+    "hbsd/src/lib/libc/stdio/feof.c": "811f112d7dc3470a"
+  }
+}

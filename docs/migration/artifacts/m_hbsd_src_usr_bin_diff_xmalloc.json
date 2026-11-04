@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_diff_xmalloc",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of xmalloc.c, IR-identical for all 5 functions, 9 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/diff/xmalloc.c": "0e1d18599b4ed062"
+  }
+}

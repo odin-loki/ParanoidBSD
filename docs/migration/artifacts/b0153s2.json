@@ -1,0 +1,10 @@
+{
+  "batch": "b0153s2",
+  "verified": "2026-08-08T22:38:03Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                cases       failures\n-------------- -------------- --------------\nwcsftime_l             203862              0\nwcsftime               203862              0\nTOTAL                                      0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wcsftime.c": "d5badda350f38bb9"
+  }
+}

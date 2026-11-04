@@ -1,0 +1,10 @@
+{
+  "batch": "b0012s4",
+  "verified": "2026-07-30T08:18:50Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: floatx80_lt, __gtxf2)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\ngtxf2 (__gtxf2)            264443            0\nfloatx80_lt                264443            0\nTOTAL                      528886            0\n\nRESULT: PASS (528886 cases, 0 divergences)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/gtxf2.c": "d8b792fdfd16424e"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "batch": "b0097",
+  "verified": "2026-08-08T11:46:22Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                 cases     failures\n---------------------------------------------\nwait6                   231360            0\nsendto                  313977            0\nclock_nanosleep         202296            0\nppoll                   200816            0\n---------------------------------------------\nTOTAL                   948449            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/wait6.c": "1612db594c8bff28",
+    "hbsd/src/lib/libc/sys/sendto.c": "33de7b8ec44adfc4",
+    "hbsd/src/lib/libc/sys/clock_nanosleep.c": "879d264157c28ab4",
+    "hbsd/src/lib/libc/sys/ppoll.c": "02dee23bb8d6c923"
+  }
+}

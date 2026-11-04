@@ -1,0 +1,10 @@
+{
+  "batch": "b0106s1",
+  "verified": "2026-08-08T22:12:36Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n--------------------------------------------\n__fputwc           200015            0\nfputwc_l           200016            0\nfputwc             200015            0\n--------------------------------------------\nTOTAL              600046            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fputwc.c": "2ceb433f7028eea1"
+  }
+}

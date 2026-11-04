@@ -1,0 +1,13 @@
+{
+  "batch": "b0204",
+  "verified": "2026-08-08T22:47:47Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n--------                -----     --------\nfn_match               200013            0\nrange_match            200005            0\nfix_path               200004            0\nresub                   63666            0\ntar_endrd                   1            0\ntar_trail              200004            0\nul_oct                 200016            0\nuqd_oct                200003            0\ntar_chksm              200002            0\ntar_id                 200003            0\ntar_rd                 200005            0\nustar_id               200002            0\nustar_rd               200003            0\nname_split             200003            0\ncpio_trail             200003            0\ncpio_id                200003            0\ncpio_endrd                  1            0\nvcpio_id               100070            0\ncrc_id                  99933            0\nvcpio_endrd                 1            0\nbcpio_id               200003            0\nbcpio_endrd                 1            0\nbcpio_swp                   0            0\nTOTAL                 3263745            0\nharness.cpp:5: warning: \"_GNU_SOURCE\" redefined\n    5 | #define _GNU_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\n",
+  "input_hashes": {
+    "hbsd/src/bin/pax/buf_subs.c": "1be3ce447644f5f1",
+    "hbsd/src/bin/pax/pat_rep.c": "c62136bc3e45aba7",
+    "hbsd/src/bin/pax/tar.c": "fc5cf7b7a10137df",
+    "hbsd/src/bin/pax/cpio.c": "d75a26ec656f14fd"
+  }
+}

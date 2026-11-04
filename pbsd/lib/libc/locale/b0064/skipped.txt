@@ -1,0 +1,2 @@
+hbsd/src/lib/libc/locale/nomacros.c - no function definitions; the file only defines preprocessor macros and includes <ctype.h> to externalise ctype inlines.
+hbsd/src/lib/libc/locale/ctype.c - no function definitions; the file only includes locale headers with no callable bodies in this translation unit.

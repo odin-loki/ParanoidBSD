@@ -1,0 +1,12 @@
+{
+  "batch": "b0113",
+  "verified": "2026-08-08T11:41:00Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "b0113 differential test (wchar_t is 4 bytes)\n\n  function              cases       failures   status\n  ------------ -------------- --------------   ------\n  mempcpy              201326              0   ok\n  wcpncpy              288396              0   ok\n  wmempcpy             200900              0   ok\n  ------------ -------------- --------------   ------\n  TOTAL                690622              0   ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/mempcpy.c": "462d9733f7406c2b",
+    "hbsd/src/lib/libc/string/wcpncpy.c": "4ee90cb6aafafb80",
+    "hbsd/src/lib/libc/string/wmempcpy.c": "a6363ba0e227b88a"
+  }
+}

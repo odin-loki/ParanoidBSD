@@ -1,0 +1,103 @@
+{
+ "note": "ESBMC kinduction FAILED that looked like shl/OOB and were not already in CBMC arithmetic-triage. Not a bug list until the C is read. Tests deferred. 0 defects.",
+ "settled": [
+  {
+   "file": "lib/libc/gen/elf_utils.c",
+   "function": "__pthread_map_stacks_exec",
+   "verdict": "not-a-defect",
+   "note": "indexes __libc_interposing[INTERPOS_map_stacks_exec]; named enum < INTERPOS_MAX. same table as __libc_interposing_slot"
+  },
+  {
+   "file": "lib/libc/gen/libc_interposing_table.c",
+   "function": "__libc_interposing_slot",
+   "verdict": "not-a-defect",
+   "note": "already in oob-static-triage: interposno is INTERPOS_* < INTERPOS_MAX"
+  },
+  {
+   "file": "lib/libc/gen/readpassphrase.c",
+   "function": "handler",
+   "verdict": "not-a-defect",
+   "note": "already in oob-static-triage: signo[NSIG]; kernel signal number"
+  },
+  {
+   "file": "lib/libc/posix1e/acl_branding.c",
+   "function": "_entry_brand_may_be",
+   "verdict": "not-a-defect",
+   "note": "inlined entry2acl alignment round-down; sibling _entry_brand_as already arithmetic-triage / UB_FINDINGS"
+  },
+  {
+   "file": "lib/libcalendar/easter.c",
+   "function": "easterodn",
+   "verdict": "not-a-defect",
+   "note": "ns[weekday(dn)]; weekday returns 0..6"
+  },
+  {
+   "file": "lib/libcam/tests/libcam_test.c",
+   "function": "cam_has_error",
+   "verdict": "deferred",
+   "note": "ATF helper over cam_errbuf"
+  },
+  {
+   "file": "lib/msun/src/e_atan2l.c",
+   "function": "atan2l",
+   "verdict": "not-a-defect",
+   "note": "pio2_hi is atanhi[3] on a 4-element table"
+  },
+  {
+   "file": "lib/msun/src/k_exp.c",
+   "function": "__ldexp_cexp",
+   "verdict": "not-a-defect",
+   "note": "same expt 0/-1 contract as __ldexp_exp already in arithmetic-triage"
+  },
+  {
+   "file": "lib/msun/src/k_expf.c",
+   "function": "__ldexp_cexpf",
+   "verdict": "not-a-defect",
+   "note": "float sibling; callers pass 0 or -1"
+  },
+  {
+   "file": "lib/msun/src/s_atanl.c",
+   "function": "atanl",
+   "verdict": "not-a-defect",
+   "note": "id 0..3; aT[] indices are compile-time constants in T_even/T_odd"
+  },
+  {
+   "file": "lib/msun/src/s_tanhl.c",
+   "function": "tanhl",
+   "verdict": "not-a-defect",
+   "note": "k_hexpl only for |x|<40; k stays in float exponent range"
+  },
+  {
+   "file": "lib/msun/tests/nearbyint_test.c",
+   "function": "get_output",
+   "verdict": "deferred",
+   "note": "ATF; index from 0..nitems(tests)-1"
+  },
+  {
+   "file": "lib/msun/tests/nearbyint_test.c",
+   "function": "test_modf",
+   "verdict": "deferred",
+   "note": "ATF; same tests[] loop"
+  },
+  {
+   "file": "lib/msun/tests/nearbyint_test.c",
+   "function": "test_nearby",
+   "verdict": "deferred",
+   "note": "ATF; same tests[] loop"
+  },
+  {
+   "file": "sys/ddb/db_access.c",
+   "function": "db_put_value",
+   "verdict": "not-a-defect",
+   "note": "already in oob-static-triage: data[sizeof(int)]; size 1/2/4"
+  }
+ ],
+ "remaining": [],
+ "counts": {
+  "settled": 15,
+  "defect": 0,
+  "not-a-defect": 11,
+  "deferred": 4,
+  "remaining": 0
+ }
+}

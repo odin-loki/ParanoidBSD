@@ -1,0 +1,13 @@
+{
+  "batch": "b0327",
+  "verified": "2026-08-09T03:06:14Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\natan                50372            0\nsinhl               50586            0\nexp2f               50238            0\nsqrtl               70203            0\n------------ ------------ ------------\nTOTAL              221399            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_atan.c": "5218bb64bd2c1ab8",
+    "hbsd/src/lib/msun/src/e_sinhl.c": "75a6df0fd37e0509",
+    "hbsd/src/lib/msun/src/s_exp2f.c": "371e190297be3e83",
+    "hbsd/src/lib/msun/src/e_sqrtl.c": "ec30c7e0df4d0c48"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "batch": "b0021",
+  "verified": "2026-07-30T09:50:57Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/4: remque)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0021: port vs. oracle\n  function          cases     failures\n  ---------- ------------ ------------\n  l64a_r           200670            0  ok\n  l64a             200051            0  ok\n  remque           200070            0  ok\n  _Exit             25278            0  ok\n  ---------- ------------ ------------\n  TOTAL            626069            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/_Exit.c": "99a356994b637aad",
+    "hbsd/src/lib/libc/stdlib/remque.c": "cef16da893caa65a",
+    "hbsd/src/lib/libc/stdlib/l64a.c": "344d7fb6e6115cb2"
+  }
+}

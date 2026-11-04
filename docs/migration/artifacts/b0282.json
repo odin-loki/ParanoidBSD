@@ -1,0 +1,10 @@
+{
+  "batch": "b0282",
+  "verified": "2026-08-09T00:15:52Z",
+  "evidence": "harness green + 4/4 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nFunction                          Cases   Failures\ninitgroups                       200010          0\nfreebsd14_initgroups             200010          0\nTOTAL                            400020          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/initgroups.c": "31bd8687208a0742"
+  }
+}

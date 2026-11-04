@@ -1,0 +1,11 @@
+{
+  "batch": "b0174",
+  "verified": "2026-08-08T12:27:12Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "=== compiling quad helpers (cc -std=c11 -O2 -I/home/odin/pbsd/hbsd/src/lib/libc/quad -include quad_linux.h)\n=== compiling oracle.c (cc -std=c11 -O2)\n=== compiling port.cppm (c++ -std=c++23 -O2 -fmodules-ts)\n=== compiling harness.cpp\n=== linking\n=== running\n\nfunction          cases   failures\nmul_main         200016        0\ndivrem_main      200015        0\noracle.c:39:1: warning: return type defaults to \u2018int\u2019 [-Wimplicit-int]\n   39 | ref_mul_main()\n      | ^~~~~~~~~~~~\noracle.c:103:1: warning: return type defaults to \u2018int\u2019 [-Wimplicit-int]\n  103 | ref_divrem_main()\n      | ^~~~~~~~~~~~~~~\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/quad/TESTS/mul.c": "bf56541620f4dc89",
+    "hbsd/src/lib/libc/quad/TESTS/divrem.c": "a4378fa958f78006"
+  }
+}

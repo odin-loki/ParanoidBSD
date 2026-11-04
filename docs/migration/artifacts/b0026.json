@@ -1,0 +1,11 @@
+{
+  "batch": "b0026",
+  "verified": "2026-07-30T10:26:20Z",
+  "evidence": "harness green + IR-identical for all 10 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                        cases   failures result\n------------------------ ------------ ---------- ------\nstdc_count_ones_uc             200929          0 PASS\nstdc_count_ones_us             266209          0 PASS\nstdc_count_ones_ui             200673          0 PASS\nstdc_count_ones_ul             200673          0 PASS\nstdc_count_ones_ull            200673          0 PASS\nstdc_count_zeros_uc            200929          0 PASS\nstdc_count_zeros_us            266209          0 PASS\nstdc_count_zeros_ui            200673          0 PASS\nstdc_count_zeros_ul            200673          0 PASS\nstdc_count_zeros_ull           200673          0 PASS\n\nALL PASS: 0 failing case(s)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdbit/stdc_count_ones.c": "fb308c7553de805a",
+    "hbsd/src/lib/libc/stdbit/stdc_count_zeros.c": "89cd46d8288c6b73"
+  }
+}

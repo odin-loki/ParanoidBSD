@@ -1,0 +1,13 @@
+{
+  "batch": "b0025",
+  "verified": "2026-08-08T09:21:14Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n--------------------------------------\nfork               200014            0\nfsync              200105            0\nfdatasync          200105            0\nclose              200105            0\n--------------------------------------\nTOTAL              800329            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/fork.c": "b63d34bdb8030a57",
+    "hbsd/src/lib/libc/sys/fsync.c": "0d7f4d6d04cb70ab",
+    "hbsd/src/lib/libc/sys/fdatasync.c": "42c1f2af41d001ab",
+    "hbsd/src/lib/libc/sys/close.c": "1b71a6e525077730"
+  }
+}

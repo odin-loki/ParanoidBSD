@@ -1,0 +1,13 @@
+{
+  "batch": "b0102",
+  "verified": "2026-08-08T11:33:07Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n----------------------------------------------\naio_write2            51284            0\nseekdir               50166            0\nsignal                50355            0\ngetentropy            50383            0\n----------------------------------------------\nTOTAL                202188            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/aio_write2.c": "57ae1c2b4b994194",
+    "hbsd/src/lib/libc/gen/seekdir.c": "b8e1bb98194ed4c2",
+    "hbsd/src/lib/libc/gen/signal.c": "2069e4a23fa15946",
+    "hbsd/src/lib/libc/gen/getentropy.c": "33b4fcbd50f1960f"
+  }
+}

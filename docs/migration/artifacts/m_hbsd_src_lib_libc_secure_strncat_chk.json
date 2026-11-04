@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_secure_strncat_chk",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of strncat_chk.c, IR-identical for all 1 functions, 15 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/strncat_chk.c": "72c8c7ece8db53a7"
+  }
+}

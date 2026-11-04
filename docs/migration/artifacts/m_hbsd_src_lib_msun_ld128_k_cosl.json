@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_ld128_k_cosl",
+  "verified": "2026-07-30T09:26:22Z",
+  "evidence": "mechanical port of k_cosl.c, IR-identical for all 1 functions, 42 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/k_cosl.c": "cb0521c50f8065cd"
+  }
+}

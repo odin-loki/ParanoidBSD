@@ -1,0 +1,10 @@
+{
+  "batch": "b0175",
+  "verified": "2026-08-08T13:16:14Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "b0175 sleep: pbsd.bin.sleep.b0175 vs oracle.c\n\n  function                  cases   failures\n  -------------------- ---------- ----------\n  parse_interval           254701          0   ok\n  report_request           200198          0   ok\n  usage                       512          0   ok\n  -------------------- ---------- ----------\n  TOTAL                    455411          0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/bin/sleep/sleep.c": "9958193055d969fb"
+  }
+}

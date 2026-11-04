@@ -1,0 +1,1 @@
+timesoftfloat.c: standalone benchmark program requiring the full softfloat runtime, clock(), and stdio; not a self-contained library unit.

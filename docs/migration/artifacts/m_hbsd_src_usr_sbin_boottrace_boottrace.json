@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_boottrace_boottrace",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of boottrace.c, IR-identical for all 1 functions, 11 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/boottrace/boottrace.c": "a4c9f7392d8f9a8d"
+  }
+}

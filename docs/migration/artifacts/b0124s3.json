@@ -1,0 +1,10 @@
+{
+  "batch": "b0124s3",
+  "verified": "2026-08-08T22:11:27Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction          cases    fails\nalist_free       200012        0\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/alist_free.c": "2d2daefff3b6853d"
+  }
+}

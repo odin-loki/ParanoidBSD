@@ -1,0 +1,2 @@
+elf_utils.c: depends on libc_private.h __libc_interposing and other libc-internal symbols unavailable for isolated linking.
+nftw-compat11.c: depends on fts-compat11.h freebsd11_fts_* helpers unavailable for isolated linking.

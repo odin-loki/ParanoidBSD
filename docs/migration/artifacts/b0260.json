@@ -1,0 +1,13 @@
+{
+  "batch": "b0260",
+  "verified": "2026-08-09T00:10:30Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                                      cases     failures\n--------------------------------------------------------------\nrpc_commondata globals                       200001            0\n__rpc_gss_wrap_stub                          200460            0\n__rpc_gss_unwrap_stub                        200460            0\nxdr_pmap                                     201026            0\n_rpc_dtablesize                              200798            0\n--------------------------------------------------------------\nTOTAL                                       1002745            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/rpcsec_gss_stub.c": "215d2a3270d396c0",
+    "hbsd/src/lib/libc/rpc/rpc_commondata.c": "765b35dfaa2d696e",
+    "hbsd/src/lib/libc/rpc/pmap_prot.c": "60695907986be8f1",
+    "hbsd/src/lib/libc/rpc/rpc_dtablesize.c": "ec2ac5f2d9ea2e41"
+  }
+}

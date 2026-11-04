@@ -1,0 +1,1 @@
+hbsd/src/bin/ed/sub.c:search_and_replace -- depends on delete_lines, put_sbuf_line, push_undo_stack, display_lines, get_addressed_line_node, and editor-wide address globals outside this batch.

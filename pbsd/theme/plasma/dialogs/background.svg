@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-dialog" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6496dc" stop-opacity="0.78"/>
+      <stop offset="0.35" stop-color="#3c6cb4" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#142850" stop-opacity="0.88"/>
+    </linearGradient>
+    <linearGradient id="aero-dialog-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.25" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="320" height="240" rx="8" fill="url(#aero-dialog)"/>
+  <rect x="1" y="1" width="318" height="56" rx="7" fill="url(#aero-dialog-shine)"/>
+  <rect x="0" y="0" width="320" height="1" fill="#b8d8ff" fill-opacity="0.55"/>
+</svg>

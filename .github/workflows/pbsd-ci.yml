@@ -1,0 +1,607 @@
+name: PBSD CI
+
+on:
+  push:
+    paths:
+      - 'pbsd/**'
+      - 'tools/**'
+      - 'docs/migration/**'
+      - 'docs/specs/ANALYSER.md'
+      - 'LICENSE'
+      - 'LICENSING.md'
+      - 'NOTICES.md'
+      - 'COMMERCIAL-LICENCE.md'
+      - 'LICENSES/**'
+      - '.clang-tidy'
+      - '.github/workflows/pbsd-ci.yml'
+  pull_request:
+    paths:
+      - 'pbsd/**'
+      - 'tools/**'
+      - 'docs/migration/**'
+      - 'docs/specs/ANALYSER.md'
+      - 'LICENSE'
+      - 'LICENSING.md'
+      - 'NOTICES.md'
+      - 'COMMERCIAL-LICENCE.md'
+      - 'LICENSES/**'
+      - '.clang-tidy'
+      - '.github/workflows/pbsd-ci.yml'
+
+jobs:
+  build-and-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build clang clang-tidy clang-tools libbsd-dev python3 bmake
+
+      - name: Licence compliance gate
+        run: python3 tools/check_licences.py --verbose
+
+      - name: Module + stub counts
+        run: python3 tools/count_modules.py
+
+      # tools/mark_converted.py has never been committed - it exists only on
+      # the author's machine. Skip rather than fail the whole run, but say so,
+      # so the missing gate is visible instead of silently absent.
+      - name: Sync conversion ledgers
+        run: |
+          if [ -f tools/mark_converted.py ]; then
+            python3 tools/mark_converted.py --sync
+          else
+            echo "::warning title=Ledger sync skipped::tools/mark_converted.py is not in the repository. CONVERTED.md and batch_progress.json are not being checked for drift."
+          fi
+
+      - name: Configure (L3 thread-safety flags via CMake)
+        run: |
+          cmake -S pbsd -B build -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      # PBSD targets FreeBSD, so a hosted Ubuntu runner cannot build the
+      # FreeBSD userland ports: their sources include headers that live inside
+      # the FreeBSD tree (math_private.h, namespace.h, fpmath.h) or do not
+      # exist on Linux at all (sys/sysctl.h, sys/acl.h, sys/mac.h, uuid.h).
+      # Pointing at hbsd/src/lib/libc/include makes it worse, not better -
+      # those private headers pull in FreeBSD's sys/*, which shadows glibc.
+      #
+      # So the build runs to completion with -k 0 and the gate is a ratchet:
+      # every failure must already be in the exception list, and anything
+      # outside it is a regression. 149 modules are expected to fail; none of
+      # them is original PBSD work.
+      - name: Build modules
+        run: |
+          set -o pipefail
+          cmake --build build -j"$(nproc)" -- -k 0 2>&1 | tee build.log || true
+
+      - name: Linux build gate (no regressions outside the known-unbuildable set)
+        run: python3 tools/check_linux_build.py build.log
+
+      # pbsd.fp is original PBSD work rather than a port, and it depends on
+      # nothing FreeBSD, so unlike the 149 modules the ratchet above counts it
+      # can be built AND run on a Linux runner. The tests are exhaustive where
+      # the domain allows: all 65,536 bfloat16 values and all 2^32 binary32
+      # ones. A failure here is a real defect in the arithmetic, not a
+      # cross-platform artefact, so this step does not tolerate one.
+      - name: Generic float module (pbsd.fp) — build and run its tests
+        run: |
+          cmake -S pbsd/lib/fp -B build-fp -G Ninja -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build-fp -j"$(nproc)"
+          ctest --test-dir build-fp --output-on-failure
+
+      # sys/sys/atomic_generic.h replaces six hand-written atomic.h with one.
+      # "It compiles" is not the question - the question is whether each
+      # operation lowers to an instruction or to a libatomic call, because
+      # the kernel has no libatomic. This compiles the header for all six
+      # targets, one object per width, and reads the undefined symbols back.
+      # Cross-compiling needs no sysroot: the header is compiled against a
+      # shimmed <sys/types.h> and nothing else.
+      - name: Generic atomics — lock-free on every target
+        run: python3 tools/atomic_generic_check.py
+
+      # Lock-free is a precondition, not a proof. This compiles the same
+      # 618 operations twice for the six targets - once against
+      # <machine/atomic.h>, once against <sys/atomic_generic.h> - and
+      # compares the instructions, because a barrier is the whole content
+      # of an atomic operation and two headers agreeing that
+      # atomic_add_acq_32 exists says nothing about which one it emits.
+      #
+      # It is not a gate on the adoption; nothing includes the generic
+      # header yet, and 171 of 618 match. It is a gate on the MEASUREMENT:
+      # docs/migration/atomic_codegen.json holds a verdict and a digest of
+      # both sequences per operation, so a change to either header that
+      # moves the generated code is reported with the side that moved.
+      # The verdict alone was not enough - weakening an acquire to seq_cst
+      # left it at "different barrier" and the first version of this gate
+      # called that no change.
+      - name: Generic atomics — what the two headers actually emit
+        run: |
+          python3 tools/atomic_codegen_check.py \
+            --baseline docs/migration/atomic_codegen.json
+
+      # sys/sys/_stdint_generic.h and _inttypes_generic.h replace five copies
+      # each of <machine/_stdint.h> and <machine/_inttypes.h>. They are only a
+      # replacement if they expand to the same thing, so this preprocesses
+      # both for all six targets and compares every macro - numerically for
+      # the limits, textually for the conversions. It has already caught a
+      # signedness change in wint_t on riscv and an ABI change to the FAST
+      # types, both from trusting a compiler predefine over the tree.
+      #
+      # --baseline is what survives the switch-over. Once
+      # <machine/_stdint.h> includes the generic header the comparison
+      # above is a header against itself, so docs/migration/
+      # stdint_expansions.json holds what the six architecture headers
+      # expanded to BEFORE they were changed - by value, not by spelling -
+      # and every one of them is checked against it. It also covers the
+      # three macros the comparison above cannot see: SIG_ATOMIC_MIN, MAX
+      # and WIDTH stay per-architecture, so they are not in the generic
+      # header, and they are exactly what a switch-over could get wrong.
+      - name: Generic stdint/inttypes — same expansion as the six headers
+        run: |
+          python3 tools/stdint_generic_check.py \
+            --baseline docs/migration/stdint_expansions.json
+
+      # WITHOUT_MACHDEP_OPTIMIZATIONS was set and inert for lib/msun on
+      # amd64 and i386 - every reporter said the option was enabled, because
+      # it was, and the makefile appended both the C and the assembly under
+      # the same object name. Nothing failed and nothing warned. This checks
+      # that each of the four consumers still has a mechanism that takes
+      # effect, and that a fifth has not appeared without one.
+      - name: MACHDEP option — set is not the same as in effect
+        run: python3 tools/machdep_option_check.py
+
+      # Every setuid-root binary is a local privilege escalation waiting for
+      # a bug. FreeBSD declares them in each program's Makefile, so the set
+      # is readable without building. The gate is that the set does not
+      # change silently - gaining one from an upstream merge is not
+      # something to find out later.
+      - name: setuid inventory — the set has not changed
+        run: python3 tools/setuid_inventory.py --gate
+
+      # ...and against a real one. That inventory reads Makefiles, and its
+      # own docstring said a `find -perm -4000' over a built image was the
+      # missing half. Boot run 60 is that image - the first PBSD system
+      # with a login - and the answer disagreed with the tool three ways,
+      # all of them the tool's fault: BINMODE read out of an .if nothing
+      # satisfies (newgrp is not setuid), the directory named instead of
+      # PROG (dmagent/dma), and LINKS's hard links unaccounted for
+      # (at/atq/atrm/batch, ping/ping6, shutdown/poweroff,
+      # authpf/authpf-noip). It now predicts 33 files and the image has
+      # those 33.
+      - name: setuid inventory — against a real image
+        run: |
+          python3 tools/setuid_inventory.py \
+            --check tools/verify/testdata/setuid_boot_run60.txt
+
+      # A source that another source #includes by name is not an independent
+      # translation unit, so renaming it .c -> .cpp breaks the includer and
+      # nothing else notices: the file still exists, SRCS still resolves, no
+      # two objects collide, and a zero-edit port is byte-identical. The
+      # hundred-file lib/msun batch shipped five such files and stopped
+      # buildworld at s_cos.cpp:48 with "'e_rem_pio2.c' file not found",
+      # nine minutes into a fifty-minute job. This is a second of work.
+      - name: No port has renamed a source another source #includes
+        run: python3 tools/check_source_includes.py --gate
+
+      # crt1_c.c is where a process begins, and it is the one file per
+      # architecture that nothing here builds: the architecture matrix
+      # builds kernels for all six and the only world anyone builds is
+      # amd64. Four of the seven could not compile at all. This compiles
+      # each for its own target with clang -target and a header shim, no
+      # cross toolchain and no sysroot.
+      - name: Every architecture's csu entry point compiles
+        run: tools/check_csu_builds.sh
+
+      # lib/libc names 1,051 sources by hand and finds them through one
+      # shared .PATH, so an entry whose file was deleted is not visibly
+      # wrong anywhere - and MDSRCS is dropped whole under
+      # WITHOUT_MACHDEP_OPTIMIZATIONS, so it stays inert until something
+      # asks for the assembly back. Five such entries survived the removal
+      # of the 74 machine-dependent .S files.
+      - name: Every source lib/libc names is on disk
+        run: python3 tools/check_libc_srcs.py --gate
+
+      # Four times this session a console change was written, reasoned
+      # about, dispatched, and came back fifty minutes later having not
+      # done what it looked like it did. The kernel-debugger probe is
+      # exercised against fakes that answer, that page at --More--, and
+      # that ignore the break entirely.
+      - name: The boot test's kernel-debugger probe
+        run: python3 tools/ci/test_boot_test_ddb.py
+
+      # Run 59 was the first image with a login. It booted, logged in and
+      # answered - and four of its five answer files held the COMMAND
+      # rather than the answer, because a serial console echoes what you
+      # type and the echoed line carries both of the markers the capture
+      # keys on. The fifth worked only because its echo wrapped at eighty
+      # columns and so failed to match. One of five right, for a reason
+      # unrelated to the code being right.
+      - name: The boot test's --run capture
+        run: python3 tools/ci/test_interrogate_echo.py
+
+      # Run 43 printed a backtrace whose interrupt frame carried a USER
+      # rip and a vm_map that placed it inside the run-time linker, with no
+      # shared library mapped after it - and then concluded "the kernel
+      # started and never reached userland", which its own output
+      # disproves. Same shape as run 40. So the reading is code now, and
+      # this is run 43's real output fed back through it.
+      - name: The debugger output is read, not just printed
+        run: python3 tools/ci/test_ddb_explain.py
+
+      # The image-editing block runs at the end of a fifty-minute build, on
+      # FreeBSD, against a real disk image. Run 26 spent one of those
+      # learning the memstick is MBR, because the test before it used a GPT
+      # layout that had been invented. This extracts the block verbatim and
+      # runs it against stubs whose output is what mdconfig and gpart really
+      # printed in runs 26 and 27.
+      - name: The boot image's init swap and loader.conf editing
+        run: sh tools/ci/test_init_swap.sh
+
+      # The two instruments the verification sweep is built on, each
+      # tested against defects it must report. Both had a first version
+      # that ran and answered and was not doing the work:
+      #
+      #   analyze.py    "0 findings across 60 translation units" -
+      #                 -analyzer-disable-all-checks turned every checker
+      #                 off and the -analyzer-checker flags after it did
+      #                 not turn any back on. A real zero and an empty
+      #                 check look identical in a summary line.
+      #
+      #   classify.py   26,548 of 26,607 kernel functions "exported",
+      #                 because Flags comes after Type in goto-instrument's
+      #                 symbol table and the regex only looked before it.
+      #                 Linkage decides whether a modular finding is a
+      #                 defect or a missing precondition, so every finding
+      #                 downstream was labelled off a value never read.
+      #
+      # apt's cbmc and clang are enough for both; the sweep itself is not
+      # run here, only its instruments.
+      - name: Verification instruments (CBMC + clang analyser)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cbmc clang
+          python3 tools/verify/test_analyze.py
+          python3 tools/verify/test_classify.py
+          python3 tools/verify/test_report_triage.py
+          # The coverage metric's own failure modes. A number
+          # people quote without reading has to be tested in
+          # the direction it lies: the first draft read
+          # visibility off the model-check jsonl, which holds
+          # one record per (file, function) CHECKED rather than
+          # per unit BUILT, and so reported 0.03 for sys/dev
+          # where the truth is 0.93 -- understating the exact
+          # number this project has worked hardest to raise.
+          python3 tools/verify/test_confidence.py
+          # The denominator of the "we check for most kinds of defect"
+          # claim. A taxonomy inflates itself two ways by default:
+          # dropping the out-of-scope classes (concurrency, functional
+          # correctness) out of the denominator, and rounding a SOME up
+          # to a COVERED. Both are asserted against here, along with the
+          # rule that installing a tool can never LOWER the score.
+          python3 tools/verify/test_taxonomy.py
+          # The function universe. "No function left untouched" is a
+          # claim about a SET, and the set must not be built by asking
+          # the instruments what they saw - that number is always 100%.
+          # The textual scanner's error bar is measured against the port
+          # ledger by `inventory.py --selftest'; these are its shape
+          # rules, including the one that kept `if (x) {' out.
+          python3 tools/verify/test_inventory.py
+          # The three states every findings report collapses into one:
+          # nobody ran it, it ran and could not build, it ran and said
+          # nothing. A file that does not compile contributes zero
+          # findings and is indistinguishable from a clean one in any
+          # report that counts findings; here it is TU-ERROR and it
+          # counts AGAINST coverage.
+          python3 tools/verify/test_matrix.py
+          # The port agent's own ESBMC wrapper, which no workflow ran
+          # until now -- and which passed --no-bounds-check on every
+          # invocation it has ever made. ESBMC's polarity is the reverse
+          # of CBMC's: bounds, pointer and division checks are ON and are
+          # switched off by a --no-* flag. So every formal check that
+          # wrapper reported clean had array bounds checking disabled,
+          # and nothing in the output it parsed would have said so.
+          python3 tools/pbsd_agent/test_agent_port.py
+          # The orchestrator, whose whole job is the opposite of the
+          # usual one: a harness that runs twelve instruments and prints
+          # the findings of the five that worked is worse than one that
+          # runs five, because the reader cannot tell the difference.
+          python3 tools/verify/test_sweep_all.py
+          # The ESBMC driver, against a mock, because ESBMC is in no
+          # distribution's package set and this driver has never met a
+          # real one. The mock emits the documented output shapes; the
+          # tests assert that every uncertainty resolves to a WEAKER
+          # verdict - k-induction claiming PROVED-UNBOUNDED needs the
+          # line in the output saying the induction closed, never the
+          # mode alone.
+          python3 tools/verify/test_esbmc_driver.py
+          # The C++ tier. Its central test is that a translation unit
+          # which fails to build is ERROR and its findings are DISCARDED
+          # -- the probe file holds a real use-after-free before the
+          # failing #include, so a tool that reported it would be
+          # presenting a partial result as a whole one. And a scope where
+          # nothing built exits 2, with a separate test asserting a clean
+          # scope exits 0 so that cannot be satisfied by always failing.
+          python3 tools/verify/test_cxx_analyze.py
+          python3 tools/verify/test_cxx_tidy.py
+          # The results packer. It drops ~90 MB of regenerable bulk to
+          # make a day of somebody's CPU transferable, and the failure
+          # it must never have is dropping something that is NOT
+          # regenerable - the machine that produced it is a desktop and
+          # the run took hours. Anything it does not recognise is kept.
+          python3 tools/verify/test_pack_results.py
+          # The build-system readers. Every one of them exists because
+          # the tool had a rule where a makefile had the answer, and each
+          # was found by a translation unit that came back ERROR and
+          # looked exactly like a clean one. A reader that quietly stops
+          # reading gives back the zero it gave before it was written -
+          # and the CSTD reader was already taking a `CSTD?= c89' from
+          # inside a compiler conditional when this test first ran.
+          python3 tools/verify/test_includes.py
+          # The ERROR inventory's REASONS, which --check-errors
+          # cannot see: a NOT_BUILT prefix says the module build
+          # does not descend into a vendored driver, and the day
+          # somebody adds it there the prefix goes on absorbing
+          # three hundred ERRORs that have become real.
+          python3 tools/verify/test_expected_errors.py
+
+      # The port screener encodes what the hundred-file lib/msun batch
+      # learned one expensive run at a time. Its value is entirely in the
+      # reasons it gives, so each reason gets a synthetic file built to
+      # trigger it and nothing else.
+      - name: The port-candidate screener
+        run: python3 tools/test_check_port_candidates.py
+
+      # Boot image run 35 died three minutes into buildworld on
+      #   siglist.cpp:35: error: array designators are a C99 extension
+      # a file the IR oracle had certified ir.equal AND abi_equal. The
+      # oracle compiles with -Wno-everything, deliberately, so it cannot
+      # see a diagnostic - and the FreeBSD build is -Werror. This closes
+      # that gap: a diagnostic the C++ raises and the C does not is what
+      # the rename introduced.
+      - name: No port introduces a diagnostic its C original does not
+        run: python3 tools/check_port_cxx_warnings.py --gate
+
+      # Boot image run 46 asked for src_conf=none - FreeBSD's own defaults,
+      # as a bisection control - and buildworld died linking the first
+      # static binary on `undefined symbol: __stpcpy`. The assembly
+      # removal deleted lib/libc/amd64/string/*.S and left the C files
+      # that CALL those routines in MDSRCS, each carrying a prototype for
+      # a symbol nothing defines. Invisible because src.conf.pbsd sets
+      # WITHOUT_MACHDEP_OPTIMIZATIONS and lib/libc/Makefile:159 then never
+      # selects MDSRCS at all.
+      #
+      # check_libc_srcs.py checks every listed source EXISTS. This checks
+      # that what those sources call exists too.
+      - name: Every MDSRCS source calls something that is defined
+        run: python3 tools/check_machdep_symbols.py --gate
+
+      # The oracle's ratchets check verified + committed + removed against a
+      # floor, and the third term is the only one a human writes down rather
+      # than measures - so it is the only place a floor could be held up by a
+      # claim. docs/migration/freebsd_oracle_removed.txt names each source
+      # that left the tree after being counted; this holds every entry to
+      # what git says about it: gone from the tree now, present at the named
+      # commit's parent, absent at that commit, and that commit an ancestor
+      # of HEAD. An entry for a file that is back would count it twice.
+      - name: Every recorded oracle removal is one git agrees with
+        run: python3 tools/check_oracle_removed.py
+
+      # M_WAITOK cannot fail and M_NOWAIT can, and the difference is one
+      # token. This started as a report-only lint because it had false
+      # positives; it has four documented classes it now handles, and the
+      # nine real sites it found are fixed, so the tree is at zero and the
+      # gate is about the NEXT one.
+      #
+      # A fifth false-positive class is fixed by teaching sites() about it,
+      # never by an allowlist - an allowlist here would hide the next real
+      # one, which is exactly the failure this lint exists to prevent.
+      - name: No M_NOWAIT allocation used without a NULL check
+        run: python3 tools/verify/nowait_check.py --gate
+
+      # A switch over a bit mask with fewer arms than the mask has states.
+      # procctl(2)'s protmax_status() and aslr_status() each had two bits,
+      # three arms, and `*(int *)data = d` - a kernel stack disclosure had
+      # anything ever set both bits. clang's -Wuninitialized says nothing
+      # about this shape; its analyser found one instance and this looks
+      # for the shape everywhere, which is the lesson mld6.c taught.
+      - name: No masked switch leaves a variable uninitialised
+        run: python3 tools/verify/masked_switch_check.py --gate
+
+      # A pointer read inside the branch that tested it for NULL. The
+      # branch condition IS `p == NULL' and the body reads p->field, so
+      # the line is either dead code or a guaranteed fault - there is no
+      # third reading, and no premise about reachability is needed. The
+      # clang sweep found the shape (amd_ntb_hw_info_handler() reporting
+      # a failed sbuf allocation by reading sb->s_error out of the NULL
+      # sbuf), but only in files it can build; ntb_tool.c's second copy
+      # came from a grep. This looks everywhere, in a second.
+      - name: No pointer dereferenced inside the branch that proved it null
+        run: |
+          python3 tools/verify/null_branch.py --gate \
+            --scope sys --scope lib --scope bin --scope sbin \
+            --scope usr.bin --scope usr.sbin --scope libexec \
+            --scope stand --scope share
+
+      # Boot image run 38 died linking libc.so.7:
+      #   ld.lld: version script assignment of 'FBSD_1.0' to symbol
+      #           '__isnan' failed: symbol not defined
+      # on a file the oracle had certified abi_equal - because
+      # lib/libc/gen/isnan.c is entirely inside #ifdef PIC, the oracle does
+      # not pass -DPIC, and two EMPTY modules compare equal. An empty
+      # module is a failure here, not a pass.
+      - name: Every port exports the symbols its C original does
+        run: python3 tools/check_port_symbols.py --gate
+
+      # The parity gate above compares ONE config across the six
+      # architectures. This asks the other twenty-one the question that
+      # actually applies to them, most being single-architecture: does a
+      # kernel named for hardening resolve to the full hardening set?
+      # A report, not a gate — nine of the twenty-one fall short in the
+      # tree as imported, and they are upstream's configs, not PBSD's.
+      # docs/ROADMAP.md carries the list.
+      - name: What the other hardening kernel configs actually carry
+        run: python3 tools/check_kernconf_parity.py hbsd/src --all-configs
+
+      # The compiled-in default of every hardening knob, from the source.
+      # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
+      # "and what does hardening.pax.aslr.status default to", which is a
+      # different question and the one that decides whether a mitigation is
+      # on for a system that does not ask. Reported here; the boot-image
+      # workflow's --check compares it against the kernel that booted.
+      #
+      # --kernconf is not decoration. Half these defaults sit behind an
+      # #ifdef, and without a config to resolve it the tool has to report
+      # them as conditional and skip them: 18 knobs checked with it, 10
+      # without. Both configs are printed so a guard that only one of them
+      # takes is visible as a difference.
+      # Run 60's dump made the comparison possible for the first time and
+      # the step went red on a knob the kernel had exactly right: the
+      # default was read from the first of two #ifdef arms, and the option
+      # guarding it is commented out in std.hardenedbsd. A check that is
+      # red because of the instrument teaches the reader to ignore it.
+      - name: The hardening defaults are read with their guards
+        run: python3 tools/test_hardening_sysctls.py
+
+      - name: Hardening sysctl defaults
+        run: |
+          for kc in HARDENEDBSD HARDENEDBSD-MINIMAL; do
+            echo "=== $kc ==="
+            python3 tools/hardening_sysctls.py --kernconf "$kc"
+          done
+
+      # A report, not a gate. arch_duplication.py, atomic_survey.py and
+      # asm_inventory.py measure how much per-architecture code there is and
+      # arch_interface.py measures how much of it is one interface written
+      # several times. None of them can fail the build; they exist so the
+      # numbers in docs/CONSOLIDATION.md and docs/PORTABILITY.md are
+      # re-measured on every push rather than being a snapshot someone took
+      # once and nobody re-ran.
+      - name: Per-architecture duplication survey
+        run: |
+          python3 tools/arch_interface.py hbsd/src --top 15
+          echo
+          python3 tools/arch_clusters.py hbsd/src --top 12
+          echo
+          python3 tools/arch_duplication.py hbsd/src --scope sys 2>/dev/null | head -25 || true
+          echo
+          python3 tools/atomic_survey.py hbsd/src 2>/dev/null | tail -12 || true
+
+      # ctest currently finds no tests - pbsd/CMakeLists.txt is generated with
+      # a single library target and no enable_testing(). Kept so the harness
+      # is picked up automatically once it is wired in.
+      - name: Test SI harness
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Migration batch progress summary
+        run: |
+          python3 tools/convert_c_batch.py --report
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("docs/migration/batch_progress.json")
+          data = json.loads(p.read_text())
+          print("=== batch_progress.json ===")
+          for wave, stats in sorted(data.get("waves", {}).items()):
+              print(f"{wave}: converted={stats.get('converted',0)} stubbed={stats.get('stubbed',0)} pending={stats.get('pending',0)} total={stats.get('total',0)}")
+          PY
+
+      - name: Inventory summary by wave
+        run: python3 tools/sum_inventory.py
+
+      # clang-tidy needs the prebuilt module interfaces to parse a .cppm, and
+      # on Linux there are none: CMake will not compile anything until the
+      # whole dependency scan succeeds, and it cannot (see the build gate
+      # above). Without BMIs, tidy reports "unknown type name 'import'" on
+      # every export import line. Run it only when the build produced module
+      # files, so this lights up on a FreeBSD runner without failing here.
+      # This step SKIPPED SILENTLY for its whole life, in 0 seconds, and
+      # reported success. Nothing said so: the ::warning is not a
+      # failure and a green tick beside it reads as "the C++ was linted".
+      # The verdict matrix found it - pbsd/ is 15,740 functions and every
+      # one of them was UNTOUCHED while this step was passing.
+      #
+      # It still exits 0, because the modules genuinely cannot be built
+      # on a Linux runner and failing here would gate the whole tree on
+      # something out of its scope. What changes is that the absence is
+      # now DATA: a NOTRUN record per file, in the schema matrix.py
+      # ingests, so those functions read as unchecked rather than as
+      # scanned. See docs/VERIFY_RUNBOOK.md.
+      - name: L1 — clang-tidy (WarningsAsErrors)
+        run: |
+          L1_SRCS="pbsd/handles/pbsd.handles.cppm
+                   pbsd/bifrost/pbsd.bifrost.cppm
+                   pbsd/bifrost/pbsd.bifrost.virtio.cppm
+                   pbsd/compositor/pbsd.compositor.cppm
+                   pbsd/pkg/pbsd.pkg.cppm"
+          if ! find build -name '*.pcm' -print -quit | grep -q .; then
+            echo "::warning title=clang-tidy skipped::No prebuilt module interfaces in build/. C++20 modules cannot be linted without them, and the FreeBSD userland ports do not scan on Linux."
+            : > cxx_notrun.jsonl
+            for f in $L1_SRCS; do
+              printf '{"file":%s,"status":"NOTRUN","findings":[],"detail":"no module interfaces in build/; C++20 modules cannot be linted without them"}\n' "\"$f\"" >> cxx_notrun.jsonl
+            done
+            echo "=============================================="
+            echo " L1 clang-tidy DID NOT RUN."
+            echo " $(wc -l < cxx_notrun.jsonl) file(s) recorded NOTRUN in cxx_notrun.jsonl."
+            echo " Those functions are UNCHECKED, not clean. A green"
+            echo " tick on this step means the step skipped."
+            echo "=============================================="
+            exit 0
+          fi
+          clang-tidy -p build $L1_SRCS
+
+      - name: L2/L4 — analyser plugin build (when LLVM dev packages present)
+        run: |
+          if [ -f build/analyser/libpbsd_analyser_ownership.so ] || [ -f build/analyser/pbsd_analyser_ownership.so ]; then
+            echo "pbsd_analyser built"
+          else
+            echo "=============================================="
+            echo " L2/L4 ownership analyser DID NOT RUN."
+            echo " LLVM dev packages absent (see specs/ANALYSER.md)."
+            echo " The ownership checks this plugin makes were not"
+            echo " made. A green tick means the step skipped."
+            echo "=============================================="
+          fi
+
+      - name: Wave 9 inventory report
+        run: |
+          python3 tools/inventory_c_sources.py
+          python3 tools/wave_purge_c_check.py
+          # --json does not exist; --metrics emits the rollup and --quiet
+          # suppresses the human summary so the artifact is valid JSON.
+          python3 tools/wave_purge_c_check.py --metrics --quiet > wave9_purge.json
+          cat wave9_purge.json
+
+      - name: Wave 9 purge gate (PBSD 0.1 — fails until owned .c hits zero)
+        run: python3 tools/wave_purge_c_check.py --gate
+        continue-on-error: true
+
+      # Analyser L2/L4 + pkg skeleton: optional until LLVM dev packages installed.
+      # pbsd/pkg (AtomicUpdater) and pbsd/analyser plugins are built when LLVM is present.
+      # L1 clang-tidy above covers nucleus handle/bifrost/compositor/pkg modules.
+
+  wave-build-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build clang clang-tools libbsd-dev python3
+
+      # pbsd/_build_wave.sh has never been committed either. Per
+      # docs/migration/WAVE_STATUS.md it is a local wrapper around what
+      # build-and-gate already does inline (Ninja + Clang, full ctest,
+      # inventory and batch scripts), so its absence costs no coverage here.
+      - name: Hosted wave build gate
+        run: |
+          if [ -f pbsd/_build_wave.sh ]; then
+            bash pbsd/_build_wave.sh
+          else
+            echo "::warning title=Wave build gate skipped::pbsd/_build_wave.sh is not in the repository. The build-and-gate job covers the same ground."
+          fi

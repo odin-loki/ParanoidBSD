@@ -1,0 +1,12 @@
+{
+  "batch": "b0276",
+  "verified": "2026-08-09T00:44:07Z",
+  "evidence": "harness green + 3/3 mutations killed (IR: IR differs for 1/3: nextafter)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases       failures\n------------ -------------- --------------\ntan                  399970              0\ntanh                 369318              0\nnextafter            231180              0\n------------ -------------- --------------\nTOTAL               1000468              0\nPASS\nharness.cpp:173:9: warning: integer constant is too large for its type\n  173 |         0x4035ffffffffffffeULL,\n      |         ^~~~~~~~~~~~~~~~~~~~~~\nharness.cpp:199:9: warning: integer constant is too large for its type\n  199 |         0x4035ffffffffffffeULL, 0xc035ffffffffffffeULL,\n      |         ^~~~~~~~~~~~~~~~~~~~~~\nharness.cpp:199:33: warning: integer constant is too large for its type\n  199 |         0x4035ffffffffffffeULL, 0xc035ffffffffffffeULL,\n      |                                 ^~~~~~~~~~~~~~~~~~~~~~\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_tan.c": "8f3cf2bff060d356",
+    "hbsd/src/lib/msun/src/s_tanh.c": "0b48206b43c59fd1",
+    "hbsd/src/lib/msun/src/s_nextafter.c": "9bc7e90a9ff87d12"
+  }
+}

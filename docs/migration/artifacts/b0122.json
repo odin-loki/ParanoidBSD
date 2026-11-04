@@ -1,0 +1,12 @@
+{
+  "batch": "b0122",
+  "verified": "2026-08-08T11:46:00Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                        cases     failures\n------------------------ ------------ ------------\nuuid_create                    201560            0\nuuid_create_nil                197600            0\nuuid_hash                      201560            0\n------------------------ ------------ ------------\nTOTAL                          600720            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/uuid/uuid_create.c": "d9aba35a7aaef486",
+    "hbsd/src/lib/libc/uuid/uuid_create_nil.c": "370b3056e95f17e1",
+    "hbsd/src/lib/libc/uuid/uuid_hash.c": "7c21e1e70f2586e3"
+  }
+}

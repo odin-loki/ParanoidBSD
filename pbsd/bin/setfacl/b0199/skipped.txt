@@ -1,0 +1,2 @@
+merge.c: depends on full FreeBSD ACL API (acl_get_qualifier, acl_dup, acl_create_entry_np, etc.), setfacl.h globals (have_mask) and helpers (branding_mismatch, brand_name), and err/warn fatal exits; not portable in isolation
+setfacl.c: depends on FTS file traversal, full ACL API, setfacl.h helpers (merge_acl, add_acl, remove_*, set_acl_mask, zmalloc, get_acl_from_file), application globals, signal/getopt CLI, and err/warn fatal exits; not portable in isolation

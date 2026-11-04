@@ -1,0 +1,13 @@
+{
+  "batch": "b0271",
+  "verified": "2026-08-09T00:12:18Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0271 differential results\nfunction                            cases   failures status\n_pthread_getconcurrency             33362          0 ok\n_pthread_setconcurrency             33383          0 ok\n_pthread_setprio                    33110          0 ok\n_pthread_switch_add_np              33524          0 ok\n_pthread_switch_delete_np           33437          0 ok\n_Tthr_kill                          33215          0 ok\nTOTAL                              200031          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/thread/thr_concurrency.c": "76c20f1d76e8309e",
+    "hbsd/src/lib/libthr/thread/thr_setprio.c": "2c58e4d9ca9c5306",
+    "hbsd/src/lib/libthr/thread/thr_switch_np.c": "61b75c066dc0fa4f",
+    "hbsd/src/lib/libthr/thread/thr_kill.c": "efdc906280baae44"
+  }
+}

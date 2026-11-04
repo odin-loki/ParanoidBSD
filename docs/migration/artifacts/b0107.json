@@ -1,0 +1,12 @@
+{
+  "batch": "b0107",
+  "verified": "2026-08-08T11:28:56Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0107 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\n(no functions in batch)                     -            -          -\n-------------------------------- ------------ ------------ ----------\nTOTAL                                       0            0       PASS\n\n0 function(s) ported, 0 case(s) run, 0 failure(s).\nfgetwc.c, snprintf.c, and gets_s.c depend on libc internals; see skipped.txt.\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fgetwc.c": "a0cd5650e61a4b90",
+    "hbsd/src/lib/libc/stdio/snprintf.c": "761a11fd9fc28877",
+    "hbsd/src/lib/libc/stdio/gets_s.c": "b684085efb9d5065"
+  }
+}

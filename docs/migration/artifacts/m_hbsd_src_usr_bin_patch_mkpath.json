@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_patch_mkpath",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of mkpath.c, IR-identical for all 1 functions, 11 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/patch/mkpath.c": "078dd5ba38543f7f"
+  }
+}

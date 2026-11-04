@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_s_frexpl",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of s_frexpl.c, IR-identical for all 1 functions, 6 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_frexpl.c": "8995923757deefce"
+  }
+}

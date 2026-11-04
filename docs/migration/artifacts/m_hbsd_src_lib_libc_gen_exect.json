@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_exect",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of exect.c, IR-identical for all 1 functions, 7 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/exect.c": "8f7687cd1064d8b5"
+  }
+}

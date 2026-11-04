@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_timespec_getres",
+  "verified": "2026-07-30T09:24:40Z",
+  "evidence": "mechanical port of timespec_getres.c, IR-identical for all 1 functions, 5 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/timespec_getres.c": "6eb71dd065729cf2"
+  }
+}

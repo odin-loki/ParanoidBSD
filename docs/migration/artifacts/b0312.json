@@ -1,0 +1,11 @@
+{
+  "batch": "b0312",
+  "verified": "2026-08-09T02:39:26Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n-------------- ------------ ------------\ncpowf              11367106            0\ncpow                3798636            0\n-------------- ------------ ------------\nTOTAL              15165742            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_cpowf.c": "e5358275e9994d96",
+    "hbsd/src/lib/msun/src/s_cpow.c": "4af3e4be4a21b74f"
+  }
+}

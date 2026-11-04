@@ -1,0 +1,13 @@
+{
+  "batch": "b0110",
+  "verified": "2026-08-08T11:57:50Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD b0110 differential harness\nhand-written edge cases + 200000 randomised iterations (fixed seed 0x243F6A8885A308D3)\n\nfunction                                cases   failures\n---------------------------------------------------------\nmac_set_fd                             200297          0\nmac_set_file                           200064          0\nmac_set_link                           200064          0\nmac_set_proc                           200027          0\nacl_delete_def_file                    200192          0\nacl_delete_def_link_np                 200192          0\nacl_delete_file_np                     200192          0\nacl_delete_link_np                     200192          0\nacl_delete_fd_np                       200121          0\nextattr_namespace_to_string            200042          0\nextattr_string_to_namespace            200478          0\nacl_copy_entry                         251215          0\nacl_copy_ext                           200020          0\nacl_copy_int                           200002          0\n---------------------------------------------------------\nTOTAL                                 2853098          0\n\nPASS: port matches the oracle in every case\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/posix1e/mac_set.c": "bf2e561c291ba0da",
+    "hbsd/src/lib/libc/posix1e/acl_delete.c": "0a91699c17ac9cf1",
+    "hbsd/src/lib/libc/posix1e/extattr.c": "fca46b03ca94cf9f",
+    "hbsd/src/lib/libc/posix1e/acl_copy.c": "8818d3bd0725c205"
+  }
+}

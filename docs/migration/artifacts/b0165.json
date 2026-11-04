@@ -1,0 +1,10 @@
+{
+  "batch": "b0165",
+  "verified": "2026-08-08T12:08:57Z",
+  "evidence": "harness green + 1/1 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0165 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\nmain                                   200009            0       PASS\n-------------------------------- ------------ ------------ ----------\nTOTAL                                  200009            0       PASS\n\n200009 case(s) run, 0 failure(s).\n",
+  "input_hashes": {
+    "hbsd/src/usr.bin/true/true.c": "65d2fad425e300ae"
+  }
+}

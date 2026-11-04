@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_ppp_probe",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of probe.c, IR-identical for all 1 functions, 13 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/ppp/probe.c": "28ff2746abf87a51"
+  }
+}

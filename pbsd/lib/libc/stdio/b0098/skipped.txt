@@ -1,0 +1,2 @@
+lib/libc/stdio/vwscanf.c:vwscanf_l  -- needs <xlocale.h> and vfwscanf_l(); this libc provides neither, so no faithful port is possible.
+lib/libc/stdio/vwprintf.c:vwprintf_l -- needs <xlocale.h> and vfwprintf_l(); this libc provides neither, so no faithful port is possible.

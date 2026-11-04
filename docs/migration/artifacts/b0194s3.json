@@ -1,0 +1,10 @@
+{
+  "batch": "b0194s3",
+  "verified": "2026-08-09T01:55:33Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases   failures\n------------------------ ---------- ----------\nhash_realloc                  31443          0\n\nALL CASES MATCHED\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/hash/hash.c": "903d7a9a9ffa8d2d"
+  }
+}

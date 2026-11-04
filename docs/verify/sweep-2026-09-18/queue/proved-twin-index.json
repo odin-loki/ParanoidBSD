@@ -1,0 +1,7 @@
+{
+  "proved_n": 6291,
+  "unique_files": 3024,
+  "hbsd_cpp": 44,
+  "pbsd_twins": 0,
+  "note": "jsonl_records=9644 proved_records=6291; proved_c_files=2978 proved_cpp_files=44 proved_cxx_files=2; pbsd_cpp_glob=445 hbsd_src_cpp_glob=1156 clang_port_staged_cpp=40; hbsd_cpp is proved .cpp existing at hbsd/src/<file> (queue kind:hbsd_cpp); clang_port overlap=40; pbsd_twins is same-relative-path .c->.cpp/.cpp under pbsd/ (no invented matches); pbsd_basename_non_generic_extra=0; prior_queue hbsd_cpp=40 pbsd_twins=0; hbsd_cpp_not_in_clang_port=lib/msun/src/s_asinh.cpp,lib/msun/src/s_ilogb.cpp,lib/msun/src/s_ilogbf.cpp,lib/msun/src/s_ilogbl.cpp; pbsd_basename_non_generic_extra=0 (no extra twins)"
+}

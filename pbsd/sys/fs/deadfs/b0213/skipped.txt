@@ -1,0 +1,3 @@
+dead_vnops.c: dead_rename — calls external vop_rename_fail() (vnode refcount cleanup), not defined in batch
+dead_vnops.c: dead_vnodeops — vop_vector initializer, not a function; requires full kernel VOP infrastructure
+dead_vnops.c: VFS_VOP_VECTOR_REGISTER — registration macro, not a function

@@ -1,0 +1,13 @@
+{
+  "batch": "b0313",
+  "verified": "2026-08-09T02:58:40Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/5: strcasestr_l, strcasestr, wcswidth_l, wcswidth)",
+  "ir_equivalent": false,
+  "harness_output": "b0313 differential test (wchar_t is 4 bytes)\n\nfunction                      cases     failures\n--------                      -----     --------\nstrcasestr                    50027            0\nstrcasestr_l                  50004            0\nwcswidth                      50068            0\nwcswidth_l                    50016            0\nwcslcat                       50221            0\nTOTAL                        250336            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/strcasestr.c": "cb083eb666c727f3",
+    "hbsd/src/lib/libc/string/wcswidth.c": "866e8176e6c19332",
+    "hbsd/src/lib/libc/string/wcslcat.c": "acb9235c2992916a",
+    "hbsd/src/lib/libc/string/wcsxfrm.c": "63b613a229a08fa5"
+  }
+}
