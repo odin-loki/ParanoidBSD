@@ -66,14 +66,14 @@ The bottleneck is **gate CPU**: about 30,000 core-hours of builds, proof checks 
 
 | Item | Expected | Range | Source |
 |---|---|---|---|
-| GLM-5.3-Flash API (GMI Cloud direct, fp8) | US$1,524 | $719–3,778 | `pbsd_run estimate`, AGENTS.md sections 7.3 and 8.1 |
+| GLM-5.3-Flash API (Morph direct, fp8) | US$1,582 | $774–3,747 (up to $6,044 if Morph's page prices apply) | `pbsd_run estimate`, AGENTS.md sections 7.3 and 8.1 |
 | w1: GCP c3d-highcpu-360 Spot Sydney, about 6 days, 87% of the gate work | US$287 | $172–574 | Google spot price; includes 25% for idle and boot time |
 | w1 boot disk (100 GB pd-balanced) and egress | under US$15 | | small; gate traffic is a few GB |
-| Pilot (step 10), 447 tasks | US$140 of API | $65–341 | part of the run, not extra: pilot work is kept |
+| Pilot (step 10), 447 tasks | US$143 of API | $70–338 | part of the run, not extra: pilot work is kept |
 | PC electricity, about 8 days at 450 W | US$19 | | A$0.33/kWh |
 | GPU | US$0 | | the Lean prover runs on the PC's RTX 3090 |
-| **Total expected** | **≈ US$1,850 (A$2,650)** | | |
-| **Budget to set aside (high case + 15%)** | **US$5,100 (A$7,300)** | | |
+| **Total expected** | **≈ US$1,900 (A$2,720)** | | |
+| **Budget to set aside (high case + 15%)** | **US$5,000 (A$7,200)** | | |
 
 Set billing alerts at A$300 and A$800 on the cloud account and a hard spend limit on every API key (step 3).
 
@@ -83,31 +83,33 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 
 1. **Create accounts.**
    - Google Cloud (console.cloud.google.com): create a project `pbsd`, add a billing account (AUD card).
-   - GMI Cloud (console.gmicloud.ai): the only model provider (AGENTS.md section 7.3). Add credit, then create an API key under Settings → API Keys.
+   - Morph (morphllm.com/dashboard): the only model provider (AGENTS.md section 7.3).
+     - **First, check that you can top up:** add a small amount of credit, and only then go further.
+     - Then create an API key.
    - Optional, for a KVM worker or a GCP fallback: AWS.
 2. **Ask for capacity now; these take time.**
-   - **GMI Cloud:** under Inference → Model Hub, open GLM-5.3-Flash and note three things: its model id, its input / cached / output prices, and your account's concurrency limit.
-     - The burst run needs about 90 requests in flight, so if the limit is lower, ask GMI (contact sales) for about 100.
-     - The pilot needs far fewer, so it can start before the answer arrives.
+   - **Morph:** in the dashboard, check the price of `morph-glm53flash`. Its model list says $0.047 / $0.02 / $0.268 per 1M; its marketing page says $0.15 / $0.01 / $0.42.
+     - Check your account's rate limit too.
+     - The burst run needs about 90 requests in flight, so ask Morph for about 100 if it is lower. The pilot needs far fewer, so it can start before the answer arrives.
    - **GCP quotas:** IAM & Admin → Quotas, region `australia-southeast1`. Raise "C3D CPUs" and "Preemptible CPUs" to at least 400. New projects start far below that, and the machine will not start until the request is approved. Also request the same in `us-central1` as a backup.
    - **AWS (if used):** Service Quotas → EC2 → "All Standard Spot Instance Requests" to 400 vCPUs in `eu-north-1` (the default is 5).
 3. **Make the API key and set a spend limit.**
-   - **GMI Cloud:** add about US$200 of credit for the pilot, and more after it. Set a spending limit if the console offers one; otherwise keep the credit balance as the limit.
-   - **Config:** put the model id and the three prices from the Model Hub into both configs (`providers[0]` in `config.glm-api*.json`). The shipped values are `zai-org/GLM-5.3-Flash-FP8` and $0.075 / $0.015 / $0.25.
+   - **Morph:** add about US$200 of credit for the pilot, and more after it. Set a spending limit if the dashboard offers one; otherwise keep the credit balance as the limit.
+   - **Config:** if the dashboard's prices differ, put them into both configs (`providers[0]` in `config.glm-api*.json`). The shipped values are `morph-glm53flash` and $0.047 / $0.02 / $0.268.
 
    Keep the key in your password manager.
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
-   export GMI_API_KEY=...            # GMI Cloud, the only model provider (AGENTS.md 7.3)
+   export MORPH_API_KEY=...          # Morph, the only model provider (AGENTS.md 7.3)
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
    Add `. ~/.pbsd/env` to `~/.bashrc`. The gates never see these variables, because the runner scrubs the gate environment.
 
-   **Check that GMI answers.** The command below should print a short reply. Use the model id from the Model Hub.
+   **Check that Morph answers.** The command below should print a short reply.
    ```bash
-   curl -s https://api.gmi-serving.com/v1/chat/completions -H "Authorization: Bearer $GMI_API_KEY" -H 'Content-Type: application/json' \
-     -d '{"model":"zai-org/GLM-5.3-Flash-FP8","max_tokens":200,"messages":[{"role":"user","content":"Say ok"}]}' \
+   curl -s https://api.morphllm.com/v1/chat/completions -H "Authorization: Bearer $MORPH_API_KEY" -H 'Content-Type: application/json' \
+     -d '{"model":"morph-glm53flash","max_tokens":200,"messages":[{"role":"user","content":"Say ok"}]}' \
      | jq -r '.choices[0].message.content // .error.message // .message, (.usage | tostring)'
    ```
    The second line shows the `usage` block. Check whether it has `prompt_tokens_details.cached_tokens`, which the runner uses to bill cache hits.
@@ -173,7 +175,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
     - tokens and US$ per task class;
     - **T1/T2 obligations proved per attempt**;
     - review rejection rate;
-    - GMI's 429 rate. If it throttles, lower `concurrency` in the config or ask GMI for more.
+    - Morph's 429 rate. If it throttles, lower `concurrency` in the config or ask Morph for more.
 
     Then rerun `pbsd_run estimate cores=208` with the measured numbers, for example `implementer.attempts=1.9 T2.attempts=5 hit=0.8`. **Stop and decide** if:
     - T2 proofs stay under about 50% after 3 attempts;
