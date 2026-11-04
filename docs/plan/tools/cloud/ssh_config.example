@@ -1,0 +1,10 @@
+# Append to ~/.ssh/config in WSL2 on the PC. Multiplexing keeps ~90 concurrent gates on one TCP connection.
+Host w1 pbsd-mirror
+  HostName 10.66.0.11            # WireGuard address; or the public IP if you skip WireGuard
+  User pbsd
+  IdentityFile ~/.ssh/pbsd_runner
+  ControlMaster auto
+  ControlPath ~/.ssh/cm-%r@%h:%p
+  ControlPersist 1h
+  ServerAliveInterval 30
+  StrictHostKeyChecking accept-new

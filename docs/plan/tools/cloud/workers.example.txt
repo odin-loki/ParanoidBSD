@@ -1,0 +1,5 @@
+# Cloud gate workers read by pbsd_run every 30 s (workers_file in config.glm-api-burst.json).
+# One line per worker: <ssh host alias from ~/.ssh/config> <gate slots>
+# A gate holds about 2 cores, so slots = physical cores / 2 (leave 4 cores for the OS and git).
+# bootstrap.sh prints the line for a new worker; tools/cloud/register.sh appends it here.
+# w1 88

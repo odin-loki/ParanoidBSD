@@ -46,6 +46,13 @@ struct Config {
   std::string checkpoint_repo;                   // bare repo on the HDD, pushed with --mirror
   std::vector<std::string> burst_cmd;            // prefix for gates on cloud CI, e.g. ["ssh","ci1","--"]
   int burst_slots = 0;                           // gates that may run through burst_cmd at once
+  // Cloud gate workers (replaces the single burst_cmd host). One line per worker in workers_file:
+  // "<ssh-host> <slots>"; re-read every 30 s so bootstrap can register workers mid-run. A burst gate
+  // pushes the task commit to mirror_url as refs/gates/<id>, then runs
+  // ssh <host> -- /opt/pbsd/bin/pbsd-gate <role> <id> <sha> on the least-busy worker.
+  std::string workers_file;                      // e.g. ~/.pbsd/workers.txt (empty = off)
+  std::string mirror_url;                        // bare repo the workers fetch from, e.g. /srv/pbsd/pbsd.git
+  std::string remote_gate = "/opt/pbsd/bin/pbsd-gate";
   std::string backend = "api", local_url = "http://127.0.0.1:8080/v1", local_model = "GLM-5.3-Flash";
   std::vector<std::string> server_cmd;           // how to (re)start llama-server; empty = never restart
   int local_slots = 4;                           // must equal llama-server --parallel
@@ -189,7 +196,9 @@ enum class Result { passed, failed, crash };
 struct TaskOutcome { Result r; std::vector<Usage> usage; };
 TaskOutcome run_task(const json& task, Api& api, const Config& c, Db& db, int slot = -1);
 // Gate admission: counting slots per kind (compile, qemu, proof) plus optional cloud burst slots.
-struct GateLease { std::string kind; bool burst = false; };
+struct GateLease { std::string kind; bool burst = false; std::string host; };
+struct Worker { std::string host; int slots = 0; };
+std::vector<Worker> load_workers(const std::string& path);
 GateLease gate_acquire(const std::string& kind, const Config& c);
 void gate_release(const GateLease& g);
 std::string gate_status(const Config& c);

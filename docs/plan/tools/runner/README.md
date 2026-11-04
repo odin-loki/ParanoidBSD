@@ -66,5 +66,5 @@ The task database lives in `PBSD_STATE` (tmpfs by default). Every `checkpoint_s`
 
 ## Still to provide
 
-- `tools/gates/<role>.sh <task-id> <worktree>` in the repository: the build, test, fault-injection, PRISM and QEMU commands for each role.
-- The local git server setup (bare repository and `wp/*` branches).
+- Real build, test, PRISM and QEMU commands for the gate hooks in `../gates/lib.sh` (`PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_PROOF_CMD`, `PBSD_QEMU_IMAGE`); the scripts themselves are in `../gates`.
+- Cloud gate workers: `workers_file` (one `<ssh-host> <slots>` per line, re-read every 30 s), `mirror_url` and `remote_gate`; setup in `../../CLOUD_SETUP.md` and `../cloud`.

@@ -1,0 +1,11 @@
+#cloud-config
+# Paste as user-data (GCP: --metadata-from-file user-data=cloud-init.yaml; AWS: --user-data file://cloud-init.yaml;
+# Hetzner: "Cloud config"). Replace the two values marked REPLACE.
+write_files:
+  - path: /root/pbsd.env
+    permissions: '0600'
+    content: |
+      PBSD_PUBKEY="REPLACE: contents of ~/.ssh/pbsd_runner.pub on the PC"
+      PBSD_IS_MIRROR=1
+runcmd:
+  - [bash, -c, "git clone -q --depth 1 https://github.com/odin-loki/ParanoidBSD /opt/pbsd-src && set -a && . /root/pbsd.env && set +a && bash /opt/pbsd-src/docs/plan/tools/cloud/bootstrap.sh > /var/log/pbsd-bootstrap.log 2>&1"]

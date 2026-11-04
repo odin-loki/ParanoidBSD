@@ -126,6 +126,8 @@ Config Config::load() {
       c.checkpoint_dir = j.value("checkpoint_dir", c.checkpoint_dir); c.checkpoint_repo = j.value("checkpoint_repo", c.checkpoint_repo);
       c.checkpoint_s = j.value("checkpoint_s", c.checkpoint_s); c.burst_slots = j.value("burst_slots", c.burst_slots);
       c.lease_s = j.value("lease_s", c.lease_s);
+      c.workers_file = j.value("workers_file", c.workers_file); c.mirror_url = j.value("mirror_url", c.mirror_url);
+      c.remote_gate = j.value("remote_gate", c.remote_gate);
       if (j.contains("burst_cmd")) c.burst_cmd = j["burst_cmd"].get<std::vector<std::string>>();
       // "providers" replaces the built-in list. Fields: name, url, model, key_env, concurrency, rpm,
       // tpm, price_in, price_hit, price_out, peak_double, offpeak_only, extra.

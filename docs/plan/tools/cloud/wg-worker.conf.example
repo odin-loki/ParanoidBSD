@@ -1,0 +1,10 @@
+# WireGuard on worker w1: /etc/wireguard/wg0.conf (or pass as PBSD_WG_CONF to bootstrap.sh). Open UDP 51820 in the provider firewall.
+[Interface]
+Address = 10.66.0.11/24
+ListenPort = 51820
+PrivateKey = <w1.key>
+
+[Peer]
+# the PC (behind home NAT: it dials out, keepalive holds the path open)
+PublicKey = <pc.pub>
+AllowedIPs = 10.66.0.1/32

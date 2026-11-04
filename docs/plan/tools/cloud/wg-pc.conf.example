@@ -1,0 +1,13 @@
+# WireGuard on the PC (WSL2): /etc/wireguard/wg0.conf. Generate keys with: wg genkey | tee pc.key | wg pubkey > pc.pub
+# Optional: plain SSH over the internet with key-only auth is enough. WireGuard adds one encrypted
+# private network (10.66.0.0/24) so workers can also reach the PC (self-registration) without opening ports at home.
+[Interface]
+Address = 10.66.0.1/24
+PrivateKey = <pc.key>
+
+[Peer]
+# w1
+PublicKey = <w1.pub>
+AllowedIPs = 10.66.0.11/32
+Endpoint = <w1 public IP>:51820
+PersistentKeepalive = 25

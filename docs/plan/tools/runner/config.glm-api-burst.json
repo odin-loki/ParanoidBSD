@@ -65,7 +65,7 @@
   "agent_watchdog_s": 1800,
   "slots": {
     "agent": {
-      "count": 128
+      "count": 144
     },
     "compile": {
       "count": 8,
@@ -93,12 +93,8 @@
   "checkpoint_repo": "/mnt/d/pbsd-ckpt/pbsd.git",
   "checkpoint_s": 600,
   "role_backend": {},
-  "burst_cmd": [
-    "ssh",
-    "-o",
-    "BatchMode=yes",
-    "pbsd-ci",
-    "--"
-  ],
-  "burst_slots": 64
+  "burst_slots": 0,
+  "workers_file": "/home/odin/.pbsd/workers.txt",
+  "mirror_url": "pbsd-mirror:/srv/pbsd/pbsd.git",
+  "remote_gate": "/opt/pbsd/bin/pbsd-gate"
 }

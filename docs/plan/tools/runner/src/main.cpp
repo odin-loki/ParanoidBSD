@@ -97,6 +97,13 @@ int pbsd::selftest(const Config& base) {
   auto g1 = gate_acquire("compile", cg), g2 = gate_acquire("compile", cg);
   check("gate slots and burst", !g1.burst && g2.burst);
   gate_release(g1); gate_release(g2);
+  // Worker list: the burst gate goes to the least-busy registered worker; comments and bad lines skipped.
+  std::string wf = (std::filesystem::temp_directory_path() / ("pbsd-workers-" + std::to_string(getpid()) + ".txt")).string();
+  std::ofstream(wf) << "# host slots\nw-a 1\nbroken\nw-b 2\n";
+  Config cw = base; cw.slots["compile"] = {1, 1, 2, 0}; cw.workers_file = wf;
+  auto w0 = gate_acquire("compile", cw), w1 = gate_acquire("compile", cw), w2 = gate_acquire("compile", cw);
+  check("worker list", load_workers(wf).size() == 2 && !w0.burst && w1.host == "w-a" && w2.host == "w-b");
+  gate_release(w0); gate_release(w1); gate_release(w2);
   return ok ? 0 : 1;
 }
 int main(int argc, char** argv) {

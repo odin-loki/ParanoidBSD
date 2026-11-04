@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <cctype>
 #include <thread>
 #include <condition_variable>
 #include <format>
@@ -50,18 +51,33 @@ json tools_schema() {
 namespace {
 std::mutex g_gm; std::condition_variable g_gcv;
 std::map<std::string, int> g_gbusy; int g_burst_busy = 0;
+std::map<std::string, int> g_wbusy; std::vector<Worker> g_workers; long g_workers_at = 0;
+}
+std::vector<Worker> load_workers(const std::string& path) {
+  std::vector<Worker> w; std::ifstream f(path); std::string line;
+  while (std::getline(f, line)) {
+    if (line.empty() || line[0] == '#') continue;
+    std::istringstream is(line); Worker x; if (is >> x.host >> x.slots && x.slots > 0) w.push_back(x);
+  }
+  return w;
 }
 GateLease gate_acquire(const std::string& kind, const Config& c) {
   std::unique_lock l(g_gm);
   const int cap = c.slots.count(kind) ? c.slots.at(kind).count : 1;
   for (;;) {
     if (g_gbusy[kind] < cap) { ++g_gbusy[kind]; return {kind, false}; }
+    if (!c.workers_file.empty()) {
+      if (now() - g_workers_at > 30) { g_workers = load_workers(c.workers_file); g_workers_at = now(); }
+      const Worker* best = nullptr; double load = 1.0;
+      for (auto& w : g_workers) { double l = double(g_wbusy[w.host]) / w.slots; if (l < load) { load = l; best = &w; } }
+      if (best) { ++g_wbusy[best->host]; return {kind, true, best->host}; }
+    }
     if (!c.burst_cmd.empty() && g_burst_busy < c.burst_slots) { ++g_burst_busy; return {kind, true}; }
     g_gcv.wait_for(l, std::chrono::seconds(5));
   }
 }
 void gate_release(const GateLease& g) {
-  { std::lock_guard l(g_gm); if (g.burst) --g_burst_busy; else --g_gbusy[g.kind]; }
+  { std::lock_guard l(g_gm); if (!g.host.empty()) --g_wbusy[g.host]; else if (g.burst) --g_burst_busy; else --g_gbusy[g.kind]; }
   g_gcv.notify_all();
 }
 std::string gate_status(const Config& c) {
@@ -70,6 +86,7 @@ std::string gate_status(const Config& c) {
   for (const char* k : {"compile", "qemu", "proof"})
     if (c.slots.count(k)) s += std::format("  {} {}/{}", k, g_gbusy[k], c.slots.at(k).count);
   if (c.burst_slots) s += std::format("  burst {}/{}", g_burst_busy, c.burst_slots);
+  for (auto& w : g_workers) s += std::format("  {} {}/{}", w.host, g_wbusy[w.host], w.slots);
   return s + "\n";
 }
 
@@ -164,8 +181,16 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
         fs::path gate = fs::path(c.repo) / "tools/gates" / (role + ".sh");
         // Wait for a gate slot of this kind (local, NUMA-pinned) or a cloud burst slot.
         GateLease gl = gate_acquire(kind, c);
-        std::vector<std::string> argv{"sh", gate.string(), id, wt.string()};
-        if (gl.burst) argv.insert(argv.begin(), c.burst_cmd.begin(), c.burst_cmd.end());
+        std::vector<std::string> argv{"bash", gate.string(), id, wt.string()};
+        if (!gl.host.empty()) {
+          // Cloud worker: commit the tree, push it to the mirror, run the same gate there on that commit.
+          sh(wt.string(), {"git", "add", "-A"});
+          sh(wt.string(), {"git", "-c", "user.name=pbsd-agent", "-c", "user.email=agent@pbsd.local", "commit", "-q", "--allow-empty", "-m", id + " gate"});
+          std::string sha = sh(wt.string(), {"git", "rev-parse", "HEAD"});
+          while (!sha.empty() && std::isspace((unsigned char)sha.back())) sha.pop_back();
+          sh(wt.string(), {"git", "push", "-q", "-f", c.mirror_url, "HEAD:refs/gates/" + id});
+          argv = {"ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=30", gl.host, "--", c.remote_gate, role, id, sha};
+        } else if (gl.burst) argv.insert(argv.begin(), c.burst_cmd.begin(), c.burst_cmd.end());
         auto g = run_job(argv, gl.burst ? -1 : node, gate_timeout(t, kind, c), wt.string());
         gate_release(gl);
         gate_ok = g.code == 0;
