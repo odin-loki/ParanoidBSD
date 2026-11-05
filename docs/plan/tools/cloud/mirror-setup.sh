@@ -18,6 +18,6 @@ if [ -n "${PRISM_BIN:-}" ] && [ -x "$PRISM_BIN" ]; then
   if [ -d "$tools" ]; then
     rsync -a --delete "$tools/" "$m:/opt/pbsd/prism-tools/" && echo "PRISM tools copied from $tools" || echo "WARNING: copying $tools failed"
     ssh "$m" 'find /opt/pbsd/prism-tools -path "*/bin/esbmc" -type f | grep -q . && echo "worker has esbmc" || echo "WARNING: no esbmc under /opt/pbsd/prism-tools"'
-  else echo "WARNING: $tools missing: run build/prism-deps tool esbmc cbmc cppcheck on the PC first"; fi
+  else echo "WARNING: $tools missing: run tools/cloud/build-prism.sh on the PC first"; fi
 else echo "NOTE: set PRISM_BIN=/path/to/prism to copy PRISM and its tools to the worker (proof gates exit 3 without them)"; fi
 echo "mirror seeded; runner pushes refs/gates/<task> to $m:/srv/pbsd/pbsd.git"

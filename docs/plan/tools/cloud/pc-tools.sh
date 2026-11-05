@@ -12,7 +12,7 @@ apt-get update -q
 apt-get install -y -q build-essential clang lld llvm cmake ninja-build ccache git jq curl unzip xz-utils numactl bubblewrap \
   qemu-system-x86 qemu-system-arm qemu-system-misc qemu-utils openjdk-21-jre-headless z3 python3 python3-yaml \
   libcurl4-openssl-dev nlohmann-json3-dev libsqlite3-dev libnuma-dev sqlite3 tmux \
-  bison flex libboost-all-dev libz3-dev   # build deps for ESBMC/CBMC, which `prism-deps tool` compiles from source
+  bison flex libboost-all-dev libz3-dev libcurl4-openssl-dev llvm-18-dev libclang-18-dev libzstd-dev libfmt-dev libyaml-cpp-dev \n  libgmp-dev libedit-dev libimmer-dev libc6-dev-i386 gcc-multilib   # build deps for PRISM and the analyzers it runs (tools/cloud/build-prism.sh)
 # GCC 16 for the C++26 contract runtime build: from the distribution if it has it, else build or use a toolchain PPA (P0-07 pins it).
 apt-get install -y -q g++-16 2>/dev/null || echo "NOTE: g++-16 not in this distribution's archive; P0-07 installs it"
 gh_latest() { curl -fsSL "https://api.github.com/repos/$1/releases/latest" | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | .browser_download_url' | head -1; }
@@ -25,19 +25,11 @@ install -d /opt/pbsd/gates; install -m 755 "$here"/../gates/*.sh /opt/pbsd/gates
 install -d -o "$u" "$home/pbsd-ref"
 [ -n "${LINUX_TAG:-}" ] && [ ! -d "$home/pbsd-ref/linux" ] && su "$u" -c "git clone -q --depth 1 --branch '$LINUX_TAG' https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git '$home/pbsd-ref/linux'"
 [ -n "${WINE_TAG:-}" ] && [ ! -d "$home/pbsd-ref/wine" ] && su "$u" -c "git clone -q --depth 1 --branch '$WINE_TAG' https://gitlab.winehq.org/wine/wine.git '$home/pbsd-ref/wine'"
-# PRISM (odin-loki/PRISM) is built by you with its own scripts (Clang 19+, FORGE is fetched by its CMake):
-#   git clone https://github.com/odin-loki/PRISM ~/PRISM && cd ~/PRISM && scripts/wsl_build.sh
-# then point PRISM_BIN at build/prism, and PRISM_PROVER_FPK at your Goedel-Prover .fpk (tested on FORGE).
-# ESBMC, CBMC and cppcheck are NOT installed from distro packages or release downloads: PRISM pins each by commit and
-# SHA-256 (third_party/MANIFEST.toml), and `prism-deps tool` builds it into $PRISM_TOOLS_DIR (default ~/.prism/tools).
-# PRISM searches --tool, then that directory, then PATH, and records the exact build in every finding.
-# Rerun this script after building PRISM.
-pb="${PRISM_BIN:-$home/PRISM/build/prism}"; pd="$(dirname "$pb")/prism-deps"; td="${PRISM_TOOLS_DIR:-$home/.prism/tools}"
-if [ -x "$pb" ]; then
-  echo "  PRISM found: $pb"
-  if [ -x "$pd" ]; then su "$u" -c "PRISM_TOOLS_DIR='$td' '$pd' tool esbmc cbmc cppcheck" || echo "WARNING: prism-deps tool failed (see above)"
-  else echo "  WARNING: $pd missing: build all PRISM targets"; fi
-else echo "  WARNING: PRISM not built yet (see the note above); rerun this script afterwards to build ESBMC, CBMC and cppcheck"; fi
-for t in esbmc cbmc cppcheck; do printf '  %-20s %s\n' "$t (prism)" "$(find "$td" -path "*/bin/$t" -type f 2>/dev/null | head -1 | grep . || echo MISSING)"; done
+# PRISM (odin-loki/PRISM) and the analyzers it runs are built by tools/cloud/build-prism.sh, as your user, after this script:
+# it fetches PRISM's pinned clang 23.1.4 (clang 18 cannot build PRISM), builds PRISM (FORGE is fetched by its CMake), and
+# builds cppcheck, CBMC and ESBMC from the commits PRISM pins (`prism-deps tool` only fetches and verifies the source).
+# Then point PRISM_BIN at ~/PRISM/build/prism, and PRISM_PROVER_FPK at your Goedel-Prover .fpk (tested on FORGE).
+td="${PRISM_TOOLS_DIR:-$home/.prism/tools}"
+for t in esbmc cbmc cppcheck; do printf '  %-20s %s\n' "$t (prism)" "$(ls "$td"/$t/*/bin/$t 2>/dev/null | head -1 | grep . || echo 'MISSING: run tools/cloud/build-prism.sh')"; done
 for t in apalache-mc lake qemu-system-x86_64; do printf '  %-20s %s\n' "$t" "$(command -v $t || echo MISSING)"; done
 [ -w /dev/kvm ] && echo "  KVM available" || echo "  WARNING: no /dev/kvm: enable nested virtualization for WSL2 (.wslconfig nestedVirtualization=true) or QEMU gates will be slow"

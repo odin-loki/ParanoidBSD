@@ -520,7 +520,7 @@ pbsd_run init && pbsd_run run
 
 0. **Base branch.** The source tree that commit `bfa869fc1` deleted from `main` is restored on this branch (section 11). Run on a branch that has the full tree and this plan.
 1. **Toolchains and providers.**
-   - Install the toolchains on the PC (WSL2): a Clang 19+ toolchain, Lean (elan) and Apalache; build PRISM (`scripts/wsl_build.sh` in its repository), then `prism-deps tool esbmc cbmc cppcheck` for the pinned analyzers it runs and put your Goedel `.fpk` where `PRISM_PROVER_FPK` points. `CLOUD_SETUP.md` step 6 has the commands.
+   - Install the toolchains on the PC (WSL2): a Clang 19+ toolchain, Lean (elan) and Apalache; run `tools/cloud/build-prism.sh` (PRISM with its pinned clang 23.1.4, then the pinned cppcheck, CBMC and ESBMC) and put your Goedel `.fpk` where `PRISM_PROVER_FPK` points. `CLOUD_SETUP.md` step 6 has the commands.
    - Clone Linux and Wine at pinned tags under `~/pbsd-ref`.
    - Add Morph credit in its dashboard. Check the GLM-5.3-Flash price and your limits there, and put them in the config. Check that it answers (`CLOUD_SETUP.md` step 4).
 2. **Selftest.** `pbsd_run selftest` (23 checks).
@@ -642,7 +642,7 @@ The PC can lose power, run out of memory or crash. Any API provider can rate-lim
 7. **Spec review:** reviewers reject incomplete obligation lists and contracts weaker than the spec. PRISM's own vacuity audit covers unsatisfiable `requires`.
 
 **Not yet verified (the first pilot step):**
-- The gate has not been run against a real PRISM build. The stage lists, the `report.json` reading and the `--unwind` flag follow PRISM's source. On the PC, run PRISM by hand on one P0-02 unit, read `report.json`, and fix `proof_check.sh` where it differs.
+- **Calibrated once on 6 Nov 2026 on a toy C++ unit** (PRISM built, flags accepted, `report.json` read as the gate expects). Found: the `review` stage reports NOTRUN under `--no-llm` while its Z3 vacuity audit still runs (the gate now accepts that case); the `esbmc` stage only checks `.c` files, so on C++ it returns UNKNOWN; `interval`/`pir` reported a signed-overflow FAILED despite `requires` bounds (check how PRISM reads the annotation syntax); `contracts` returned NEEDS-HARNESS on a function the front end rejected. Still to do: run on a real P0-02 unit. On the PC, run PRISM by hand on one P0-02 unit, read `report.json`, and fix `proof_check.sh` where it differs.
 - How well PRISM's C++ front end handles the kernel dialect. PRISM states its own coverage honestly (`NEEDS-HARNESS`, `NOTRUN`), so the pilot will show it.
 - That `prism prove` closes the P0-02 and P1-02 model lemmas with your Goedel model.
 

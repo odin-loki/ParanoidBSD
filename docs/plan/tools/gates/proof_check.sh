@@ -130,7 +130,8 @@ T2|T3|T4)
   [ $rc -eq 2 ] && infra "a PRISM stage crashed (see the log above)"
   rep="$work/out/report.json"; [ -f "$rep" ] || infra "PRISM wrote no report.json (exit $rc)"
   # A stage that could not run is infrastructure, never a pass (PRISM Law 1).
-  jq -e '[.stages[] | select(.name as $n | ("'"$stages"'" | split(",") | index($n))) | select(.status=="NOTRUN")] | length == 0' "$rep" >/dev/null \
+  # review is NOTRUN under --no-llm only for its model features; its Z3 vacuity audit still ran (calibrated 6 Nov 2026), so that case is not a missing stage.
+  jq -e '[.stages[] | select(.name as $n | ("'"$stages"'" | split(",") | index($n))) | select(.status=="NOTRUN") | select((.name=="review" and ((.detail//"") | contains("vacuity audit") and contains("ran")))|not)] | length == 0' "$rep" >/dev/null \
     || { jq -r '.stages[] | select(.status=="NOTRUN") | "NOTRUN stage \(.name): \(.detail)"' "$rep" | head -10; infra "a required PRISM stage did not run (tool missing?)"; }
   [ $rc -eq 1 ] && { jq -r '.stages[].findings[] | select(.status=="FAILED" or .status=="CRASH" or .status=="SANFAIL") | "\(.status) \(.stage) \(.file):\(.line // 0) \(.function // "") \(.cls): \(.message)"' "$rep" | head -20; fail "PRISM found a defect"; }
   results="[]"
