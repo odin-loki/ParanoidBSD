@@ -1,31 +1,38 @@
 #!/usr/bin/env bash
-# Proof gate (AGENTS.md section 10). Replaces the PRISM hook: PRISM is a probabilistic model checker
-# with no C/C++ front end, so it cannot check PBSD code. Usage: proof_check.sh <task-id> <worktree>
+# Proof gate (AGENTS.md section 10): PRISM is the checker. Usage: proof_check.sh <task-id> <worktree>
 #
-# The tier comes from the task definition (PBSD_PROOF_TIER, set by the runner, never from the tree),
-# and selects:
-#   T1  Lean 4 (lake build) or TLA+ (Apalache) on proofs/<WP>/model/, then the axiom audit and the
-#       statement comparator against the locked statements in proofs/<WP>/spec/ (hash in proofs/spec-lock.json)
-#   T2  ESBMC in contract / k-induction mode on every obligation in proofs/<WP>/<U>/obligations.json,
-#       plus the vacuity run and the annotation-only diff
-#   T3  ESBMC (C++) or CBMC (C) bounded with unwinding assertions; GenMC for files marked concurrent
-#   T4  CBMC/ESBMC gateway harnesses under proofs/<WP>/<U>/harness/
-# Every tool runs with LOCKED flags from this script or the worker image, never from the agent.
-# Vacuity: the verification build defines PBSD_VACUITY; the dialect's PBSD_PRE macros then add
-# assert(false) after the preconditions and PBSD_REACHED() becomes assert(false), so a check that
-# still "passes" proves nothing and is rejected.
-# Exit 0 pass, 1 fail, 3 infrastructure error. Results are printed as "PBSD-RESULT: <json>" lines
-# (PROVED / BOUNDED), which the runner keeps with the gate event for the proof report.
-# The tool command lines below are the starting point; P0-07 pins the tool versions and the
-# calibration run confirms each flag against them (AGENTS.md section 12, step 6).
+# PRISM (odin-loki/PRISM, binary `prism`) runs its stages on the unit and writes report.json; this
+# script decides pass or fail from the findings and adds the checks PRISM cannot make about an agent
+# (locked statements, annotation-only diffs, banned constructs, tier from the task).
+#   T1  proofs/<WP>/model/: Lean 4 (lake build + axiom audit + comparator against the locked
+#       statements) or TLA+ (Apalache). The Lean proofs themselves come from `prism prove`
+#       (FORGE + the Goedel prover model), called by the agent through the lean_prove tool.
+#   T2  PRISM stages contracts, wp, pir, esbmc, harness, review on the unit: every obligation must be
+#       PROVED / PROVED-UNBOUNDED / PROVED-CERTIFIED / PROVED-ASSUMING, none VACUOUS-ASSUMPTION or FAILED
+#   T3  PRISM lints, thread, interval, cppcheck, esbmc, pir, harness, conc: BOUNDED or better, none FAILED
+#   T4  PRISM gateway stages on the harnesses: BOUNDED or better, none FAILED
+# Tool flags and stage lists are fixed here or by environment on the worker, never by the agent.
+# Exit 0 pass, 1 fail, 3 infrastructure error (tool missing, PRISM stage crashed). Results are printed
+# as "PBSD-RESULT: <json>" (verdict per obligation) for the proof report.
+#
+# NOT YET RUN AGAINST A REAL PRISM BUILD. The stage lists and the report.json reading follow PRISM's
+# source (include/prism/pipeline.hpp, src/prism/models.cpp); the first pilot step is to run this by
+# hand on one P0-02 unit and fix whatever differs (AGENTS.md section 12).
 set -uo pipefail
 id="$1"; wt="$2"
 wp="${id%%-U*}"; wp="${wp%-MODEL}"; wp="${wp%-INT}"; unit="$(sed -E 's/^.*-(U[0-9]+)-.*$/\1/' <<<"$id")"
+PRISM_BIN="${PRISM_BIN:-prism}"
+T="${PBSD_PROOF_TIMEOUT_S:-1800}"
+LOCK="$wt/proofs/spec-lock.json"
+fail() { echo "FAIL: $*"; exit 1; }
+infra() { echo "infrastructure: $*"; exit 3; }
+need() { command -v "$1" >/dev/null || infra "$1 not installed"; }
+
 if [[ "$id" == *-INT ]]; then
   # Integrator: re-check every unit whose code or proofs the integration changed (tiers from the
   # pinned task list, never from the tree).
-  tasks="${PBSD_TASKS:-/opt/pbsd/tasks.json}"; [ -f "$tasks" ] || { echo "infrastructure: $tasks missing"; exit 3; }
-  base="$(git -C "$wt" log -1 --format=%B | sed -n 's/^PBSD-Base: //p')"; [ -n "$base" ] || exit 3
+  tasks="${PBSD_TASKS:-/opt/pbsd/tasks.json}"; [ -f "$tasks" ] || infra "$tasks missing"
+  base="$(git -C "$wt" log -1 --format=%B | sed -n 's/^PBSD-Base: //p')"; [ -n "$base" ] || infra "no PBSD-Base trailer"
   changed="$(git -C "$wt" diff --name-only "$base" HEAD)"
   rc=0
   while IFS=$'\t' read -r pid ptier own; do
@@ -36,21 +43,19 @@ if [[ "$id" == *-INT ]]; then
 fi
 tier="${PBSD_PROOF_TIER:-}"
 [[ "$id" == *-MODEL ]] && tier=T1
-[ -n "$tier" ] || { echo "infrastructure: PBSD_PROOF_TIER not set by the runner"; exit 3; }
-LOCK="$wt/proofs/spec-lock.json"
-fail() { echo "FAIL: $*"; exit 1; }
-need() { command -v "$1" >/dev/null || { echo "infrastructure: $1 not installed"; exit 3; }; }
-T="${PBSD_PROOF_TIMEOUT_S:-1800}"
+[ -n "$tier" ] || infra "PBSD_PROOF_TIER not set by the runner"
 
 # ---- banned constructs, everywhere the task can write proofs or annotations
 banned_lean='(^|[^A-Za-z_])(sorry|admit|native_decide|implemented_by|extern)([^A-Za-z_]|$)|^[[:space:]]*axiom[[:space:]]|debug\.skipKernelTC|set_option[[:space:]]+(debug|trust)'
 banned_c='__CPROVER_assume|__ESBMC_assume|__VERIFIER_assume|#pragma[[:space:]]+(CPROVER|ESBMC)'
 scan() { grep -rnEI "$2" $1 2>/dev/null | grep -v '/harness/skeleton/' && fail "banned construct (see lines above)"; return 0; }
 
-annotation_only() {   # the code with PBSD_* annotation lines removed must equal the reviewed code
+annotation_only() {   # the code with annotation comments removed must equal the reviewed code
   local base; base="$(git -C "$wt" log -1 --format=%B | sed -n 's/^PBSD-Base: //p')"
-  [ -n "$base" ] || { echo "no PBSD-Base trailer: cannot check annotation-only diff"; exit 3; }
-  local strip='/^[[:space:]]*(PBSD_(PRE|POST|ASSERT|INVARIANT|DECREASES|ASSIGNS|GHOST)\b|\/\/ *@proof)/d'
+  [ -n "$base" ] || infra "no PBSD-Base trailer: cannot check the annotation-only diff"
+  # PRISM annotations: `// requires: ...`, `// ensures: ...`, `// invariant: ...`, `// decreases: ...`
+  # and single-line ACSL `/*@ ... */`.
+  local strip='/^[[:space:]]*(\/\/[[:space:]]*(requires|ensures|invariant|decreases|assigns)[[:space:]]*:.*|\/\*@.*\*\/)[[:space:]]*$/d'
   while IFS= read -r f; do
     case "$f" in proofs/*) continue ;; esac
     diff <(git -C "$wt" show "$base:$f" 2>/dev/null | sed -E "$strip") <(sed -E "$strip" "$wt/$f") >/dev/null \
@@ -62,10 +67,11 @@ case "$tier" in
 T0)
   echo "T0: static checks only (compile-time asserts run in the build step)"; exit 0 ;;
 T1)
-  m="$wt/proofs/$wp/model"; s="$wt/proofs/$wp/spec"
+  m="$wt/proofs/$wp/model"
   [ -d "$m" ] || fail "no model in proofs/$wp/model"
   [ -f "$LOCK" ] || fail "proofs/spec-lock.json missing (written by P0-FREEZE)"
   # Locked statements unchanged since the freeze.
+  need jq
   while IFS=$'\t' read -r path hash; do
     [ "$(sha256sum "$wt/$path" | cut -d' ' -f1)" = "$hash" ] || fail "locked statement file $path changed"
   done < <(jq -r --arg wp "$wp" 'to_entries[] | select(.key | startswith("proofs/"+$wp+"/spec/")) | [.key,.value] | @tsv' "$LOCK")
@@ -93,44 +99,60 @@ T1)
            | grep -vE '^(propext|Classical\.choice|Quot\.sound)?$' || true)"
     [ -z "$bad" ] || fail "proofs use axioms outside propext/Classical.choice/Quot.sound: $bad"
   fi
+  echo "PBSD-RESULT: [{\"unit\":\"$wp-model\",\"status\":\"PROVED\",\"tool\":\"lean/apalache\"}]"
   echo "PROVED: $wp model"; exit 0 ;;
 T2|T3|T4)
+  need jq; need "$PRISM_BIN"
   d="$wt/proofs/$wp/$unit"; [ -d "$d" ] || fail "no proofs/$wp/$unit"
   ob="$d/obligations.json"; [ -f "$ob" ] || fail "no obligations.json (the list of functions and properties to check)"
   [ "$(jq 'length' "$ob")" -gt 0 ] || fail "empty obligation list"
-  # Assumptions are banned in code and in T2/T3 obligations. T4 harnesses may constrain their inputs
-  # with assumptions (that is what a harness is), so they must end with PBSD_REACHED(); and the
-  # vacuity run below (which turns PBSD_REACHED into assert(false)) must fail for every harness.
-  if [ "$tier" = T4 ]; then scan "$d --exclude-dir=harness" "$banned_c"; else scan "$d" "$banned_c"; fi
-  scan "$wt/pbsd" "$banned_c"
+  scan "$d" "$banned_c"; scan "$wt/pbsd" "$banned_c"
   [ "$tier" = T4 ] || annotation_only
-  need jq; results="[]"
-  while IFS=$'\t' read -r file fn kind; do
-    src="$wt/$file"; [ -f "$src" ] || fail "obligation file $file missing"
-    case "$kind:$tier" in
-      *:T2)  need esbmc; flags=(${PBSD_ESBMC_T2_FLAGS:---std c++20 --function "$fn" --enforce-contract "$fn" --k-induction --max-k-step 64 --unlimited-k-steps --overflow-check --unsigned-overflow-check --memory-leak-check --timeout ${T}s}) ;;
-      concurrent:*) need genmc; flags=() ;;
-      *:T3|*:T4)
-        if [[ "$file" == *.c ]]; then need cbmc; flags=(${PBSD_CBMC_FLAGS:---function "$fn" --bounds-check --pointer-check --div-by-zero-check --signed-overflow-check --unsigned-overflow-check --pointer-overflow-check --conversion-check --undefined-shift-check --unwind 32 --unwinding-assertions})
-        else need esbmc; flags=(${PBSD_ESBMC_T3_FLAGS:---std c++20 --function "$fn" --unwind 32 --unwinding-assertions --overflow-check --unsigned-overflow-check --timeout ${T}s}); fi ;;
+  # Scan only the directories that hold the obligations' files (the unit's code and harnesses).
+  scan_dirs=(); while IFS= read -r f; do scan_dirs+=("$(dirname "$wt/$f")"); done < <(jq -r '.[].file' "$ob")
+  scan_dirs+=("$d")
+  work="$(mktemp -d "${TMPDIR:-/tmp}/prism-gate.XXXXXX")"; trap 'rm -rf "$work"' EXIT
+  mkdir -p "$work/scope"; for p in $(printf '%s\n' "${scan_dirs[@]}" | sort -u); do
+    rel="${p#$wt/}"; mkdir -p "$work/scope/$(dirname "$rel")"; cp -r "$p" "$work/scope/$rel"
+  done
+  case "$tier" in
+    T2) stages="${PBSD_PRISM_STAGES_T2:-inventory,classify,lints,interval,esbmc,contracts,wp,pir,harness,review}" ;;
+    T3) stages="${PBSD_PRISM_STAGES_T3:-inventory,classify,lints,taint,thread,interval,warnings,cppcheck,esbmc,pir,harness,conc}" ;;
+    T4) stages="${PBSD_PRISM_STAGES_T4:-inventory,classify,lints,taint,interval,pir,harness}" ;;
+  esac
+  # No --allow-exec: nothing from the scanned tree is executed (PRISM Law 9). --fail-on defect makes
+  # exit 1 mean "a FAILED/CRASH/SANFAIL finding"; exit 2 means a PRISM stage crashed (a PRISM bug).
+  timeout "$T" "$PRISM_BIN" "$work/scope" --no-llm --jobs "${PBSD_JOBS:-2}" --stage "$stages" --out "$work/out" \
+      --fail-on defect --unwind "${PBSD_PRISM_UNWIND:-32}" >"$work/prism.log" 2>&1
+  rc=$?
+  tail -25 "$work/prism.log"
+  [ $rc -eq 124 ] && fail "PRISM timeout after ${T}s"
+  [ $rc -eq 2 ] && infra "a PRISM stage crashed (see the log above)"
+  rep="$work/out/report.json"; [ -f "$rep" ] || infra "PRISM wrote no report.json (exit $rc)"
+  # A stage that could not run is infrastructure, never a pass (PRISM Law 1).
+  jq -e '[.stages[] | select(.name as $n | ("'"$stages"'" | split(",") | index($n))) | select(.status=="NOTRUN")] | length == 0' "$rep" >/dev/null \
+    || { jq -r '.stages[] | select(.status=="NOTRUN") | "NOTRUN stage \(.name): \(.detail)"' "$rep" | head -10; infra "a required PRISM stage did not run (tool missing?)"; }
+  [ $rc -eq 1 ] && { jq -r '.stages[].findings[] | select(.status=="FAILED" or .status=="CRASH" or .status=="SANFAIL") | "\(.status) \(.stage) \(.file):\(.line // 0) \(.function // "") \(.cls): \(.message)"' "$rep" | head -20; fail "PRISM found a defect"; }
+  results="[]"
+  while IFS=$'\t' read -r file fn; do
+    best="$(jq -r --arg f "$file" --arg fn "$fn" '
+        [.stages[].findings[] | select(.function==$fn and (.file|endswith($f)))] as $x
+        | if ($x|length)==0 then "NOFINDING"
+          elif ([$x[] | select(.status=="VACUOUS-ASSUMPTION" or (.cls|tostring|test("VACUOUS")))]|length)>0 then "VACUOUS"
+          elif ([$x[] | select(.status|IN("FAILED","CRASH","SANFAIL","ERROR"))]|length)>0 then "FAILED"
+          else ([$x[].status] | map(select(IN("PROVED-CERTIFIED","PROVED-UNBOUNDED","PROVED","PROVED-ASSUMING","BOUNDED"))) |
+                (if index("PROVED-CERTIFIED") then "PROVED-CERTIFIED" elif index("PROVED-UNBOUNDED") then "PROVED-UNBOUNDED"
+                 elif index("PROVED") then "PROVED" elif index("PROVED-ASSUMING") then "PROVED-ASSUMING"
+                 elif index("BOUNDED") then "BOUNDED" else "NOANSWER" end)) end' "$rep")"
+    case "$tier:$best" in
+      T2:PROVED-CERTIFIED|T2:PROVED-UNBOUNDED|T2:PROVED|T2:PROVED-ASSUMING) ;;
+      T3:*PROVED*|T3:BOUNDED|T4:*PROVED*|T4:BOUNDED) ;;
+      *) jq -r --arg f "$file" --arg fn "$fn" '.stages[].findings[] | select(.function==$fn and (.file|endswith($f))) | "  \(.stage) \(.status) \(.cls): \(.message)"' "$rep" | head -8
+         fail "$fn: $best (needs $( [ "$tier" = T2 ] && echo 'a PROVED verdict' || echo 'BOUNDED or better'))" ;;
     esac
-    tool=esbmc; [[ "$kind" == concurrent ]] && tool=genmc; [[ "$file" == *.c && "$tier" != T2 ]] && tool=cbmc
-    inc=(-I "$wt/pbsd/kernel/include" -I "$wt/pbsd/kernel/base" -DPBSD_VERIFY=1)
-    if [ "$tool" = genmc ]; then out="$(timeout "$T" genmc -rc11 "${inc[@]}" "$src" 2>&1)"; rc=$?
-    else out="$(timeout "$T" "$tool" "$src" "${inc[@]}" "${flags[@]}" 2>&1)"; rc=$?; fi
-    echo "$out" | tail -15
-    [ $rc -eq 124 ] && fail "$fn: checker timeout"
-    grep -qE 'Generated 0 VCC|0 remaining after simplification|No properties to check' <<<"$out" && fail "$fn: zero verification conditions"
-    [ $rc -eq 0 ] || fail "$fn ($tool) did not verify"
-    if [ "$tool" != genmc ]; then   # vacuity: with assert(false) after the preconditions (or at PBSD_REACHED) the check must FAIL
-      [ "$tier" != T4 ] || grep -q 'PBSD_REACHED' "$src" || fail "$fn: harness does not end with PBSD_REACHED();"
-      timeout "$T" "$tool" "$src" "${inc[@]}" -DPBSD_VACUITY=1 "${flags[@]}" >/dev/null 2>&1
-      [ $? -ne 0 ] || fail "$fn: assumptions or preconditions are unsatisfiable (vacuity check passed)"
-    fi
-    status=$([ "$tier" = T2 ] && echo PROVED || echo "BOUNDED")
-    results="$(jq -c --arg f "$file" --arg fn "$fn" --arg s "$status" --arg t "$tool" '. + [{file:$f, function:$fn, status:$s, tool:$t}]' <<<"$results")"
-  done < <(jq -r '.[] | [.file, .function, (.kind // "sequential")] | @tsv' "$ob")
+    results="$(jq -c --arg f "$file" --arg fn "$fn" --arg s "$best" '. + [{file:$f, function:$fn, status:$s, tool:"prism"}]' <<<"$results")"
+  done < <(jq -r '.[] | [.file, .function] | @tsv' "$ob")
   echo "PBSD-RESULT: $results"
-  echo "$tier: $(jq length <<<"$results") obligation(s) $( [ "$tier" = T2 ] && echo PROVED || echo BOUNDED )"; exit 0 ;;
+  echo "$tier: $(jq length <<<"$results") obligation(s) checked by PRISM"; exit 0 ;;
 *) fail "unknown tier $tier" ;;
 esac

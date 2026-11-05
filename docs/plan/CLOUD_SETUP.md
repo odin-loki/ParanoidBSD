@@ -51,9 +51,9 @@ The bottleneck is **gate CPU**: about 30,000 core-hours of builds, proof checks 
 
 ### GPU: does renting one help?
 
-**No, not for the bottleneck.** The gates are compilers, proof checkers (ESBMC, CBMC, GenMC, Lean, Apalache) and QEMU, and none of them use a GPU.
+**No, not for the bottleneck.** The gates are compilers, proof checkers (PRISM with ESBMC and CBMC, Lean, Apalache) and QEMU, and none of them use a GPU.
 
-**The one GPU job is the local Lean prover.** It runs on the PC's RTX 3090 (`tools/llama/lean-prover.sh`): a 32B Lean prover at 4-bit is about 20 GB. Rent a GPU only if you want the prover off the PC. Prices found (Sep 2026 snapshot, [hostalu](https://hostalu.com/en/gpu-cloud/), [RunPod](https://www.runpod.io/pricing)):
+**The one GPU job is the Lean prover,** the Goedel model on FORGE inside `prism prove`, on the PC's RTX 3090. Rent a GPU only if you want it off the PC. Prices found (Sep 2026 snapshot, [hostalu](https://hostalu.com/en/gpu-cloud/), [RunPod](https://www.runpod.io/pricing)):
 
 | GPU | RunPod community / secure | Vast.ai median | Lambda |
 |---|---|---|---|
@@ -101,6 +101,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
    export MORPH_API_KEY=...          # Morph, the only model provider (AGENTS.md 7.3)
+   export PRISM_BIN=$HOME/PRISM/build/prism PRISM_PROVER_FPK=/path/to/goedel-prover.fpk   # PRISM and the Lean prover on FORGE
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
@@ -119,12 +120,12 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    sudo LINUX_TAG=<newest longterm tag on kernel.org> WINE_TAG=<current Wine stable tag> PBSD_USER=$USER \
         bash docs/plan/tools/cloud/pc-tools.sh
    ```
-   It installs the build toolchain, QEMU for three architectures, ESBMC, CBMC, GenMC, Apalache and Lean (elan). It also copies the **pinned** gate scripts to `/opt/pbsd/gates` (`gates_dir`) and the task list to `/opt/pbsd/tasks.json`, and clones Linux and Wine at the tags you give under `~/pbsd-ref` (`ref_roots`).
+   It installs the build toolchain, QEMU for three architectures, ESBMC, CBMC, Apalache and Lean (elan). It also copies the **pinned** gate scripts to `/opt/pbsd/gates` (`gates_dir`) and the task list to `/opt/pbsd/tasks.json`, and clones Linux and Wine at the tags you give under `~/pbsd-ref` (`ref_roots`).
    - **Tags:** write the two tags down. Every worker must use the same ones, because they are the behavioural reference for every port.
    - **KVM:** for QEMU gates with KVM under WSL2, set `nestedVirtualization=true` in `%UserProfile%\.wslconfig`.
    - **Gate hooks:** set the real build commands once the P0-07 tasks have passed: `PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE` and `PBSD_QEMU_MARKER`. The proof hook defaults to `proof_check.sh`, with the tier taken from the task.
    - **Exit codes:** each gate exits 0 pass, 1 fail, 3 infrastructure error.
-   - **Lean prover:** start it on the RTX 3090 with `docs/plan/tools/llama/lean-prover.sh`. It serves `http://127.0.0.1:8081/v1`, the default `lean_prover_url`.
+   - **PRISM and FORGE:** build PRISM yourself (`git clone https://github.com/odin-loki/PRISM ~/PRISM && cd ~/PRISM && scripts/wsl_build.sh`; its CMake fetches FORGE). Put your Goedel `.fpk` somewhere and set `PRISM_PROVER_FPK` to it. Check: `prism --version`, then `prism prove` on one small `sorry` lemma.
 7. **Rent w1** (only when step 2's quota is approved and you are ready to run).
    ```bash
    gcloud compute instances create pbsd-w1 --project pbsd --zone australia-southeast1-b \
@@ -149,7 +150,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    - Append `tools/cloud/ssh_config.example` to `~/.ssh/config`. It defines the aliases `w1` and `pbsd-mirror`, with connection multiplexing so ~90 gates share one connection. Test with `ssh w1 nproc`.
 9. **Seed the mirror and register the worker.**
    ```bash
-   tools/cloud/mirror-setup.sh $PBSD_REPO pbsd-mirror <base-branch>   # pushes the full history once, then builds w1's hbsd/kde reference trees
+   PRISM_BIN=$PRISM_BIN tools/cloud/mirror-setup.sh $PBSD_REPO pbsd-mirror <base-branch>   # pushes the full history once, then builds w1's hbsd/kde reference trees
    tools/cloud/register.sh w1                                         # adds "w1 88" to ~/.pbsd/workers.txt ("kvm" is added only where /dev/kvm exists)
    ```
    - **Updates:** the runner re-reads `workers.txt` every 30 s, so workers can be added or removed while it runs.
@@ -210,7 +211,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 - [ ] Billing alert on GCP at A$300 and A$800; spend cap on every API key.
 - [ ] Spot price for `c3d-highcpu-360` in `australia-southeast1` checked on the day (expect about US$1.60/h).
 - [ ] `pc-tools.sh` run; the Linux and Wine tags written down and passed to every worker.
-- [ ] Lean prover answering at `http://127.0.0.1:8081/v1`.
+- [ ] PRISM built; `prism --version` works; `PRISM_PROVER_FPK` set; `prism prove` closed one small lemma; `proof_check.sh` calibrated by hand on one unit (AGENTS.md section 10).
 - [ ] `pbsd_run selftest`: 23 checks ok.
 - [ ] Pilot (step 10) done and the estimate re-run with measured numbers; go/no-go decided.
 - [ ] Only one big worker running, unless the pilot says the PC + w1 cannot keep the agents busy.

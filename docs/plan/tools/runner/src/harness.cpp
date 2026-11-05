@@ -100,8 +100,8 @@ json tools_schema(const std::string& role, bool lean = false) {
     fn("post_message", "Post a typed message. to: a task id, or spec|impl|test|proof|if (this unit's or package's task). kind: question, contract_change_request, review_findings, test_failure, proof_failure, handoff",
        {{"to", str}, {"kind", str}, {"body", str}}, {"to", "kind", "body"}),
     fn("read_messages", "Read the messages addressed to this task or its package", json::object(), {}),
-    fn("lean_prove", "Prove one Lean 4 theorem with the local Lean prover model: the statement is appended to the owned .lean file, the prover writes the proof, Lean checks it; on success the file is updated. State small lemmas and prove them one at a time.",
-       {{"file", str}, {"statement", str}}, {"file", "statement"}),
+    fn("lean_prove", "Prove one Lean 4 theorem with PRISM and the local Goedel prover model (prism prove). The theorem must be in an owned .lean file with a whole-proof `sorry`. On success the proof is written into the file. State small lemmas and prove them one at a time.",
+       {{"file", str}, {"theorem", str}}, {"file", "theorem"}),
     fn("submit", role == "reviewer" ? "Finish the review: verdict approve, or changes with findings (each names the task to reopen)"
                                     : "Finish the task; accepted only if the gate passed on the current tree", submit_props, submit_req)});
 }
@@ -257,53 +257,21 @@ std::string gate_status(const Config& c) {
   return s + "\n";
 }
 
-// lean_prove: sample proofs from the local Lean prover and keep the first one Lean accepts.
-// The candidate is the owned file plus the statement plus the prover's proof; it is checked with
-// `lake env lean` in the file's Lake project, in a scrubbed environment. Code that runs at elaboration
-// time (#eval, run_cmd, IO, unsafe, extern, ...) is refused before it is checked.
-std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& stmt, Db& db) {
-  static const std::regex bad(R"((#eval|#exit|run_cmd|run_elab|run_meta|\bIO\b|unsafe|@\[extern|implemented_by|initialize|native_decide|\bsorry\b|\badmit\b|^\s*axiom\s))");
-  fs::path proj = file.parent_path();
-  while (proj != wt && !fs::exists(proj / "lakefile.lean") && !fs::exists(proj / "lakefile.toml")) proj = proj.parent_path();
-  if (proj == wt) return "no Lake project (lakefile.lean or lakefile.toml) above " + file.string();
-  const std::string header = fs::exists(file) ? slurp(file, 4u << 20) : std::string();
-  std::string feedback, best_err;
+// lean_prove: `prism prove FILE THEOREM --write --allow-exec`. PRISM runs best-first tactic search with the
+// prover model on FORGE (PRISM_PROVER_FPK), validates every candidate, checks the axioms and runs
+// `lake build`; only then does it write the proof. Exit 0 proved, 1 not proved, 3 not run, 2 error.
+std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& theorem, Db& db) {
+  static const std::regex name_re(R"(^[A-Za-z_][A-Za-z0-9_.']*$)");
+  if (!std::regex_match(theorem, name_re)) return "refused: bad theorem name";
   auto env = gate_env("");
-  for (int round = 0; round < std::max(1, c.lean_rounds); ++round) {
-    for (int k = 0; k < std::max(1, c.lean_samples); ++k) {
-      std::string prompt = "Complete the following Lean 4 code:\n\n```lean4\n" + header + "\n" + stmt + " := by\n```" +
-                           (feedback.empty() ? "" : "\n\nA previous attempt failed with these Lean errors; fix them:\n" + feedback);
-      json body{{"model", c.lean_prover_model}, {"messages", json::array({{{"role", "user"}, {"content", prompt}}})},
-                {"max_tokens", c.lean_max_tokens}, {"temperature", 0.8}};
-      std::string url = c.lean_prover_url; while (!url.empty() && url.back() == '/') url.pop_back();
-      Http r = http_post(url + "/chat/completions", body.dump(), "", 3600);
-      if (r.conn_error || r.code != 200) return "local Lean prover unavailable (" + std::to_string(r.code) + "); try again later";
-      json j = json::parse(r.body, nullptr, false);
-      std::string out = j.is_discarded() ? "" : j["choices"][0]["message"].value("content", "");
-      auto a = out.rfind("```lean4"); if (a == std::string::npos) a = out.rfind("```lean");
-      if (a == std::string::npos) continue;
-      auto b = out.find("```", out.find('\n', a)); if (b == std::string::npos) continue;
-      std::string code = out.substr(out.find('\n', a) + 1, b - out.find('\n', a) - 1);
-      std::string cand = code.find(header.substr(0, std::min<size_t>(header.size(), 200))) == 0 && !header.empty() ? code : header + "\n" + code;
-      if (!header.empty() && cand.compare(0, header.size(), header) != 0) continue;   // the prover may not rewrite earlier text
-      if (std::regex_search(cand.substr(header.size()), bad)) { best_err = "candidate used a refused construct"; continue; }
-      fs::path tmp = file.parent_path() / (".pbsd_try_" + std::to_string(getpid()) + "_" + std::to_string(k) + ".lean");
-      std::ofstream(tmp) << cand;
-      std::vector<std::string> argv{"lake", "env", "lean", fs::relative(tmp, proj).string()};
-      if (!c.gate_wrap.empty()) argv.insert(argv.begin(), c.gate_wrap.begin(), c.gate_wrap.end());
-      auto chk = run_job(argv, -1, c.lean_check_timeout_s, proj.string(), 500, &env);
-      fs::remove(tmp);
-      db.event(t["id"], "lean_prove", json{{"round", round}, {"sample", k}, {"code", chk.code}});
-      if (chk.code == 0 && chk.tail.find("sorry") == std::string::npos && chk.tail.find("error") == std::string::npos) {
-        std::ofstream(file, std::ios::trunc) << cand;
-        return "proved and written to " + fs::relative(file, wt).string();
-      }
-      if (best_err.empty() || chk.tail.size() < best_err.size()) best_err = chk.tail.substr(0, 6000);
-    }
-    feedback = best_err;
-  }
-  return "not proved after " + std::to_string(c.lean_samples * c.lean_rounds) + " samples; best attempt's Lean errors:\n" + best_err +
-         "\nSplit the statement into smaller lemmas and prove them first.";
+  std::vector<std::string> argv{c.prism_bin, "prove", file.string(), theorem, "--write", "--allow-exec"};
+  if (!c.gate_wrap.empty()) argv.insert(argv.begin(), c.gate_wrap.begin(), c.gate_wrap.end());
+  auto r = run_job(argv, -1, c.prove_timeout_s, wt.string(), 500, &env);
+  db.event(t["id"], "lean_prove", json{{"theorem", theorem}, {"code", r.code}});
+  std::string tail = r.tail.size() > 6000 ? r.tail.substr(r.tail.size() - 6000) : r.tail;
+  if (r.code == 0) return "proved and written to " + fs::relative(file, wt).string() + "\n" + tail;
+  if (r.code == 3) return "NOTRUN: prism prove has no prover model (set PRISM_PROVER_FPK) or Lean is missing\n" + tail;
+  return std::string(r.code == 1 ? "not proved" : "error") + ". State smaller lemmas (each `theorem name : stmt := by sorry`) and prove them one at a time.\n" + tail;
 }
 
 TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot) {
@@ -378,7 +346,7 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
   double last_ck = now(), task_start = now();
   bool gate_ok = false;
   json tools = tools_schema(role, false);
-  if (role == "prover" && !c.lean_prover_url.empty()) tools = tools_schema(role, true);
+  if (role == "prover" && getenv("PRISM_PROVER_FPK")) tools = tools_schema(role, true);
   else tools.erase(std::remove_if(tools.begin(), tools.end(), [](const json& x) { return x["function"]["name"] == "lean_prove"; }), tools.end());
   auto commit = [&](std::string m) {
     if (m.ends_with(" gate")) {   // the proof gate checks annotation-only diffs against this base
@@ -511,9 +479,9 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
         if (k == "contract_change_request" && db.state_of(to) == "passed") db.reopen({to}, {});
         res = "posted to " + to;
       } else if (fnm == "lean_prove") {
-        std::string p = a.value("file", ""), stmt = a.value("statement", "");
+        std::string p = a.value("file", ""), stmt = a.value("theorem", "");
         auto dst = in_tree(wt, p);
-        if (c.lean_prover_url.empty()) res = "no local Lean prover configured";
+        if (!getenv("PRISM_PROVER_FPK")) res = "no prover model configured (PRISM_PROVER_FPK)";
         else if (!owned(t, p) || !dst || !p.ends_with(".lean")) res = "refused: " + p + " is not an owned .lean file";
         else { res = lean_prove(c, t, wt, *dst, stmt, db); if (res.starts_with("proved")) gate_ok = false; }
       } else if (fnm == "read_messages") {

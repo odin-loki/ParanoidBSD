@@ -1,6 +1,6 @@
 # PBSD architecture and implementation plan
 
-Execution: every task runs on GLM-5.3-Flash through the API of one provider, Morph, called directly, at fp8 and about half Z.ai's price (AGENTS.md section 7.3), with 32 parallel agents on Odin's PC (Lenovo P920) or about 224 with one cloud burst worker, and no time limit. Lean proofs come from a local Lean-specialised prover model on the P920's GPU, called by the agents; code proofs use ESBMC, CBMC and GenMC (PRISM is no longer used: it cannot check code). Builds, tests, proof checks and QEMU run on the P920 in RAM with the HDD for checkpoints only, plus the burst worker; these gates, not the model, are the bottleneck (AGENTS.md section 8.1, middle case: about 44 days on the PC alone, about 6 days with one burst worker, about US$1.6k of API tokens and US$1.9k (A$2.7k) in total, all estimates until the pilot). The live progress runner is `tools/runner` (C++23). Running the model locally under llama-server is an optional backend (AGENTS.md Appendix D); the DeepSeek plan is Appendix C and cloud options are Appendices A and B. The atomic task graph, coordination, harness, prompts, proof stack and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
+Execution: every task runs on GLM-5.3-Flash through the API of one provider, Morph, called directly, at fp8 and about half Z.ai's price (AGENTS.md section 7.3), with 32 parallel agents on Odin's PC (Lenovo P920) or about 224 with one cloud burst worker, and no time limit. Lean proofs come from a Lean-specialised prover model (Goedel) running on FORGE, called by the agents; code-level checks and proofs use PRISM (Odin's C++23 checker), and Lean proofs come from `prism prove` with the Goedel model on FORGE. Builds, tests, proof checks and QEMU run on the P920 in RAM with the HDD for checkpoints only, plus the burst worker; these gates, not the model, are the bottleneck (AGENTS.md section 8.1, middle case: about 44 days on the PC alone, about 6 days with one burst worker, about US$1.6k of API tokens and US$1.9k (A$2.7k) in total, all estimates until the pilot). The live progress runner is `tools/runner` (C++23). Running the model locally under llama-server is an optional backend (AGENTS.md Appendix D); the DeepSeek plan is Appendix C and cloud options are Appendices A and B. The atomic task graph, coordination, harness, prompts, proof stack and cost are in [AGENTS.md](AGENTS.md); the task list is [tasks.yaml](tasks.yaml) / [tasks.json](tasks.json). The per-package briefs below are the parent context each atomic task receives.
 Status: draft, reviewed and fixed 4 Nov 2026 (AGENTS.md section 11). Supersedes the stage plan in `docs/plans/cxx23-port-master-plan.md` for the kernel; that plan's per-file pipeline (stages A–H), handle set, envelopes and userland waves remain in force for userland.
 ## 1. Direction
 - The kernel core is rewritten clean-slate in a verified memory-safe C++23 subset, proved as it is written (Lean 4 package models and ESBMC contract proofs; AGENTS.md section 10). Old HBSD is not proved first as an oracle.
@@ -42,9 +42,9 @@ Status: draft, reviewed and fixed 4 Nov 2026 (AGENTS.md section 11). Supersedes 
 - Wave D: P5 packages, then P6-01.
 ## 5. Verification approach
 
-- Verified core (allocator, VM, capabilities, scheduler, rings, VFS path walk, dispatcher, IOMMU, gateways): a Lean 4 (or TLA+/Apalache) package model whose locked theorems are proved (T1; Lean proofs by the local prover model), and ESBMC contract proofs that each operation refines the model (T2); required to merge, labelled PROVED.
-- Adapted Linux/HBSD code elsewhere in the kernel: contracts at every function boundary, checked by ESBMC (C++) or CBMC (C) with unwinding assertions and GenMC for concurrent code (T3, labelled BOUNDED); sanitizers and fuzzing inside bodies.
-- Foreign code (Linux drivers, DRM, Wine/NT, translated binaries, imported filesystems): CBMC/ESBMC harnesses at the gateway (T4, BOUNDED) plus generated runtime checks (P4-07); the real guarantee is the T1/T2 proof that IOMMU windows and capabilities confine it.
+- Verified core (allocator, VM, capabilities, scheduler, rings, VFS path walk, dispatcher, IOMMU, gateways): a Lean 4 (or TLA+/Apalache) package model whose locked theorems are proved (T1; Lean proofs by `prism prove` with the Goedel model on FORGE), and PRISM contract proofs that each operation refines the model (T2); required to merge, labelled PROVED.
+- Adapted Linux/HBSD code elsewhere in the kernel: contracts at every function boundary, checked by PRISM's bounded stages (T3, labelled BOUNDED); sanitizers and fuzzing inside bodies.
+- Foreign code (Linux drivers, DRM, Wine/NT, translated binaries, imported filesystems): PRISM harnesses at the gateway (T4, BOUNDED) plus generated runtime checks (P4-07); the real guarantee is the T1/T2 proof that IOMMU windows and capabilities confine it.
 - Differential: same workload on stock Linux, HBSD and PBSD; compare syscall traces, outputs, performance (LTP, kyua, xfstests, liburing, blktests, packetdrill, igt, Wine tests, Android CTS).
 - Fuzzing: syzkaller with Linux, BSD and NT descriptions from P0-07 onward.
 - Proofs are judged only by machine checkers with locked flags; the anti-cheating gates (locked statements, axiom audit, no assumptions, annotation-only diffs, vacuity checks) are in AGENTS.md section 10. Verified-core code uses a checker-friendly subset: no C++ modules, coroutines or virtual inheritance, concrete template instantiations, bounded loops, asm only in stubs with locked contracts.
@@ -56,7 +56,7 @@ Status: draft, reviewed and fixed 4 Nov 2026 (AGENTS.md section 11). Supersedes 
 
 - Owns: `pbsd/kernel/base/, docs/specs/KERNEL_CXX_ABI.md`
 - Depends on: none
-- Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contracts written as PBSD_PRE/PBSD_POST/PBSD_ASSERT/PBSD_INVARIANT/PBSD_ASSIGNS/PBSD_DECREASES macros that expand to C++26 pre/post/contract_assert in the GCC 16 runtime build, to ESBMC/CBMC contracts in the verification build and to runtime checks under Clang (the C++20 [[expects]]/[[ensures]] attribute design was removed from the standard and is ignored by compilers), typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
+- Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contracts written as PRISM annotation comments before each function (`// requires:`, `// ensures:`, `// invariant:`, `// decreases:`), with runtime checks generated from them in the runtime build (the C++20 [[expects]]/[[ensures]] attribute design was removed from the standard and is ignored by compilers), typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
 - Reuse:
   - pbsd/core, pbsd/handles, docs/specs/HANDLES.md — adapt
   - Linux include/linux/compiler*.h — reference
@@ -67,7 +67,7 @@ Status: draft, reviewed and fixed 4 Nov 2026 (AGENTS.md section 11). Supersedes 
 You are implementing PBSD work package P0-01 (Kernel C++ dialect and contract macros) in github.com/odin-loki/ParanoidBSD on branch wp/P0-01.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: pbsd/kernel/base/, docs/specs/KERNEL_CXX_ABI.md.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P0-01.md.
-Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contracts written as PBSD_PRE/PBSD_POST/PBSD_ASSERT/PBSD_INVARIANT/PBSD_ASSIGNS/PBSD_DECREASES macros that expand to C++26 pre/post/contract_assert in the GCC 16 runtime build, to ESBMC/CBMC contracts in the verification build and to runtime checks under Clang (the C++20 [[expects]]/[[ensures]] attribute design was removed from the standard and is ignored by compilers), typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
+Scope: Freeze the freestanding C++23 subset: no raw owning pointers, -fno-exceptions -fno-rtti, contracts written as PRISM annotation comments before each function (`// requires:`, `// ensures:`, `// invariant:`, `// decreases:`), with runtime checks generated from them in the runtime build (the C++20 [[expects]]/[[ensures]] attribute design was removed from the standard and is ignored by compilers), typestate helper templates, affine owner/borrow/shared handle types (extend existing UniqueHandle/BorrowedHandle/SharedHandle).
 Reuse first: pbsd/core, pbsd/handles, docs/specs/HANDLES.md (adapt); Linux include/linux/compiler*.h (reference).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
 Done when: clang-tidy profile bans raw new/delete/malloc and pointer arithmetic outside pbsd/kernel/base/unsafe/; every contract form expands in the runtime build and the verification build; 100% of existing pbsd/core compiles under the profile. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
@@ -184,21 +184,21 @@ Done when: Generated tables for all three personalities compile; dispatcher tota
 
 - Owns: `CMake/ninja under pbsd/, tools/proof/, .github/workflows/, tests/diff/`
 - Depends on: P0-01
-- Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); the proof checkers (ESBMC, CBMC, GenMC, Lean 4, Apalache) run per commit on changed units at pinned versions, and the gate hooks in tools/gates are set; differential runners compare syscall traces against stock Linux and HBSD.
+- Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); the proof checkers (PRISM with ESBMC and CBMC, Lean 4, Apalache) run per commit on changed units at pinned versions, and the gate hooks in tools/gates are set; differential runners compare syscall traces against stock Linux and HBSD.
 - Reuse:
   - existing tools/, pbsd.py, scripts/, core-gates — adapt
   - Linux tools/testing/selftests, LTP, syzkaller, xfstests, liburing tests, FreeBSD kyua tests — direct import as test oracles
-- Acceptance: Empty kernel boots to serial banner on all three arches in CI; proof job (Lean, ESBMC, CBMC, GenMC) green on P0 headers.
+- Acceptance: Empty kernel boots to serial banner on all three arches in CI; proof job (PRISM, Lean) green on P0 headers.
 - Agent brief:
 
 ```text
 You are implementing PBSD work package P0-07 (Build, CI, proof pipeline and differential harness) in github.com/odin-loki/ParanoidBSD on branch wp/P0-07.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: CMake/ninja under pbsd/, tools/proof/, .github/workflows/, tests/diff/.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P0-07.md.
-Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); the proof checkers (ESBMC, CBMC, GenMC, Lean 4, Apalache) run per commit on changed units at pinned versions, and the gate hooks in tools/gates are set; differential runners compare syscall traces against stock Linux and HBSD.
+Scope: One build producing the new kernel image under QEMU (amd64, arm64, riscv64); the proof checkers (PRISM with ESBMC and CBMC, Lean 4, Apalache) run per commit on changed units at pinned versions, and the gate hooks in tools/gates are set; differential runners compare syscall traces against stock Linux and HBSD.
 Reuse first: existing tools/, pbsd.py, scripts/, core-gates (adapt); Linux tools/testing/selftests, LTP, syzkaller, xfstests, liburing tests, FreeBSD kyua tests (direct import as test oracles).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
-Done when: Empty kernel boots to serial banner on all three arches in CI; proof job (Lean, ESBMC, CBMC, GenMC) green on P0 headers. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
+Done when: Empty kernel boots to serial banner on all three arches in CI; proof job (PRISM, Lean) green on P0 headers. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.
 ```
 
 #### P0-08 Ownership map and merge rules
@@ -312,7 +312,7 @@ Done when: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC co
 
 - Owns: `pbsd/kernel/sched/`
 - Depends on: P0-05, P1-02
-- Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting only policies that carry a passing ESBMC proof of the extension contract.
+- Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting only policies that carry a passing PRISM proof of the extension contract.
 - Reuse:
   - Linux kernel/sched/fair.c (EEVDF), kernel/sched/ext.c, pelt.c, topology.c — adapt algorithm into C++
   - hbsd/src/sys/kern/sched_ule.c, kern_switch.c — reference for BSD thread integration
@@ -323,7 +323,7 @@ Done when: machine-checked proof (package model in Lean 4/TLA+, code by ESBMC co
 You are implementing PBSD work package P1-05 (Scheduler: EEVDF and loadable verified policies) in github.com/odin-loki/ParanoidBSD on branch wp/P1-05.
 Read docs/plan/PBSD_PLAN.md sections 1, 4, 5 and this package. Edit only: pbsd/kernel/sched/.
 Frozen interfaces in pbsd/kernel/include/ are read-only; if one is wrong, stop and write docs/plan/change-requests/P1-05.md.
-Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting only policies that carry a passing ESBMC proof of the extension contract.
+Scope: EEVDF with lag/deadline, sched_attr latency hints, P/E-core aware topology, policy-extension interface accepting only policies that carry a passing PRISM proof of the extension contract.
 Reuse first: Linux kernel/sched/fair.c (EEVDF), kernel/sched/ext.c, pelt.c, topology.c (adapt algorithm into C++); hbsd/src/sys/kern/sched_ule.c, kern_switch.c (reference for BSD thread integration).
 Write C++23 in the PBSD kernel dialect (no raw owning pointers, contracts on every public function).
 Done when: Differential: hackbench, schbench, cyclictest within 5% of Linux; machine-checked proof (package model in Lean 4/TLA+, code by ESBMC contracts) that bounded lag. Run the gate (build, tests, proof check) before submitting; the runner merges into pbsd-cutover. Do not name new components.

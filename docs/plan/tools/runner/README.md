@@ -40,7 +40,7 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
 - From attempt `escalate_at` on, it runs on `escalate_tier` (default `flash`, so escalation is off). Set `escalate_tier: "frontier"` to move hard tasks to GLM-5.3.
 - Providers fail over only within a tier.
 
-**Local Lean prover:** `lean_prover_url` (default in the configs: `http://127.0.0.1:8081/v1`, from `../llama/lean-prover.sh`), plus `lean_prover_model`, `lean_samples`, `lean_rounds`, `lean_max_tokens` and `lean_check_timeout_s`. When it is set, prover tasks get the `lean_prove` tool (AGENTS.md section 10).
+**Lean proofs:** `prism_bin` (default `prism`) and `prove_timeout_s`. When `PRISM_PROVER_FPK` (your Goedel `.fpk` on FORGE) is set, prover tasks get the `lean_prove` tool, which runs `prism prove FILE THEOREM --write --allow-exec` (AGENTS.md section 10).
 
 **Ready-made configs:**
 - `config.glm-api.json`: 32 agents, PC only.

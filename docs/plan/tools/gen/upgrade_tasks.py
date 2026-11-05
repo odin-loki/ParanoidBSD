@@ -79,16 +79,9 @@ PROOF_ACCEPT = {
     "T1": "Every theorem in the package's locked statement files (proofs/{wp}/spec/, hash-pinned at P0-FREEZE) is proved with {tool}; "
           "Lean: no sorry/admit/axiom/native_decide/implemented_by/extern, #print axioms lists only propext, Classical.choice and Quot.sound, "
           "and the comparator confirms each proved statement is byte-identical to the locked one. Reported as PROVED.",
-    "T2": "Every obligation in the unit's obligation list (the spec's contracts, plus the package model's refinement post-condition "
-          "abs(s') == step(abs(s), op)) is verified by ESBMC in contract or k-induction mode with the locked flags; no __ESBMC_assume / "
-          "__CPROVER_assume outside the locked harness skeleton; the vacuity check (assert(false) after the preconditions) fails as it must; "
-          "zero-VC results rejected; annotation-only diff against the reviewed implementation. Reported as PROVED. An obligation that "
-          "stays open is escalated, never turned into a runtime check.",
-    "T3": "Memory safety, integer overflow and the unit's contracts verified by ESBMC (or CBMC for C files) with unwinding assertions "
-          "and the locked flags; concurrency code also checked with GenMC (RC11/LKMM, 2-4 threads); every function the checker could not "
-          "reach is listed; annotation-only diff. Reported as BOUNDED(k).",
-    "T4": "A CBMC/ESBMC harness for every gateway-facing function of the unit (memory safety, overflow and the gateway contract) with "
-          "unwinding assertions; matching runtime gateway checks generated; reported as BOUNDED(k) plus RUNTIME, never as proved.",
+    "T2": "Every obligation in the unit's obligation list (the spec's contracts, plus the package model's refinement post-condition) is checked by PRISM (stages contracts, wp, pir, esbmc, harness, review) with a PROVED, PROVED-UNBOUNDED, PROVED-CERTIFIED or PROVED-ASSUMING verdict, none VACUOUS-ASSUMPTION or FAILED; contracts are `// requires:` / `// ensures:` / `// invariant:` / `// decreases:` comments; no __ESBMC_assume / __CPROVER_assume; annotation-only diff against the reviewed implementation. Reported as PROVED. An obligation that stays open is escalated, never turned into a runtime check.",
+    "T3": "Every obligation in the unit's obligation list is checked by PRISM (lints, thread, interval, cppcheck, esbmc, pir, harness, conc) with a BOUNDED verdict or better and no FAILED finding; no stage NOTRUN; annotation-only diff. Reported as BOUNDED(k).",
+    "T4": "A PRISM harness for every gateway-facing function of the unit (memory safety, overflow and the gateway contract), checked with a BOUNDED verdict or better and no FAILED finding; matching runtime gateway checks generated; reported as BOUNDED(k) plus RUNTIME, never as proved.",
 }
 
 def accept_fix(s):

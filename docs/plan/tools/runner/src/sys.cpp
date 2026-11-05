@@ -37,7 +37,7 @@ std::vector<std::string> gate_env(const std::string& build_dir) {
   // Gate hooks (tools/gates/lib.sh): PBSD_BUILD_CMD, PBSD_TEST_CMD, PBSD_PROOF_*, PBSD_QEMU_*, PBSD_JOBS ...
   for (char** p = environ; *p; ++p) {
     std::string kv = *p;
-    if (kv.starts_with("PBSD_") && kv.find("KEY") == std::string::npos && kv.find("TOKEN") == std::string::npos) e.push_back(kv);
+    if ((kv.starts_with("PBSD_") || kv.starts_with("PRISM_")) && kv.find("KEY") == std::string::npos && kv.find("TOKEN") == std::string::npos) e.push_back(kv);
   }
   if (!build_dir.empty()) e.push_back("PBSD_BUILD_DIR=" + build_dir);
   return e;
@@ -131,7 +131,7 @@ Config Config::load() {
     c.providers.push_back(d);
   }
   c.backend = env("PBSD_BACKEND", c.backend.c_str());
-  c.lean_prover_url = env("PBSD_LEAN_PROVER_URL", c.lean_prover_url.c_str());
+  c.prism_bin = env("PRISM_BIN", c.prism_bin.c_str());
   c.local_url = env("PBSD_LOCAL_URL", c.local_url.c_str());
   // PBSD_CONFIG, else $PBSD_STATE/config.json, else the HDD checkpoint copy (tmpfs is empty after a reboot).
   std::string cfg = env("PBSD_CONFIG", "");
@@ -196,9 +196,7 @@ Config Config::load() {
       c.merge_target = j.value("merge_target", c.merge_target);
       if (j.contains("backup_cmd")) c.backup_cmd = j["backup_cmd"].get<std::vector<std::string>>();
       c.backup_every_s = j.value("backup_every_s", c.backup_every_s);
-      c.lean_prover_url = j.value("lean_prover_url", c.lean_prover_url); c.lean_prover_model = j.value("lean_prover_model", c.lean_prover_model);
-      c.lean_samples = j.value("lean_samples", c.lean_samples); c.lean_rounds = j.value("lean_rounds", c.lean_rounds);
-      c.lean_max_tokens = j.value("lean_max_tokens", c.lean_max_tokens); c.lean_check_timeout_s = j.value("lean_check_timeout_s", c.lean_check_timeout_s);
+      c.prism_bin = j.value("prism_bin", c.prism_bin); c.prove_timeout_s = j.value("prove_timeout_s", c.prove_timeout_s);
       c.max_attempts = j.value("max_attempts", c.max_attempts); c.quarantine_after = j.value("quarantine_after", c.quarantine_after);
       c.build_watchdog_s = j.value("build_watchdog_s", c.build_watchdog_s); c.qemu_watchdog_s = j.value("qemu_watchdog_s", c.qemu_watchdog_s);
       c.io_some_max = j.value("io_some_max", c.io_some_max);

@@ -76,10 +76,6 @@
     "hbsd": "/run/pbsd/repo/hbsd",
     "kde": "/run/pbsd/repo/kde"
   },
-  "lean_prover_url": "http://127.0.0.1:8081/v1",
-  "lean_prover_model": "Goedel-Prover-V2-32B",
-  "lean_samples": 8,
-  "lean_rounds": 2,
   "_providers_note": "Odin's choice (4 Nov 2026, AGENTS.md section 7.3): one model provider, Morph, called directly at its own OpenAI-compatible API (no OpenRouter). GLM-5.3-Flash at fp8, US datacentre. Prices from Morph's model list (morphllm.com/api/models/json); confirm them and the account's limits in the Morph dashboard before the pilot.",
   "_optional_fallback": {
     "note": "Not used. To add a failover provider, copy this object into 'providers' (weight 0 = only when GMI is busy or down).",
@@ -93,5 +89,7 @@
     "price_in": 0.15,
     "price_hit": 0.03,
     "price_out": 0.5
-  }
+  },
+  "prism_bin": "prism",
+  "prove_timeout_s": 1800
 }

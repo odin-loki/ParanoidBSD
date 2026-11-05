@@ -91,11 +91,10 @@ struct Config {
   std::string merge_target = "pbsd-cutover";     // integrators and -IF tasks merge into this branch
   std::vector<std::string> backup_cmd;           // e.g. ["gsutil","-m","rsync","-r","/srv/pbsd/ckpt","gs://..."]
   int backup_every_s = 3600;
-  // ---- local Lean prover (the lean_prove tool for T1 model tasks). A Lean-specialised model such
-  // as Goedel-Prover-V2 or DeepSeek-Prover-V2 behind an OpenAI-compatible server (llama-server, vLLM)
-  // on the PC's GPU. GLM states lemmas and calls lean_prove; the prover writes the proof; Lean checks it.
-  std::string lean_prover_url, lean_prover_model = "Goedel-Prover-V2-32B";
-  int lean_samples = 8, lean_rounds = 2, lean_max_tokens = 16384, lean_check_timeout_s = 600;
+  // ---- Lean proofs: `prism prove FILE.lean THEOREM` (PRISM on FORGE with the Goedel prover model,
+  // PRISM_PROVER_FPK). The lean_prove tool is offered to prover tasks when PRISM_PROVER_FPK is set.
+  std::string prism_bin = "prism";
+  int prove_timeout_s = 1800;
   static Config load();                            // env + optional $PBSD_STATE/config.json
 };
 

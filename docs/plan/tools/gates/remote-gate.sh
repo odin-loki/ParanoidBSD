@@ -6,7 +6,7 @@
 # log and removes the worktree. Exit 3 = infrastructure error (the runner retries elsewhere).
 set -uo pipefail
 role="$1"; id="$2"; sha="$3"; tier="${4:-}"; [ "$tier" = - ] && tier=""; export PBSD_PROOF_TIER="$tier"
-. /etc/pbsd/worker.env 2>/dev/null || true
+set -a; . /etc/pbsd/worker.env 2>/dev/null || true; set +a
 cache="${PBSD_CACHE_REPO:-/run/pbsd/cache.git}"; wt="/run/pbsd/wt/$id-$$"
 sparse="${PBSD_SPARSE:-/* !/hbsd/ !/kde/ !/linux/ !/docs/migration/ !/docs/verify/ !/docs/PORT_PLAN.md}"
 mkdir -p /run/pbsd/wt

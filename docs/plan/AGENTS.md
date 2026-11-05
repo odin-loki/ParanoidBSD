@@ -4,8 +4,8 @@ Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what 
 
 **Who does the work:**
 - **GLM-5.3-Flash** does every task through its API: decomposition, porting, tests, proof work, reviews and merges. It is served by **one provider, Morph, called directly** at its own API (no OpenRouter). Morph serves the model at fp8, the precision Z.ai itself uses, from the US, at about half Z.ai's price (section 7.3).
-- **Lean proofs** come from a **local Lean-specialised prover model** on the P920's RTX 3090, for example Goedel-Prover-V2-32B. GLM-5.3-Flash states each lemma and calls the runner's `lean_prove` tool; the prover writes the proof; Lean checks it.
-- **Code-level proofs** use ESBMC, CBMC and GenMC (section 10). PRISM is gone, because it cannot check code.
+- **Lean proofs** come from `prism prove`: PRISM's tactic search with the **Goedel prover model running on FORGE** (your `.fpk`, `PRISM_PROVER_FPK`), on the P920. GLM-5.3-Flash states each lemma with a `sorry` and calls the runner's `lean_prove` tool; PRISM and FORGE write the proof; Lean's kernel checks it and PRISM audits the axioms.
+- **Code-level checks and proofs** are done by **PRISM** (`odin-loki/PRISM`, your C++23 checker): its contracts, wp, pir, esbmc and harness stages, with verdicts PROVED-UNBOUNDED, PROVED-CERTIFIED, PROVED-ASSUMING and BOUNDED kept apart (section 10).
 
 **Where things run:**
 - The builds, tests, proof checks and QEMU gates run on Odin's Lenovo P920, in RAM, with the HDD for checkpoints only.
@@ -155,7 +155,7 @@ The tier mechanism (`role_tier`, `escalate_at`, `escalate_tier`) can move hard t
 | `edit_file(path, old_text, new_text)` | Replace one exact, unique occurrence. Refused outside `owns`. |
 | `run_gate` | Commits the owned files and gates that SHA. |
 | `post_message(to, kind, body)`, `read_messages` | Typed messages; `to` is a task id or `spec`/`impl`/`test`/`proof`/`if`. |
-| `lean_prove(file, statement)` | Prover role, when `lean_prover_url` is set. |
+| `lean_prove(file, theorem)` | Prover role, when `PRISM_PROVER_FPK` is set: runs `prism prove` (FORGE + the Goedel prover) on a theorem whose whole proof is `sorry`. |
 | `submit` | Accepted only if the gate passed on the current tree; any write after a passing gate invalidates it. Reviewers must give a verdict and findings. |
 
 - **Worktrees:** each task runs in its own tmpfs worktree with its branch checked out. The worktree is sparse: everything except `hbsd/`, `kde/`, `linux/`, `docs/migration/`, `docs/verify/` and `docs/PORT_PLAN.md`, about 75 MB.
@@ -195,7 +195,7 @@ Every request starts with the shared global prefix:
 
 ```text
 You are one agent in the PBSD build. PBSD is a verified C++23 kernel. Rules:
-- Use only the PBSD kernel dialect: no raw owning pointers, no new/delete/malloc, contracts on every public function written with PBSD_PRE / PBSD_POST / PBSD_INVARIANT / PBSD_ASSERT (they expand to C++26 pre/post/contract_assert in the GCC 16 runtime build and to ESBMC/CBMC contracts in the verification build), typestate where a resource has states.
+- Use only the PBSD kernel dialect: no raw owning pointers, no new/delete/malloc, contracts on every public function written as PRISM annotation comments immediately before the function (`// requires: ...`, `// ensures: ...`, `// invariant: ...`, `// decreases: ...`; pointer parameters need `// requires: \valid(...)`), typestate where a resource has states.
 - Never invent names for components or subsystems; use plain descriptive names.
 - Reuse Linux, HBSD and Wine code: keep algorithms and structure, change only what the dialect and capability model require. Read sources with read_file (hbsd/..., ref:linux/..., ref:wine/...).
 - Edit only paths in your task's owns. Frozen headers in pbsd/kernel/include and locked statements in proofs/*/spec are read-only; propose changes with post_message(kind=contract_change_request, to=if).
@@ -228,10 +228,10 @@ Acceptance: {{accept}}
 Prover:
 ```text
 Role: prover. Task {{id}}: {{title}}. Proof tier: see proof_tier in the task.
-T1 (-MODEL): prove every locked statement in proofs/{{wp}}/spec/ in your owned model project (Lean 4: a Lake package "Model" importing "Spec"; TLA+: Init, Next, Safety and an inductive invariant IndInv). For Lean, state small lemmas and call lean_prove(file, statement) for each; the local prover writes the proof and Lean checks it. Never edit spec files; no sorry, admit, axiom, native_decide, implemented_by or extern.
-T2: write proofs/{{wp}}/{{unit}}/obligations.json ([{"file", "function", "kind"}], one entry per obligation in the spec) and add loop invariants, assigns clauses and ghost state as PBSD_* annotation lines in the unit's code until ESBMC proves every obligation in contract or k-induction mode. Change only annotation lines in code; never weaken a contract the spec requires; no assume statements.
-T3: the same obligation file; ESBMC (C++) or CBMC (C) bounded checks with unwinding assertions; mark lock-free or concurrent functions "kind": "concurrent" for GenMC.
-T4: write CBMC/ESBMC harnesses under proofs/{{wp}}/{{unit}}/harness/ for every gateway-facing function (assumptions may constrain the harness inputs; end every harness with PBSD_REACHED();), list them in obligations.json, and generate the matching runtime gateway checks.
+T1 (-MODEL): prove every locked statement in proofs/{{wp}}/spec/ in your owned model project (Lean 4: a Lake package "Model" importing "Spec"; TLA+: Init, Next, Safety and an inductive invariant IndInv). For Lean, write each lemma as `theorem name : statement := by sorry` in an owned .lean file and call lean_prove(file, name); PRISM and the Goedel prover on FORGE write the proof and Lean checks it. Never edit spec files; no sorry, admit, axiom, native_decide, implemented_by or extern.
+T2: write proofs/{{wp}}/{{unit}}/obligations.json ([{"file", "function"}], one entry per obligation in the spec) and add `// requires:`, `// ensures:`, `// invariant:` and `// decreases:` comments in the unit's code until PRISM reports a PROVED verdict for every obligation. Change only annotation comments in code; never weaken a contract the spec requires; no assume statements.
+T3: the same obligation file; PRISM must report BOUNDED or better for every obligation, with no FAILED finding.
+T4: write PRISM harnesses under proofs/{{wp}}/{{unit}}/harness/ for every gateway-facing function (a pointer parameter needs `// requires: \valid(...)`), list them in obligations.json, and generate the matching runtime gateway checks.
 The checker flags are fixed by the gate; you cannot choose them.
 Acceptance: {{accept}}
 ```
@@ -442,7 +442,7 @@ Default `tools/runner/config.glm-api.json` (PC only) and `config.glm-api-burst.j
 | `api_max_tokens` | 32,768 (reasoning included; the old 16,384 could not hold an 800-line file plus reasoning) | same |
 | Context budget (`ctx_per_slot`) | 131,072 | same |
 | `role_max_turns` | decomposer 40, implementer 80, tester 70, prover 300, reviewer 30, integrator 160 | same |
-| Lean prover (`lean_prover_url`) | `http://127.0.0.1:8081/v1` (`tools/llama/lean-prover.sh`) | same |
+| Lean proofs | `prism_bin` + `PRISM_PROVER_FPK` (FORGE runs the Goedel model in-process) | same |
 | Pinned gates (`gates_dir`) | `/opt/pbsd/gates` | same |
 | Checkpoints to the HDD | every 600 s | every 600 s |
 
@@ -513,19 +513,20 @@ pbsd_run init && pbsd_run run
    - Each gate slot has a fixed core count and node, so builds never use `-j$(nproc)`.
    - Compile and QEMU go on node 0; proofs spread over both nodes.
    - Run under Linux, or WSL2 with memory interleaving in the BIOS. WSL2 needs nested virtualization for KVM in the QEMU slots.
-5. **Local GPU for Lean proofs:** the RTX 3090 runs the Lean prover (`tools/llama/lean-prover.sh`). The A4000 can run a smaller prover or a log-triage model through `aux_url` / `role_backend`.
+5. **Local GPU for Lean proofs:** FORGE runs the Goedel prover on the RTX 3090 inside `prism prove`. The A4000 can run a log-triage model through `aux_url` / `role_backend`.
 6. **More API headroom with burst:** add DeepInfra (200 concurrent by default) or ask Z.ai for higher concurrency. Ramp Fireworks traffic slowly, because its limit grows 25% per 15 minutes.
 
 ### 8.5 Order of work
 
 0. **Base branch.** The source tree that commit `bfa869fc1` deleted from `main` is restored on this branch (section 11). Run on a branch that has the full tree and this plan.
 1. **Toolchains and providers.**
-   - Install the toolchains on the PC (WSL2): GCC 16 (C++26 contracts), Clang, ESBMC, CBMC, GenMC, Lean (elan) and Apalache. `CLOUD_SETUP.md` step 6 has the commands.
+   - Install the toolchains on the PC (WSL2): a Clang 19+ toolchain, ESBMC and CBMC (PRISM runs them), Lean (elan) and Apalache; build PRISM (`scripts/wsl_build.sh` in its repository) and put your Goedel `.fpk` where `PRISM_PROVER_FPK` points. `CLOUD_SETUP.md` step 6 has the commands.
    - Clone Linux and Wine at pinned tags under `~/pbsd-ref`.
-   - Start the Lean prover.
    - Add Morph credit in its dashboard. Check the GLM-5.3-Flash price and your limits there, and put them in the config. Check that it answers (`CLOUD_SETUP.md` step 4).
 2. **Selftest.** `pbsd_run selftest` (23 checks).
-3. **P0-07 first.** It pins the tool versions and sets the real gate commands (`PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE`). It also checks every checker flag in `proof_check.sh` against those versions.
+3. **Calibrate PRISM, then P0-07.**
+   - **By hand first:** run `prism` on one existing unit with the T2 stage list from `proof_check.sh`, read `report.json`, and fix the gate where its stage names, flags or reading differ. Run `prism prove` once on a small `sorry` lemma with your `.fpk`.
+   - **P0-07** then pins the tool versions and sets the real gate commands (`PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE`).
 4. **Pilot (go/no-go).**
    - Run all of Phase 0 with every package's `-IF` task, `P0-FREEZE`, and all of P1-02: 447 tasks, closed under their dependencies, including three package models and 29 T2 proofs.
    - Measure requests, tokens and dollars per task class; the first-pass gate rate; **T1/T2 obligations proved per attempt**; and the 429 rate per provider.
@@ -596,61 +597,59 @@ The PC can lose power, run out of memory or crash. Any API provider can rate-lim
   - Workers block the instance metadata service for the gate user.
 - **Daily backup.** At 04:00 Sydney time, the database copy, the bare repo (`git bundle`) and the logs go to a second disk or a cloud bucket.
 
-## 10. Proof stack (replaces PRISM)
+## 10. Proof stack: PRISM and FORGE
 
-**Why PRISM is gone.** PRISM is a probabilistic model checker for Markov chains and MDPs. It reads only its own modelling language, has no C or C++ front end, and cannot check any property of PBSD code. The old proof gate also passed when a task wrote no proofs at all.
+**PRISM** (`odin-loki/PRISM`, "Performance, Regression, Integration and Security Module") is Odin's C++23 code checker, and it is the checker for every code-level result here. An earlier revision of this plan mistook it for a different tool of the same name, the probabilistic model checker, and removed it. That was wrong, and it is corrected here. Facts below were read from PRISM's source and docs on 5 Nov 2026.
 
-This repository's own earlier tooling (`tools/verify`) used CBMC, ESBMC and the clang analyser. CBMC reached 749 of 4,737 units, so C++ support is a known limit.
+**What PRISM does that this plan uses:**
+- **Stages** (`STAGE_ORDER`): inventory, classify, lints, taint, thread, interval, warnings, cppcheck, pbsd, sanitize, polyglot, esbmc, dafny, contracts, wp, pir, conc, harness, review, concolic, fuzz, diff, rapid, muttest, ltl, llm, repair and more. Each stage that cannot run is written down as `NOTRUN`, never as a pass.
+- **Contracts:** `// requires:`, `// ensures:`, `// invariant:` and `// decreases:` comments, or ACSL `/*@ ... */`, placed before the function. A pointer parameter needs `// requires: \valid(...)`, or the verdict is `NEEDS-HARNESS`. The `review` stage audits every `requires` for vacuity (`VACUOUS-ASSUMPTION`).
+- **Verdicts**, never merged: `PROVED-CERTIFIED` (solver result re-checked by Lean's LRAT checker or cake_lpr), `PROVED-UNBOUNDED` (k-induction closed), `PROVED`, `PROVED-ASSUMING` (under a listed `requires`), `BOUNDED` (nothing found within k; not a proof), then no-answer verdicts (`UNKNOWN`, `TIMEOUT`, `NOTRUN`, `NEEDS-HARNESS`) and defects (`FAILED`, `CRASH`, `SANFAIL`). LLM output is only `HYPOTHESIS`; it cannot prove anything.
+- **Safety:** it never executes scanned code without `--allow-exec`; the gate does not pass that flag.
+- **Output:** `report.json` (`stages[].findings[]` with `stage, status, file, function, line, cls, message`), `report.md`, `report.sarif`; `--fail-on defect` exits 1 on a defect and 2 when a PRISM stage crashed.
+- **External tools** it runs when installed: ESBMC, CBMC, cppcheck, clang-tidy, Frama-C and others (`prism-deps tool NAME`).
+- **Lean proof search:** `prism prove FILE.lean THEOREM --write --allow-exec` runs a best-first tactic search with a prover model, validates every candidate, checks the kernel result and the axioms (only `propext`, `Classical.choice`, `Quot.sound`), and runs `lake build` before it accepts.
 
-**Result labels.** Every result is **PROVED** (unbounded), **BOUNDED(k)**, **RUNTIME** or **TESTED**, and the proof report keeps them apart.
+**FORGE** (`odin-loki/FORGE`) is the inference engine PRISM is built on. `prism prove` runs the **Goedel-Prover model as a FORGE `.fpk`** in-process: set `PRISM_PROVER_FPK` to the file Odin has already tested on FORGE. No separate model server is needed.
+
+**Result labels.** Every result is PROVED (any PROVED-* verdict), BOUNDED(k), RUNTIME or TESTED, and the proof report keeps them apart.
 
 | Tier | Where | Checker | Who writes the proof | Label | Tasks |
 |---|---|---|---|---|---|
-| T0 | build and infrastructure packages (P0-01, P0-07, P0-08) | `static_assert`/`consteval`, dialect lint | GLM-5.3-Flash | TESTED | 15 |
-| T1 | models of the 12 verified-core packages | **Lean 4** (kernel-checked); **TLA+ with Apalache** inductive invariants for the P1-06 and P2-01 protocols | GLM-5.3-Flash states lemmas; the **local Lean prover** writes the Lean proofs through `lean_prove` | PROVED | 12 |
-| T2 | verified-core code: allocator, page tables (W^X), capabilities, dispatcher, EEVDF core, ring core, path walk, IOMMU core, cap model, VFS interface | **ESBMC** function contracts and loop invariants in contract or k-induction mode. Each operation also proves `abs(s') == step(abs(s), op)` against the T1 model, transcribed as ghost functions in a locked header. | GLM-5.3-Flash | PROVED | 83 |
-| T3 | the rest of the kernel | ESBMC (C++) or CBMC (C) with unwinding assertions; **GenMC** (RC11/LKMM, 2–4 threads) for concurrent code | GLM-5.3-Flash | BOUNDED(k) | 837 |
-| T4 | drivers and imported foreign code (Linux drivers, DRM, Wine, ext4/NTFS/ZFS imports, translation) | CBMC/ESBMC harnesses at the gateway, plus generated runtime gateway checks. The real guarantee is the T1/T2 proof that IOMMU windows and capabilities confine the driver. | GLM-5.3-Flash | BOUNDED(k) + RUNTIME | 1,642 |
-
-**The local Lean prover:**
-- **Candidates:** any Lean-specialised model behind an OpenAI-compatible server. At 4-bit, a 32B model fits the RTX 3090.
-  - Goedel-Prover-V2-32B: about 88% on miniF2F at pass@32, per a secondary source.
-  - Pythagoras-Prover-32B: 93% at pass@2048 (arXiv 2606.12594).
-  - DeepSeek-Prover-V2.
-- **How `lean_prove` works:**
-  1. It samples `lean_samples` proofs (8 by default) for the statement appended to the owned `.lean` file.
-  2. It checks each with `lake env lean` in a scrubbed environment.
-  3. It keeps the first one Lean accepts.
-  4. If none passes, it feeds the best attempt's errors back for a second round (`lean_rounds`).
-  5. If that also fails, it tells GLM to split the statement into lemmas.
-- **What it refuses:** candidates that rewrite earlier text, and code that runs at elaboration time (`#eval`, `run_cmd`, `IO`, `unsafe`, `extern`).
-- **Its limit:** the prover proves Lean statements only. The link from the Lean model to the C++ code is the T2 refinement proof in ESBMC.
+| T0 | build and infrastructure packages (P0-01, P0-07, P0-08) | `static_assert`/`consteval`, dialect lint, PRISM lints | GLM-5.3-Flash | TESTED | 15 |
+| T1 | models of the 12 verified-core packages | **Lean 4** (kernel-checked); **TLA+ with Apalache** for the P1-06 and P2-01 protocols | GLM-5.3-Flash states lemmas; **`prism prove` (Goedel on FORGE)** writes the Lean proofs | PROVED | 12 |
+| T2 | verified-core code: allocator, page tables (W^X), capabilities, dispatcher, EEVDF core, ring core, path walk, IOMMU core, cap model, VFS interface | **PRISM** stages contracts, wp, pir, esbmc, harness, review; each operation refines the T1 model through its `ensures` | GLM-5.3-Flash | PROVED | 83 |
+| T3 | the rest of the kernel | **PRISM** lints, thread, interval, cppcheck, esbmc, pir, harness, conc | GLM-5.3-Flash | BOUNDED(k) | 837 |
+| T4 | drivers and imported foreign code | **PRISM** harnesses at the gateway, plus generated runtime gateway checks. The real guarantee is the T1/T2 proof that IOMMU windows and capabilities confine the driver. | GLM-5.3-Flash | BOUNDED(k) + RUNTIME | 1,642 |
 
 **Dialect consequences** (frozen in P0-01):
-- **Contract syntax.** `[[expects]]/[[ensures]]/[[invariant]]` is the C++20 contracts design removed in 2019, and compilers silently ignore unknown attributes. Contracts are `PBSD_PRE/POST/ASSERT/INVARIANT/ASSIGNS/DECREASES` macros:
-  - **GCC 16 runtime build:** C++26 `pre`/`post`/`contract_assert` (P2900). GCC 16 implements them; Clang does not.
-  - **Verification build:** `__ESBMC_requires/ensures` or `__CPROVER_*`.
-  - **Clang:** runtime checks.
-  - **Vacuity build:** under `PBSD_VACUITY` an `assert(false)` after the preconditions.
-- **Verified-core subset:** no C++ modules, coroutines or virtual inheritance; concrete template instantiations; asm only in stubs with locked contracts. ESBMC's front end claims C++20, not C++23.
+- **Contract syntax** is PRISM's: annotation comments before each function. The C++20 `[[expects]]/[[ensures]]/[[invariant]]` attribute design was removed from the standard in 2019 and compilers ignore it, so it is not used. P0-01 writes a generator that turns the annotation comments into runtime checks for the runtime build (GCC 16 `pre`/`post`, or checks under Clang).
+- **Verified-core subset:** PRISM reports many C++ features as `NEEDS-HARNESS` instead of closing a proof (for example coroutines, `<=>`, setjmp, some library types). The T2 subset avoids them: no C++ modules, coroutines or virtual inheritance, concrete template instantiations, bounded loops, asm only in stubs. The pilot shows where the subset must shrink further.
 - **Design for verification:** a finite syscall interface, bounded loops in kernel paths, and page-table entries written one at a time.
 
-**Anti-cheating gates** (`tools/gates/proof_check.sh`; flags are fixed by the gate, never by the agent):
-1. **Locked statements.** Lean and TLA+ statement files are hash-pinned at `P0-FREEZE`, and any change fails. A generated `example : Spec.X := Model.X` per theorem checks that each proved statement is the locked one.
-2. **Axiom audit.** `#print axioms` may list only `propext`, `Classical.choice` and `Quot.sound`. The gate also rejects `sorry`, `admit`, `axiom`, `native_decide`, `implemented_by`, `extern` and `debug.skipKernelTC`.
-3. **No assumptions in code or in T2/T3 obligations.** `__ESBMC_assume`, `__CPROVER_assume` and `__VERIFIER_assume` are rejected there. T4 harnesses may use them to constrain inputs, but every harness must end with `PBSD_REACHED();`.
-4. **Annotation-only diffs.** With the `PBSD_*` annotation lines removed, the code must equal the reviewed code at the task's `PBSD-Base` commit.
-5. **Vacuity, for T2, T3 and T4.** Under `PBSD_VACUITY`, an `assert(false)` after the preconditions, and at each `PBSD_REACHED()`, must fail. Zero verification conditions are rejected, and so is an empty obligation list.
-6. **Tier from the task.** The tier comes from `tasks.json` through the runner, never from a file the agent writes.
-7. **Integration re-check.** An integrator change to a proved unit re-runs that unit's proof.
-8. **Spec review.** Reviewers reject incomplete obligation lists and contracts weaker than the spec.
+**The gate** (`tools/gates/proof_check.sh`): it runs PRISM with fixed stage lists and flags, reads `report.json`, and decides pass or fail per obligation:
+- T2 needs a PROVED-* verdict, with no `VACUOUS-ASSUMPTION` and no defect.
+- T3 and T4 need BOUNDED or better, with no defect.
+- A required stage that is `NOTRUN` (tool missing) or a crashed PRISM stage exits 3 (infrastructure: retried, no attempt charged), never a pass.
 
-Still to add in P0-07: mutation tests (seeded bugs must be rejected), two solver seeds, and cover checks.
+**Anti-cheating checks** the gate adds around PRISM:
+1. **Locked statements** (T1): Lean and TLA+ statement files are hash-pinned at `P0-FREEZE`; a generated `example : Spec.X := Model.X` per theorem checks that each proved statement is the locked one.
+2. **Axiom audit** (T1): `#print axioms` may list only `propext`, `Classical.choice` and `Quot.sound`; `sorry`, `admit`, `axiom`, `native_decide`, `implemented_by`, `extern` and `debug.skipKernelTC` are rejected.
+3. **No assumptions:** `__ESBMC_assume`, `__CPROVER_assume` and `__VERIFIER_assume` are rejected in code and obligations.
+4. **Annotation-only diffs:** with the annotation comments removed, the code must equal the reviewed code at the task's `PBSD-Base` commit.
+5. **Tier from the task:** the tier comes from `tasks.json` through the runner, never from a file the agent writes.
+6. **Integration re-check:** an integrator change to a proved unit re-runs that unit's proof.
+7. **Spec review:** reviewers reject incomplete obligation lists and contracts weaker than the spec. PRISM's own vacuity audit covers unsatisfiable `requires`.
+
+**Not yet verified (the first pilot step):**
+- The gate has not been run against a real PRISM build. The stage lists, the `report.json` reading and the `--unwind` flag follow PRISM's source. On the PC, run PRISM by hand on one P0-02 unit, read `report.json`, and fix `proof_check.sh` where it differs.
+- How well PRISM's C++ front end handles the kernel dialect. PRISM states its own coverage honestly (`NEEDS-HARNESS`, `NOTRUN`), so the pilot will show it.
+- That `prism prove` closes the P0-02 and P1-02 model lemmas with your Goedel model.
 
 **Honest scope:**
 - **Published scale:** fully verified kernels so far are around 6–9 KLOC. seL4 took about 25 person-years; Atmosphere (Verus) under 2.5 person-years.
-- **This plan:** proves a verified core of roughly 10–20 KLOC and labels everything else BOUNDED or RUNTIME.
-- **No evidence yet:** there is no published benchmark for LLM-written C++ verification proofs, and none for GLM on any verification tool. The pilot measures it.
+- **This plan:** aims at a verified core of roughly 10–20 KLOC, and labels everything else BOUNDED or RUNTIME.
+- **No evidence yet:** no published results exist for GLM writing C++ proofs against any checker. The pilot measures it.
 
 ## 11. Review of 4 Nov 2026
 
@@ -659,8 +658,8 @@ The plan's arithmetic reproduced exactly: `pbsd_run estimate` gave $421, 14.9 da
 | # | Problem | Fix |
 |---|---|---|
 | 1 | Commit `bfa869fc1` ("docs: add PBSD phased kernel plan…") deleted 116,056 files from `main`: `hbsd/`, `pbsd/`, `kde/`, `tools/`, `LICENSE` and more. The runner, tasks and gates read those trees. | Restored from its parent `4500833f7` (commit "Restore the source tree deleted by bfa869fc1") |
-| 2 | PRISM cannot check C++ code; the proof gate passed with no proofs | Tiered stack and `proof_check.sh` (section 10); local Lean prover through `lean_prove` |
-| 3 | `[[expects]]/[[ensures]]/[[invariant]]` is the removed C++20 design; compilers ignore it, so the promised runtime checks would not exist | `PBSD_*` macros over C++26 `pre/post` (GCC 16) and ESBMC/CBMC contracts |
+| 2 | The plan's proof gate was a placeholder that passed with no proofs, and an earlier revision of this review wrongly removed PRISM, mistaking it for the probabilistic model checker | PRISM (Odin's C++23 checker) is the checker, run by a tiered gate (`proof_check.sh`); Lean proofs through `lean_prove` = `prism prove` on FORGE (section 10) |
+| 3 | `[[expects]]/[[ensures]]/[[invariant]]` is the removed C++20 design; compilers ignore it, so the promised runtime checks would not exist | PRISM's annotation comments; P0-01 generates the runtime checks from them (section 10) |
 | 4 | About 6 turns per task, but a turn is one API request | Per-role request budgets; re-estimated (section 8.1) |
 | 5 | Gate CPU counted one run per task | Gate runs per attempt: 29.8k core-hours in the middle case |
 | 6 | `owns` was one comma-joined string; the runner treated it as one path, so every write was refused | `tasks.json` uses lists; the runner accepts both forms |

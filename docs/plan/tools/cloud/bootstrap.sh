@@ -23,7 +23,7 @@ echo "== packages (toolchain, QEMU for amd64/arm64/riscv64, solvers, Java for Ap
 apt-get update -q
 apt-get install -y -q build-essential clang lld llvm bmake bison flex m4 cmake ninja-build ccache git jq curl unzip xz-utils \
   qemu-system-x86 qemu-system-arm qemu-system-misc qemu-utils openjdk-21-jre-headless z3 python3 rsync wireguard-tools \
-  iptables util-linux coreutils procps
+  iptables bubblewrap util-linux coreutils procps
 
 echo "== proof tools (AGENTS.md section 10). A missing tool makes its gates exit 3 (retried), never pass"
 gh_latest() {  # gh_latest <owner/repo> <asset regex>: newest matching release asset
@@ -44,13 +44,6 @@ if ! command -v apalache-mc >/dev/null; then
   if [ -n "$u" ] && curl -fsSL "$u" -o /tmp/apalache.tgz; then
     mkdir -p /opt/apalache && tar -xzf /tmp/apalache.tgz -C /opt/apalache --strip-components=1 && ln -sf /opt/apalache/bin/apalache-mc /usr/local/bin/apalache-mc
   else echo "WARNING: Apalache not installed"; fi
-fi
-if ! command -v genmc >/dev/null; then   # no binary release: build it (needs LLVM development packages)
-  apt-get install -y -q llvm-dev libclang-dev libhwloc-dev autoconf automake libffi-dev || true
-  if [ -d /opt/genmc-src ] || git clone -q --depth 1 https://github.com/MPI-SWS/genmc /opt/genmc-src; then
-    (cd /opt/genmc-src && autoreconf --install >/dev/null 2>&1 && ./configure >/dev/null && make -j"$(nproc)" >/dev/null && make install >/dev/null) \
-      || echo "WARNING: GenMC build failed; concurrency obligations will exit 3"
-  fi
 fi
 
 echo "== user pbsd and ssh key"
@@ -103,6 +96,7 @@ install -d -o pbsd -g pbsd /srv/ref
 
 echo "== pinned gate scripts and entry points (agents cannot change these)"
 install -d /opt/pbsd/bin /opt/pbsd/gates /etc/pbsd
+install -d -o pbsd -g pbsd /opt/pbsd/prism    # mirror-setup.sh copies the PC's PRISM build here
 if [ -f "$here/../gates/remote-gate.sh" ]; then
   install -m 755 "$here/../gates/remote-gate.sh" /opt/pbsd/bin/pbsd-gate
   install -m 755 "$here"/../gates/*.sh /opt/pbsd/gates/
@@ -126,6 +120,7 @@ PBSD_MIRROR=$PBSD_MIRROR
 PBSD_JOBS=2
 PBSD_REF=/srv/ref
 PBSD_TASKS=/opt/pbsd/tasks.json
+PRISM_BIN=/opt/pbsd/prism/prism
 ENV
 
 echo "== WireGuard (optional)"
@@ -139,7 +134,8 @@ slots=$(( (cores - 4) / 2 )); [ $slots -lt 1 ] && slots=1
 kvm=""; [ -e /dev/kvm ] && kvm=" kvm"
 line="$(hostname) $slots$kvm"
 echo "== done: $cores physical cores, ${ram_gb} GB RAM, tmpfs ${sz} GB, KVM ${kvm:- none (QEMU gates stay on the PC)}"
-for t in esbmc cbmc apalache-mc genmc lake qemu-system-x86_64; do printf '  %-20s %s\n' "$t" "$(command -v $t || echo MISSING)"; done
+for t in esbmc cbmc apalache-mc lake qemu-system-x86_64; do printf '  %-20s %s\n' "$t" "$(command -v $t || echo MISSING)"; done
+[ -x /opt/pbsd/prism/prism ] || echo "  PRISM not yet on this worker: run tools/cloud/mirror-setup.sh from the PC (copies it)"
 echo "workers.txt line (use your ssh alias for the host):  $line"
 if [ -n "${PBSD_RUNNER:-}" ]; then
   su pbsd -c "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new $PBSD_RUNNER 'mkdir -p ~/.pbsd && grep -q \"^$(hostname) \" ~/.pbsd/workers.txt 2>/dev/null || echo \"$line\" >> ~/.pbsd/workers.txt'" \
