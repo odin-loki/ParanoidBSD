@@ -82,7 +82,7 @@
   },
   "_providers_note": "Odin's choice (4 Nov 2026, AGENTS.md section 7.3): one model provider, Morph, called directly at its own OpenAI-compatible API (no OpenRouter). GLM-5.3-Flash at fp8, US datacentre. Prices from Morph's model list (morphllm.com/api/models/json); confirm them and the account's limits in the Morph dashboard before the pilot.",
   "_optional_fallback": {
-    "note": "Not used. To add a failover provider, copy this object into 'providers' (weight 0 = only when GMI is busy or down).",
+    "note": "Not used. To add a failover provider, copy this object into 'providers' (weight 0 = only when Morph is busy or down).",
     "name": "zai",
     "tier": "flash",
     "weight": 0,

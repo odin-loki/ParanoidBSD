@@ -10,7 +10,8 @@
 #   PBSD_WG_CONF   optional WireGuard config contents for wg0 (see wg-worker.conf.example)
 #   PBSD_RUNNER    optional ssh target on the PC (over WireGuard) to self-register, e.g. odin@10.66.0.1
 #   LINUX_TAG, WINE_TAG   reference trees for differential tests: the same tags as on the PC
-#   ESBMC_URL, CBMC_DEB_URL, APALACHE_URL   release downloads (default: the latest release; P0-07 pins them)
+#   APALACHE_URL   release download (default: the latest release; P0-07 pins it). ESBMC, CBMC and cppcheck are not installed here:
+#                  mirror-setup.sh copies the PC's PRISM-built (pinned) copies to /opt/pbsd/prism-tools
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "run as root"; exit 1; }
 : "${PBSD_PUBKEY:?set PBSD_PUBKEY to the runner ssh public key}"
@@ -29,16 +30,6 @@ echo "== proof tools (AGENTS.md section 10). A missing tool makes its gates exit
 gh_latest() {  # gh_latest <owner/repo> <asset regex>: newest matching release asset
   curl -fsSL "https://api.github.com/repos/$1/releases/latest" | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | .browser_download_url' | head -1
 }
-if ! command -v esbmc >/dev/null; then
-  u="${ESBMC_URL:-$(gh_latest esbmc/esbmc 'linux.*\.zip$' || true)}"
-  if [ -n "$u" ] && curl -fsSL "$u" -o /tmp/esbmc.zip; then
-    mkdir -p /opt/esbmc && unzip -qo /tmp/esbmc.zip -d /opt/esbmc && ln -sf "$(find /opt/esbmc -name esbmc -type f -perm -u+x | head -1)" /usr/local/bin/esbmc
-  else echo "WARNING: ESBMC not installed (set ESBMC_URL)"; fi
-fi
-if ! command -v cbmc >/dev/null; then
-  u="${CBMC_DEB_URL:-$(gh_latest diffblue/cbmc 'ubuntu-24.04.*\.deb$' || true)}"
-  if [ -n "$u" ] && curl -fsSL "$u" -o /tmp/cbmc.deb; then apt-get install -y -q /tmp/cbmc.deb; else apt-get install -y -q cbmc || echo "WARNING: CBMC not installed"; fi
-fi
 if ! command -v apalache-mc >/dev/null; then
   u="${APALACHE_URL:-$(gh_latest apalache-mc/apalache 'apalache.*\.tgz$' || true)}"
   if [ -n "$u" ] && curl -fsSL "$u" -o /tmp/apalache.tgz; then
@@ -96,7 +87,7 @@ install -d -o pbsd -g pbsd /srv/ref
 
 echo "== pinned gate scripts and entry points (agents cannot change these)"
 install -d /opt/pbsd/bin /opt/pbsd/gates /etc/pbsd
-install -d -o pbsd -g pbsd /opt/pbsd/prism    # mirror-setup.sh copies the PC's PRISM build here
+install -d -o pbsd -g pbsd /opt/pbsd/prism /opt/pbsd/prism-tools    # mirror-setup.sh copies the PC's PRISM build and its tools here
 if [ -f "$here/../gates/remote-gate.sh" ]; then
   install -m 755 "$here/../gates/remote-gate.sh" /opt/pbsd/bin/pbsd-gate
   install -m 755 "$here"/../gates/*.sh /opt/pbsd/gates/
@@ -121,6 +112,7 @@ PBSD_JOBS=2
 PBSD_REF=/srv/ref
 PBSD_TASKS=/opt/pbsd/tasks.json
 PRISM_BIN=/opt/pbsd/prism/prism
+PRISM_TOOLS_DIR=/opt/pbsd/prism-tools
 ENV
 
 echo "== WireGuard (optional)"
@@ -134,7 +126,7 @@ slots=$(( (cores - 4) / 2 )); [ $slots -lt 1 ] && slots=1
 kvm=""; [ -e /dev/kvm ] && kvm=" kvm"
 line="$(hostname) $slots$kvm"
 echo "== done: $cores physical cores, ${ram_gb} GB RAM, tmpfs ${sz} GB, KVM ${kvm:- none (QEMU gates stay on the PC)}"
-for t in esbmc cbmc apalache-mc lake qemu-system-x86_64; do printf '  %-20s %s\n' "$t" "$(command -v $t || echo MISSING)"; done
+for t in apalache-mc lake qemu-system-x86_64; do printf '  %-20s %s\n' "$t" "$(command -v $t || echo MISSING)"; done
 [ -x /opt/pbsd/prism/prism ] || echo "  PRISM not yet on this worker: run tools/cloud/mirror-setup.sh from the PC (copies it)"
 echo "workers.txt line (use your ssh alias for the host):  $line"
 if [ -n "${PBSD_RUNNER:-}" ]; then

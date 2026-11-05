@@ -520,7 +520,7 @@ pbsd_run init && pbsd_run run
 
 0. **Base branch.** The source tree that commit `bfa869fc1` deleted from `main` is restored on this branch (section 11). Run on a branch that has the full tree and this plan.
 1. **Toolchains and providers.**
-   - Install the toolchains on the PC (WSL2): a Clang 19+ toolchain, ESBMC and CBMC (PRISM runs them), Lean (elan) and Apalache; build PRISM (`scripts/wsl_build.sh` in its repository) and put your Goedel `.fpk` where `PRISM_PROVER_FPK` points. `CLOUD_SETUP.md` step 6 has the commands.
+   - Install the toolchains on the PC (WSL2): a Clang 19+ toolchain, Lean (elan) and Apalache; build PRISM (`scripts/wsl_build.sh` in its repository), then `prism-deps tool esbmc cbmc cppcheck` for the pinned analyzers it runs and put your Goedel `.fpk` where `PRISM_PROVER_FPK` points. `CLOUD_SETUP.md` step 6 has the commands.
    - Clone Linux and Wine at pinned tags under `~/pbsd-ref`.
    - Add Morph credit in its dashboard. Check the GLM-5.3-Flash price and your limits there, and put them in the config. Check that it answers (`CLOUD_SETUP.md` step 4).
 2. **Selftest.** `pbsd_run selftest` (23 checks).

@@ -120,12 +120,12 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    sudo LINUX_TAG=<newest longterm tag on kernel.org> WINE_TAG=<current Wine stable tag> PBSD_USER=$USER \
         bash docs/plan/tools/cloud/pc-tools.sh
    ```
-   It installs the build toolchain, QEMU for three architectures, ESBMC, CBMC, Apalache and Lean (elan). It also copies the **pinned** gate scripts to `/opt/pbsd/gates` (`gates_dir`) and the task list to `/opt/pbsd/tasks.json`, and clones Linux and Wine at the tags you give under `~/pbsd-ref` (`ref_roots`).
+   It installs the build toolchain, QEMU for three architectures, Apalache and Lean (elan). ESBMC, CBMC and cppcheck are built by PRISM's `prism-deps` (next bullet), not installed here. It also copies the **pinned** gate scripts to `/opt/pbsd/gates` (`gates_dir`) and the task list to `/opt/pbsd/tasks.json`, and clones Linux and Wine at the tags you give under `~/pbsd-ref` (`ref_roots`).
    - **Tags:** write the two tags down. Every worker must use the same ones, because they are the behavioural reference for every port.
    - **KVM:** for QEMU gates with KVM under WSL2, set `nestedVirtualization=true` in `%UserProfile%\.wslconfig`.
    - **Gate hooks:** set the real build commands once the P0-07 tasks have passed: `PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE` and `PBSD_QEMU_MARKER`. The proof hook defaults to `proof_check.sh`, with the tier taken from the task.
    - **Exit codes:** each gate exits 0 pass, 1 fail, 3 infrastructure error.
-   - **PRISM and FORGE:** build PRISM yourself (`git clone https://github.com/odin-loki/PRISM ~/PRISM && cd ~/PRISM && scripts/wsl_build.sh`; its CMake fetches FORGE). Put your Goedel `.fpk` somewhere and set `PRISM_PROVER_FPK` to it. Check: `prism --version`, then `prism prove` on one small `sorry` lemma.
+   - **PRISM and FORGE:** build PRISM yourself (`git clone https://github.com/odin-loki/PRISM ~/PRISM && cd ~/PRISM && scripts/wsl_build.sh`; its CMake fetches FORGE). Put your Goedel `.fpk` somewhere and set `PRISM_PROVER_FPK` to it. Then build the pinned analyzers with `~/PRISM/build/prism-deps tool esbmc cbmc cppcheck` (into `~/.prism/tools`, hash-checked; rerunning `pc-tools.sh` does the same). PRISM looks in `--tool`, then `$PRISM_TOOLS_DIR` / `~/.prism/tools`, then `PATH`. Check: `prism --version`, `ls ~/.prism/tools`, then `prism prove` on one small `sorry` lemma.
 7. **Rent w1** (only when step 2's quota is approved and you are ready to run).
    ```bash
    gcloud compute instances create pbsd-w1 --project pbsd --zone australia-southeast1-b \
@@ -135,7 +135,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    gcloud compute firewall-rules create pbsd-wg --allow udp:51820 --target-tags pbsd   # only if using WireGuard
    ```
    Bootstrap runs by itself via cloud-init (log: `/var/log/pbsd-bootstrap.log`). It:
-   - installs the toolchain, QEMU, ESBMC, CBMC, GenMC, Apalache and Lean;
+   - installs the toolchain, QEMU, Apalache and Lean (ESBMC, CBMC and cppcheck arrive with PRISM in step 9);
    - creates user `pbsd` with your key;
    - mounts a tmpfs at `/run/pbsd` (70% of RAM);
    - creates the bare mirror `/srv/pbsd/pbsd.git`;
@@ -150,7 +150,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    - Append `tools/cloud/ssh_config.example` to `~/.ssh/config`. It defines the aliases `w1` and `pbsd-mirror`, with connection multiplexing so ~90 gates share one connection. Test with `ssh w1 nproc`.
 9. **Seed the mirror and register the worker.**
    ```bash
-   PRISM_BIN=$PRISM_BIN tools/cloud/mirror-setup.sh $PBSD_REPO pbsd-mirror <base-branch>   # pushes the full history once, then builds w1's hbsd/kde reference trees
+   PRISM_BIN=$PRISM_BIN tools/cloud/mirror-setup.sh $PBSD_REPO pbsd-mirror <base-branch>   # pushes the full history once, builds w1's hbsd/kde reference trees, copies PRISM and ~/.prism/tools to w1
    tools/cloud/register.sh w1                                         # adds "w1 88" to ~/.pbsd/workers.txt ("kvm" is added only where /dev/kvm exists)
    ```
    - **Updates:** the runner re-reads `workers.txt` every 30 s, so workers can be added or removed while it runs.
