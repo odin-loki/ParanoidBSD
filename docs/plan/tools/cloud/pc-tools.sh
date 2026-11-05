@@ -12,7 +12,8 @@ apt-get update -q
 apt-get install -y -q build-essential clang lld llvm cmake ninja-build ccache git jq curl unzip xz-utils numactl bubblewrap \
   qemu-system-x86 qemu-system-arm qemu-system-misc qemu-utils openjdk-21-jre-headless z3 python3 python3-yaml \
   libcurl4-openssl-dev nlohmann-json3-dev libsqlite3-dev libnuma-dev sqlite3 tmux \
-  bison flex libboost-all-dev libz3-dev libcurl4-openssl-dev llvm-18-dev libclang-18-dev libzstd-dev libfmt-dev libyaml-cpp-dev \n  libgmp-dev libedit-dev libimmer-dev libc6-dev-i386 gcc-multilib   # build deps for PRISM and the analyzers it runs (tools/cloud/build-prism.sh)
+  bison flex libboost-all-dev libz3-dev libcurl4-openssl-dev llvm-18-dev libclang-18-dev libzstd-dev libfmt-dev libyaml-cpp-dev \
+  libgmp-dev libedit-dev libimmer-dev libc6-dev-i386 gcc-multilib   # build deps for PRISM and the analyzers it runs (tools/cloud/build-prism.sh)
 # GCC 16 for the C++26 contract runtime build: from the distribution if it has it, else build or use a toolchain PPA (P0-07 pins it).
 apt-get install -y -q g++-16 2>/dev/null || echo "NOTE: g++-16 not in this distribution's archive; P0-07 installs it"
 gh_latest() { curl -fsSL "https://api.github.com/repos/$1/releases/latest" | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | .browser_download_url' | head -1; }
