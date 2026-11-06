@@ -99,7 +99,13 @@ for o in "${owns[@]}"; do
       s="${o%/}/Spec.lean"
       if [ ! -f "$s" ]; then echo "FAIL: this task owns $o but $s does not exist: write the locked theorem statements there"; spec_missing=$((spec_missing+1))
       elif ! grep -Eq '^[[:space:]]*def[[:space:]]+[A-Za-z_][A-Za-z0-9_'"'"']*[[:space:]]*(\([^)]*\)[[:space:]]*)*:[[:space:]]*Prop' "$s"; then
-        echo "FAIL: $s has no statement of the form: def <name> : Prop := <statement>"; spec_missing=$((spec_missing+1)); fi ;;
+        echo "FAIL: $s has no statement of the form: def <name> : Prop := <statement>"; spec_missing=$((spec_missing+1))
+      elif grep -nEq '^[[:space:]]*(axiom|opaque|constant)[[:space:]]|(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' "$s"; then
+        # Third/fourth rehearsal: the decomposer axiomatised the package's operations (`axiom kindLegal : ...`). The model task then cannot prove
+        # Model.X : Spec.X about concrete definitions, and any proof using an axiom fails the T1 axiom audit (only propext, Classical.choice, Quot.sound).
+        echo "FAIL: $s uses axiom, opaque, constant, sorry or admit. Define every data type and operation concretely (structure, inductive, def) inside Spec.lean; the model task proves the statements about exactly those definitions."
+        grep -nE '^[[:space:]]*(axiom|opaque|constant)[[:space:]]|(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' "$s" | head -4
+        spec_missing=$((spec_missing+1)); fi ;;
   esac
 done
 echo "unit_build: $n C++ file(s) checked for $id, $fail failed, $stub placeholder/empty file(s), $spec_fail Lean spec dir(s) that do not compile, $spec_missing missing spec(s)"
