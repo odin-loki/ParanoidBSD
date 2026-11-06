@@ -142,14 +142,16 @@ std::string Api::status_line() {
 }
 
 std::expected<json, std::string> Api::chat(const json& messages, const json& tools, Usage& u, const std::string& role, int slot,
-                                           const std::string& affinity, const std::string& tier) {
+                                           const std::string& affinity, const std::string& tier,
+                                           const std::string& effort) {
   std::string be = c_.backend;
   if (auto it = c_.role_backend.find(role); it != c_.role_backend.end()) be = it->second;
   if (be == "aux" && !aux_) be = c_.backend;
   json body{{"messages", messages}};
   if (!tools.is_null() && !tools.empty()) body["tools"] = tools;
   if (be == "api") {
-    if (auto it = c_.role_reasoning_effort.find(role); it != c_.role_reasoning_effort.end()) { if (!it->second.empty()) body["reasoning_effort"] = it->second; }
+    if (!effort.empty()) body["reasoning_effort"] = effort;
+    else if (auto it = c_.role_reasoning_effort.find(role); it != c_.role_reasoning_effort.end()) { if (!it->second.empty()) body["reasoning_effort"] = it->second; }
     else if (!c_.reasoning_effort.empty()) body["reasoning_effort"] = c_.reasoning_effort;
     return chat_api(body, u, affinity, tier);
   }

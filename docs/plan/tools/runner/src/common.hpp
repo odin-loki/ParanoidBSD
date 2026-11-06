@@ -104,6 +104,9 @@ struct Config {
   // At the default a turn can take 45 minutes and an agent never acts. Sent as "reasoning_effort" (low | high | max); empty = the provider default.
   // PBSD_REASONING_EFFORT / "reasoning_effort", with per-role overrides in "role_reasoning_effort".
   std::string reasoning_effort;
+  // From attempt escalate_at on a task thinks harder ("think settings"): the default stays low because the model is strong enough for most tasks;
+  // "high" (or "max") is spent only on tasks that have already failed twice. Empty = no change on escalation.
+  std::string escalate_reasoning_effort = "high";
   std::map<std::string, std::string> role_reasoning_effort;
   // Shared Lake packages (Mathlib and friends, several GB), linked into a model project's .lake/packages instead of fetched into every
   // worktree. PBSD_LEAN_PACKAGES / "lean_packages"; empty = leave projects alone.
@@ -211,7 +214,8 @@ class Api {
   // tier: "frontier" or "flash"; only providers of that tier are used (any provider if none has it).
   std::expected<json, std::string> chat(const json& messages, const json& tools, Usage& u,
                                         const std::string& role = "", int slot = -1,
-                                        const std::string& affinity = "", const std::string& tier = "");
+                                        const std::string& affinity = "", const std::string& tier = "",
+                                        const std::string& effort = "");
   static bool peak_now();
   LocalServer* local() { return local_.get(); }
   std::string status_line();                      // backend, tok/s, restarts

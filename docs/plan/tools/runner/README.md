@@ -38,6 +38,7 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
 **Model tiers:**
 - A role runs on `role_tier[role]`, else `default_tier` (`flash`).
 - From attempt `escalate_at` on, it runs on `escalate_tier` (default `flash`, so escalation is off). Set `escalate_tier: "frontier"` to move hard tasks to GLM-5.3.
+- Reasoning effort: `reasoning_effort` (default `low` in the generated config; the default `max` of GLM-5.3-Flash burns whole token budgets). From attempt `escalate_at` the task switches to `escalate_reasoning_effort` (default `high`), so extra thinking is spent only on tasks that already failed twice. `role_reasoning_effort` overrides per role.
 - Providers fail over only within a tier.
 
 **Lean proofs:** `prism_bin` (default `prism`) and `prove_timeout_s`. When `PRISM_PROVER_FPK` (your Goedel `.fpk` on FORGE) is set, prover tasks get the `lean_prove` tool, which runs `prism prove FILE THEOREM --write --allow-exec` (AGENTS.md section 10).

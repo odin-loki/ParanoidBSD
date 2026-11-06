@@ -430,7 +430,7 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
     if (int n = compact_history(msgs, budget)) db.event(id, "compacted", n);
     if (wrote_any) reads_off = false;
     const json tools_now = reads_off ? without_reads(tools) : tools;
-    auto r = api.chat(msgs, tools_now, u, role, slot, wp, tier);
+    auto r = api.chat(msgs, tools_now, u, role, slot, wp, tier, attempt >= c.escalate_at ? c.escalate_reasoning_effort : std::string());
     out.usage.push_back(u);
     if (u.hit + u.miss + u.out > 0) db.cost(id, u.hit, u.miss, u.out, u.usd(), u.provider);   // billed as it happens
     if (!r) {

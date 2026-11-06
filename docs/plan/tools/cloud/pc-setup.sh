@@ -30,7 +30,7 @@ cat > "$filter" <<'JQ'
 | .providers[0].concurrency = 16
 | .gates_dir = "/opt/pbsd/gates" | .checkpoint_dir = "/mnt/d/pbsd-ckpt" | .checkpoint_repo = "/mnt/d/pbsd-ckpt/pbsd.git"
 | .ref_roots = {linux: ($home + "/pbsd-ref/linux"), wine: ($home + "/pbsd-ref/wine"), hbsd: "/run/pbsd/repo/hbsd", kde: "/run/pbsd/repo/kde"}
-| .prism_bin = ($home + "/PRISM/build/prism") | .prover_slots = 1 | .reasoning_effort = "low"
+| .prism_bin = ($home + "/PRISM/build/prism") | .prover_slots = 1 | .reasoning_effort = "low" | .escalate_reasoning_effort = "high"
 | .lean_packages = ($home + "/lean49/.lake/packages") | .prover_fpk_escalate = ($home + "/models/goedel32.fpk")
 JQ
 jq --arg home "$home" -f "$filter" "$base" > "$home/.pbsd/config.json"; rm -f "$filter"
