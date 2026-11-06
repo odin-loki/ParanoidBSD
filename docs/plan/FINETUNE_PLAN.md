@@ -11,6 +11,21 @@ Written 6 Nov 2026. **Measured** = run on this PC. **Sourced** = from a page or 
 1. **The test project had no Mathlib** (measured): `ring`, `norm_num`, `linarith`, `nlinarith` are `unknown tactic`; only `omega` and `simp` work. Goedel was trained on Mathlib-style proofs, so most "unknown tactic" rejections are very probably the environment, not the model, and every baseline so far is a floor.
 2. **PRISM leaves no room to think** (sourced: `grammars/lean_proof.gbnf`, `src/prism/ai/proof_search.cpp`, `include/prism/forge_llm.hpp`): the model must reply `{"tactics": [...]}` under a grammar, default `max_new = 768`. Goedel-V2 and Qwen 3.5 are long-chain-of-thought models.
 
+**Result after fixing the environment (measured, 6 Nov 2026).** Lean 4.9.0 + Mathlib v4.9.0 (the version Goedel's model card says it was built for), `prism prove`, GPU, a budget of 6 model calls, one run per lemma, with three PRISM/FORGE fixes (below). **Both Goedel-Prover-V2 models proved all six lemmas**, each checked by the Lean kernel, the axiom audit and `lake build`:
+
+| Lemma | 8B (Q4_K) | 32B (Q4_K) |
+|---|---|---|
+| `2 * n = n + n` | 127 s | 208 s |
+| `2ab ≤ a² + b²` (reals) | 137 s | 160 s |
+| `n % 2 = 0 ∨ n % 2 = 1` | 128 s | 155 s |
+| `2 · Σ i = n(n+1)` (induction) | 212 s | 269 s |
+| `abc ≤ (a³+b³+c³)/3` | 219 s | 210 s |
+| `n² mod 4 ∈ {0,1}` | 180 s | 282 s |
+
+The same lemma `2 * n = n + n` was a 10-minute failure for both models in a Mathlib-free project. Times include loading the model on every call (about 100 s), so they say little about proving speed. The 32B was not faster or more successful on these, and was 0.9–1.6x slower. **This is a small, easy set from textbook mathematics, not PBSD lemmas, with one run each; it shows the environment was the blocker, not that the models are strong on the real target.**
+
+**Consequence for the plan.** Phase 0's exit test ("if Goedel-8B with Mathlib already solves most of the micro-set, stop here") is met on this set. Training should wait until the PBSD micro-set (phase 0) shows a gap that Goedel-8B/32B cannot close.
+
 **What this means.** Three cheap, training-free steps may close much of the gap and must be done first: Mathlib (phase 0), a reasoning prelude in PRISM's reply format (C++ change), and the existing escalation to Goedel-32B. Under the language rule, **training is a build project, not a configuration**, because FORGE has no training path yet (section 4). It should start only if phase 0 leaves a gap that is worth that effort.
 
 ## 2. Data inventory

@@ -101,7 +101,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
    export MORPH_API_KEY=...          # Morph, the only model provider (AGENTS.md 7.3)
-   export PRISM_BIN=$HOME/PRISM/build/prism PRISM_PROVER_FPK=/mnt/d/forgebox/models/goedel-8b-q4_k.fpk   # PRISM and the Lean prover on FORGE
+   export PRISM_BIN=$HOME/PRISM/build/prism PRISM_PROVER_FPK=/mnt/d/forgebox/models/goedel-8b-q4_k.fpk PRISM_DEVICE=cuda   # PRISM and the Lean prover on FORGE; the 32B is /home/odin/models/goedel32.fpk (slower, same result on easy lemmas)
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
@@ -125,6 +125,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
    - **KVM:** for QEMU gates with KVM under WSL2, set `nestedVirtualization=true` in `%UserProfile%\.wslconfig`.
    - **Gate hooks:** set the real build commands once the P0-07 tasks have passed: `PBSD_BUILD_CMD`, `PBSD_TEST_CMD`, `PBSD_QEMU_IMAGE` and `PBSD_QEMU_MARKER`. The proof hook defaults to `proof_check.sh`, with the tier taken from the task.
    - **Exit codes:** each gate exits 0 pass, 1 fail, 3 infrastructure error.
+   - **Lean and Mathlib for the prover:** `tools/cloud/lean-mathlib.sh` (Lean 4.9.0 + Mathlib v4.9.0, the version Goedel was built for). Without Mathlib the model's proofs fail as "unknown tactic".
    - **PRISM and FORGE:** build PRISM and its analyzers with `tools/cloud/build-prism.sh` (clones `~/PRISM`, fetches PRISM's pinned clang 23.1.4 because clang 18 cannot build it, builds PRISM with FORGE, then builds cppcheck, CBMC and ESBMC from the commits PRISM pins; about 20 minutes on 64 cores). Put your Goedel `.fpk` somewhere and set `PRISM_PROVER_FPK` to it. `prism-deps tool` only fetches and hash-checks analyzer source; `build-prism.sh` compiles it into `~/.prism/tools`. PRISM looks in `--tool`, then `$PRISM_TOOLS_DIR` / `~/.prism/tools`, then `PATH`. Check: `prism --version`, `ls ~/.prism/tools`, then `prism prove` on one small `sorry` lemma.
 7. **Rent w1** (only when step 2's quota is approved and you are ready to run).
    ```bash
