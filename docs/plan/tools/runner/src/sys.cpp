@@ -132,6 +132,9 @@ Config Config::load() {
   }
   c.backend = env("PBSD_BACKEND", c.backend.c_str());
   c.prism_bin = env("PRISM_BIN", c.prism_bin.c_str());
+  if (auto v = env("PBSD_PROVER_SLOTS"); !v.empty()) c.prover_slots = std::max(1, std::atoi(v.c_str()));
+  c.lean_packages = env("PBSD_LEAN_PACKAGES", c.lean_packages.c_str());
+  c.prover_fpk_escalate = env("PBSD_PROVER_FPK_ESCALATE", c.prover_fpk_escalate.c_str());
   c.local_url = env("PBSD_LOCAL_URL", c.local_url.c_str());
   // PBSD_CONFIG, else $PBSD_STATE/config.json, else the HDD checkpoint copy (tmpfs is empty after a reboot).
   std::string cfg = env("PBSD_CONFIG", "");
@@ -197,6 +200,9 @@ Config Config::load() {
       if (j.contains("backup_cmd")) c.backup_cmd = j["backup_cmd"].get<std::vector<std::string>>();
       c.backup_every_s = j.value("backup_every_s", c.backup_every_s);
       c.prism_bin = j.value("prism_bin", c.prism_bin); c.prove_timeout_s = j.value("prove_timeout_s", c.prove_timeout_s);
+      c.prover_slots = std::max(1, j.value("prover_slots", c.prover_slots));
+      c.lean_packages = j.value("lean_packages", c.lean_packages);
+      c.prover_fpk_escalate = j.value("prover_fpk_escalate", c.prover_fpk_escalate);
       c.max_attempts = j.value("max_attempts", c.max_attempts); c.quarantine_after = j.value("quarantine_after", c.quarantine_after);
       c.build_watchdog_s = j.value("build_watchdog_s", c.build_watchdog_s); c.qemu_watchdog_s = j.value("qemu_watchdog_s", c.qemu_watchdog_s);
       c.io_some_max = j.value("io_some_max", c.io_some_max);

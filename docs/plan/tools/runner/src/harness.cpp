@@ -260,13 +260,49 @@ std::string gate_status(const Config& c) {
 // lean_prove: `prism prove FILE THEOREM --write --allow-exec`. PRISM runs best-first tactic search with the
 // prover model on FORGE (PRISM_PROVER_FPK), validates every candidate, checks the axioms and runs
 // `lake build`; only then does it write the proof. Exit 0 proved, 1 not proved, 3 not run, 2 error.
+// At most Config::prover_slots `prism prove` runs at once: each holds its own copy of the model on the GPU.
+struct ProverSlot {
+  static std::mutex& mu() { static std::mutex m; return m; }
+  static std::condition_variable& cv() { static std::condition_variable v; return v; }
+  static int& used() { static int n = 0; return n; }
+  explicit ProverSlot(int limit) { std::unique_lock lk(mu()); cv().wait(lk, [&] { return used() < std::max(1, limit); }); ++used(); }
+  ~ProverSlot() { { std::lock_guard lk(mu()); --used(); } cv().notify_one(); }
+  ProverSlot(const ProverSlot&) = delete; ProverSlot& operator=(const ProverSlot&) = delete;
+};
+
+// Link the shared Lake packages into the model project that holds `file`, so neither `prism prove` (whose scratch copy follows the
+// link) nor `lake build` fetches Mathlib into every worktree. .lake is ignored by git, so the link is never committed.
+void link_lean_packages(const Config& c, const fs::path& file) {
+  if (c.lean_packages.empty() || !fs::is_directory(c.lean_packages)) return;
+  std::error_code ec;
+  for (fs::path d = fs::absolute(file, ec).parent_path(); !d.empty() && d != d.root_path(); d = d.parent_path()) {
+    if (fs::exists(d / "lakefile.lean", ec) || fs::exists(d / "lakefile.toml", ec)) {
+      if (!fs::exists(d / ".lake" / "packages", ec) && !fs::is_symlink(d / ".lake" / "packages", ec)) {
+        fs::create_directories(d / ".lake", ec);
+        fs::create_directory_symlink(fs::absolute(c.lean_packages, ec), d / ".lake" / "packages", ec);
+      }
+      return;
+    }
+  }
+}
+
 std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& theorem, Db& db) {
   static const std::regex name_re(R"(^[A-Za-z_][A-Za-z0-9_.']*$)");
   if (!std::regex_match(theorem, name_re)) return "refused: bad theorem name";
+  ProverSlot slot(c.prover_slots);
+  link_lean_packages(c, file);
   auto env = gate_env("");
   std::vector<std::string> argv{c.prism_bin, "prove", file.string(), theorem, "--write", "--allow-exec"};
   if (!c.gate_wrap.empty()) argv.insert(argv.begin(), c.gate_wrap.begin(), c.gate_wrap.end());
   auto r = run_job(argv, -1, c.prove_timeout_s, wt.string(), 500, &env);
+  if (r.code == 1 && !c.prover_fpk_escalate.empty() && fs::exists(c.prover_fpk_escalate)) {   // not proved: one retry with the larger model
+    std::erase_if(env, [](const std::string& kv) { return kv.starts_with("PRISM_PROVER_FPK="); });
+    env.push_back("PRISM_PROVER_FPK=" + c.prover_fpk_escalate);
+    auto r2 = run_job(argv, -1, c.prove_timeout_s, wt.string(), 500, &env);
+    db.event(t["id"], "lean_prove_escalated", json{{"theorem", theorem}, {"code", r2.code}});
+    r2.tail = "[escalated to " + fs::path(c.prover_fpk_escalate).filename().string() + "]\n" + r2.tail;
+    r = r2;
+  }
   db.event(t["id"], "lean_prove", json{{"theorem", theorem}, {"code", r.code}});
   std::string tail = r.tail.size() > 6000 ? r.tail.substr(r.tail.size() - 6000) : r.tail;
   if (r.code == 0) return "proved and written to " + fs::relative(file, wt).string() + "\n" + tail;

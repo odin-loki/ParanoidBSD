@@ -95,6 +95,15 @@ struct Config {
   // PRISM_PROVER_FPK). The lean_prove tool is offered to prover tasks when PRISM_PROVER_FPK is set.
   std::string prism_bin = "prism";
   int prove_timeout_s = 1800;
+  // `prism prove` loads its own copy of the prover model on the GPU (8B about 6.7 GB, 32B about 22 GB of a 24 GB card), so the number
+  // running at once is limited here, not by the agent count. PBSD_PROVER_SLOTS / "prover_slots" in the config.
+  int prover_slots = 1;
+  // Shared Lake packages (Mathlib and friends, several GB), linked into a model project's .lake/packages instead of fetched into every
+  // worktree. PBSD_LEAN_PACKAGES / "lean_packages"; empty = leave projects alone.
+  std::string lean_packages;
+  // When set, a `prism prove` that ends "not proved" is retried once with this model (PRISM_PROVER_FPK is replaced for the retry).
+  // PBSD_PROVER_FPK_ESCALATE / "prover_fpk_escalate".
+  std::string prover_fpk_escalate;
   static Config load();                            // env + optional $PBSD_STATE/config.json
 };
 

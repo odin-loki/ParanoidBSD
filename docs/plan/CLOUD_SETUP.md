@@ -162,6 +162,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
      4. That checks the commit out in tmpfs with the same sparse pattern as the PC's worktrees, and runs the pinned `/opt/pbsd/gates/<role>.sh`.
    - **QEMU gates** never go to w1, because it has no KVM.
 10. **Pilot: 447 tasks, go/no-go.** Measure before spending the big money. The pilot runs in the real database, so its work is kept for the full run.
+    **Before starting (6 Nov 2026):** run `tools/cloud/pc-setup.sh` (directories, pinned gates and task list, `~/.pbsd/config.json` sized for this PC, `~/.pbsd/env`, and the repository in `/run/pbsd/repo`), paste `MORPH_API_KEY` into `~/.pbsd/env`, then `. ~/.pbsd/env && tools/cloud/preflight.sh`. It must end with `0 FAIL`; it also makes one small real Morph call. `/run` is wiped when WSL restarts: rerun `pc-setup.sh` then. The interim `unit_build.sh` / `unit_test.sh` hooks replace the whole-tree CMake gate (which does not build yet) until P0-07 sets the real ones. `prover_slots` is 1 because the 32B retry needs about 22 GB of the 3090.
     ```bash
     # All of Phase 0 with every package's -IF task, P0-FREEZE and all of P1-02: 447 tasks, closed under their
     # dependencies, including three package models (Lean prover) and 29 T2 proofs.

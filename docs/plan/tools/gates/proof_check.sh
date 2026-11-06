@@ -90,6 +90,10 @@ T1)
   fi
   if [ -f "$m/lakefile.lean" ] || [ -f "$m/lakefile.toml" ]; then
     need lake
+    # Shared Mathlib packages (several GB) are linked in, not fetched into every worktree. .lake is git-ignored.
+    if [ -n "${PBSD_LEAN_PACKAGES:-}" ] && [ -d "$PBSD_LEAN_PACKAGES" ] && [ ! -e "$m/.lake/packages" ]; then
+      mkdir -p "$m/.lake" && ln -s "$PBSD_LEAN_PACKAGES" "$m/.lake/packages"
+    fi
     (cd "$m" && timeout "$T" lake build Model Spec) || fail "lake build"   # explicit targets: a package without defaultTargets builds nothing
     # Axiom audit and statement comparator: every locked statement Spec.X must be proved as Model.X.
     chk="$m/.pbsd_check.lean"; : > "$chk"

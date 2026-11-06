@@ -175,3 +175,8 @@ docs/port_plan.json
 # tools/verify/analyze.py --out defaults here; it is a scratch result
 # file, not a repository artefact.
 analyze_results.jsonl
+
+# Lake/Lean build output and the linked Mathlib packages inside proofs/<WP>/model and similar projects; Apalache output.
+# The runner commits whole owned directories, so these must never be picked up (Mathlib is several GB).
+**/.lake/
+**/_apalache-out/

@@ -42,6 +42,8 @@ A fully static link needs static libcurl, OpenSSL and libnuma (`.a` files). On a
 
 **Lean proofs:** `prism_bin` (default `prism`) and `prove_timeout_s`. When `PRISM_PROVER_FPK` (your Goedel `.fpk` on FORGE) is set, prover tasks get the `lean_prove` tool, which runs `prism prove FILE THEOREM --write --allow-exec` (AGENTS.md section 10).
 
+**Prover limits (6 Nov 2026):** each `prism prove` loads its own copy of the model on the GPU (8B about 6.7 GB, 32B about 22 GB of a 24 GB card), so `prover_slots` (env `PBSD_PROVER_SLOTS`, default 1) limits how many run at once. `lean_packages` (env `PBSD_LEAN_PACKAGES`) is a shared Lake packages directory (Mathlib) that `lean_prove` links into a model project's `.lake/packages`, so no worktree fetches Mathlib; `.lake/` is git-ignored. `prover_fpk_escalate` (env `PBSD_PROVER_FPK_ESCALATE`) is a larger model: a prove that ends "not proved" is retried once with it. Keep `prover_slots` at 1 while a 32B escalation is configured.
+
 **Ready-made configs:**
 - `config.glm-api.json`: 32 agents, PC only.
 - `config.glm-api-burst.json`: 224 agents, with cloud gate workers from `workers_file`.
