@@ -1,5 +1,7 @@
 # Plan: fine-tune a Lean prover for PBSD tier T1, in C, C++ and CUDA
 
+> **SHELVED (Odin, 7 Nov 2026): we are not fine-tuning.** The prover is Goedel-Prover-V2-8B, escalating to the 32B. This document is kept only as a record of the measurements and the option.
+
 Written 6 Nov 2026. **Measured** = run on this PC. **Sourced** = from a page or file named in the text. **Assumption** and **unknown** are open, each with a step that settles it.
 
 **Language rule (Odin, 6 Nov 2026).** Everything we write for this is C, C++ or CUDA. No Python: no PyTorch, `transformers`, PEFT, TRL, unsloth or `datasets`. Shell is allowed as glue only. Lean itself, PRISM and FORGE are existing C++/Lean tools and stay as they are.
