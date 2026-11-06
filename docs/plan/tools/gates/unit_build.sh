@@ -90,5 +90,17 @@ if [ "${#spec_dirs[@]}" -gt 0 ]; then
     rm -rf "$tmp"
   done
 fi
-echo "unit_build: $n C++ file(s) checked for $id, $fail failed, $stub placeholder/empty file(s), $spec_fail Lean spec dir(s) that do not compile"
-[ "$fail" -eq 0 ] && [ "$stub" -eq 0 ] && [ "$spec_fail" -eq 0 ]
+# A task that OWNS a proofs/<WP>/spec/ directory (the -IF task of a verified-core package) must write the locked statements: in the third
+# rehearsal run P0-02-IF passed in one attempt without writing any (nothing required the file), and the model task then had nothing to prove.
+spec_missing=0
+for o in "${owns[@]}"; do
+  case "$o" in
+    proofs/*/spec|proofs/*/spec/)
+      s="${o%/}/Spec.lean"
+      if [ ! -f "$s" ]; then echo "FAIL: this task owns $o but $s does not exist: write the locked theorem statements there"; spec_missing=$((spec_missing+1))
+      elif ! grep -Eq '^[[:space:]]*def[[:space:]]+[A-Za-z_][A-Za-z0-9_'"'"']*[[:space:]]*(\([^)]*\)[[:space:]]*)*:[[:space:]]*Prop' "$s"; then
+        echo "FAIL: $s has no statement of the form: def <name> : Prop := <statement>"; spec_missing=$((spec_missing+1)); fi ;;
+  esac
+done
+echo "unit_build: $n C++ file(s) checked for $id, $fail failed, $stub placeholder/empty file(s), $spec_fail Lean spec dir(s) that do not compile, $spec_missing missing spec(s)"
+[ "$fail" -eq 0 ] && [ "$stub" -eq 0 ] && [ "$spec_fail" -eq 0 ] && [ "$spec_missing" -eq 0 ]
