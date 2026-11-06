@@ -402,14 +402,22 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
   // Progress nudges. GLM-5.3-Flash on the first real dry run (P0-01-IF, 6 Nov 2026) made 87 read-only calls over 39 turns, wrote nothing and
   // never ran the gate, twice. A task that has written nothing by a third of its turns, or has no passing gate by two thirds, is told so.
   bool wrote_any = false, nudged_write = false, nudged_gate = false;
+  // Third rehearsal (6 Nov 2026): P0-02-IF received both nudges and kept reading for all 40 turns on all 3 attempts (51 read-only calls, no
+  // write, no gate run). After the write nudge the read-only tools are therefore withdrawn until the agent has written a file.
+  bool reads_off = false;
+  auto without_reads = [](const json& all) {
+    json out = json::array();
+    for (auto& tl : all) { const std::string nm = tl["function"].value("name", ""); if (nm != "read_file" && nm != "list_dir" && nm != "grep") out.push_back(tl); }
+    return out;
+  };
   // Circuit breaker. In the first rehearsal (6 Nov 2026) one proof task ran its gate 338 times on three attempts, repeating the same failure,
   // and the prover tasks took 77% of the spend. The same failing gate output (digits ignored) three times in a row gets a warning; six ends the attempt.
   size_t last_fail_hash = 0; int same_fail = 0;
   for (int turn = 0; turn < max_turns; ++turn) {
     db.heartbeat(id, c.lease_s);
     if (!wrote_any && !nudged_write && turn >= std::max(3, max_turns / 3)) {
-      nudged_write = true;
-      msgs.push_back({{"role", "user"}, {"content", std::format("You have used {} of {} turns and have written no file. Stop exploring: everything the task needs is in the task text and the files already read. Write the owned files now with write_file, with their real content: the gate rejects a file that holds only a comment, a stub or a placeholder, so a stub only wastes a turn. Then call run_gate and submit.", turn, max_turns)}});
+      nudged_write = true; reads_off = true;
+      msgs.push_back({{"role", "user"}, {"content", std::format("You have used {} of {} turns and have written no file. Stop exploring: everything the task needs is in the task text and the files already read. Write the owned files now with write_file, with their real content: the gate rejects a file that holds only a comment, a stub or a placeholder, so a stub only wastes a turn. Then call run_gate and submit. read_file, list_dir and grep are switched off until you have written a file.", turn, max_turns)}});
     }
     if (!gate_ok && !nudged_gate && turn >= std::max(5, max_turns * 2 / 3)) {
       nudged_gate = true;
@@ -420,7 +428,9 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
     size_t budget = size_t(std::max(4096, c.ctx_per_slot - reply - 1024));
     if (compacted_hard) budget /= 2;
     if (int n = compact_history(msgs, budget)) db.event(id, "compacted", n);
-    auto r = api.chat(msgs, tools, u, role, slot, wp, tier);
+    if (wrote_any) reads_off = false;
+    const json tools_now = reads_off ? without_reads(tools) : tools;
+    auto r = api.chat(msgs, tools_now, u, role, slot, wp, tier);
     out.usage.push_back(u);
     if (u.hit + u.miss + u.out > 0) db.cost(id, u.hit, u.miss, u.out, u.usd(), u.provider);   // billed as it happens
     if (!r) {
