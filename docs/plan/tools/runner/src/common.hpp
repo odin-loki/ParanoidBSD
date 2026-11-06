@@ -95,7 +95,7 @@ struct Config {
   // ---- Lean proofs: `prism prove FILE.lean THEOREM` (PRISM on FORGE with the Goedel prover model,
   // PRISM_PROVER_FPK). The lean_prove tool is offered to prover tasks when PRISM_PROVER_FPK is set.
   std::string prism_bin = "prism";
-  int prove_timeout_s = 1800;
+  int prove_timeout_s = 900;
   // `prism prove` loads its own copy of the prover model on the GPU (8B about 6.7 GB, 32B about 22 GB of a 24 GB card), so the number
   // running at once is limited here, not by the agent count. PBSD_PROVER_SLOTS / "prover_slots" in the config.
   int prover_slots = 1;

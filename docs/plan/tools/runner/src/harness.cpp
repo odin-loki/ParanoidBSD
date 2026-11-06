@@ -289,6 +289,13 @@ void link_lean_packages(const Config& c, const fs::path& file) {
 std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& theorem, Db& db) {
   static const std::regex name_re(R"(^[A-Za-z_][A-Za-z0-9_.']*$)");
   if (!std::regex_match(theorem, name_re)) return "refused: bad theorem name";
+  // Fifth rehearsal (7 Nov 2026): the agent called lean_prove on the same two hard statements 2-3 times each (every call is the 8B and then the 32B,
+  // 7-10 minutes) and spent 90 minutes for one proof. Each theorem gets two calls per task; after that the agent must prove it by hand or split it.
+  static std::mutex cap_mu; static std::map<std::string, int> cap_n;
+  { std::lock_guard<std::mutex> lk(cap_mu);
+    int& k = cap_n[t["id"].get<std::string>() + "|" + theorem + "|" + std::to_string(t.value("_attempt", 1))];
+    if (k >= 2) return "refused: lean_prove already failed twice on " + theorem + " in this attempt. Do not call it again for this theorem: prove it with Mathlib tactics by hand (intro, simp, omega, aesop, Finset/Set lemmas), state and prove smaller lemmas first, or post_message(kind=proof_failure) if the statement itself looks wrong or too hard.";
+    ++k; }
   ProverSlot slot(c.prover_slots);
   link_lean_packages(c, file);
   auto env = gate_env("");
