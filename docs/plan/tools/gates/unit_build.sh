@@ -67,5 +67,28 @@ for o in "${owns[@]}"; do
     for f in "$o".*; do [ -f "$f" ] && check "$f"; done
   fi
 done
-echo "unit_build: $n C++ file(s) checked for $id, $fail failed, $stub placeholder/empty file(s)"
-[ "$fail" -eq 0 ] && [ "$stub" -eq 0 ]
+# Lean statement files must COMPILE. In the second rehearsal (6 Nov 2026) the decomposer's proofs/P0-02/spec/Spec.lean passed this gate and was
+# frozen although `deriving DecidableEq, Repr` on a structure with function fields does not compile, so the model task could prove nothing.
+# The spec directory is built as the Spec library of the pinned Lake template (Lean 4.9 + Mathlib, shared packages linked, not fetched).
+spec_fail=0
+mapfile -t spec_dirs < <(
+  if [ -n "$base" ]; then printf '%s\n' "${changed[@]}"; else find proofs -path '*/spec/*.lean' -type f 2>/dev/null; fi |
+    grep -E '^proofs/[^/]+/spec/.*\.lean$' | xargs -r -n1 dirname | sort -u)
+if [ "${#spec_dirs[@]}" -gt 0 ]; then
+  tmpl="${PBSD_TEMPLATES:-/opt/pbsd/templates}/model-lake"
+  if ! command -v lake >/dev/null || [ ! -d "$tmpl" ] || [ ! -d "${PBSD_LEAN_PACKAGES:-/nonexistent}" ]; then
+    echo "infrastructure: lake, $tmpl or PBSD_LEAN_PACKAGES missing: cannot compile the Lean spec"; exit 3
+  fi
+  for sd in "${spec_dirs[@]}"; do
+    tmp="$(mktemp -d)"; mkdir -p "$tmp/model/.lake" "$tmp/spec"
+    cp -r "$tmpl"/. "$tmp/model/"; cp -r "$sd"/. "$tmp/spec/"
+    ln -s "$PBSD_LEAN_PACKAGES" "$tmp/model/.lake/packages"
+    if ! (cd "$tmp/model" && timeout "${PBSD_LEAN_SPEC_TIMEOUT:-600}" lake build Spec > "$tmp/build.log" 2>&1); then
+      echo "FAIL: $sd does not compile as the Spec library (Lean 4.9, Mathlib):"; grep -v '^\(info\|trace\|✔\)' "$tmp/build.log" | head -25
+      spec_fail=$((spec_fail+1))
+    fi
+    rm -rf "$tmp"
+  done
+fi
+echo "unit_build: $n C++ file(s) checked for $id, $fail failed, $stub placeholder/empty file(s), $spec_fail Lean spec dir(s) that do not compile"
+[ "$fail" -eq 0 ] && [ "$stub" -eq 0 ] && [ "$spec_fail" -eq 0 ]

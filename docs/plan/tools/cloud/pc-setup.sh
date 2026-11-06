@@ -13,6 +13,8 @@ priv() { if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi; }
 priv install -d -o "$u" -g "$u" /opt/pbsd /opt/pbsd/gates /run/pbsd /run/pbsd/state /run/pbsd/wt
 priv install -m 755 -o "$u" -g "$u" "$plan"/tools/gates/*.sh /opt/pbsd/gates/
 priv install -m 644 -o "$u" -g "$u" "$plan/tasks.json" /opt/pbsd/tasks.json
+priv install -d -o "$u" -g "$u" /opt/pbsd/templates /opt/pbsd/templates/model-lake
+priv cp -r "$plan/templates/model-lake/." /opt/pbsd/templates/model-lake/ && priv chown -R "$u":"$u" /opt/pbsd/templates   # pinned: the Lean spec gate builds from this copy
 mkdir -p /mnt/d/pbsd-ckpt "$home/.pbsd" || echo "WARNING: could not create /mnt/d/pbsd-ckpt (is D: mounted?)"
 
 # 2. the runner config, derived from the shipped one (Morph, one provider) and sized for this machine
