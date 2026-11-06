@@ -27,6 +27,37 @@ check() {  # check <file>
   rm -f /tmp/unit_build.$$; [ "$tu" != "$f" ] && rm -f "$tu"
   return 0
 }
+# Content checks. A syntax check alone accepts a file that holds only a comment, and in the first rehearsal (6 Nov 2026) a decomposer
+# "passed" by writing `/* ${doc} */` into three files (a spec, a Lean statement file and a header). Reject placeholders and empty files.
+stub=0
+# Only files THIS task changed are checked: an owned directory may hold older files (a comment-only header from an earlier task, say) that
+# are not this task's doing and must not block it. The runner puts the base commit in the gate commit's PBSD-Base trailer.
+base="$(git log -1 --format=%B 2>/dev/null | sed -n 's/^PBSD-Base: //p' | head -1)"
+changed=(); [ -n "$base" ] && mapfile -t changed < <(git diff --name-only "$base" HEAD 2>/dev/null)
+in_changed() { [ -z "$base" ] && return 0; printf '%s\n' "${changed[@]}" | grep -qxF -- "$1"; }
+content_check() {  # content_check <file>
+  local f="$1" stripped lines
+  [ -f "$f" ] || return 0
+  in_changed "$f" || return 0
+  case "$f" in *.sh|*.json|*.toml|*.lock|*/.lake/*) return 0 ;; esac
+  if grep -Eq '\$\{[A-Za-z_][A-Za-z0-9_]*\}|\{\{[a-z_]+\}\}|<PLACEHOLDER>|TODO: write' "$f" 2>/dev/null; then echo "FAIL: $f contains a template placeholder instead of content"; stub=$((stub+1)); return 0; fi
+  case "$f" in
+    *.h|*.hpp|*.hh|*.cpp|*.cc|*.cxx|*.cppm)
+      stripped="$(sed -E ':a;N;$!ba;s#/\*([^*]|\*+[^*/])*\*+/##g;s#//[^\n]*##g' "$f" | tr -d '[:space:]')"
+      if [ "${#stripped}" -lt 30 ]; then echo "FAIL: $f has no code (only comments or fewer than 30 characters)"; stub=$((stub+1)); fi ;;
+    *.md)
+      lines="$(grep -c '[^[:space:]]' "$f")"
+      if [ "$lines" -lt 12 ]; then echo "FAIL: $f has only $lines non-blank lines; a spec needs real content"; stub=$((stub+1)); fi ;;
+    *.lean)
+      if ! grep -Eq '^[[:space:]]*(theorem|lemma|def|example|inductive|structure|class|instance|abbrev)\b' "$f"; then echo "FAIL: $f declares nothing (no theorem, def, structure ...)"; stub=$((stub+1)); fi ;;
+  esac
+}
+for o in "${owns[@]}"; do
+  o="${o%.\*}"   # "dir/name.*" means every file of that stem
+  if [ -f "$o" ]; then content_check "$o"
+  elif [ -d "$o" ]; then while IFS= read -r f; do content_check "$f"; done < <(find "$o" -type f -not -path '*/.lake/*' -not -path '*/.git/*' | sort)
+  else for f in "$o".*; do content_check "$f"; done; fi
+done
 for o in "${owns[@]}"; do
   o="${o%.\*}"   # "dir/name.*" means every file of that stem
   if [ -f "$o" ]; then check "$o"
@@ -36,5 +67,5 @@ for o in "${owns[@]}"; do
     for f in "$o".*; do [ -f "$f" ] && check "$f"; done
   fi
 done
-echo "unit_build: $n C++ file(s) checked for $id, $fail failed"
-[ "$fail" -eq 0 ]
+echo "unit_build: $n C++ file(s) checked for $id, $fail failed, $stub placeholder/empty file(s)"
+[ "$fail" -eq 0 ] && [ "$stub" -eq 0 ]

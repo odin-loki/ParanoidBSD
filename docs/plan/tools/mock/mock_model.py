@@ -28,9 +28,9 @@ def first_write(task):
     if role == 'reviewer':
         return None
     if tid.endswith('-IF'):
-        return ('write_file', {'path': owns[0].rstrip('/') + '/mock_if.hpp', 'content': '#pragma once\n// frozen mock contract\n'})
+        return ('write_file', {'path': owns[0].rstrip('/') + '/mock_if.hpp', 'content': '#pragma once\n// frozen mock contract\nnamespace mock { constexpr int kContractVersion = 1; inline int contract_version() { return kContractVersion; } }\n'})
     if tid.endswith('-SPEC'):
-        return ('write_file', {'path': owns[0], 'content': '# spec\nInputs, outputs, invariants, error paths.\n'})
+        return ('write_file', {'path': owns[0], 'content': '# spec\n' + ''.join('Line %d: inputs, outputs, invariants and error paths of the unit.\n' % i for i in range(1, 15))})
     if tid.endswith('-IMPL'):
         c = code_for(tid)
         if tid in FAIL_ONCE and tid not in seen:
@@ -38,7 +38,7 @@ def first_write(task):
             c = c.replace(';', '')            # syntax error: the gate must reject it
         return ('write_file', {'path': owns[0].rstrip('/') + '/unit.cpp', 'content': c})
     if tid.endswith('-TEST'):
-        return ('write_file', {'path': owns[0].rstrip('/') + '/test.cpp', 'content': 'int main() { return 0; }\n'})
+        return ('write_file', {'path': owns[0].rstrip('/') + '/test.cpp', 'content': '#include <cstdio>\nint main() { std::puts(\"unit test ok\"); return 0; }\n'})
     if tid.endswith('-PROOF'):
         fn = 'f_u%03d' % unit_of(tid)
         return ('write_file', {'path': owns[0].rstrip('/') + '/obligations.json',

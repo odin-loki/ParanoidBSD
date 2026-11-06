@@ -402,11 +402,14 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
   // Progress nudges. GLM-5.3-Flash on the first real dry run (P0-01-IF, 6 Nov 2026) made 87 read-only calls over 39 turns, wrote nothing and
   // never ran the gate, twice. A task that has written nothing by a third of its turns, or has no passing gate by two thirds, is told so.
   bool wrote_any = false, nudged_write = false, nudged_gate = false;
+  // Circuit breaker. In the first rehearsal (6 Nov 2026) one proof task ran its gate 338 times on three attempts, repeating the same failure,
+  // and the prover tasks took 77% of the spend. The same failing gate output (digits ignored) three times in a row gets a warning; six ends the attempt.
+  size_t last_fail_hash = 0; int same_fail = 0;
   for (int turn = 0; turn < max_turns; ++turn) {
     db.heartbeat(id, c.lease_s);
     if (!wrote_any && !nudged_write && turn >= std::max(3, max_turns / 3)) {
       nudged_write = true;
-      msgs.push_back({{"role", "user"}, {"content", std::format("You have used {} of {} turns and have written no file. Stop exploring: everything the task needs is in the task text and the files already read. Write the owned files now with write_file, then call run_gate and submit.", turn, max_turns)}});
+      msgs.push_back({{"role", "user"}, {"content", std::format("You have used {} of {} turns and have written no file. Stop exploring: everything the task needs is in the task text and the files already read. Write the owned files now with write_file, with their real content: the gate rejects a file that holds only a comment, a stub or a placeholder, so a stub only wastes a turn. Then call run_gate and submit.", turn, max_turns)}});
     }
     if (!gate_ok && !nudged_gate && turn >= std::max(5, max_turns * 2 / 3)) {
       nudged_gate = true;
@@ -518,6 +521,18 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
         db.event(id, "gate", json{{"code", g.code}, {"timeout", g.timed_out}, {"sha", sha}});
         std::string tail = g.tail.size() > size_t(c.tool_result_chars) ? g.tail.substr(g.tail.size() - c.tool_result_chars) : g.tail;
         res = std::format("exit {}{} on {}\n{}", g.code, g.timed_out ? " (watchdog timeout)" : "", sha.substr(0, 12), tail);
+        if (gate_ok) { same_fail = 0; last_fail_hash = 0; }
+        else {
+          std::string norm; for (char ch : g.tail) if (!std::isdigit(static_cast<unsigned char>(ch)) && !std::isxdigit(static_cast<unsigned char>(ch))) norm += ch;
+          const size_t h = std::hash<std::string>{}(norm);
+          same_fail = (h == last_fail_hash) ? same_fail + 1 : 1; last_fail_hash = h;
+          if (same_fail == 3) res += "\n\nNOTE: this is the same failure three times in a row. Rerunning the gate will not change it: change the files, or post_message(kind=proof_failure or test_failure, to=impl) if the problem is in another task's files.";
+          if (same_fail >= 6) {
+            db.event(id, "stuck", json{{"same_failure", same_fail}});
+            msgs.push_back({{"role", "tool"}, {"tool_call_id", call.value("id", "")}, {"content", res}});
+            finish_state(); out.r = Result::failed; return out;
+          }
+        }
       } else if (fnm == "post_message") {
         std::string to = resolve_to(t, a.value("to", "")), k = a.value("kind", "note");
         db.post(to, id, k, a.value("body", ""));
