@@ -99,6 +99,12 @@ struct Config {
   // `prism prove` loads its own copy of the prover model on the GPU (8B about 6.7 GB, 32B about 22 GB of a 24 GB card), so the number
   // running at once is limited here, not by the agent count. PBSD_PROVER_SLOTS / "prover_slots" in the config.
   int prover_slots = 1;
+  // GLM-5.3-Flash is a reasoning model whose effort defaults to the maximum. Measured on Morph (6 Nov 2026): the same short Lean request spent
+  // 8000 tokens (the whole cap) on reasoning in 97 s and returned no answer at the default, and answered in 3.7 s with 392 tokens at "low".
+  // At the default a turn can take 45 minutes and an agent never acts. Sent as "reasoning_effort" (low | high | max); empty = the provider default.
+  // PBSD_REASONING_EFFORT / "reasoning_effort", with per-role overrides in "role_reasoning_effort".
+  std::string reasoning_effort;
+  std::map<std::string, std::string> role_reasoning_effort;
   // Shared Lake packages (Mathlib and friends, several GB), linked into a model project's .lake/packages instead of fetched into every
   // worktree. PBSD_LEAN_PACKAGES / "lean_packages"; empty = leave projects alone.
   std::string lean_packages;

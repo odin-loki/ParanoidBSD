@@ -134,6 +134,7 @@ Config Config::load() {
   c.prism_bin = env("PRISM_BIN", c.prism_bin.c_str());
   if (auto v = env("PBSD_PROVER_SLOTS"); !v.empty()) c.prover_slots = std::max(1, std::atoi(v.c_str()));
   c.lean_packages = env("PBSD_LEAN_PACKAGES", c.lean_packages.c_str());
+  c.reasoning_effort = env("PBSD_REASONING_EFFORT", c.reasoning_effort.c_str());
   c.prover_fpk_escalate = env("PBSD_PROVER_FPK_ESCALATE", c.prover_fpk_escalate.c_str());
   c.local_url = env("PBSD_LOCAL_URL", c.local_url.c_str());
   // PBSD_CONFIG, else $PBSD_STATE/config.json, else the HDD checkpoint copy (tmpfs is empty after a reboot).
@@ -202,6 +203,8 @@ Config Config::load() {
       c.prism_bin = j.value("prism_bin", c.prism_bin); c.prove_timeout_s = j.value("prove_timeout_s", c.prove_timeout_s);
       c.prover_slots = std::max(1, j.value("prover_slots", c.prover_slots));
       c.lean_packages = j.value("lean_packages", c.lean_packages);
+      c.reasoning_effort = j.value("reasoning_effort", c.reasoning_effort);
+      if (j.contains("role_reasoning_effort")) for (auto& [k, v] : j["role_reasoning_effort"].items()) c.role_reasoning_effort[k] = v.get<std::string>();
       c.prover_fpk_escalate = j.value("prover_fpk_escalate", c.prover_fpk_escalate);
       c.max_attempts = j.value("max_attempts", c.max_attempts); c.quarantine_after = j.value("quarantine_after", c.quarantine_after);
       c.build_watchdog_s = j.value("build_watchdog_s", c.build_watchdog_s); c.qemu_watchdog_s = j.value("qemu_watchdog_s", c.qemu_watchdog_s);

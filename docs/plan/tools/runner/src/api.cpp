@@ -148,7 +148,11 @@ std::expected<json, std::string> Api::chat(const json& messages, const json& too
   if (be == "aux" && !aux_) be = c_.backend;
   json body{{"messages", messages}};
   if (!tools.is_null() && !tools.empty()) body["tools"] = tools;
-  if (be == "api") return chat_api(body, u, affinity, tier);
+  if (be == "api") {
+    if (auto it = c_.role_reasoning_effort.find(role); it != c_.role_reasoning_effort.end()) { if (!it->second.empty()) body["reasoning_effort"] = it->second; }
+    else if (!c_.reasoning_effort.empty()) body["reasoning_effort"] = c_.reasoning_effort;
+    return chat_api(body, u, affinity, tier);
+  }
   body["model"] = be == "aux" ? c_.aux_model : c_.local_model;
   body["max_tokens"] = c_.max_tokens;
   auto r = chat_local(be == "aux" ? c_.aux_url : c_.local_url, body, u, slot, be == "aux" ? aux_.get() : local_.get());
