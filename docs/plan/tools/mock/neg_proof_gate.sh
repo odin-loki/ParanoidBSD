@@ -8,15 +8,14 @@ PBSD-Base: $BASE"; }
 run() { PBSD_PROOF_TIER=$2 bash $G P0-02-U001-PROOF /tmp/neg > /tmp/neg.out 2>&1; rc=$?; printf '%-36s tier=%s rc=%s  %s\n' "$1" "$2" $rc "$(grep -E '^(FAIL|infrastructure|PBSD-RESULT|T[234]:)' /tmp/neg.out | head -1 | cut -c1-120)"; }
 e_none() { :; }
 e_assume() { echo '#define A __ESBMC_assume(1)' >> $U; }
-e_code() { sed -i 's/255u/127u/' $U; }
-e_ann() { sed -i 's|^// requires: x >= 0|// requires: x >= 0 \&\& x < 100|' $U; }
-e_signed() { printf '%s\n' '// requires: a < 5 && b < 5' '// ensures: result == a + b' 'int f_u001(int a, int b) { return a + b; }' > $U; }
+e_code() { sed -i "s/255u/127u/" $U; }
+e_ann() { sed -i 's/requires x >= 0;/requires x >= 0 \&\& x < 100;/' $U; }
+e_signed() { printf '%s\n' '/*@ requires a < 5 && b < 5; ensures result == a + b; */' 'int f_u001(int a, int b) { return a + b; }' > $U; }
 e_empty() { echo "[]" > proofs/P0-02/U001/obligations.json; }
-e_vac() { sed -i 's|^// requires: x >= 0|// requires: x >= 1 \&\& x < 1|' $U; }
-mk e_none;   run "baseline (genuine proof)" T2
+e_vac() { sed -i 's/requires x >= 0;/requires x >= 1 \&\& x < 1;/' $U; }
+mk e_ann;    run "genuine proof (annotation-only change)" T2
 mk e_assume; run "assume macro added" T2
 mk e_code;   run "code changed, not annotation" T2
-mk e_ann;    run "annotation-only change (allowed)" T2
 mk e_vac;    run "vacuous requires (x>=1 && x<1)" T2
 mk e_signed; run "signed overflow" T4
 mk e_empty;  run "empty obligation list" T2

@@ -122,8 +122,11 @@ T2|T3|T4)
   esac
   # No --allow-exec: nothing from the scanned tree is executed (PRISM Law 9). --fail-on defect makes
   # exit 1 mean "a FAILED/CRASH/SANFAIL finding"; exit 2 means a PRISM stage crashed (a PRISM bug).
-  timeout "$T" "$PRISM_BIN" "$work/scope" --no-llm --jobs "${PBSD_JOBS:-2}" --stage "$stages" --out "$work/out" \
-      --fail-on defect --unwind "${PBSD_PRISM_UNWIND:-32}" >"$work/prism.log" 2>&1
+  # Run from inside the scope: PRISM opens the files it reports by their scan-root-relative path against the process
+  # cwd, and from anywhere else its contracts and wp stages lose the includes and types of the unit (found 6 Nov 2026).
+  PRISM_ABS="$(command -v "$PRISM_BIN")"
+  ( cd "$work/scope" && timeout "$T" "$PRISM_ABS" . --no-llm --jobs "${PBSD_JOBS:-2}" --stage "$stages" --out "$work/out" \
+      --fail-on defect --unwind "${PBSD_PRISM_UNWIND:-32}" ) >"$work/prism.log" 2>&1
   rc=$?
   tail -25 "$work/prism.log"
   [ $rc -eq 124 ] && fail "PRISM timeout after ${T}s"

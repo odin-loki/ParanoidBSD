@@ -10,6 +10,8 @@ cmake_minimum_required(VERSION 3.28)
 project(pbsd CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+# Passed by the gate (tools/gates/lib.sh). Fault-injection hooks are added by P0-07; until then the option has no effect.
+option(PBSD_FAULT_INJECTION "Build the fault-injection hooks" OFF)
 add_library(pbsd STATIC)
 target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/cat/b0163/port.cppm

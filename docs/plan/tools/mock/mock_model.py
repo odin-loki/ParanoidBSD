@@ -17,10 +17,10 @@ def unit_of(tid):
 def code_for(tid):
     u = unit_of(tid)
     if u == 1:
-        return ('// requires: x >= 0\n// ensures: result <= 255\n'
-                'unsigned f_u001(unsigned x) { return x & 255u; }\n')
-    return ('// requires: a < 1000 && b < 1000\n// ensures: result == a + b\n'
-            'unsigned f_u%03d(unsigned a, unsigned b) { return a + b; }\n' % u)
+        return ('#include <stdint.h>\n/*@ requires x >= 0; ensures result <= 255; */\n'
+                'uint32_t f_u001(uint32_t x) { return x & 255u; }\n')
+    return ('#include <stdint.h>\n/*@ requires a < 1000 && b < 1000; ensures result == a + b; */\n'
+            'uint32_t f_u%03d(uint32_t a, uint32_t b) { return a + b; }\n' % u)
 
 
 def first_write(task):

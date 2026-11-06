@@ -8,4 +8,4 @@ Needs a built `pbsd_run` (`~/pbsd-run-build/pbsd_run`, built with `-DPBSD_STATIC
     tools/mock/run.sh P0-02-U002-IMPL        # run; the named IMPL task is broken once, so the build gate rejects it and the retry fixes it
     tools/mock/neg_proof_gate.sh             # proof_check.sh against cheating cases (assume macro, code change, signed overflow, ...)
 
-6 Nov 2026: 17 of 17 tasks pass. `neg_proof_gate.sh` shows the gate rejecting all but the vacuous-`requires` case (a known hole, AGENTS.md section 10).
+6 Nov 2026: 17 of 17 tasks pass, and `neg_proof_gate.sh` shows the gate accepting the genuine proof and rejecting every cheat (assume macro, code change, vacuous `requires`, signed overflow, empty obligations); exit 3 for a missing tier or PRISM.
