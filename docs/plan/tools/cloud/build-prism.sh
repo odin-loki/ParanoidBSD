@@ -11,10 +11,11 @@
 #   - `prism-deps tool` only FETCHES and sha256-verifies the pinned source ("no automatic build recipe"); it does not build.
 #     So cppcheck, CBMC and ESBMC are built here with the manifest's build_hint commands and copied to <prefix>/bin,
 #     where PRISM looks (~/.prism/tools/<name>/<commit>/bin/<name>, or $PRISM_TOOLS_DIR).
-#   - FORGE: PRISM's CMake fetches odin-loki/FORGE main. Its grammar parser had no {m,n} repetition, which every PRISM grammar uses, so
-#     every constrained model call (prism prove, review, contract drafting) failed. Until odin-loki/FORGE branch grammar-counted-repetition and
-#     odin-loki/PRISM branch prove-fresh-seed-and-primed-names are merged: git clone -b grammar-counted-repetition https://github.com/odin-loki/FORGE ~/FORGE
-#     and run FORGE_DIR=$HOME/FORGE tools/cloud/build-prism.sh (PRISM then also needs its prove branch).
+#   - FORGE: PRISM's CMake fetches odin-loki/FORGE main. Until 6 Nov 2026 its grammar parser had no {m,n} repetition (every PRISM grammar uses
+#     it), its memory governor crashed at exit with a CUDA runtime, and autodiff read freed memory; PRISM resolved source paths against the
+#     cwd, used a fixed model seed, mis-parsed primed theorem names and copied Lake projects without their packages. All of these are merged
+#     (FORGE #69 #70 #71, PRISM #40 #41 #42), and a fresh build from main was checked: it proves a Mathlib lemma on the GPU. FORGE_DIR=<path>
+#     still builds against a local FORGE checkout.
 #   - ESBMC 8.5 supports LLVM 18..22: point it at LLVM 18. Its libc models need the i386 libc headers.
 set -euo pipefail
 P="${PRISM_DIR:-$HOME/PRISM}"; J="${PBSD_BUILD_JOBS:-$(nproc)}"

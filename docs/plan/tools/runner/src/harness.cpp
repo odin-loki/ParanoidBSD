@@ -399,8 +399,19 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
     std::ofstream(state) << msgs.dump();
   };
   bool compacted_hard = false;
+  // Progress nudges. GLM-5.3-Flash on the first real dry run (P0-01-IF, 6 Nov 2026) made 87 read-only calls over 39 turns, wrote nothing and
+  // never ran the gate, twice. A task that has written nothing by a third of its turns, or has no passing gate by two thirds, is told so.
+  bool wrote_any = false, nudged_write = false, nudged_gate = false;
   for (int turn = 0; turn < max_turns; ++turn) {
     db.heartbeat(id, c.lease_s);
+    if (!wrote_any && !nudged_write && turn >= std::max(3, max_turns / 3)) {
+      nudged_write = true;
+      msgs.push_back({{"role", "user"}, {"content", std::format("You have used {} of {} turns and have written no file. Stop exploring: everything the task needs is in the task text and the files already read. Write the owned files now with write_file, then call run_gate and submit.", turn, max_turns)}});
+    }
+    if (!gate_ok && !nudged_gate && turn >= std::max(5, max_turns * 2 / 3)) {
+      nudged_gate = true;
+      msgs.push_back({{"role", "user"}, {"content", std::format("{} of {} turns used and the gate has not passed. Call run_gate now. If it fails, fix what the log says and run it again. The attempt fails if submit is not called before turn {}.", turn, max_turns, max_turns)}});
+    }
     Usage u;
     const int reply = c.backend == "api" ? c.api_max_tokens : c.max_tokens;
     size_t budget = size_t(std::max(4096, c.ctx_per_slot - reply - 1024));
@@ -546,6 +557,7 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
           submitted = false; res = "rejected: verdict must be approve or changes";
         } else res = "accepted";
       } else res = "unknown tool " + fnm;
+      if ((fnm == "write_file" || fnm == "edit_file") && !res.starts_with("refused")) wrote_any = true;
       msgs.push_back({{"role", "tool"}, {"tool_call_id", call.value("id", "")}, {"content", res}});
     }
     // 3. Atomic commit at turn end; WIP checkpoint every checkpoint_s.

@@ -82,7 +82,8 @@ struct Config {
   // ---- worktrees, references, gates and merges
   // Sparse pattern for task worktrees (and gate checkouts): everything except the big read-only
   // reference trees, which agents read through read_file("ref:<name>/...") or the main checkout.
-  std::vector<std::string> wt_sparse{"/*", "!/hbsd/", "!/kde/", "!/linux/", "!/docs/migration/", "!/docs/verify/", "!/docs/PORT_PLAN.md"};
+  std::vector<std::string> wt_sparse{"/*", "!/hbsd/", "!/kde/", "!/linux/", "!/docs/migration/", "!/docs/verify/", "!/docs/PORT_PLAN.md",
+                                      "!/docs/plan/tasks.yaml", "!/docs/plan/tasks.json"};   // the 10 MB task list: agents read it for 20 turns instead of writing
   std::map<std::string, std::string> ref_roots;  // e.g. {"linux": "/srv/ref/linux", "wine": "/srv/ref/wine"}
   std::string gates_dir;                         // trusted gate scripts; default $PBSD_REPO/tools/gates
   std::vector<std::string> gate_wrap;            // sandbox prefix for local gates, e.g. ["bwrap", ...]
