@@ -17,7 +17,8 @@ apt-get install -y -q build-essential clang lld llvm cmake ninja-build ccache gi
 # GCC 16 for the C++26 contract runtime build: from the distribution if it has it, else build or use a toolchain PPA (P0-07 pins it).
 apt-get install -y -q g++-16 2>/dev/null || echo "NOTE: g++-16 not in this distribution's archive; P0-07 installs it"
 gh_latest() { curl -fsSL "https://api.github.com/repos/$1/releases/latest" | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | .browser_download_url' | head -1; }
-command -v apalache-mc >/dev/null || { f="${APALACHE_URL:-$(gh_latest apalache-mc/apalache 'apalache.*\.tgz$')}"; curl -fsSL "$f" -o /tmp/apalache.tgz && mkdir -p /opt/apalache && tar -xzf /tmp/apalache.tgz -C /opt/apalache --strip-components=1 && ln -sf /opt/apalache/bin/apalache-mc /usr/local/bin/apalache-mc; } || echo "WARNING: Apalache not installed"
+# The GitHub API returns 403 once unauthenticated callers hit its rate limit, so the release is fetched by its stable download URL.
+command -v apalache-mc >/dev/null || { f="${APALACHE_URL:-https://github.com/apalache-mc/apalache/releases/latest/download/apalache.tgz}"; curl -fsSL "$f" -o /tmp/apalache.tgz && mkdir -p /opt/apalache && tar -xzf /tmp/apalache.tgz -C /opt/apalache --strip-components=1 && ln -sf /opt/apalache/bin/apalache-mc /usr/local/bin/apalache-mc; } || echo "WARNING: Apalache not installed"
 [ -x "$home/.elan/bin/elan" ] || su "$u" -c 'curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none' || echo "WARNING: elan not installed"
 ln -sf "$home/.elan/bin/lake" /usr/local/bin/lake 2>/dev/null || true; ln -sf "$home/.elan/bin/lean" /usr/local/bin/lean 2>/dev/null || true
 # Pinned gate scripts (the runner's gates_dir) and the task list the integrator gate reads.

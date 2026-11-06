@@ -48,7 +48,8 @@ tier="${PBSD_PROOF_TIER:-}"
 # ---- banned constructs, everywhere the task can write proofs or annotations
 banned_lean='(^|[^A-Za-z_])(sorry|admit|native_decide|implemented_by|extern)([^A-Za-z_]|$)|^[[:space:]]*axiom[[:space:]]|debug\.skipKernelTC|set_option[[:space:]]+(debug|trust)'
 banned_c='__CPROVER_assume|__ESBMC_assume|__VERIFIER_assume|#pragma[[:space:]]+(CPROVER|ESBMC)'
-scan() { grep -rnEI "$2" $1 2>/dev/null | grep -v '/harness/skeleton/' && fail "banned construct (see lines above)"; return 0; }
+# Build output is never scanned: lake writes generated C (full of `extern`) under .lake, and the agent reruns this gate in the same worktree.
+scan() { grep -rnEI --exclude-dir=.lake --exclude-dir=.build --exclude-dir=_apalache-out "$2" $1 2>/dev/null | grep -v '/harness/skeleton/' && fail "banned construct (see lines above)"; return 0; }
 
 annotation_only() {   # the code with annotation comments removed must equal the reviewed code
   local base; base="$(git -C "$wt" log -1 --format=%B | sed -n 's/^PBSD-Base: //p')"
@@ -77,16 +78,19 @@ T1)
   done < <(jq -r --arg wp "$wp" 'to_entries[] | select(.key | startswith("proofs/"+$wp+"/spec/")) | [.key,.value] | @tsv' "$LOCK")
   scan "$m" "$banned_lean"
   if ls "$m"/*.tla >/dev/null 2>&1; then
-    need apalache-mc
+    need apalache-mc; ap_out="$(mktemp -d "${TMPDIR:-/tmp}/apalache-gate.XXXXXX")"
     for f in "$m"/*.tla; do   # inductive invariant: Init => IndInv, IndInv /\ Next => IndInv', IndInv => Safety
-      timeout "$T" apalache-mc check --init=Init --inv=IndInv --length=0 "$f" || fail "Init does not imply IndInv in $f"
-      timeout "$T" apalache-mc check --init=IndInv --inv=IndInv --length=1 "$f" || fail "IndInv not inductive in $f"
-      timeout "$T" apalache-mc check --init=IndInv --inv=Safety --length=0 "$f" || fail "IndInv does not imply Safety in $f"
+      # Apalache needs an init predicate in assignment form, so the model defines IndInit == <variables typed or ranged> /\ IndInv
+      # (calibrated 6 Nov 2026: --init=IndInv alone fails with "x' is used before it is assigned").
+      grep -qE '^IndInit[[:space:]]*==' "$f" || fail "$f defines no IndInit (variables typed as assignments, conjoined with IndInv)"
+      timeout "$T" apalache-mc check --out-dir="$ap_out" --init=Init --inv=IndInv --length=0 "$f" || fail "Init does not imply IndInv in $f"
+      timeout "$T" apalache-mc check --out-dir="$ap_out" --init=IndInit --inv=IndInv --length=1 "$f" || fail "IndInv not inductive in $f"
+      timeout "$T" apalache-mc check --out-dir="$ap_out" --init=IndInit --inv=Safety --length=0 "$f" || fail "IndInv does not imply Safety in $f"
     done
   fi
   if [ -f "$m/lakefile.lean" ] || [ -f "$m/lakefile.toml" ]; then
     need lake
-    (cd "$m" && timeout "$T" lake build) || fail "lake build"
+    (cd "$m" && timeout "$T" lake build Model Spec) || fail "lake build"   # explicit targets: a package without defaultTargets builds nothing
     # Axiom audit and statement comparator: every locked statement Spec.X must be proved as Model.X.
     chk="$m/.pbsd_check.lean"; : > "$chk"
     echo "import Model" >> "$chk"; echo "import Spec" >> "$chk"

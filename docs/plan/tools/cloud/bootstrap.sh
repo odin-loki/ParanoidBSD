@@ -31,7 +31,7 @@ gh_latest() {  # gh_latest <owner/repo> <asset regex>: newest matching release a
   curl -fsSL "https://api.github.com/repos/$1/releases/latest" | jq -r --arg re "$2" '.assets[] | select(.name | test($re)) | .browser_download_url' | head -1
 }
 if ! command -v apalache-mc >/dev/null; then
-  u="${APALACHE_URL:-$(gh_latest apalache-mc/apalache 'apalache.*\.tgz$' || true)}"
+  u="${APALACHE_URL:-https://github.com/apalache-mc/apalache/releases/latest/download/apalache.tgz}"   # not the API: it 403s when rate limited
   if [ -n "$u" ] && curl -fsSL "$u" -o /tmp/apalache.tgz; then
     mkdir -p /opt/apalache && tar -xzf /tmp/apalache.tgz -C /opt/apalache --strip-components=1 && ln -sf /opt/apalache/bin/apalache-mc /usr/local/bin/apalache-mc
   else echo "WARNING: Apalache not installed"; fi

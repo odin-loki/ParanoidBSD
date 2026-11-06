@@ -9,3 +9,8 @@ Needs a built `pbsd_run` (`~/pbsd-run-build/pbsd_run`, built with `-DPBSD_STATIC
     tools/mock/neg_proof_gate.sh             # proof_check.sh against cheating cases (assume macro, code change, signed overflow, ...)
 
 6 Nov 2026: 17 of 17 tasks pass, and `neg_proof_gate.sh` shows the gate accepting the genuine proof and rejecting every cheat (assume macro, code change, vacuous `requires`, signed overflow, empty obligations); exit 3 for a missing tier or PRISM.
+
+`neg_t1_gate.sh` does the same for tier T1: a Lean model against a locked statement and a TLA+ model for Apalache (needs `lake` and `apalache-mc`).
+It accepts the genuine models and rejects `sorry`, a new `axiom`, `native_decide`, a proof of a different statement, an edited locked statement
+file, and TLA+ invariants that do not imply Safety or are not inductive. Calibration found that Apalache needs an `IndInit` predicate
+(`x \in Int /\ IndInv`), that `lake build` must name `Model` and `Spec`, and that the banned-construct scan must skip `.lake`.

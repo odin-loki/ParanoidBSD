@@ -11,6 +11,10 @@
 #   - `prism-deps tool` only FETCHES and sha256-verifies the pinned source ("no automatic build recipe"); it does not build.
 #     So cppcheck, CBMC and ESBMC are built here with the manifest's build_hint commands and copied to <prefix>/bin,
 #     where PRISM looks (~/.prism/tools/<name>/<commit>/bin/<name>, or $PRISM_TOOLS_DIR).
+#   - FORGE: PRISM's CMake fetches odin-loki/FORGE main. Its grammar parser had no {m,n} repetition, which every PRISM grammar uses, so
+#     every constrained model call (prism prove, review, contract drafting) failed. Until odin-loki/FORGE branch grammar-counted-repetition and
+#     odin-loki/PRISM branch prove-fresh-seed-and-primed-names are merged: git clone -b grammar-counted-repetition https://github.com/odin-loki/FORGE ~/FORGE
+#     and run FORGE_DIR=$HOME/FORGE tools/cloud/build-prism.sh (PRISM then also needs its prove branch).
 #   - ESBMC 8.5 supports LLVM 18..22: point it at LLVM 18. Its libc models need the i386 libc headers.
 set -euo pipefail
 P="${PRISM_DIR:-$HOME/PRISM}"; J="${PBSD_BUILD_JOBS:-$(nproc)}"
@@ -19,7 +23,8 @@ cd "$P"
 L="$HOME/.cache/prism/tools/llvm-23.1.4/bin"
 [ -x "$L/clang++" ] || python3 scripts/fetch_llvm.py
 if [ ! -x build/prism ] || [ ! -x build/prism-deps ]; then
-  cmake -B build -G Ninja -DCMAKE_C_COMPILER="$L/clang" -DCMAKE_CXX_COMPILER="$L/clang++" -DPRISM_LLVM_PINNED_BIN="$L" \
+  FORGE_ARGS=(); [ -n "${FORGE_DIR:-}" ] && FORGE_ARGS=(-DFORGE_SOURCE_DIR="$FORGE_DIR")   # see the note above on the grammar fix
+  cmake -B build -G Ninja "${FORGE_ARGS[@]}" -DCMAKE_C_COMPILER="$L/clang" -DCMAKE_CXX_COMPILER="$L/clang++" -DPRISM_LLVM_PINNED_BIN="$L" \
     -DCMAKE_BUILD_TYPE=Release -DPRISM_CUDA=OFF -DPRISM_QT=OFF -DPRISM_Z3=ON -DPRISM_TESTS=OFF
   cmake --build build --target prism prism-deps -j"$J"      # FORGE is fetched by this CMake
 fi

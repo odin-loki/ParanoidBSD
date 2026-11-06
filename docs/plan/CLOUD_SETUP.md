@@ -101,7 +101,7 @@ You (Odin) do steps 1–4 and the renting yourself; nothing here signs up or ren
 4. **Put the keys in WSL2 on the PC** (not in the repo). In `~/.pbsd/env` (chmod 600):
    ```bash
    export MORPH_API_KEY=...          # Morph, the only model provider (AGENTS.md 7.3)
-   export PRISM_BIN=$HOME/PRISM/build/prism PRISM_PROVER_FPK=/path/to/goedel-prover.fpk   # PRISM and the Lean prover on FORGE
+   export PRISM_BIN=$HOME/PRISM/build/prism PRISM_PROVER_FPK=/mnt/d/forgebox/models/goedel-8b-q4_k.fpk   # PRISM and the Lean prover on FORGE
    export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
    export PBSD_CONFIG=$HOME/pbsd/docs/plan/tools/runner/config.glm-api-burst.json
    ```
