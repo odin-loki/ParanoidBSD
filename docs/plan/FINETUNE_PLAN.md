@@ -1,112 +1,143 @@
-# Plan: fine-tune Qwen 3.5 9B for Lean proofs (PBSD tier T1)
+# Plan: fine-tune a Lean prover for PBSD tier T1, in C, C++ and CUDA
 
-Written 6 Nov 2026. Everything marked **measured** was run on this PC; **sourced** comes from a page named in the text; **assumption** and **unknown** are open and have a step that settles them.
+Written 6 Nov 2026. **Measured** = run on this PC. **Sourced** = from a page or file named in the text. **Assumption** and **unknown** are open, each with a step that settles it.
 
-## 1. Goal and the honest starting point
+**Language rule (Odin, 6 Nov 2026).** Everything we write for this is C, C++ or CUDA. No Python: no PyTorch, `transformers`, PEFT, TRL, unsloth or `datasets`. Shell is allowed as glue only. Lean itself, PRISM and FORGE are existing C++/Lean tools and stay as they are.
 
-**Goal.** A local prover that `prism prove` can call (`PRISM_PROVER_FPK`) to close the Lean 4 lemmas of the 12 verified-core package models (T1), on the RTX 3090, with no API cost.
+## 1. Where we stand, and two findings that come first
 
-**What exists (measured, 6 Nov 2026).** `prism prove` with Goedel-Prover-V2-8B (Q4_K `.fpk`) closed `n + 0 = n`, `n * 1 = n`, `a + b = b + a` and a primed-name variant in about 90 s each, and failed `2 * n = n + n` in 10 minutes. Decomposing that lemma into three smaller ones for the 8B proved only the trivial one.
+**Measured.** `prism prove` with Goedel-Prover-V2-8B (Q4_K `.fpk`) closed `n + 0 = n`, `n * 1 = n`, `a + b = b + a` and a primed-name variant in about 90 s each, and failed `2 * n = n + n` in 10 minutes. Splitting that lemma into three smaller ones for the 8B proved only the trivial one.
 
-**Two findings that change the plan before any training starts.**
+1. **The test project had no Mathlib** (measured): `ring`, `norm_num`, `linarith`, `nlinarith` are `unknown tactic`; only `omega` and `simp` work. Goedel was trained on Mathlib-style proofs, so most "unknown tactic" rejections are very probably the environment, not the model, and every baseline so far is a floor.
+2. **PRISM leaves no room to think** (sourced: `grammars/lean_proof.gbnf`, `src/prism/ai/proof_search.cpp`, `include/prism/forge_llm.hpp`): the model must reply `{"tactics": [...]}` under a grammar, default `max_new = 768`. Goedel-V2 and Qwen 3.5 are long-chain-of-thought models.
 
-1. **The test project had no Mathlib** (measured): `ring`, `norm_num`, `linarith` and `nlinarith` are all `unknown tactic`; only `omega` and `simp` work. Goedel was trained on Mathlib-style proofs, so most of its rejections ("unknown tactic") are very probably the environment, not the model. Every baseline so far is therefore a floor. **Step 0 is a Mathlib workspace and a re-run, before anything is judged.**
-2. **PRISM's interface leaves no room to think** (sourced from `grammars/lean_proof.gbnf`, `src/prism/ai/proof_search.cpp`, `include/prism/forge_llm.hpp`): the model must answer with `{"tactics": [...]}` under a grammar, with `max_new = 768` tokens by default. Goedel-V2 and Qwen 3.5 are long-chain-of-thought models. So the fine-tune must either teach a short, direct tactic format, or PRISM must allow a reasoning prelude before the constrained JSON. Both are evaluated below.
-
-**Recommendation, stated plainly.** Fine-tuning Qwen 3.5 9B is reasonable, but it should earn its GPU time. Goedel-V2-8B reached 83.0% on MiniF2F at pass@32 (its model card) with expert iteration and reinforcement learning at a scale a single 3090 does not match. The cheapest strong candidate is a **control**: Goedel-8B plus a small LoRA on the PBSD-shaped format and domain. Run it beside the Qwen 3.5 9B pilot, and let the same eval decide.
+**What this means.** Three cheap, training-free steps may close much of the gap and must be done first: Mathlib (phase 0), a reasoning prelude in PRISM's reply format (C++ change), and the existing escalation to Goedel-32B. Under the language rule, **training is a build project, not a configuration**, because FORGE has no training path yet (section 4). It should start only if phase 0 leaves a gap that is worth that effort.
 
 ## 2. Data inventory
 
-All from [Goedel-LM on Hugging Face](https://huggingface.co/Goedel-LM/datasets) (sourced from the dataset cards, 6 Nov 2026).
+[Goedel-LM on Hugging Face](https://huggingface.co/Goedel-LM/datasets), sourced from the dataset cards, 6 Nov 2026.
 
-| Dataset | Size | Contents | Licence | Use here |
+| Dataset | Size | Contents | Licence | Use |
 |---|---|---|---|---|
-| [`SFT_dataset_v2`](https://huggingface.co/datasets/Goedel-LM/SFT_dataset_v2) | 1,745,010 examples, 6.11 GB | `messages` (2–4 chat turns): the user gives a Lean 4 file (`import Mathlib`, `import Aesop`, `maxHeartbeats 0`, theorem ending in `sorry`), the assistant answers with the proof | Apache-2.0 | main SFT source; **construction and Lean/Mathlib version not stated** |
-| [`RL_dataset_V2`](https://huggingface.co/datasets/Goedel-LM/RL_dataset_V2/blob/main/README.md) | 98,632 examples, 336 MB download | subsets `lean4_completion` (whole proof) and `lean4_revision` (fix a proof from compiler feedback) | Apache-2.0 | the revision subset matches PRISM's retry loop; completion for the pilot |
-| [`Goedel-Pset-v1`](https://huggingface.co/datasets/Goedel-LM/Goedel-Pset-v1) | 1,732,594 rows, 828 MB | formal Lean 4 statements + informal statement; **no proofs** | not stated on the card | statements for expert iteration (section 5, phase 4) |
-| `Lean-workbook-proofs` | 29.8k | proofs for Lean Workbook problems | **not checked** | small clean set; check licence and format |
+| [`SFT_dataset_v2`](https://huggingface.co/datasets/Goedel-LM/SFT_dataset_v2) | 1,745,010 examples, 6.11 GB | `messages` (2–4 chat turns): the user gives a Lean 4 file (`import Mathlib`, `import Aesop`, `maxHeartbeats 0`, theorem ending in `sorry`); the assistant answers with the proof | Apache-2.0 | main SFT source. **Construction and Lean/Mathlib version not stated** |
+| [`RL_dataset_V2`](https://huggingface.co/datasets/Goedel-LM/RL_dataset_V2/blob/main/README.md) | 98,632 examples, 336 MB download | subsets `lean4_completion` (whole proof) and `lean4_revision` (fix a proof from compiler feedback) | Apache-2.0 | revision subset matches PRISM's retry loop |
+| [`Goedel-Pset-v1`](https://huggingface.co/datasets/Goedel-LM/Goedel-Pset-v1) | 1,732,594 rows, 828 MB | formal Lean 4 statements + informal statement; **no proofs** | not stated on the card | statements for expert iteration (phase 4) |
+| `Lean-workbook-proofs` | 29.8k | proofs for Lean Workbook problems | **not checked** | small clean set |
 | [`MathOlympiadBench`](https://huggingface.co/datasets/Goedel-LM/MathOlympiadBench) | 360 problems | formalised olympiad problems (158 IMO, 131 shortlist, 68 regional, 3 puzzles) | **not checked** | **evaluation only** |
-| PBSD's own | 12 verified-core packages | locked theorem statements (`proofs/<WP>/spec/`), P0-02 and P1-02 first | ours | the real target and the domain eval (section 4) |
+| PBSD's own | 12 verified-core packages | locked statements in `proofs/<WP>/spec/`, P0-02 and P1-02 first | ours | the real target; domain eval |
 
-The paper is [arXiv 2508.03613](https://arxiv.org/abs/2508.03613); its abstract says models, code and data are released, but the [repo README](https://github.com/Goedel-LM/Goedel-Prover-V2) documents inference only, so **assume the training code is not usable and write our own**.
+The paper ([arXiv 2508.03613](https://arxiv.org/abs/2508.03613)) says models, code and data are released, but the [repo README](https://github.com/Goedel-LM/Goedel-Prover-V2) documents inference only. **Assume there is no usable training code.**
 
-**Domain gap.** These sets are competition and Lean-Workbook mathematics. PBSD's T1 lemmas are data-structure and state-machine invariants (allocator, page tables, capabilities, rings). Expect the public data to give tactic fluency, not domain skill. The domain comes from the verified proofs our own pipeline accepts (phase 6).
+**Domain gap.** These sets are competition and Lean-Workbook mathematics. PBSD's T1 lemmas are data-structure and state-machine invariants. Expect the public data to give tactic fluency, not domain skill; the domain comes from proofs our own pipeline accepts (phase 6).
 
-## 3. Base model facts (Qwen 3.5 9B)
+## 3. The base model
 
-[Official model card](https://huggingface.co/Qwen/Qwen3.5-9B) (sourced): 9B parameters (listed as 10B in BF16), 32 layers, hidden size 4096, a **hybrid** of Gated DeltaNet (linear attention) and Gated Attention in a 3:1 pattern, 262,144 context, Apache-2.0, multimodal, multi-token-prediction trained. The base weights are `Qwen/Qwen3.5-9B-Base`. Thinking is on by default and Qwen 3.5 has no `/think` switch (it uses `enable_thinking`). It needs a very recent `transformers`.
+| | Qwen 3.5 9B | Goedel-Prover-V2-8B |
+|---|---|---|
+| Source | [model card](https://huggingface.co/Qwen/Qwen3.5-9B) | local `model.safetensors` + `config.json` (measured) |
+| Architecture | 32 layers, hidden 4096, **hybrid**: 3 Gated DeltaNet (linear attention) layers per 1 Gated Attention layer; 262,144 context; multimodal; Apache-2.0 | Qwen3, **dense** standard attention, 36 layers, hidden 4096 |
+| Already a Lean prover | no | yes (fine-tuned from Qwen3-8B; 83.0% MiniF2F pass@32 per its card) |
+| Quantised file here | `qwen3.5-9b-gguf.fpk`, 5.73 GB | `goedel-8b-q4_k.fpk`, 4.93 GB |
+| Thinking | on by default; no `/think` switch | long chain of thought |
 
-**Unknown, and the first thing the pilot must settle:** whether PEFT, TRL and the 4-bit libraries support this hybrid architecture without a slow fallback for the DeltaNet layers (the model card does not say; a linear-attention kernel library such as flash-linear-attention is likely needed). If training Qwen 3.5 9B turns out to be several times slower than a standard transformer, that alone can decide the base-model question.
+The base weights for the first are `Qwen/Qwen3.5-9B-Base` (model card). The choice between them is a build-cost question (section 4), not only a quality question.
 
-**This machine (measured).** RTX 3090 24 GB, 64 threads, 47 GB RAM visible to WSL, 619 GB free on the WSL disk, 4.1 TB free on D:. **No PyTorch is installed.** The 3090 is the same GPU `prism prove` and the PBSD run use, so training and the weekend run cannot overlap.
+**This machine (measured).** RTX 3090 24 GB, 64 threads, 47 GB RAM visible to WSL, 619 GB free on the WSL disk, 4.1 TB free on D:. The 3090 is also the GPU for `prism prove` and the PBSD run, so training and the weekend run cannot overlap.
 
-## 4. Evaluation, defined first
+## 4. The stack, and the gap in FORGE
 
-One harness, used for every model: **`prism prove` itself**, with the real Lean and Mathlib, a fixed budget, counting a lemma solved only when PRISM reports PROVED (kernel, axiom audit, `lake build`). This measures the thing we ship, including the grammar and the 768-token limit.
+| Job | Tool (language) |
+|---|---|
+| Download | `curl` (C) from the Hugging Face file URLs |
+| Parquet to JSONL | DuckDB command line (C++): `COPY (SELECT ...) TO 'x.jsonl'`. **Not installed; not tried on these files** |
+| Tokenise, filter, de-duplicate, remove eval overlap, pack, convert formats | new C++ tool `pbsd_data`, using FORGE's tokenizer |
+| Check proofs against Lean | C++ job runner (the runner's `run_job` pattern) driving `lake env lean` |
+| Train | FORGE (C++/CUDA), new `forge train` |
+| Evaluate | `prism prove` plus a small C++ driver |
+| Deploy | FORGE LoRA adapter file, loaded at run time |
+| Expert-iteration loop | C++, extending the runner |
+
+**What FORGE already has** (sourced: `graph/include/forge/graph/autodiff.hpp`, `docs/graph.md`, `docs/gpu.md`, `docs/STATUS.md`, `docs/cli.md`):
+- Reverse-mode autodiff, `grad(g, loss, wrt)`, that appends the backward graph to the same IR, so it runs on CPU or GPU. Supported ops: add sub mul div neg scale square sqrt rsqrt recip exp log tanh sigmoid silu relu abs, matmul, matmul_t, transpose, reshape, reduce_sum, reduce_mean, logsumexp, softmax, rms_norm. Anything else raises `unsupported`.
+- A CUDA runtime with kernels compiled to PTX (no CUDA SDK needed), tested on this RTX 3090; FlashAttention-2 and quantised tensor-core matmul **forward** kernels.
+- `forge import` for `qwen3` and `qwen3_5` blueprints, and `Gated DeltaNet` **inference** (`delta_rule`, `causal_conv` state ops).
+- LoRA adapters at inference: `add_adapter` loads `<weight>.lora_a` / `.lora_b` (PEFT layout, `W' = W + (alpha/r)·B·A`) from a `.fpk`. **A trained adapter can therefore be deployed with no merge or conversion step.**
+
+**What is missing for training** (checked by absence from the supported-op list and the source):
+1. Backward for attention (FlashAttention-2 backward), RoPE, and embedding gather.
+2. Input-gradient for a **frozen 4-bit base** matmul (only activation gradients are needed, but no such kernel exists).
+3. Backward for `delta_rule` and `causal_conv` (Qwen 3.5 only). This is the hardest piece: the forward keeps the DeltaNet state in registers.
+4. AdamW update, LoRA parameter wiring, gradient checkpointing and activation memory planning for 24 GB, loss masking and sequence packing, a training loop and a checkpoint format.
+
+FORGE's own plan (`FORGE_PLAN.md`) lists autodiff for LoRA as a "later phase", so this is planned work that has not been built.
+
+**Testing without Python.** Gradient checks in C++ by finite differences (FORGE already tests `grad` this way), plus a self-consistency check that the training forward pass gives the same loss as the inference path on a fixed batch. There is no reference-gradient file from another framework.
+
+**llama.cpp as an alternative.** I could not confirm its current training support (my search returned only old guides), so it is **unknown**. Check it in a half-day spike before building anything; if its training path is usable on this GPU with a dense Qwen3 model it would save most of the FORGE work, though not for the Qwen 3.5 hybrid layers.
+
+## 5. Evaluation, defined first
+
+One harness for every model: **`prism prove` itself**, with real Lean and Mathlib and a fixed model-call budget, counting a lemma solved only when PRISM reports PROVED (kernel, axiom audit, `lake build`). It measures what we ship, including the grammar and token limit. Always evaluate the **quantised `.fpk`**.
 
 | Set | Size | Role |
 |---|---|---|
-| PBSD micro-set | start with the 8 lemmas used so far, grow to about 50 from P0-02 and P1-02 | the real target |
-| MathOlympiadBench subset | 50–100 | hard, out-of-domain |
-| MiniF2F test | 244 | standard comparison with published numbers; **licence and source not checked** |
+| PBSD micro-set | the 8 lemmas so far, growing to about 50 from P0-02 and P1-02 | the real target |
+| MathOlympiadBench subset | 50–100 | hard, out of domain |
+| MiniF2F test | 244 | standard comparison; **source and licence not checked** |
 
-Report per model: solved at 1, 4 and 8 model calls, median wall-clock per lemma, and the failure split (`unknown tactic`, kernel error, no progress, duplicate). Always evaluate the **quantised `.fpk`**, not the bf16 weights, because that is what runs.
+Report solved at 1, 4 and 8 calls, median seconds per lemma, and the failure split. Baselines: Goedel-8B, stock Qwen 3.5 9B, Goedel-32B.
 
-Baselines on the same harness: Goedel-8B Q4_K, stock Qwen 3.5 9B, and Goedel-32B (the existing escalation target).
+## 6. Phases
 
-## 5. Phases
+**Phase 0 — no training; environment and cheap wins (2–3 days).**
+- Mathlib in a Lake workspace pinned to one Lean and Mathlib version, chosen by compiling about 1,000 sampled `SFT_dataset_v2` examples against candidates. Re-run all baselines.
+- PRISM (C++): try a reasoning prelude before the constrained JSON, and a larger `max_new`.
+- Run the Goedel-32B escalation properly (my first attempt failed on a project-setup mistake, not the model).
+- *Exit:* a baseline table. If Goedel-8B with Mathlib already solves most of the PBSD micro-set, **stop here** and revisit training later.
 
-**Phase 0 — environment and baseline (1–2 days).**
-- Add Mathlib to a Lake workspace pinned to one Lean and Mathlib version. Pick the version by compiling a random sample of about 1,000 `SFT_dataset_v2` examples against the candidates; the card does not say which one the data was checked with.
-- Re-run the Goedel-8B baseline with Mathlib, including `2 * n = n + n` and the decomposed variants.
-- *Exit:* a baseline table. If Goedel-8B already solves most of the PBSD micro-set with Mathlib, the fine-tune targets the hard remainder, and the case for it shrinks.
+**Phase 1 — data tools in C++ (3–4 days).**
+- Download (about 7.3 GB), convert with DuckDB, then `pbsd_data`: length statistics (**unknown**, sets sequence length and cost), de-duplicate, remove eval overlap, verify a sample against the pinned Lean, keep what still compiles.
+- Three formats: whole proof as `{"tactics": [...]}`; next step (prefix then remaining tactics); revision (error plus failed proof to fix). A second variant with a short reasoning prelude.
 
-**Phase 1 — data engineering (2–3 days).**
-- Download the three datasets (about 7.3 GB). Measure the token length distribution (**unknown**; it sets sequence length and cost).
-- Drop examples that exceed the sequence budget, de-duplicate, and **remove anything overlapping the eval sets**.
-- Verify a sample against the pinned Lean and Mathlib; keep only the proofs that still compile, and record the pass rate.
-- Build three training formats:
-  1. *Whole proof* in PRISM's reply format: the proof's top-level tactic lines as `{"tactics": [...]}`.
-  2. *Next step*: a proof prefix plus the remaining tactics (matches PRISM's best-first search; PRISM supplies the Lean error and goal state).
-  3. *Revision*: from `lean4_revision`, error plus failed proof to the fix.
-- Keep a **second format with a short reasoning prelude** to test the thinking question empirically.
-- Convert to the Qwen 3.5 chat template; strip thinking from history as the card requires.
+**Phase 2 — spikes before committing (about 1 week).**
+- *Spike A:* confirm FORGE's `grad()` trains a tiny two-layer transformer (matmul, rms_norm, silu, softmax only) with AdamW on CPU, loss falling.
+- *Spike B:* FlashAttention-2 backward on the 3090 against a finite-difference check.
+- *Spike C:* llama.cpp training on a dense Qwen3 model (section 4).
+- *Exit:* pick the engine, and decide whether the Qwen 3.5 `delta_rule` backward is in scope.
 
-**Phase 2 — pilot (2–3 days of GPU).**
-- Install PyTorch, a recent `transformers`, PEFT, TRL, bitsandbytes and the linear-attention kernels. Time the first 100 steps and **write the measured tokens per second here** before choosing a data size.
-- QLoRA (rank 64 to start) on about 50k examples, Qwen 3.5 9B post-trained versus `-Base`, direct-tactic versus short-prelude format. Control: Goedel-8B + LoRA on the same data.
-- *Gate:* continue only if the pilot beats its own baseline on the PBSD micro-set and does not regress on MiniF2F.
+**Phase 3 — build the trainer, dense model first.**
+- Order: attention/RoPE/gather backward, quantised-base input-gradient, AdamW and LoRA wiring, checkpointing, loop, adapter writer. Target the dense Qwen3 architecture, i.e. **Goedel-8B + LoRA**, which exercises everything except DeltaNet and doubles as the control.
+- *Exit:* gradient checks pass; a short run lowers loss; the adapter loads in FORGE and changes outputs. Measure tokens per second here and write it into this plan. At an **assumed** 1,500 tokens/s, 100M tokens is about 19 hours and 1B about 8 days; the full SFT set is several billion tokens, so **use a filtered subset**.
 
-**Phase 3 — main SFT (days, set by phase 2).**
-- Scale the data to the budget. Cost is `tokens / measured tokens-per-second`; at an **assumed** 1,500 tokens/s on QLoRA, 100M tokens is about 19 hours and 1B tokens about 8 days. The full SFT set, if it averages a few thousand tokens per example, would be several billion tokens, so **use a filtered subset, not all 1.75M**.
-- Train in stages and run the eval every checkpoint.
+**Phase 4 — Qwen 3.5 9B (only if phase 3 works and phase 0 left a gap).**
+- Add `delta_rule` and `causal_conv` backward. Train, compare with the Goedel-8B LoRA on the same eval, and keep whichever wins per cost.
 
-**Phase 4 — expert iteration with Lean as the judge (ongoing).**
-- Run the model through `prism prove` on `Goedel-Pset-v1` statements (start with a few thousand), keep every PRISM-accepted proof, add them to the training mix, retrain. This is cheap rejection-sampling fine-tuning and needs no RL infrastructure.
-- Full reinforcement learning with a Lean reward (as Goedel did) is **deferred**: it normally needs multiple GPUs, and one 3090 is shared with inference.
+**Phase 5 — expert iteration with Lean as the judge.**
+- Run the model through `prism prove` on `Goedel-Pset-v1` statements (start with a few thousand), keep every PRISM-accepted proof, add to the mix, retrain. Full RL with a Lean reward is deferred: it normally needs more than one GPU.
 
-**Phase 5 — deploy (1 day).**
-- Merge the LoRA, convert to a FORGE `.fpk` (Q4_K, as the existing Goedel and Qwen files were), and evaluate the quantised file. Whether FORGE's converter takes a merged fine-tune unchanged is **unknown**: test it with the pilot checkpoint, not at the end.
-- Set `PRISM_PROVER_FPK`. Escalation chain stays: this model, then Goedel-32B, then the frontier tier (the runner's `escalate_tier`).
+**Phase 6 — deploy and PBSD domain loop.**
+- Small PRISM change (C++): an env var for the adapter path, passed to FORGE's `add_adapter`. Escalation chain unchanged: this model, then Goedel-32B, then the frontier tier.
+- Every proof the pipeline accepts is a verified example in the target domain; fine-tune on them as P0-02 and P1-02 run.
 
-**Phase 6 — PBSD domain loop.**
-- Every proof the pipeline accepts is a Lean-verified example in the target domain. Collect them as the P0-02 and P1-02 packages run, and fine-tune on them. This is where the domain gap closes.
-
-## 6. Risks
+## 7. Risks
 
 | Risk | Why it matters | Mitigation |
 |---|---|---|
-| Hybrid-attention training is slow or unsupported | no 4-bit/PEFT path may exist for Gated DeltaNet yet | settle in the phase 2 timing run; fall back to the dense Goedel-8B (Qwen3, standard attention) |
-| Mathlib version mismatch | proofs that compiled for the authors may not compile here | phase 0 sample compile; filter |
-| Interface mismatch (no room to think) | a thinking model forced into 768 tokens of JSON underperforms | direct-tactic format; test the prelude variant; raise `max_new` in PRISM if it wins |
-| Contamination | eval sets may overlap the training data | de-duplicate against eval sets before training |
-| Quantisation loss | the bf16 model may beat the shipped Q4_K | evaluate only the `.fpk` |
-| Compute is shared | the weekend PBSD run needs the 3090 | schedule training after it, or on another machine |
-| Licence | the Pset card names no licence; two other cards not checked | read each before redistributing any derived weights or data |
-| Public data is out of domain | competition maths is not kernel invariants | phase 6 flywheel |
+| **No training path in FORGE** | the largest piece of engineering here | spikes first; dense model before hybrid; llama.cpp check; stop at phase 0 if enough |
+| DeltaNet backward is hard | Qwen 3.5 only; state held in registers in the forward kernel | do it last; the dense Goedel-8B LoRA is the fallback |
+| No reference gradients | no Python means no PyTorch comparison | finite differences and forward-loss self-consistency |
+| Memory on 24 GB | 9B frozen 4-bit base plus activations | gradient checkpointing; measure early (**unknown**) |
+| Mathlib version mismatch | public proofs may not compile here | phase 0/1 sample compile; filter |
+| Interface mismatch | thinking model forced into 768 tokens of JSON | prelude format; larger `max_new` |
+| Contamination | eval sets may overlap training data | remove overlap before training |
+| Quantisation loss | bf16 may beat the shipped Q4_K | evaluate only the `.fpk` |
+| GPU is shared | weekend run needs the 3090 | schedule training after it |
+| Licences | Pset card names none; two cards unchecked | read each before redistributing |
+| Out-of-domain data | competition maths is not kernel invariants | phase 6 loop |
 
-## 7. Decisions needed
+## 8. Decisions needed
 
-1. **Base:** `Qwen3.5-9B-Base` or the post-trained model. Recommendation: post-trained if phase 2 shows it keeps instruction following with LoRA, otherwise Base.
-2. **Format:** direct tactics (recommended start) or a short reasoning prelude. The pilot tests both.
-3. **Budget:** a cap on GPU days for phases 2 and 3, and whether to run the Goedel-8B control alongside.
+1. **Order:** phase 0 first and decide again from its table (recommended), or go straight to the trainer.
+2. **Engine:** build training in FORGE (recommended; it is yours and already has autodiff and CUDA), or use llama.cpp if spike C works.
+3. **Base:** Goedel-8B + LoRA first as the control and trainer test, then Qwen 3.5 9B, or Qwen 3.5 9B directly (needs the DeltaNet backward before any result).
+4. **Budget:** a cap on engineering time and on GPU days.
