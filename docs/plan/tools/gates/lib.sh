@@ -34,7 +34,7 @@ do_proof() { step proof "${PBSD_PROOF_TIMEOUT:-7200}" "${PBSD_PROOF_CMD:-\"$GATE
 do_qemu()  { step qemu  "${PBSD_QEMU_TIMEOUT:-1800}" "${PBSD_QEMU_CMD:-\"$GATE_DIR/qemu_boot.sh\" \"$1\"}"; }
 gate_main() {  # gate_main <task-id> <worktree> <steps...>
   local id="$1" wt="$2"; shift 2
-  export GATE_ID="$id"
+  export GATE_ID="$id" GATE_WT="$wt"   # hooks (PBSD_BUILD_CMD etc.) find the worktree here
   [ -d "$wt" ] || { log "worktree $wt missing"; exit 3; }
   log "task $id on $(hostname) in $wt: $*"
   for s in "$@"; do "do_$s" "$wt"; rc=$?; [ $rc -eq 0 ] || exit $rc; done
