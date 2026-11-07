@@ -7,7 +7,7 @@
 # Tier C: everything else. Cost model: input $0.047/M, output $0.268/M tokens (an upper bound: cached input is cheaper).
 # Env: MINE_P starting parallel calls (default 12; adapts between 4 and 32).
 HERE=$(cd "$(dirname "$0")" && pwd); R=/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79; D=/mnt/c/ParanoidBSD/mined-data; L=$HOME/pbsd-ref/linux
-TIERS=${1:-B}; BUDGET=${2:-60}; P=${MINE_P:-12}; mkdir -p "$D"
+TIERS=${1:-B}; BUDGET=${2:-60}; P=${MINE_P:-32}; mkdir -p "$D"
 LED=$D/ledger.txt
 # The ledger starts with what phase 1 and the pilot already cost, so the cap counts everything spent on mining.
 if [ ! -f "$LED" ]; then
@@ -49,11 +49,12 @@ for TIER in $TIERS; do
   while [ "$i" -lt "$TOTAL" ]; do
     if [ -f "$D/STOP" ]; then log "STOP file found: stopping in tier $TIER at chunk $i"; touch "$D/DONE-all"; exit 0; fi
     if over; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping in tier $TIER at chunk $i"; touch "$D/DONE-all"; exit 0; fi
-    tail -n +$((i+1)) "$LIST" | head -n 400 > "$D/batch.cur"
+    # 1500-chunk batches: each batch waits for its slowest call, so small batches left the miner mostly idle at their end (rate swung between 40 and 170 per minute)
+    tail -n +$((i+1)) "$LIST" | head -n "${MINE_BATCH:-1500}" > "$D/batch.cur"
     BEFORE=$(wc -l < "$D/failed.txt" 2>/dev/null || echo 0)
     xargs -P "$P" -L 1 bash -c "$HERE/mine_chunk.sh tier$TIER \$0 \$1 \$2 $OUT" < "$D/batch.cur" > /dev/null 2>> "$D/miner.err"
     FAILS=$(( $(wc -l < "$D/failed.txt" 2>/dev/null || echo 0) - BEFORE ))
-    i=$((i+400)); [ "$i" -gt "$TOTAL" ] && i=$TOTAL; echo "$i" > "$PROG"
+    i=$((i+${MINE_BATCH:-1500})); [ "$i" -gt "$TOTAL" ] && i=$TOTAL; echo "$i" > "$PROG"
     if [ "$FAILS" -gt 40 ]; then P=$(( P/2 > 4 ? P/2 : 4 )); log "many failures ($FAILS in the batch): parallel down to $P, pausing 60 s"; sleep 60
     elif [ "$FAILS" -eq 0 ] && [ "$P" -lt "${MINE_PMAX:-64}" ]; then P=$((P+8)); fi
     log "tier $TIER chunk $i/$TOTAL results $(wc -l < "$OUT") spent \$$(cost) fails $FAILS parallel $P"
