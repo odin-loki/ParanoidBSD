@@ -32,6 +32,9 @@ For any AI (or person) who runs, repairs or extends the PBSD pipeline. Each item
 20. **Interim build hooks.** The whole `pbsd/` tree does not build (about 157 modules cannot find headers in `hbsd/`), so the default build gate would fail every task. `PBSD_BUILD_CMD=/opt/pbsd/gates/unit_build.sh` checks only owned files; P0-07 must define the real build.
 21. **Pin the gates.** Gates run from `/opt/pbsd/gates` and `/opt/pbsd/tasks.json`, not from the worktree an agent can edit. After editing gates or prompts, re-run `pc-setup.sh` and confirm preflight says "pinned gates match the repository".
 
+17b. **The decomposer froze false statements.** In the sixth rehearsal three of seven locked statements were false as written (no premise tying the claim to the operation), so P0-02-MODEL could never pass: the agent found counterexamples but the gate wanted proofs. The IF prompt now requires a by-hand truth check of every statement, and the prover prompt says: prove `neg_<name>`, post `proof_failure` to `if`, move on. `slim_check` cannot test these (function-typed fields have no sampler).
+17c. **Never rebuild or replace a binary while a run uses it.** A PRISM relink during a rehearsal made `lean_prove` return code 127 and spoiled the result. Build elsewhere and swap when idle.
+
 ## D. PRISM and FORGE
 
 22. **PRISM tools are fetched, not vendored.** `prism-deps` only fetches; cppcheck, CBMC and ESBMC were built by hand. Clang 18 cannot build PRISM (`std::expected`); use the pinned clang 23.1.4.
