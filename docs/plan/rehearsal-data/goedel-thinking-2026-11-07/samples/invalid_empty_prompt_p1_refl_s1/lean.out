@@ -1,0 +1,13 @@
+GdlCand_p1_refl_1.lean:1:93: error: unexpected token '..'; expected '{' or tactic
+GdlCand_p1_refl_1.lean:1:66: error: failed to synthesize
+  HMul ℕ ℕ ?m.39
+use `set_option diagnostics true` to get diagnostic information
+GdlCand_p1_refl_1.lean:1:78: error: failed to synthesize
+  HMul ℕ ℕ ?m.81
+use `set_option diagnostics true` to get diagnostic information
+GdlCand_p1_refl_1.lean:1:91: error: unsolved goals
+ℕ : Type u_1
+a b : ℕ
+h : a ≠ b
+⊢ ∃ k, sorryAx Prop true ∨ sorryAx Prop true
+GdlCand_p1_refl_1.lean:3:7: error: unknown constant 'axioms'

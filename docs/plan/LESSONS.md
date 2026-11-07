@@ -102,3 +102,19 @@ Good news in the same run: with `lean_check` the final attempt used 4 `lean_chec
 Fix: a `proof_failure` sent to a passed `-IF` task now reopens it, blocks `P0-FREEZE` until it passes again (the hash lock covers the statement being repaired), ends the sender's attempt at once (its files are kept) and holds the sender `blocked` until the reopened tasks pass (`Db::finish`). Selftest case added (24 of 24). **Not yet exercised end to end:** the rehearsal script runs IF and MODEL as separate phases, so the reopen loop (IF repairs the statement, freeze re-runs, MODEL resumes) has only a database-level test. Next rehearsal should run IF, a freeze stand-in and MODEL in one task set.
 
 Also: the first version of the evidence copy put two 478 MB `repo.bundle` files into the repository folder (the test repo carries the `hbsd`/`kde` history). Never `git add` a bundle or anything under `.lake`; the rehearsal script now writes only the `proofs/` trees next to the data and keeps the bundle in WSL home.
+
+## J. Goedel-Prover-V2-8B with thinking, on the GPU (7 Nov 2026, free experiment; conclusion: not usable here)
+
+Setup: the model's own prompt ("Complete the following Lean 4 code ... provide a detailed proof plan"), thinking on, Q4_K `.fpk` on the RTX 3090, 8 representative problems modelled on the P0-02 statements (`rehearsal-data/goedel-thinking-2026-11-07/problems/`). Everything below is saved in that folder.
+
+| Attempt | Config | Outcome |
+|---|---|---|
+| smoke test | ctx 16k, 12,000 tokens, temp 0.6 | 247 s (48 tok/s); never reached an answer: looped ("But wait...") |
+| two workers | ctx 32k, 30,000 tokens | both froze after about 4 minutes (about 22 KB of output), 100% GPU and CPU, 23.8 of 24 GB used, still "running" after 2 h 7 min |
+| one worker | ctx 48k, repeat penalty 1.05 | froze after 3 minutes (23 KB), WSL VM restarted underneath |
+| invalid run | ctx 16k | **my launcher passed an empty problem path, so the model got no problem** and invented one; discarded, kept as `invalid_empty_prompt_*` |
+| **valid run** | ctx 16k, 14,000 tokens, repeat penalty 1.1, problem `a &&& a = a` | 328 s (42.6 tok/s); looped on "perhaps `&&&` is not defined"; said Lean has no bitwise AND for Nat (wrong); final code block was the statement with `sorry` |
+
+Conclusions: (1) at 16k context it runs but does not solve even the easiest statement and loops; (2) at 32k+ context the process froze in two runs (likely a GPU hang or memory spill on the 24 GB card; unconfirmed), so a bigger context is not available in practice; (3) by comparison GLM-5.3-Flash proved 15 of 16 harder statements in the lean_check run. Combined with the earlier 13 failed `lean_prove` calls, **Goedel is dropped**; revisit only if a better prover model or a full-precision build appears. One sample was run on one problem, so this is not a benchmark, but the failure is not subtle.
+
+Mistakes in this experiment, for the record: a script kept in `/tmp` was wiped by WSL; a launcher command gave an empty path and I almost drew a conclusion from it (the log line `grep: /problems/p1_refl.lean: No such file` gave it away: read the error output before reading the result); and I killed a good run by moving to a new configuration before looking at why the old one stalled.

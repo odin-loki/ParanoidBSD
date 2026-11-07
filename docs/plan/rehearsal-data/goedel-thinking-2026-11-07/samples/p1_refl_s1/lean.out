@@ -1,0 +1,5 @@
+GdlCand_p1_refl_1.lean:1:41: error: function expected at
+  RSub
+term has type
+  ?m.9
+GdlCand_p1_refl_1.lean:3:14: error: unknown constant 'rights_subset_refl'
