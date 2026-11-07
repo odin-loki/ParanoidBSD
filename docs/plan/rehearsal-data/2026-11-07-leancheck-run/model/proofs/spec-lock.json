@@ -1,0 +1,20 @@
+{
+  "proofs/P0-02/spec/Spec.lean": "ea5842972109c73e175eb0928c53b257c9bdc371480cc5984b3727b5fb446841",
+  "theorems": {
+    "P0-02": [
+      "narrow_subset_parent",
+      "derive_keeps_generation",
+      "derive_rights_narrowed",
+      "revoked_use_fails",
+      "stale_fails_closed",
+      "live_subset_use_ok",
+      "revoke_bumps_generation",
+      "restart_clears_and_bumps",
+      "restart_token_stale_fails",
+      "restart_new_token_live",
+      "posix_read_iff",
+      "nt_delete_iff",
+      "android_untrusted_rights_empty"
+    ]
+  }
+}

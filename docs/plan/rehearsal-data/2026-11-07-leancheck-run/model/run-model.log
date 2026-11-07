@@ -1,0 +1,385 @@
+1 tasks in /run/pbsd/rehb/state-model/tasks.db
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.00   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.9
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   0.0 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 0  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.00   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 12%  load 1.8
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   59.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 17  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.02   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 12%  load 0.9
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   50.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 40  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.05   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 12%  load 0.8
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   40.3 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 71  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.09   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 12%  load 0.9
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   33.8 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 100  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.14   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 13%  load 0.7
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   30.1 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 130  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.21   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 14%  load 1.7
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   27.1 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 154  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.26   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 18%  load 2.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   24.6 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 174  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.32   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 19%  load 2.2
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   22.8 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 192  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.36   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   24.5 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 204  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.40   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.2
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   25.8 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 218  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.46   projected total $0
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.3
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   24.8 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 237  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.52   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   23.8 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 258  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.57   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   23.5 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 277  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.63   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   22.5 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 293  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.64   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.0
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   22.3 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 298  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.64   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.0
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   22.3 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 298  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.64   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.0
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   22.3 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 298  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.66   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 2.3
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   35.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 303  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.67   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   35.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 304  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.70   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.4
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   41.1 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 314  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.72   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 3.3
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   41.5 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 322  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.74   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 24%  load 3.5
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   41.6 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 330  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.77   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.5
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   41.3 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 342  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.78   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 2.6
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   43.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 344  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.80   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.6
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   43.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 354  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.83   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.0
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   43.2 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 365  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.86   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.2
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   43.0 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 377  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.88   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.6
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   42.6 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 385  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.89   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 3.4
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   42.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 391  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.91   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   43.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 397  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.93   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 4.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   43.3 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 405  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.95   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 3.0
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   44.1 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 413  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.97   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 3.1
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   44.1 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 425  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $0.99   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 3.3
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   44.5 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 434  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.01   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.2
+  gates  compile 0/4  qemu 0/1  proof 1/3
+  model api   44.6 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 447  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.04   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 3.5
+  gates  compile 0/4  qemu 0/1  proof 1/3
+  model api   44.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 461  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.06   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 3.0
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   44.8 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 473  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.06   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.8
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   45.7 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 477  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.06   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 2.8
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   49.4 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 481  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.06   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 22%  load 2.6
+  gates  compile 0/4  qemu 0/1  proof 0/3
+  model api   49.9 tok/s out
+    morph        flash    morph-glm53flash       in flight 1/16  ok 489  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 1  queued 0  blocked 0  failed 0  escalated 0  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.07   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+  slots  agent 1/2   RAM 23%  load 2.9
+  gates  compile 0/4  qemu 0/1  proof 1/3
+  model api   50.6 tok/s out
+    morph        flash    morph-glm53flash       in flight 0/16  ok 501  429 0  err 0
+PBSD  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1 (0.0%)
+  running 0  queued 0  blocked 0  failed 0  escalated 1  quarantined 0
+  throughput 0.0 tasks/h   time left unknown (no throughput yet)   ETA -
+  API cost so far $1.07   projected total $1
+  P0 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/1
+run complete
