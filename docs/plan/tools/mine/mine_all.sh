@@ -55,7 +55,7 @@ for TIER in $TIERS; do
     FAILS=$(( $(wc -l < "$D/failed.txt" 2>/dev/null || echo 0) - BEFORE ))
     i=$((i+400)); [ "$i" -gt "$TOTAL" ] && i=$TOTAL; echo "$i" > "$PROG"
     if [ "$FAILS" -gt 40 ]; then P=$(( P/2 > 4 ? P/2 : 4 )); log "many failures ($FAILS in the batch): parallel down to $P, pausing 60 s"; sleep 60
-    elif [ "$FAILS" -eq 0 ] && [ "$P" -lt 32 ]; then P=$((P+4)); fi
+    elif [ "$FAILS" -eq 0 ] && [ "$P" -lt "${MINE_PMAX:-64}" ]; then P=$((P+8)); fi
     log "tier $TIER chunk $i/$TOTAL results $(wc -l < "$OUT") spent \$$(cost) fails $FAILS parallel $P"
   done
   touch "$D/DONE-tier$TIER"; log "tier $TIER complete"
