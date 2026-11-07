@@ -46,3 +46,24 @@ For any AI (or person) who runs, repairs or extends the PBSD pipeline. Each item
 28. **Do not trust a background-task "completed" notice.** It can mean only that the launcher exited. Check the real process and the state DB.
 29. **The auto-mode classifier blocks `curl | sh` installers and `gh pr merge` from Bash.** Ask Odin to run installers manually; merge PRs from Windows cmd/PowerShell when Odin says so.
 30. **Odin's constraints:** C, C++ and CUDA only for anything that ships (no Python in the product pipeline); Goedel 8B by default, 32B only as escalation; no fine-tuning; PRISM and FORGE must be used for proofs and inference.
+
+## F. Why proofs are slow (root-cause analysis, 7 Nov 2026, measured)
+
+One `prism prove` of `theorem band_le_left (a b : Nat) : a &&& b ≤ a` with the Goedel 8B on the RTX 3090 took **567 s and failed** (24 model calls, 13 Lean checks, budget exhausted). GPU utilisation was 0-13% the whole time.
+
+| Part | Measured | Share |
+|---|---|---|
+| Start-up per `prism prove` process (lake/Mathlib check, 4.9 GB model read from D: at 191 MB/s, load, first-call plan compile ~30 s) | about 120 s before the first model call | 21% |
+| Lean kernel checks | 3.3 s each (`import Mathlib`), 13 of them = about 43 s | 8% |
+| Model calls | about 17 s each, 24 of them = about 400 s | 71% |
+
+Why a model call takes about 17 s (FORGE `bench` and `run` on the same `.fpk`, CUDA): decode 38-74 tok/s and prefill 130-312 tok/s. An RTX 3090 should do several times that. The decode counters show **724 kernel launches and 6 syncs per token and 0 CUDA graphs captured**, so decoding is launch-bound and the GPU idles (hence the 4% utilisation); the Xeon Gold 6242 (2.8 GHz) is slow at issuing launches. The reply may be up to 768 tokens (`max_new`) under a grammar allowing 40 lines of 400 characters, so one call is up to about 12-20 s of decode plus a few seconds of prefill.
+
+Root causes, in order of effect:
+1. **Search yield is low.** Of 24 candidates, most were rejected: invented names (`Nat.ands_le_left`, `Nat.amp`), `sorry`, duplicates, wrong tactics. Each wasted candidate costs about 17 s.
+2. **Decode is launch-bound** (no CUDA graphs) and **prefill is slow**: FORGE upstream work (CUDA graph capture for decode, a faster prefill GEMM).
+3. **A new process per `lean_prove` call** repeats about 120 s of start-up. A task with 8 calls loses about 16 minutes before any search.
+4. **Replies are allowed to be much longer than a tactic needs** (768 tokens).
+5. Not a cause: the API (model turns are seconds and cost cents), Lean checks, disk speed.
+
+Remedies, none yet done unless noted: cap `max_new` and the grammar's line count (PRISM); keep the prover resident between calls (PRISM/FORGE server mode); CUDA-graph decode in FORGE; run provers in parallel on more GPUs (burst VM with a GPU); give the model the Mathlib names it needs (a lemma library); `lean_prove` limited to two calls per theorem per attempt (done).
