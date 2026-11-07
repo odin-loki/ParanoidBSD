@@ -31,8 +31,8 @@ cat > "$filter" <<'JQ'
 | .providers[0].concurrency = 16
 | .gates_dir = "/opt/pbsd/gates" | .checkpoint_dir = "/mnt/d/pbsd-ckpt" | .checkpoint_repo = "/mnt/d/pbsd-ckpt/pbsd.git"
 | .ref_roots = {linux: ($home + "/pbsd-ref/linux"), wine: ($home + "/pbsd-ref/wine"), hbsd: "/run/pbsd/repo/hbsd", kde: "/run/pbsd/repo/kde"}
-| .prism_bin = ($home + "/PRISM/build/prism") | .prover_slots = 2 | .reasoning_effort = "low" | .escalate_reasoning_effort = "high"
-| .lean_packages = ($home + "/lean49/.lake/packages") | .prover_fpk_escalate = ($home + "/models/goedel32.fpk")
+| .prism_bin = ($home + "/PRISM/build/prism") | .prover_slots = 1 | .reasoning_effort = "low" | .escalate_reasoning_effort = "high"
+| .lean_packages = ($home + "/lean49/.lake/packages")
 JQ
 jq --arg home "$home" -f "$filter" "$base" > "$home/.pbsd/config.json"; rm -f "$filter"
 
@@ -44,9 +44,10 @@ export MORPH_API_KEY=                         # <- paste your Morph key here; ne
 export PBSD_STATE=/run/pbsd/state PBSD_WT=/run/pbsd/wt PBSD_REPO=/run/pbsd/repo PBSD_CHECKPOINT=/mnt/d/pbsd-ckpt
 export PBSD_CONFIG=$home/.pbsd/config.json PBSD_TASKS=/opt/pbsd/tasks.json
 export PBSD_JOBS=2
-# Prover: PRISM runs the Goedel model in process on the GPU. 8B first; the 32B is the automatic retry when no proof is found.
+# Goedel prover: DROPPED (Odin, 7 Nov 2026). In the passing P0-02-MODEL rehearsal it returned no proof in 13 calls and GLM wrote every proof; T1 is 12 of
+# 12,976 tasks, so the prover would save about $30. Without PRISM_PROVER_FPK the runner does not offer lean_prove; agents use lean_check and the gate.
+# To bring it back, add: export PRISM_PROVER_FPK=/mnt/d/forgebox/models/goedel-8b-q4_k.fpk PBSD_PROVER_FPK_ESCALATE=$home/models/goedel32.fpk (and prover_slots 2).
 export PRISM_BIN=$home/PRISM/build/prism PRISM_TOOLS_DIR=$home/.prism/tools PRISM_DEVICE=cuda
-export PRISM_PROVER_FPK=/mnt/d/forgebox/models/goedel-8b-q4_k.fpk PBSD_PROVER_FPK_ESCALATE=$home/models/goedel32.fpk
 export PBSD_LEAN_PACKAGES=$home/lean49/.lake/packages
 # Interim per-unit build and test (the whole pbsd/ tree does not build yet; P0-07 replaces these)
 export PBSD_BUILD_CMD=/opt/pbsd/gates/unit_build.sh PBSD_TEST_CMD=/opt/pbsd/gates/unit_test.sh

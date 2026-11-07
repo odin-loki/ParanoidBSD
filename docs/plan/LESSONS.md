@@ -76,3 +76,9 @@ Rules: measure with a timer inside the real process first; keep grammars free of
 ## G. Orphan provers (7 Nov 2026)
 
 When a rehearsal's runner was killed by `timeout`, its `prism prove --all` child (the 32B escalation: 25 GB of RAM, the whole 24 GB GPU) kept running for over an hour. It spoiled the next measurement (a prove took 574 s instead of about 120 s) and would have starved a real run. Fixes: jobs now die with the runner (`PR_SET_PDEATHSIG`), and `rehearsal_b.sh` kills leftover provers first. Before any timing or run, check `nvidia-smi` shows about 0% and no `prism prove` in `ps`.
+
+## H. Speed of one T1 task and dropping Goedel (7 Nov 2026)
+
+Time split of the passing 48-minute P0-02-MODEL run (345 requests, one agent): 36% quick API turns (about 3.3 s each), 50% gate runs and `lean_prove` (38 full gate runs, about 38 s each, mostly Lean builds), 13% one 32,768-token request (384 s). The agent had no cheap compile check and abused `lean_prove` on made-up "probe" theorems. New tool `lean_check(file)` (incremental `lake build Model Spec`): measured 24 s cold, 4.4 s warm, 7.5 s after an edit, with the Mathlib packages linked. Prompt: use it after every edit, run the gate once it compiles with 0 sorry.
+
+**Odin dropped the Goedel prover (7 Nov 2026):** it returned no proof in 13 calls, GLM wrote every proof, and T1 is 12 of 12,976 tasks (about $30 of API). `pc-setup.sh` no longer sets `PRISM_PROVER_FPK`, so the runner does not offer `lean_prove`; preflight reports it as off. No GPU is needed for the run, so the GPU burst VM is not needed either. The code stays for a later revisit (`lean_prove`, two prover slots, the FORGE/PRISM speed fixes all stay merged).

@@ -102,6 +102,8 @@ json tools_schema(const std::string& role, bool lean = false) {
     fn("read_messages", "Read the messages addressed to this task or its package", json::object(), {}),
     fn("lean_prove", "Prove one Lean 4 theorem with PRISM and the local Goedel prover model (prism prove). The theorem must be in an owned .lean file with a whole-proof `sorry`. On success the proof is written into the file. Pass theorem \"*\" to try EVERY theorem with a sorry in the project in one call (the model is loaded once, so this is much cheaper than one call per theorem); otherwise state small lemmas and prove them one at a time.",
        {{"file", str}, {"theorem", str}}, {"file", "theorem"}),
+    fn("lean_check", "Compile the Lean model project that holds an owned .lean file (incremental lake build of Model and Spec, a few seconds) and return the errors. Use it after every edit instead of run_gate; run_gate only when it compiles and no sorry is left.",
+       {{"file", str}}, {"file"}),
     fn("submit", role == "reviewer" ? "Finish the review: verdict approve, or changes with findings (each names the task to reopen)"
                                     : "Finish the task; accepted only if the gate passed on the current tree", submit_props, submit_req)});
 }
@@ -298,6 +300,25 @@ void link_lean_packages(const Config& c, const fs::path& file) {
   }
 }
 
+// lean_check: an incremental `lake build Model Spec` of the model project that holds `file`. Seventh rehearsal (7 Nov 2026): half of a 48-minute T1 task
+// was Lean builds inside 38 full gate runs (about 38 s each), and the agent used lean_prove on made-up "probe" theorems just to see compile errors.
+// This is the cheap compile check: no gate, no prover model, no commit.
+std::string lean_check(const Config& c, const fs::path& wt, const fs::path& file) {
+  link_lean_packages(c, file);
+  fs::path proj;
+  std::error_code ec;
+  for (fs::path d = fs::absolute(file, ec).parent_path(); !d.empty() && d != d.root_path(); d = d.parent_path())
+    if (fs::exists(d / "lakefile.lean", ec) || fs::exists(d / "lakefile.toml", ec)) { proj = d; break; }
+  if (proj.empty()) return "refused: no lakefile.lean above " + file.string() + " (write the Lake template files first)";
+  auto env = gate_env("");
+  auto r = run_job({"lake", "build", "Model", "Spec"}, -1, 300, proj.string(), 500, &env);
+  std::string tail = r.tail.size() > 5000 ? r.tail.substr(r.tail.size() - 5000) : r.tail;
+  size_t sorries = 0;
+  for (size_t at = 0; (at = r.tail.find("uses 'sorry'", at)) != std::string::npos; ++at) ++sorries;
+  if (r.code == 0) return "compiles. " + std::to_string(sorries) + " declaration(s) still use sorry." + "\n" + tail;
+  return "does NOT compile (exit " + std::to_string(r.code) + "):" + "\n" + tail;
+}
+
 std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& theorem, Db& db) {
   static const std::regex name_re(R"(^[A-Za-z_][A-Za-z0-9_.']*$)");
   // theorem "*" proves every theorem with a sorry in the model project in ONE prism process: the model is loaded and warmed up once
@@ -414,6 +435,7 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
   json tools = tools_schema(role, false);
   if (role == "prover" && getenv("PRISM_PROVER_FPK")) tools = tools_schema(role, true);
   else tools.erase(std::remove_if(tools.begin(), tools.end(), [](const json& x) { return x["function"]["name"] == "lean_prove"; }), tools.end());
+  if (role != "prover") tools.erase(std::remove_if(tools.begin(), tools.end(), [](const json& x) { return x["function"]["name"] == "lean_check"; }), tools.end());
   auto commit = [&](std::string m) {
     if (m.ends_with(" gate")) {   // the proof gate checks annotation-only diffs against this base
       std::string base = trim(sh(wt.string(), {"git", "merge-base", "HEAD", "refs/heads/wp/" + wp}));
@@ -586,6 +608,11 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
         if (!getenv("PRISM_PROVER_FPK")) res = "no prover model configured (PRISM_PROVER_FPK)";
         else if (!owned(t, p) || !dst || !p.ends_with(".lean")) res = "refused: " + p + " is not an owned .lean file";
         else { res = lean_prove(c, t, wt, *dst, stmt, db); if (res.starts_with("proved")) gate_ok = false; }
+      } else if (fnm == "lean_check") {
+        std::string p = a.value("file", "");
+        auto dst = in_tree(wt, p);
+        if (!owned(t, p) || !dst || !p.ends_with(".lean")) res = "refused: " + p + " is not an owned .lean file";
+        else res = lean_check(c, wt, *dst);
       } else if (fnm == "read_messages") {
         for (auto& mm : db.messages_for(id, wp)) res += mm.dump() + "\n";
         if (res.empty()) res = "no messages";

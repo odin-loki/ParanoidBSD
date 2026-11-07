@@ -29,9 +29,13 @@ chk "apalache-mc"         command -v apalache-mc
 [ -d "${PBSD_LEAN_PACKAGES:-/nonexistent}/mathlib" ] && ok "Mathlib packages at $PBSD_LEAN_PACKAGES" || bad "Mathlib packages missing: tools/cloud/lean-mathlib.sh"
 
 echo "== models"
-[ -f "${PRISM_PROVER_FPK:-}" ] && ok "prover (first pass): $PRISM_PROVER_FPK" || bad "PRISM_PROVER_FPK is not a file"
-[ -z "${PBSD_PROVER_FPK_ESCALATE:-}" ] && warn "no escalation model set" || { [ -f "$PBSD_PROVER_FPK_ESCALATE" ] && ok "prover (escalation): $PBSD_PROVER_FPK_ESCALATE" || bad "PBSD_PROVER_FPK_ESCALATE is not a file"; }
-[ "${PRISM_DEVICE:-}" = cuda ] && ok "PRISM_DEVICE=cuda" || warn "PRISM_DEVICE is '${PRISM_DEVICE:-unset}': the prover will run on the CPU"
+if [ -z "${PRISM_PROVER_FPK:-}" ]; then
+  ok "Goedel prover is off (decided 7 Nov 2026): proofs are written by GLM and checked by lean_check and the gate"
+else
+  [ -f "$PRISM_PROVER_FPK" ] && ok "prover (first pass): $PRISM_PROVER_FPK" || bad "PRISM_PROVER_FPK is not a file"
+  [ -z "${PBSD_PROVER_FPK_ESCALATE:-}" ] && warn "no escalation model set" || { [ -f "$PBSD_PROVER_FPK_ESCALATE" ] && ok "prover (escalation): $PBSD_PROVER_FPK_ESCALATE" || bad "PBSD_PROVER_FPK_ESCALATE is not a file"; }
+  [ "${PRISM_DEVICE:-}" = cuda ] && ok "PRISM_DEVICE=cuda" || warn "PRISM_DEVICE is '${PRISM_DEVICE:-unset}': the prover will run on the CPU"
+fi
 
 echo "== layout"
 for d in /run/pbsd/state /run/pbsd/wt /mnt/d/pbsd-ckpt /opt/pbsd/gates; do [ -d "$d" ] && [ -w "$d" ] && ok "$d writable" || bad "$d missing or not writable: tools/cloud/pc-setup.sh"; done
