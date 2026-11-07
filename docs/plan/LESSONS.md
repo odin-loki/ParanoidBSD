@@ -1,8 +1,18 @@
 # Lessons and mistakes (read this first)
 
+Rule zero: section 0 (save work as you go).
+
 See also [REHEARSAL_REPORT_2026-11-07.md](REHEARSAL_REPORT_2026-11-07.md) for the measured results and data.
 
 For any AI (or person) who runs, repairs or extends the PBSD pipeline. Each item is a mistake that cost real time or money on 6-7 Nov 2026, with the rule that came out of it. **Measured** items were observed on Odin's PC (Windows 11, WSL2 Ubuntu, RTX 3090, 48 GB RAM cap). Add new ones at the top of the relevant section.
+
+## 0. SAVE WORK AS YOU GO (Odin, 7 Nov 2026: "No more losing work")
+
+Work was lost four times in two days: the final `Spec.lean` and `Model.lean` of the passing P0-02 run (test repo in `/run`, tmpfs, wiped when WSL went idle; the conversation file is deleted when a task passes), a whole rehearsal's state, profiling output in `/tmp/rc`, and the first Goedel smoke test. Rules:
+1. **Never keep results only in `/tmp`, `/run` or a worktree.** Write them as they are produced to a persistent path: the repository folder on the Windows side (`/mnt/c/ParanoidBSD/...`, which WSL does not wipe) or `~/` in WSL. Copy at the END of every phase and every sample, not once at the end of the whole run.
+2. **Commit and push the data periodically while a long run is going** (a background loop every 10 minutes), and again when it ends. An uncommitted result is a lost result.
+3. **Keep the artefacts, not just the numbers:** the final source files (`git bundle` the test repository), the task database, the conversation, the raw model output, the commands. A summary cannot be re-checked.
+4. **Before deleting or letting a scratch directory expire, ask "is the evidence somewhere else?"** The rehearsal script now copies the database and bundles the repository per phase; the Goedel experiment writes straight into `docs/plan/rehearsal-data/` and auto-commits.
 
 ## A. Running on this PC (WSL, Windows)
 
