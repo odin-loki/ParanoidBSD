@@ -601,6 +601,16 @@ TaskOutcome run_task(const json& t, Api& api, const Config& c, Db& db, int slot)
         // A contract change request reopens the package's -IF task (it owns the package contracts) so
         // requests are applied in a batch; dependants whose build breaks are retried by their gates.
         if (k == "contract_change_request" && db.state_of(to) == "passed") db.reopen({to}, {});
+        // Eighth rehearsal (7 Nov 2026): a prover proved the negation of a false locked statement and sent proof_failure to the -IF task, but only
+        // contract_change_request reopened it, so nothing happened and the model task ended "escalated" after 17 gate runs. A proof_failure sent to a passed
+        // -IF task reopens it AND the freeze (its hash lock covers the statement being fixed); this attempt ends at once (the files are kept) and the task
+        // waits, blocked, until the reopened tasks pass again.
+        if (k == "proof_failure" && to.ends_with("-IF") && db.state_of(to) == "passed") {
+          db.reopen({to}, {"P0-FREEZE"});   // the freeze waits (blocked) until the -IF task passes again
+          db.event(id, "spec_reopened", json{{"to", to}});
+          msgs.push_back({{"role", "tool"}, {"tool_call_id", call.value("id", "")}, {"content", "posted to " + to + "; it is reopened to repair the statement and the freeze will re-run. Your files are kept. This attempt ends now; the task resumes when they pass."}});
+          finish_state(); out.r = Result::failed; return out;
+        }
         res = "posted to " + to;
       } else if (fnm == "lean_prove") {
         std::string p = a.value("file", ""), stmt = a.value("theorem", "");

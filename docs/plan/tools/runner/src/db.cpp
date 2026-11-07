@@ -117,6 +117,10 @@ void Db::finish(const std::string& id, const std::string& result, const Config& 
     ++inf; st = inf >= 20 ? "quarantined" : "ready"; att = std::max<int64_t>(0, att - 1); }
   else if (result == "changes") st = "blocked";    // waits for the reopened unit tasks to pass again
   else st = att >= c.max_attempts ? "escalated" : "ready";
+  if (st == "ready" && result == "failed") {   // it reported a problem to a task that has been reopened: wait for that task instead of retrying on the same spec
+    Stmt w(h_, "SELECT COUNT(*) FROM message m JOIN task t ON t.id=m.to_task WHERE m.from_task=? AND m.kind='proof_failure' AND t.state!='passed'"); w.b(1, id);
+    if (w.step() && w.i(0) > 0) st = "blocked";
+  }
   Stmt u(h_, "UPDATE task SET state=?, crashes=?, finished=?, attempts=?, infra=? WHERE id=?");
   u.b(1, st).b(2, cr).b(3, now()).b(4, att).b(5, inf).b(6, id); u.step();
   Stmt e(h_, "INSERT INTO event VALUES(?,?,?,?)"); e.b(1, now()).b(2, id).b(3, st).b(4, result); e.step();

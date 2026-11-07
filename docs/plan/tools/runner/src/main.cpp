@@ -241,6 +241,15 @@ int pbsd::selftest(const Config& base) {
     edb.exec("UPDATE task SET state='leased', attempts=2 WHERE id='P9-01-U002-IMPL'");
     edb.finish("P9-01-U002-IMPL", "infra", ce);
     check("infra failure charges no attempt", edb.state_of("P9-01-U002-IMPL") == "ready");
+    // A task that reported a proof_failure to a task that is not passed waits (blocked) instead of retrying on the same spec, and resumes when it passes.
+    edb.exec("UPDATE task SET state='ready' WHERE id='P9-01-U002-IMPL'");
+    edb.exec("UPDATE task SET state='leased', attempts=1 WHERE id='P9-01-U002-PROOF'");
+    edb.post("P9-01-U002-IMPL", "P9-01-U002-PROOF", "proof_failure", "statement is false");
+    edb.finish("P9-01-U002-PROOF", "failed", ce);
+    const bool held = edb.state_of("P9-01-U002-PROOF") == "blocked";
+    edb.exec("UPDATE task SET state='passed' WHERE id='P9-01-U002-IMPL'");
+    edb.unblock();
+    check("a proof_failure to an unfinished task blocks the sender until it passes", held && edb.state_of("P9-01-U002-PROOF") == "ready");
     kill(fr, SIGKILL); waitpid(fr, nullptr, 0);
   }
   unsetenv("E2E_SECRET_KEY");

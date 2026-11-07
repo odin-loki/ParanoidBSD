@@ -34,7 +34,10 @@ phase() {  # phase <name> <task-id-regex> <timeout-s>
   keep=$HOME/rehb-last/$name; rm -rf "$keep"; mkdir -p "$keep"
   cp -r $S/tasks.db $S/conv "$keep"/ 2>/dev/null; cp $D/run-$name.log "$keep"/ 2>/dev/null
   cp -r $D/wt-$name/*/proofs "$keep"/proofs 2>/dev/null; cp $D/repo/proofs/spec-lock.json "$keep"/ 2>/dev/null
-  git -C $D/repo bundle create "$keep"/repo.bundle --all >/dev/null 2>&1   # every task branch, so the final Spec.lean and Model.lean survive (they were lost on 7 Nov)
+  # the full bundle is about 480 MB (hbsd/kde history): keep it in WSL home only; put just the proofs trees (small, committable) next to the data
+  find "$keep" -name .lake -prune -exec rm -rf {} + 2>/dev/null
+  git -C $D/repo bundle create "$keep"/repo.bundle --all >/dev/null 2>&1
+  for b in $(git -C $D/repo branch --list 'wp/*' 't/*' --format='%(refname:short)'); do mkdir -p "$keep/trees/${b//\//_}"; git -C $D/repo archive "$b" proofs 2>/dev/null | tar -x -C "$keep/trees/${b//\//_}" 2>/dev/null; done
   echo "== phase $name: ended after $(( $(date +%s) - s )) s (evidence in $keep)"
   sqlite3 -separator '  ' $S/tasks.db "select id,state,attempts from task order by id"
   sqlite3 -separator '  ' $S/tasks.db "select 'cost USD', round(sum(usd),3) from cost"
