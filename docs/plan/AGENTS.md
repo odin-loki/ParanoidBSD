@@ -1,5 +1,7 @@
 # PBSD agent execution: GLM-5.3-Flash API, parallel agents, Odin's PC
 
+> **Read [LESSONS.md](LESSONS.md) first.** It records the mistakes made while setting up and rehearsing this pipeline (WSL shutting down, reasoning-effort cost, gate-dodging agent behaviour, PRISM/FORGE pitfalls) and the rule that came out of each.
+
 Reviewed and fixed on 4 Nov 2026. Section 11 lists every problem found and what was done about it.
 
 **Who does the work:**
