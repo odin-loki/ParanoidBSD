@@ -55,7 +55,7 @@ git add --sparse proofs/spec-lock.json proofs/P0-02/spec/Spec.lean
 git -c user.name=freeze -c user.email=f@f commit -q -m "freeze stand-in: hash the P0-02 spec (what P0-FREEZE does in the real graph)" && echo "froze: $(git log --oneline -1 | cut -c1-70)"
 [ "$(echo "$names" | jq length)" -gt 0 ] || { echo "no 'def name : Prop' statements in Spec.lean: stopping before the T1 task"; exit 1; }
 
-phase model '^P0-02-MODEL$' 5400
+phase model '^P0-02-MODEL$' 7200
 echo "== what MODEL wrote:"; git -C $D/repo ls-tree -r --name-only pbsd-cutover -- proofs/P0-02/model | head -12
 git -C $D/repo show pbsd-cutover:proofs/P0-02/model/Model.lean 2>&1 | head -40 | cut -c1-150
 [ -f $D/watchdog.log ] && cat $D/watchdog.log
