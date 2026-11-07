@@ -1,0 +1,1 @@
+cmd: forge run goedel-8b-q4_k.fpk -n 40000 --ctx 49152 --temp 0.6 --repeat-penalty 1.05 --top-p 0.95 --seed 1
