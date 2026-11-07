@@ -21,7 +21,8 @@ mkdir -p /mnt/d/pbsd-ckpt "$home/.pbsd" || echo "WARNING: could not create /mnt/
 base="$plan/tools/runner/config.glm-api.json"
 ram_gb="$(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo)"
 # WSL here is capped at 48 GB (.wslconfig). The shipped slots assume ~140 GB, so: compile 4 x 2 GB, qemu 1 x 4 GB, proof 3 x 6 GB.
-# prover_slots stays 1 while a 32B escalation is configured: it needs ~22 GB of the 3090's 24 GB, so nothing else may hold the GPU.
+# prover_slots 2: two 8B prover processes (about 9 GB each) share the 3090 side by side; the 32B escalation (about 19 GB) takes the whole GPU, so the
+# runner makes it wait until both slots are free (ProverSlot with the full weight). Measured 7 Nov 2026: one prover leaves the GPU 90% idle.
 filter="$(mktemp)"
 cat > "$filter" <<'JQ'
   .slots.agent.count = 16
@@ -30,7 +31,7 @@ cat > "$filter" <<'JQ'
 | .providers[0].concurrency = 16
 | .gates_dir = "/opt/pbsd/gates" | .checkpoint_dir = "/mnt/d/pbsd-ckpt" | .checkpoint_repo = "/mnt/d/pbsd-ckpt/pbsd.git"
 | .ref_roots = {linux: ($home + "/pbsd-ref/linux"), wine: ($home + "/pbsd-ref/wine"), hbsd: "/run/pbsd/repo/hbsd", kde: "/run/pbsd/repo/kde"}
-| .prism_bin = ($home + "/PRISM/build/prism") | .prover_slots = 1 | .reasoning_effort = "low" | .escalate_reasoning_effort = "high"
+| .prism_bin = ($home + "/PRISM/build/prism") | .prover_slots = 2 | .reasoning_effort = "low" | .escalate_reasoning_effort = "high"
 | .lean_packages = ($home + "/lean49/.lake/packages") | .prover_fpk_escalate = ($home + "/models/goedel32.fpk")
 JQ
 jq --arg home "$home" -f "$filter" "$base" > "$home/.pbsd/config.json"; rm -f "$filter"

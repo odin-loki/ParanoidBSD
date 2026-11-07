@@ -47,23 +47,23 @@ For any AI (or person) who runs, repairs or extends the PBSD pipeline. Each item
 29. **The auto-mode classifier blocks `curl | sh` installers and `gh pr merge` from Bash.** Ask Odin to run installers manually; merge PRs from Windows cmd/PowerShell when Odin says so.
 30. **Odin's constraints:** C, C++ and CUDA only for anything that ships (no Python in the product pipeline); Goedel 8B by default, 32B only as escalation; no fine-tuning; PRISM and FORGE must be used for proofs and inference.
 
-## F. Why proofs are slow (root-cause analysis, 7 Nov 2026, measured)
+## F. Why proofs were slow (root-cause analysis, 7 Nov 2026, measured; fixed)
 
-One `prism prove` of `theorem band_le_left (a b : Nat) : a &&& b ≤ a` with the Goedel 8B on the RTX 3090 took **567 s and failed** (24 model calls, 13 Lean checks, budget exhausted). GPU utilisation was 0-13% the whole time.
+Start: one `prism prove` of `theorem band_le_left (a b : Nat) : a &&& b ≤ a` (Goedel 8B, RTX 3090, 24 model calls, 13 Lean checks, failed) took **567 s** with the GPU at 0-13%.
 
-| Part | Measured | Share |
-|---|---|---|
-| Start-up per `prism prove` process (lake/Mathlib check, 4.9 GB model read from D: at 191 MB/s, load, first-call plan compile ~30 s) | about 120 s before the first model call | 21% |
-| Lean kernel checks | 3.3 s each (`import Mathlib`), 13 of them = about 43 s | 8% |
-| Model calls | about 17 s each, 24 of them = about 400 s | 71% |
+**First analysis was partly wrong.** I benchmarked an old FORGE dev build (`~/forge-main`: 38-74 tok/s decode, 724 launches per token, no CUDA graphs) and blamed launch overhead. The FORGE that PRISM actually links already uses CUDA graphs: **4,427 tok/s prefill and 127 tok/s decode (87 with a grammar)**. Lesson: benchmark the binary that runs in production, and measure inside the real process before concluding.
 
-Why a model call takes about 17 s (FORGE `bench` and `run` on the same `.fpk`, CUDA): decode 38-74 tok/s and prefill 130-312 tok/s. An RTX 3090 should do several times that. The decode counters show **724 kernel launches and 6 syncs per token and 0 CUDA graphs captured**, so decoding is launch-bound and the GPU idles (hence the 4% utilisation); the Xeon Gold 6242 (2.8 GHz) is slow at issuing launches. The reply may be up to 768 tokens (`max_new`) under a grammar allowing 40 lines of 400 characters, so one call is up to about 12-20 s of decode plus a few seconds of prefill.
+**Real cause (timing added inside PRISM's model call, `PRISM_TIMING=1`):** per call, prefill is under 1 s and the GPU forward pass takes 8 ms per token, but `grammar_constraint::apply` (the grammar mask, on the CPU) took **0.3-2 s per token, 95% of decode time**. Decode ran at 3 tok/s. Two defects in FORGE's `grammar.hpp`:
+1. `*`, `+`, `?` and `{m,}` compile to right recursion and a finished frame stayed on the stack for every iteration: the stack grew with the match, no state repeated, every step copied a deeper stack (cost grew along the line: 184 s for a 92-token reply).
+2. `apply` walked the whole 150k-token trie on one thread for every token although the allowed set depends only on the stack set.
 
-Root causes, in order of effect:
-1. **Search yield is low.** Of 24 candidates, most were rejected: invented names (`Nat.ands_le_left`, `Nat.amp`), `sorry`, duplicates, wrong tactics. Each wasted candidate costs about 17 s.
-2. **Decode is launch-bound** (no CUDA graphs) and **prefill is slow**: FORGE upstream work (CUDA graph capture for decode, a faster prefill GEMM).
-3. **A new process per `lean_prove` call** repeats about 120 s of start-up. A task with 8 calls loses about 16 minutes before any search.
-4. **Replies are allowed to be much longer than a tactic needs** (768 tokens).
-5. Not a cause: the API (model turns are seconds and cost cents), Lean checks, disk speed.
+**Fixes (FORGE#72, PRISM#43 draft, runner):**
+- FORGE: pop finished frames before a tail call; cache the allowed-token mask per stack set; spread a miss over threads; `grammar_constraint::reset()`.
+- PRISM: one grammar constraint per (model, grammar) for the process; `lean_proof.gbnf` uses unbounded `char+` and `( line )*` (the validator already enforces 40 lines of 400 bytes); the sha256 of the 5 GB model (44 s) is cached by path, size and mtime; `PRISM_MAX_NEW` (the runner sets 400); `PRISM_TIMING=1`.
+- Runner: `lean_prove(file, "*")` proves every theorem with a sorry in one process (model loaded once); `prover_slots` 2 (two 8B processes share the 3090; measured: two concurrent proves each finished in about 120 s, same as one alone, 15.7 GB of 24 GB); the 32B escalation takes the whole GPU (exclusive slot).
 
-Remedies, none yet done unless noted: cap `max_new` and the grammar's line count (PRISM); keep the prover resident between calls (PRISM/FORGE server mode); CUDA-graph decode in FORGE; run provers in parallel on more GPUs (burst VM with a GPU); give the model the Mathlib names it needs (a lemma library); `lean_prove` limited to two calls per theorem per attempt (done).
+**Result, same search:** 567 s -> 188 s (digest computed) -> **118 s** (digest cached). Decode per call from up to 184 s to about 0.5 s.
+
+**What is left in the 118 s:** about 34 s one-time warm-up in the first prefill (CUDA graph instantiate / kernel setup, per process), about 43 s of Lean checks (3.3 s each, `import Mathlib`), about 8 s `lake build`, about 15 s of decode. The search itself still fails often: the 8B invents Mathlib names (`Nat.ands_le_left`, `Nat.amp`), writes `sorry`, or repeats itself, so most of the 24 candidates are wasted; that is model quality, not speed.
+
+Rules: measure with a timer inside the real process first; keep grammars free of large counted repetitions; do not benchmark a different build from the one in production.

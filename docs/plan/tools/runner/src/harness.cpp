@@ -100,7 +100,7 @@ json tools_schema(const std::string& role, bool lean = false) {
     fn("post_message", "Post a typed message. to: a task id, or spec|impl|test|proof|if (this unit's or package's task). kind: question, contract_change_request, review_findings, test_failure, proof_failure, handoff",
        {{"to", str}, {"kind", str}, {"body", str}}, {"to", "kind", "body"}),
     fn("read_messages", "Read the messages addressed to this task or its package", json::object(), {}),
-    fn("lean_prove", "Prove one Lean 4 theorem with PRISM and the local Goedel prover model (prism prove). The theorem must be in an owned .lean file with a whole-proof `sorry`. On success the proof is written into the file. State small lemmas and prove them one at a time.",
+    fn("lean_prove", "Prove one Lean 4 theorem with PRISM and the local Goedel prover model (prism prove). The theorem must be in an owned .lean file with a whole-proof `sorry`. On success the proof is written into the file. Pass theorem \"*\" to try EVERY theorem with a sorry in the project in one call (the model is loaded once, so this is much cheaper than one call per theorem); otherwise state small lemmas and prove them one at a time.",
        {{"file", str}, {"theorem", str}}, {"file", "theorem"}),
     fn("submit", role == "reviewer" ? "Finish the review: verdict approve, or changes with findings (each names the task to reopen)"
                                     : "Finish the task; accepted only if the gate passed on the current tree", submit_props, submit_req)});
@@ -265,8 +265,20 @@ struct ProverSlot {
   static std::mutex& mu() { static std::mutex m; return m; }
   static std::condition_variable& cv() { static std::condition_variable v; return v; }
   static int& used() { static int n = 0; return n; }
-  explicit ProverSlot(int limit) { std::unique_lock lk(mu()); cv().wait(lk, [&] { return used() < std::max(1, limit); }); ++used(); }
-  ~ProverSlot() { { std::lock_guard lk(mu()); --used(); } cv().notify_one(); }
+  // weight 1 = one 8B prover process (about 9 GB of the 24 GB GPU: two fit side by side). A weight of the whole limit = exclusive use of the GPU,
+  // which the 32B escalation model needs (about 19 GB); new single users wait while an exclusive request is pending.
+  static int& want() { static int n = 0; return n; }
+  explicit ProverSlot(int limit, int weight = 1) : lim_(std::max(1, limit)), w_(std::clamp(weight, 1, std::max(1, limit))) {
+    std::unique_lock lk(mu());
+    const bool excl = w_ > 1 || lim_ == 1;
+    if (w_ == lim_ && lim_ > 1) ++want();
+    cv().wait(lk, [&] { return (w_ == lim_ || want() == 0) && used() + w_ <= lim_; });
+    if (w_ == lim_ && lim_ > 1) --want();
+    (void)excl;
+    used() += w_;
+  }
+  ~ProverSlot() { { std::lock_guard lk(mu()); used() -= w_; } cv().notify_all(); }
+  int lim_, w_;
   ProverSlot(const ProverSlot&) = delete; ProverSlot& operator=(const ProverSlot&) = delete;
 };
 
@@ -288,7 +300,10 @@ void link_lean_packages(const Config& c, const fs::path& file) {
 
 std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const fs::path& file, const std::string& theorem, Db& db) {
   static const std::regex name_re(R"(^[A-Za-z_][A-Za-z0-9_.']*$)");
-  if (!std::regex_match(theorem, name_re)) return "refused: bad theorem name";
+  // theorem "*" proves every theorem with a sorry in the model project in ONE prism process: the model is loaded and warmed up once
+  // (about 35 s plus the Lean check) instead of once per theorem.
+  const bool batch = theorem == "*";
+  if (!batch && !std::regex_match(theorem, name_re)) return "refused: bad theorem name";
   // Fifth rehearsal (7 Nov 2026): the agent called lean_prove on the same two hard statements 2-3 times each (every call is the 8B and then the 32B,
   // 7-10 minutes) and spent 90 minutes for one proof. Each theorem gets two calls per task; after that the agent must prove it by hand or split it.
   static std::mutex cap_mu; static std::map<std::string, int> cap_n;
@@ -296,16 +311,21 @@ std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const
     int& k = cap_n[t["id"].get<std::string>() + "|" + theorem + "|" + std::to_string(t.value("_attempt", 1))];
     if (k >= 2) return "refused: lean_prove already failed twice on " + theorem + " in this attempt. Do not call it again for this theorem: prove it with Mathlib tactics by hand (intro, simp, omega, aesop, Finset/Set lemmas), state and prove smaller lemmas first, or post_message(kind=proof_failure) if the statement itself looks wrong or too hard.";
     ++k; }
-  ProverSlot slot(c.prover_slots);
+  auto slot = std::make_unique<ProverSlot>(c.prover_slots, 1);
   link_lean_packages(c, file);
   auto env = gate_env("");
-  std::vector<std::string> argv{c.prism_bin, "prove", file.string(), theorem, "--write", "--allow-exec"};
+  if (!std::getenv("PRISM_MAX_NEW")) env.push_back("PRISM_MAX_NEW=400");   // a tactic reply needs far fewer tokens than the default 768-1024
+  std::vector<std::string> argv = batch ? std::vector<std::string>{c.prism_bin, "prove", "--all", file.parent_path().string(), "--write", "--allow-exec"}
+                                        : std::vector<std::string>{c.prism_bin, "prove", file.string(), theorem, "--write", "--allow-exec"};
+  const int to = c.prove_timeout_s * (batch ? 4 : 1);
   if (!c.gate_wrap.empty()) argv.insert(argv.begin(), c.gate_wrap.begin(), c.gate_wrap.end());
-  auto r = run_job(argv, -1, c.prove_timeout_s, wt.string(), 500, &env);
+  auto r = run_job(argv, -1, to, wt.string(), 500, &env);
   if (r.code == 1 && !c.prover_fpk_escalate.empty() && fs::exists(c.prover_fpk_escalate)) {   // not proved: one retry with the larger model
+    slot.reset();
+    ProverSlot excl(c.prover_slots, c.prover_slots);   // the 32B model needs the whole GPU
     std::erase_if(env, [](const std::string& kv) { return kv.starts_with("PRISM_PROVER_FPK="); });
     env.push_back("PRISM_PROVER_FPK=" + c.prover_fpk_escalate);
-    auto r2 = run_job(argv, -1, c.prove_timeout_s, wt.string(), 500, &env);
+    auto r2 = run_job(argv, -1, to, wt.string(), 500, &env);
     db.event(t["id"], "lean_prove_escalated", json{{"theorem", theorem}, {"code", r2.code}});
     r2.tail = "[escalated to " + fs::path(c.prover_fpk_escalate).filename().string() + "]\n" + r2.tail;
     r = r2;
