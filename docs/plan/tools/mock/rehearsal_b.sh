@@ -4,6 +4,7 @@
 # lean_prove, the Lake template, Mathlib) -- real runner, real gates, real Morph. Isolated from the pilot.
 #   tools/mock/rehearsal_b.sh [spend-limit-usd]       default 3
 LIMIT="${1:-3}"
+pkill -f "prism prove" 2>/dev/null; sleep 1   # a prover left over from an earlier run would hold the GPU (7 Nov 2026)
 . ~/.pbsd/env
 D=/run/pbsd/rehb; rm -rf $D; mkdir -p $D
 git clone -q --local --no-checkout /run/pbsd/repo $D/repo || exit 1

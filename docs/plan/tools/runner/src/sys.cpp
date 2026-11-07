@@ -1,3 +1,4 @@
+#include <sys/prctl.h>
 #include "common.hpp"
 #include <cstdlib>
 #include <fstream>
@@ -50,6 +51,10 @@ JobResult run_job(const std::vector<std::string>& argv, int node, int timeout_s,
   if (pid < 0) return {-1, "fork failed", false};
   if (pid == 0) {
     setpgid(0, 0);
+    // Seventh rehearsal (7 Nov 2026): when the runner was killed, its `prism prove --all` child (the 32B model, 25 GB of RAM, the whole GPU) kept running for
+    // over an hour and spoiled the next run. A job dies with the runner. (The forking thread waits for its job, so the parent-thread rule is safe.)
+    prctl(PR_SET_PDEATHSIG, SIGKILL);
+    if (getppid() == 1) _exit(127);
     dup2(fd[1], 1); dup2(fd[1], 2); close(fd[0]); close(fd[1]);
     if (!cwd.empty() && chdir(cwd.c_str()) != 0) _exit(127);
     if (FILE* o = fopen("/proc/self/oom_score_adj", "w")) { fprintf(o, "%d", oom_adj); fclose(o); }

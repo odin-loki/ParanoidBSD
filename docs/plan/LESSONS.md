@@ -70,3 +70,7 @@ Start: one `prism prove` of `theorem band_le_left (a b : Nat) : a &&& b ≤ a` (
 **What is left in the 118 s:** about 34 s one-time warm-up in the first prefill (CUDA graph instantiate / kernel setup, per process), about 43 s of Lean checks (3.3 s each, `import Mathlib`), about 8 s `lake build`, about 15 s of decode. The search itself still fails often: the 8B invents Mathlib names (`Nat.ands_le_left`, `Nat.amp`), writes `sorry`, or repeats itself, so most of the 24 candidates are wasted; that is model quality, not speed.
 
 Rules: measure with a timer inside the real process first; keep grammars free of large counted repetitions; do not benchmark a different build from the one in production.
+
+## G. Orphan provers (7 Nov 2026)
+
+When a rehearsal's runner was killed by `timeout`, its `prism prove --all` child (the 32B escalation: 25 GB of RAM, the whole 24 GB GPU) kept running for over an hour. It spoiled the next measurement (a prove took 574 s instead of about 120 s) and would have starved a real run. Fixes: jobs now die with the runner (`PR_SET_PDEATHSIG`), and `rehearsal_b.sh` kills leftover provers first. Before any timing or run, check `nvidia-smi` shows about 0% and no `prism prove` in `ps`.
