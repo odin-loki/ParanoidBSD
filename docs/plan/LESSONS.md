@@ -1,5 +1,7 @@
 # Lessons and mistakes (read this first)
 
+See also [REHEARSAL_REPORT_2026-11-07.md](REHEARSAL_REPORT_2026-11-07.md) for the measured results and data.
+
 For any AI (or person) who runs, repairs or extends the PBSD pipeline. Each item is a mistake that cost real time or money on 6-7 Nov 2026, with the rule that came out of it. **Measured** items were observed on Odin's PC (Windows 11, WSL2 Ubuntu, RTX 3090, 48 GB RAM cap). Add new ones at the top of the relevant section.
 
 ## A. Running on this PC (WSL, Windows)

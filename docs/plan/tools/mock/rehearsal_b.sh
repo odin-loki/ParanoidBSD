@@ -34,6 +34,7 @@ phase() {  # phase <name> <task-id-regex> <timeout-s>
   keep=$HOME/rehb-last/$name; rm -rf "$keep"; mkdir -p "$keep"
   cp -r $S/tasks.db $S/conv "$keep"/ 2>/dev/null; cp $D/run-$name.log "$keep"/ 2>/dev/null
   cp -r $D/wt-$name/*/proofs "$keep"/proofs 2>/dev/null; cp $D/repo/proofs/spec-lock.json "$keep"/ 2>/dev/null
+  git -C $D/repo bundle create "$keep"/repo.bundle --all >/dev/null 2>&1   # every task branch, so the final Spec.lean and Model.lean survive (they were lost on 7 Nov)
   echo "== phase $name: ended after $(( $(date +%s) - s )) s (evidence in $keep)"
   sqlite3 -separator '  ' $S/tasks.db "select id,state,attempts from task order by id"
   sqlite3 -separator '  ' $S/tasks.db "select 'cost USD', round(sum(usd),3) from cost"

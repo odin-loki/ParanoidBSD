@@ -1,0 +1,65 @@
+next: . ~/.pbsd/env   then   tools/cloud/preflight.sh
+repo: f8b17563c rehearsal: model phase limit 2 h
+1 tasks in /run/pbsd/rehb/state-if/tasks.db
+== phase if: ended after 1182 s (evidence in /home/odin/rehb-last/if)
+P0-02-IF  passed  1
+cost USD  0.046
+== what IF wrote (spec statements):
+import Mathlib
+
+/-!
+# Locked statements for the P0-02 capability header family (pbsd::kernel::cap)
+
+The frozen header family `pbsd/kernel/include/cap/` is the P0-02 contract set:
+rights masks, capability tokens, kernel objects, the restart/revoke epoch bump,
+and the three mapping tables (POSIX mode bits, NT security descriptor access
+masks, Android app UID inheritance).
+
+This file is the reference model the -MODEL task proves every statement of
+(`Model.<name> : Spec.<name>`), with definitions mirroring the C++ shape:
+
+* `Rights` is modelled as `Nat` (a 16-position bit set fits a `Nat`).
+ `rights_subset a b := Nat.land a b = a` mirrors the C++ predicate
+ `rights_subset(child, parent)` (`(child & parent) == child`).
+* `Kind` mirrors `pbsd::kernel::cap::Kind`.
+* `Object` mirrors `pbsd::kernel::cap::CapObject` (`id`, `kind`, `epoch`).
+* `Capability` mirrors `pbsd::kernel::cap::CapToken`
+ (`kind`, `rights`, `objepoch`, `depth`).
+* `derivation_step child parent` is the contract that `pbsd::kernel::cap::derive`
+ guarantees on success: the child's rights are a subset of the parent's, and
+ the child's depth is one past the parent's.
+* `validated t o` is the exact-match predicate over (kind, epoch).
+* `bump_epoch o` mirrors the C++ `bump_epoch`, the restart/revoke epoch bump.
+
+Each `def ... : Prop` below is a real statement about exactly these definitions;
+nothing is proved here.
+-/
+
+namespace Spec
+
+/-! ### Domain types ###
+
+ Models the C++ `pbsd::kernel::cap::Rights` (a 16-position bit set over a
+ `std::uint64_t`; in the Lean model a `Nat`).
+-/
+
+
+/-- `rights_subset a b`: right set `a` grants nothing that `b` does not. -/
+theorem names found: [
+  "rights_subset_refl",
+  "rights_subset_trans",
+  "derivation_step_never_widens_rights",
+  "derivation_chain_never_widens_rights",
+  "stale_fails_closed",
+  "bump_epoch_invalidates_all_prev",
+  "kind_mismatch_fails_closed"
+]
+froze: 03dcd7567 freeze stand-in: hash the P0-02 spec (what P0-FREEZE does in
+1 tasks in /run/pbsd/rehb/state-model/tasks.db
+== phase model: ended after 2899 s (evidence in /home/odin/rehb-last/model)
+P0-02-MODEL  passed  2
+cost USD  0.766
+== what MODEL wrote:
+fatal: path 'proofs/P0-02/model/Model.lean' does not exist in 'pbsd-cutover'
+
+[exited with code 0]

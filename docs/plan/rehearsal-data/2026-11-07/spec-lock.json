@@ -1,0 +1,14 @@
+{
+  "proofs/P0-02/spec/Spec.lean": "826bb7c3d8a5a73b0574e22150978fbd02060703e9ca872d716f5b3bb6ac2d56",
+  "theorems": {
+    "P0-02": [
+      "rights_subset_refl",
+      "rights_subset_trans",
+      "derivation_step_never_widens_rights",
+      "derivation_chain_never_widens_rights",
+      "stale_fails_closed",
+      "bump_epoch_invalidates_all_prev",
+      "kind_mismatch_fails_closed"
+    ]
+  }
+}
