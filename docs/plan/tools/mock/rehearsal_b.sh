@@ -30,7 +30,11 @@ phase() {  # phase <name> <task-id-regex> <timeout-s>
   ( cd $D/repo && timeout "$to" $P run > $D/run-$name.log 2>&1 ) & local rp=$!
   spend_watchdog $rp & local wp=$!
   wait $rp; kill $wp 2>/dev/null
-  echo "== phase $name: ended after $(( $(date +%s) - s )) s"
+  # keep the evidence: /run is tmpfs and WSL wipes it when it goes idle (7 Nov 2026 we lost a whole run's state)
+  keep=$HOME/rehb-last/$name; rm -rf "$keep"; mkdir -p "$keep"
+  cp -r $S/tasks.db $S/conv "$keep"/ 2>/dev/null; cp $D/run-$name.log "$keep"/ 2>/dev/null
+  cp -r $D/wt-$name/*/proofs "$keep"/proofs 2>/dev/null; cp $D/repo/proofs/spec-lock.json "$keep"/ 2>/dev/null
+  echo "== phase $name: ended after $(( $(date +%s) - s )) s (evidence in $keep)"
   sqlite3 -separator '  ' $S/tasks.db "select id,state,attempts from task order by id"
   sqlite3 -separator '  ' $S/tasks.db "select 'cost USD', round(sum(usd),3) from cost"
 }
