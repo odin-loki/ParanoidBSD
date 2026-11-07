@@ -314,6 +314,9 @@ std::string lean_prove(const Config& c, const json& t, const fs::path& wt, const
   std::string tail = r.tail.size() > 6000 ? r.tail.substr(r.tail.size() - 6000) : r.tail;
   if (r.code == 0) return "proved and written to " + fs::relative(file, wt).string() + "\n" + tail;
   if (r.code == 3) return "NOTRUN: prism prove has no prover model (set PRISM_PROVER_FPK) or Lean is missing\n" + tail;
+  // Sixth rehearsal (7 Nov 2026): after a failed hand proof the file no longer compiled, and every lean_prove call then ended at once with
+  // code 2 (an error, not "not proved") while the agent kept retrying other theorems. Say what code 2 means and what to do.
+  if (r.code != 1) return "error (the file probably does not compile): lean_prove needs the whole file to compile with every unfinished proof written as `:= by sorry`. Fix the Lean error below, or replace the proof that fails with `by sorry`, then call lean_prove again. Do not call it on other theorems until the file compiles.\n" + tail;
   return std::string(r.code == 1 ? "not proved" : "error") + ". State smaller lemmas (each `theorem name : stmt := by sorry`) and prove them one at a time.\n" + tail;
 }
 
