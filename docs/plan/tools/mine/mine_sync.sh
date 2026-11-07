@@ -5,7 +5,7 @@ R=/c/ParanoidBSD/dreamy-mahavira-7e0e79; D=/c/ParanoidBSD/mined-data; S=$R/docs/
 mkdir -p "$S"; cd "$R" || exit 1
 while true; do
   FINAL=""
-  ls "$D"/DONE-tier* >/dev/null 2>&1 && FINAL=1
+  [ -f "$D/DONE-all" ] && FINAL=1
   for f in "$D"/tier*.jsonl; do
     [ -f "$f" ] || continue
     b=$(basename "$f" .jsonl); n=$(wc -l < "$f"); full=$((n/4000))
