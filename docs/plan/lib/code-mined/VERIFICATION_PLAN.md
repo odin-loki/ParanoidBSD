@@ -57,11 +57,13 @@ Target kinds: `arith-helper`, `bitmap`, `string-op`, `table-lookup`, and other f
 
 ### Step 4: Cross-check with a second model (subset)
 
-- Model: Claude Sonnet (independent of the GLM-5.3 Flash generator).
+- Primary checker: DeepSeek V4.1 Flash on Morph LLM (`morph-dsv41flash`). Different model family from the GLM-5.3 Flash generator, so the check stays independent.
+- Tiebreaker: Claude Sonnet, run only on records where the primary checker answers `DISAGREE`.
 - Subset: `state-machine` and `driver-glue` records that passed steps 1 and 2.
-- Ask for a verdict plus a short reason (`agree` or `disagree: <reason>`), not a regenerated contract.
+- Ask for plain-text verdicts, one per function: `AGREE` or `DISAGREE: <short reason>`. Do not rely on structured output or ask for a regenerated contract.
+- Treat the primary checker's output as a flag, not a verdict: a smaller model will raise some false disagreements, which the Sonnet tiebreak resolves.
 - Use a fixed instruction prefix so prompt caching applies.
-- Pilot first: a few hundred records to measure real token usage before the full pass.
+- Pilot first: a few hundred records to measure real token usage and the disagreement rate before the full pass.
 
 ### Step 6: Tag every record
 
@@ -83,14 +85,15 @@ A hand audit of about 150-200 functions split across `kind` would give a per-kin
 
 ## 4. Cost estimate (Step 4 only)
 
-Assumes about 2,820 input and 720 output tokens per record, about 58k records in the subset (roughly 20% of the corpus; the real figure depends on the step 1-2 filter). Standard rates, no discounts.
+Assumes about 2,820 input and 720 output tokens per record, about 58k records in the subset (roughly 20% of the corpus; the real figure depends on the step 1-2 filter). Standard rates, no caching.
 
 | Model | Rate (in/out per 1M tokens) | Subset (~58k) | Full corpus (~288k) |
 |---|---|---|---|
-| Sonnet 5.5 | $2 / $10 | ~$740 | ~$3,700 |
+| DeepSeek V4.1 Flash on Morph (primary) | $0.12 / $0.80 | ~$53 | ~$263 |
+| Sonnet 5.5 (tiebreak, disagreements only) | $2 / $10 | depends on disagreement rate | depends on disagreement rate |
 
-Reasoning tokens bill as output and will push the totals up. Asking for a verdict and short reason instead of a regenerated contract, and caching the instruction prefix, should bring the real cost down. Check whether Sonnet has a batch discount before running.
+Morph's V4.1 Flash rate was $0.15 / $0.60 at launch (2026-09-10) and listed at $0.12 / $0.80 as of 2026-10-17; confirm the live rate before running. Reasoning tokens bill as output and will push totals up. If about 15% of subset records are escalated, Sonnet adds roughly $110 on the subset, for a total near $160. Check whether Sonnet has a batch discount before running.
 
 ## 5. Schedule
 
-Planned for Wednesday. Order: steps 1-2 first, bucket failures by `kind`, then step 3, then the Sonnet pilot, then the full step 4 pass, with step 6 tagging written as each pass runs.
+Planned for Wednesday. Order: steps 1-2 first, bucket failures by `kind`, then step 3, then the V4.1 Flash pilot, then the full step 4 pass with Sonnet tiebreak on disagreements, with step 6 tagging written as each pass runs.
