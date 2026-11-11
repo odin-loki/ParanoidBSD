@@ -56,6 +56,7 @@ function esc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
 # step 1 ---------------------------------------------------------------------------------------------------------------------------------
 function step1(    why, rt, c, t, w, n, ws, k, unk, nun, codes, p, omitted, generic, e, hasreq, hasens) {
   why = ""
+  if (name !~ /^[A-Za-z_][A-Za-z0-9_]*$/) return "function name is not a plain identifier"   # also protects the regexes below from names like BPF_PROG(sub
   if (!(name in swords)) why = add(why, "function name not in the source slice")
   if (contract != "") {
     hasreq = (contract ~ /requires/); hasens = (contract ~ /ensures/)
