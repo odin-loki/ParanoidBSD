@@ -14,3 +14,5 @@
 2026-11-11 20:28:50 repair: 8842 records repaired, spent $5.1542, failed 154
 2026-11-11 20:48:44 repair: 9825 records repaired, spent $5.7870, failed 171
 2026-11-11 21:05:52 repair: 10807 records repaired, spent $6.4094, failed 189
+2026-11-11 21:26:11 repair: 11788 records repaired, spent $7.0369, failed 208
+2026-11-12 04:32:48 repair: 28575 records to do (cap 999999), budget $30, spent so far $7.3861, parallel 48
