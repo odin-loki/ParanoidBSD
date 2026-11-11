@@ -1,8 +1,10 @@
 #!/bin/bash
 # step4_all.sh <max-records> <budget-usd> [parallel]   Step 4 over the eligible subset: functions of kind state-machine or driver-glue that passed steps 1 and 2
-# (s1 pass, s2 pass or skip). One DeepSeek V4.1 Flash 1017 call per record (step4_chunk.sh). Records are taken in a fixed random order, so a small max-records is a
-# random sample (use 300 for the pilot, a big number for the full pass). Resumable (done keys are skipped), spend-capped, STOP file honoured.
-# All data in /mnt/c/ParanoidBSD/mined-data/verify/ : s4todo.tsv, xcheck.jsonl, ledger.txt, failed.txt, errors.log, step4.log
+# (s1 pass, s2 pass or skip). One DeepSeek V4.1 Flash 1017 call per record (step4_chunk.sh). Records are taken in a fixed order (formal contracts first, random within each
+# group). Resumable (done keys are skipped), spend-capped, STOP file honoured.
+# ONE continuous stream (11 Nov 2026): earlier versions ran batches and waited for each batch's slowest call (some take minutes, retries up to 15), so most workers idled
+# at the end of every batch (rate swung between 400 and 1 record a minute). Now xargs runs the whole list; a background watchdog enforces the budget and the credit stop
+# by touching $X/STOP (step4_chunk.sh checks it before every call). All data in /mnt/c/ParanoidBSD/mined-data/verify/
 HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data; V=$D/verify; X=$V/xcheck; mkdir -p "$X"
 MAXREC=${1:-300}; BUDGET=${2:-20}; P=${3:-24}; OUT=$X/xcheck.jsonl; LED=$X/ledger.txt
 log() { echo "$(date '+%F %T') $*" | tee -a "$X/step4.log"; }
@@ -23,17 +25,17 @@ if [ ! -s "$V/s4todo.tsv" ]; then
 fi
 [ -s "$OUT" ] && jq -r '.key' "$OUT" | sort -u > "$X/done.keys" || : > "$X/done.keys"
 head -n "$MAXREC" "$V/s4todo.tsv" | awk -F'\t' 'FILENAME == ARGV[1] { d[$1] = 1; next } !($1 in d)' "$X/done.keys" - > "$X/todo.now"   # (NR==FNR is wrong when done.keys is empty)
-TOTAL=$(wc -l < "$X/todo.now"); log "step 4: $TOTAL records to do (cap $MAXREC), budget \$$BUDGET, spent so far \$$(cost), parallel $P"
-i=0
-while [ "$i" -lt "$TOTAL" ]; do
-  [ -f "$X/STOP" ] && { log "STOP file: stopping at $i"; break; }
-  if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping at $i"; break; fi
-  tail -n +$((i+1)) "$X/todo.now" | head -n "${S4_BATCH:-5000}" > "$X/batch.cur"
-  BEFORE=$(wc -l < "$X/failed.txt" 2>/dev/null || echo 0)
-  xargs -P "$P" -d '\n' -I{} bash "$HERE/step4_chunk.sh" "{}" "$OUT" < "$X/batch.cur" 2>> "$X/step4.err"
-  FAILS=$(( $(wc -l < "$X/failed.txt" 2>/dev/null || echo 0) - BEFORE )); i=$((i+${S4_BATCH:-5000}))
-  [ "$FAILS" -gt 60 ] && { P=$(( P/2 > 4 ? P/2 : 4 )); log "many failures ($FAILS): parallel down to $P"; sleep 45; }
-  log "step 4: $(wc -l < "$OUT") records done, spent \$$(cost), fails $FAILS"
-done
-log "step 4 batch finished: $(wc -l < "$OUT" 2>/dev/null || echo 0) records, spent \$$(cost)"
-touch "$X/DONE-batch"
+TOTAL=$(wc -l < "$X/todo.now"); log "step 4: $TOTAL records to do (cap $MAXREC), budget \$$BUDGET, spent so far \$$(cost), parallel $P (continuous stream)"
+rm -f "$X/DONE-batch"
+# watchdog: stops the stream (STOP file) when the budget is reached or the API reports no credit / a bad key
+( while [ ! -f "$X/DONE-batch" ] && [ ! -f "$X/STOP" ]; do
+    sleep 20
+    if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping"; touch "$X/STOP"; fi
+    if tail -n 60 "$X/errors.log" 2>/dev/null | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then log "ALERT credit or auth error from the API: stopping"; touch "$X/STOP"; fi
+    log "step 4: $(wc -l < "$OUT") records done, spent \$$(cost), failed $(sort -u "$X/failed.txt" 2>/dev/null | wc -l)"
+  done ) &
+WD=$!
+xargs -P "$P" -d '\n' -I{} bash "$HERE/step4_chunk.sh" "{}" "$OUT" < "$X/todo.now" 2>> "$X/step4.err"
+kill "$WD" 2>/dev/null
+log "step 4 finished: $(wc -l < "$OUT" 2>/dev/null || echo 0) records, spent \$$(cost)"
+[ -f "$X/STOP" ] || touch "$X/DONE-batch"

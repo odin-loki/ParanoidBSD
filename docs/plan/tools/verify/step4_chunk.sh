@@ -5,6 +5,7 @@
 # Side files next to out.jsonl, all written under one flock: ledger.txt (tokens per call), failed.txt (keys), errors.log.
 . ~/.pbsd/env
 LINE=$1; OUT=$2; D=$(dirname "$OUT")
+[ -f "$D/STOP" ] && exit 0   # the watchdog in step4_all.sh stops the stream (budget, credit error) by creating this file
 KEY=$(printf '%s' "$LINE" | cut -f1); FILE=$(printf '%s' "$LINE" | cut -f2); S=$(printf '%s' "$LINE" | cut -f3); E=$(printf '%s' "$LINE" | cut -f4); FUNCS=$(printf '%s' "$LINE" | cut -f5-)
 CODE=$(sed -n "${S},${E}p" "$FILE"); [ -z "$CODE" ] && exit 0
 # fixed instruction prefix first (prompt caching), then the variable part
