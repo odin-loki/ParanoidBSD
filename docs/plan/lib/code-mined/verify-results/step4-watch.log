@@ -47,3 +47,6 @@
 2026-11-11 15:49:30 check 35: alive=yes records=1450 (+16, 16/min) errors=226 (+8) failed=36 spent=$3.09/$60 restarts=0
 2026-11-11 15:50:30 check 36: alive=yes records=1456 (+6, 6/min) errors=230 (+4) failed=37 spent=$3.16/$60 restarts=0
 2026-11-11 15:51:30 check 37: alive=yes records=1457 (+1, 1/min) errors=232 (+2) failed=37 spent=$3.18/$60 restarts=0
+2026-11-11 15:55:05 watcher started
+2026-11-11 15:55:05 step 4 started (budget $60, parallel 48)
+2026-11-11 15:55:05 check 1: alive=yes records=1458 (+0, 0/min) errors=234 (+0) failed=37 spent=$3.20/$60 restarts=0
