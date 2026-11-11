@@ -22,7 +22,8 @@ while true; do
     touch "$X/STOP"; pkill -f step4_all.sh; pkill -f step4_chunk.sh; say "ALERT stopped. Top up, delete $X/STOP, run the launcher again (it resumes)."; break
   fi
   if alive; then
-    if [ "$cur" -eq "$last" ]; then stall=$((stall+1)); else stall=0; fi
+    if [ -f "$X/BUILDING" ]; then stall=0                       # building the todo list: nothing is expected to finish
+    elif [ "$cur" -eq "$last" ]; then stall=$((stall+1)); else stall=0; fi
     [ $stall -ge 6 ] && { say "ALERT stall: nothing finished in $stall checks; restarting"; pkill -f step4_all.sh; pkill -f step4_chunk.sh; sleep 5; restarts=$((restarts+1)); start; stall=0; }
   elif [ ! -f "$X/DONE-batch" ]; then
     say "ALERT step 4 is not running: restarting ($((restarts+1)) this hour)"; restarts=$((restarts+1)); start

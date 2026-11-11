@@ -9,14 +9,16 @@ log() { echo "$(date '+%F %T') $*" | tee -a "$X/step4.log"; }
 # price: $0.12 / 1M input, $0.80 / 1M output (Morph list price on 17 Oct 2026; cached input is billed less, so this is an upper bound)
 cost() { awk '{i+=$1; o+=$2} END{printf "%.4f", (i*0.12+o*0.80)/1000000}' "$LED" 2>/dev/null || echo 0; }
 if [ ! -s "$V/s4todo.tsv" ]; then
-  log "building the todo list (eligible records, random order)"
+  log "building the todo list (eligible records, formal contracts first): several minutes"
+  touch "$X/BUILDING"; trap 'rm -f "$X/BUILDING"' EXIT
   jq -r 'select((.kind=="state-machine" or .kind=="driver-glue") and .s1=="pass" and (.s2=="pass" or .s2=="skip")) | "\(.key)\t\(.i)"' "$V/step12.jsonl" > "$V/s4elig.tsv"
   awk -F'\t' 'NR==FNR { el[$1 SUBSEP $2] = 1; next }
        (($1 SUBSEP $5) in el) { if ($1 != cur) { if (cur != "") print line; cur = $1; line = $1 "\t" $2 "\t" $3 "\t" $4 "\t"; first = 1 }
                                 f = $6 " ¦ " $9 " ¦ " $8; line = line (first ? "" : " ¶ ") f; first = 0 }
        END { if (cur != "") print line }' "$V/s4elig.tsv" "$V/rows.tsv" | shuf --random-source=<(yes 11) |
     # records holding at least one FORMAL contract first (the formal-vs-prose defects are the main target), random order within each group
-    awk -F'\t' '{ print (index($5, "/*@") ? 0 : 1) "\t" $0 }' | sort -s -t "$(printf '\t')" -k1,1n | cut -f2- > "$V/s4todo.tsv"
+    awk -F'\t' '{ print (index($5, "/*@") ? 0 : 1) "\t" $0 }' | sort -s -t "$(printf '\t')" -k1,1n | cut -f2- > "$V/s4todo.tsv.part"
+  mv "$V/s4todo.tsv.part" "$V/s4todo.tsv"; rm -f "$X/BUILDING"   # atomic: a killed build never leaves a truncated list behind
   log "eligible records: $(wc -l < "$V/s4todo.tsv")  (functions: $(wc -l < "$V/s4elig.tsv"))"
 fi
 [ -s "$OUT" ] && jq -r '.key' "$OUT" | sort -u > "$X/done.keys" || : > "$X/done.keys"
