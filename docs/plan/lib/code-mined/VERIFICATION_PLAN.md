@@ -1,5 +1,7 @@
 # Code-Mined Shards: Verification Plan
 
+> **Superseded for the sale: see [SELLABLE_PLAN.md](SELLABLE_PLAN.md) (labels, proving stage, audit, packaging).**
+
 **Author:** Odin Loch
 **Branch:** `claude/dreamy-mahavira-7e0e79`
 **Scope:** `docs/plan/lib/code-mined/shards/` (72 shards: `tierB-0000..0008`, `tierC-0000..0062`, about 4,000 records each, about 288k records total)
