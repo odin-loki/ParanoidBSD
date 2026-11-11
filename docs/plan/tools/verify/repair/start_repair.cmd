@@ -5,4 +5,4 @@ rem (repair_verify.sh) and the finisher window commits the results.
 set BUDGET=%1
 if "%BUDGET%"=="" set BUDGET=40
 if exist C:\ParanoidBSD\mined-data\verify\repair\STOP del C:\ParanoidBSD\mined-data\verify\repair\STOP
-start "PBSD repair RUN" cmd /k wsl -d Ubuntu -- bash -lc "bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/repair/repair_all.sh 999999 %BUDGET% 48 && bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/repair/repair_verify.sh"
+start "PBSD repair RUN" cmd /k wsl -d Ubuntu -- bash -lc "bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/repair/repair_all.sh 999999 %BUDGET% 100 && bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/repair/repair_verify.sh"
