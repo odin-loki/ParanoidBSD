@@ -28,10 +28,10 @@ i=0
 while [ "$i" -lt "$TOTAL" ]; do
   [ -f "$X/STOP" ] && { log "STOP file: stopping at $i"; break; }
   if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping at $i"; break; fi
-  tail -n +$((i+1)) "$X/todo.now" | head -n 600 > "$X/batch.cur"
+  tail -n +$((i+1)) "$X/todo.now" | head -n "${S4_BATCH:-5000}" > "$X/batch.cur"
   BEFORE=$(wc -l < "$X/failed.txt" 2>/dev/null || echo 0)
   xargs -P "$P" -d '\n' -I{} bash "$HERE/step4_chunk.sh" "{}" "$OUT" < "$X/batch.cur" 2>> "$X/step4.err"
-  FAILS=$(( $(wc -l < "$X/failed.txt" 2>/dev/null || echo 0) - BEFORE )); i=$((i+600))
+  FAILS=$(( $(wc -l < "$X/failed.txt" 2>/dev/null || echo 0) - BEFORE )); i=$((i+${S4_BATCH:-5000}))
   [ "$FAILS" -gt 60 ] && { P=$(( P/2 > 4 ? P/2 : 4 )); log "many failures ($FAILS): parallel down to $P"; sleep 45; }
   log "step 4: $(wc -l < "$OUT") records done, spent \$$(cost), fails $FAILS"
 done

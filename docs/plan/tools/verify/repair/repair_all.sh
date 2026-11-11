@@ -16,9 +16,9 @@ while [ "$i" -lt "$TOTAL" ]; do
   if tail -n 50 "$RP/errors.log" 2>/dev/null | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then
     log "ALERT credit or auth error from the API: stopping at $i (top up, then run start_repair.cmd again: it resumes)"; touch "$RP/STOP"; break; fi
   if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping at $i"; break; fi
-  tail -n +$((i+1)) "$RP/todo.now" | head -n 1000 > "$RP/batch.cur"
+  tail -n +$((i+1)) "$RP/todo.now" | head -n "${REPAIR_BATCH:-4000}" > "$RP/batch.cur"
   xargs -P "$P" -d '\n' -I{} bash "$HERE/repair_chunk.sh" "{}" "$OUT" < "$RP/batch.cur" 2>> "$RP/repair.err"
-  i=$((i+1000))
+  i=$((i+${REPAIR_BATCH:-4000}))
   log "repair: $(wc -l < "$OUT") records repaired, spent \$$(cost), failed $(sort -u "$RP/failed.txt" 2>/dev/null | wc -l)"
 done
 log "repair batch finished: $(wc -l < "$OUT" 2>/dev/null || echo 0) records, spent \$$(cost)"
