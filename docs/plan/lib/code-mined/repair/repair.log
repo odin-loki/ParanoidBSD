@@ -2,3 +2,5 @@
 2026-11-11 16:10:48 repair: 99 records repaired, spent $0.0525, failed 1
 2026-11-11 16:10:48 repair batch finished: 99 records, spent $0.0525
 2026-11-11 16:11:14 repair: 40969 records to do (cap 999999), budget $40, spent so far $0.0525, parallel 48
+2026-11-11 16:36:13 repair: 1091 records repaired, spent $0.5290, failed 9
+2026-11-11 16:45:20 repair: 39414 records to do (cap 999999), budget $20, spent so far $0.7997, parallel 48
