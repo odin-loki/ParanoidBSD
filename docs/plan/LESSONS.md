@@ -118,3 +118,15 @@ Setup: the model's own prompt ("Complete the following Lean 4 code ... provide a
 Conclusions: (1) at 16k context it runs but does not solve even the easiest statement and loops; (2) at 32k+ context the process froze in two runs (likely a GPU hang or memory spill on the 24 GB card; unconfirmed), so a bigger context is not available in practice; (3) by comparison GLM-5.3-Flash proved 15 of 16 harder statements in the lean_check run. Combined with the earlier 13 failed `lean_prove` calls, **Goedel is dropped**; revisit only if a better prover model or a full-precision build appears. One sample was run on one problem, so this is not a benchmark, but the failure is not subtle.
 
 Mistakes in this experiment, for the record: a script kept in `/tmp` was wiped by WSL; a launcher command gave an empty path and I almost drew a conclusion from it (the log line `grep: /problems/p1_refl.lean: No such file` gave it away: read the error output before reading the result); and I killed a good run by moving to a new configuration before looking at why the old one stalled.
+
+## K. Verifying the mined data (11 Nov 2026)
+
+Mistakes made while running the verification plan, and the rule from each:
+1. **`NR==FNR` is wrong when the first file is empty** (awk then treats the second file as the first): the step 4 pilot "did" 0 records. Use `FILENAME == ARGV[1]`.
+2. **One bad contract hid thousands of verdicts.** In a batch file, a Frama-C crash (non-ASCII byte) or a stub that is not valid C (`extern long for;`) stops the parse, and every contract after it looked like a pass. Run each contract in its own file, and count a crash or an abort as a failure, never as a pass. Then check a pass rate that looks too good (0.2% failing was impossible next to our own 15%).
+3. **A watcher killed a long list build** (no output for 6 minutes = "stall"), and a killed build can leave a truncated file the next run reuses. Write lists to `.part` and `mv` them; flag a build in progress so the watcher waits.
+4. **A function name with a parenthesis (`BPF_PROG(sub`) crashed a regex** built from it. Validate identifiers before using them in a regex.
+5. **E-ACSL plus libFuzzer, and E-ACSL built by hand, both failed** (shadow memory against TLS, then a malloc/free mismatch with GMP); the Ubuntu package lacks `e-acsl-gcc.sh`. Step 3 uses our own contract-to-C translator (`contract2c`, exact 128-bit integer semantics) and an edge-value random driver instead.
+6. **The reviewer's rule differed from the checker's rule.** DeepSeek was told "weaker than the prose = DISAGREE", the tiebreak reviewers "weak but true = OVERTURN", so 12 of 16 overturns were the rule, not DeepSeek. Give every judge the same definition of a defect.
+7. **"Small inputs" must be non-negative:** -5 in an unsigned parameter is 4294967291. The first rerun of the counterexamples on small inputs was wrong for that reason.
+8. **Precedence bugs are real defects, not type noise:** `result == (x >> 18) & 3` compares first, then masks a boolean. Frama-C reports it as "unexpected 𝔹 and ℤ"; such contracts are false.

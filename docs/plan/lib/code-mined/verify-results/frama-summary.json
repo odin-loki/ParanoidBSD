@@ -1,0 +1,55 @@
+{
+  "contracts": 145743,
+  "frama": {
+    "fail": 45801,
+    "pass": 78819,
+    "type": 20260,
+    "unknown": 863
+  },
+  "signature": {
+    "fallback": 4778,
+    "real": 140965
+  },
+  "top_fail_messages": [
+    {
+      "m": "unexpected token ')' ",
+      "n": 2858
+    },
+    {
+      "m": "expecting ';' before is ",
+      "n": 1812
+    },
+    {
+      "m": "unexpected token '(' ",
+      "n": 965
+    },
+    {
+      "m": "expecting ';' before valid ",
+      "n": 818
+    },
+    {
+      "m": "unbound logic variable null. Ignoring specificatio",
+      "n": 750
+    },
+    {
+      "m": "unexpected token 'i' ",
+      "n": 711
+    },
+    {
+      "m": "unexpected token 'is' ",
+      "n": 672
+    },
+    {
+      "m": "unbound logic function old. Ignoring specification",
+      "n": 633
+    },
+    {
+      "m": "Attempt to declare errno as external identifier ou",
+      "n": 556
+    },
+    {
+      "m": "expecting ';' before in ",
+      "n": 531
+    }
+  ]
+}

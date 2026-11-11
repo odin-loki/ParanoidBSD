@@ -1,0 +1,20 @@
+001	UPHOLD	line 61 returns -1 for modes outside 0-4 and the prose names that path, but the formal requires 0 <= pi->mode <= 4, so the -1 path is excluded from the formal contract.
+002	UPHOLD	lines 886-888 and 900-902 call svc_exit_thread only on the current rqstp, and threads started in earlier loop iterations keep running, so the prose claim that partially created threads are exited is false.
+003	UPHOLD	line 1687 sets done from dma->channel_program and line 1702 returns it, so nonzero means the channel was programmed, not that the DMA transfer is complete as the prose claims.
+004	UPHOLD	lines 396-397 send buffers under SZ_4K to pci_epf_mhi_iatu_write, which copies with memcpy_toio and calls buf_info->cb (lines 291, 298-299), so the claim that the bytes were DMA'd misses that path and its callback side effect.
+005	OVERTURN	the formal ensures (result == 0 ==> *pengine != NULL) does not exclude negative returns; it is weaker than the prose but not false, and line 41 only forwards to nvkm_msvld_new_.
+006	UPHOLD	lines 1048-1052 let SNDCTL_DSP_SPEED change the speed after checking ownership only, with no queues_are_quiescent check, which contradicts the prose rule that parameter changes need ownership and quiescence.
+007	OVERTURN	lines 251 and 253 return only false or true, so ensures result == 0 || result == 1 is correct; it is weaker than the prose but not false.
+008	UPHOLD	line 407 takes a reference on mem_node with of_find_node_by_path, and no of_node_put follows on any path (lines 476-484), so failure paths do not unwind all resources as the prose claims.
+009	UPHOLD	line 51 rejects only slot > 0, so negative slots go on to the register access at lines 57-63, which contradicts the prose claim that negative slots are rejected.
+010	UPHOLD	line 338 masks the VSA value with 0xFE, which can be 0, and line 339 then returns 0 << 20 == 0, so ensures result > 0 is false.
+011	UPHOLD	with force_change false, line 1053 sets changed = pre_features ^ features, so a feature that is successfully disabled leaves (changed & ~features) != 0 while line 1112 returns 0, which falsifies the formal ensures.
+012	OVERTURN	line 205 returns failure_state & (FAILURE_LOW_OVERTEMP | FAILURE_HIGH_OVERTEMP), so the formal ensures holds; leaving out the side effects makes it weaker but not false.
+013	UPHOLD	lines 199-201 compute ent from v and dereference it, so requires true wrongly claims the function is safe for any v and drops the prose precondition that v is a valid ei_entry node.
+014	UPHOLD	line 177 stores the result of devm_snd_soc_register_card, which line 183 returns, and lines 154 and 167 return -EINVAL, but the prose postcondition says without condition that the card is registered and names no error return.
+015	OVERTURN	line 454 returns the result of nubus_driver_register, and ensures result == 0 || result < 0 states only the sign, which is weaker than the prose but not false.
+016	UPHOLD	line 361 sets curack only when CC_ALGO(tp)->ack_received is non-NULL, and line 317 restricts the ABC flag handling to type == CC_ACK, but the prose states both as unconditional updates.
+017	UPHOLD	lines 6222-6226 return QLA_SUCCESS when ql4xdisablesysfsboot is set without creating boot_kset, any kobjects or scsi_host references, which contradicts the prose success postcondition.
+018	UPHOLD	line 758 updates self_powered only in USB_MODE_HOST, and the unconfigure path (lines 694-697) never updates power or self_powered, so the prose claim that both are updated on success is not guaranteed.
+019	UPHOLD	lines 531-532 dereference fd and fd->fd_rh, so requires true wrongly claims safety for any fd and drops the prose precondition that fd points to a valid fib_data.
+020	UPHOLD	line 3836 parses into an unsigned long but line 3840 stores it in ksm_advisor_max_cpu, an unsigned int (printed with %u at line 3826), so values above UINT_MAX are truncated and the knob does not equal the parsed value.

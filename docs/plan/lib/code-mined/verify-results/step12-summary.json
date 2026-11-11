@@ -1,0 +1,15 @@
+{
+  "functions": 1135593,
+  "with_contract": 149268,
+  "s1": {
+    "fail": 55307,
+    "pass": 1080286
+  },
+  "s2": {
+    "fail": 23105,
+    "pass": 123342,
+    "skip": 989146
+  },
+  "s1_fail_with_contract": 43516,
+  "s2_fail": 23105
+}

@@ -1,0 +1,20 @@
+021	OVERTURN	the prose (0 iff total_fails == 0) matches line 830 and the formal ensures result==0||result==1 is weaker but true, so the objection only says the formal is weak.
+022	UPHOLD	modes 3 and 4 loop only count/2 u16 and count/4 u32 times (lines 129, 135), so when count is not a multiple of 2 or 4 the trailing buf bytes are never written, and the prose sets no alignment precondition.
+023	OVERTURN	lines 2433-2435 set NVME_REQ_CANCELLED, call __nvme_fc_abort_op and return true, as the prose says; the formal requires \true / ensures result==1 is weak but not false.
+024	OVERTURN	the prose matches lines 189-192 (lockdep_assert_held, WARN on bits&~mask, intel_de_rmw); the objection only complains that the formal is weaker than the prose, which does not make it false.
+025	OVERTURN	lines 528-531 return 0 for a NULL heartbeat_counter and readl otherwise, exactly as the prose says; the formal covers only the NULL case, so it is weak but true.
+026	OVERTURN	the prose states the conditional FdClose (lines 1917-1918) and the return of REAL(close) (line 1919); a formal that leaves out a side effect is weak, not false.
+027	UPHOLD	for odd count, mode 0/1/2 reads buf[k^1] = buf[count] past the end (lines 153, 161), and modes 3/4 send only count/2 or count/4 units (lines 165, 170), so "all bytes sent" with only "buf holds count bytes" is false.
+028	OVERTURN	the prose names the unconditional FdClose (line 1925) and the REAL(__close) return (line 1926); the formal is only weaker, not false.
+029	UPHOLD	when the LazyObject file is already non-lazy, line 61-62 returns without queuing and the file stays non-lazy, so the prose's "left lazy" is wrong about the file's state.
+030	UPHOLD	iter->pos is advanced on line 298 and bh[0] is released on line 301 before the error returns on lines 310 and 315, so the iterator is not unchanged on failure.
+031	UPHOLD	line 1216 sets AAP only for IFF_PROMISC, so allmulti alone gets AM but not AAP, contrary to the prose's "promisc/allmulti sets ... AAP/AM bits".
+032	UNCLEAR	the external-SIM request path on line 293 returns eap_sim_ext_sim_req's result, and that callee is not shown, so whether it returns 0 without filling SRES/Kc cannot be decided.
+033	UPHOLD	the resolver thread started on line 2303 and the busy-wait threads are never joined; line 2350 only calls loopbreak before event_base_free on line 2351, so "all resources freed" is not guaranteed.
+034	UPHOLD	line 575 zeroes *flags for an SR-IOV VF but does not return, so lines 589 and 593 can still OR bits in; *flags is therefore not guaranteed zero for a VF.
+035	OVERTURN	the postcondition matches lines 366-376 (early return without CTAG filter, auto_vid0 set only after vlan_vid_add succeeds); a stricter-than-needed precondition does not make the contract false.
+036	UPHOLD	line 9947 sets rc_probertt_int to bbr_rtt_probe_limit, which is not a 0/1 value, and lines 9920/9922 force google_discount and r_use_policer to 0 rather than a sysctl default, so "each field equals its sysctl default (0 or 1)" is false.
+037	UPHOLD	the non-RT version returns true unconditionally (line 484), so the formal "result == 1 ==> softirq_ctrl.cnt == 0" contradicts the prose's non-RT case and holds only for the RT version on line 335.
+038	UPHOLD	registers CCK(0x16)/(0x17) (lines 395-396), CCK(0x2B) (lines 462/464), CCK(0x2E)/LO_MASK in the non-hwpctl case (line 451) and CCK(0x2F) (line 470) are written without being saved, and old_channel is never stored before the channel switch on line 467.
+039	UPHOLD	rpc_set_waitqueue_priority updates nr only when priority changes (lines 132-135), so if the queue is already at maxpriority, nr may not equal 1 << maxpriority.
+040	UPHOLD	line 567 returns 0 without adding NAME, line 579 returns 0 with NAME but no property variables, and line 572 returns an errno before any page is allocated, all contrary to the prose's two outcomes.

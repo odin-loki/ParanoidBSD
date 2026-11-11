@@ -56,7 +56,15 @@ function esc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
 # step 1 ---------------------------------------------------------------------------------------------------------------------------------
 function step1(    why, rt, c, t, w, n, ws, k, unk, nun, codes, p, omitted, generic, e, hasreq, hasens) {
   why = ""
-  if (name !~ /^[A-Za-z_][A-Za-z0-9_]*$/) return "function name is not a plain identifier"   # also protects the regexes below from names like BPF_PROG(sub
+  if (name !~ /^[A-Za-z_][A-Za-z0-9_]*$/) {
+    # not a plain C identifier (this also protects the regexes below from names like BPF_PROG(sub). Accepted when it is the exact text of the source
+    # (SYSCALL_DEFINE0(getpid)) or a C++ name whose last component is in the slice (File::flush, ~iscsi_connection, Ns::Class::operator==); rejected otherwise
+    # ("<unnamed VRAM size probe>", "sys_mac_syscall (stub)", "write_gic_<name>_intr_reg")
+    if (index(stext, name)) return ""
+    last = name; sub(/.*::/, "", last); sub(/^~/, "", last)
+    if (name ~ /::|^~/ && (last ~ /^operator/ || ((last ~ /^[A-Za-z_][A-Za-z0-9_]*$/) && (last in swords)))) return ""
+    return "function name is not a C or C++ name found in the slice"
+  }
   if (!(name in swords)) why = add(why, "function name not in the source slice")
   if (contract != "") {
     hasreq = (contract ~ /requires/); hasens = (contract ~ /ensures/)
@@ -125,8 +133,8 @@ function step2(    c, depth, i, ch, clauses, nc, body, t, k) {
   key = $1; file = $2; start = $3 + 0; endl = $4 + 0; idx = $5; name = $6; kind = $7; contract = $8; prose = $9
   if (file != curfile) { src_ok = load(file); curfile = file; curkey = "" }
   if (key != curkey) {
-    delete swords; curkey = key
-    if (src_ok) { for (i = start; i <= endl && i <= nsrc; i++) { w = src[i]; gsub(/[^A-Za-z0-9_]+/, " ", w); n = split(w, ws, " "); for (k = 1; k <= n; k++) swords[ws[k]] = 1 } }
+    delete swords; curkey = key; stext = ""
+    if (src_ok) { for (i = start; i <= endl && i <= nsrc; i++) { stext = stext src[i] "\n"; w = src[i]; gsub(/[^A-Za-z0-9_]+/, " ", w); n = split(w, ws, " "); for (k = 1; k <= n; k++) swords[ws[k]] = 1 } }
   }
   if (src_ok) { why1 = step1(); s1 = (why1 == "" ? "pass" : "fail") } else { s1 = "skip"; why1 = "source file not found" }
   step2()

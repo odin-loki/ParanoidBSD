@@ -1,0 +1,14 @@
+{
+  "candidates": 31367,
+  "s3": {
+    "counterexample-limits": 436,
+    "counterexample-logic": 259,
+    "crash": 17,
+    "nocompile": 2079,
+    "noinput": 1,
+    "notscalar": 18674,
+    "pass": 1586,
+    "timeout": 13,
+    "untranslatable": 8302
+  }
+}

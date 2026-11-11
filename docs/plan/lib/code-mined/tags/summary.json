@@ -1,0 +1,62 @@
+{
+  "functions": 1135593,
+  "status": {
+    "rejected": 81260,
+    "unchecked": 990310,
+    "verified": 64023
+  },
+  "syntax": {
+    "fail": 48777,
+    "pass": 78457,
+    "skip": 1008359
+  },
+  "fuzz": {
+    "fail": 712,
+    "pass": 1586,
+    "skip": 1133295
+  },
+  "xcheck": {
+    "agree": 2617,
+    "disagree": 1117,
+    "skip": 1131859
+  },
+  "verified_by_kind": {
+    "allocator": 739,
+    "arith-helper": 10514,
+    "bit-extract": 1,
+    "bit-op": 2,
+    "bitmap": 676,
+    "bitmask": 62,
+    "buffer-op": 1,
+    "dispatcher": 2,
+    "driver-glue": 20871,
+    "error-path": 3471,
+    "graph-op": 2,
+    "hash-op": 1,
+    "init-teardown": 5573,
+    "list-op": 315,
+    "loader": 1,
+    "lock-or-sync": 764,
+    "lookup": 1,
+    "other": 7223,
+    "parser": 1679,
+    "poll-loop": 1,
+    "pred-helper": 1,
+    "predicate": 1,
+    "probe": 1,
+    "refcount": 383,
+    "ring-buffer": 650,
+    "round-trip": 1,
+    "scheduler-glue": 2,
+    "search-loop": 1,
+    "search-op": 4,
+    "stack-op": 2,
+    "state-machine": 4903,
+    "string-op": 488,
+    "stub": 5,
+    "sync": 1,
+    "table-lookup": 5548,
+    "test-driver": 2,
+    "tree-op": 131
+  }
+}

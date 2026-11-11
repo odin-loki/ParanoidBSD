@@ -1,0 +1,20 @@
+041	UPHOLD	line 339 calls clk_disable_unprepare, so the clock is gated on suspend, not "ungated" as the prose claims.
+042	OVERTURN	lines 568-569 zero bucket_id and bucket_changes exactly as the formal ensures states; omitting the diverge_time update (line 567) makes it weak, not false.
+043	UPHOLD	lines 741-743 return the xfs_defer_finish_noroll error (which already forced shutdown at line 721), a failure path the prose omits by naming only the final-roll failure.
+044	OVERTURN	make_reservation at line 713 reserves journal space, which is distinct from the caller-held inode budget that mark_inode_clean releases (line 626), so the budget precondition is not contradicted.
+045	UPHOLD	the snd_fack clamp at lines 496-499 sits inside the post_recovery != NULL check at line 495, so it is not unconditional as the prose implies.
+046	UPHOLD	the loop at lines 268-272 with i += 2 and i < 8 zeroes only 0x310, 0x312, 0x314 and 0x316, not 0x310..0x31E.
+047	UPHOLD	lines 2093-2095 return the user_path_at error before path_umount, an error path the prose omits.
+048	OVERTURN	the formal ensures matches the BUSY return (line 468) and the success/failure from mpiBuildCmd (line 499); requiring length % 4 == 0 is stricter than the truncating loop at line 493 but not false.
+049	OVERTURN	the polls that wait for a bit to clear (0x8000 at lines 3429 and 3446) do abort with return at lines 3434-3435 and 3451-3452; the first loop (line 3381) waits for bit 0x80 to be set, so the prose is accurate.
+050	OVERTURN	a nonzero ret comes only from sigsetjmp inside the timeout && dojmp branch (line 278), so the formal ensures is true; being weaker than the prose is not an error.
+051	UPHOLD	when __ftrace_set_clr_event fails, line 1942 jumps to out, and line 1947 still advances *ppos by cnt, contradicting the prose.
+052	UPHOLD	the early return at lines 483-485, when the interface is not running, leaves MSK_FLAG_LINK unchanged, so "set exactly when the link is active" does not hold on that path.
+053	UPHOLD	line 215 writes PCF85063_CTRL2_AF (set) when alrm->enabled is false, so AF is not cleared as the prose claims.
+054	UPHOLD	the prose omits gmc_v8_0_wait_for_idle (line 179) and makes the delay conditional, but udelay(100) at line 191 runs whenever the IP block exists.
+055	UPHOLD	lines 453-454 zero antenna_rx and antenna_tx; there is no antenna_stats array, so the prose names the wrong field and omits antenna_tx.
+056	UPHOLD	for size < SZ_4K, line 324 delegates to pci_epf_mhi_iatu_read (memcpy plus the buf_info->cb callback), not a DMA transfer as the prose claims.
+057	UPHOLD	line 658 returns the sysfs_add_link_to_group result unchecked, so the link need not exist when that call fails, contrary to the unconditional postcondition.
+058	UPHOLD	on the non-recovery path, line 1798 can set err from dbg_check_space_info, and lines 1801-1802 return it with the RW resources still allocated and ro_mount still 0, contradicting the failure postcondition.
+059	UPHOLD	line 138 uses the non-fatal ATF_CHECK and line 144 always returns true, so IDENT being set is not guaranteed, and lines 88-92 skip the first element of each type.
+060	UPHOLD	ret is QLA_SUCCESS after get_fw_boot_info succeeds (line 6178) and is never reset to QLA_ERROR, so the function returns success even when no target is fetched or both fetches fail (lines 6185-6212).
