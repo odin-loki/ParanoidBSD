@@ -1,9 +1,9 @@
 {
   "functions": 1135593,
   "status": {
-    "rejected": 81651,
-    "unchecked": 989617,
-    "verified": 64325
+    "rejected": 173356,
+    "unchecked": 546314,
+    "verified": 415923
   },
   "syntax": {
     "fail": 48777,
@@ -16,12 +16,13 @@
     "skip": 1133295
   },
   "xcheck": {
-    "agree": 3401,
-    "disagree": 1547,
-    "skip": 1130645
+    "agree": 379414,
+    "disagree": 95572,
+    "disagree:": 1,
+    "skip": 660606
   },
   "verified_by_kind": {
-    "allocator": 739,
+    "allocator": 741,
     "arith-helper": 10514,
     "bit-extract": 1,
     "bit-op": 2,
@@ -29,33 +30,33 @@
     "bitmask": 62,
     "buffer-op": 1,
     "dispatcher": 2,
-    "driver-glue": 21127,
-    "error-path": 3471,
+    "driver-glue": 322464,
+    "error-path": 3486,
     "graph-op": 2,
     "hash-op": 1,
-    "init-teardown": 5573,
+    "init-teardown": 5582,
     "list-op": 315,
     "loader": 1,
-    "lock-or-sync": 764,
+    "lock-or-sync": 766,
     "lookup": 1,
-    "other": 7223,
-    "parser": 1679,
+    "other": 7230,
+    "parser": 1681,
     "poll-loop": 1,
     "pred-helper": 1,
     "predicate": 1,
     "probe": 1,
     "refcount": 383,
-    "ring-buffer": 650,
+    "ring-buffer": 653,
     "round-trip": 1,
     "scheduler-glue": 2,
     "search-loop": 1,
     "search-op": 4,
     "stack-op": 2,
-    "state-machine": 4949,
-    "string-op": 488,
+    "state-machine": 55160,
+    "string-op": 490,
     "stub": 5,
     "sync": 1,
-    "table-lookup": 5548,
+    "table-lookup": 5556,
     "test-driver": 2,
     "tree-op": 131
   }
