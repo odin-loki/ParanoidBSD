@@ -3,7 +3,7 @@
 # Reads  /mnt/c/ParanoidBSD/mined-data/tier{B,C}.jsonl (+ retry/retry.jsonl if present), de-duplicated by record key (the first occurrence wins).
 # Writes /mnt/c/ParanoidBSD/mined-data/verify/step12.jsonl (one line per function, see verify12.awk) and summary.json.
 # Resumable per partition; all data on the Windows disk (not /tmp).
-HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data; V=$D/verify; mkdir -p "$V/parts"; N=16
+HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data; V=${VERIFY_DIR:-$D/verify}; mkdir -p "$V/parts"; N=16
 log() { echo "$(date '+%F %T') $*" | tee -a "$V/verify.log"; }
 if [ ! -s "$V/rows.tsv" ]; then
   log "flattening records to rows (one jq pass per file)"

@@ -6,6 +6,6 @@ rem Data: C:\ParanoidBSD\mined-data\verify\xcheck   (not temp). Stop cleanly: cr
 set BUDGET=%1
 if "%BUDGET%"=="" set BUDGET=60
 if exist C:\ParanoidBSD\mined-data\verify\xcheck\STOP del C:\ParanoidBSD\mined-data\verify\xcheck\STOP
-start "PBSD step4 WATCHER" cmd /k wsl -d Ubuntu -- bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/step4_watch.sh %BUDGET% 48
+start "PBSD step4 WATCHER" cmd /k wsl -d Ubuntu -- bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/step4_watch.sh %BUDGET% 80
 timeout /t 5 /nobreak > nul
 start "PBSD step4 LOG" cmd /k wsl -d Ubuntu -- bash -lc "tail -n 30 -F /mnt/c/ParanoidBSD/mined-data/verify/xcheck/step4.log /mnt/c/ParanoidBSD/mined-data/verify/xcheck/watch.log"

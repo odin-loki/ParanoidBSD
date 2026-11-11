@@ -3,7 +3,7 @@
 # Needs verify/parts/p*.tsv (from run_verify12.sh). Each contract is its own tiny C file (frama_gen.awk), so one crash or one bad stub can never hide other verdicts.
 # Scratch files (about 150k tiny files) are in ~/verify-scratch in WSL (regenerable); results are in /mnt/c/ParanoidBSD/mined-data/verify/frama/p<N>.jsonl, merged into
 # frama12.jsonl, summary in frama-summary.json. Resumable per part. Optional arg: process only the first N contracts of each part (for a test).
-HERE=$(cd "$(dirname "$0")" && pwd); V=/mnt/c/ParanoidBSD/mined-data/verify; F=$V/frama; S=$HOME/verify-scratch; MAXP=${1:-0}; mkdir -p "$F" "$S"
+HERE=$(cd "$(dirname "$0")" && pwd); V=${VERIFY_DIR:-/mnt/c/ParanoidBSD/mined-data/verify}; F=$V/frama; S=${SCRATCH_DIR:-$HOME/verify-scratch}; MAXP=${1:-0}; mkdir -p "$F" "$S"
 log() { echo "$(date '+%F %T') $*" | tee -a "$F/frama.log"; }
 cp "$HERE/frama_prelude.h" "$S/prelude.h"
 one_part() {

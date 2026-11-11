@@ -6,7 +6,7 @@
 # This replaces the plan's libFuzzer/AFL + E-ACSL design: E-ACSL's runtime could not be built without e-acsl-gcc.sh (not in the Ubuntu package), and for scalar
 # functions coverage guidance adds little over edge values.
 # Scratch: ~/s3-scratch (regenerable). Results: /mnt/c/ParanoidBSD/mined-data/verify/s3/s3.jsonl and summary.json.
-HERE=$(cd "$(dirname "$0")" && pwd); V=/mnt/c/ParanoidBSD/mined-data/verify; O=$V/s3; S=$HOME/s3-scratch; mkdir -p "$O" "$S"
+HERE=$(cd "$(dirname "$0")" && pwd); V=${VERIFY_DIR:-/mnt/c/ParanoidBSD/mined-data/verify}; O=$V/s3; S=${SCRATCH_DIR:-$HOME/s3-scratch}; mkdir -p "$O" "$S"
 log() { echo "$(date '+%F %T') $*" | tee -a "$O/s3.log"; }
 g++ -O2 -std=c++20 "$HERE/contract2c.cpp" -o "$S/contract2c" || { log "contract2c does not build"; exit 1; }
 log "selecting candidates"
