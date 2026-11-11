@@ -15,7 +15,10 @@ or
 NL=$'\n'
 FLIST=$(printf '%s' "$FUNCS" | awk 'BEGIN{RS=" ¶ "; FS=" ¦ "} {printf "FUNCTION %s%sprose contract: %s%sformal contract: %s%s%s", $1, "\n", $2, "\n", ($3==""?"(none)":$3), "\n", "\n"}')
 USER="Source (lines ${S}-${E} of ${FILE##*/}):${NL}${CODE}${NL}${NL}Functions to review:${NL}${FLIST}"
-REQ=$(jq -n --arg sys "$SYS" --arg user "$USER" '{model:"morph-dsv41flash-1017", messages:[{role:"system",content:$sys},{role:"user",content:$user}], max_tokens:10000, temperature:0}')
+# Reasoning effort. Measured 11 Nov 2026 on 40 records against the provider default: "minimal" $0.00165/call but lenient (19 of 158 DISAGREEs became AGREE);
+# "low" $0.00162/call (29% cheaper than the default $0.00229) with 91% the same verdicts and no bias (7 vs 5 flips). Odin: not max, the right amount -> low.
+EFFORT=${S4_EFFORT:-low}
+REQ=$(jq -n --arg sys "$SYS" --arg user "$USER" --arg eff "$EFFORT" '{model:"morph-dsv41flash-1017", messages:[{role:"system",content:$sys},{role:"user",content:$user}], max_tokens:10000, temperature:0} + (if $eff == "" then {} else {reasoning_effort:$eff} end)')
 # (pilot, 11 Nov 2026: at max_tokens 4000 about 9% of replies were empty because the model's reasoning used the whole budget; reasoning_effort made no difference)
 for attempt in 1 2 3; do
   RESP=$(curl -sS --max-time 300 https://api.morphllm.com/v1/chat/completions -H "Authorization: Bearer $MORPH_API_KEY" -H 'Content-Type: application/json' -d "$REQ" 2>&1)
