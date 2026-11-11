@@ -12,6 +12,9 @@ TOTAL=$(wc -l < "$RP/todo.now"); log "repair: $TOTAL records to do (cap $MAXREC)
 i=0
 while [ "$i" -lt "$TOTAL" ]; do
   [ -f "$RP/STOP" ] && { log "STOP file: stopping at $i"; break; }
+  # out of credit (or a bad key): stop at once instead of racing through the list with failing calls; the next start resumes here
+  if tail -n 50 "$RP/errors.log" 2>/dev/null | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then
+    log "ALERT credit or auth error from the API: stopping at $i (top up, then run start_repair.cmd again: it resumes)"; touch "$RP/STOP"; break; fi
   if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping at $i"; break; fi
   tail -n +$((i+1)) "$RP/todo.now" | head -n 1000 > "$RP/batch.cur"
   xargs -P "$P" -d '\n' -I{} bash "$HERE/repair_chunk.sh" "{}" "$OUT" < "$RP/batch.cur" 2>> "$RP/repair.err"
