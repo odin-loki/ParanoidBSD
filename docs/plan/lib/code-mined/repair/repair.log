@@ -1,0 +1,4 @@
+2026-11-11 15:59:14 repair: 100 records to do (cap 100), budget $2, spent so far $0, parallel 32
+2026-11-11 16:10:48 repair: 99 records repaired, spent $0.0525, failed 1
+2026-11-11 16:10:48 repair batch finished: 99 records, spent $0.0525
+2026-11-11 16:11:14 repair: 40969 records to do (cap 999999), budget $40, spent so far $0.0525, parallel 48
