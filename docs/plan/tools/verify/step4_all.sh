@@ -31,7 +31,7 @@ rm -f "$X/DONE-batch"
 ( while [ ! -f "$X/DONE-batch" ] && [ ! -f "$X/STOP" ]; do
     sleep 20
     if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping"; touch "$X/STOP"; fi
-    if tail -n 60 "$X/errors.log" 2>/dev/null | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then log "ALERT credit or auth error from the API: stopping"; touch "$X/STOP"; fi
+    if tail -n 60 "$X/errors.log" 2>/dev/null | grep -i '"error"' | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then log "ALERT credit or auth error from the API: stopping"; touch "$X/STOP"; fi
     log "step 4: $(wc -l < "$OUT") records done, spent \$$(cost), failed $(sort -u "$X/failed.txt" 2>/dev/null | wc -l)"
   done ) &
 WD=$!

@@ -14,7 +14,7 @@ TOTAL=$(wc -l < "$RP/todo.now"); log "repair: $TOTAL records to do (cap $MAXREC)
 ( while [ ! -f "$RP/DONE" ] && [ ! -f "$RP/STOP" ]; do
     sleep 20
     if awk -v c="$(cost)" -v b="$BUDGET" 'BEGIN{exit !(c>=b)}'; then log "BUDGET \$$BUDGET reached (spent \$$(cost)): stopping"; touch "$RP/STOP"; fi
-    if tail -n 60 "$RP/errors.log" 2>/dev/null | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then log "ALERT credit or auth error from the API: stopping (top up, then run start_repair.cmd again: it resumes)"; touch "$RP/STOP"; fi
+    if tail -n 60 "$RP/errors.log" 2>/dev/null | grep -i '"error"' | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key'; then log "ALERT credit or auth error from the API: stopping (top up, then run start_repair.cmd again: it resumes)"; touch "$RP/STOP"; fi
     log "repair: $(wc -l < "$OUT") records repaired, spent \$$(cost), failed $(sort -u "$RP/failed.txt" 2>/dev/null | wc -l)"
   done ) &
 WD=$!

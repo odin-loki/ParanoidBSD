@@ -17,7 +17,7 @@ while true; do
   n=$((n+1)); interval=60; [ $n -gt 60 ] && interval=600
   [ $(( $(date +%s) - t0 )) -gt 3600 ] && { restarts=0; t0=$(date +%s); }
   cur=$(wc -l < "$X/xcheck.jsonl" 2>/dev/null || echo 0); e=$(wc -l < "$X/errors.log" 2>/dev/null || echo 0)
-  if [ $((e - laste)) -gt 0 ] && tail -n $((e - laste)) "$X/errors.log" | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key|forbidden'; then
+  if [ $((e - laste)) -gt 0 ] && tail -n $((e - laste)) "$X/errors.log" | grep -i '"error"' | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key|forbidden'; then
     say "ALERT credit or auth error: $(tail -n $((e - laste)) "$X/errors.log" | grep -iE 'insufficient|credit|payment|billing|quota|40[123]|unauthorized|invalid|forbidden' | head -1 | cut -c1-200)"
     touch "$X/STOP"; pkill -f step4_all.sh; pkill -f step4_chunk.sh; say "ALERT stopped. Top up, delete $X/STOP, run the launcher again (it resumes)."; break
   fi
