@@ -1,9 +1,9 @@
 {
   "functions": 1135593,
   "status": {
-    "rejected": 81260,
-    "unchecked": 990310,
-    "verified": 64023
+    "rejected": 81651,
+    "unchecked": 989617,
+    "verified": 64325
   },
   "syntax": {
     "fail": 48777,
@@ -16,9 +16,9 @@
     "skip": 1133295
   },
   "xcheck": {
-    "agree": 2617,
-    "disagree": 1117,
-    "skip": 1131859
+    "agree": 3401,
+    "disagree": 1547,
+    "skip": 1130645
   },
   "verified_by_kind": {
     "allocator": 739,
@@ -29,7 +29,7 @@
     "bitmask": 62,
     "buffer-op": 1,
     "dispatcher": 2,
-    "driver-glue": 20871,
+    "driver-glue": 21127,
     "error-path": 3471,
     "graph-op": 2,
     "hash-op": 1,
@@ -51,7 +51,7 @@
     "search-loop": 1,
     "search-op": 4,
     "stack-op": 2,
-    "state-machine": 4903,
+    "state-machine": 4949,
     "string-op": 488,
     "stub": 5,
     "sync": 1,

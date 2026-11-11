@@ -1,6 +1,6 @@
 # Code-mined shards: verification results
 
-Run on 11 Nov 2026 following [VERIFICATION_PLAN.md](VERIFICATION_PLAN.md). Everything here is **measured** on Odin's PC unless marked otherwise. Tools: `docs/plan/tools/verify/` (shell, awk, jq, C++; no Python). Results: `tags/` (one line per function), `verify-results/` (per-step data and summaries). Step 4 was still running when this was written; its numbers are a snapshot and the tags are re-generated with `tools/verify/tag_all.sh` when it ends.
+Run on 11 Nov 2026 following [VERIFICATION_PLAN.md](VERIFICATION_PLAN.md). Everything here is **measured** on Odin's PC unless marked otherwise. Tools: `docs/plan/tools/verify/` (shell, awk, jq, C++; no Python). Results: `tags/` (one line per function), `verify-results/` (per-step data and summaries). **Step 4 was stopped by Odin on 11 Nov 2026 at 1,458 records** (US$3.20 spent, upper bound); its numbers below are final for that partial run, and the tags include them. It can be resumed with `tools/verify/start_step4.cmd` after deleting `mined-data/verify/xcheck/STOP`.
 
 ## 1. What was checked
 
@@ -11,7 +11,7 @@ Run on 11 Nov 2026 following [VERIFICATION_PLAN.md](VERIFICATION_PLAN.md). Every
 | 2a stub grammar | single-line `/*@ ... */`, clauses start with requires/ensures/assigns, balanced brackets, no prose between operands | 149,268 contracts | **23,105 fail** (15%) |
 | 2b Frama-C 25.0 | each contract parsed and typed by Frama-C's ACSL front end, in its own stub with the real signature | 145,743 contracts | 78,819 pass, 45,801 fail, 20,260 type errors, 863 unknown |
 | 3 random testing | pure integer helpers: contract translated to C (exact 128-bit semantics), 200,000 random and edge-value inputs | 2,312 tested (of 31,367 candidates) | 1,586 pass, **695 counterexamples**, 17 trap under their precondition |
-| 4 cross-check | DeepSeek V4.1 Flash 1017 on Morph reads code and annotation, AGREE / DISAGREE per function | 132,513 eligible records (476,980 functions); snapshot: 943 records, 3,141 functions | 2,224 agree, **917 disagree (29%)** |
+| 4 cross-check | DeepSeek V4.1 Flash 1017 on Morph reads code and annotation, AGREE / DISAGREE per function | 132,513 eligible records (476,980 functions); stopped at 1,458 records, 4,944 functions | 3,399 agree, **1,545 disagree (31%)** |
 | tiebreak | 60 random DISAGREEs judged in this session (three reviewers) | 60 | DeepSeek right in 43 (72%) under "is it false", **55 (92%)** under the plan's definition (weaker than the prose is a defect) |
 
 ## 2. What the defects are
@@ -27,9 +27,9 @@ Run on 11 Nov 2026 following [VERIFICATION_PLAN.md](VERIFICATION_PLAN.md). Every
 
 | status | functions | meaning |
 |---|---|---|
-| verified | 64,023 | no check failed or disagreed, and at least one passed or agreed |
-| rejected | 81,260 | at least one check failed or disagreed (an upheld disagreement counts) |
-| unchecked | 990,310 | no check could judge it: prose-only annotations outside the step 4 snapshot |
+| verified | 64,325 | no check failed or disagreed, and at least one passed or agreed |
+| rejected | 81,651 | at least one check failed or disagreed (an upheld disagreement counts) |
+| unchecked | 989,617 | no check could judge it: prose-only annotations outside the 1,458 records step 4 reached |
 
 **Read "verified" carefully.** Of the verified functions, about 60,000 rest only on syntax (the formal contract parses and types in Frama-C); about 1,400 are also random-tested and about 2,000 cross-checked. A contract that parses can still be false: only `fuzz: pass` and `xcheck: agree` say anything about truth, and only `fuzz: pass` is evidence from running the code. Nothing here is a proof.
 
@@ -42,7 +42,7 @@ Run on 11 Nov 2026 following [VERIFICATION_PLAN.md](VERIFICATION_PLAN.md). Every
 
 ## 5. Still open
 
-1. Step 4 finishes (about 12 hours at the cap); then re-run `tools/verify/tag_all.sh` and commit `tags/`.
+1. Step 4 was stopped at 1,458 of 132,513 eligible records (the 18,874 with a formal contract come first). Resuming it continues where it stopped; re-run `tools/verify/tag_all.sh` afterwards and commit `tags/`.
 2. Decide whether "weaker than the prose" is a defect (the plan says yes; the tiebreak reviewers said no). It moves 12 of 60 sampled verdicts.
 3. More tiebreaks if individual records matter: the packets builder (`tools/verify/tb_build.sh`) makes any number.
 4. The stratified manual audit (not planned) would give a per-kind error rate.
