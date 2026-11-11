@@ -12,7 +12,8 @@ snap() {
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" && git push -q origin HEAD 2>&1 | tail -1; }
 }
 while true; do
-  running=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -c 'pgrep -fc step4_all.sh' 2>/dev/null | tr -d '\r')
+  # "[s]tep4" so that this command's own shell (whose command line contains the pattern) does not count as a running step 4
+  running=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -c 'pgrep -fc "[s]tep4_all.sh"' 2>/dev/null | tr -d '\r')
   if [ -f "$X/DONE-batch" ] && [ "${running:-0}" = "0" ]; then
     echo "$(date '+%F %T') step 4 finished: re-tagging"
     MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/docs/plan/tools/verify/tag_all.sh > /dev/null 2>&1
