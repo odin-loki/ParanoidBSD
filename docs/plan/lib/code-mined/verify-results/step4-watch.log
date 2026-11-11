@@ -227,3 +227,66 @@
 2026-11-12 04:32:44 watcher started
 2026-11-12 04:32:44 step 4 started (budget $260, parallel 80)
 2026-11-12 04:32:44 check 1: alive=yes records=23605 (+0, 0/min) errors=1976 (+0) failed=283 spent=$45.89/$260 restarts=0
+2026-11-12 04:33:45 check 2: alive=yes records=23698 (+93, 93/min) errors=2012 (+36) failed=283 spent=$46.00/$260 restarts=0
+2026-11-12 04:34:39 watcher started
+2026-11-12 04:34:39 step 4 started (budget $260, parallel 160)
+2026-11-12 04:34:39 check 1: alive=yes records=23794 (+4, 4/min) errors=2047 (+0) failed=283 spent=$46.25/$260 restarts=0
+2026-11-12 04:35:40 check 2: alive=yes records=24212 (+418, 418/min) errors=2099 (+52) failed=283 spent=$46.80/$260 restarts=0
+2026-11-12 04:36:40 check 3: alive=yes records=24632 (+420, 420/min) errors=2153 (+54) failed=284 spent=$47.62/$260 restarts=0
+2026-11-12 04:37:41 check 4: alive=yes records=24715 (+83, 83/min) errors=2187 (+34) failed=288 spent=$48.02/$260 restarts=0
+2026-11-12 04:38:41 check 5: alive=yes records=24735 (+20, 20/min) errors=2201 (+14) failed=290 spent=$48.18/$260 restarts=0
+2026-11-12 04:39:42 check 6: alive=yes records=24741 (+6, 6/min) errors=2214 (+13) failed=290 spent=$48.30/$260 restarts=0
+2026-11-12 04:40:42 check 7: alive=yes records=24746 (+5, 5/min) errors=2215 (+1) failed=290 spent=$48.34/$260 restarts=0
+2026-11-12 04:41:42 check 8: alive=yes records=24747 (+1, 1/min) errors=2219 (+4) failed=290 spent=$48.37/$260 restarts=0
+2026-11-12 04:42:43 check 9: alive=yes records=24748 (+1, 1/min) errors=2219 (+0) failed=290 spent=$48.38/$260 restarts=0
+2026-11-12 04:43:43 check 10: alive=yes records=24748 (+0, 0/min) errors=2220 (+1) failed=290 spent=$48.39/$260 restarts=0
+2026-11-12 04:44:43 check 11: alive=yes records=25185 (+437, 437/min) errors=2226 (+6) failed=291 spent=$48.83/$260 restarts=0
+2026-11-12 04:45:44 check 12: alive=yes records=25328 (+143, 143/min) errors=2233 (+7) failed=291 spent=$49.25/$260 restarts=0
+2026-11-12 04:46:44 check 13: alive=yes records=25342 (+14, 14/min) errors=2235 (+2) failed=291 spent=$49.35/$260 restarts=0
+2026-11-12 04:47:20 watcher started
+2026-11-12 04:47:20 step 4 started (budget $260, parallel 160)
+2026-11-12 04:47:21 check 1: alive=yes records=25345 (+1, 1/min) errors=2236 (+0) failed=291 spent=$49.38/$260 restarts=0
+2026-11-12 04:48:21 check 2: alive=yes records=25659 (+314, 314/min) errors=2259 (+23) failed=291 spent=$49.70/$260 restarts=0
+2026-11-12 04:49:22 check 3: alive=yes records=26049 (+390, 390/min) errors=2301 (+42) failed=291 spent=$50.24/$260 restarts=0
+2026-11-12 04:50:22 check 4: alive=yes records=26389 (+340, 340/min) errors=2318 (+17) failed=292 spent=$50.78/$260 restarts=0
+2026-11-12 04:51:23 check 5: alive=yes records=26751 (+362, 362/min) errors=2334 (+16) failed=295 spent=$51.41/$260 restarts=0
+2026-11-12 04:52:23 check 6: alive=yes records=27150 (+399, 399/min) errors=2366 (+32) failed=296 spent=$52.12/$260 restarts=0
+2026-11-12 04:53:24 check 7: alive=yes records=27568 (+418, 418/min) errors=2394 (+28) failed=297 spent=$52.81/$260 restarts=0
+2026-11-12 04:54:24 check 8: alive=yes records=27924 (+356, 356/min) errors=2425 (+31) failed=298 spent=$53.49/$260 restarts=0
+2026-11-12 04:55:25 check 9: alive=yes records=28332 (+408, 408/min) errors=2451 (+26) failed=300 spent=$54.25/$260 restarts=0
+2026-11-12 04:56:25 check 10: alive=yes records=28727 (+395, 395/min) errors=2479 (+28) failed=303 spent=$54.90/$260 restarts=0
+2026-11-12 04:57:26 check 11: alive=yes records=29085 (+358, 358/min) errors=2499 (+20) failed=305 spent=$55.51/$260 restarts=0
+2026-11-12 04:58:26 check 12: alive=yes records=29469 (+384, 384/min) errors=2516 (+17) failed=307 spent=$56.21/$260 restarts=0
+2026-11-12 04:59:27 check 13: alive=yes records=29830 (+361, 361/min) errors=2541 (+25) failed=308 spent=$56.81/$260 restarts=0
+2026-11-12 05:00:27 check 14: alive=yes records=30160 (+330, 330/min) errors=2569 (+28) failed=315 spent=$57.41/$260 restarts=0
+2026-11-12 05:01:28 check 15: alive=yes records=30285 (+125, 125/min) errors=2580 (+11) failed=319 spent=$57.86/$260 restarts=0
+2026-11-12 05:02:28 check 16: alive=yes records=30295 (+10, 10/min) errors=2590 (+10) failed=322 spent=$57.94/$260 restarts=0
+2026-11-12 05:03:28 check 17: alive=yes records=30299 (+4, 4/min) errors=2591 (+1) failed=323 spent=$57.98/$260 restarts=0
+2026-11-12 05:04:29 check 18: alive=yes records=30299 (+0, 0/min) errors=2592 (+1) failed=323 spent=$57.99/$260 restarts=0
+2026-11-12 05:05:29 check 19: alive=yes records=30301 (+2, 2/min) errors=2594 (+2) failed=323 spent=$58.01/$260 restarts=0
+2026-11-12 05:06:30 check 20: alive=yes records=30302 (+1, 1/min) errors=2594 (+0) failed=323 spent=$58.02/$260 restarts=0
+2026-11-12 05:07:30 check 21: alive=yes records=30302 (+0, 0/min) errors=2595 (+1) failed=323 spent=$58.03/$260 restarts=0
+2026-11-12 05:11:35 watcher started
+2026-11-12 05:11:35 step 4 started (budget $260, parallel 160)
+2026-11-12 05:11:35 check 1: alive=yes records=30607 (+0, 0/min) errors=2607 (+0) failed=324 spent=$58.32/$260 restarts=0
+2026-11-12 05:12:36 check 2: alive=yes records=30773 (+166, 166/min) errors=2653 (+46) failed=324 spent=$58.50/$260 restarts=0
+2026-11-12 05:13:36 check 3: alive=yes records=31072 (+299, 299/min) errors=2683 (+30) failed=324 spent=$58.99/$260 restarts=0
+2026-11-12 05:14:37 check 4: alive=yes records=31419 (+347, 347/min) errors=2707 (+24) failed=324 spent=$59.62/$260 restarts=0
+2026-11-12 05:15:38 check 5: alive=yes records=31763 (+344, 344/min) errors=2719 (+12) failed=325 spent=$60.19/$260 restarts=0
+2026-11-12 05:16:38 check 6: alive=yes records=32135 (+372, 372/min) errors=2748 (+29) failed=326 spent=$60.80/$260 restarts=0
+2026-11-12 05:17:39 check 7: alive=yes records=32419 (+284, 284/min) errors=2774 (+26) failed=331 spent=$61.31/$260 restarts=0
+2026-11-12 05:18:39 check 8: alive=yes records=32743 (+324, 324/min) errors=2799 (+25) failed=334 spent=$61.84/$260 restarts=0
+2026-11-12 05:19:40 check 9: alive=yes records=33083 (+340, 340/min) errors=2821 (+22) failed=338 spent=$62.42/$260 restarts=0
+2026-11-12 05:20:40 check 10: alive=yes records=33442 (+359, 359/min) errors=2835 (+14) failed=338 spent=$62.99/$260 restarts=0
+2026-11-12 05:21:41 check 11: alive=yes records=33740 (+298, 298/min) errors=2853 (+18) failed=340 spent=$63.51/$260 restarts=0
+2026-11-12 05:22:41 check 12: alive=yes records=34103 (+363, 363/min) errors=2869 (+16) failed=343 spent=$64.11/$260 restarts=0
+2026-11-12 05:23:42 check 13: alive=yes records=34410 (+307, 307/min) errors=2893 (+24) failed=343 spent=$64.64/$260 restarts=0
+2026-11-12 05:24:43 check 14: alive=yes records=34719 (+309, 309/min) errors=2909 (+16) failed=345 spent=$65.18/$260 restarts=0
+2026-11-12 05:25:43 check 15: alive=yes records=34996 (+277, 277/min) errors=2930 (+21) failed=348 spent=$65.69/$260 restarts=0
+2026-11-12 05:26:44 check 16: alive=yes records=35338 (+342, 342/min) errors=2948 (+18) failed=349 spent=$66.30/$260 restarts=0
+2026-11-12 05:27:44 check 17: alive=yes records=35648 (+310, 310/min) errors=2962 (+14) failed=351 spent=$66.86/$260 restarts=0
+2026-11-12 05:28:45 check 18: alive=yes records=35972 (+324, 324/min) errors=2985 (+23) failed=351 spent=$67.40/$260 restarts=0
+2026-11-12 05:29:45 check 19: alive=yes records=36321 (+349, 349/min) errors=3010 (+25) failed=356 spent=$67.97/$260 restarts=0
+2026-11-12 05:30:46 check 20: alive=yes records=36637 (+316, 316/min) errors=3029 (+19) failed=357 spent=$68.53/$260 restarts=0
+2026-11-12 05:31:47 check 21: alive=yes records=36966 (+329, 329/min) errors=3051 (+22) failed=359 spent=$69.15/$260 restarts=0
+2026-11-12 05:32:47 check 22: alive=yes records=37357 (+391, 391/min) errors=3076 (+25) failed=361 spent=$69.81/$260 restarts=0
