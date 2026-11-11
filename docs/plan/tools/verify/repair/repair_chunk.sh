@@ -25,7 +25,7 @@ Rules:
 NL=$'\n'
 FLIST=$(printf '%s' "$FUNCS" | awk 'BEGIN{RS=" ¶ "; FS=" ¦ "} { gsub(/\n$/, "", $5); printf "[#%s] %s\ncurrent prose contract: %s\ncurrent formal contract: %s\nrejected because: %s\n\n", $1, $2, $3, ($4 == "" ? "(none)" : $4), $5 }')
 USER="Source (lines ${S}-${E} of ${FILE##*/}):${NL}${CODE}${NL}${NL}Functions to repair:${NL}${FLIST}"
-MAXTOK=6000
+MAXTOK=14000   # the remaining records are large slices: at 6000 the reasoning used the whole budget and the reply was empty (money spent for nothing)
 for attempt in 1 2 3; do
   REQ=$(jq -n --arg sys "$SYS" --arg user "$USER" --argjson mt $MAXTOK '{model:"morph-glm53flash", messages:[{role:"system",content:$sys},{role:"user",content:$user}], max_tokens:$mt, reasoning_effort:"low", temperature:0.2}')
   RESP=$(curl -sS --max-time 300 https://api.morphllm.com/v1/chat/completions -H "Authorization: Bearer $MORPH_API_KEY" -H 'Content-Type: application/json' -d "$REQ" 2>&1)
@@ -39,7 +39,7 @@ for attempt in 1 2 3; do
     exit 0
   fi
   ( flock 9; echo "$(date +%F_%T) $KEY attempt $attempt: $(echo "$RESP" | head -c 250 | tr '\n' ' ')" >> "$D/errors.log" ) 9> "$OUT.lock"
-  MAXTOK=12000; sleep $((attempt*6))
+  MAXTOK=20000; sleep $((attempt*6))
 done
 ( flock 9; echo "$KEY" >> "$D/failed.txt" ) 9> "$OUT.lock"
 exit 0
