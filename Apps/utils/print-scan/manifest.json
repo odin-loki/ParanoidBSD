@@ -1,0 +1,59 @@
+{
+  "id": "org.pbsd.print-scan",
+  "name": "Printers and Scanners",
+  "version": "0.1.0",
+  "category": "utils",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.device:ipp",
+    "net.device:escl",
+    "net.route:clear",
+    "proc.helper:ipp-backend",
+    "proc.helper:escl-backend",
+    "proc.helper:pdf-transform",
+    "proc.helper:scan-image",
+    "dev.print",
+    "dev.usb:printer",
+    "dev.usb:scanner",
+    "svc.print",
+    "svc.discovery",
+    "svc.portal.print",
+    "svc.portal.usb",
+    "svc.portal.file",
+    "svc.settings",
+    "svc.notify",
+    "svc.keyring",
+    "svc.intent",
+    "svc.audit",
+    "svc.power",
+    "svc.model",
+    "ai.local",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "ipp-backend", "language": "c++23", "capabilities": ["net.device:ipp", "dev.usb:printer"]},
+    {"name": "escl-backend", "language": "c++23", "capabilities": ["net.device:escl", "dev.usb:scanner"]},
+    {"name": "pdf-transform", "language": "c++23", "capabilities": []},
+    {"name": "scan-image", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["application/pdf", "image/png", "image/jpeg", "text/plain", "application/vnd.iccprofile"],
+    "export": ["application/pdf", "image/png", "image/jpeg", "image/tiff", "text/plain", "text/markdown", "application/json"]
+  },
+  "intents": {
+    "handles": ["print", "scan"],
+    "emits": ["share", "open", "view"]
+  },
+  "url_schemes": ["ipp", "ipps"],
+  "services_provided": ["intent:scan"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2",
+  "notes": "net.device:<type>, svc.print and svc.discovery are proposed capability names (UT06-GAP-1, UT06-GAP-3); they are not in PLATFORM.md section 6 or 8 yet."
+}

@@ -1,0 +1,138 @@
+{
+  "id": "org.pbsd.maps",
+  "name": "Maps",
+  "version": "0.1.0",
+  "category": "internet",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.host:<map-mirror>:443",
+    "net.host:<imagery-host>:443",
+    "net.user",
+    "net.route:clear",
+    "net.route:vpn",
+    "net.route:tor",
+    "dev.location",
+    "dev.print",
+    "proc.helper:tile",
+    "proc.helper:search",
+    "proc.helper:route",
+    "proc.helper:import",
+    "proc.helper:fetch",
+    "proc.helper:image",
+    "proc.helper:region-build",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.location",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.search",
+    "svc.power",
+    "svc.notify",
+    "svc.backup",
+    "svc.audit",
+    "svc.clipboard",
+    "bg.run"
+  ],
+  "helpers": [
+    {
+      "name": "tile",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "search",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "route",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "import",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "fetch",
+      "language": "c++23",
+      "capabilities": [
+        "net.host (granted hosts only)",
+        "net.route (exactly one per instance)"
+      ]
+    },
+    {
+      "name": "image",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "region-build",
+      "language": "c++23",
+      "capabilities": []
+    }
+  ],
+  "mime": {
+    "view": [
+      "application/gpx+xml",
+      "application/vnd.google-earth.kml+xml",
+      "application/vnd.google-earth.kmz",
+      "application/geo+json",
+      "application/x-pbsd-mapregion"
+    ],
+    "edit": [
+      "application/gpx+xml",
+      "application/geo+json"
+    ],
+    "import": [
+      "application/gpx+xml",
+      "application/vnd.google-earth.kml+xml",
+      "application/vnd.google-earth.kmz",
+      "application/geo+json",
+      "application/zip",
+      "application/vnd.openstreetmap.data+pbf"
+    ],
+    "export": [
+      "application/gpx+xml",
+      "application/vnd.google-earth.kml+xml",
+      "application/geo+json",
+      "image/png",
+      "image/svg+xml",
+      "application/pdf"
+    ]
+  },
+  "intents": {
+    "handles": [
+      "open",
+      "view",
+      "search"
+    ],
+    "emits": [
+      "open",
+      "share",
+      "print"
+    ]
+  },
+  "url_schemes": [
+    "geo"
+  ],
+  "services_provided": [
+    "org.pbsd.maps.geocode"
+  ],
+  "background": {
+    "autostart": false,
+    "run": false
+  },
+  "depends_on": [
+    "org.pbsd.platform >= 0.1"
+  ],
+  "backing_repos": [
+    "FUSE"
+  ],
+  "priority": "P2"
+}

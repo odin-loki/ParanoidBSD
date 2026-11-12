@@ -139,7 +139,7 @@ Personas:
 
 | ID | Feature | Detail | Priority | Phase |
 |---|---|---|---|---|
-| OF08-F046 | Fills | None, solid, linear, radial, conic and mesh-free multi-stop gradients with on-canvas handles; pattern fills (built-in hatches and tiles, user patterns from a selection); image fill. | M | 1 |
+| OF08-F046 | Fills | None, solid, linear, radial and conic multi-stop gradients with on-canvas handles; pattern fills (built-in hatches and tiles, user patterns from a selection); image fill. | M | 1 |
 | OF08-F047 | Strokes | Width, colour or gradient, dash patterns (presets and custom), caps, joins, mitre limit, alignment (centre, inside, outside), variable-width profiles. | M | 1 |
 | OF08-F048 | Markers | Arrowheads and other end markers (about 40), scale with stroke, custom markers from a shape. | M | 1 |
 | OF08-F049 | Multiple fills and strokes | An appearance stack per object (several strokes and fills in order). | C | 3 |
@@ -192,7 +192,7 @@ Personas:
 
 | ID | Feature | Detail | Priority | Phase |
 |---|---|---|---|---|
-| OF08-F084 | Text-to-diagram language | A documented grammar that accepts the common core of Mermaid syntax for: flowchart (`graph TD`), sequence, class, state, ER, Gantt, mind map, pie is excluded (charts are OF05's). Unsupported statements are reported by line; nothing is silently dropped. | M | 2 |
+| OF08-F084 | Text-to-diagram language | A documented grammar that accepts the common core of Mermaid syntax for: flowchart (`graph TD`), sequence, class, state, ER, Gantt and mind map. Pie charts are excluded (charts belong to OF05). Unsupported statements are reported by line; nothing is silently dropped. | M | 2 |
 | OF08-F085 | Code panel | A `codeEdit` panel beside the canvas; the diagram updates 300 ms after typing stops; errors underline the line. | M | 2 |
 | OF08-F086 | Code-linked diagram object | The generated diagram is a group that stores its source text. Editing the text regenerates it. Style and manual position overrides are kept by node id where the node still exists. | M | 2 |
 | OF08-F087 | Detach | Convert a code-linked diagram to ordinary shapes. | M | 2 |
@@ -261,3 +261,544 @@ Personas:
 | OF08-F130 | Scripted generation | A signed ForgeScript module with no capabilities can create or update shapes through a narrow document API (for diagrams from data). | C | 3 |
 | OF08-F131 | Accessibility of diagrams | Reading order, alt text per object and per page, a generated text outline of a diagram (nodes and what they connect to) exported with tagged PDF and as `desc`/`title` in SVG. | M | 2 |
 | OF08-F132 | Help | Tool guides, the diagram language reference, stencil catalogue, shortcut list. | M | 1 |
+
+## 5. GUI
+
+Layout pattern: document canvas + inspector, with a tool strip. Default density: compact.
+
+### 5.1 Window map
+
+```
+Draw
+├─ Document window (tabs for several documents)
+│  ├─ Header bar: menu, title, search / command palette, trust badge
+│  ├─ Context toolbar (options of the active tool or selection)
+│  ├─ Tool strip (left edge, 40 px)
+│  ├─ Sidebar (F9): Stencils | Pages | Layers | Symbols | Comments | History
+│  ├─ Canvas (rulers, grid, guides, pages, pasteboard)
+│  ├─ Inspector (F4): Style | Text | Arrange | Data | Connector | Dimension | Page | Export
+│  ├─ Bottom dock: Diagram code | Import report | Validation results
+│  ├─ Page tab bar
+│  └─ Status bar: tool hint, cursor position, selection size, snap bar, scale, zoom
+├─ Embedded-edit window (same layout, host document named in the title, Save returns to host)
+├─ Dialogs
+│  ├─ New document (template, size, scale)   ├─ Export (SVG, PDF, raster, slices)
+│  ├─ Page setup                             ├─ Import options (draw.io, Visio, DOT)
+│  ├─ Layout graph                           ├─ Import report
+│  ├─ Transform                              ├─ Stencil manager
+│  ├─ Array                                  ├─ Save as stencil
+│  ├─ Trace bitmap                           ├─ Dimension styles
+│  ├─ Offset path                            ├─ Document properties and metadata
+│  ├─ Find and replace                       ├─ Versions and visual diff
+│  ├─ Print (tiling preview)                 └─ Preferences
+├─ Popovers: colour picker, gradient editor, stroke and dash, marker picker, quick-connect
+│            arrows, typed-input box, snap settings, zoom menu, node-type menu, stencil search
+└─ Inline bars: trust bar, isolation-mode bar, code-linked bar, read-only bar
+```
+
+### 5.2 Main window
+
+Shown at 1360×820, wide layout.
+
+```
++------------------------------------------------------------------------------------------+
+| [=] Draw — network-plan.odg                [search  Ctrl+K]            (1)[ok] [▁][▢][✕] |
++------------------------------------------------------------------------------------------+
+| (2) Fill [■ v] Line [■ v][1.5pt v][—— v] Ends [◁ v][▷ v] | [Align v][Dist v] | [Group]    |
++--+---------------+--------------------------------------------------+--------------------+
+|(3)| (4) Stencils  | (5)  0     50    100    150    200    250   mm   | (8) Inspector      |
+|[↖]| [/ search___] |   +----------------------------------------------+ [Style][Text][Arr] |
+|[▷]| ▾ Network     | 0 |  · · · · · · · · · · · · · · · · · · · · ·   |                    |
+|[✎]| [▭][◯][⬡][▤] |   |    +--------+              +--------+        | Style [Device   v] |
+|[▭]| [☁][▦][⎚][▥] |50 |    | Router |──────────────| Switch |        | Fill  [■ surface v]|
+|[◯]| ▾ Flowchart   |   |    +--------+   (6) 1 Gb   +---o----+        | Line  [■ line    v]|
+|[T]| [▭][◇][▱][⬭] |   |         ▲                      │   (7)       | Width [1.5 pt]     |
+|[⌐]| ▸ UML         |100|      ◁ [▣] ▷              +---+----+        | Corner [2 mm]      |
+|[✂]| ▸ Floor plan  |   |         ▼                 | Server |        | Shadow [ ]         |
+|[🔍]| ▸ Electrical  |   |                           +--------+        |                    |
+|[✋]|               |150|                                             | Data               |
+|   | ▾ Recent      |   +----------------------------------------------+ name [core-sw-1__] |
+|   | [▭][▣][☁]    |                                                    | ip   [10.0.0.2___] |
++--+---------------+--------------------------------------------------+--------------------+
+| (9) [+] < Overview | Rack A | Floor 2 >                                                  |
++------------------------------------------------------------------------------------------+
+| (10) Select: drag to move · X 81.0 Y 96.5 mm · 24×16 mm · Snap [▦][┼][◇][•] · 1:1 · 140% |
++------------------------------------------------------------------------------------------+
+```
+
+1. Trust badge. Draw has no network capability, so no `[net]` badge exists in this app.
+2. Context toolbar: changes with the tool (pen: node type, close path; text: font; selection: style and arrange).
+3. Tool strip: select `V`, direct select `A`, pen `P`, rectangle `R`, ellipse `E`, text `T`, connector `C`, knife `K`, zoom `Z`, hand `H`; long press opens a flyout of related tools (polygon, star, line, arc, pencil, dimension, measure).
+4. Stencil panel, 220 px: search field, collapsible libraries as `gridView`s of 32 px shapes with tooltips.
+5. Canvas with rulers and a dot grid.
+6. A connector label. 7. A glued connector end on a connection point (`o`).
+8. Inspector tabs: style, text, arrange, data.
+9. Page tabs with add button and page list.
+10. Status bar: tool hint, cursor position, selection size, snap toggles (grid, guides, objects, points), drawing scale, zoom.
+
+Quick-connect arrows (`◁ ▷ ▲ ▼`) appear around a hovered or selected shape after 150 ms and for keyboard users on `Alt+Arrow`.
+
+States: empty (new-document chooser with templates), loading (page thumbnails first, then tiles), error (inline bar; import report), offline (always; no difference), locked (encrypted ODG: password sheet), read-only (bar; viewing, export and copy work).
+
+### 5.3 Other views and dialogs
+
+**Node editing** (canvas detail with its context toolbar).
+
+```
++------------------------------------------------------------------------------------------+
+| Nodes: [Corner][Smooth][Symmetric][Auto] | [+ Add][− Delete][Join][Break] | X [41.2] Y [18.0]|
++------------------------------------------------------------------------------------------+
+|                         ○───────────●────────────○   handles                             |
+|                                    ╱ ╲                                                   |
+|                    ■──────────────╯   ╰───────────────■                                  |
+|                    │  (1) selected smooth node ●        │                                 |
+|                    ■────────────────────────────────────■   corner nodes ■               |
++------------------------------------------------------------------------------------------+
+```
+
+1. Selected node with two handles. Keys: arrows nudge, `Tab` next node, `Shift+C` cycle node type, `Delete` remove keeping shape, `Ctrl+J` join, `Ctrl+B` break. Each node is an a11y item "node 4 of 9, smooth".
+
+**Diagram code panel** (bottom dock, 1360×260).
+
+```
++------------------------------------------------------------------------------------------+
+| Diagram code — linked to group "Login flow"       Type [flowchart v]  [Apply] [Detach]   |
++---------------------------------------------------+--------------------------------------+
+|  1  graph TD                                      | (2) Problems                         |
+|  2    A[Open login page] --> B{Has account?}      | line 6: "click B call fn()" is not   |
+|  3    B -- yes --> C[Enter password]              |   supported: actions are not allowed |
+|  4    B -- no  --> D[Sign up]                     |                                      |
+|  5    C --> E[Home]                               | Layout [Layered ↓ v] Spacing [12 mm]  |
+|  6    click B call fn()                           | [x] Keep my manual positions          |
+| (1)                                               | Theme [Document v]                    |
++---------------------------------------------------+--------------------------------------+
+```
+
+1. `codeEdit` with a grammar for the diagram language. 2. Problems list (`listView`), layout options for the generated group.
+
+**Layout graph dialog** (560×460).
+
+```
++-- Lay out diagram ----------------------------------------+
+| Apply to  (•) Selection (14 shapes) ( ) Page ( ) Container |
+| Algorithm [Layered                         v]             |
+|   Direction (•)↓ ( )→ ( )↑ ( )←                           |
+|   Layer spacing [18 mm]   Node spacing [10 mm]            |
+|   Connectors [Orthogonal v]  [x] Route around shapes      |
+| [x] Keep relative order where possible                    |
+| [ ] Resize containers to fit                              |
+| Seed [1]                                                  |
+| +------------------ preview --------------------------+   |
+| |   [A]→[B]→[C]                                       |   |
+| |        ↘[D]                                         |   |
+| +-----------------------------------------------------+   |
+|                              [Cancel]  [Apply layout]     |
++-----------------------------------------------------------+
+```
+
+**Export dialog** (720×540).
+
+```
++-- Export ----------------------------------------------------------------------+
+| What   (•) Selection ( ) Page [Overview v] ( ) All pages ( ) Slices (3)        |
+| Format [SVG v]   ( SVG · PDF · PNG · JPEG · WebP · ODG · draw.io )             |
++-----------------------------------+--------------------------------------------+
+| SVG options                       |  Preview                                   |
+| [x] Plain SVG (no private data)   |   +----------------------------------+     |
+| [ ] Text as outlines              |   |   [Router]────[Switch]           |     |
+| Precision [3] decimals            |   |                  │               |     |
+| Size ( ) viewBox only (•) mm      |   |              [Server]            |     |
+| Images (•) Embed ( ) Separate     |   +----------------------------------+     |
+| IDs   (•) Keep names ( ) Shorten  |   212 × 148 mm · 14 objects · 6.1 kB       |
+| [x] Include title and desc (a11y) |                                            |
++-----------------------------------+--------------------------------------------+
+| ⚠ 1 effect (blur) is kept as an SVG filter; some viewers ignore it.            |
+|                                                   [Cancel]  [Export…]          |
++--------------------------------------------------------------------------------+
+```
+
+**Import report** (640×440): `tableView` with Page, Object, Issue, Action taken (approximated, dropped, blocked); filter; `[Go to]`. Shown after draw.io, Visio and SVG imports when anything is listed.
+
+**Layers panel** (sidebar tab).
+
+```
++-- Layers ----------------------------+
+| [/ filter____]            [+][🗑]    |
+| 👁 🔓 ▾ Labels                 ■     |
+| 👁 🔓 ▾ Devices                ■     |
+| 👁 🔓    ▸ Group "Core" (4)          |
+| 👁 🔓    > Switch core-sw-1          |
+| 👁 🔒 ▾ Cabling                ■     |
+| ◌ 🔒 ▸ Background (master)           |
++--------------------------------------+
+```
+
+`treeView` with two toggle columns; `F2` renames; drag re-parents; `Alt+click` on the eye isolates a layer.
+
+**Stencil manager** (760×520): left `listView` of libraries with show check boxes, signer and trust badge; right `gridView` of the shapes; `[Import pack…] [Export pack…] [New library] [Remove]`.
+
+**Dimension on canvas**: a selected dimension shows grips at both extension-line origins and on the text; the inspector's Dimension tab has style, precision, unit display, override text, and "attached to" with a `[Re-attach]` button.
+
+**Embedded-edit window**: the main window with a bar "Editing a drawing in: report.odt (Writer)   [Save and return] [Discard]"; File menu is reduced to Save to host, Export a copy, Close.
+
+**Versions and visual diff**: two page renders side by side or overlaid, with a legend (added green with `+`, removed red with `−`, changed amber with `~`), and a change list.
+
+### 5.4 Menus
+
+```
+File    New… (Ctrl+N) · New from template… · Open… (Ctrl+O) · Open recent ▸ · Open in disposable sandbox…
+        Import ▸ SVG… · draw.io… · Visio… · Diagram text… · Image… · Stencil pack…
+        Save (Ctrl+S) · Save as… (Ctrl+Shift+S) · Save as template… · Export… (Ctrl+E) · Export again (Ctrl+Shift+E)
+        Versions… · Properties… · Page setup… · Print… (Ctrl+P) · Close (Ctrl+W) · Quit (Ctrl+Q)
+Edit    Undo (Ctrl+Z) · Redo (Ctrl+Shift+Z) · History… · Cut · Copy · Paste · Paste in place (Ctrl+Shift+V) · Paste style (Ctrl+Alt+V)
+        Duplicate (Ctrl+D) · Delete · Select all (Ctrl+A) · Select similar ▸ · Invert selection (Ctrl+Shift+I)
+        Find and replace… (Ctrl+F / Ctrl+H) · Preferences… (Ctrl+,)
+View    Zoom ▸ In · Out · 100% (1) · Fit page (2) · Fit selection (3) · Fit drawing (4)
+        Outline mode (Ctrl+Y) · Pixel preview · Rulers (Ctrl+R) · Grid (Ctrl+') · Guides (Ctrl+;) · Snap ▸ · Smart guides (Ctrl+U)
+        Sidebar (F9) ▸ Stencils · Pages · Layers · Symbols · Comments · History · Inspector (F4) · Diagram code (Ctrl+`)
+        Navigator · New view · Full screen (F11)
+Insert  Shape ▸ · Text (T) · Connector (C) · Image… · Symbol ▸ · Dimension ▸ · Table · Diagram from text…
+        Page (Ctrl+Shift+N) · Layer (Ctrl+Alt+L) · Comment (Ctrl+Alt+M) · Field ▸ · Link… (Ctrl+L)
+Object  Group (Ctrl+G) · Ungroup (Ctrl+Shift+G) · Enter group (Enter) · Leave group (Esc)
+        Bring to front (Ctrl+Shift+]) · Forward (Ctrl+]) · Backward (Ctrl+[) · To back (Ctrl+Shift+[)
+        Align ▸ · Distribute ▸ · Transform… (Ctrl+Shift+T) · Flip ▸ · Rotate ▸ · Array…
+        Lock (Ctrl+2) · Unlock all (Ctrl+Alt+2) · Hide (Ctrl+3) · Show all (Ctrl+Alt+3)
+        Clip ▸ Make (Ctrl+7) · Release (Ctrl+Alt+7) · Mask ▸ · Create symbol (F8) · Detach instance · Save as stencil…
+Path    Convert to path (Ctrl+Shift+O) · Outline stroke · Union (Ctrl+Alt+U) · Subtract (Ctrl+Alt+S) · Intersect (Ctrl+Alt+I)
+        Exclude (Ctrl+Alt+X) · Divide · Expand compound · Join nodes (Ctrl+J) · Break (Ctrl+B) · Reverse
+        Simplify… · Offset… · Round corners… · Trace bitmap…
+Diagram Lay out… (Ctrl+Shift+L) · Tidy ▸ · Re-route connectors · Line jumps ▸ · Connection points ▸ Add · Edit
+        Container ▸ · Validate · Shape data… · Export shape data…
+Text    Font ▸ · Size ▸ · Bold (Ctrl+B in text) · Italic (Ctrl+I) · Align ▸ · Text on path · Convert to outlines · Spelling (F7) · Styles…
+Help    Draw help (F1) · Diagram language reference · Stencil catalogue · Keyboard shortcuts · About
+```
+
+### 5.5 Keyboard and pointer
+
+Tool keys (single letters when no text is being edited): `V A P N` (pencil) `R E L` (line) `T C K M` (measure) `D` (dimension) `Z H`; `Space` held is the hand; `Esc` returns to select. `Enter` on a shape edits its text; `F2` also. `Tab` and `Shift+Tab` walk objects in reading order. Arrows nudge by 1 unit of the grid subdivision, `Shift` ×10, `Alt` ×0.1. `Alt+Arrow` on a shape triggers quick connect in that direction. `Ctrl+drag` copies, `Shift` constrains, `Alt` resizes from the centre. While dragging, typing digits opens the typed-input box. `X` swaps fill and stroke, `/` sets none, `I` eyedropper. `[` and `]` change stroke width. `Ctrl+Shift+Left/Right` moves between pages (`Ctrl+PageUp/PageDown` also).
+
+Context menus: object (cut, copy, paste, duplicate, order, group, lock, convert, symbol, style, data, link, alt text, export selection); connector (type, reroute, add waypoint, add label, reverse, ends); node (type, delete, break, join); canvas (paste, select all, grid, guides, page setup); layer row; page tab (insert, duplicate, delete, rename, master, move); stencil shape (add to favourites, edit, remove); ruler (units, origin).
+
+Drag and drop: stencil to canvas; stencil onto a connector to insert; stencil onto a shape to replace it keeping connections (`Alt`); files onto the canvas (images embed; SVG, draw.io, Visio, `.mmd`, `.dot` import as a group or as a new page by choice); colour swatch onto an object; layer rows to reorder; selection out as SVG and PNG; pages between documents.
+
+Pointer and pen: double-click a shape to edit text, a path to edit nodes, a group to enter it; pen pressure for pencil width; eraser end erases path parts; two-finger pan, pinch zoom, two-finger rotate of the selection when enabled.
+
+### 5.6 States
+
+| State | Behaviour |
+|---|---|
+| Empty | New-document chooser: templates (`gridView`), recent, "Open…", "Paste diagram text". |
+| Loading | Page list first; tiles fill in; large imports show progress with Cancel. |
+| Error | Parse error with the part and offset; "Recover readable pages". Geometry helper crash: restart, redo the operation once, then report. |
+| Offline | The only state: the app has no network capability. |
+| Locked | Password sheet for encrypted ODG. |
+| Read-only | Bar with reason; export still works. |
+| Isolation mode | Bar "Inside group 'Core' — Esc to leave"; the rest of the page at 30% opacity. |
+| Code-linked selection | Bar "Generated from text — edit the text, or Detach". Direct geometry edits are limited to move and style. |
+| Narrow (<640) | Tool strip stays; stencil panel and inspector become overlays; context toolbar scrolls. |
+
+### 5.7 Widgets
+
+| Region | FUSE widget | Notes |
+|---|---|---|
+| Canvas | 2D canvas (**G-12**) | Requirements below |
+| Tool strip, context toolbar | `panel`, `toolButton`, `comboBox`, `spinBox` | |
+| Stencil panel | `lineEdit` (search), `gridView` | Needs sections and drag out (FUSE-WP-28, FUSE-WP-33) |
+| Pages panel, page tabs | `gridView`, `tabBar` | |
+| Layers, symbols, history | `treeView`, `listView` | Model-backed tree with toggle columns and drag re-parent (FUSE-WP-28) |
+| Inspector | `tabWidget`, `propertyGrid`, `colorPicker`, `fontPicker`, `slider` | Gradient editor is a custom control on the canvas plus a stop list |
+| Code panel | `codeEdit` | Custom grammar; error underlines |
+| Text editing on canvas | rich text (**G-10**) hosted inside the canvas | |
+| Navigator | `viewportWidget` | |
+| Dialog previews | canvas in view-only mode | |
+| Help | `markdownView` | |
+
+`nodeGraph` (typed pins and bezier links) is not used as the diagram surface: it has no free-form shapes, routing, layers or export. Diagrams are ordinary canvas objects.
+
+**What the canvas (G-12) must do.** This list is Draw's requirement on the platform widget; OF06, OF04, CR01, OF03 and IN04 share parts of it.
+
+| # | Requirement |
+|---|---|
+| C1 | A scene the app owns; the widget renders it. Retained display items with stable ids, z-order, parent groups and per-item transforms (2×3 affine). |
+| C2 | Vector primitives in the draw list: filled and stroked paths (lines, quadratic and cubic beziers, arcs), even-odd and non-zero fill rules, dashes, caps, joins, mitre limit (FUSE-WP-23 lists paths, transforms and gradients). |
+| C3 | Paint servers: solid, linear, radial and conic gradients with many stops, pattern tiles, images with opacity. |
+| C4 | Clipping by path, opacity groups (off-screen layers), blend modes, blur and shadow filters. |
+| C5 | Text runs positioned by the app, with shaping (G-03), on straight baselines and along paths (glyph-by-glyph transforms). |
+| C6 | View transform with zoom from 1% to 25,600% and pan in 64-bit document coordinates; pixel snapping for hairlines; anti-aliasing with correct coverage at any zoom. |
+| C7 | Tiled, cached rendering with a spatial index; only damaged tiles re-render; tiles render off the UI thread; a budget of 8 ms of main-thread work per frame. |
+| C8 | Overlay layer that is not part of the document: selection handles, node handles, guides, smart-guide lines, rubber bands, snapping marks, cursors, drawn in screen space at constant size. |
+| C9 | Hit testing: by point with tolerance (fill, stroke, handle), by rectangle (touching or enclosing), returning ids in z-order; done against exact geometry, not bounding boxes. |
+| C10 | Input: pointer with sub-pixel positions, wheel and touchpad gestures (pan, pinch, rotate), touch, and pen with pressure, tilt, eraser and barrel buttons (FUSE-WP-08); pointer capture during drags; coalesced events exposed for smooth freehand. |
+| C11 | Rulers and grid as optional built-in layers with app-supplied units and scale. |
+| C12 | Hosting an in-place editor (rich text, G-10) inside the canvas at an arbitrary transform, at least rotation in 90° steps with free rotation falling back to an unrotated editing box. |
+| C13 | Several canvases on one scene (split views, navigator, export preview) without copying it. |
+| C14 | Off-screen rendering of a scene region to an image at a given scale, and to a vector target (PDF through G-16; SVG is written by the app). The same code path as on-screen so exports match the view. |
+| C15 | Accessibility: the app supplies a tree of items (role, name, bounds, actions); the canvas maps it to the a11y bridge and moves a11y focus with keyboard selection. |
+| C16 | Colour: sRGB now; wide gamut when FUSE-WP-26 lands; no change to the scene format. |
+| C17 | Zero allocation and zero frames when idle; no steady-state allocation while panning a cached view. |
+| C18 | Both backends: CPU rasteriser and Vulkan compute (V1), with identical output within a stated tolerance for goldens. |
+
+Gaps beyond G-12:
+
+- **OF08-GAP-1 Vector core library placement.** A shared, signed source library for geometry and rendering of ODF shapes used by three apps. PLATFORM.md section 3 has no shared-library bundle; each app would carry its own copy of the helper.
+- **OF08-GAP-2 Embedded object editing protocol.** `svc.intent` `edit` with a handle to a sub-document inside another app's file, with save-back and replacement-image refresh. PLATFORM.md section 9 lists the intent but not this flow.
+- **OF08-GAP-3 Gradient and dash editors** as reusable controls (also wanted by OF06, CR01, DV02).
+- G-10, G-03, G-16, G-17 as noted.
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App logic | ForgeScript | app host | Tools as state machines, commands, undo, document model front, stencil catalogue, diagram-language front end, settings, intents |
+| UI documents and styles | FUSE UI | app host | Window, panels, dialogs |
+| Scene adapter | ForgeScript + typed binding | app host | Mirrors the document into the canvas scene with batched updates (G-02) |
+| Vector core | C++23 | helper `vector-core` | Path maths (flattening, offset, simplify), boolean operations, preset shape geometry, hit testing support, text-on-path layout, marker and dash expansion, tracing. Justification: speed |
+| Graph layout and routing | C++23 | helper `vector-core` (same process) | Layered, tree, force, circular, orthogonal layouts; obstacle-avoiding connector routing |
+| Drawing I/O helper | C++23 | helper `draw-io` | Parse and write ODG, SVG, draw.io, Visio, DOT, EMF/WMF, DXF, stencil packs; build PDF pages; raster export encode; thumbnails; render service. Justification: untrusted bytes |
+| Diagram-language parser | ForgeScript | app host | Parses the text grammar to a graph model (memory safe in the interpreter; inputs capped at 1 MiB) |
+| Script host for generation | C++23 embedding the ForgeScript engine | helper `macro-host` | Signed scripts with no capabilities |
+
+```
+            +----------------------- app host -----------------------+
+ pointer, | FUSE UI: canvas (G-12), panels   <->   ForgeScript:       |
+ pen, keys| scene (display items)                  document, tools,   |
+          |        ^  batched updates              commands, parser   |
+          +--------|-----------------------|-----------------|--------+
+                   | geometry results      | jobs + handles  | render/1 (bus)
+                   v                       v                 v
+            +---------------+        +----------+     OF04 Writer, OF06 Slides
+            |  vector-core  |        | draw-io  |     (edit intent, replacement image)
+            | booleans,     |        | parsers, |
+            | layout, route |        | writers  |
+            +---------------+        +----------+
+              no files, no net        only passed file handles, no net
+```
+
+### 6.2 Data model
+
+| Entity | Fields |
+|---|---|
+| `Document` | `id: uuid`, `pages: [PageId]`, `masters: [PageId]`, `layers_shared: [Layer]`, `styles: [Style]`, `symbols: [Symbol]`, `swatches: [Swatch]`, `theme: Theme`, `units: enum`, `meta: Metadata`, `stencil_refs: [StencilRef]`, `opaque_parts: [Blob]`, `revision: u64` |
+| `Page` | `id: u32`, `name`, `size: (w, h)` in µm (`i64`), `scale: Rational`, `master: PageId?`, `background: Paint`, `grid: Grid{kind, spacing, subdiv}`, `guides: [Guide{pos, angle}]`, `layers: [Layer]`, `export_slices: [Slice{name, rect, formats}]` |
+| `Layer` | `id`, `name`, `visible`, `locked`, `printable`, `opacity`, `colour_tag`, `children: [NodeId]` |
+| `Node` (object) | `id: u64`, `name`, `kind: enum{shape, path, text, image, group, connector, symbol_instance, dimension, container, compound, code_diagram, table}`, `transform: [f64; 6]`, `style_ref`, `overrides: StyleDelta`, `text: RichText?`, `text_box: TextFrame`, `connection_points: [Port{id, pos_rel, dir?}]`, `data: [Field{key, type, value}]`, `alt: {title, desc}`, `locked`, `hidden`, `link?`, `children: [NodeId]`, kind payload |
+| `Path` payload | `subpaths: [SubPath{closed, nodes: [PathNode{p, h_in, h_out, type}]}]`, `fill_rule` |
+| `Shape` payload | `preset: text`, `params: [f64]` (live adjust values) |
+| `Connector` payload | `kind: enum{straight, ortho, rounded, curved, arc}`, `start: End{node?, port?, floating_pos, marker}`, `end: End`, `waypoints: [Point]`, `pinned: bool`, `labels: [Label{t, offset, text}]`, `jump: enum` |
+| `Dimension` payload | `kind`, `anchors: [AnchorRef{node, feature}]`, `offset`, `style_ref`, `override_text?` |
+| `Symbol` | `id`, `name`, `root: NodeId`, `override_slots: [Slot{key, kind}]`, `resize_rule` |
+| `CodeDiagram` payload | `language: enum`, `source: text`, `layout: LayoutParams`, `node_overrides: {source_id → {pos?, style?}}` |
+| `Style` | `id`, `name`, `parent?`, `fills: [Paint]`, `strokes: [Stroke{paint, width, dash, cap, join, align, profile}]`, `markers`, `effects: [Effect]`, `opacity`, `blend`, `text: TextStyle` |
+| `Stencil` | `library`, `id`, `name`, `keywords`, `geometry: Node`, `ports`, `data_schema`, `resize_rule`, `theme_roles` |
+
+Coordinates are integers in micrometres in the model (exact, no drift) and `f64` inside transforms and the geometry helper.
+
+Stores: recovery journal `~/.local/share/org.pbsd.draw/recovery/<doc-id>.journal`; versions under `versions/` with `versions.sqlite`; user stencils and templates under `~/.local/share/org.pbsd.draw/stencils/` and `templates/`; `app.sqlite` (recent documents as portal tokens, favourites, export presets, `schema_version`); tile and thumbnail cache in `~/.cache/org.pbsd.draw/`. Built-in stencils are read-only in the bundle under `assets/stencils/`.
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| ODG, OTG, FODG (ODF 1.3) | yes | yes | Own ZIP and strict XML readers (shared source with OF05, OF06); zlib (zlib licence) | `draw-io` |
+| SVG 1.1 / SVG 2 subset, SVGZ | yes | yes | Own parser and writer; own CSS-subset reader | `draw-io` |
+| draw.io / mxGraph XML | yes | yes | Own code; inflate via zlib | `draw-io` |
+| Visio VSDX, VSSX, VSTX, VSDM | yes | no | Own OPC and VisioML mapping | `draw-io` |
+| Visio VSD (binary), EMF, WMF, DXF 2D | yes (C) | no | Own code | `draw-io` |
+| Mermaid-compatible diagram text | yes | partly | Own grammar | app host (ForgeScript) |
+| Graphviz DOT | yes | yes (structure) | Own grammar. Graphviz itself (EPL-2.0) is not used | app host (ForgeScript) |
+| Stencil pack `.pbstencil` | yes | yes | ZIP of SVG plus `stencil.json`; detached Ed25519 signature | `draw-io` |
+| PDF | via OF03 helper (C) | yes | Print pipeline (G-16) | spooler; OF03's parser sandbox for import |
+| PNG, JPEG, WebP | yes | yes | Platform image pipeline (FUSE-WP-27) | platform image helper |
+| GPL palette text | yes | yes | Own code | app host |
+| Render service `org.pbsd.draw.render/1` | — | — | Bus schema: `render(handle, page, format, size) → handle` | `draw-io` |
+
+### 6.4 Integration
+
+- Intents handled: `open`, `edit` (including embedded-edit from OF04 and OF06), `view`, `new`, `print`. Emitted: `share`, `print`, `edit` (image to CR01), `open` (links).
+- MIME view/edit: `application/vnd.oasis.opendocument.graphics`, `…graphics-template`, `…graphics-flat-xml`, `image/svg+xml`. Import: `application/vnd.jgraph.mxfile`, `application/vnd.ms-visio.drawing.main+xml` (and stencil, template variants), `text/vnd.mermaid`, `text/vnd.graphviz`, `image/png`, `image/jpeg`, `image/webp`. Export: `image/svg+xml`, `application/pdf`, `image/png`, `image/jpeg`, `image/webp`, `application/vnd.jgraph.mxfile`.
+- Services: `svc.settings`, `svc.notify` (long exports), `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.search`, `svc.clipboard`, `svc.thumbnail`, `svc.keyring` (signer trust list), `svc.audit`, `svc.a11y`, `svc.backup`, `svc.model` (optional).
+- Interface offered: `org.pbsd.draw.render/1`.
+- Other apps: OF04 and OF06 (embedding, shared vector core and themes), OF05 (embedded charts appear as replacement images inside drawings), OF09 (ER diagrams exported from a schema open in Draw as ordinary shapes), CR01 (raster edits), OF03 (PDF import), SH04 (screen colour picker), DV02 (may reuse the canvas tools; separate app).
+- Backing repos. Verified: FUSE's draw list today has Rect, Shadow, Glyph, Image, Line, PushClip, PopClip, Backdrop and no paths, transforms or multi-stop gradients (FUSE build plan 2.2 citing `FUSE:Source/FUSE/UI/Core/include/fuse/ui/draw_list.hpp:15-24`); no canvas widget exists in `widgets.hpp`; `ui::Event` has no pen or touch type (same section, citing `ui.hpp:32-51`). So Draw cannot be built on today's FUSE; it depends on G-12 and FUSE-WP-23 and FUSE-WP-08. Verified: `nodeGraph`, `codeEdit`, `viewportWidget`, `gridView` exist (`FUSE:docs/ui/README.md`). Verified: ForgeScript signing (V14). Proposed: everything else.
+
+## 7. Security and privacy
+
+| Capability | Why |
+|---|---|
+| `fs.app` | Journal, versions, user stencils and templates |
+| `fs.portal` | Open, save, import, export, batch export to a granted folder |
+| `net.none` | The app never uses the network. No optional network capability is declared |
+| `proc.helper:vector-core` | Geometry, layout, routing |
+| `proc.helper:draw-io` | File parsing and writing, render service |
+| `proc.helper:macro-host` | Signed generation scripts |
+| `dev.print` | Printing |
+| `dev.gpu.compute` (optional, off) | Canvas on the Vulkan backend |
+| `svc.settings`, `svc.notify`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.search`, `svc.clipboard`, `svc.thumbnail`, `svc.keyring`, `svc.audit`, `svc.a11y`, `svc.backup` | As in 6.4 |
+| `ai.local`, `svc.model` (optional, off) | Draft diagram text from a description |
+
+Assets: drawings (network plans and floor plans are sensitive: they describe infrastructure and buildings), shape data (addresses, host names), the user's other files, hosts that embed drawings.
+
+Adversaries: a crafted SVG (scripts, external references as tracking beacons, entity bombs, filter bombs with huge blur radii), crafted draw.io (HTML labels with scripts, compressed payload bombs), crafted Visio packages, a hostile stencil pack, pathological geometry (millions of nodes, self-intersections that blow up boolean operations), a hostile embedded drawing inside a Writer document.
+
+Mitigations:
+
+| Threat | Mitigation |
+|---|---|
+| Script and remote content in SVG and draw.io | Never executed, never fetched; removed on import and reported; no web view anywhere in the app |
+| Parser bugs | All foreign formats parsed in `draw-io` in capability mode with no network; per-job process; output re-validated by the app (node counts, coordinate ranges) |
+| Bombs | Limits: 256 MiB expanded per file, 2 million nodes, nesting depth 256, `use` expansion count 100,000, filter region 16,384 px, blur radius 500 px; inflate ratio cap |
+| Geometry blow-up | Boolean and offset operations have operand-size and time budgets; cancellable; the helper is restarted on overrun |
+| Stencils as a code path | Stencils are data with declarative rules only; signed packs show a signer; no scripts in shapes |
+| Infrastructure details leaking | "Plain SVG" and "strip shape data" export options; pre-share check lists hidden layers, off-page objects, shape data fields, comments, metadata |
+| Embedded-edit abuse | The host passes a handle to the sub-document only; Draw gets no access to the host file; the replacement image is produced by `draw-io` |
+| Render service abuse | Size caps (16,384 px), time budget, only handles passed by the caller |
+
+Stored: journal, versions, stencils, recent list under the app directories. Leaves the machine: nothing. There is no network code in the app or its helpers.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `new.template` | text | `blank-a4-landscape` | |
+| `new.units` | enum | locale (`mm` or `in`) | |
+| `new.boundless` | bool | `false` | Boundless page for diagrams |
+| `canvas.grid.kind` | enum | `dots` | `lines`, `dots`, `isometric`, `none` |
+| `canvas.grid.spacing_mm` / `.subdivisions` | float / int | `10` / `2` | |
+| `canvas.snap.grid` / `.guides` / `.objects` / `.points` | bool | `true` / `true` / `true` / `true` | |
+| `canvas.snap.tolerance_px` | int | `8` | |
+| `canvas.smart_guides` | bool | `true` | |
+| `canvas.outline_selected_only` | bool | `false` | |
+| `canvas.backend` | enum | `auto` | `auto`, `cpu`, `gpu` |
+| `tools.nudge_fine` | float | `0.1` | Multiplier with `Alt` |
+| `tools.pencil.smoothing` | int | `50` | 0–100 |
+| `tools.pen.rubber_band` | bool | `true` | |
+| `connect.default_kind` | enum | `ortho` | |
+| `connect.autoroute` | bool | `true` | |
+| `connect.clearance_mm` | float | `4` | |
+| `connect.line_jumps` | enum | `none` | `none`, `arc`, `gap` |
+| `connect.quick_arrows` | bool | `true` | |
+| `layout.default` | enum | `layered_down` | |
+| `layout.animate` | bool | `true` | Off with reduced motion |
+| `code.update_delay_ms` | int | `300` | |
+| `export.svg.plain` | bool | `true` | No private metadata |
+| `export.svg.precision` | int | `3` | |
+| `export.raster.scale` | float | `2.0` | |
+| `export.strip_shape_data` | bool | `false` | |
+| `import.report.always` | bool | `false` | Show the report even when empty |
+| `security.embedded_fonts` | enum | `never` | |
+| `recovery.journal_interval_ms` | int | `2000` | |
+| `versions.keep` | int | `30` | |
+| `ai.diagram_drafts` | bool | `false` | Needs `ai.local` |
+
+## 9. Accessibility and languages
+
+- Everything a pointer can do has a key route: place a stencil (`/`, type, `Enter` drops at the view centre or connected to the selection), connect (`Alt+Arrow`, or select two shapes and `Ctrl+Shift+C`), move and resize by keys with spoken deltas, edit nodes by keys.
+- The canvas exposes objects in reading order with role (shape, connector, text, image, group), name, and for connectors "from A to B, label L".
+- A generated diagram outline (text list of nodes and their links) is available in a panel and is what the screen reader reads for a page summary.
+- Colour is never the only carrier: stencil themes pair colour with shape or label; the contrast helper covers text on fills.
+- Right-to-left text in shapes; layouts can run right-to-left; vertical text for CJK (G-03).
+- Handles and hit targets scale with the density setting; at touch density handles are 24 px with 44 px hit areas.
+
+## 10. Performance budgets
+
+| Measure | Target |
+|---|---|
+| Cold start to new-document chooser | 400 ms |
+| Open a 5,000-object drawing | 1 s to first full view |
+| Pan and zoom frame time | under 8 ms with 100,000 objects (cached tiles), under 16 ms while tiles refill |
+| Drag one object among 10,000 with live connector re-routing | under 16 ms per frame |
+| Boolean union of two 10,000-node paths | under 200 ms |
+| Layered layout of 1,000 nodes and 2,000 edges | under 1 s |
+| Code panel update for a 200-line diagram | under 100 ms after the delay |
+| SVG export of 10,000 objects | under 1 s |
+| Memory | under 120 MiB for an empty document; tile cache capped at 512 MiB |
+| Idle | zero frames, zero wake-ups |
+
+## 11. Testing and proof
+
+Test plan (targets; nothing has run):
+
+- **Unit**: tool state machines, command inverses (do then undo restores the model byte for byte), style inheritance, symbol overrides, unit and scale parsing, diagram grammar (accept and reject tables).
+- **Geometry property tests**: boolean identities (`A ∪ A = A`, `A ∩ B ⊆ A`, area of union plus intersection equals sum of areas), offset then inverse offset bounds, flattening error under tolerance, routing never crosses an obstacle when a free route exists.
+- **Round trip**: ODG → model → ODG; SVG → model → SVG render-compared; draw.io → model → draw.io structure-compared.
+- **Differential render**: the resvg test suite and the W3C SVG 1.1 test suite images as references for the supported subset (used as test data only); LibreOffice Draw as an oracle for ODG; draw.io's own PNG exports of sample files for import fidelity.
+- **Golden renders**: every preset shape, marker, dash, gradient kind, each stencil library sheet, each layout algorithm on fixed graphs, both backends.
+- **Layout determinism**: same input and seed gives identical coordinates on repeated runs and thread counts.
+- **Scripted UI**: the 14 top tasks by keyboard through the a11y tree; pen input replay files.
+- **Fuzz**: SVG, CSS subset, path data strings, mxGraph XML and its compressed forms, VSDX parts, DOT and Mermaid text, stencil packs, journal, render-service requests, geometry helper inputs (random and adversarial polygons).
+- **Security tests**: an SVG corpus with scripts, external references and bombs must produce no socket, no process, bounded memory and a report line each.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Integer coordinate model and transforms composition | No overflow within the stated page limits | T2 | PRISM range analysis | — |
+| Path data and number parsers | No runtime errors on any input | T2 | PRISM plus fuzzing | — |
+| ZIP and XML readers | No runtime errors | T2 | Shared with OF05 | — |
+| Boolean operations | Result is a valid region; identities hold | T3 with property tests; T2 for absence of runtime errors | PRISM for bounds and termination; property tests for correctness | Exact-predicate geometry proofs are research-grade |
+| Orthogonal router | Terminates; output avoids obstacles | T2 for termination and bounds; T3 for quality | PRISM plus tests | — |
+| Layout algorithms | Terminate; deterministic | T3 | Tests | Heuristics have no simple specification |
+| SVG, mxGraph, VisioML mapping | Memory safe | T3 | Safe subset, sanitisers, fuzzing | Format size |
+| Undo system | `undo(do(c, m)) = m` for every command | T1 for the command algebra core | Proof over the command representation; each command's inverse tested | Commands are ForgeScript; the proof covers a model of them |
+| Diagram grammar (ForgeScript) | Rejects action and script constructs | T3 | Reject-table tests, fuzzing | — |
+| Render service boundary | Only passed handles are touched | T2 | Capability confinement plus PRISM on the request parser | — |
+
+## 12. Build plan
+
+Phase 1 — usable core:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF08-W01 | Canvas requirements review with the FUSE plan (C1–C18) and a prototype scene on `viewportWidget` | G-12, FUSE-WP-23 |
+| OF08-W02 | Document model, command layer, undo, journal | G-07, G-08 |
+| OF08-W03 | Vector core helper: paths, flattening, preset shapes, markers, dashes, hit geometry | G-06 |
+| OF08-W04 | Tools: select, transform, primitives, pen, node editing | OF08-W01, OF08-W02, OF08-W03, G-02 |
+| OF08-W05 | Fills, strokes, gradients, inspector | OF08-W04 |
+| OF08-W06 | Text on shapes, point and area text | G-10, G-03 |
+| OF08-W07 | Grid, guides, rulers, snapping, smart guides, align and distribute | OF08-W04 |
+| OF08-W08 | Layers, groups, pages, page tabs, panels | OF08-W02, FUSE-WP-28 |
+| OF08-W09 | Connectors with glue, labels, quick connect; stencil panel with the basic and flowchart sets | OF08-W04 |
+| OF08-W10 | ODG read and write | ZIP and XML readers (shared with OF05) |
+| OF08-W11 | SVG import with the safety rules, SVG and raster export | OF08-W03, FUSE-WP-27 |
+| OF08-W12 | Trust bar, recovery, palette, help; vector core packaged for OF06 and OF04 | G-09, OF08-GAP-1 |
+
+Phase 2 — full feature:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF08-W13 | Boolean operations, compound shapes, path operations, clipping and masks | OF08-W03 |
+| OF08-W14 | Automatic connector routing, line jumps | OF08-W09 |
+| OF08-W15 | Layout algorithms and tidy tools | OF08-W14 |
+| OF08-W16 | Diagram language, code panel, code-linked objects | OF08-W15 |
+| OF08-W17 | Symbols, full stencil libraries, custom stencils, shape data, containers | OF08-W09 |
+| OF08-W18 | Styles, themes, swatches, effects, blend modes | OF08-W05 |
+| OF08-W19 | Dimensions, drawing scale, typed input, measure tool | OF08-W07 |
+| OF08-W20 | draw.io import and export, import report | OF08-W10 |
+| OF08-W21 | PDF export, print with tiling, page masters | G-16 |
+| OF08-W22 | Pen and touch input, pencil tool | FUSE-WP-08 |
+| OF08-W23 | Comments, metadata tools, templates, search and thumbnails, disposable open, diagram accessibility outline | G-09 |
+
+Phase 3 — advanced:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF08-W24 | Embedding in OF04 and OF06; render service | OF08-GAP-2, OF04, OF06 |
+| OF08-W25 | Visio import | OF08-W20 |
+| OF08-W26 | DOT and other text inputs, headless export, diagram to code | OF08-W16 |
+| OF08-W27 | Wall tool, hatches, area schedule, viewports | OF08-W19 |
+| OF08-W28 | Trace bitmap, shape builder, blend, sketch style, appearance stack | OF08-W13 |
+| OF08-W29 | Versions with visual diff, stencil signing, batch export | SE04, G-09 |
+| OF08-W30 | PDF, EMF/WMF, DXF, VSD imports | OF03 |
+| OF08-W31 | Scripted generation, diagram drafts with `svc.model`, validation rules | FORGE signing, G-15 |
+
+## 13. Open questions and risks
+
+- **G-12 is the whole app.** The canvas requirement list (C1–C18) is large and shared by six apps. If the platform canvas lands late, Draw's phase 1 moves with it. The model, I/O and geometry helper can be built and tested without it.
+- **Robust boolean operations** are hard. Options: integer-snapped coordinates with exact predicates (slower, reliable) or floating point with tolerances (fast, fragile). The plan assumes the first.
+- **Mermaid compatibility** is a moving target with no formal grammar. The plan fixes a documented subset and reports the rest; users may expect more.
+- **Visio fidelity.** ShapeSheet formulas are not evaluated; shapes that depend on them import as their last cached geometry.
+- **Native format choice.** ODG keeps the suite on ODF and shares code with OF06. SVG is friendlier to other tools. The plan supports both as working formats; features outside SVG's model (pages, connectors, symbols with overrides) live in namespaced metadata that other tools ignore.
+- **Shared vector core** has no home in the bundle format (OF08-GAP-1). Three copies of one helper is acceptable at first but means three updates for one fix.
+- **Embedded editing flow** (OF08-GAP-2) needs a platform decision shared with OF05's embedding.
+- **Stencil content.** Drawing several hundred symbols to a consistent standard is art work, not code; licences of any reused symbol sets must allow redistribution (IEC and ISO symbol standards are paid documents; shapes must be drawn from scratch).
+- **Text inside rotated shapes** needs the rich text widget to work under a transform (C12); otherwise editing falls back to an unrotated overlay.

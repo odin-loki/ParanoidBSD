@@ -1,0 +1,40 @@
+{
+  "id": "org.pbsd.sound-recorder",
+  "name": "Sound Recorder",
+  "version": "0.1.0",
+  "category": "media",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "dev.mic", "dev.screen", "ai.local",
+    "proc.helper:encode-helper", "proc.helper:demux-helper", "proc.helper:decode-helper",
+    "proc.helper:audio-edit-helper", "proc.helper:peaks-helper",
+    "bg.run",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.mic", "svc.portal.screen", "svc.intent",
+    "svc.search", "svc.keyring", "svc.clipboard", "svc.media", "svc.power", "svc.model",
+    "svc.undo-trash", "svc.audit"
+  ],
+  "helpers": [
+    {"name": "encode-helper", "language": "c++23", "capabilities": []},
+    {"name": "demux-helper", "language": "c++23", "capabilities": []},
+    {"name": "decode-helper", "language": "c++23", "capabilities": []},
+    {"name": "audio-edit-helper", "language": "c++23", "capabilities": []},
+    {"name": "peaks-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["audio/ogg", "audio/opus", "audio/flac", "audio/wav", "audio/vorbis", "audio/mpeg", "audio/mp4",
+             "application/x-pbrec+json"],
+    "edit": ["audio/ogg", "audio/opus", "audio/flac", "audio/wav"],
+    "import": ["audio/ogg", "audio/opus", "audio/flac", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-matroska"],
+    "export": ["audio/ogg", "audio/opus", "audio/flac", "audio/wav", "audio/x-matroska", "text/plain",
+               "text/markdown", "application/x-subrip", "text/vtt", "application/json", "text/csv"]
+  },
+  "intents": {"handles": ["open", "view", "pick", "share"], "emits": ["edit", "share", "compose", "new", "open"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.soundrecorder.Recorder1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.media-pipeline >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE", "odin-loki/FORGE"],
+  "priority": "P2"
+}

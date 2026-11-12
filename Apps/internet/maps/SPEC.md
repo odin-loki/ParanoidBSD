@@ -269,3 +269,534 @@ Priority: M must, S should, C could. Phase: 1 usable core, 2 full feature, 3 adv
 | IN04-F135 | Session restore | View, open panels, current route and overlays return after a restart (if "Remember recent" is on; else only the view). | S | 1 |
 | IN04-F136 | Library safety | The library store is journalled; every import can be undone; `svc.backup` covers it. | M | 1 |
 | IN04-F137 | Low-power mode | On battery: frame rate cap of 30 during animations, no kinetic pan, hill shading cached not recomputed. | C | 3 |
+
+## 5. GUI
+
+### 5.1 Window map
+
+```
+Maps window
+├─ Header bar: menu, title, search field, location indicator, [net] badge (only when a grant is live)
+├─ Sidebar (F9), one of: Search results · Library (lists, routes, tracks, layers, views) · Directions · Regions
+├─ Map (mapView): controls column, scale bar, attribution, coordinates chip, missing-data chip
+│   ├─ Place card (bottom sheet or inspector)
+│   ├─ Layer panel (popover)
+│   ├─ Measure bar (overlay)
+│   └─ Navigation banner (overlay, navigation mode)
+├─ Inspector (F4): place details | route details | track statistics | layer style
+├─ Bottom panel (toggle): elevation profile | overlay attribute table | instructions
+└─ Status bar: coordinates, zoom, elevation, data date, recording state
+Dialogs and sheets
+├─ Region manager · Install region from file · Add imagery source · Install transit feed
+├─ Save place · Share place (with QR) · Coordinate converter · Import overlays · Export
+├─ Print map · Export image · Route options · Preferences
+└─ Shell-drawn: location prompt (Approximate / Precise), file chooser, print, net.host prompt
+```
+
+### 5.2 Main window
+
+Shown at 1280×800, directions sidebar open, bottom profile panel open.
+
+```
++----------------------------------------------------------------------------------------+
+|[=] Maps        [ search places, addresses, coordinates…      ]  (◎) [▁] [▢] [✕]       | (1)
++---------------------------+------------------------------------------------------------+
+| [Search][Library][Route]  |                                                      [+]   | (4)
+| ( ) Car (•) Bike ( ) Foot |          ~~~~ river ~~~~                             [−]   |
+| A [ Central Station     ] |     ┌──────────┐        ● B                          [N]   |
+| + [ via: Old Bridge     ] |     │  park    │      ╱                              [◎]   |
+| B [ Hill View Lookout   ] |     └──────────┘    ╱   route line                   [▤]   |
+| [+ stop]  [Options…]      |          A ●──────╱                                        |
+| ------------------------- |                                                            | (3)
+| > 42 min · 11.8 km · ↑210 |   ░░░░ hatched: region not installed  [Get region]         |
+|   47 min · 10.9 km · ↑340 |                                                            |
+| ------------------------- |  |—— 500 m ——|                © OpenStreetMap · 2026-10    | (5)
+| 1 ↑ Head north on Quay St +------------------------------------------------------------+
+|   350 m                   | Elevation  ↑210 m ↓40 m                                    |
+| 2 ↰ Turn left: Old Bridge |  240┤            ╱‾‾‾╲___╱‾‾‾‾‾‾                           | (6)
+|   1.2 km                  |   60┤___╱‾‾‾╲___╱                                          |
+| 3 ↱ Turn right: Hill Rd   |     0        4 km        8 km       11.8 km                |
++---------------------------+------------------------------------------------------------+
+| 48.20850° N 16.37280° E · z 13.4 · 212 m · Data: 2026-10-06 · Location: off           | (7)
++----------------------------------------------------------------------------------------+
+  (2) sidebar
+```
+
+States: empty (first run: base map only), loading (tiles of a just-installed region), error (region damaged), offline (normal: nothing changes), locked (library in a vault), read-only (region drive missing), narrow.
+
+1. Header bar. Search `lineEdit` is the centre of the header. `(◎)` is the location indicator, shown only while location is in use. No `[net]` badge unless a network grant is live.
+2. Sidebar, 300 px (wider than the standard 220 px because of route steps), `tabBar` with three modes. Directions: profile `radioButton`s, stop `lineEdit`s in a reorderable `listView`, alternatives `listView`, instructions `listView`.
+3. `mapView` (FUSE-WP-48). Overlays: route line with casing, stops, alternatives in `--fg-2`, selected place pin, own position dot or coarse circle.
+4. Controls column, right edge, 36 px `toolButton`s: zoom in, zoom out, north, locate, layers.
+5. Scale bar bottom left; attribution and data month bottom right (a `link`).
+6. Bottom panel, 160 px, `chart` for the profile; hover shows a marker on the route.
+7. Status bar: coordinates under the pointer or cursor, zoom, height, data date of the region under the centre, location state in words.
+
+Narrow (<640): sidebar becomes a bottom sheet with three heights (peek 96 px, half, full); controls stay; the bottom panel becomes a tab of the sheet.
+
+### 5.3 Other views and dialogs
+
+#### 5.3.1 Region manager (dialog or sidebar page, 820×600)
+
+```
++----------------------------------------------------------------------------------+
+| Regions                              Mirror: maps.mirror (set by the system)     |
+| Installed 3 · 2.1 GiB        Free 212 GiB         Catalogue: 2026-11-01 [Refresh]|
++--------------------------------------------+-------------------------------------+
+| [ filter…              ]                   |   (outline map: click a region)     |
+| [ ] ▾ Europe                               |        ┌───┬────┐                   |
+| [x]   ▾ Austria          612 M  2026-10 ✓  |        │███│    │                   |
+| [x]       Vienna          88 M  2026-10 ✓  |        ├───┼────┤                   |
+| [ ]       Tyrol          140 M  —          |        │   │░░░░│  █ installed      |
+| [x]   ▸ Czechia          540 M  2026-08 ↑  |        └───┴────┘  ░ selected       |
+| [ ] ▸ Oceania                              |                                     |
++--------------------------------------------+-------------------------------------+
+| Components [x] Map [x] Search [x] Routing  Add-ons [ ] Terrain [ ] Contours      |
+| Route for downloads [ Clear v ]  The mirror will see which regions you fetch.    |
+| Selected: +140 MiB download, +310 MiB on disk                                    |
+|                         [Install from file…] [Remove…] [Download and install]    |
++----------------------------------------------------------------------------------+
+```
+
+`treeView` with check boxes and columns; outline map is a small `mapView` in Minimal style; `checkBox`, `comboBox`, `button`, `progressBar` per row while downloading. Marks: ✓ current, ↑ update available, each with a word in the a11y name. States: catalogue stale (over 60 days: hint), no network grant yet (Download shows the shell prompt first), downloading (row progress, Pause), verifying, signature failed (row in `--danger`, file discarded), drive missing.
+
+#### 5.3.2 Place card (inspector, 280 px, or bottom sheet)
+
+```
++--------------------------------------+
+| Hill View Lookout              [✕]   |
+| Viewpoint · 1.8 km north-east        |
+| Hill Road, 1190 Vienna               |
+| 48.26010° N 16.35870° E  [Copy]      |
+| Height 484 m                         |
++--------------------------------------+
+| [Directions] [Save] [Share]          |
++--------------------------------------+
+| Open     24 hours                    |
+| Access   yes · wheelchair: limited   |
+| Website  example.org/lookout  ↗      |
+| Note     [ add a note…            ]  |
+| ▸ All tags (9)  ·  OSM node 123456   |
++--------------------------------------+
+```
+
+`label`s, `button`s, `link`, `lineEdit`, collapsible `panel` with a two-column `tableView` for tags.
+
+#### 5.3.3 Share place (dialog, 460×420)
+
+```
++--------------------------------------------------+
+| Share "Hill View Lookout"                        |
+| Precision [ Full v ]  (Full · ~100 m · ~1 km)    |
+| geo:48.2601,16.3587?q=Hill%20View%20Lookout      |
+|                                        [Copy]    |
+|            ┌─────────────────┐                   |
+|            │ █▀▀█ ▄ █▀▀█     │                   |
+|            │ █  █ ▀ █  █ QR  │                   |
+|            │ ▀▀▀▀ █ ▀▀▀▀     │                   |
+|            └─────────────────┘                   |
+| Also copy: [Coordinates] [Address] [Plus code]   |
+|                 [Save QR as PNG…] [Share…] [Done]|
++--------------------------------------------------+
+```
+
+The QR code is generated locally (own encoder) and drawn through `image`. "Share…" opens the shell share sheet with the `geo:` URI as text.
+
+#### 5.3.4 Coordinate converter (dialog, 520×400)
+
+```
++----------------------------------------------------------+
+| Coordinates                                              |
+| Input [ 48°12'30.6"N 16°22'22.1"E                    ]   |
+| Read as: degrees, minutes, seconds                       |
++----------------------------------------------------------+
+| Decimal degrees     48.20850, 16.37281          [Copy]   |
+| Degrees, minutes    48°12.510'N 16°22.369'E     [Copy]   |
+| DMS                 48°12'30.6"N 16°22'22.1"E   [Copy]   |
+| UTM                 33U 601971 5340510          [Copy]   |
+| MGRS                33UXP 01971 40510           [Copy]   |
+| Open Location Code  8FWR6952+9X                 [Copy]   |
+| Geohash             u2edk85                     [Copy]   |
+| Maidenhead          JN88ee                      [Copy]   |
+| geo: URI            geo:48.2085,16.37281        [Copy]   |
+|                              [Show on map] [Close]       |
++----------------------------------------------------------+
+```
+
+`lineEdit` and a `tableView`-like form; values in monospace; an unreadable input shows what formats are accepted.
+
+#### 5.3.5 Layer panel (popover, 320×460)
+
+```
++--------------------------------------+
+| Map style                            |
+| (•) Standard ( ) Outdoor             |
+| ( ) Transport ( ) Minimal            |
+| Theme [ Follow system v ]            |
++--------------------------------------+
+| Add-on layers                        |
+| [x] Hill shading      ▁▃▅ 60%        |
+| [x] Contours                         |
+| [ ] Cycling routes                   |
+| [ ] Hiking routes                    |
+| [ ] Satellite (network) [Set up…]    |
+| [ ] Graticule                        |
++--------------------------------------+
+| My layers                            |
+| [x] ● Favourites (12)                |
+| [x] ━ Alps trip.gpx       ▁▃▅ 100%   |
+| [ ] ▨ survey.geojson                 |
+| [Import…]                            |
++--------------------------------------+
+```
+
+`radioButton`, `comboBox`, `checkBox`, `slider`, `listView` with drag to reorder.
+
+#### 5.3.6 Measure bar and track recording (overlays on the map)
+
+```
++--------------------------------------------------------------+
+| Measure: 3 points · 2.41 km · bearing 048° · area —          |
+| [Undo point] [Close shape] [Save as line] [Units v] [Done]   |
++--------------------------------------------------------------+
+
++--------------------------------------------------------------+
+| ● Recording 00:42:10 · 3.8 km · 5.4 km/h · ↑120 m   (◎ precise)|
+| [Pause] [Add waypoint] [Stop and save]                       |
++--------------------------------------------------------------+
+```
+
+Each is a `panel` docked at the top of the map with `label`s and `button`s. The recording bar is `--danger` outlined with the word "Recording" so it cannot be missed.
+
+#### 5.3.7 Print map (dialog, 720×520)
+
+```
++----------------------------------------------+-------------------------------+
+| (preview: map with frame handles)            | Paper   [ A4 v ] [Portrait v] |
+|   ┌──────────────────────────────┐           | Scale   [ 1:25 000 v ]        |
+|   │                              │           | Pages   2 × 1 (overlap 10 mm) |
+|   │        frame                 │           | [x] Scale bar  [x] Legend     |
+|   │                              │           | [x] Grid [ UTM v ]            |
+|   └──────────────────────────────┘           | [x] Route and instructions    |
+|                                              | Style   [ Outdoor, light v ]  |
++----------------------------------------------+-------------------------------+
+|                                   [Cancel] [Save as PDF…] [Print…]           |
++------------------------------------------------------------------------------+
+```
+
+### 5.4 Menus
+
+```
+File     New window Ctrl+N · New tab Ctrl+T · Import… Ctrl+O · Export ▸ (Selection, Route, Track, Library) ·
+         Export image… Ctrl+Shift+E · Print… Ctrl+P · Regions… Ctrl+Shift+R · Close Ctrl+W · Quit Ctrl+Q
+Edit     Undo Ctrl+Z · Redo Ctrl+Shift+Z · Copy map Ctrl+C · Copy coordinates Ctrl+Shift+C ·
+         Paste place or coordinates Ctrl+V · Find Ctrl+F · Search this area Ctrl+Shift+F · Preferences Ctrl+,
+View     Sidebar F9 · Inspector F4 · Bottom panel Ctrl+B · Layers L · Style ▸ · Zoom in Ctrl++ ·
+         Zoom out Ctrl+- · Zoom to selection Ctrl+0 · North up N · Feature list Ctrl+Shift+L ·
+         Map cursor Ctrl+M · Back Alt+Left · Forward Alt+Right · Full screen F11
+Place    What is here? W · Save place Ctrl+D · Share… Ctrl+Shift+S · Directions to D · Directions from Shift+D ·
+         Set my position here · Open website · Copy address
+Route    New route Ctrl+Shift+N · Add stop · Reverse Ctrl+Shift+V · Options… · Alternatives ▸ ·
+         Save route Ctrl+S · Export route… · Start navigation Ctrl+Enter · Clear route
+Tools    Measure M · Coordinates… Ctrl+G · Record track Ctrl+R · Add waypoint Ctrl+Shift+W · Draw ▸ ·
+         Isochrone… · Transit feeds… · Imagery sources… · Verify regions · Clear private data…
+Location Show my position Ctrl+L · Follow ▸ · Stop using location
+Help     Maps help F1 · Keyboard shortcuts · Data licences · About
+```
+
+`Ctrl+G` is "Coordinates" here (go to); "find next" in result lists is `F3`. This overrides the reserved meaning only inside this app and is listed in Settings.
+
+### 5.5 Keyboard and pointer
+
+| Keys | Action | Keys | Action |
+|---|---|---|---|
+| Arrows | pan by 1/8 of the view (`Shift`: by one view) | `+` / `-` | zoom by 0.5 |
+| `Home` | zoom to all overlays or to the route | `1`–`4` | style Standard, Outdoor, Transport, Minimal |
+| `Tab` (map cursor on) | next feature under or near the cursor | `Esc` | cancel tool, deselect, close card |
+| `Ctrl`+drag | rotate | `Shift`+drag | zoom to rectangle |
+
+Context menu on the map: What is here?, Directions from here, Directions to here, Add stop here, Save place here, Measure from here, Set my position here, Copy coordinates, Share this point, Centre here. On a place row: Show, Directions, Rename, Move to list, Colour, Share, Export, Delete. On a route line: Add via point, Avoid this road (adds a temporary block and re-routes), Show step. On a track: Profile, Statistics, Edit, Trim ends, Export, Delete. On a region row: Download, Update, Verify, Remove, Show on map.
+
+Drag and drop: GPX, KML, KMZ, GeoJSON and region package files onto the window import or install after confirmation; `geo:` text or coordinate text onto the map drops a pin; a place from the sidebar onto a stop field sets it; stops reorder by drag; the route line drags to add a via point; a place dragged out offers `text/uri-list` (`geo:`), `text/plain` and GeoJSON.
+
+Gestures: pinch zoom, two-finger rotate, two-finger vertical drag for tilt (when built), long press as right click.
+
+### 5.6 States
+
+| State | Behaviour |
+|---|---|
+| Empty (first run) | Base map at world zoom with a card: "Install a region for detailed maps, search and routing." Buttons: Get regions, Install from file. Nothing is requested. |
+| Loading | Tiles appear lowest zoom first; no spinner unless a tile takes more than 300 ms. |
+| Error | Damaged region: banner with Verify and Re-download. Route not found: reason in words (no road link, missing region, restricted access) and the nearest routable point is offered. |
+| Offline | The normal state. Only Regions, imagery and transit install show "needs network". |
+| Location denied | Locate button shows a struck-through icon; tooltip explains; "Set my position here" is offered. |
+| Location coarse | Circle only; banner "Approximate location" with "Use precise…" (re-prompts through the shell). |
+| Locked | Library in a locked vault: sidebar Library shows Unlock; map, search and routing still work. |
+| Read-only | Regions on a missing drive are listed as unavailable. |
+| Recording | Recording bar always visible; closing the window asks: keep recording in the background, or stop and save. |
+| Narrow | See 5.2. |
+
+### 5.7 Widgets
+
+| Region | FUSE widget | Note |
+|---|---|---|
+| Map | `mapView` | Proposed in FUSE-WP-48 on the 2D canvas FUSE-WP-43; gap G-12 |
+| Search and stops | `lineEdit`, suggestion list (`popupMenu`-style) | search field is listed as missing in the FUSE plan |
+| Results, alternatives, instructions, layers | `listView` / `modelListView` | drag reorder (FUSE-WP-33) |
+| Library, regions | `treeView` | check boxes, columns |
+| Profile graph, statistics | `chart` | hover linking to the map: IN04-GAP-2 |
+| Attribute table, tags, converter | `tableView` | |
+| Popovers, sheets | `popover`, `sheet` (FUSE-WP-30, Proposed) | bottom sheet with three heights: IN04-GAP-3 |
+| Forms | `comboBox`, `checkBox`, `radioButton`, `slider`, `spinBox`, `colorPicker`, `dialog` | |
+| QR code | `image` | pixels from the app's own encoder |
+
+Gaps: **IN04-GAP-1** the map helper contract with `mapView`: draw-ready vector buffers, style classes, label candidates, hit-test results (FUSE-WP-48.3 names the buffer contract; this spec supplies the producer side in 6.5); **IN04-GAP-2** `chart` hover and range-selection signals with external marker; **IN04-GAP-3** bottom sheet with detents for narrow windows; **IN04-GAP-4** a distribution-side pipeline and mirror that builds and signs region packages from OpenStreetMap, elevation and transit data; **IN04-GAP-5** an interface on `svc.portal.location` for coarse versus precise fixes with a stated radius, and for heading and speed.
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App logic | ForgeScript | app host | Views, library, route requests, region manager, settings, intents, unit and coordinate maths that is not hot. |
+| UI | FUSE UI | app host | Section 5; hosts `mapView`. |
+| Tile helper | C++23 (safe subset) | one, long-lived, no network | Opens region packages read-only (descriptors passed by the app), decodes vector tiles, applies the style sheet, builds draw buffers and label candidates, answers hit tests, computes hill shading from height tiles. |
+| Search helper | C++23 (safe subset) | one, no network | Queries the per-region search indexes (SQLite FTS5 and R*Tree, read-only), ranks and merges results, reverse geocoding, opening-hours evaluation. |
+| Route helper | C++23 (safe subset) | one per request batch, no network | Loads routing graphs by memory map, runs the query, builds instructions and the elevation profile, transit journeys, isochrones, map matching. |
+| Import helper | C++23 (safe subset) | on demand, no network | Parses GPX, KML, KMZ, GeoJSON, GTFS zip; simplifies and tiles large overlays; writes exports. |
+| Fetch helper | C++23 (safe subset) on the platform protocol helper | on demand, one per route | Region catalogue and package downloads; imagery tiles; transit feed download. |
+| Image helper | C++23 (safe subset) | on demand, no network | Decodes imagery tiles (PNG, JPEG, WebP) to pixels. |
+| Region builder | C++23 (safe subset) | on demand (F031) and on the distribution's build hosts | `.osm.pbf` to region package. |
+
+```
+ app host: logic (ForgeScript) + UI (FUSE, mapView) + library.db
+   │  draw buffers (shared memory)        region packages (read-only fds)
+   ├─ tile helper ◄───────────────────────── ~/.local/share/org.pbsd.maps/regions/*.mapregion
+   ├─ search helper ◄──────────────────────┘
+   ├─ route helper  ◄──────────────────────┘
+   ├─ import helper (GPX, KML, GeoJSON, GTFS)        ├─ image helper
+   ├─ fetch helper ── network service ── package mirror | imagery host (only with a grant)
+   └─ svc.portal.location (handle only while in use) · svc.intent · svc.portal.print
+```
+
+No helper except the fetch helper ever holds a socket. With no grant given, the app has no network process at all.
+
+### 6.2 Data model
+
+Stores: `~/.local/share/org.pbsd.maps/library.db` (SQLite, WAL, `schema_version` in `meta`), `regions/` (packages), `transit/` (converted feeds), `~/.cache/org.pbsd.maps/imagery/`, `~/.config/org.pbsd.maps/` (settings, imagery sources, custom styles).
+
+| Entity | Fields |
+|---|---|
+| `place` | `id u64`, `list_id u32`, `name text`, `lat f64`, `lon f64`, `ele_m f32?`, `osm_type enum{node,way,relation}?`, `osm_id u64?`, `category text?`, `address text?`, `colour u8`, `icon text`, `note text`, `created i64`, `modified i64` |
+| `list` | `id u32`, `name text`, `colour u8`, `icon text`, `visible bool`, `position u32` |
+| `route` | `id u64`, `name text`, `profile text`, `options json`, `stops json` (`[{lat,lon,name,place_id?}]`), `geometry blob` (delta-encoded polyline, 1e-6 degrees), `distance_m u32`, `duration_s u32`, `ascent_m u16`, `descent_m u16`, `instructions blob`, `data_date text`, `created i64` |
+| `track` | `id u64`, `name text`, `source enum{recorded,imported}`, `started i64?`, `ended i64?`, `distance_m u32`, `moving_s u32`, `ascent_m u16`, `descent_m u16`, `bounds [f64;4]`, `colour u8`, `visible bool` |
+| `track_point` | `track_id u64`, `segment u16`, `seq u32`, `lat f64`, `lon f64`, `ele_m f32?`, `time i64?`, `speed_mps f32?`, `hdop f32?` (stored as packed blobs of 512 points) |
+| `layer` | `id u32`, `name text`, `kind enum{gpx,kml,geojson,drawn}`, `source_name text`, `feature_count u32`, `style json`, `visible bool`, `opacity u8`, `position u32`, `tiles blob` (simplified per zoom) |
+| `feature` | `layer_id u32`, `id u64`, `geom_type enum{point,line,polygon}`, `geometry blob`, `props json` |
+| `view_bookmark` | `id u32`, `name text`, `lat f64`, `lon f64`, `zoom f32`, `bearing f32`, `style text`, `layers json` |
+| `recent` (only if enabled) | `kind enum{search,place,route}`, `value json`, `time i64` |
+| `region` (index of installed packages) | `id text`, `name text`, `version text` (data date), `path text`, `components set{map,search,routing,terrain,contours}`, `size u64`, `sig_ok bool`, `installed i64` |
+| `imagery_source` (config) | `id u32`, `name text`, `url_template text`, `scheme enum{xyz,tms,wmts}`, `min_zoom u8`, `max_zoom u8`, `attribution text`, `host text`, `route enum` |
+| `recording.journal` | append-only fixed-size records `{time i64, lat f64, lon f64, ele f32, speed f32, hdop f32, flags u8}` |
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| Region package `.mapregion` (Proposed, 6.5) | yes | builder only | own code | tile, search, route helpers (each opens only its part) |
+| Vector tiles: Mapbox Vector Tile 2.1 encoding (protobuf) | yes | builder | own protobuf reader (fixed schema, about 300 lines) | tile helper |
+| Tile archive: PMTiles v3 layout, or an equivalent own single-file index if its terms do not fit (to verify) | yes | builder | own code | tile helper |
+| SQLite FTS5 and R*Tree (search index) | yes | builder | SQLite (public domain), already a platform dependency (PLATFORM V8) | search helper |
+| Routing graph (own binary format, 6.5) | yes | builder | own code | route helper |
+| Height tiles (16-bit grid, lossless, own framing) and contour vector tiles | yes | builder | own code | tile helper |
+| `.osm.pbf` | yes (builder) | — | own protobuf reader plus zlib from the base system | region builder |
+| GPX 1.0/1.1, KML 2.2, KMZ | yes | yes | own XML parser (shared source with IN02), own ZIP reader (stored and deflate only) | import helper |
+| GeoJSON (RFC 7946) | yes | yes | own code | import helper |
+| GTFS (zip of CSV) | yes | — | own code | import helper |
+| `geo:` URI (RFC 5870) | yes | yes | own code | app host (short, bounded grammar) |
+| QR code (ISO/IEC 18004) | — | yes | own encoder | app host |
+| PNG, JPEG, WebP imagery tiles; XYZ, TMS, WMTS (KVP and REST tile requests only, no capabilities XML in phase 3) | yes | PNG export | platform image decoders | image helper |
+| HTTPS with range requests | yes | — | FORGE-WP-21 protocol helper | fetch helper |
+| PDF, SVG, PNG map export | — | yes | print pipeline (G-16), FUSE draw list to SVG (to verify that FUSE-WP-23 can serialise), own PNG writer | app host |
+
+### 6.4 Integration
+
+- Intents handled: `open` and `view` for `geo:` URIs, GPX, KML, KMZ, GeoJSON and `.mapregion` files; "show on map" with coordinates or an address string. Emitted: `open` (websites to IN01, `tel:`), `share`, `print`, `scan` is not used.
+- MIME: view and import `application/gpx+xml`, `application/vnd.google-earth.kml+xml`, `application/vnd.google-earth.kmz`, `application/geo+json`, `application/x-pbsd-mapregion`; export the first four plus `image/png`, `image/svg+xml`, `application/pdf`.
+- Services: `svc.settings`, `svc.portal.file`, `svc.portal.location`, `svc.portal.print`, `svc.intent`, `svc.search` (opt-in), `svc.power` (navigation and recording), `svc.notify` (downloads done, recording still running), `svc.backup`, `svc.audit`, `svc.clipboard`.
+- IPC offered: `org.pbsd.maps.geocode` v1: `reverse(lat, lon) -> {address, areas[]}` and `forward(text, near?) -> results[]`, answered from installed regions only, for ME01, CO03 and IN05; each caller needs the user's one-time consent because queries reveal locations to Maps (which stores nothing).
+- Other apps: IN05 (shares `mapView` and may use geocoding for place names), ME01 (photo places, tracks), CO03 (addresses), IN01 (links), SE03 (route for downloads), SE05 (vault), ME04 (none needed), SY05 (mirror configuration).
+- Backing repos: none. Verified: FUSE has no map or canvas widget today (`widgets.hpp` list, PLATFORM V3; the FUSE build plan lists both as missing). Proposed: everything else.
+
+### 6.5 Map data plan (tiles, style, search, routing)
+
+**Region package.** A directory or single file `<region>-<date>.mapregion` with a signed `manifest.json` (id, name, bounds polygon, data date, schema versions, per-part size and BLAKE3 hash) and parts: `tiles.pmt`, `search.db`, `graph-car.bin`, `graph-bike.bin`, `graph-foot.bin`, `border.bin`, optional `terrain.pmt`, `contours.pmt`. Parts can be installed separately (F027). Ed25519 signature over the manifest by the distribution's map key; verified by the app host before any helper opens a part.
+
+**Tiles.** Web Mercator pyramid, zoom 0–14, 4096-unit extent, Mapbox Vector Tile geometry encoding. Layer schema: a fixed, documented set (water, land cover, land use, boundaries, roads, rail, buildings, place labels, POIs, transit, routes). An existing open schema should be adopted if its licence allows use without extra terms (Shortbread and OpenMapTiles are the candidates; licences to verify). Names carry `name`, `name:<lang>` for a fixed language list, and `name_latin`. Tiles are compressed with zstd or gzip (to decide by measured size and decode time; zstd would be a third-party BSD-licensed library, gzip uses base-system zlib).
+
+**Renderer.** The tile helper decodes a tile, evaluates the style sheet and emits, per tile and zoom: vertex and index buffers for fills and lines with style class ids, point lists, and label candidates (text, class, anchor, priority). `mapView` validates every count and index (FUSE-WP-48 gate `fuse_ui_map_vector_tile_hostile`), places labels and draws through the canvas. Polygon triangulation and line joins happen in the helper. Style sheets are a small own format (JSON: class → colours as design tokens, widths by zoom stops, dash, label font and halo, min and max zoom, filters on a fixed set of properties). No expression language, so a style cannot loop or run code.
+
+**Search index.** Built from named OSM elements and addresses: table `entry(id, kind, name, alt_names, lat, lon, importance, admin_ids, tags)`, FTS5 over normalised tokens (case-folded, accent-folded, transliterated), R*Tree over points for reverse lookups, `street(id, name, admin_id, geom)` and `housenumber(street_id, number, lat, lon)` plus interpolation ranges, `admin(id, level, name, polygon)` for containment.
+
+**Routing.** Graph per profile with edge attributes (length, class, speed, surface, access flags, toll, ferry, slope bucket, turn restrictions). Query method: a multi-level overlay method with customisable weights is preferred over plain contraction hierarchies, because user options (F057) change weights without a new preprocessing run; bidirectional A* is the fallback for small regions and the reference for tests. The choice is confirmed by a prototype (IN04-W13). Transit uses a round-based public transit algorithm over stop-time tables converted from GTFS. Cross-region routing joins graphs at border nodes listed in `border.bin`.
+
+**Sources and licences.** OpenStreetMap data (ODbL; attribution shown; produced works are not share-alike, derived databases are). Elevation from an open global model (candidates: SRTM, Copernicus DEM GLO-30; licences and attribution text to verify). Transit feeds as published by agencies under their own terms; shown per feed. Packages are built on distribution hosts (IN04-GAP-4), never fetched from third-party tile services.
+
+## 7. Security and privacy
+
+| Capability | Reason |
+|---|---|
+| `fs.app` | Regions, library, cache, settings. |
+| `fs.portal` | Import and export files, install a region from a file, external region folder. |
+| `net.none` | Default state. The app works fully with no sockets. |
+| `net.host:<map mirror>:443` | Region catalogue and packages. Asked when the user first presses Refresh or Download. Host name comes from system configuration (SY05). |
+| `net.host:<imagery host>:443` | One per imagery source the user adds (F109). |
+| `net.user` | Only for "install transit feed from URL" (F066); asked at that moment. |
+| `net.route:clear`, `net.route:vpn`, `net.route:tor` | Route choice for downloads and imagery. |
+| `dev.location` | Position, recording, navigation. Prompt on first use with Approximate or Precise; indicator while in use. |
+| `dev.print` | Print maps and instruction sheets. |
+| `proc.helper:tile`, `:search`, `:route`, `:import`, `:fetch`, `:image`, `:region-build` | Section 6.1. |
+| `svc.settings`, `svc.portal.file`, `svc.portal.location`, `svc.portal.print`, `svc.intent`, `svc.search`, `svc.power`, `svc.notify`, `svc.backup`, `svc.audit`, `svc.clipboard` | Section 6.4. |
+| `bg.run` | Track recording, navigation and region downloads with the window closed. Asked when needed. |
+
+Threat model:
+
+| | |
+|---|---|
+| Assets | Where the user is and has been; where they plan to go; saved places (home, work); searches; the integrity of map and routing data. |
+| Adversaries | A network observer or a mirror operator learning regions of interest; an imagery server learning viewed areas; a hostile GPX, KML, GeoJSON, GTFS or region file; a hostile app using the geocode interface to probe; someone reading a shared track that starts at the user's home. |
+| Attack surface | Parsers for vector tiles, package parts, XML, JSON, ZIP, CSV, image tiles; the routing graph loader (memory-mapped untrusted file if a package is sideloaded); the IPC geocode interface; `geo:` URIs from other apps. |
+
+Mitigations: offline by design, so the common tasks send nothing; location only by explicit action, coarse offered first, indicator always shown, no storage unless recording; region packages are signed and each part hash-checked, and helpers still treat them as hostile (bounds-checked readers, no trust in offsets); parsers run in helpers with no network and no file access beyond passed descriptors; KML network links and external entities are ignored; imagery is opt-in per host with a notice, no cookies and a cache; shared coordinates can be rounded and tracks trimmed at both ends; the geocode interface needs per-app consent and rate-limits to 10 queries per second; `geo:` input is range-checked (latitude ±90, longitude ±180, zoom 0–22).
+
+Stored: section 6.2, on the user's disk. Sent: nothing by default. With grants: region file requests to the mirror (reveals regions), tile requests to an imagery host (reveals viewed areas at tile precision), one request for a transit feed URL. Residual: region choice leaks coarse interest; a sideloaded unsigned package is refused, so community-built regions need the local builder (F031) or the user's own signing key added in SE04 (C).
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `map.style` | enum standard/outdoor/transport/minimal | standard | Base style. |
+| `map.theme` | enum system/light/dark/high_contrast | system | Map colours. |
+| `map.label_language` | enum system/local/both | system | F006. |
+| `map.label_scale_pct` | int 80–200 | 100 | F007. |
+| `map.poi_density` | enum few/normal/many | normal | F007. |
+| `map.kinetic_pan` | bool | true | Off with reduced motion. |
+| `map.rotation` | bool | true | F004. |
+| `units.distance` | enum metric/imperial/nautical | locale | F099. |
+| `units.coordinates` | enum dd/dm/dms/utm/mgrs/olc | dd | Status bar and copy format. |
+| `regions.dir` | portal handle | app data | F028. |
+| `regions.auto_update` | bool | false | F025. |
+| `regions.route` | enum clear/vpn/tor | clear | F030. |
+| `routing.profile` | enum car/bike/foot | foot | Default profile. |
+| `routing.avoid` | set{motorway,toll,ferry,unpaved,steps} | {} | F057. |
+| `routing.optimise` | enum fastest/shortest/balanced | fastest | F058. |
+| `routing.alternatives` | int 0–3 | 2 | F056. |
+| `routing.voice` | bool | false | F071. |
+| `location.default_precision` | enum ask/approximate/precise | ask | What the shell prompt preselects. |
+| `location.follow` | enum off/centre/heading | off | F118. |
+| `privacy.remember_recent` | bool | false | F042, F120. |
+| `privacy.share_precision` | enum full/3dp/2dp/1dp | full | F125 (own position always starts at 3dp). |
+| `privacy.strip_times_on_export` | bool | false | F094. |
+| `record.interval_s`, `record.min_distance_m` | int 1–60, int 0–100 | 5, 5 | F086. |
+| `record.auto_pause` | bool | true | F088. |
+| `layers.hillshade_strength_pct`, `layers.hillshade_azimuth` | int 0–100, int 0–359 | 60, 315 | F107. |
+| `imagery.cache_mib` | int 0–20000 | 500 | F111. |
+| `imagery.cached_only` | bool | false | F110. |
+| `search.contribute_places` | bool | false | F130. |
+
+## 9. Accessibility and languages
+
+- The map is visual; the feature list (F133) and the map cursor (F134) are the equivalent path. The list is an a11y table with name, type, direction ("north-east") and distance; activating a row selects the feature.
+- Route instructions are a list with full sentences ("In 350 metres turn left onto Old Bridge"), not icons alone; the profile graph has a text summary (total climb, steepest section and where).
+- Map styles pass contrast checks for road casings and labels in the high-contrast theme; route alternatives differ by line pattern as well as colour; track colouring by speed has a legend with numbers.
+- All controls are at least 36 px on the map (44 px in touch density).
+- Names use the user's language where the data has it; scripts need the FULL text profile (G-03); right-to-left labels follow line direction rules in the label placer.
+- Units, number formats, coordinate hemispheres and compass words come from string tables; category search words are translated tables, so "Apotheke" finds pharmacies.
+
+## 10. Performance budgets
+
+| Metric | Budget |
+|---|---|
+| Cold start to first frame (base map) | 300 ms |
+| Pan frame at zoom 14 in a dense city | 6 ms in `mapView` (FUSE-WP-48 budget); tile build in the helper under 40 ms per tile |
+| Tile cache | 256 MiB of draw buffers, evicted least recently used |
+| Search | first results under 100 ms; suggestions under 50 ms; reverse geocode under 30 ms |
+| Route, 30 km city, foot | under 300 ms |
+| Route, 1 000 km, car | under 2 s with the multi-level method; under 20 s is the limit for the fallback |
+| Region size (guide) | a mid-size country about 0.5–1 GiB with search and three routing graphs (to measure) |
+| Largest overlay | 1 million vertices, 6 ms pan frame after tiling |
+| Recording | under 1% CPU; journal write under 1 ms |
+| Memory | app host 150 MiB; tile helper 400 MiB cap; route helper memory-maps graphs, private memory under 300 MiB |
+| Idle | zero frames and zero wake-ups with a still map and no location use |
+
+## 11. Testing and proof
+
+Nothing has run. Targets only.
+
+- Unit: coordinate parsing and formatting for every format of F040 (round trips, hemisphere and zone edge cases, poles, antimeridian), geodesic distance and area against published test sets, `geo:` URI grammar, QR encoder against known vectors, opening-hours parser against a corpus, unit conversion.
+- Golden renders: each style at fixed views and zooms; label placement goldens; all dialogs in three themes.
+- Scripted UI through the a11y tree: tasks T1–T13, with location simulated by a test portal.
+- Fuzz: vector tile decoder, package manifest and part readers, routing graph loader, GPX, KML, GeoJSON, GTFS, ZIP, `.osm.pbf` (builder), imagery tile decode, `geo:` URIs, style sheets.
+- Differential: routes against a reference open-source routing engine on the same extract (distance within 1%, same road sequence for a sample set); multi-level query against plain Dijkstra on small graphs (must be equal); geocoding against a reference open-source geocoder on an address sample; tile decode against a reference vector tile decoder.
+- Privacy tests: packet capture with no grants shows zero packets in all tasks; with location denied no location handle is opened; shared `geo:` strings honour the precision setting; exported tracks honour time stripping.
+- Data pipeline tests: a built region for a small test extract is byte-identical across two builds (reproducible).
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Vector tile decoder | No runtime errors on hostile tiles; output counts consistent | T2 | PRISM; fuzz | — |
+| Draw-buffer builder | Every index is inside its vertex array | T1 | PRISM proof of the emit functions; validated again by `mapView` | — |
+| Routing graph loader | All offsets bounds-checked before use | T2 | PRISM; fuzz | — |
+| Shortest-path query | Result equals Dijkstra on the same weights | T1 target for the core relaxation; tested for the overlay | PRISM on the core; differential tests | Proof of the multi-level structure is research-grade work |
+| Coordinate conversions | Round-trip error bounds; no overflow or domain errors | T1 | PRISM with interval reasoning; test vectors | Floating-point proof support in PRISM (to verify) |
+| XML, JSON, ZIP, CSV parsers | No runtime errors; bounded memory | T2 | PRISM; fuzz | — |
+| Package signature check | No part is opened unless manifest signature and part hash verify | T1 | PRISM over the install state machine | — |
+| Search ranking | No runtime errors | T2 | PRISM; differential | SQLite itself is third-party C: T4 for that part |
+| App logic | Memory safety by construction | T3 | ForgeScript guarantees; unit tests | — |
+
+## 12. Build plan
+
+| ID | Work item | Depends on |
+|---|---|---|
+| | **Phase 1: usable core (view, regions, basic search, places)** | |
+| IN04-W01 | Region package format, manifest, signature and part hashes | FORGE-WP-22, FORGE-WP-09 |
+| IN04-W02 | Region builder: tiles and name index from `.osm.pbf` (distribution side) | IN04-GAP-4 |
+| IN04-W03 | Tile helper: decode, style, draw buffers, hit test | G-12, FUSE-WP-43, FUSE-WP-48, FORGE-WP-28 |
+| IN04-W04 | Main window with `mapView`, controls, status bar, base world map | G-02, W03 |
+| IN04-W05 | Region manager: catalogue, download, verify, install from file | W01, FORGE-WP-21 |
+| IN04-W06 | Search helper: name search, ranking, results list, place card | W02 |
+| IN04-W07 | Library: places and lists, save, show, `geo:` intent in | W04 |
+| IN04-W08 | Location: prompt, coarse circle and precise dot, indicator, manual position | `svc.portal.location`, IN04-GAP-5 |
+| | **Phase 2: full feature (routing, overlays, layers)** | |
+| IN04-W09 | Address index, typo tolerance, categories, coordinates input, reverse geocoding | W06 |
+| IN04-W10 | Routing graph builder per profile; border nodes | W02 |
+| IN04-W11 | Route helper: query, alternatives, options, instructions | W10 |
+| IN04-W12 | Directions UI, route line editing, export, saved routes | W11, FUSE-WP-33 |
+| IN04-W13 | Prototype and decision: multi-level method versus contraction hierarchies | W10 |
+| IN04-W14 | Import helper: GPX, KML, GeoJSON; overlay styling; export | FORGE-WP-28 |
+| IN04-W15 | Terrain and contours add-ons; hill shading; elevation profile | W02, W03 |
+| IN04-W16 | Styles (Outdoor, Transport, Minimal), themes, label settings, route overlays | W03 |
+| IN04-W17 | Measure, coordinate converter, share with QR, image export | W04 |
+| IN04-W18 | Feature list and map cursor for keyboard and screen reader | W03, G-04 |
+| | **Phase 3: advanced** | |
+| IN04-W19 | Track recording, journal, statistics, cleaning, background | W08, `bg.run` |
+| IN04-W20 | Navigation mode, re-routing, spoken instructions | W11, W19, AX01 |
+| IN04-W21 | Transit: GTFS import, journey planner, transit layer | W14 |
+| IN04-W22 | Imagery sources, fetch and image helpers, cache | FORGE-WP-21 |
+| IN04-W23 | Print map with scale and paging | G-16 |
+| IN04-W24 | Geometry editing, drawing, large overlays, attribute table | W14 |
+| IN04-W25 | Geocode interface for other apps | W09, G-08 |
+| IN04-W26 | Local region build (F031), delta updates, isochrones, map matching, round trips | W02, W11 |
+
+## 13. Open questions and risks
+
+1. `mapView` and the 2D canvas do not exist (G-12, FUSE-WP-43, FUSE-WP-48). Maps cannot start before them; the buffer contract must be agreed with the FUSE plan (IN04-GAP-1).
+2. Someone must build, sign and host region packages (IN04-GAP-4). A planet-wide build needs large machines and a regular schedule. Without it the app has only the base map and sideloaded data.
+3. Tile schema and archive format licences (Shortbread, OpenMapTiles, PMTiles) are to verify; an own schema is the fallback and costs style work.
+4. The routing method is a real engineering risk: plain contraction hierarchies are simpler but make user options costly; the multi-level method needs partitioning in the builder. Decided in IN04-W13.
+5. Address search quality depends on OSM address coverage, which varies by country; the UI must say when a region has few addresses.
+6. Elevation data licences and void areas need checking per source.
+7. The location portal's coarse mode (radius, snapping) is defined by SH04 and the location service; this spec assumes a radius is reported (IN04-GAP-5).
+8. `Ctrl+G` is used for "go to coordinates" against the reserved "find next"; if the design system owner objects, it moves to `Ctrl+J`.
+9. SQLite as the search index is third-party C code in a helper; the helper is confined, but a safe-subset index reader would be better later.
+10. Map label quality needs design iteration (the FUSE plan says the same in FUSE-WP-48 risks).
