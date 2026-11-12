@@ -1,0 +1,12 @@
+2026-11-12 13:56:38 [round 2] start: repair budget $32, review budget $40
+round 2: items 120228, functions with a current annotation 120228, records 77446
+  tier 0: 27604 functions
+  tier 1: 22927 functions
+  tier 2: 69697 functions
+2026-11-12 14:22:12 [round 2] start: repair budget $32, review budget $40
+2026-11-12 14:47:32 [round 2] start: repair budget $32, review budget $40
+2026-11-12 16:28:24 [round 2] pass 1: 773 records failed (API overload or empty reply); retrying them
+2026-11-12 16:40:47 [round 2] pass 2: 70 records failed (API overload or empty reply); retrying them
+2026-11-12 16:55:07 [round 2] pass 3: 44 records failed (API overload or empty reply); retrying them
+2026-11-12 16:55:08 [round 2] repair stage over: 31856 records repaired, spent $18.0325
+2026-11-12 16:55:08 [round 2] re-verify
