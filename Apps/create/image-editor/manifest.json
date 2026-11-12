@@ -1,0 +1,34 @@
+{
+  "id": "org.pbsd.image-editor",
+  "name": "Image Editor",
+  "version": "0.1.0",
+  "category": "create",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "proc.helper:raster-engine", "proc.helper:image-codec", "proc.helper:raw-develop",
+    "dev.gpu.compute", "dev.print", "ai.local",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.print", "svc.intent",
+    "svc.clipboard", "svc.thumbnail", "svc.model", "svc.keyring", "svc.power",
+    "svc.backup", "svc.search", "svc.a11y"
+  ],
+  "helpers": [
+    {"name": "raster-engine", "language": "c++23", "capabilities": ["fs.app", "dev.gpu.compute"]},
+    {"name": "image-codec", "language": "c++23", "capabilities": []},
+    {"name": "raw-develop", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["image/openraster", "image/png", "image/jpeg", "image/webp", "image/avif", "image/jxl", "image/tiff", "image/x-exr"],
+    "edit": ["image/openraster", "image/png", "image/jpeg", "image/webp", "image/avif", "image/jxl", "image/tiff", "image/x-exr"],
+    "import": ["image/vnd.adobe.photoshop", "image/x-xcf", "application/x-krita", "image/x-adobe-dng", "image/gif", "image/bmp", "image/x-tga", "image/x-portable-anymap", "image/qoi", "image/svg+xml"],
+    "export": ["image/openraster", "image/png", "image/apng", "image/jpeg", "image/webp", "image/avif", "image/jxl", "image/tiff", "image/x-exr", "image/gif", "image/bmp", "application/pdf"]
+  },
+  "intents": {"handles": ["open", "edit", "view", "new", "share"], "emits": ["share", "print", "scan", "open"]},
+  "url_schemes": [],
+  "services_provided": ["thumbnailer:image/openraster"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE", "odin-loki/FORGE"],
+  "priority": "P2"
+}

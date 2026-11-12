@@ -1,0 +1,70 @@
+{
+  "id": "org.pbsd.jails",
+  "name": "Jails and Containers",
+  "version": "0.1.0",
+  "category": "virt",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.user",
+    "net.route:clear",
+    "net.route:vpn",
+    "net.route:tor",
+    "proc.helper:stack-helper",
+    "dev.usb:*",
+    "dev.gpu.compute",
+    "svc.jail",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.usb",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.audit",
+    "svc.backup",
+    "svc.update",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "stack-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "application/x-pbsd-container+toml",
+      "application/x-pbsd-stack+toml",
+      "application/x-compose+yaml"
+    ],
+    "edit": [
+      "application/x-pbsd-container+toml",
+      "application/x-pbsd-stack+toml"
+    ],
+    "import": [
+      "application/x-compose+yaml",
+      "application/vnd.oci.image.layout.v1+tar",
+      "application/x-docker-archive",
+      "application/x-tar"
+    ],
+    "export": [
+      "application/vnd.oci.image.layout.v1+tar",
+      "application/x-compose+yaml",
+      "application/x-pbsd-stack+toml",
+      "application/spdx+json",
+      "text/plain"
+    ]
+  },
+  "intents": {"handles": ["open", "view", "new"], "emits": ["open", "share"]},
+  "url_schemes": ["ctr"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.service.jail >= 0.1",
+    "org.pbsd.terminal >= 0.1"
+  ],
+  "backing_repos": ["odin-loki/ParanoidBSD:pbsd/kernel/jail"],
+  "priority": "P2"
+}

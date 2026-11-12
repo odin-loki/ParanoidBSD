@@ -1,0 +1,81 @@
+{
+  "id": "org.pbsd.slides",
+  "name": "Slides",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:vector-core",
+    "proc.helper:deck-io",
+    "proc.helper:remote-link",
+    "proc.helper:macro-host",
+    "dev.print",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.search",
+    "svc.clipboard",
+    "svc.thumbnail",
+    "svc.media",
+    "svc.power",
+    "svc.keyring",
+    "svc.audit",
+    "svc.a11y",
+    "svc.backup"
+  ],
+  "optional_capabilities": [
+    {"capability": "net.listen:lan:47111", "default": "off", "reason": "Remote control during a show. Proposed capability (OF06-GAP-3); not in PLATFORM.md section 6 yet"},
+    {"capability": "dev.mic", "default": "off", "reason": "Narration recording"},
+    {"capability": "svc.portal.mic", "default": "off", "reason": "Narration recording"},
+    {"capability": "dev.gpu.compute", "default": "off", "reason": "Faster show rendering and video export"},
+    {"capability": "ai.local", "default": "off", "reason": "Draft alt text"},
+    {"capability": "svc.model", "default": "off", "reason": "Draft alt text"}
+  ],
+  "helpers": [
+    {"name": "vector-core", "language": "c++23", "capabilities": []},
+    {"name": "deck-io", "language": "c++23", "capabilities": []},
+    {"name": "remote-link", "language": "c++23", "capabilities": ["net.listen:lan:47111", "svc.keyring"]},
+    {"name": "macro-host", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "application/vnd.oasis.opendocument.presentation",
+      "application/vnd.oasis.opendocument.presentation-template",
+      "application/vnd.oasis.opendocument.presentation-flat-xml"
+    ],
+    "edit": [
+      "application/vnd.oasis.opendocument.presentation",
+      "application/vnd.oasis.opendocument.presentation-template",
+      "application/vnd.oasis.opendocument.presentation-flat-xml"
+    ],
+    "import": [
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+      "application/vnd.openxmlformats-officedocument.presentationml.template",
+      "application/vnd.ms-powerpoint",
+      "text/markdown"
+    ],
+    "export": [
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/svg+xml",
+      "video/webm",
+      "text/markdown"
+    ]
+  },
+  "intents": {"handles": ["open", "edit", "view", "new", "print"], "emits": ["share", "print", "edit", "pick", "open"]},
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P2"
+}

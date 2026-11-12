@@ -1,0 +1,41 @@
+{
+  "id": "org.pbsd.calendar",
+  "name": "Calendar",
+  "version": "0.1.0",
+  "category": "comms",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:ical", "proc.helper:dav", "proc.helper:fetch",
+    "svc.accounts", "svc.keyring", "svc.notify", "svc.settings", "svc.intent",
+    "svc.portal.file", "svc.portal.print", "svc.search", "svc.backup", "svc.audit",
+    "svc.power", "svc.clipboard", "svc.undo-trash", "svc.a11y", "svc.model", "ai.local",
+    "bg.run", "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "ical", "language": "c++23", "capabilities": []},
+    {"name": "dav", "language": "c++23", "capabilities": []},
+    {"name": "fetch", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["text/calendar"],
+    "edit": ["text/calendar"],
+    "import": ["text/calendar", "text/x-vcalendar", "text/csv"],
+    "export": ["text/calendar", "text/csv", "application/pdf"]
+  },
+  "intents": {
+    "handles": ["open", "view", "new", "share"],
+    "emits": ["compose", "share", "print", "pick", "open"]
+  },
+  "url_schemes": ["webcal", "webcals", "pbsd-calendar"],
+  "services_provided": [
+    "org.pbsd.calendar.itip", "org.pbsd.calendar.ical",
+    "org.pbsd.calendar.upcoming", "org.pbsd.calendar.freebusy"
+  ],
+  "background": {"autostart": true, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P1"
+}

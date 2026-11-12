@@ -1,0 +1,46 @@
+{
+  "id": "org.pbsd.firewall",
+  "name": "Firewall",
+  "version": "0.1.0",
+  "category": "security",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.firewall",
+    "svc.audit",
+    "svc.notify",
+    "svc.settings",
+    "svc.search",
+    "svc.backup",
+    "svc.keyring",
+    "svc.portal.file",
+    "svc.portal.print",
+    "proc.helper:list-importer"
+  ],
+  "optional_capabilities": ["net.host:<user-added list host>:443"],
+  "helpers": [
+    {"name": "list-importer", "language": "c++23", "capabilities": []}
+  ],
+  "system_helpers": [
+    {"name": "firewall-service", "language": "c++23", "provides": "svc.firewall", "capabilities": ["svc.audit", "svc.notify", "proc.helper:pf-check-helper", "proc.helper:connection-monitor", "proc.helper:resolver-controller"]},
+    {"name": "pf-check-helper", "language": "c++23", "capabilities": []},
+    {"name": "connection-monitor", "language": "c++23", "capabilities": []},
+    {"name": "resolver-controller", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/vnd.pbsd.firewall-rules+json", "text/x-pf-conf"],
+    "edit": ["application/vnd.pbsd.firewall-rules+json", "text/x-pf-conf"],
+    "import": ["text/x-pf-conf", "text/plain", "text/x-hosts", "text/dns"],
+    "export": ["application/vnd.pbsd.firewall-rules+json", "text/x-pf-conf", "text/csv", "application/json", "text/markdown", "application/pdf"]
+  },
+  "intents": {"handles": ["open", "edit", "view"], "emits": ["open", "print", "share"]},
+  "url_schemes": ["firewall"],
+  "services_provided": ["org.pbsd.firewall.v1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/ParanoidBSD", "odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P0"
+}

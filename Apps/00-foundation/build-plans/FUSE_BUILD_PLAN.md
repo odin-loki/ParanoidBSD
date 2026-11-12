@@ -6,13 +6,12 @@ By Odin Loch
 Everything that must be built in the FUSE repo so the Qt-free app suite in `Apps/` can run on FUSE UI on ParanoidBSD (HardenedBSD 15-STABLE). Planning only. Nothing in this file has been built, tested or proved.
 
 ## 1. Purpose, scope and how to read this
-
 | Item | Statement |
 |---|---|
 | Purpose | One ordered list of FUSE work, traced to the platform gaps (`PLATFORM.md` section 13), the 78 apps (`CATALOGUE.md`) and the suite milestones M0–M5 (`ROADMAP.md`). |
 | In scope | The FUSE repo: `Source/FUSE/UI`, the platform layer in `Source/FUSE/Core`, `Source/FUSE/Audio`, `Source/FUSE/Renderer` where UI touches it, `Source/FUSE/EditorShell`, `cmake/`, `vendor/`, CI. |
 | Out of scope | The ForgeScript language and engine (FORGE plan), the app host binary, session bus, system services and portals (platform plan), the compositor (`pbsd/compositor`), codecs and document parsers (helper services owned by apps). This plan states the FUSE side of each seam. |
-| Sources read | `PLATFORM.md`, `DESIGN_SYSTEM.md`, `CATALOGUE.md`, `ROADMAP.md`; the FUSE clone (docs and headers cited below); the four app specs that existed on 12 Nov 2026: SH01, OF01, ME03, AX01 (each incomplete: sections 5–13 not yet written). |
+| Sources read | `PLATFORM.md`, `DESIGN_SYSTEM.md`, `CATALOGUE.md`, `ROADMAP.md`; the FUSE clone (docs and headers cited below); `FORGE_BUILD_PLAN.md` (sections on FORGE-WP-12, FORGE-WP-13 and every line naming FUSE); the 21 app specs that existed at the last pass on 12 Nov 2026: SH01, SH02, SY01, SY02, AD01, SE01, VM01, OF01, OF02, OF05, CO01, IN01, ME03, CR01, DV01, DV06, AI01, UT01, UT02, AX01, AX02. Their sections 5.7 and gap tables were read; five (SH02, SY02, OF02, DV01, AX02) had no section 5.7 heading yet. The other 57 apps had no spec; their rows in section 7 come from `CATALOGUE.md` and `ROADMAP.md` only. |
 
 Labels:
 
@@ -28,9 +27,7 @@ Every work package is one table with the same rows: Goal, Owns (directories), De
 Repo conventions every package follows (Verified: `FUSE:docs/coding-standards.md`, `FUSE:docs/ui/README.md`): ISO C++23; handles not owning pointers; `std::expected`, no exceptions; one owner thread per `UiContext`, other threads `post()`; zero heap allocation in steady-state frames; a CPU reference for every GPU path; new behaviour gets a `ctest` named `fuse_*`; a stub says it is a stub. Layout: `Source/FUSE/UI/<Module>/{include/fuse/ui/<module>,src}`, tests in `Source/FUSE/UI/tests/test_<name>.cpp`, third-party code in `vendor/<name>` with a `VERSION` pin.
 
 ## 2. Baseline: what FUSE provides today
-
 ### 2.1 Modules (Verified)
-
 | Module | Target | Provides today | Source |
 |---|---|---|---|
 | Text | `fuse_text` | Fonts (glyf outlines), UTF-8, UAX 29 graphemes, `ITextShaper` with `MinimalShaper` and (FULL) `HarfBuzzShaper`, wrap and ellipsis layout, fallback chains, COLRv0 colour glyphs, one 8-bit glyph atlas page, `TextEditBuffer` (flat string, default cap 4096 bytes, undo log). Profiles MINIMAL (default), FULL, COOKED (not built). | `FUSE:Source/FUSE/UI/Text/include/fuse/text/text.hpp:1-10,69,232,258-262` |
@@ -50,7 +47,6 @@ Repo conventions every package follows (Verified: `FUSE:docs/coding-standards.md
 | Editor shell | `fuse_editor_controller`, `fuse_editor_fuse` | Qt-free `EditorController` and a FUSE UI editor shell built only with `-DFUSE_EDITOR_SHELL=fuse`; default is `qt`. | `FUSE:Source/FUSE/EditorShell/CMakeLists.txt:1-4,39` |
 
 ### 2.2 Limits of today's widgets that the suite hits (Verified from headers)
-
 | Widget or area | What it does today | What it cannot do today | Source |
 |---|---|---|---|
 | `codeEdit` | Line gutter, keyword colouring for Plain, Lua, Cpp, Css, one caret, selection, auto-indent, vertical scroll. Undo stores whole-document snapshots, capped at 128. | Piece table, multi-cursor, column mode, folding, grammars, minimap, soft wrap, find, huge files, IME details, diff. | `widgets.hpp:348-360`, `FUSE:Source/FUSE/UI/Widgets/src/widgets_tier_d2.cpp:683-688,813-814` |
@@ -71,7 +67,6 @@ Repo conventions every package follows (Verified: `FUSE:docs/coding-standards.md
 | Draw list | Rect, Shadow, Glyph, Image (RGBA8), Line, PushClip, PopClip, Backdrop. | Paths, transforms, radial or multi-stop gradients, dashed strokes, wide-gamut or HDR colour. | `FUSE:Source/FUSE/UI/Core/include/fuse/ui/draw_list.hpp:15-24` |
 
 ### 2.3 Test gates that exist (Verified: `FUSE:Source/FUSE/UI/tests/CMakeLists.txt`, `FUSE:docs/ui/README.md`)
-
 | Group | Gates |
 |---|---|
 | Core nine | `fuse_ui_layout_conformance`, `fuse_ui_style_cascade`, `fuse_ui_event_routing`, `fuse_ui_focus_order`, `fuse_ui_cpu_raster_golden`, `fuse_ui_zero_alloc_steady` (0 allocations over 50 frames), `fuse_ui_bench_10k` (≤ 0.5 ms median, 1.0 ms FULL), `fuse_ui_single_thread_parity`, `fuse_ui_a11y_tree_dump` |
@@ -85,7 +80,6 @@ Repo conventions every package follows (Verified: `FUSE:docs/coding-standards.md
 Not in tree: any coverage-guided fuzzer target for UI code (`fuse_ui_markup_fuzz` is a plain ctest), any Wayland gate, any FreeBSD or HardenedBSD CI job (workflows are Linux, Windows, Android, iOS only: `FUSE:.github/workflows/`).
 
 ### 2.4 Third-party dependencies that matter to the suite (Verified: `FUSE:THIRD_PARTY.md`, CMake files)
-
 | Component | Licence | In `vendor/`? | Network at configure? | Note |
 |---|---|---|---|---|
 | stb (image, truetype) | MIT / public domain | yes | no | MINIMAL text, PNG write |
@@ -107,26 +101,24 @@ Not in tree: any coverage-guided fuzzer target for UI code (`fuse_ui_markup_fuzz
 | SDL (full tree in `vendor/sdl`) | zlib | yes, not built | no | Decision D1 in the FUSE UI plan adopts SDL3 for Wayland; no SDL3 backend is in tree |
 
 ### 2.5 Qt dependencies today (Verified)
-
 | # | Where | What | Source |
 |---|---|---|---|
-| Q1 | Root option | `FUSE_BUILD_EDITOR` "Build fuse_editor Qt 6 desktop shell", default OFF | `FUSE:CMakeLists.txt:27` |
-| Q2 | Root option | `FUSE_ENABLE_QT_PRESENT`, default OFF; defines `FUSE_ENABLE_QT_PRESENT=1` on `fuse_rhi` | `FUSE:CMakeLists.txt:31`, `FUSE:Source/FUSE/Renderer/CMakeLists.txt:244-245` |
-| Q3 | `fuse_editor_api` | With `FUSE_BUILD_VULKAN`, `find_package(Qt6 QUIET COMPONENTS Gui)`; when found it compiles `viewport_vulkan_surface_qt.cpp` and links `Qt6::Gui` privately. This happens even when `FUSE_BUILD_EDITOR` is OFF. | `FUSE:Source/FUSE/Editor/CMakeLists.txt:128-143` |
-| Q4 | `fuse_editor_qt`, `fuse_editor` | `Qt6::Widgets`, `Qt6::Gui`, AUTOMOC, two `qt_add_resources` (fonts, branding) | `FUSE:Source/FUSE/Editor/CMakeLists.txt:151-245` |
-| Q5 | Qt shell sources | 39 files in `Source/FUSE/Editor/src/qt/` | `FUSE:Source/FUSE/Editor/src/qt/` |
-| Q6 | Qt gates | `Qt6::Test`; `fuse_editor_qt_gates`, console transport, shell and e20 gates | `FUSE:Source/FUSE/Editor/tests/qt/CMakeLists.txt:33-147`, `.../e20_qt_tests.cmake:7` |
-| Q7 | Editor shell switch | `FUSE_EDITOR_SHELL` default `qt` | `FUSE:Source/FUSE/EditorShell/CMakeLists.txt:3` |
-| Q8 | Presets | `fuse-editor-debug`, `fuse-editor-qt` set `FUSE_BUILD_EDITOR=ON` | `FUSE:CMakePresets.json:60-81` |
-| Q9 | Lint | `fuse_lint_b6_editor_qt6_only` checks the editor links only Qt 6 | `FUSE:cmake/FuseLintGates.cmake:124-125,155` |
-| Q10 | CI | Job `fuse-editor-qt` in the Linux workflow | `FUSE:docs/building.md:176`, `FUSE:.github/workflows/fuse-umbrella-linux.yml` |
-| Q11 | Present gate naming | `desktopQtPresentRuntimeReady`, Qt wording in the swapchain utilities | `FUSE:docs/editor.md` (Track B gate), `FUSE:Source/FUSE/Renderer/src/vk/present_path.cpp` |
-| Q12 | Docs and policy | README, architecture, roadmap, coding standards and `docs/editor.md` state "Qt owns chrome" | `FUSE:README.md`, `FUSE:docs/coding-standards.md` (Editor) |
+| QT-01 | Root option | `FUSE_BUILD_EDITOR` "Build fuse_editor Qt 6 desktop shell", default OFF | `FUSE:CMakeLists.txt:27` |
+| QT-02 | Root option | `FUSE_ENABLE_QT_PRESENT`, default OFF; defines `FUSE_ENABLE_QT_PRESENT=1` on `fuse_rhi` | `FUSE:CMakeLists.txt:31`, `FUSE:Source/FUSE/Renderer/CMakeLists.txt:244-245` |
+| QT-03 | `fuse_editor_api` | With `FUSE_BUILD_VULKAN`, `find_package(Qt6 QUIET COMPONENTS Gui)`; when found it compiles `viewport_vulkan_surface_qt.cpp` and links `Qt6::Gui` privately. This happens even when `FUSE_BUILD_EDITOR` is OFF. | `FUSE:Source/FUSE/Editor/CMakeLists.txt:128-143` |
+| QT-04 | `fuse_editor_qt`, `fuse_editor` | `Qt6::Widgets`, `Qt6::Gui`, AUTOMOC, two `qt_add_resources` (fonts, branding) | `FUSE:Source/FUSE/Editor/CMakeLists.txt:151-245` |
+| QT-05 | Qt shell sources | 39 files in `Source/FUSE/Editor/src/qt/` | `FUSE:Source/FUSE/Editor/src/qt/` |
+| QT-06 | Qt gates | `Qt6::Test`; `fuse_editor_qt_gates`, console transport, shell and e20 gates | `FUSE:Source/FUSE/Editor/tests/qt/CMakeLists.txt:33-147`, `.../e20_qt_tests.cmake:7` |
+| QT-07 | Editor shell switch | `FUSE_EDITOR_SHELL` default `qt` | `FUSE:Source/FUSE/EditorShell/CMakeLists.txt:3` |
+| QT-08 | Presets | `fuse-editor-debug`, `fuse-editor-qt` set `FUSE_BUILD_EDITOR=ON` | `FUSE:CMakePresets.json:60-81` |
+| QT-09 | Lint | `fuse_lint_b6_editor_qt6_only` checks the editor links only Qt 6 | `FUSE:cmake/FuseLintGates.cmake:124-125,155` |
+| QT-10 | CI | Job `fuse-editor-qt` in the Linux workflow | `FUSE:docs/building.md:176`, `FUSE:.github/workflows/fuse-umbrella-linux.yml` |
+| QT-11 | Present gate naming | `desktopQtPresentRuntimeReady`, Qt wording in the swapchain utilities | `FUSE:docs/editor.md` (Track B gate), `FUSE:Source/FUSE/Renderer/src/vk/present_path.cpp` |
+| QT-12 | Docs and policy | README, architecture, roadmap, coding standards and `docs/editor.md` state "Qt owns chrome" | `FUSE:README.md`, `FUSE:docs/coding-standards.md` (Editor) |
 
-`Tools/FUSE` has no Qt link: the only Qt mention is the lint tool that checks Q9 (`FUSE:Tools/FUSE/Lint/fuse_lint.cpp`). No Qt include exists under `Source/FUSE/UI` code paths (comments only).
+`Tools/FUSE` has no Qt link: the only Qt mention is the lint tool that checks QT-09 (`FUSE:Tools/FUSE/Lint/fuse_lint.cpp`). No Qt include exists under `Source/FUSE/UI` code paths (comments only).
 
 ### 2.6 Status of the Qt-free editor shell (Verified: `FUSE:docs/ui/README.md`, `FUSE:docs/plans/FUSE_EDITOR_QT_FIRST_PLAN.md` section 11, `FUSE:docs/plans/FUSE_UI_PLAN.md:490,582-592`)
-
 | Item | State in the docs |
 |---|---|
 | Panels | All ten panels plus Navigation and Terrain, New Project wizard, Preferences with shortcut rebinding, view modes, gizmo, play frame, multi-viewport, zero-copy live viewport (`--gpu-viewport`). |
@@ -136,7 +128,6 @@ Not in tree: any coverage-guided fuzzer target for UI code (`fuse_ui_markup_fuzz
 | Not present | A Wayland window for the shell; a HardenedBSD build; a11y adapter without Rust. |
 
 ### 2.7 Observations in this session (Observed 12 Nov 2026, Linux, not HardenedBSD)
-
 | # | Observation | Consequence |
 |---|---|---|
 | O1 | Configuring `Source/FUSE/UI` standalone printed "FUSE UI: no Vulkan loader found, fuse_ui_vk skipped (CPU raster only)" (message at `FUSE:Source/FUSE/UI/CMakeLists.txt:264`). | The loader search paths are Linux-specific (`/usr/lib/x86_64-linux-gnu`, `/usr/lib64`, `/usr/lib`; `CMakeLists.txt:183`). FreeBSD keeps ports libraries under `/usr/local/lib`. FUSE-WP-01.4. |
@@ -145,7 +136,6 @@ Not in tree: any coverage-guided fuzzer target for UI code (`fuse_ui_markup_fuzz
 Nothing else was configured, built or run. All performance numbers quoted from FUSE docs are the docs' own records.
 
 ### 2.8 Portability facts read in the code (Verified)
-
 | Fact | Source | Consequence |
 |---|---|---|
 | Any non-Apple, non-Windows Unix is given the "Linux desktop" profile. | `FUSE:cmake/FusePlatforms.cmake:21-22` | FreeBSD is silently treated as Linux. FUSE-WP-01.1. |
@@ -155,7 +145,6 @@ Nothing else was configured, built or run. All performance numbers quoted from F
 | The PBSD compositor tree has module files named for xdg-shell, layer-shell, fractional scale, viewporter, text-input-v3, data device, primary selection, cursor shape, pointer constraints, relative pointer, tablet v2, idle inhibit, foreign toplevel, ext-workspace, xdg-activation, xdg-decoration, linux-dmabuf, presentation time, colour management, security context, subcompositor. No session-lock module was seen. | `PBSD:pbsd/compositor/pbsd.compositor.wayland.*.cppm` | File names only. Behaviour is Unverified. A missing protocol is a compositor task, noted per work package. |
 
 ## 3. Requirements matrix
-
 One row per thing the suite needs from FUSE. "Gap" is a `PLATFORM.md` section 13 ID. "Needed by" gives app IDs, spec feature IDs, spec gap IDs, or a foundation section (PL = `PLATFORM.md`, DS = `DESIGN_SYSTEM.md`, RM = `ROADMAP.md`). All rows are Proposed requirements; the evidence that FUSE lacks each is in section 2.
 
 | ID | Requirement | Gap | Needed by | WP |
@@ -267,14 +256,12 @@ One row per thing the suite needs from FUSE. "Gap" is a `PLATFORM.md` section 13
 | FUSE-R-105 | Notification and badge widgets drawn by the shell from data | — | SH02; SH01-F056, F126 | 30 |
 | FUSE-R-106 | Virtual keyboard support: text fields report type, purpose and caret rectangle | — | AX03; AX04 | 59 |
 
-Spec gap IDs seen so far and where they land: AX01-GAP-1 → FUSE-WP-55; SH01-GAP-1 → FUSE-WP-10 (plus a compositor protocol); SH01-GAP-2 → compositor and portal, FUSE side in FUSE-WP-10 and FUSE-WP-67; ME03-GAP-1 → FUSE-WP-11, FUSE-WP-26, FUSE-WP-54; ME03-GAP-2 → FUSE-WP-06 and the compositor; ME03-GAP-3 (optical drive portal) and ME03-GAP-4 (multicast and SSDP) are not FUSE work. The specs' own definitions of these gaps were not yet written when read; the mapping uses the feature rows that cite them.
+Spec gap IDs (`<APPID>-GAP-n`) raised by the specs are mapped to work packages in section 7.3.
 
 ## 4. Work packages
-
-Sixteen epics, seventy work packages. Each gate named here is new unless marked "existing".
+Sixteen epics, seventy work packages, all Proposed. Each gate named here is new unless marked "existing". "Existing" means the test is defined in the FUSE tree; it does not mean it was run for this plan.
 
 ### Epic A — Portability and build
-
 #### FUSE-WP-01 HardenedBSD and FreeBSD port (clang + libc++)
 | Row | Content |
 |---|---|
@@ -287,7 +274,6 @@ Sixteen epics, seventy work packages. Each gate named here is new unless marked 
 | Tier and PRISM | T3. PRISM job: bounded check of the platform wrappers (poll, kqueue, shm) for unchecked return values and out-of-range indices. |
 | Accept | `ctest -L fuse_ui` and the `fuse_app_*` gates run to completion on HardenedBSD with results stored by FUSE-WP-04. No `__linux__` test remains in the app-profile sources without a FreeBSD branch. |
 | Deps / Size / Risks | Deps: none. Size M. Risks: libc++ in base lags a C++23 library feature (probe names it; fallback shims live in `Source/FUSE/UI/Core/include/fuse/ui/compat.hpp`); engine modules outside the app profile take much longer (kept off the critical path). |
-
 #### FUSE-WP-02 Offline, vendored, reproducible configure
 | Row | Content |
 |---|---|
@@ -300,7 +286,6 @@ Sixteen epics, seventy work packages. Each gate named here is new unless marked 
 | Tier and PRISM | T4 (build system). No PRISM job. |
 | Accept | The offline job is green with FULL text and Wayland enabled; the SBOM lists every linked third-party component with licence. |
 | Deps / Size / Risks | Deps: FUSE-WP-16 for the text trees. Size M. Risks: Slang has no vendored source and no known FreeBSD binary (Unverified): the app profile must not need it; engine shaders for CR04 need a separate answer (Q-09). |
-
 #### FUSE-WP-03 W^X, PaX and ASLR compliance
 | Row | Content |
 |---|---|
@@ -313,7 +298,6 @@ Sixteen epics, seventy work packages. Each gate named here is new unless marked 
 | Tier and PRISM | T2 target for the property "no call requests W+X". PRISM job: whole-program scan of `mmap`, `mprotect`, `shm_open` call sites with constant propagation of the protection argument. |
 | Accept | The M0 exit test in `ROADMAP.md` has its FUSE half: a stored audit output shows no executable page is writable in a FUSE UI process. |
 | Deps / Size / Risks | Deps: FUSE-WP-01. Size M. Risks: a GPU driver maps W+X inside our process (then GPU present moves behind Q-04); `makecontext` fibres under SafeStack (app profile does not use fibres). |
-
 #### FUSE-WP-04 CI on HardenedBSD
 | Row | Content |
 |---|---|
@@ -328,7 +312,6 @@ Sixteen epics, seventy work packages. Each gate named here is new unless marked 
 | Deps / Size / Risks | Deps: FUSE-WP-01. Size M. Risks: no GPU in the runner (GPU gates then run on a second machine weekly); runner maintenance cost. |
 
 ### Epic B — Windowing on Wayland
-
 #### FUSE-WP-05 Wayland core backend for `fuse_app`
 | Row | Content |
 |---|---|
@@ -341,7 +324,6 @@ Sixteen epics, seventy work packages. Each gate named here is new unless marked 
 | Tier and PRISM | T3; T2 target for the generated dispatch and the window handle table. PRISM job: every event handler checks object id, argument count, array length and fd before use. |
 | Accept | M1 exit test's FUSE half: a signed bundle's window opens in the PBSD compositor through `fuse_app`. |
 | Deps / Size / Risks | Deps: FUSE-WP-01, FUSE-WP-02. Size L. Risks: client library choice (Q-02); compositor protocol behaviour is Unverified (section 2.8). |
-
 ```cpp
 namespace fuse::app {                                   // sketch, FUSE-WP-05 to FUSE-WP-11
 struct WindowHandle { u32 index = 0, generation = 0; }; // generation-checked, like NodeHandle
@@ -353,7 +335,6 @@ std::expected<WindowHandle, AppError> openSurface(NativePlatform&, AppWindow&, c
 const WlCaps& caps(const NativePlatform&);              // what the compositor offered
 }
 ```
-
 #### FUSE-WP-06 Presenters on Wayland, fractional scale, frame pacing
 | Row | Content |
 |---|---|
@@ -366,7 +347,6 @@ const WlCaps& caps(const NativePlatform&);              // what the compositor o
 | Tier and PRISM | T3. PRISM job: buffer pool indices and stride arithmetic cannot overflow for sizes up to 16384×16384. |
 | Accept | `hello_app` and `notes_app` are pixel-exact against the CPU reference at four scales on both presenters. |
 | Deps / Size / Risks | Deps: FUSE-WP-05, FUSE-WP-24 for GPU. Size L. Risks: text sharpness at odd scales (snap rules need goldens); Vulkan WSI availability on HardenedBSD is Unverified. |
-
 #### FUSE-WP-07 Popups, dialogs, subsurfaces, multi-window, decorations
 | Row | Content |
 |---|---|
@@ -379,7 +359,6 @@ const WlCaps& caps(const NativePlatform&);              // what the compositor o
 | Tier and PRISM | T3. PRISM job: popup tree handle lifetime (no use of a destroyed popup's handle). |
 | Accept | Every Tier B popup test (`fuse_ui_tier_b`) has a Wayland twin that passes. |
 | Deps / Size / Risks | Deps: FUSE-WP-05, FUSE-WP-06. Size L. Risks: cross-process embedding (Q-05); decoration policy (Q-03). |
-
 #### FUSE-WP-08 Pointer kinds: touch, pen, gestures, pointer lock, cursors
 | Row | Content |
 |---|---|
@@ -392,7 +371,6 @@ const WlCaps& caps(const NativePlatform&);              // what the compositor o
 | Tier and PRISM | T3. PRISM job: recogniser state machines have no unreachable or stuck state for streams up to 10 pointers. |
 | Accept | The canvas (FUSE-WP-43) records pressure and tilt from a scripted tablet stream without loss. |
 | Deps / Size / Risks | Deps: FUSE-WP-05. Size M. Risks: tablet hardware variety cannot be covered by a scripted compositor. |
-
 #### FUSE-WP-09 Clipboard, primary selection, drag and drop between apps
 | Row | Content |
 |---|---|
@@ -405,7 +383,6 @@ const WlCaps& caps(const NativePlatform&);              // what the compositor o
 | Tier and PRISM | T2 target for the transfer state machine. PRISM job: every pipe read and write is bounded; every fd is closed on all paths. |
 | Accept | Copy in one sample app and paste in another works for text and images under the PBSD compositor. |
 | Deps / Size / Risks | Deps: FUSE-WP-05. Size M. Risks: the sensitivity and portal MIME types depend on the platform plan. |
-
 #### FUSE-WP-10 Shell protocols: layer shell, toplevel list, lock, activation, inhibitors
 | Row | Content |
 |---|---|
@@ -418,7 +395,6 @@ const WlCaps& caps(const NativePlatform&);              // what the compositor o
 | Tier and PRISM | T1 target for the lock client state machine; T3 for the rest. PRISM job: model check that `unlock_and_destroy` is unreachable unless the authenticated flag was set by the host callback. |
 | Accept | A sample panel (bottom, 40 px, exclusive zone) and a sample lock screen run under the PBSD compositor. |
 | Deps / Size / Risks | Deps: FUSE-WP-05, FUSE-WP-07. Size L. Risks: compositor lacks a management or lock protocol (compositor work, tracked as Q-06). |
-
 #### FUSE-WP-11 Outputs, colour management and HDR surfaces
 | Row | Content |
 |---|---|
@@ -433,48 +409,49 @@ const WlCaps& caps(const NativePlatform&);              // what the compositor o
 | Deps / Size / Risks | Deps: FUSE-WP-05, FUSE-WP-06. Size M. Risks: the colour protocol's behaviour in the compositor is Unverified; HDR needs driver and display support that cannot be tested in CI. |
 
 ### Epic C — Script binding and app host seams
-
 #### FUSE-WP-12 Binding core and the ForgeScript binding (retire Lua for apps)
 | Row | Content |
 |---|---|
-| Goal | App logic in ForgeScript drives FUSE UI through typed handles and batched updates, with at least the surface the Lua binding has today and the surface in `PLATFORM.md` section 5. Gap G-02. |
-| Owns | `Source/FUSE/UI/Bind/{include/fuse/ui/bind,src,schema}` (new), target `fuse_ui_bind`; `Source/FUSE/UI/tests/test_bind_*.cpp`. FUSE does not link FORGE. |
-| Design | A language-neutral binding core. (1) Handle table: a script-side reference is 64 bits, `kind:8, generation:24, index:32`; a stale or wrong-kind reference is an error value, never a crash (the Lua binding already treats stale handles as nil, Verified `lua_ui.hpp:12-13`). (2) A numbered operation set with typed arguments; no JSON on any path (`PLATFORM.md` V15 says JSON crossing is too slow). (3) Batches: the script side appends operations to a byte buffer; FUSE applies the whole buffer at the start of the next `update()`, so one style pass and one layout pass cover any number of changes. (4) Events: signals become plain records in a ring; the host drains them after `update()` and calls script callbacks, so no script runs inside layout or paint. (5) One API description file, `schema/ui_api.fbind`, generates the C++ dispatch table here and the `ui::` module declarations on the FORGE side, so the two cannot drift. The description carries `major.minor`; bundles pin it (FUSE-WP-68). The split of responsibility is in the table below. Lua stays for games; the `pbsd-app` preset sets `FUSE_BUILD_UI_SCRIPT=OFF`. |
-| Tasks | FUSE-WP-12.1 API description format and the C++ generator.<br>FUSE-WP-12.2 Handle table with kinds Node, Model, ItemModel, Action, Window, Timer, Connection, Image.<br>FUSE-WP-12.3 Operation set covering every Lua function (`find`, `setText`, `setValue`, `setChecked`, `setDisabled`, `on`, `set`, `get`, `load`, `refresh`, `create`, `destroy`, `addClass`, `css`).<br>FUSE-WP-12.4 Batch writer and reader.<br>FUSE-WP-12.5 Event ring and connection lifetime.<br>FUSE-WP-12.6 Operations for `ui::dialog`, `ui::menu`, `ui::toast`, `ui::drag`, `ui::drop`, `ui::clipboard`, `ui::post`, windows and timers.<br>FUSE-WP-12.7 Plain C ABI shim `fuse_ui_bind_c` for FORGE to link.<br>FUSE-WP-12.8 Parity gate against Lua; Lua off in the app profile.<br>FUSE-WP-12.9 Reference docs generated from the description. |
-| Gates | `fuse_ui_bind_parity`: one scripted scenario through Lua and through `Binding` gives the same layout dump, draw-list hash and a11y dump.<br>`fuse_ui_bind_stale_handles`: every operation with stale, wrong-kind or random references returns an error.<br>`fuse_ui_bind_batch_1k`: 1000 property sets in one batch cause one style pass and one layout pass.<br>`fuse_ui_bind_zero_alloc`: steady frames with 100 batched updates allocate nothing.<br>`fuse_ui_bind_api_frozen`: the description's hash equals the committed lock file; a change needs a version bump.<br>`fuse_ui_bind_batch_fuzz`: hostile batch bytes never crash. |
-| Budgets | Per-operation overhead on the FUSE side ≤ 50 ns. Batch of 1000 sets applied ≤ 0.3 ms before layout. Event delivery within the same frame. |
-| Tier and PRISM | T2 target for the batch decoder and handle table; T1 target for the generation check. PRISM job: the decoder never reads past the buffer; every reference is validated before use; index arithmetic cannot wrap. |
-| Accept | `notes_app` rewritten against the binding core (driven by a C++ test harness standing in for ForgeScript) behaves the same as the Lua version. The FORGE plan accepts `ui_api.fbind` version 1.0. |
-| Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-14; FORGE's typed native-call path (FORGE plan). Size L. Risks: the two plans disagree on value representation (settle with Q-01 before code); API churn while widgets are still being added. |
-
+| Goal | App logic in ForgeScript drives FUSE UI through typed handles and batched updates, with at least the surface the Lua binding has today and the surface in `PLATFORM.md` section 5. Gap G-02, FUSE half. The FORGE half is FORGE-WP-12 (typed foreign-function interface) and FORGE-WP-13 (`ui::` module, view models, loop bridge) in `FORGE_BUILD_PLAN.md`. |
+| Owns | `Source/FUSE/UI/Bind/{include/fuse/ui/bind,src,schema}` (new), target `fuse_ui_bind` (no FORGE dependency); `Source/FUSE/UI/Bind/forge/` (new), target `fuse_ui_forge`, built only when `FUSE_FORGE_FFI_DIR` points at FORGE's `ffi.hpp`; `Source/FUSE/UI/tests/test_bind_*.cpp`. |
+| Design | Two layers. **Core** (`fuse_ui_bind`), language-neutral: (1) a handle table whose reference is 64 bits, 32-bit slot plus 32-bit generation, with the kind as a type tag checked on use. This is the layout FORGE-WP-12.2 states and the layout `NodeHandle` already has (Verified, `lua_ui.hpp:45-49`), so no translation is needed. A stale or wrong-kind reference is an error value, never a crash (the Lua binding already treats stale handles as nil, `lua_ui.hpp:12-13`). (2) A numbered operation set with typed arguments; no JSON on any path (`PLATFORM.md` V15). (3) Batches: records of (operation, handle, property id, value), applied whole at the start of the next `update()`, so one style pass and one layout pass cover any number of changes. The record layout is the one FORGE-WP-12.5 defines for `ffi::batch`; FUSE mirrors it in a generated header and the adapter asserts the two are identical. (4) Events: signals become plain records in a ring; the host drains them after `update()` and FORGE runs the callbacks, so no script runs inside layout or paint. (5) One API description, `schema/ui_api.fbind`, generates the C++ dispatch table, the property ids and the FORGE-side `ffi::signature` list, so the two cannot drift; it carries `major.minor` and bundles pin it (FUSE-WP-68). **Adapter** (`fuse_ui_forge`): registers every `ui::` native through FORGE's `define_typed`, using only `ffi.hpp`. FORGE must not depend on FUSE and FUSE's core must not depend on FORGE; the shipped host links both in the ParanoidBSD repo (the FORGE plan's Q1, option c). Binding expressions: FUSE keeps its own expression bytecode for documents used with no engine (designer preview, tests, cooked documents); an expression outside that subset is handed to the engine through an `ExprHost` hook (FORGE-WP-13.3). Lua stays for games; the `pbsd-app` preset sets `FUSE_BUILD_UI_SCRIPT=OFF`. |
+| Tasks | FUSE-WP-12.1 API description format and the C++ generator; review with FORGE-WP-12.1.<br>FUSE-WP-12.2 Handle table with kinds Node, Model, ItemModel, Action, Window, Timer, Connection, Image.<br>FUSE-WP-12.3 Operation set covering every Lua function (`find`, `setText`, `setValue`, `setChecked`, `setDisabled`, `on`, `set`, `get`, `load`, `refresh`, `create`, `destroy`, `addClass`, `css`).<br>FUSE-WP-12.4 Batch record mirror and `apply`.<br>FUSE-WP-12.5 Event ring and connection lifetime.<br>FUSE-WP-12.6 Operations for `ui::dialog`, `ui::menu`, `ui::toast`, `ui::drag`, `ui::drop`, `ui::clipboard`, `ui::post`, windows and timers.<br>FUSE-WP-12.7 `fuse_ui_forge` adapter on `ffi.hpp`; `ExprHost` hook.<br>FUSE-WP-12.8 Parity gate against Lua; Lua off in the app profile.<br>FUSE-WP-12.9 Reference docs generated from the description.<br>FUSE-WP-12.10 Painter command batches for `customPaint` nodes (FUSE-WP-23.9). |
+| Gates | `fuse_ui_bind_parity`: one scripted scenario through Lua and through `Binding` gives the same layout dump, draw-list hash and a11y dump.<br>`fuse_ui_bind_stale_handles`: every operation with stale, wrong-kind or random references returns an error.<br>`fuse_ui_bind_batch_1k`: 1000 property sets in one batch cause one style pass and one layout pass.<br>`fuse_ui_bind_zero_alloc`: steady frames with 100 batched updates allocate nothing.<br>`fuse_ui_bind_api_frozen`: the description's hash equals the committed lock file; a change needs a version bump.<br>`fuse_ui_bind_batch_fuzz`: hostile batch records never crash.<br>`fuse_ui_forge_conformance`: the conformance test the FORGE plan says FORGE owns, run in FUSE's CI against the adapter. |
+| Budgets | Per-operation overhead on the FUSE side ≤ 50 ns. 10 000 batched property sets applied ≤ 1 ms before layout (the FORGE plan's figure for the flush). Event delivery within the same frame. |
+| Tier and PRISM | T2 target for the batch reader and handle table; T1 target for the generation check. PRISM job: the reader never reads past the batch; every reference is validated before use; index arithmetic cannot wrap. |
+| Accept | `notes_app` rewritten against the binding core (driven by a C++ harness standing in for the engine) behaves the same as the Lua version. Both plans accept `ui_api.fbind` 1.0 and one `ffi.hpp`. |
+| Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-14; FORGE-WP-12, FORGE-WP-13. Size L. Risks: the two plans drift (Q-01; the FORGE plan lists the same risk as RK-07); API churn while widgets are still being added. |
 ```cpp
 namespace fuse::ui::bind {                                  // sketch
 enum class Kind : u8 { Node, Model, ItemModel, Action, Window, Timer, Connection, Image };
-struct Ref { u64 bits = 0; };                               // kind:8 | generation:24 | index:32
+struct Ref { u32 slot = 0, generation = 0; };               // same 64 bits as FORGE's handle value
 enum class BindError : u8 { StaleHandle, WrongKind, UnknownProp, BadValue, QueueFull, Denied };
+struct BatchRecord { u16 op; u16 prop; Ref target; u64 value; };   // mirror of FORGE's ffi::batch record
 struct EventRecord { Ref connection, node; f64 value; u32 flags; u32 textOffset, textLength; };
 class Binding {                                             // one per UiContext; owner thread only
 public:
     explicit Binding(UiContext& ui);
     std::expected<Ref, BindError> find(std::string_view id) const;
-    std::expected<void, BindError> apply(std::span<const std::byte> batch); // applied before update()
+    std::expected<void, BindError> apply(std::span<const BatchRecord> batch); // before update()
     std::span<const EventRecord> drainEvents();             // valid until the next update()
     static constexpr u32 kApiMajor = 1, kApiMinor = 0;
 };
 } // namespace fuse::ui::bind
 ```
 
-| Concern | FUSE (this plan) | FORGE plan | App host (platform plan) |
+| Concern | FUSE (this plan) | FORGE plan | Host (ParanoidBSD repo) |
 |---|---|---|---|
-| `ui_api.fbind` description and version | Owns | Generates the `ui::` module from it | Pins the version per bundle |
-| Handle table, operations, batches, event ring | Owns | Calls them | — |
-| Fast typed native calls instead of JSON `define()` | States the need | Owns | — |
-| `ui::model<T>` change tracking in the language | Provides slots and dirty marks (FUSE-WP-13) | Owns the type | — |
-| Running script callbacks, turning errors into script errors | — | Owns | Routes events |
-| Threading | Rule: binding calls only on the owner thread | Provides worker-to-UI `post` | Creates threads |
-| Capability checks on clipboard, drag, windows | None; FUSE trusts its caller | — | Owns |
-| Reading bundle files | Accepts bytes only in host mode (FUSE-WP-15) | — | Owns |
-
+| `ui_api.fbind` description and version | Owns (FUSE-WP-12.1) | Reviews; consumes generated signatures | Pins the version per bundle |
+| `ffi.hpp`: slots, handles, buffers, callbacks, batch records | Uses; mirrors the batch record | Owns (FORGE-WP-12) | — |
+| `ui::` natives (`load`, `find`, `set`, `get`, `connect`, dialogs, menus, drag and drop, clipboard), all widget behaviour | Owns (`fuse_ui_forge`) | — | Links them |
+| `ui::model<T>`, reactivity, item models over script containers | Slots, dirty marks, `ItemModel2` windows (FUSE-WP-13) | Owns (FORGE-WP-13.1, 13.2) | — |
+| Binding expressions | Own bytecode for the built-in subset | `compile_expr`, `eval_expr` for the rest (FORGE-WP-13.3) | — |
+| Loop | `Application::step()`, wake sources (FUSE-WP-15) | `engine::pump`, `next_wakeup` (FORGE-WP-13.4) | Owns the wait |
+| Action table | Table, dispatch, menus, palette (FUSE-WP-14) | Script-side type (FORGE-WP-13.5) | — |
+| Running callbacks; mapping errors to script errors | — | Owns (FORGE-WP-12.4, 12.6) | Routes events |
+| Capability checks on clipboard, drag, windows | None; FUSE trusts its caller | Policy from the manifest (FORGE-WP-08) | Enforces |
+| Reading bundle files | Accepts bytes only in host mode (FUSE-WP-15) | Bundle loader (FORGE-WP-09) | — |
+| Scripted UI tests | Driver operations (FUSE-WP-69) | `uitest::` API (FORGE-WP-35.4) | — |
 #### FUSE-WP-13 View models and item models v2
 | Row | Content |
 |---|---|
@@ -487,26 +464,24 @@ public:
 | Tier and PRISM | T2 target for index and offset arithmetic. PRISM job: row-to-pixel and pixel-to-row conversions cannot overflow or go negative for 2^40 rows. |
 | Accept | Table, tree, list and grid views (FUSE-WP-28) run only on `ItemModel2`. |
 | Deps / Size / Risks | Deps: none. Size L. Risks: notification order bugs corrupt selection (differential tests against a naive model). |
-
 #### FUSE-WP-14 Action system
 | Row | Content |
 |---|---|
 | Goal | One action table per app feeds menus, toolbars, context menus, the command palette, shortcut dispatch and shortcut settings (`PLATFORM.md` section 5 `ui::action`). |
 | Owns | `Source/FUSE/UI/Core/include/fuse/ui/actions.hpp`, `Source/FUSE/UI/Core/src/actions.cpp` (new), `Source/FUSE/UI/Widgets` (menu and toolbar builders). |
 | Design | `ActionDesc { stable id, label key, icon, default shortcuts, category, checkable, scope }`; state (enabled, checked, disabled reason) lives in the table and is bindable. Scopes: application, window, panel, widget; the innermost focused scope wins. Chords and sequences are supported. Rebinding is stored through the settings backend (FUSE-WP-15) with live conflict detection. The reserved keys of DS 6 ship as defaults; shell-reserved keys (`Super`, `Super+L`) cannot be bound by an app. A disabled item shows its reason as a tooltip (DS 5). The editor shell already builds menus, toolbar and shortcut rebinding from an action table in its controller (Verified, `FUSE:docs/ui/README.md` Editor shell); this package moves that pattern into the toolkit. Actions are listed in the a11y tree so voice control can invoke them by name. |
-| Tasks | FUSE-WP-14.1 `ActionTable`, scopes, dispatch.<br>FUSE-WP-14.2 Key sequence parser and printer, locale-aware labels.<br>FUSE-WP-14.3 Menu, context menu and toolbar builders from action ids.<br>FUSE-WP-14.4 Rebinding store and conflict detection.<br>FUSE-WP-14.5 Reserved-key policy.<br>FUSE-WP-14.6 A11y and palette exposure.<br>FUSE-WP-14.7 Move the editor shell onto it. |
+| Tasks | FUSE-WP-14.1 `ActionTable`, scopes, dispatch.<br>FUSE-WP-14.2 Key sequence parser and printer, locale-aware labels.<br>FUSE-WP-14.3 Menu, context menu and toolbar builders from action ids.<br>FUSE-WP-14.4 Rebinding store and conflict detection.<br>FUSE-WP-14.5 Reserved-key policy.<br>FUSE-WP-14.6 A11y and palette exposure.<br>FUSE-WP-14.7 Move the editor shell onto it.<br>FUSE-WP-14.8 Shortcut settings page parts on `keySequenceEdit` (FUSE-WP-58.7; AX01-GAP-3, SY01-GAP-2). |
 | Gates | `fuse_ui_actions_dispatch`: scope resolution, chords, disabled actions.<br>`fuse_ui_actions_rebind_conflict`.<br>`fuse_ui_actions_menu_sync`: menu, toolbar and palette show the same label, shortcut and state.<br>`fuse_ui_actions_reserved`: an app cannot take a shell key. |
 | Budgets | Key to action dispatch ≤ 5 µs with 2000 actions. |
 | Tier and PRISM | T3. PRISM job: the key-sequence parser has no out-of-range access. |
 | Accept | A sample app has every command reachable from the palette and every shortcut rebindable (DS principle 3). |
 | Deps / Size / Risks | Deps: FUSE-WP-58 for the full key set. Size M. Risks: none major. |
-
 #### FUSE-WP-15 App host integration points
 | Row | Content |
 |---|---|
 | Goal | The shared app host can embed FUSE with no ambient authority: FUSE opens no file, socket or library by itself once the host has started it. |
 | Owns | `Source/FUSE/UI/App/include/fuse/app/host.hpp`, `Source/FUSE/UI/App/src/host.cpp` (new), `app.hpp`, `app.cpp`. |
-| Design | `AppDesc` gains a `HostServices` function table: `settings` (get, set, subscribe; the flat-file `Settings`, Verified `app.hpp:50-73`, stays for standalone tools), `resources` (bundle resource name to bytes; `AppWindow::load(path)` is refused in host mode, only bytes or cooked blobs load), `instance` (a second launch forwards its arguments and handles to the first; today this is a per-user lock, `app.hpp:168`), `session` (save and restore an opaque state blob per window), `log`, `clock`. The loop: the host owns the wait and calls `Application::step()` (Verified seam, `app.hpp:207-209`); `addWakeSource(fd)` lets the bus socket share the wait. Session restore: size, state, panel sizes, dock layout, scroll and focus go in the blob; position is the compositor's. Crash reattach: a Wayland surface cannot move to a new process, so "reattach by session token" (`PLATFORM.md` section 4) is done as: the new process sends the same session token in `SurfaceDesc`, the compositor restores placement (needs a session-management protocol, Q-06), and FUSE restores the blob. A checkpoint of the blob is written through `session` at most once a second when dirty. After start-up FUSE must run in Capsicum capability mode. |
+| Design | `AppDesc` gains a `HostServices` function table: `settings` (get, set, subscribe; the flat-file `Settings`, Verified `app.hpp:50-73`, stays for standalone tools), `resources` (bundle resource name to bytes; `AppWindow::load(path)` is refused in host mode, only bytes or cooked blobs load), `instance` (a second launch forwards its arguments and handles to the first; today this is a per-user lock, `app.hpp:168`), `session` (save and restore an opaque state blob per window), `log`, `clock`. The loop: the host owns the wait and calls `Application::step()` (Verified seam, `app.hpp:207-209`); `addWakeSource(fd)` lets the bus socket share the wait. Session restore: size, state, panel sizes, dock layout, scroll and focus go in the blob; position is the compositor's. Crash reattach (host side: FORGE-WP-11): a Wayland surface cannot move to a new process, so "reattach by session token" (`PLATFORM.md` section 4) is done as: the new process sends the same session token in `SurfaceDesc`, the compositor restores placement (needs a session-management protocol, Q-06), and FUSE restores the blob. A checkpoint of the blob is written through `session` at most once a second when dirty. After start-up FUSE must run in Capsicum capability mode. |
 | Tasks | FUSE-WP-15.1 `HostServices` and host mode.<br>FUSE-WP-15.2 Settings backend switch.<br>FUSE-WP-15.3 Resource provider; remove path loads in host mode.<br>FUSE-WP-15.4 Activation messages for single instance.<br>FUSE-WP-15.5 State blob format (versioned) and restore.<br>FUSE-WP-15.6 External wake sources.<br>FUSE-WP-15.7 Session token plumbed to the surface.<br>FUSE-WP-15.8 Capability-mode audit: fonts, shaders, cursors and themes all come from pre-opened handles. |
 | Gates | `fuse_app_host_services`: with mocked services, FUSE makes no direct file call (checked by an interposing shim).<br>`fuse_app_capsicum_frame`: after `cap_enter()`, loading documents from bytes, opening popups and presenting frames all succeed (FreeBSD only; skipped elsewhere).<br>`fuse_app_session_restore`: blob round trip restores panels, dock layout, scroll, focus.<br>`fuse_app_external_fd_wake`: an external fd wakes the loop; idle stays at zero frames.<br>`fuse_app_second_instance_activate`.<br>`fuse_app_state_blob_fuzz`. |
 | Budgets | Host-mode start to first frame ≤ 150 ms with cooked documents (existing gate `fuse_app_hello_startup`). State blob save ≤ 1 ms for a 50-panel window. |
@@ -515,7 +490,6 @@ public:
 | Deps / Size / Risks | Deps: FUSE-WP-05. Size M. Risks: a GPU driver opening files after `cap_enter()` (then device setup must happen before entering capability mode; Unverified). |
 
 ### Epic D — Text
-
 #### FUSE-WP-16 FULL text profile, vendored and offline
 | Row | Content |
 |---|---|
@@ -528,33 +502,30 @@ public:
 | Tier and PRISM | T3 for our code; the four libraries are third-party C and C++ outside the safe subset (see FUSE-WP-65 for containment). PRISM job: our wrapper `text_full.cpp` only. |
 | Accept | M0 exit: FULL text gates run offline on HardenedBSD. |
 | Deps / Size / Risks | Deps: FUSE-WP-02. Size M. Risks: FreeType's licence choice (FTL is the compatible option to record); vendored size. |
-
 #### FUSE-WP-17 Fonts: discovery, matching, fallback, colour emoji, variable fonts
 | Row | Content |
 |---|---|
 | Goal | Any installed font can be found and matched; every script falls back to a face that has it; colour emoji and variable fonts render; rasterisation options are explicit. |
 | Owns | `Source/FUSE/UI/Text/include/fuse/text/font_db.hpp`, `Source/FUSE/UI/Text/src/font_db.cpp`, `color_glyph.cpp`, `atlas.cpp` (new), `vendor/fonts`. |
-| Design | `FontDatabase` scans directories the host hands it (no fontconfig, no ambient path search) and builds an index: family, style, weight 1–1000, width, slant, scripts (from `OS/2` and `cmap`), variation axes, colour formats. The host stores the index in the cache directory. Matching follows the CSS font-matching steps. Fallback chains are per script and per language (Han variants by locale); emoji presentation follows variation selectors. Formats: CFF and collections through FreeType; variable fonts (`fvar`, `gvar`, `HVAR`) with HarfBuzz variations; COLRv1 paint graphs lowered to draw-list paths and gradients (needs FUSE-WP-23); CBDT and sbix bitmaps into an RGBA atlas page. Today only COLRv0 exists and "CBDT / sbix bitmap and COLRv1 colour fonts, system font discovery" are listed as not done (Verified, `FUSE_UI_PLAN.md:482`). OpenType features and variations are set from CSS (FUSE-WP-20). Rasterisation: grayscale with subpixel positioning (quarter-pixel buckets exist, `text.hpp:236`), hinting none or light, gamma-correct blending and stem darkening. LCD subpixel antialiasing is a stated non-goal of the FUSE UI plan (`FUSE_UI_PLAN.md:58`); see Q-10. Atlas: several pages with per-glyph LRU instead of today's full reset (`text.hpp:230-231`). A monospace family must be vendored: none is in `vendor/fonts` today (Q-11). |
+| Design | `FontDatabase` scans directories the host hands it (no fontconfig, no ambient path search) and builds an index: family, style, weight 1–1000, width, slant, scripts (from `OS/2` and `cmap`), variation axes, colour formats. The host stores the index in the cache directory. Matching follows the CSS font-matching steps. Fallback chains are per script and per language (Han variants by locale); emoji presentation follows variation selectors. Formats: CFF and collections through FreeType; variable fonts (`fvar`, `gvar`, `HVAR`) with HarfBuzz variations; COLRv1 paint graphs lowered to draw-list paths and gradients (needs FUSE-WP-23); CBDT and sbix bitmaps into an RGBA atlas page. Today only COLRv0 exists and "CBDT / sbix bitmap and COLRv1 colour fonts, system font discovery" are listed as not done (Verified, `FUSE_UI_PLAN.md:482`). OpenType features and variations are set from CSS (FUSE-WP-20). Rasterisation: greyscale with subpixel positioning (quarter-pixel buckets exist, `text.hpp:236`), hinting none or light, gamma-correct blending and stem darkening. LCD subpixel antialiasing is a stated non-goal of the FUSE UI plan (`FUSE_UI_PLAN.md:58`); see Q-10. Atlas: several pages with per-glyph LRU instead of today's full reset (`text.hpp:230-231`). A monospace family must be vendored: none is in `vendor/fonts` today (Q-11). |
 | Tasks | FUSE-WP-17.1 Font index format and scanner.<br>FUSE-WP-17.2 Matching and `FontSet` handles.<br>FUSE-WP-17.3 Script and language fallback tables.<br>FUSE-WP-17.4 Variable fonts and feature settings.<br>FUSE-WP-17.5 COLRv1, CBDT, sbix.<br>FUSE-WP-17.6 Multi-page atlas with LRU and an RGBA page.<br>FUSE-WP-17.7 Rasterisation options and gamma.<br>FUSE-WP-17.8 Vendor UI and monospace families and wider Noto coverage. |
 | Gates | `fuse_text_font_db_match`: a table of 60 family, weight and style queries.<br>`fuse_text_font_db_scan_hostile`: corrupt and truncated fonts are skipped; scan time is bounded.<br>`fuse_text_fallback_scripts`: a 30-script corpus renders with no missing glyph.<br>`fuse_text_color_emoji_formats`: goldens for COLRv0, COLRv1, CBDT, sbix.<br>`fuse_text_variable_axes`: weight, width and optical size instances; advances match.<br>`fuse_text_features`: ligatures on and off; tabular digits have equal advances.<br>`fuse_text_atlas_multipage`: 10 000 glyphs without a full reset; zero allocation on hits.<br>Existing: `fuse_text_fallback`. |
 | Budgets | Cold index of 500 fonts ≤ 300 ms; cached load ≤ 5 ms. Atlas hit ≤ 30 ns. Glyph miss at 13 px ≤ 50 µs. |
 | Tier and PRISM | T2 target for the index reader and table lookups written here; T3 for the rest. PRISM job: font table offsets are checked before every read in our own parsers. |
 | Accept | UT03 Fonts can list, preview and inspect every installed face using only this API. |
 | Deps / Size / Risks | Deps: FUSE-WP-16, FUSE-WP-23. Size L. Risks: hostile fonts are a classic attack surface (FUSE-WP-65 decides in-process or helper parsing, Q-07). |
-
 #### FUSE-WP-18 Text layout v2: spans, selection everywhere, decoration and hyphenation hooks
 | Row | Content |
 |---|---|
 | Goal | One layout object serves labels, editors and rich text: attributed runs, exact hit testing, selection in every text widget, and hooks for spell-check underlines and hyphenation. |
 | Owns | `Source/FUSE/UI/Text/include/fuse/text/layout2.hpp`, `spans.hpp`, `Source/FUSE/UI/Text/src/layout2.cpp`, `segment.cpp` (new), `Source/FUSE/UI/Core/src/text_selection.cpp` (new). |
 | Design | Today a layout has one font size, one colour and three alignments (Verified, `text.hpp:176-191`). `Spans` carry family set, size, weight, slant, colours, underline and strike styles, baseline shift, letter spacing, features, language, link id and inline-object placeholders. Paragraph style adds justify, line height, indents, tab stops, direction, maximum lines and start, middle or end elision. Results expose `hitTest(point)`, `caretRect(offset, affinity)`, `selectionRects(range)` split by bidi run, and line lookup. Relayout is per paragraph. `DecorationProvider` supplies ranges with a kind (spelling, grammar, search hit, diagnostic, composition, link); the spell-check service (G-17) fills it; FUSE holds no dictionaries. `HyphenationProvider` returns break offsets for a word and language; soft hyphens are honoured. A shared selection controller gives every text widget drag, double and triple click (UAX 29 words and sentences, to be added: only graphemes exist today, `text.hpp:39-48`), keyboard selection and copy. |
-| Tasks | FUSE-WP-18.1 Span and paragraph style model.<br>FUSE-WP-18.2 Layout v2 with visual-order runs and cluster maps.<br>FUSE-WP-18.3 Hit testing, caret and selection geometry.<br>FUSE-WP-18.4 UAX 29 word and sentence segmentation.<br>FUSE-WP-18.5 Decoration provider and painters.<br>FUSE-WP-18.6 Hyphenation provider and justification.<br>FUSE-WP-18.7 Selection controller; `selectable` on label, markdown view and table cells.<br>FUSE-WP-18.8 Inline objects and tab stops.<br>FUSE-WP-18.9 Port `lineEdit` and labels to layout v2. |
+| Tasks | FUSE-WP-18.1 Span and paragraph style model.<br>FUSE-WP-18.2 Layout v2 with visual-order runs and cluster maps.<br>FUSE-WP-18.3 Hit testing, caret and selection geometry.<br>FUSE-WP-18.4 UAX 29 word and sentence segmentation.<br>FUSE-WP-18.5 Decoration provider and painters.<br>FUSE-WP-18.6 Hyphenation provider and justification.<br>FUSE-WP-18.7 Selection controller; `selectable` on label, markdown view and table cells; one selection across several text nodes in a scroll area (AI01-GAP-3).<br>FUSE-WP-18.8 Inline objects and tab stops.<br>FUSE-WP-18.9 Port `lineEdit` and labels to layout v2. |
 | Gates | `fuse_text_layout2_hit_test`: caret-to-point round trips on bidi and ligature text.<br>`fuse_text_selection_rects`: bidi selections match a reference.<br>`fuse_text_decorations`: squiggle, search and composition goldens.<br>`fuse_text_hyphenation_hook`: provider called once per word per width; breaks honoured.<br>`fuse_text_word_sentence_conformance`: Unicode test files.<br>`fuse_ui_text_selectable`: select and copy in label, markdown and table cell.<br>`fuse_text_layout2_zero_alloc`: unchanged paragraphs relayout with no allocation.<br>`fuse_text_inline_objects`, `fuse_text_justify`. |
 | Budgets | 1000-grapheme paragraph: first layout ≤ 0.5 ms, cached ≤ 20 µs. Hit test ≤ 1 µs. |
 | Tier and PRISM | T2 target for cluster maps and range arithmetic. PRISM job: every offset returned lies on a grapheme boundary inside the text. |
 | Accept | All text widgets use layout v2; `fuse_ui_cpu_raster_golden` is regenerated once and reviewed. |
 | Deps / Size / Risks | Deps: FUSE-WP-16, FUSE-WP-17. Size XL. Risks: this is the base of FUSE-WP-35 and FUSE-WP-37; a late change is costly, so the header is reviewed before code. |
-
 #### FUSE-WP-19 Large-document text buffer
 | Row | Content |
 |---|---|
@@ -569,7 +540,6 @@ public:
 | Deps / Size / Risks | Deps: none (pure data structure). Size L. Risks: mapped file truncated by another process causes a fault (the host must pass a private snapshot or the buffer must copy on first touch; Q-08). |
 
 ### Epic E — Styling and theming
-
 #### FUSE-WP-20 CSS subset additions, right-to-left mirroring, breakpoints
 | Row | Content |
 |---|---|
@@ -579,7 +549,7 @@ public:
 | Tasks | FUSE-WP-20.1 Split `ComputedStyle`; registry entries for new properties.<br>FUSE-WP-20.2 Text properties (family, weight, style, line height, spacing, features, decoration, overflow).<br>FUSE-WP-20.3 Selectors: structural, attribute, `:not`, new state pseudo-classes.<br>FUSE-WP-20.4 Scoped tokens.<br>FUSE-WP-20.5 Media queries and breakpoints.<br>FUSE-WP-20.6 Borders per side, outline, multiple and inset shadows, gradients.<br>FUSE-WP-20.7 Transform, z-index, sticky, aspect ratio, object fit, cursor.<br>FUSE-WP-20.8 Grid rows, `repeat`, `minmax`, more than 8 tracks.<br>FUSE-WP-20.9 Logical properties, `direction`, mirroring in every layout.<br>FUSE-WP-20.10 `calc`, `min`, `max`, `clamp`, `em`, `rem`, `ch`; `color-mix`.<br>FUSE-WP-20.11 `@import` and `@font-face` limited to bundle resources.<br>FUSE-WP-20.12 Cooker and designer support for all of it. |
 | Gates | `fuse_ui_style_css_subset2`: parse, cascade and computed value for every new property and selector.<br>`fuse_ui_style_scoped_tokens`: inheritance, override, invalidation.<br>`fuse_ui_style_media_queries`.<br>`fuse_ui_layout_rtl_mirror`: every layout model's dump equals the mirrored left-to-right dump.<br>`fuse_ui_layout_breakpoints`: 639/640 and 1099/1100 px transitions.<br>`fuse_ui_style_zero_alloc`: a state change restyles with no allocation.<br>Existing: `fuse_ui_style_cascade`, `fuse_ui_layout_conformance`, `fuse_ui_style_cooked`. |
 | Budgets | `fuse_ui_bench_10k` stays ≤ 0.5 ms. Full restyle of 10 000 nodes ≤ 5 ms. Style memory per node not above today's (to be measured first). |
-| Tier and PRISM | T2 target for the CSS tokenizer and value parsers. PRISM job: parser reads stay inside the input; selector chains and track counts respect their fixed capacities. |
+| Tier and PRISM | T2 target for the CSS tokeniser and value parsers. PRISM job: parser reads stay inside the input; selector chains and track counts respect their fixed capacities. |
 | Accept | The system style sheet of FUSE-WP-21 is written with no workaround and no inline `setCss`. |
 | Deps / Size / Risks | Deps: FUSE-WP-23 for transforms and gradients. Size XL. Risks: scope creep towards full CSS (the table below is the whole list; additions need an owner decision). |
 
@@ -609,7 +579,6 @@ public:
 | `user-select`, `visibility`, `scrollbar-width` | FUSE-R-041; overlay scroll bars | not in the property list |
 | `@import`, `@font-face` (bundle resources only) | `style/*.css` in bundles (`PLATFORM.md` section 3) | no at-rule support |
 | Host switch limiting `backdrop-blur` to shell surfaces | DS 2: "backdrop blur only on shell surfaces" | `backdrop-blur` exists for all (`style.hpp:82`) |
-
 #### FUSE-WP-21 System theme: tokens, light, dark, high contrast, density
 | Row | Content |
 |---|---|
@@ -622,7 +591,6 @@ public:
 | Tier and PRISM | T4 (data). No PRISM job. |
 | Accept | Every sample and every new widget is styled only through tokens. |
 | Deps / Size / Risks | Deps: FUSE-WP-20. Size M. Risks: the DS 2 colour values have not been checked for contrast; the gate may force token changes (owner decision). |
-
 #### FUSE-WP-22 Animation system and reduced motion
 | Row | Content |
 |---|---|
@@ -637,20 +605,18 @@ public:
 | Deps / Size / Risks | Deps: FUSE-WP-20. Size M. Risks: none major. |
 
 ### Epic F — Rendering
-
 #### FUSE-WP-23 Draw list v2 and `Painter`: paths, transforms, gradients, layers
 | Row | Content |
 |---|---|
 | Goal | Widgets can draw vector paths, transformed content, rich gradients and opacity groups, on CPU and GPU, with the CPU rasteriser as the specification. |
 | Owns | `Source/FUSE/UI/Core/include/fuse/ui/draw_list.hpp`, `painter.hpp` (new), `Source/FUSE/UI/Core/src/draw_list.cpp`, `raster_path.cpp` (new), `Source/FUSE/UI/Render`. |
 | Design | Today there are eight operations and no path or transform (section 2.2). New operations: `Path` (move, line, quadratic, cubic, close; non-zero and even-odd fill; stroke with width, join, cap, mitre limit, dash), `PushTransform` / `PopTransform` (2×3 affine), `PushLayer` / `PopLayer` (group opacity, a small set of blend modes, clip to path), gradient paints (linear, radial, conic, N stops), `ImageEx` (source rectangle, nearest or linear or mip sampling, nine-slice, tint, colour-space tag, external slot), `GlyphRun` (many glyphs sharing font, size and colour). Path points, stops and runs live in side arenas owned by the list and reused each frame. `Painter` is the recording API for custom widgets (`moveTo`, `lineTo`, `cubicTo`, `fill`, `stroke`, `drawImage`, `drawText`, `save`, `restore`, `setTransform`); the FUSE UI plan proposes it (`FUSE_UI_PLAN.md` section 4.9) and no painter header is in tree. CPU paths use analytic coverage. Also: per-node cached command ranges, so one dirty node re-records only its own commands (today the list is rebuilt when anything is paint-dirty, Verified `ui.hpp:6-8`). |
-| Tasks | FUSE-WP-23.1 Operation and arena layout; hash and `translate` updated.<br>FUSE-WP-23.2 CPU path fill and stroke.<br>FUSE-WP-23.3 Transforms and layers on CPU.<br>FUSE-WP-23.4 Gradient paints.<br>FUSE-WP-23.5 `ImageEx` and `GlyphRun`.<br>FUSE-WP-23.6 `Painter`.<br>FUSE-WP-23.7 GPU packing and kernel support for each new operation.<br>FUSE-WP-23.8 Per-node command cache. |
+| Tasks | FUSE-WP-23.1 Operation and arena layout; hash and `translate` updated.<br>FUSE-WP-23.2 CPU path fill and stroke.<br>FUSE-WP-23.3 Transforms and layers on CPU.<br>FUSE-WP-23.4 Gradient paints.<br>FUSE-WP-23.5 `ImageEx` and `GlyphRun`.<br>FUSE-WP-23.6 `Painter`.<br>FUSE-WP-23.7 GPU packing and kernel support for each new operation.<br>FUSE-WP-23.8 Per-node command cache.<br>FUSE-WP-23.9 `customPaint` node: a widget whose content is a recorded `Painter` command list, settable through the binding (UT02-GAP-1). |
 | Gates | `fuse_ui_draw_paths_golden`: fill rules, joins, caps, dashes, self-intersection.<br>`fuse_ui_draw_transform_golden`, `fuse_ui_draw_gradients_golden`, `fuse_ui_draw_layers_golden` (group opacity differs from per-primitive opacity).<br>`fuse_ui_painter_api`.<br>`fuse_ui_draw_list_fuzz`: random command streams never write outside the target.<br>`fuse_ui_paint_cache_partial`: one dirty node of 10 000 re-records only its commands.<br>Existing, extended: `fuse_ui_vk_parity`, `fuse_ui_cpu_raster_golden`, `fuse_ui_zero_alloc_steady`. |
 | Budgets | 10 000 path segments filled at 1080p ≤ 2 ms CPU. Re-record for one dirty node ≤ 50 µs. |
 | Tier and PRISM | T2 target for the CPU rasteriser. PRISM job: every pixel write lies inside the target and the scissor; arena indices are in range. |
 | Accept | Charts, canvas, SVG icons and COLRv1 glyphs draw through these operations only. |
 | Deps / Size / Risks | Deps: none. Size XL. Risks: GPU path quality against the CPU reference (parity policy per operation: exact for rects and glyphs, FLIP threshold for paths). |
-
 #### FUSE-WP-24 Vulkan backend on HardenedBSD: GPU text, damage, blur, external images
 | Row | Content |
 |---|---|
@@ -663,7 +629,6 @@ public:
 | Tier and PRISM | T3. PRISM job: packed draw-data offsets and sizes stay inside the uploaded buffers. |
 | Accept | Gallery and samples match the CPU reference on a real GPU on HardenedBSD (recorded by FUSE-WP-04). |
 | Deps / Size / Risks | Deps: FUSE-WP-01, FUSE-WP-06, FUSE-WP-23. Size L. Risks: driver availability and W^X behaviour on HardenedBSD are Unverified; compute-only kernel may be slow on integrated GPUs (measure before optimising). |
-
 #### FUSE-WP-25 CPU rasteriser as a production renderer
 | Row | Content |
 |---|---|
@@ -676,7 +641,6 @@ public:
 | Tier and PRISM | T2 target together with FUSE-WP-23. PRISM job: tile and span bounds; SIMD loads and stores stay inside rows. |
 | Accept | The installer and lock screen meet 60 frames per second on the CPU path at 1080p on the reference low-end machine (to be named by the owner). |
 | Deps / Size / Risks | Deps: FUSE-WP-23. Size L. Risks: 4K full-screen animation on CPU will not reach 60 fps (design system keeps motion small; documented limit). |
-
 #### FUSE-WP-26 Colour management and HDR in the UI pipeline
 | Row | Content |
 |---|---|
@@ -689,7 +653,6 @@ public:
 | Tier and PRISM | T2 target for the LUT reader. PRISM job: LUT index arithmetic and interpolation stay in range. |
 | Accept | ME01 and ME03 can show a tagged image and frame correctly on a profiled display (visual check by the owner; CI covers the maths only). |
 | Deps / Size / Risks | Deps: FUSE-WP-11, FUSE-WP-23, FUSE-WP-24. Size L. Risks: no HDR display in CI. |
-
 #### FUSE-WP-27 Image pipeline hooks, SVG subset, icon system
 | Row | Content |
 |---|---|
@@ -704,46 +667,42 @@ public:
 | Deps / Size / Risks | Deps: FUSE-WP-23. Size L. Risks: an icon set is design work, not code (owner supplies or commissions). |
 
 ### Epic G — Widgets: views, chrome, overlays
-
 #### FUSE-WP-28 Item views: list, tree, table, grid upgrades
 | Row | Content |
 |---|---|
 | Goal | The four item views meet DS 5: virtualised, multi-select, type-ahead, column chooser, sortable headers, inline rename, context menus, at 10M rows. |
 | Owns | `Source/FUSE/UI/Widgets/include/fuse/ui/widgets/item_views.hpp`, `Source/FUSE/UI/Widgets/src/item_views/` (new). The Tier B and C views stay until callers move. |
 | Design | `listView2`, `treeView2` (tree-table), `tableView2`, `gridView2`, all on `ItemModel2`: e.g. `NodeHandle tableView2(UiContext&, NodeHandle parent, ModelRef, const TableDesc& = {}, std::string_view id = {})`. A shared `SelectionModel` stores ranges, not per-row bits, with modes single, multi, extended, and row, cell or column units; "current" is separate from "selected". Type-ahead is prefix search with a 1 s reset and a collation hook. Inline edit creates an editor delegate on demand (text, combo, spin, date, check) with commit, cancel and validation. Columns: resize, drag reorder, chooser, multi-column sort marks, auto-size on visible rows, pinned columns. Rows: fixed height fast path, or variable height with estimated extents and measured anchors. Sticky group headers; empty-state and loading slots; drop indicators for FUSE-WP-33; both axes virtualised. Tree: lazy children, indent guides. Grid: sections, rubber-band selection. Keyboard: arrows, Home, End, Page keys, `Ctrl+A`, Space, `F2`, `Shift+F10`. A11y: table, tree, row, cell roles with indices (FUSE-WP-55). |
-| Tasks | FUSE-WP-28.1 `SelectionModel`.<br>FUSE-WP-28.2 Shared virtualisation core (64-bit extents, anchors).<br>FUSE-WP-28.3 `tableView2` with header and column model.<br>FUSE-WP-28.4 `treeView2`.<br>FUSE-WP-28.5 `listView2` and `gridView2`.<br>FUSE-WP-28.6 Editor delegates and validation.<br>FUSE-WP-28.7 Type-ahead and keyboard matrix.<br>FUSE-WP-28.8 Column and sort state persistence.<br>FUSE-WP-28.9 Port `propertyGrid`, the designer and the editor shell. |
+| Tasks | FUSE-WP-28.1 `SelectionModel`.<br>FUSE-WP-28.2 Shared virtualisation core (64-bit extents, anchors).<br>FUSE-WP-28.3 `tableView2` with header and column model.<br>FUSE-WP-28.4 `treeView2`.<br>FUSE-WP-28.5 `listView2` and `gridView2`.<br>FUSE-WP-28.6 Editor delegates and validation.<br>FUSE-WP-28.7 Type-ahead and keyboard matrix.<br>FUSE-WP-28.8 Column and sort state persistence.<br>FUSE-WP-28.9 Port `propertyGrid`, the designer and the editor shell.<br>FUSE-WP-28.10 Miller column view (chained lists with a preview column) and emblem overlays on grid tiles (SY02-GAP-2, SY02-GAP-4). |
 | Gates | `fuse_ui_view_selection_models`, `fuse_ui_view_typeahead`, `fuse_ui_view_inline_edit`, `fuse_ui_view_columns` (resize, reorder, hide, pin, persist), `fuse_ui_view_variable_rows`, `fuse_ui_view_tree_table`, `fuse_ui_view_keyboard` (the full key matrix), `fuse_ui_view_grid_rubberband`, `fuse_ui_view_a11y_table` (roles and indices in the dump). Each is a behaviour test with a golden. Plus `fuse_ui_modelview_10m_rows` (FUSE-WP-13). |
 | Budgets | 10M rows: scroll frame ≤ 4 ms; select all ≤ 10 µs; node count constant. 1000 columns: horizontal scroll frame ≤ 4 ms. |
 | Tier and PRISM | T3; T2 target for the virtualisation arithmetic. PRISM job: visible-range computation cannot index outside the model. |
 | Accept | SY02 Files' list, AD04 Logs' table and AD05's lineage tree can be built with no custom view code. |
 | Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-18. Size XL. Risks: variable-height virtualisation at scale (anchor drift); mitigated by the fixed-height fast path. |
-
 #### FUSE-WP-29 Window chrome kit
 | Row | Content |
 |---|---|
 | Goal | The window anatomy of DS 3 exists as widgets, so every app has the same header bar, sidebar, inspector, toolbar and status bar. |
 | Owns | `Source/FUSE/UI/Widgets/include/fuse/ui/widgets/chrome.hpp`, `Source/FUSE/UI/Widgets/src/chrome/` (new), `Source/FUSE/UI/Theme/templates/standard_window.fuseui` (new). |
-| Design | Widgets, each a registered class in the existing function-table style: `headerBar` (menu button, title and document name, search slot, capability badge slot filled by the host, window buttons, drag region), `sidebar` (220 px, collapses to icons, overlay under 640 px), `inspector` (280 px, becomes a sheet under 640 px), `statusBar` (chips that are buttons, progress slot), `toolBar` (built from actions, overflow menu), `splitView` (persisted sizes, collapse thresholds), `breadcrumb`, `searchField` (clear, scope chips, history, debounce), `tagInput`, `segmented`, `emptyState`, `inlineBanner`, `trustBadge` (verified, unverified, tampered; icon and word), `secretField`, `form` rows (label above, hint and error below, validation on blur), `wizard`. `secretField`: hidden by default, reveal while held, no value in the a11y tree, input purpose "password" to the input method, copy only through an action that flags the clipboard entry as secret. The capability badges are data from the host; an app cannot remove them from its own header (FUSE-WP-67). |
-| Tasks | FUSE-WP-29.1 `headerBar` and window controls.<br>FUSE-WP-29.2 `sidebar`, `inspector`, `splitView`, breakpoints.<br>FUSE-WP-29.3 `toolBar`, `statusBar`.<br>FUSE-WP-29.4 `breadcrumb`, `searchField`, `tagInput`, `segmented`.<br>FUSE-WP-29.5 `form`, `emptyState`, `inlineBanner`, `trustBadge`, `wizard`.<br>FUSE-WP-29.6 `secretField`.<br>FUSE-WP-29.7 Standard window template wired to `F4`, `F9`, `F10`, `F11`. |
+| Design | Widgets, each a registered class in the existing function-table style: `headerBar` (menu button, title and document name, search slot, capability badge slot filled by the host, window buttons, drag region), `sidebar` (220 px, collapses to icons, overlay under 640 px), `inspector` (280 px, becomes a sheet under 640 px), `statusBar` (chips that are buttons, progress slot), `toolBar` (built from actions, overflow menu), `splitView` (persisted sizes, collapse thresholds), `breadcrumb`, `searchField` (clear, scope chips, history, debounce), `tagInput`, `segmented`, `emptyState`, `inlineBanner`, `trustBadge` (verified, unverified, tampered; icon and word), `secretField`, `form` rows (label above, hint and error below, validation on blur), `wizard` with a step rail that shows validation state (AD01-GAP-1). `secretField`: hidden by default, reveal while held, no value in the a11y tree, input purpose "password" to the input method, copy only through an action that flags the clipboard entry as secret. The capability badges are data from the host; an app cannot remove them from its own header (FUSE-WP-67). |
+| Tasks | FUSE-WP-29.1 `headerBar` and window controls.<br>FUSE-WP-29.2 `sidebar`, `inspector`, `splitView`, breakpoints.<br>FUSE-WP-29.3 `toolBar`, `statusBar`.<br>FUSE-WP-29.4 `breadcrumb`, `searchField`, `tagInput`, `segmented`.<br>FUSE-WP-29.5 `form`, `emptyState`, `inlineBanner`, `trustBadge`, `wizard`.<br>FUSE-WP-29.6 `secretField`.<br>FUSE-WP-29.7 Standard window template wired to `F4`, `F9`, `F10`, `F11`.<br>FUSE-WP-29.8 `qrCode` draw widget (AD01-GAP-3).<br>FUSE-WP-29.9 `urlField`: a line edit that emphasises the registrable domain and never elides it (IN01-GAP-2). |
 | Gates | `fuse_ui_widget_<name>` for each widget (the convention in `FUSE_UI_PLAN.md:566`): behaviour, golden, a11y dump, right-to-left golden.<br>`fuse_ui_chrome_breakpoints`: sidebar and inspector change form at 640 px.<br>`fuse_ui_secret_field`: no value in the a11y dump or the selection clipboard; reveal only while held. |
 | Budgets | Standard window with 300 nodes: first layout ≤ 1 ms. |
 | Tier and PRISM | T3. PRISM job: none specific. |
 | Accept | The standard window template reproduces the DS 3 wireframe at narrow, medium and wide widths. |
 | Deps / Size / Risks | Deps: FUSE-WP-14, FUSE-WP-20, FUSE-WP-21, FUSE-WP-27. Size L. Risks: decoration policy (Q-03) changes the header bar's job. |
-
 #### FUSE-WP-30 Overlays: toasts, popovers, sheets, command palette, notifications and badges
 | Row | Content |
 |---|---|
 | Goal | The transient surfaces of DS 5 exist once, behave the same everywhere, and are safe to fill with untrusted strings. |
 | Owns | `Source/FUSE/UI/Widgets/include/fuse/ui/widgets/overlays.hpp`, `Source/FUSE/UI/Widgets/src/overlays/` (new). |
 | Design | `toast` (bottom centre, 5 s, optional Undo, errors stay with "Details", queue of 3, polite or assertive live region), `popover` (anchored; an `xdg_popup` on Wayland), `sheet` (window-modal panel inside the window), `commandPalette` (fuzzy search over the action table and provider rows; ranking prefix, then substring, then fuzzy, with frequency and recency, the same rule SH01-F029 states, as one shared `fuzzyRank` function), `messageDialog` (title is the question, buttons are verbs, Esc cancels, a destructive button is never the default), `badge` (count or dot), `notificationCard` and `osd` (drawn by the shell from data records; apps never supply a surface), rich `tooltip` showing the shortcut and the disabled reason. All text from other processes is treated as hostile: length caps, control and bidi-override characters neutralised, no markup. |
-| Tasks | FUSE-WP-30.1 `toast` and queue.<br>FUSE-WP-30.2 `popover` and `sheet`.<br>FUSE-WP-30.3 `fuzzyRank` and `commandPalette`.<br>FUSE-WP-30.4 `messageDialog` builder.<br>FUSE-WP-30.5 `badge`, `notificationCard`, `osd`.<br>FUSE-WP-30.6 Rich tooltip.<br>FUSE-WP-30.7 Hostile-string sanitiser shared by all of them. |
+| Tasks | FUSE-WP-30.1 `toast` and queue.<br>FUSE-WP-30.2 `popover` and `sheet`.<br>FUSE-WP-30.3 `fuzzyRank` and `commandPalette`.<br>FUSE-WP-30.4 `messageDialog` builder.<br>FUSE-WP-30.5 `badge`, `notificationCard`, `osd`.<br>FUSE-WP-30.6 Rich tooltip.<br>FUSE-WP-30.7 Hostile-string sanitiser shared by all of them.<br>FUSE-WP-30.8 Range-pick mode: a dialog collapses to a bar while another widget in the window supplies a selection (OF05-GAP-3). |
 | Gates | `fuse_ui_widget_toast`: timing on a virtual clock, Undo, sticky errors, queue.<br>`fuse_ui_widget_popover`, `fuse_ui_widget_sheet`.<br>`fuse_ui_widget_command_palette`: ranking table; 5000 actions.<br>`fuse_ui_widget_message_dialog`: Esc cancels; destructive is not default.<br>`fuse_ui_widget_notification_card`: 1 MiB titles, bidi overrides and control characters are clipped or neutralised.<br>`fuse_ui_toast_live_region`: the a11y tree announces it. |
 | Budgets | Palette filter over 5000 actions ≤ 2 ms per key. Toast show ≤ 1 frame. |
 | Tier and PRISM | T3; T2 target for the sanitiser. PRISM job: sanitiser output length is bounded and contains no code point from the deny list. |
 | Accept | SH02 can draw every notification from data with these widgets. |
 | Deps / Size / Risks | Deps: FUSE-WP-07, FUSE-WP-14, FUSE-WP-22. Size M. Risks: none major. |
-
 #### FUSE-WP-31 Tab view with tear-off; docking at IDE quality
 | Row | Content |
 |---|---|
@@ -756,20 +715,18 @@ public:
 | Tier and PRISM | T2 target for the layout reader. PRISM job: split-tree invariants (no empty split, sizes sum to parent). |
 | Accept | DV01's workbench and OF01's splits are built on these widgets with no private docking code. |
 | Deps / Size / Risks | Deps: FUSE-WP-07, FUSE-WP-33. Size XL. Risks: tear-off depends on a compositor protocol that is Unverified; the fallback path must be good enough alone. |
-
 #### FUSE-WP-32 Pickers: date and time, colour, font, file
 | Row | Content |
 |---|---|
 | Goal | Product-quality pickers; the file picker becomes a portal client plus a chooser view that only the portal app uses. |
 | Owns | `Source/FUSE/UI/Widgets/include/fuse/ui/widgets/pickers.hpp`, `Source/FUSE/UI/Widgets/src/pickers/` (new), `Source/FUSE/UI/App/include/fuse/app/portal_client.hpp` (new). |
 | Design | Date and time: `datePicker`, `timePicker`, `dateRangePicker`, locale week start and formats, time zones through a host hook (today's `dateTimeEdit` is civil time with no zone, Verified `widgets.hpp:362-365`). Colour: `colorPicker2` with HSV, RGB and hex entry, alpha, token swatches, recents, contrast read-out, and an eyedropper that only calls the screen portal. Font: `fontPicker2` on `FontDatabase` with styles, variation axes, feature switches, per-script preview and search (today's picker lists bundled faces by default, `widgets.hpp:258-259`). File: apps call `portal::requestOpen`, `requestSave`, `requestFolder` and get handles back asynchronously; they never list directories. `fileChooserView` (places, breadcrumb, list and grid, preview, filters, new folder, type to filter, save name with overwrite check) runs on an `ItemModel2` that SH04's own helper supplies. The in-process `fileDialog` stays for standalone tools and is refused in host mode. |
-| Tasks | FUSE-WP-32.1 Date, time and range pickers.<br>FUSE-WP-32.2 Time-zone hook and DST-safe arithmetic.<br>FUSE-WP-32.3 `colorPicker2`.<br>FUSE-WP-32.4 `fontPicker2`.<br>FUSE-WP-32.5 Portal client API (transport supplied by the host).<br>FUSE-WP-32.6 `fileChooserView`.<br>FUSE-WP-32.7 Host-mode refusal of `fileDialog`. |
+| Tasks | FUSE-WP-32.1 Date, time and range pickers.<br>FUSE-WP-32.2 Time-zone hook and DST-safe arithmetic.<br>FUSE-WP-32.3 `colorPicker2`.<br>FUSE-WP-32.4 `fontPicker2`.<br>FUSE-WP-32.5 Portal client API (transport supplied by the host).<br>FUSE-WP-32.6 `fileChooserView`.<br>FUSE-WP-32.7 Host-mode refusal of `fileDialog`.<br>FUSE-WP-32.8 Gradient stop editor (CR01-GAP-2).<br>FUSE-WP-32.9 Time-zone picker on a static vector map (SY01-GAP-3). |
 | Gates | `fuse_ui_widget_date_picker`: locale matrix.<br>`fuse_ui_widget_time_zone_edit`: DST gaps and overlaps.<br>`fuse_ui_widget_color_picker2`, `fuse_ui_widget_font_picker2`.<br>`fuse_ui_file_portal_client`: mock portal; cancel, multi-select, handle delivery; the app process reads no directory.<br>`fuse_ui_widget_file_chooser_view`.<br>`fuse_ui_file_dialog_refused_in_host_mode`. |
 | Budgets | Chooser view with a 100 000-entry folder: first rows ≤ 50 ms, scroll frame ≤ 4 ms. |
 | Tier and PRISM | T3. PRISM job: date arithmetic has no overflow for years 1–9999. |
 | Accept | SH04 can build the file chooser, colour picker and print dialog pages from these widgets. |
 | Deps / Size / Risks | Deps: FUSE-WP-17, FUSE-WP-28, FUSE-WP-29. Size L. Risks: only the Gregorian calendar is planned (others need an owner decision). |
-
 #### FUSE-WP-33 Drag and drop inside an app
 | Row | Content |
 |---|---|
@@ -782,7 +739,6 @@ public:
 | Tier and PRISM | T3. PRISM job: controller state machine has no stuck state after cancel or source destruction. |
 | Accept | SH01 panel edit mode (SH01-F010) and task-bar reorder (SH01-F062) work with it. |
 | Deps / Size / Risks | Deps: FUSE-WP-08, FUSE-WP-09. Size M. Risks: none major. |
-
 #### FUSE-WP-34 Calendar and scheduler views
 | Row | Content |
 |---|---|
@@ -797,7 +753,6 @@ public:
 | Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-32. Size L. Risks: none major. |
 
 ### Epic H — Widgets: documents and editors
-
 #### FUSE-WP-35 Rich text editor
 | Row | Content |
 |---|---|
@@ -810,7 +765,6 @@ public:
 | Tier and PRISM | T1 target for operation inverses and anchor mapping; T2 for the native format reader. PRISM job: for each operation, `inverse(op)` restores the pre-state; anchors never leave the document. |
 | Accept | A sample "mini writer" edits styles, lists, tables and images with full undo, by keyboard only. |
 | Deps / Size / Risks | Deps: FUSE-WP-18, FUSE-WP-19, FUSE-WP-27. Size XL. Risks: the largest widget in the plan; table editing and bidi caret rules are where schedules slip. |
-
 #### FUSE-WP-36 Page layout engine
 | Row | Content |
 |---|---|
@@ -823,33 +777,30 @@ public:
 | Tier and PRISM | T3; T2 target for termination and bounds. PRISM job: the page loop makes progress on every iteration. |
 | Accept | Print output and screen pages are the same boxes. |
 | Deps / Size / Risks | Deps: FUSE-WP-35. Size XL. Risks: fidelity expectations against other word processors are unbounded (scope is the rule list above). |
-
 #### FUSE-WP-37 Code editor core
 | Row | Content |
 |---|---|
 | Goal | One code editor engine for OF01, DV01, DV02, OF02, OF09, AI04, DV06: piece table, multi-cursor, folding, grammars, minimap, huge files. |
 | Owns | `Source/FUSE/UI/CodeEdit/{include/fuse/ui/codeedit,src,grammars}` (new), target `fuse_ui_codeedit`. Today's `codeEdit` becomes a wrapper. |
 | Design | Buffer: the piece tree of FUSE-WP-19, addressed by `BufferHandle`; any number of views per buffer, each with its own carets, scroll, folds and wrap (OF01-F142): `NodeHandle codeView(UiContext&, NodeHandle parent, BufferHandle, const CodeViewDesc& = {}, std::string_view id = {})`. `SelectionSet` holds up to 10 000 sorted, merged carets and rectangular selections with virtual space (OF01-F075, F078); an edit at all carets is one transaction. Grammars are declarative files (`.fusegrammar`: regular-expression rules with a state stack). They run on a linear-time matcher written here (no back-references), so a hostile grammar or input cannot stall typing; user search with back-references comes from a host `RegexProvider`. Tokenising is incremental: each line caches its end state; re-tokenising stops when the state converges; the rest runs in 2 ms slices. Token classes map to CSS classes (OF01-F156). Also: folding by indent and markers, soft wrap with wrap indent, gutter lanes, a decoration API (ranges to squiggles, backgrounds, inline widgets, phantom text) used for search hits, diagnostics and spelling, bracket matching, indent guides, rulers, visible whitespace, highlighting of bidi control and invisible characters (OF01-F063), overwrite mode, IME, and a minimap drawn from token colours into cached tiles. Hooks only (not features) for completion, hover and debugger marks. |
-| Tasks | FUSE-WP-37.1 Buffer and view handles; old API wrapper.<br>FUSE-WP-37.2 `SelectionSet`, multi-caret edits, column mode.<br>FUSE-WP-37.3 Linear-time matcher and grammar loader.<br>FUSE-WP-37.4 Incremental tokeniser and theme classes.<br>FUSE-WP-37.5 Line layout cache, soft wrap, long-line chunks.<br>FUSE-WP-37.6 Folding and sticky scope hooks.<br>FUSE-WP-37.7 Gutter, decorations, bracket match, guides, whitespace.<br>FUSE-WP-37.8 Minimap and scroll-bar marks.<br>FUSE-WP-37.9 Find iterator over snapshots.<br>FUSE-WP-37.10 IME and a11y text ranges.<br>FUSE-WP-37.11 Base grammars: plain, ForgeScript, C++, CSS, JSON, Markdown, shell. |
+| Tasks | FUSE-WP-37.1 Buffer and view handles; old API wrapper.<br>FUSE-WP-37.2 `SelectionSet`, multi-caret edits, column mode.<br>FUSE-WP-37.3 Linear-time matcher and grammar loader.<br>FUSE-WP-37.4 Incremental tokeniser and theme classes.<br>FUSE-WP-37.5 Line layout cache, soft wrap, long-line chunks.<br>FUSE-WP-37.6 Folding and sticky scope hooks.<br>FUSE-WP-37.7 Gutter, decorations, bracket match, guides, whitespace.<br>FUSE-WP-37.8 Minimap and scroll-bar marks.<br>FUSE-WP-37.9 Find iterator over snapshots.<br>FUSE-WP-37.10 IME and a11y text ranges.<br>FUSE-WP-37.11 Base grammars: plain, ForgeScript, C++, CSS, JSON, Markdown, shell.<br>FUSE-WP-37.12 Read-only ranges, inline cards, end-of-line text, code-lens rows, ghost text; a caret-anchored rectangle for popovers (DV06-GAP-1, DV01-GAP-3, DV01-GAP-5). |
 | Gates | `fuse_ui_code_multicursor`: 10 000 carets typing gives the model's content and one undo step.<br>`fuse_ui_code_column_select`.<br>`fuse_ui_code_grammar_incremental`: after 100 000 random edits, incremental tokens equal a full pass.<br>`fuse_ui_code_grammar_time_bound`: pathological input stays linear.<br>`fuse_ui_code_grammar_fuzz`: hostile grammar files are refused or bounded.<br>`fuse_ui_code_folding`, `fuse_ui_code_wrap`, `fuse_ui_code_two_views`, `fuse_ui_code_minimap_golden`, `fuse_ui_code_ime`.<br>`fuse_ui_code_bidi_controls_visible`.<br>`fuse_ui_code_bench_typing`, `fuse_ui_code_4g_scroll`.<br>Existing: `fuse_ui_widget_code_edit`. |
 | Budgets | Key to paint ≤ 4 ms at any file size. Scroll frame ≤ 4 ms. 10 000-caret insert ≤ 30 ms. Background tokenising ≥ 20 MiB/s. (To be aligned with OF01 section 10 when it is written.) |
 | Tier and PRISM | T2 target for the matcher and `SelectionSet`; T3 for the rest. PRISM job: matcher steps are bounded by input length × rule count; selections stay sorted and inside the buffer. |
 | Accept | OF01 Phase 1 features in its sections 4.2, 4.3, 4.5 and 4.7 need no editor code outside this engine. |
 | Deps / Size / Risks | Deps: FUSE-WP-18, FUSE-WP-19. Size XL. Risks: grammar format lock-in (version field from day one); expectations set by mature editors. |
-
 #### FUSE-WP-38 Diff and merge view
 | Row | Content |
 |---|---|
 | Goal | Two-way and three-way comparison of text buffers with apply and revert, for OF01, DV03, DV01. |
 | Owns | `Source/FUSE/UI/CodeEdit/include/fuse/ui/codeedit/diff.hpp`, `Source/FUSE/UI/CodeEdit/src/diff/` (new). |
 | Design | Engine: line diff by the O(ND) method with a histogram option, then word and character diff inside changed lines; options to ignore whitespace and case; a time bound with a flagged heuristic fallback for very large inputs; runs on a job over buffer snapshots. View: `diffView` side by side or unified, synchronised scrolling with filler lines, change navigation, overview ruler, apply or revert a hunk, editable sides. Three-way: base, ours, theirs and a result buffer with a conflict model. Byte diff for FUSE-WP-41. Each change carries a kind in the a11y tree (AX01-F089). |
-| Tasks | FUSE-WP-38.1 Line diff engine.<br>FUSE-WP-38.2 Intra-line diff.<br>FUSE-WP-38.3 Side-by-side and unified views with sync scroll.<br>FUSE-WP-38.4 Hunk apply and revert.<br>FUSE-WP-38.5 Three-way merge model and view.<br>FUSE-WP-38.6 Byte diff. |
+| Tasks | FUSE-WP-38.1 Line diff engine.<br>FUSE-WP-38.2 Intra-line diff; word-level mode for prose (AI01-GAP-2).<br>FUSE-WP-38.3 Side-by-side and unified views with sync scroll.<br>FUSE-WP-38.4 Hunk apply and revert.<br>FUSE-WP-38.5 Three-way merge model and view.<br>FUSE-WP-38.6 Byte diff. |
 | Gates | `fuse_ui_diff_engine_correct`: applying the diff of A and B to A gives B, on a corpus and random pairs.<br>`fuse_ui_diff_minimal_small`: minimal edit scripts under 2000 lines.<br>`fuse_ui_diff_time_bound`: 1M lines each within the bound or flagged.<br>`fuse_ui_merge3_cases`: a table of conflict cases.<br>`fuse_ui_diff_view_golden`, `fuse_ui_diff_sync_scroll`, `fuse_ui_diff_fuzz`. |
 | Budgets | 10 000-line files: diff ≤ 20 ms. Scroll frame ≤ 4 ms. |
 | Tier and PRISM | T1 target for "patch(A, diff(A, B)) = B"; T2 for bounds. PRISM job: that property for bounded sizes; index ranges. |
 | Accept | DV03's change review can be built on it. |
 | Deps / Size / Risks | Deps: FUSE-WP-37. Size L. Risks: none major. |
-
 #### FUSE-WP-39 Terminal grid widget
 | Row | Content |
 |---|---|
@@ -862,7 +813,6 @@ public:
 | Tier and PRISM | T1 target for the parser state machine; T2 for screen operations. PRISM job: for every byte sequence, the cursor stays in the grid, no cell write is out of range, parameter storage is bounded. |
 | Accept | SY03 Phase 1 runs a shell, a full-screen editor and a pager correctly in the widget. |
 | Deps / Size / Risks | Deps: FUSE-WP-17, FUSE-WP-18. Size XL. Risks: the long tail of terminal behaviour; mitigated by the conformance table growing with each bug. |
-
 #### FUSE-WP-40 Spreadsheet grid
 | Row | Content |
 |---|---|
@@ -875,7 +825,6 @@ public:
 | Tier and PRISM | T2 target for the geometry trees. PRISM job: prefix sums and searches cannot overflow or return an index outside the sheet. |
 | Accept | OF05 can show a real workbook sheet with frozen headers and merged titles using only this widget. |
 | Deps / Size / Risks | Deps: FUSE-WP-18, FUSE-WP-23. Size XL. Risks: none beyond size. |
-
 #### FUSE-WP-41 Hex view
 | Row | Content |
 |---|---|
@@ -888,14 +837,13 @@ public:
 | Tier and PRISM | T2 target for offset arithmetic. PRISM job: no 64-bit overflow in row and offset maths. |
 | Accept | DV04's main view needs no custom drawing. |
 | Deps / Size / Risks | Deps: FUSE-WP-19, FUSE-WP-38. Size M. Risks: none major. |
-
 #### FUSE-WP-42 Markdown view and the restricted rich-content path
 | Row | Content |
 |---|---|
 | Goal | Markdown renders fully (links, images, tables, code), with selection and a11y. Sanitised HTML from mail and help shows through the same view without an HTML parser in the app. |
 | Owns | `Source/FUSE/UI/RichText/include/fuse/ui/richtext/markdown.hpp`, `Source/FUSE/UI/RichText/src/markdown.cpp` (new); `markdownView` in `widgets.hpp` becomes a wrapper. |
 | Design | A CommonMark parser written here, plus tables, task lists, strike-through and footnotes, builds a read-only `RichDoc`. Raw HTML inside Markdown is shown as text. Code fences are coloured by the tokeniser of FUSE-WP-37. Links emit `LinkActivated`; the view never opens anything itself, shows the real target, and applies a host scheme allow-list. Images go through `ImageProvider`; remote images are not requested unless the host allows it. Heading anchors feed an outline model. Maths spans go to an object callback. Restricted HTML: a helper converts sanitised HTML to the native rich format of FUSE-WP-35 and the same view shows it. This is the "restricted HTML renderer" route `ROADMAP.md` names beside G-14. |
-| Tasks | FUSE-WP-42.1 Block and inline parser.<br>FUSE-WP-42.2 `RichDoc` builder and outline model.<br>FUSE-WP-42.3 Link policy and target display.<br>FUSE-WP-42.4 Images and code colouring.<br>FUSE-WP-42.5 Wrapper for the old `markdownView` API.<br>FUSE-WP-42.6 Help-page sample with search. |
+| Tasks | FUSE-WP-42.1 Block and inline parser.<br>FUSE-WP-42.2 `RichDoc` builder and outline model.<br>FUSE-WP-42.3 Link policy and target display.<br>FUSE-WP-42.4 Images and code colouring.<br>FUSE-WP-42.5 Wrapper for the old `markdownView` API.<br>FUSE-WP-42.6 Help-page sample with search.<br>FUSE-WP-42.7 Streaming append that does not relayout earlier blocks (AI01-GAP-1). |
 | Gates | `fuse_ui_md_commonmark_spec`: the specification's examples as expected trees; exclusions listed by number.<br>`fuse_ui_md_fuzz`: deep nesting stays linear.<br>`fuse_ui_md_view_golden`.<br>`fuse_ui_md_links_policy`: script, file and data schemes never activate; spoofed link text is flagged.<br>`fuse_ui_md_no_remote_fetch`. |
 | Budgets | 1 MiB of Markdown parsed ≤ 30 ms. Scroll frame ≤ 4 ms. |
 | Tier and PRISM | T2 target for the parser. PRISM job: bounded reads; bounded nesting; termination. |
@@ -903,20 +851,18 @@ public:
 | Deps / Size / Risks | Deps: FUSE-WP-35. Size M. Risks: none major. |
 
 ### Epic I — Widgets: graphics, data and embedded content
-
 #### FUSE-WP-43 2D canvas
 | Row | Content |
 |---|---|
 | Goal | A zoomable, tiled, layered canvas with pen input and GPU compositing. Gap G-12. Shared by OF08, CR01, OF03, IN04, ME05, OF06. |
 | Owns | `Source/FUSE/UI/Canvas/{include/fuse/ui/canvas,src}` (new), target `fuse_ui_canvas`. |
 | Design | `NodeHandle canvasView(UiContext&, NodeHandle parent, const CanvasSource*, std::string_view id = {})`. `CanvasSource` is a function table in the style of `ItemModel` and `VideoSource`: layer count and info, `requestTile(TileKey{layer, level, x, y}, TileSink&)`, `paintVector(layer, viewRect, Painter&)`. Raster layers are 256×256 tile pyramids supplied asynchronously as CPU images or GPU external textures; requests cover the view plus one ring, ordered by distance from the centre, cancelled when they leave. Vector layers are painted through `Painter` with culling. The layer stack has opacity, the separable blend modes, visibility, masks and groups; layers composite on the GPU with a CPU reference. Tiles may be 8-bit, 16-bit or float and are colour managed. View: pan, zoom 1%–6400%, view rotation, pixel grid at high zoom, rulers and guides; document coordinates are 64-bit floats, rendering is relative to the view. Input arrives in document coordinates at full device rate with pressure and tilt. A "wet ink" overlay draws the stroke from input in the same frame while the app commits tiles. Screen-space overlay for handles and outlines; helper widgets for transform boxes and curve handles; region export at any scale for printing. |
-| Tasks | FUSE-WP-43.1 `CanvasSource`, view transform, 64-bit coordinates.<br>FUSE-WP-43.2 Tile cache, request scheduler, budgets.<br>FUSE-WP-43.3 Vector layers and culling.<br>FUSE-WP-43.4 Layer compositing: CPU reference.<br>FUSE-WP-43.5 Layer compositing: GPU.<br>FUSE-WP-43.6 Input: pen, touch gestures, wheel zoom at the cursor.<br>FUSE-WP-43.7 Wet-ink overlay.<br>FUSE-WP-43.8 Rulers, guides, snapping hooks, handle toolkit.<br>FUSE-WP-43.9 Region export. |
+| Tasks | FUSE-WP-43.1 `CanvasSource`, view transform, 64-bit coordinates.<br>FUSE-WP-43.2 Tile cache, request scheduler, budgets.<br>FUSE-WP-43.3 Vector layers and culling.<br>FUSE-WP-43.4 Layer compositing: CPU reference.<br>FUSE-WP-43.5 Layer compositing: GPU.<br>FUSE-WP-43.6 Input: pen, touch gestures, wheel zoom at the cursor.<br>FUSE-WP-43.7 Wet-ink overlay.<br>FUSE-WP-43.8 Rulers, guides, snapping hooks, handle toolkit.<br>FUSE-WP-43.9 Region export.<br>FUSE-WP-43.10 Rectangle-arrangement helper with snapping and keyboard moves (SY01-GAP-1). |
 | Gates | `fuse_ui_canvas_tiles`: request set, order and cancellation.<br>`fuse_ui_canvas_zoom_pan_golden`: nine zoom levels; exact pixels at 100%.<br>`fuse_ui_canvas_blend_modes`: CPU against the formulas; GPU parity.<br>`fuse_ui_canvas_layers_mask`.<br>`fuse_ui_canvas_pen_latency`: a 1 kHz scripted pen stream arrives complete and in order; ink is painted in the same frame.<br>`fuse_ui_canvas_cache_budget`.<br>`fuse_ui_canvas_f64_precision`: no jitter above 0.01 px at an offset of 10^9 px.<br>`fuse_ui_canvas_bench`. |
 | Budgets | Pan or zoom frame with 20 layers at a 4K view ≤ 4 ms GPU. Pen sample to screen ≤ 1 frame. Tile cache default 512 MiB. |
 | Tier and PRISM | T3; T2 target for tile index maths. PRISM job: tile keys and pyramid levels stay in range for documents up to 2^31 px. |
 | Accept | A sample paint app and a sample diagram app run on it with no drawing code outside `CanvasSource`. |
 | Deps / Size / Risks | Deps: FUSE-WP-08, FUSE-WP-23, FUSE-WP-24, FUSE-WP-26. Size XL. Risks: GPU memory limits with float tiles; CPU-only compositing of many layers will be slow (documented limit). |
-
 #### FUSE-WP-44 Image view with colour management
 | Row | Content |
 |---|---|
@@ -929,7 +875,6 @@ public:
 | Tier and PRISM | T3. PRISM job: none specific. |
 | Accept | ME01's viewer page is this widget plus chrome. |
 | Deps / Size / Risks | Deps: FUSE-WP-26, FUSE-WP-27, FUSE-WP-43. Size M. Risks: none major. |
-
 #### FUSE-WP-45 Page view (PDF and other paged documents)
 | Row | Content |
 |---|---|
@@ -942,7 +887,6 @@ public:
 | Tier and PRISM | T2 target for validation of helper records. PRISM job: every size, count and index from the source is checked before use. |
 | Accept | OF03 can view, search, select and annotate with this widget and a helper. |
 | Deps / Size / Risks | Deps: FUSE-WP-27, FUSE-WP-18, FUSE-WP-43. Size L. Risks: the text-layer contract must suit several formats (reviewed with the OF03 spec). |
-
 #### FUSE-WP-46 Chart and plot library
 | Row | Content |
 |---|---|
@@ -955,7 +899,6 @@ public:
 | Tier and PRISM | T3; T2 target for scale maths. PRISM job: no NaN or out-of-range coordinate reaches the rasteriser. |
 | Accept | SY04's dashboards and OF05's chart types are covered without custom painting. |
 | Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-18, FUSE-WP-23. Size XL. Risks: the chart-type list keeps growing (the list above is the committed scope). |
-
 #### FUSE-WP-47 Treemap and sunburst
 | Row | Content |
 |---|---|
@@ -968,7 +911,6 @@ public:
 | Tier and PRISM | T3. PRISM job: layout rectangles tile the parent with no overlap and no negative size. |
 | Accept | UT04's main view is this widget. |
 | Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-23. Size M. Risks: none major. |
-
 #### FUSE-WP-48 Map view
 | Row | Content |
 |---|---|
@@ -981,7 +923,6 @@ public:
 | Tier and PRISM | T2 target for the vector-tile buffer validator. PRISM job: all indices into vertex and label arrays are checked. |
 | Accept | IN04 can show an offline region, a route and a track. |
 | Deps / Size / Risks | Deps: FUSE-WP-43, FUSE-WP-18. Size L. Risks: map styling is design work; label quality needs iteration. |
-
 #### FUSE-WP-49 Waveform, spectrogram and meters
 | Row | Content |
 |---|---|
@@ -994,20 +935,18 @@ public:
 | Tier and PRISM | T3. PRISM job: peak index ranges. |
 | Accept | ME06's record and trim screen is built from these widgets. |
 | Deps / Size / Risks | Deps: FUSE-WP-23, FUSE-WP-52. Size M. Risks: none major. |
-
 #### FUSE-WP-50 Timeline, node graph and curve editor upgrades
 | Row | Content |
 |---|---|
 | Goal | The three editor widgets reach the level CR02, CR03 and CR04 need. |
 | Owns | `Source/FUSE/UI/Widgets/include/fuse/ui/widgets/editor_widgets.hpp`, `Source/FUSE/UI/Widgets/src/timeline2/`, `node_graph2/`, `curve_editor2/` (new). The Tier D versions stay as wrappers. |
 | Design | All three become model-backed; today each stores its own data inside the widget (Verified, `widgets.hpp:277-320`). `timeline2`: typed tracks with headers (mute, solo, lock, height), clips with trim handles, gestures that emit intents (move, trim, ripple, roll, slip) for the app to apply, snapping to playhead, markers and edges, marquee and multi-select, transitions, keyframe lanes, thumbnails and waveforms inside clips through providers, markers and regions, ruler formats (timecode with drop frame, frames, seconds, bars), zoom to one frame, 10 000 clips virtualised. `nodeGraph2`: typed coloured ports, marquee, groups and frames, comments, reroute points, collapsed nodes, widgets inside nodes, minimap, search-to-add, level of detail at 5000 nodes, a policy flag for cycles (always refused today, `widgets.hpp:278`). `curveEditor2`: many curves, bezier tangents (unified, broken, auto, flat, weighted), box select and scale, pre and post behaviour (hold, loop, ping-pong), snapping, frame-all, per-curve lock and visibility. |
-| Tasks | FUSE-WP-50.1 `TimelineModel` and `timeline2` layout.<br>FUSE-WP-50.2 Timeline gestures, snapping, intents.<br>FUSE-WP-50.3 Clip content providers and ruler formats.<br>FUSE-WP-50.4 `GraphModel` and `nodeGraph2` rendering with level of detail.<br>FUSE-WP-50.5 Graph groups, comments, reroutes, minimap, search.<br>FUSE-WP-50.6 `CurveModel` and `curveEditor2`.<br>FUSE-WP-50.7 Move the editor shell's timeline and material graph users over. |
+| Tasks | FUSE-WP-50.1 `TimelineModel` and `timeline2` layout.<br>FUSE-WP-50.2 Timeline gestures, snapping, intents.<br>FUSE-WP-50.3 Clip content providers and ruler formats.<br>FUSE-WP-50.4 `GraphModel` and `nodeGraph2` rendering with level of detail.<br>FUSE-WP-50.5 Graph groups, comments, reroutes, minimap, search.<br>FUSE-WP-50.6 `CurveModel` and `curveEditor2`.<br>FUSE-WP-50.7 Move the editor shell's timeline and material graph users over.<br>FUSE-WP-50.8 Automatic layout (layered and force-directed) for read-only graphs of 2000 nodes (SE01-GAP-2).<br>FUSE-WP-50.9 Timeline lanes with labels and point marks (SE01-GAP-3). |
 | Gates | `fuse_ui_timeline2_edit_gestures`: intents and a snapping table.<br>`fuse_ui_timeline2_10k_clips`.<br>`fuse_ui_timeline2_timecode`: drop-frame formatting table.<br>`fuse_ui_node_graph2_5k`.<br>`fuse_ui_node_graph2_groups_comments`.<br>`fuse_ui_curve2_tangents`: evaluation against a reference.<br>`fuse_ui_curve2_multi_select`.<br>Existing: `fuse_ui_widget_node_graph`, `fuse_ui_widget_curve_timeline`. |
 | Budgets | Pan or zoom frame ≤ 4 ms for 10 000 clips and for 5000 nodes. |
 | Tier and PRISM | T3. PRISM job: curve evaluation stays finite and monotone in time. |
 | Accept | CR02's edit page and CR04's animation panel use only these widgets. |
 | Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-23, FUSE-WP-33, FUSE-WP-49. Size XL. Risks: three widgets in one package; split when started. |
-
 #### FUSE-WP-51 Remote surfaces and web content embedding
 | Row | Content |
 |---|---|
@@ -1020,3 +959,540 @@ public:
 | Tier and PRISM | T2 target for record validation. PRISM job: every field of a producer record is range-checked before use. |
 | Accept | A mock "engine" process shows scrolling content with working links, a select list and screen-reader text inside a FUSE window. |
 | Deps / Size / Risks | Deps: FUSE-WP-24, FUSE-WP-55. Size L. Risks: the record contract must be agreed with the IN01 engine design, which does not exist yet. |
+
+### Epic J — Media
+#### FUSE-WP-52 Audio output and input for apps
+| Row | Content |
+|---|---|
+| Goal | Apps can play and record PCM with a clock good enough for A/V sync, without opening an audio device themselves. |
+| Owns | `Source/FUSE/Audio/include/fuse/audio/app_stream.hpp`, `Source/FUSE/Audio/src/app_stream.cpp`, `backend_bus.cpp`, `backend_oss.cpp`, `resampler.cpp` (new). |
+| Design | Today `fuse_audio` is the engine's spatial mixer with Null and OpenAL backends and no capture (section 2.1). Add a small stream API beside it: `AudioStreamDesc { rate, channels, direction, latency class, role (media, notification, speech, call) }`, a callback on an audio thread, and a device clock (frames played plus timestamp). Backends are function tables: **bus** (PCM goes to `svc.media` through a shared-memory ring passed as a descriptor; the app never touches a device, and `dev.mic` is enforced by the service), **OSS** (direct `/dev/dsp`, for the service itself and standalone tools), OpenAL (games), Null (tests). The existing lock-free ring (`FUSE:Source/FUSE/Audio/include/fuse/audio/spsc_ring.hpp`) is reused. Own windowed-sinc resampler with quality tiers, channel mapping, click-free gain ramps, device-change events, under-run counters in the style of `AudioOutputStats`. UI sounds go through `ui::sound(name)` with the notification role. The app profile does not link openal-soft (LGPL), which keeps the licence set simple. |
+| Tasks | FUSE-WP-52.1 Stream API and audio-thread rules.<br>FUSE-WP-52.2 Bus backend against a mock `svc.media`.<br>FUSE-WP-52.3 OSS backend.<br>FUSE-WP-52.4 Capture path.<br>FUSE-WP-52.5 Resampler and channel maps.<br>FUSE-WP-52.6 Device clock and drift report.<br>FUSE-WP-52.7 UI sound hook. |
+| Gates | `fuse_audio_stream_null_roundtrip`: a sine through the Null backend is bit-exact.<br>`fuse_audio_stream_clock_monotonic`.<br>`fuse_audio_resampler_quality`: signal-to-noise and pass-band limits for 44.1 kHz to 48 kHz and back.<br>`fuse_audio_stream_underrun`: starvation inserts silence and is counted.<br>`fuse_audio_input_loopback`.<br>`fuse_audio_bus_backend`: back-pressure and service restart.<br>`fuse_audio_rt_no_alloc_no_lock`: the callback path allocates nothing and takes no mutex.<br>`fuse_audio_oss_backend` (FreeBSD only). |
+| Budgets | Output latency ≤ 20 ms for media, ≤ 10 ms for the low-latency class. Callback uses ≤ 25% of its period. |
+| Tier and PRISM | T3; T2 target for ring and resampler index maths. PRISM job: ring indices wrap safely; resampler never reads outside its history. |
+| Accept | A sample plays a tone and records it back through the mock service with a stable clock. |
+| Deps / Size / Risks | Deps: FUSE-WP-01. Size L. Risks: the `svc.media` ring contract is platform work; real-time scheduling on HardenedBSD is Unverified. |
+#### FUSE-WP-53 Video surface and pipeline client
+| Row | Content |
+|---|---|
+| Goal | A real video widget: frames from a sandboxed decoder, shown in sync with audio, zero-copy where possible. Gap G-11, FUSE side. |
+| Owns | `Source/FUSE/UI/Video/include/fuse/ui/video/video_surface.hpp`, `Source/FUSE/UI/Video/src/video_surface.cpp`, `yuv_convert.cpp` (new). |
+| Design | Today `videoWidget` pulls RGBA frames by index on the UI thread and has no audio sync (section 2.2). `videoSurface` receives `VideoFrame` records from the media helper: buffer handle (dmabuf preferred, shared memory otherwise), pixel format (NV12, P010, I420, RGBA), size, crop, rotation, colour description, HDR metadata, presentation time, duration. A bounded queue of at most 5 frames feeds a presenter that picks the frame for the next refresh using the master clock (audio clock of FUSE-WP-52, predicted present time from FUSE-WP-06), repeats or drops, and reports offset and drop counts. FUSE does the final scale (bilinear, bicubic, Lanczos), YCbCr conversion and colour transform; filters such as deinterlacing and tone-map curves are the pipeline's job and arrive as finished frames or LUTs. Direct mode: when nothing overlaps the video, the buffer is attached to its own subsurface so the compositor can scan it out; controls and subtitles stay above. The window is in continuous redraw only while playing and visible; paused means zero frames. The old `VideoSource` stays as an adapter; in-process Theora decode is off in the app profile because decoders must be sandboxed. |
+| Tasks | FUSE-WP-53.1 `VideoFrame` record and validation.<br>FUSE-WP-53.2 Queue, clock selection, drop and repeat.<br>FUSE-WP-53.3 YCbCr conversion and scaling on GPU.<br>FUSE-WP-53.4 Same on CPU with SIMD.<br>FUSE-WP-53.5 Direct subsurface mode.<br>FUSE-WP-53.6 Redraw policy and idle rules.<br>FUSE-WP-53.7 Statistics for the app's overlay.<br>FUSE-WP-53.8 Adapter for `VideoSource`. |
+| Gates | `fuse_ui_video_surface_sync`: with a mock producer and a virtual audio clock, the shown frame is within half a frame of the clock; no drift over ten virtual minutes.<br>`fuse_ui_video_surface_drop_repeat`: cadence table for 24, 25, 30, 50, 60 fps on 60 Hz.<br>`fuse_ui_video_yuv_convert`: NV12, P010, I420 with BT.601, 709, 2020, limited and full range, against reference values; GPU parity.<br>`fuse_ui_video_scale_kernels`.<br>`fuse_ui_video_paused_idle`.<br>`fuse_ui_video_hostile_frames`: bad sizes, strides and formats refused; queue bounded.<br>`fuse_ui_video_direct_subsurface`.<br>Existing: `fuse_ui_widget_video`. |
+| Budgets | 4K at 60 fps from dmabuf: UI-thread cost ≤ 1 ms per frame on GPU. 1080p at 30 fps on CPU: convert and scale ≤ 8 ms on 4 threads. |
+| Tier and PRISM | T2 target for frame record validation. PRISM job: plane offsets, strides and sizes are checked against the buffer length before any read. |
+| Accept | ME03 Phase 1 playback core can be built with this widget, the audio stream and a helper. |
+| Deps / Size / Risks | Deps: FUSE-WP-06, FUSE-WP-24, FUSE-WP-26, FUSE-WP-52. Size L. Risks: dmabuf import across driver combinations; the `VideoFrame` contract must match ME03 section 6.5 (not yet written). |
+#### FUSE-WP-54 Subtitles, HDR video and hardware-decoded frames
+| Row | Content |
+|---|---|
+| Goal | Subtitles drawn from cue records, HDR shown by tone mapping or passthrough, and decoder output surfaces imported without a copy. |
+| Owns | `Source/FUSE/UI/Video/include/fuse/ui/video/subtitle_overlay.hpp`, `Source/FUSE/UI/Video/src/subtitle_overlay.cpp` (new), `video_surface.cpp`. |
+| Design | Subtitles: ME03 requires that the app receive "cue records and glyph bitmaps only" from the subtitle helper. `subtitleOverlay` takes (a) bitmap cues: positioned bitmaps with a time range, scaled with the video rectangle; (b) text cues: drawn by FUSE text with a user style (font, size, colour, outline, shadow, box, position, margin), which needs glyph outline and shadow painting added to layout v2. Two tracks at once; placement in the letterbox; timing from the video clock. HDR: PQ and HLG frames are either passed through (HDR surface description from FUSE-WP-11, direct subsurface) or mapped to SDR through a LUT the pipeline supplies (FUSE-WP-26). Hardware decode: FUSE never decodes. It imports the helper's NV12 or P010 dmabufs with their format modifiers and samples them with a YCbCr conversion; a copy path covers a mismatch of devices. |
+| Tasks | FUSE-WP-54.1 Bitmap cue overlay.<br>FUSE-WP-54.2 Text cue styling: outline, shadow, box.<br>FUSE-WP-54.3 Two tracks and letterbox placement.<br>FUSE-WP-54.4 HDR LUT path and passthrough description.<br>FUSE-WP-54.5 P010 and modifier import; fallback copy. |
+| Gates | `fuse_ui_subtitle_bitmap_overlay`: positions follow the video rectangle; time windows.<br>`fuse_ui_subtitle_text_style`: goldens with outline, shadow, box and a bidi cue.<br>`fuse_ui_subtitle_two_tracks`.<br>`fuse_ui_subtitle_hostile_cues`: 10 000 bitmaps and huge sizes are capped.<br>`fuse_ui_video_hdr_lut_tonemap`: a PQ ramp through a supplied LUT equals the reference.<br>`fuse_ui_video_hdr_passthrough_desc` (skip 77 without the protocol).<br>`fuse_ui_video_p010_import` (skip 77 without the extensions). |
+| Budgets | Subtitle overlay adds ≤ 0.2 ms per frame. |
+| Tier and PRISM | T2 target for cue record validation. PRISM job: bitmap sizes and positions are clamped before allocation and blit. |
+| Accept | ME03's subtitle features in its section 4.5 marked Phase 1 have the FUSE support they need. |
+| Deps / Size / Risks | Deps: FUSE-WP-53, FUSE-WP-18, FUSE-WP-26. Size M. Risks: HDR cannot be verified in CI. |
+
+### Epic K — Accessibility
+#### FUSE-WP-55 Accessibility model completeness
+| Row | Content |
+|---|---|
+| Goal | The a11y tree can describe every widget in this plan: full role set, states, relations, text ranges, tables, live regions. Closes AX01-GAP-1. |
+| Owns | `Source/FUSE/UI/Core/include/fuse/ui/a11y_model.hpp` (new), `ui.hpp`, `ui.cpp`, `Source/FUSE/UI/A11y`. |
+| Design | Today there are 22 roles and a snapshot node with name, bounds and a few states; the bridge diffs whole snapshots (Verified, `ui.hpp:86-101`, `a11y.hpp:29-31`). New: roles for application, dialog, alert, menu and items, toolbar, status bar, tab list and panel, tree and tree item, table, row, cell, headers, grid, heading with level, paragraph, document, landmarks, tooltip, log, terminal, canvas, figure, maths, splitter, search box, password field and the rest. Properties: description, value text, placeholder, shortcut, expanded, selected, tri-state checked, pressed, busy, invalid with an error relation, required, read-only, modal, has-popup, level, position in set and set size, row and column index and span, sort direction, orientation, live (polite, assertive). Relations: labelled-by, described-by, controls, flows-to, active descendant. Interfaces: text (content, caret, selections, attribute runs, boundaries from layout v2, range rectangles), table (headers for a cell), value, and a full action list including custom actions from the action table. Events: focus, value, text inserted and deleted, caret, selection, state, structure, live region, announcement. Updates are incremental from an a11y dirty bit per node. Virtualised views expose set size and only realised rows. Flags `a11y-private` and `no-capture` mark secret content. |
+| Tasks | FUSE-WP-55.1 Role, state and relation model.<br>FUSE-WP-55.2 Text interface on layout v2.<br>FUSE-WP-55.3 Table and tree interfaces.<br>FUSE-WP-55.4 Actions and custom actions.<br>FUSE-WP-55.5 Event stream and incremental updates.<br>FUSE-WP-55.6 Virtualised view exposure.<br>FUSE-WP-55.7 Mapping for every existing widget; the mapping is part of each new widget's definition of done.<br>FUSE-WP-55.8 Update the AccessKit adapter for other platforms. |
+| Gates | `fuse_ui_a11y_roles_complete`: every widget class maps to a role or is listed as a pure container.<br>`fuse_ui_a11y_text_ranges`: boundaries, attributes, caret and selection for line edit, code view, rich text and terminal.<br>`fuse_ui_a11y_table_tree`: headers, level, position, expanded.<br>`fuse_ui_a11y_live_regions`.<br>`fuse_ui_a11y_incremental`: one changed label gives one node update.<br>`fuse_ui_a11y_virtual_rows`.<br>`fuse_ui_a11y_secret`: secret text is never present.<br>Existing: `fuse_ui_a11y_tree_dump`, `fuse_ui_a11y_bridge`. |
+| Budgets | No assistive tool attached: zero work in the a11y pass. Attached: one dirty label ≤ 20 µs; first full tree of 10 000 nodes ≤ 5 ms. |
+| Tier and PRISM | T3; T2 target for text-range arithmetic. PRISM job: ranges returned lie inside the text and on valid boundaries. |
+| Accept | Every feature row in the AX01 spec that cites AX01-GAP-1 has the data it needs. |
+| Deps / Size / Risks | Deps: FUSE-WP-18. Size L. Risks: role set must be frozen early because FUSE-WP-56's schema depends on it. |
+#### FUSE-WP-56 Accessibility service adapter (no Rust, no AccessKit on PBSD)
+| Row | Content |
+|---|---|
+| Goal | FUSE apps speak the suite's `svc.a11y` protocol directly, so the screen reader, magnifier, on-screen keyboard and voice control work with no Rust toolchain. Gap G-04. |
+| Owns | `Source/FUSE/UI/A11y/include/fuse/ui/a11y/service_adapter.hpp`, `Source/FUSE/UI/A11y/src/service_adapter.cpp`, `Source/FUSE/UI/A11y/schema/a11y.v1` (new). |
+| Design | **Decision: native adapter, not a vendored AccessKit.** Reasons: (1) AccessKit needs a Rust toolchain or a prebuilt binary (Verified, `FUSE_UI_PLAN.md:483,637`), which breaks the single-toolchain, offline, reproducible build; (2) its Unix adapter targets AT-SPI, which needs D-Bus, and the suite has its own session bus (`PLATFORM.md` section 7); (3) every assistive tool is a suite app, so both ends of the protocol are ours; (4) the suite needs security semantics the common protocols lack (secure-surface restriction AX01-F083, per-tool rights AX01-F082). The AccessKit adapter stays in tree for other platforms and is off in `pbsd-*` presets. The adapter serialises FUSE-WP-55 trees and events into `a11y.v1` records and takes requests back (text query, hit test, perform action, scroll into view, set focus). The transport is a host function table: FUSE opens no socket. Requests run on the UI thread through the existing `Bridge::enqueue` and `drain` (Verified, `a11y.hpp:39-41`). Each request carries a rights mask set by the service (read, act, text, pointer); on a window marked secure (FUSE-WP-67) `act` is refused and secret text never leaves. With no tool attached the adapter is inert. Magnifier support: focus and caret rectangle events with the surface id. Voice control: the action list by name, and a "hints" overlay FUSE draws on request, numbering actionable nodes. The test driver (FUSE-WP-69) uses the same adapter with an in-process transport. |
+| Tasks | FUSE-WP-56.1 `a11y.v1` schema with the platform plan.<br>FUSE-WP-56.2 Encoder for full and incremental updates.<br>FUSE-WP-56.3 Request decoder and UI-thread execution.<br>FUSE-WP-56.4 Rights mask and secure-window enforcement.<br>FUSE-WP-56.5 Focus, caret and pointer tracking events.<br>FUSE-WP-56.6 Hints overlay.<br>FUSE-WP-56.7 Rate limits and flood handling.<br>FUSE-WP-56.8 Reference decoder for tests. |
+| Gates | `fuse_ui_a11y_service_roundtrip`: encode, decode in the reference decoder, compare with the tree dump.<br>`fuse_ui_a11y_service_incremental`.<br>`fuse_ui_a11y_service_requests`: actions, text queries, hit tests; stale ids refused.<br>`fuse_ui_a11y_service_rights`: `act` refused on secure windows; secret text absent.<br>`fuse_ui_a11y_service_hostile_peer`: malformed requests and floods are bounded.<br>`fuse_ui_a11y_service_detached_zero_cost`.<br>`fuse_ui_a11y_hints_overlay`.<br>`fuse_lint_no_rust_no_dbus`: `pbsd-*` presets link neither. |
+| Budgets | Full tree of 10 000 nodes encoded ≤ 5 ms. Request round trip ≤ 1 frame. |
+| Tier and PRISM | T2 target for encoder and decoder; T1 target for the rights check. PRISM job: decoder bounds; no `act` request reaches `Bridge::perform` on a secure window. |
+| Accept | M2 exit: a mock screen reader walks, reads and operates a FUSE app through the service, using only C++23 code. |
+| Deps / Size / Risks | Deps: FUSE-WP-55; the session bus and schema compiler (G-08) for the final transport. Size L. Risks: the owner prefers a vendored AccessKit (Q-12); schema churn while AX01–AX06 specs are unfinished. |
+#### FUSE-WP-57 Accessibility and keyboard gates
+| Row | Content |
+|---|---|
+| Goal | Roles, names and states are complete and every function is reachable by keyboard, and CI proves it for FUSE's own widgets and for app documents. |
+| Owns | `Source/FUSE/UI/Doc/tools/fuse_ui_audit.cpp` (new), `Source/FUSE/UI/tests/test_a11y_audit.cpp`, `test_keyboard_only.cpp` (new). |
+| Design | One rule engine used by ctest and by a command-line tool app teams run on their `.fuseui` files. Rules: every interactive node has a role and a name or a labelled-by relation; images have text or are marked decorative; text contrast ≥ 4.5:1 and control contrast ≥ 3:1 from computed styles (7:1 in high contrast); targets ≥ 24 px, or 44 px in touch density; a visible focus ring on every focusable node; anything with a click handler is focusable and activates with Enter or Space; Tab reaches every focusable node; no focus trap outside a modal scope that Esc leaves; every action is reachable without a pointer; context menus open with `Shift+F10`; no clipped text at 300% scale. The keyboard gate drives the gallery twice, by pointer and by keys only, and requires the same set of signals. |
+| Tasks | FUSE-WP-57.1 Rule engine.<br>FUSE-WP-57.2 `fuse_ui_audit` tool with machine-readable output.<br>FUSE-WP-57.3 Keyboard-only driver.<br>FUSE-WP-57.4 Overflow and clipping detector.<br>FUSE-WP-57.5 Wire into every sample and the editor shell. |
+| Gates | `fuse_ui_a11y_audit_gallery`: zero violations over the gallery in four themes.<br>`fuse_ui_keyboard_only_gallery`: key-only run emits every signal the pointer run emits.<br>`fuse_ui_focus_ring_visible`, `fuse_ui_target_size`, `fuse_ui_scale_300_no_clip`.<br>`fuse_ui_audit_tool_selftest`: thirty seeded faults in fixture documents are all found.<br>Existing: `fuse_ui_focus_order`. |
+| Budgets | Audit of a 5000-node document ≤ 200 ms. |
+| Tier and PRISM | T4 (test tooling). No PRISM job. |
+| Accept | The quality bars "Keyboard" and "Accessibility" in `PLATFORM.md` section 11 have a tool that checks them. |
+| Deps / Size / Risks | Deps: FUSE-WP-21, FUSE-WP-55. Size M. Risks: contrast of translucent or blurred surfaces can only be estimated. |
+
+### Epic L — Internationalisation and input
+#### FUSE-WP-58 Keyboard: full key set, layouts, compose, shortcuts across layouts
+| Row | Content |
+|---|---|
+| Goal | Every key is usable; shortcuts work on every layout; dead keys and compose sequences produce text. |
+| Owns | `Source/FUSE/UI/Core/include/fuse/ui/keys.hpp` (new), `ui.hpp`, `Source/FUSE/UI/Core/include/fuse/ui/platform_bridge.hpp`, `Source/FUSE/UI/App/src/wayland/wl_keyboard.cpp` (new), `vendor/compose-data` (new). |
+| Design | `ui::Key` is a short list ending in `Other` (Verified, `ui.hpp:32-41`); the platform layer's `KeyV2` already carries scancode and repeat (`events_v2.hpp`). The UI key event becomes: logical key (full set with punctuation, numpad, media, input-method keys), physical position (HID usage), text from the keymap, modifiers with left and right and AltGr, lock states, repeat flag, layout group. Shortcut matching: by logical key under the active layout, falling back to the physical position for Latin shortcuts on non-Latin layouts, so `Ctrl+C` works on a Cyrillic layout; AltGr text never fires a `Ctrl+Alt` shortcut. Compose and dead keys run through xkbcommon's compose support with vendored tables. Repeat is done by the client from the compositor's rate and delay. Key labels in menus come from the layout. A `keySequenceEdit` widget records shortcuts (the editor shell has one in Preferences, Verified `FUSE:docs/ui/README.md`). Layout choice and switching belong to the compositor and AX04. |
+| Tasks | FUSE-WP-58.1 Key model and lossless mapping from `KeyV2`.<br>FUSE-WP-58.2 Keymap handling and layout groups on Wayland.<br>FUSE-WP-58.3 Shortcut matching policy.<br>FUSE-WP-58.4 Compose and dead keys.<br>FUSE-WP-58.5 Client-side repeat.<br>FUSE-WP-58.6 Localised key labels.<br>FUSE-WP-58.7 `keySequenceEdit`. |
+| Gates | `fuse_ui_keys_full_set`: every key class maps both ways.<br>`fuse_ui_keys_layout_shortcuts`: the DS 6 reserved shortcuts fire on six layouts (two Latin variants, Cyrillic, Arabic, Japanese, one AZERTY).<br>`fuse_ui_keys_compose_dead`.<br>`fuse_ui_keys_repeat`: rate, delay, stop on focus loss.<br>`fuse_ui_keys_altgr_text_vs_shortcut`.<br>`fuse_ui_widget_key_sequence_edit`.<br>Existing: `fuse_ui_platform_keys_v2`. |
+| Budgets | Key event to dispatch ≤ 20 µs. |
+| Tier and PRISM | T3. PRISM job: key tables have no out-of-range index. |
+| Accept | The action system's shortcuts behave the same on all tested layouts. |
+| Deps / Size / Risks | Deps: FUSE-WP-05. Size M. Risks: compose data licence and size (recorded in `THIRD_PARTY.md`). |
+#### FUSE-WP-59 Input methods and on-screen keyboard hooks
+| Row | Content |
+|---|---|
+| Goal | Every text widget works with input methods through text-input-v3, reports what a virtual keyboard needs, and the input-method apps themselves can be built on FUSE. |
+| Owns | `Source/FUSE/UI/Core/include/fuse/ui/text_input_client.hpp` (new), `Source/FUSE/UI/App/src/wayland/wl_text_input.cpp` (new), `Source/FUSE/UI/AppShell/src/input_method.cpp` (new). |
+| Design | The core already has pre-edit, a text-input session flag and a caret rectangle (Verified, `ui.hpp:301-311`). One `TextInputClient` interface is implemented by line edit, rich text, code view, terminal and the sheet editor: surrounding text, apply commit, apply delete-surrounding, caret rectangle, content type. The Wayland client enables and disables on focus, sends surrounding text (bounded, never from a secret field), content hint and purpose (normal, digits, number, phone, URL, e-mail, name, password, PIN, date, time, terminal), and the cursor rectangle; it applies pre-edit with cursor range and segment styles, commit and delete-surrounding in the order the protocol's serials require. Pre-edit is drawn through the decoration provider. Virtual keyboard support: correct purpose per field, and the focused caret is scrolled into view when the usable area shrinks. For AX03 and AX04, `fuse_app_shell` adds an input-method provider client and a candidate popup surface. |
+| Tasks | FUSE-WP-59.1 `TextInputClient` and adoption by all text widgets.<br>FUSE-WP-59.2 text-input-v3 client.<br>FUSE-WP-59.3 Pre-edit segments and rendering.<br>FUSE-WP-59.4 Content purpose on every field widget.<br>FUSE-WP-59.5 Caret-visible rule on resize.<br>FUSE-WP-59.6 Input-method provider and candidate popup in the shell library. |
+| Gates | `fuse_app_wl_text_input_v3`: enable and disable on focus; surrounding text, rectangle and content type sent; serial order.<br>`fuse_ui_ime_preedit_all_widgets`: one scripted pre-edit, commit and delete stream gives the same text in every text widget.<br>`fuse_ui_ime_secret_no_surrounding`.<br>`fuse_ui_ime_caret_visible_on_resize`.<br>`fuse_ui_content_purpose_matrix`.<br>`fuse_app_wl_input_method_provider`.<br>Existing: `fuse_ui_text_input`. |
+| Budgets | Pre-edit update to paint ≤ 1 frame. |
+| Tier and PRISM | T3; T2 target for surrounding-text windowing. PRISM job: byte offsets sent to the compositor lie on code-point boundaries inside the window. |
+| Accept | A scripted CJK-style composition session works identically in the line edit, code editor, rich text and terminal. |
+| Deps / Size / Risks | Deps: FUSE-WP-05, FUSE-WP-18. Size M. Risks: protocol details for the provider side differ between compositors (ours is the only target). |
+#### FUSE-WP-60 Locale: string tables, plurals, formatting
+| Row | Content |
+|---|---|
+| Goal | All UI text comes from tables with plural forms; numbers, dates and units follow the locale; switching language is live. |
+| Owns | `Source/FUSE/UI/Doc/include/fuse/ui/doc/strings.hpp`, `Source/FUSE/UI/Doc/src/strings.cpp`, `Source/FUSE/UI/Doc/tools/fuse_ui_strings.cpp` (new). |
+| Design | A `StringTable` with `key=value` tables, locale switching and refresh exists in the game library (Verified, `FUSE:docs/ui/README.md` Game UI), and bundles carry `locale/<lang>.tbl` (`PLATFORM.md` section 3). The table moves to `fuse_ui_doc` with a versioned format: escapes, comments, plural variants (`key[one]`, `key[few]`, `key[other]`), select variants, named and typed arguments, fallback chain (language-region, language, English, key), one report per missing key. Formatting and plural categories come from a `LocaleProvider` function table the host fills from FORGE's text and locale layer (`PLATFORM.md` V18; FORGE-WP-23); FUSE ships only a minimal built-in provider for tests. `.fuseui` text may be `"@key"`. A pseudo-locale (accents, 40% longer, bidi marks) is built in for testing. `fuse_ui_strings` extracts keys from documents and scripts and reports missing and unused ones (the FUSE UI plan calls for an extraction tool, `FUSE_UI_PLAN.md:237`). Direction follows the locale (FUSE-WP-20). |
+| Tasks | FUSE-WP-60.1 Table format and loader.<br>FUSE-WP-60.2 Plural, select and argument formatting.<br>FUSE-WP-60.3 `LocaleProvider` hook and test provider.<br>FUSE-WP-60.4 `@key` in documents and live switch.<br>FUSE-WP-60.5 Pseudo-locale.<br>FUSE-WP-60.6 Extraction tool.<br>FUSE-WP-60.7 Locale-aware number entry in spin boxes and sheet editor. |
+| Gates | `fuse_ui_locale_tbl_parse` and its fuzz smoke test.<br>`fuse_ui_locale_plurals`: a plural table for twelve languages through a mock provider.<br>`fuse_ui_locale_fallback_chain`.<br>`fuse_ui_locale_pseudo`: the gallery in the pseudo-locale has no clipped text.<br>`fuse_ui_locale_switch_live`.<br>`fuse_ui_strings_extract`.<br>`fuse_ui_locale_number_input`. |
+| Budgets | Language switch on a 5000-node window ≤ 10 ms. |
+| Tier and PRISM | T2 target for the table parser and formatter. PRISM job: argument indices and buffer writes are bounded. |
+| Accept | The gallery runs in a left-to-right, a right-to-left and the pseudo locale with no layout defect found by FUSE-WP-57. |
+| Deps / Size / Risks | Deps: FUSE-WP-20. Size M. Risks: the split with FORGE's locale layer must be agreed (Q-01). |
+
+### Epic M — Printing
+#### FUSE-WP-61 Print and PDF export of any view
+| Row | Content |
+|---|---|
+| Goal | Any view can be printed or exported as PDF with real text. PDF is the spool format (gap G-16, FUSE side). |
+| Owns | `Source/FUSE/UI/Print/{include/fuse/ui/print,src}` (new), target `fuse_ui_print`. |
+| Design | `PdfWriter` is a third consumer of draw lists beside the CPU rasteriser and the GPU kernel. It writes paths, fills, strokes, shadings, clips, transforms, images and text. Text is real text with subset fonts embedded and a Unicode map, so output is searchable and readable by assistive tools; when a font forbids embedding, glyphs become outlines. Blur and shadows are rasterised at the target resolution. Opacity layers become transparency groups. Output is deterministic (no clock, stable object order) and streamed, so memory does not grow with page count. Compression uses a small deflate encoder written here, to keep a C library out of the app process. `Printable { pageCount(settings), paintPage(i, Painter&, PageRect) }` is implemented by: any node subtree (sliced into pages, tables split with repeated headers, light theme forced, backgrounds optional), rich text and page layout, sheet (print areas, scaling, titles), code view (wrapped listing with line numbers), charts (vector), canvas (region export). Print preview is `pageView` over the same `Printable`. The output sink is a descriptor from the print portal; FUSE opens no file. The print dialog belongs to SH04. PNG export uses the rasteriser at a chosen scale. |
+| Tasks | FUSE-WP-61.1 PDF object writer, cross-reference table, streaming.<br>FUSE-WP-61.2 Draw-list operations to content streams.<br>FUSE-WP-61.3 Font subsetting (TrueType and CFF) and Unicode maps.<br>FUSE-WP-61.4 Images, shadings, transparency groups.<br>FUSE-WP-61.5 Deflate encoder.<br>FUSE-WP-61.6 `Printable` and subtree pagination.<br>FUSE-WP-61.7 Printables for sheet, code, chart, canvas.<br>FUSE-WP-61.8 Preview wiring and portal sink. |
+| Gates | `fuse_ui_pdf_writer_golden`: byte goldens for 30 draw-list fixtures.<br>`fuse_ui_pdf_reproducible`: two runs are identical.<br>`fuse_ui_pdf_text_extractable`: text recovered through the Unicode map equals the source, including ligatures and bidi text in logical order.<br>`fuse_ui_pdf_font_subset`: the subset parses and holds only used glyphs; a no-embed font becomes outlines.<br>`fuse_ui_print_paginate_subtree`: no row is cut; headers repeat.<br>`fuse_ui_print_preview_matches_output`: preview and printed page come from the same draw list.<br>`fuse_ui_deflate_roundtrip` and its fuzz smoke test.<br>`fuse_ui_pdf_render_compare` (nightly, optional): an independent renderer's output against the CPU raster. |
+| Budgets | 100 text pages to PDF ≤ 1 s. Memory ≤ 32 MiB whatever the page count. |
+| Tier and PRISM | T2 target for the object writer and the deflate encoder. PRISM job: every cross-reference offset equals the object's real position; stream lengths match. |
+| Accept | `Ctrl+P` in the gallery produces a PDF whose text can be selected. |
+| Deps / Size / Risks | Deps: FUSE-WP-17, FUSE-WP-23. Size XL. Risks: font subsetting is intricate; an independent PDF renderer for CI on HardenedBSD is Unverified. |
+
+### Epic N — Editor, designer, document format
+#### FUSE-WP-62 Finish the Qt-free editor shell; remove Qt from the default build; Studio (CR04)
+| Row | Content |
+|---|---|
+| Goal | The FUSE editor builds and runs with no Qt, on Wayland and HardenedBSD, and can be packaged as the Studio app. |
+| Owns | `Source/FUSE/EditorShell/`, `Source/FUSE/Editor/CMakeLists.txt`, root `CMakeLists.txt`, `CMakePresets.json`, `cmake/FuseLintGates.cmake`, `docs/` (editor, architecture, roadmap, coding standards, README). |
+| Design | The FUSE UI plan's conditions to drop Qt are: every Qt gate has a twin, desktop accessibility adapters exist, the owner signs off (section 2.6). Steps, numbered against section 2.5: remove the silent Qt probe in `fuse_editor_api` (QT-03) by putting it behind an explicit option that defaults OFF; make `fuse` the default `FUSE_EDITOR_SHELL` (QT-07) and let `FUSE_BUILD_EDITOR` build it (QT-01); move the Qt shell behind a legacy option, then delete its sources, gates, presets and CI job (QT-04 to QT-06, QT-08, QT-10); invert the lint to "no Qt anywhere" (QT-09); rename Qt-named present-gate identifiers (QT-11); rewrite the docs (QT-12). Then move the shell onto this plan's toolkit: `dockArea2`, item views v2, the code editor core, `timeline2`, `nodeGraph2`, `curveEditor2`, charts, the action system, the a11y model. The engine needs its own HardenedBSD work (preset `pbsd-engine`: renderer, shader toolchain, fibres) which is larger than the app profile. Studio opens projects through portal handles, not ambient paths. How a large native editor fits the "ForgeScript first" app model is Q-13. |
+| Tasks | FUSE-WP-62.1 Gate-twin audit and lint.<br>FUSE-WP-62.2 Remove QT-03; flip QT-07 and QT-01.<br>FUSE-WP-62.3 Editor shell on Wayland (FUSE-WP-05 to FUSE-WP-07).<br>FUSE-WP-62.4 Editor a11y through FUSE-WP-55 and FUSE-WP-56.<br>FUSE-WP-62.5 Owner sign-off run; delete the Qt shell, gates, presets, CI job.<br>FUSE-WP-62.6 `fuse_lint_no_qt` and doc rewrite.<br>FUSE-WP-62.7 `pbsd-engine` preset and engine port issues list.<br>FUSE-WP-62.8 Adopt the new widgets in the shell.<br>FUSE-WP-62.9 Project access through handles; Studio packaging per Q-13. |
+| Gates | `fuse_lint_no_qt`: no `find_package(Qt`, no Qt include, no Qt target in the default and `pbsd-*` link graphs.<br>`fuse_lint_editor_gate_twins` (until deletion): each `fuse_editor_qt_*` gate has a `fuse_editor_ui_*` twin.<br>`fuse_editor_ui_wl_startup`, `fuse_editor_ui_wl_live_present`: Wayland twins.<br>`fuse_editor_ui_a11y_audit`.<br>`fuse_editor_portal_project_open`.<br>Existing: `ctest -L fuse_editor_ui`, and `fuse_editor_ui_frame` at the FUSE UI plan's budget. |
+| Budgets | Full nine-dock repaint ≤ 2 ms (the FUSE UI plan's target, section 6). Idle: zero frames. |
+| Tier and PRISM | T3. PRISM job: none specific to the shell. |
+| Accept | A default configure on a machine with Qt installed links no Qt library. The editor's 45 twin gates run on HardenedBSD. |
+| Deps / Size / Risks | Deps: FUSE-WP-05–07, FUSE-WP-24, FUSE-WP-55–56 for sign-off; FUSE-WP-28, 31, 37, 46, 50 for adoption. Size XL. Risks: the engine port (Vulkan renderer, Slang, Q-09) is outside the app-profile critical path and may take longest; this is a P2 app. |
+#### FUSE-WP-63 UI designer (DV02)
+| Row | Content |
+|---|---|
+| Goal | The designer prototype becomes the tool app teams use to build `.fuseui` documents and style sheets. |
+| Owns | `Source/FUSE/UI/Designer/`, `Source/FUSE/UI/Widgets/include/fuse/ui/widgets/schema.hpp` (new). |
+| Design | In tree: lossless load and save, palette, outline, canvas, property grid, style panel, drag-to-place, multi-select, undo (section 2.1). Add a `WidgetSchema` per widget class (properties with type, default, choices and help; signals; a11y mapping). It is the single source for the designer's property grid, cook-time validation, the binding API description (FUSE-WP-12) and the reference docs (FUSE-WP-68). Features: binding editor with model schema and sample data; token picker; CSS editing in the code editor with live diagnostics; state simulation (hover, focus, disabled); preview matrix over theme, density, scale, direction, locale and breakpoint; visual handles for box and grid layout; reusable components (FUSE-WP-64); action wiring by action id; tab-order overlay; a11y audit panel (FUSE-WP-57); transition editing with `curveEditor2`; icon browser; handler stubs generated for the script side; migration prompts for old documents. To fit the app model, the designer core is exposed as a `designCanvas` widget plus `DesignDocument` operations through the binding, with the app logic in ForgeScript. |
+| Tasks | FUSE-WP-63.1 `WidgetSchema` for every widget.<br>FUSE-WP-63.2 Schema-driven property grid and validation.<br>FUSE-WP-63.3 Binding editor and sample data.<br>FUSE-WP-63.4 Style tools: tokens, CSS editor, state simulation.<br>FUSE-WP-63.5 Preview matrix.<br>FUSE-WP-63.6 Layout handles and guides.<br>FUSE-WP-63.7 Components, actions, tab order, a11y panel.<br>FUSE-WP-63.8 `designCanvas` widget and binding operations. |
+| Gates | `fuse_ui_designer_schema_complete`: every registered class has a schema; every property sets and round-trips.<br>`fuse_ui_designer_preview_matrix`: goldens across the matrix for one fixture.<br>`fuse_ui_designer_binding_validation`.<br>`fuse_ui_designer_undo_fuzz`: undoing a random edit sequence restores the original bytes.<br>`fuse_ui_designer_no_data_loss`: unknown keys and newer minor versions are kept.<br>Existing: `fuse_ui_designer_roundtrip`. |
+| Budgets | Edit to preview refresh ≤ 16 ms for a 2000-node document. |
+| Tier and PRISM | T3. PRISM job: none specific. |
+| Accept | The gallery and one real app window are authored in the designer with no hand-edited JSON. |
+| Deps / Size / Risks | Deps: FUSE-WP-12, 20, 21, 37, 57, 64. Size L. Risks: schema upkeep for 100+ widgets (enforced by the completeness gate). |
+#### FUSE-WP-64 `.fuseui` format evolution and versioning
+| Row | Content |
+|---|---|
+| Goal | The document format gains what apps need (lists, conditions, components, typed models, string keys) under a clear version and migration policy. |
+| Owns | `Source/FUSE/UI/Doc/` (document, cook, json), `Source/FUSE/UI/Doc/schema/fuseui-2.schema.json` (new). |
+| Design | Today the format is `"fuseui": 1`: a JSON tree with class, id, classes, style, children, text, value, `on`, a top-level style string, and a cooked binary form that is validated on load (Verified, `document.hpp:1-21,75-76`). Version 2 adds: `repeat` over a list slot or item model with keyed identity; `if` subtrees; `component` definitions with parameters and slots and `include` of bundle-local files; a `model` block declaring variables and types so bindings are checked at cook time; expression growth (ternary, string functions, format specifiers, `tr()`); action ids instead of free action names; an `a11y` block per node; `shortcut`, `tooltip`, `@key` text; a `window` block (title, minimum size 480×320 from DS 3, role); a list of style resources; breakpoint variants. Policy: `major.minor`; a loader accepts its own major up to its minor; unknown keys are an error when cooking and are kept with a warning in tools; `fuse_ui_cook --migrate` upgrades without loss; cooked blobs carry format version, binding API version and a content hash. Limits: depth 64, 1M nodes, 1 MiB per string. A canonical formatter gives stable diffs. |
+| Tasks | FUSE-WP-64.1 Version policy and loader gate.<br>FUSE-WP-64.2 `model` block and cook-time binding checks.<br>FUSE-WP-64.3 `repeat` and `if`.<br>FUSE-WP-64.4 Components and includes.<br>FUSE-WP-64.5 Expression additions.<br>FUSE-WP-64.6 `a11y`, actions, shortcuts, `@key`, `window`.<br>FUSE-WP-64.7 Migration tool and canonical formatter.<br>FUSE-WP-64.8 Published schema file and limits. |
+| Gates | `fuse_ui_doc_v1_compat`: every v1 fixture gives the same layout and draw hash under the v2 loader.<br>`fuse_ui_doc_migrate_lossless`: migrate, load, compare; migrating twice changes nothing.<br>`fuse_ui_doc_repeat_if`: identity kept across list changes.<br>`fuse_ui_doc_components`.<br>`fuse_ui_doc_model_schema`: an undeclared variable fails at cook time.<br>`fuse_ui_doc_limits`.<br>`fuse_ui_doc_version_refusal`: a newer major is refused with a clear error.<br>Existing: `fuse_ui_markup_roundtrip`, `fuse_ui_markup_fuzz`, `fuse_ui_hot_reload_identity`, `fuse_ui_binding_bytecode`. |
+| Budgets | Cooked load of a 5000-node document ≤ 2 ms. No expression compile at cooked load (existing rule, `document.hpp`). |
+| Tier and PRISM | T2 target for the JSON parser, cooked loader and expression machine. PRISM job: bounded stack depth; slot indices in range; every length in a cooked blob checked. |
+| Accept | The standard window template and all samples are version 2 documents. |
+| Deps / Size / Risks | Deps: FUSE-WP-13, FUSE-WP-14. Size L. Risks: format churn before the first apps ship (freeze 2.0 at M1). |
+
+### Epic O — Security hardening of FUSE UI
+#### FUSE-WP-65 Untrusted input surfaces and fuzzers
+| Row | Content |
+|---|---|
+| Goal | Every byte FUSE UI parses from outside the signed bundle has a named owner, a limit, a fuzzer and a stated place of parsing. |
+| Owns | `Source/FUSE/UI/fuzz/` (new), `Tests/fuzz-corpus/ui/` (new), `Source/FUSE/UI/Core/include/fuse/ui/limits.hpp` (new), `Source/FUSE/UI/Text/src/font_sanitise.cpp` (new), `cmake/FuseSanitizers.cmake`. |
+| Design | The surface table is below. Fuzz targets are libFuzzer executables `fuse_ui_fuzz_<name>` built with address and undefined-behaviour sanitisers (the sanitiser module exists, `FUSE:cmake/FuseSanitizers.cmake`); each has a corpus and a ctest smoke run; the nightly runs each for an hour; every crash becomes a corpus file and a unit test. Structure-aware and differential fuzzers cover draw lists (CPU against GPU), batches, terminal streams (against the slow model) and the piece tree (against a string). One header holds all limits (nodes, depth, string length, image size 16384², atlas pages), each with a test. Text denial-of-service caps: run length, combining marks per cluster, bidi depth; text is always clipped to its box. Fonts are the hard case: FreeType and HarfBuzz are outside the safe subset. Plan: a font sanitiser written here checks table directory, offsets, lengths and per-table invariants before a font reaches them; only installed fonts (validated at install time) load in process; fonts embedded in documents, web pages and subtitles are rendered in helpers (ME03 already requires this for subtitles). Q-07. |
+| Tasks | FUSE-WP-65.1 Fuzz build mode and CI wiring.<br>FUSE-WP-65.2 Targets for every row of the table.<br>FUSE-WP-65.3 Differential fuzzers.<br>FUSE-WP-65.4 `limits.hpp` and enforcement tests.<br>FUSE-WP-65.5 Font sanitiser.<br>FUSE-WP-65.6 Text denial-of-service caps.<br>FUSE-WP-65.7 Checked-arithmetic helpers and integer sanitiser in debug.<br>FUSE-WP-65.8 Coverage report per parser. |
+| Gates | `fuse_ui_fuzz_<name>_smoke` per target: corpus plus 10 s, no crash.<br>`fuse_ui_fuzz_corpus_coverage`: each parser's corpus reaches 80% line coverage of it.<br>`fuse_ui_limits`: each limit gives a clean error.<br>`fuse_ui_text_dos_caps`: 100 000 combining marks and deep bidi nesting finish in ≤ 50 ms and stay clipped.<br>`fuse_text_font_sanitiser`: a seeded corpus of malformed fonts is refused; vendored fonts pass.<br>`fuse_ui_asan_ubsan_all`: the whole `fuse_ui` label under both sanitisers. |
+| Budgets | Font sanitise ≤ 2 ms for a 1 MiB font. |
+| Tier and PRISM | T2 target for the sanitiser and every parser listed as "in process" below. PRISM job: one bounded-check job per parser entry point. |
+| Accept | No parser in the table lacks a fuzzer; thirty nights with no new crash before M2. |
+| Deps / Size / Risks | Deps: FUSE-WP-04. Size L, then continuous. Risks: third-party C code remains in process for text (accepted with the sanitiser, or moved out under Q-07). |
+
+| Input | Source of bytes | Parsed where | Fuzz target | Tier target |
+|---|---|---|---|---|
+| Fonts (installed) | system and user font sets | sanitiser here, then FreeType and HarfBuzz in process | `font_sanitise`, `text_shape` | T2 sanitiser, T3 libraries |
+| Fonts (embedded in content) | documents, web, subtitles | helper only | — (helper's) | — |
+| Images | any | helper only; `.fuseimg` here | `fuseimg` | T2 |
+| `.fuseui` JSON and cooked blobs | bundle (signed), designer files | here | `doc_json`, `doc_cooked`, `binding_expr` | T2 |
+| CSS | bundle, user themes | here | `css` | T2 |
+| SVG subset, `.fuseicon` | bundle; user files via helper | here (subset parser) | `svg`, `fuseicon` | T2 |
+| Markdown | help, notes, messages | here | `markdown` | T2 |
+| Grammars | bundle, user | here | `grammar`, `grammar_match` | T2 |
+| Rich text native format, state and layout blobs, string tables | app data, clipboard | here | `richtext_native`, `state_blob`, `dock_layout`, `locale_tbl` | T2 |
+| Terminal byte stream | programs | here | `term_vt` | T1 parser |
+| Wayland events, clipboard and drag data | compositor, other apps | client library plus our dispatch | `wl_events`, `data_offer` | T2 dispatch |
+| A11y requests, remote-surface, video, subtitle, page and map records, LUTs | other processes | here (validators) | `a11y_request`, `remote_record`, `video_frame`, `cue_record`, `page_record`, `vector_tile`, `color_lut` | T2 |
+| Binding batches | script engine (same process) | here | `bind_batch` | T2 |
+| Strings from other apps (notifications, titles) | other apps | sanitiser here | `hostile_text` | T2 |
+#### FUSE-WP-66 Memory-safe subset conformance
+| Row | Content |
+|---|---|
+| Goal | FUSE UI's own code passes the suite's memory-safe C++ subset check (`PLATFORM.md` section 2), with third-party C APIs confined to small boundary modules. |
+| Owns | `cmake/FuseSafeSubset.cmake` (new), `Source/FUSE/UI/safe-subset-baseline.txt` (new), boundary modules under each `src/boundary/` (new). |
+| Design | The MathScript Clang plugin was not read for this plan (Unverified); the design is a ratchet that works whatever its exact rules are. CI runs the plugin over the app-profile sources and records violations per file in a baseline; the count may only fall; modules on a "must be clean" list (binding core, terminal parser, piece tree, document loader, CSS parser, a11y adapter, PDF writer, validators) start at zero. Patterns in today's code that a strict subset is likely to reject, seen while reading: `void* user` plus function-pointer tables in public APIs (`ItemModel`, `Presenter`, `EventSource`, `VideoSource`, `ClipboardHooks`), raw owning state pointers (`Font::m_state`, Verified `text.hpp:125`), raw atlas and pixel pointers in the rasteriser (`draw_list.hpp:100`). Plan: public tables move to `InlineFn` callables (already in tree, `FUSE:Source/FUSE/UI/Core/include/fuse/ui/inline_fn.hpp`) and handles; pixel access goes through `std::span`; C libraries (FreeType, HarfBuzz, Wayland client, xkbcommon, Vulkan) are wrapped in audited boundary files, the only places allowed to include their headers. Interim gates that need no plugin: clang's unsafe-buffer-usage warning as an error in the clean modules, and all gates run with libc++ hardening. |
+| Tasks | FUSE-WP-66.1 Read the plugin's rules; write the mapping to FUSE patterns.<br>FUSE-WP-66.2 Baseline and ratchet job.<br>FUSE-WP-66.3 Boundary modules for each C dependency.<br>FUSE-WP-66.4 `InlineFn` and handle migration of public tables.<br>FUSE-WP-66.5 Span-based pixel and atlas access.<br>FUSE-WP-66.6 Hardened libc++ run and cost measurement.<br>FUSE-WP-66.7 Store PRISM outputs beside the code as they appear. |
+| Gates | `fuse_ui_safe_subset_ratchet`: violations per file ≤ baseline; zero in the clean list.<br>`fuse_ui_unsafe_buffer_usage`: the warning is an error in the clean list.<br>`fuse_ui_hardened_libcxx`: every gate passes with library hardening on.<br>`fuse_lint_boundary_modules`: third-party C headers are included only in boundary files.<br>`fuse_ui_prism_outputs_present`: a package whose docs claim a tier as reached has a stored PRISM output; otherwise the docs say "target". |
+| Budgets | Hardened library mode costs ≤ 5% on `fuse_ui_bench_10k` (to be measured). |
+| Tier and PRISM | This package is the T3 floor for everything else. PRISM job: none of its own. |
+| Accept | New modules of this plan are subset-clean from their first commit; the baseline shrinks every milestone. |
+| Deps / Size / Risks | Deps: FUSE-WP-04. Size L. Risks: the subset forbids a pattern FUSE UI depends on (owner decision, Q-14); refactoring public tables touches every widget. |
+#### FUSE-WP-67 Trusted-path rendering support
+| Row | Content |
+|---|---|
+| Goal | The shell can draw prompts, lock screens and security indicators that an app cannot imitate, cover or drive; apps cannot remove their own capability badges. |
+| Owns | `Source/FUSE/UI/Core/include/fuse/ui/protected.hpp`, `Source/FUSE/UI/Core/src/protected.cpp`, `Source/FUSE/UI/Text/include/fuse/text/security_display.hpp`, `Source/FUSE/UI/AppShell/src/secure_surface.cpp` (new). |
+| Design | Most of the guarantee is the compositor's and the shell's; FUSE supplies four things. (1) Secure surfaces: `SurfaceDesc::secure` exists only in `fuse_app_shell`; it asks the compositor for a trusted surface (protocol to be defined, Q-06). Inside one, FUSE refuses foreign pixels (remote surfaces, video, unsigned images), refuses a11y `act` requests, sets no-capture, and passes every outside string through the sanitiser. (2) Anti-clickjacking: buttons on a secure surface ignore input for 500 ms after the surface is shown, focused or changed, and whenever the compositor reports it obscured; the dangerous choice is never the default. (3) Protected nodes: the host can create nodes (header-bar badges, trust badge) flagged protected. The binding cannot find, change, restyle or destroy them (`BindError::Denied`); bundle style sheets cannot match them; they are painted last in a reserved region, so `z-index`, transforms, margins or overlays cannot cover them. This works because apps are script on the shared host and helpers hold no display socket. (4) Text safety helpers: detection of bidi controls, invisible characters and confusable strings; middle elision that always keeps the end of a file name or host name. |
+| Tasks | FUSE-WP-67.1 Secure surface request in the shell library.<br>FUSE-WP-67.2 Foreign-pixel and a11y restrictions on secure surfaces.<br>FUSE-WP-67.3 Activation delay and obscured-state handling.<br>FUSE-WP-67.4 Protected nodes in tree, style, paint and binding.<br>FUSE-WP-67.5 Security display text helpers.<br>FUSE-WP-67.6 Prompt widget kit (capability prompt, authentication prompt) with goldens.<br>FUSE-WP-67.7 Threat-model document for app and shell authors. |
+| Gates | `fuse_ui_protected_nodes`: binding operations return Denied; a hostile sheet using `z-index`, transforms, negative margins and overlays leaves the badge visible in the golden.<br>`fuse_ui_secure_activation_delay`: clicks before 500 ms are ignored; a content change resets the delay.<br>`fuse_ui_secure_no_foreign_pixels`.<br>`fuse_ui_secure_a11y_no_act`.<br>`fuse_ui_security_display_text`: bidi override, zero-width and look-alike fixtures are flagged; the real file ending stays visible.<br>`fuse_app_wl_secure_surface_request`: present in the shell library; absent from the ordinary one (link test).<br>`fuse_ui_secure_prompt_goldens`. |
+| Budgets | Protected-node checks add ≤ 1% to `fuse_ui_bench_10k`. |
+| Tier and PRISM | T1 target for the protected-node access check and the activation-delay automaton (`ROADMAP.md` section 6 names trusted-path state machines as T1). PRISM job: no binding operation path mutates a protected node; the automaton cannot accept input before the delay. |
+| Accept | SH04's capability prompt and SH03's lock screen are built on the prompt kit; a test app trying ten listed spoofing tricks fails each. |
+| Deps / Size / Risks | Deps: FUSE-WP-10, 12, 20, 56. Size L. Risks: the compositor protocol for trusted surfaces does not exist yet (Q-06); without it only items 2–4 can be done. |
+
+### Epic P — Documentation, API stability, test and performance infrastructure
+#### FUSE-WP-68 Documentation, samples, API stability and versioning
+| Row | Content |
+|---|---|
+| Goal | App teams can learn, rely on and pin the toolkit. |
+| Owns | `docs/ui/` (guide, widget, style and binding references, security notes, HardenedBSD and Wayland notes), `Samples/ui/` (new), `Source/FUSE/UI/api/fuse_ui.api` (new lock file), `Tools/FUSE/ApiDiff/` (new). |
+| Design | References are generated, not written: widgets from `WidgetSchema`, style from the property registry (`propInfo`, Verified `style.hpp:107-110`), binding from `ui_api.fbind`. Samples are small bundles: `hello`, `gallery`, `mini-files`, `mini-writer`, `mini-term`, `mini-paint`, `dashboard`, `panel-demo`, `lock-demo`; each has a screenshot golden, an a11y audit and an idle check. Versioning: separate `major.minor` for the binding API, the `.fuseui` format and the CSS property set; C++ headers promise source compatibility within a major, with one minor of deprecation, and no binary interface promise because the host links statically. An API diff tool compares public declarations with the lock file and fails on an unannounced break. A changelog is required for any lock-file change. |
+| Tasks | FUSE-WP-68.1 Generators for the three references.<br>FUSE-WP-68.2 User guide and porting notes from the Lua binding.<br>FUSE-WP-68.3 Nine samples with gates.<br>FUSE-WP-68.4 API lock file and diff tool.<br>FUSE-WP-68.5 Version macros, `fuse::ui::version()`, changelog rule.<br>FUSE-WP-68.6 Security notes for app authors. |
+| Gates | `fuse_ui_docs_generated_fresh`: generated references equal the committed ones.<br>`fuse_ui_docs_snippets_compile`: C++ blocks in `docs/ui` compile.<br>`fuse_app_sample_<name>` for each sample.<br>`fuse_ui_api_diff`.<br>`fuse_ui_version_consistent`: CMake, headers, lock file and docs agree. |
+| Budgets | None. |
+| Tier and PRISM | T4. No PRISM job. |
+| Accept | A new engineer builds `mini-files` from the guide alone. |
+| Deps / Size / Risks | Deps: FUSE-WP-12, FUSE-WP-63 (schema). Size M, then continuous. Risks: docs drift (the freshness gate). |
+#### FUSE-WP-69 Golden-test infrastructure and UI test driver
+| Row | Content |
+|---|---|
+| Goal | Goldens scale from four images to thousands; UI tests are scripted through the a11y tree, as `PLATFORM.md` section 11 requires. |
+| Owns | `Source/FUSE/UI/tests/golden_tool.hpp`, `Source/FUSE/UI/tests/golden/` (layout), `Source/FUSE/UI/Core/include/fuse/ui/test_driver.hpp`, `Source/FUSE/UI/Core/src/test_driver.cpp` (new). |
+| Design | Today there are four golden images, regenerated with `FUSE_UI_UPDATE_GOLDEN=1` (Verified, `FUSE:docs/ui/README.md`). New: one helper for image, layout-dump and a11y-dump goldens; names `golden/<suite>/<case>@<profile>-<theme>-<scale>`; exact compare for CPU output, a FLIP threshold for GPU and path output (FLIP is vendored, `FUSE:THIRD_PARTY.md`); on failure CI uploads expected, actual and difference images with an index page; updating goldens needs a reviewer. Goldens use only vendored fonts. CPU goldens must be identical on Linux with GCC, Linux with clang and libc++, and HardenedBSD; the raster sources get the no-contraction floating-point flag the repo already has (`FUSE:cmake/FuseCxx23.cmake`). The FUSE UI plan names a `UiTestDriver`; no public header for it was found. `test_driver.hpp` provides: find by id, role or name; click, type, key, drag, scroll, gesture; a virtual clock; wait until idle; dumps and screenshots. It is reachable from the binding so app tests are scripts (the script API is FORGE-WP-35.4). Sessions can be recorded and replayed. Tests never sleep. |
+| Tasks | FUSE-WP-69.1 Golden helper and naming.<br>FUSE-WP-69.2 Difference artefacts and CI upload.<br>FUSE-WP-69.3 Cross-platform determinism work.<br>FUSE-WP-69.4 Public test driver.<br>FUSE-WP-69.5 Driver operations in the binding.<br>FUSE-WP-69.6 Record and replay.<br>FUSE-WP-69.7 End-to-end mode on the Wayland test compositor. |
+| Gates | `fuse_ui_golden_tool_selftest`: a seeded one-pixel change is caught and artefacts are written.<br>`fuse_ui_golden_cross_platform`: hash lists are equal across the CI jobs.<br>`fuse_ui_test_driver_api`: queries by role and name; driver actions give the same signals as raw input.<br>`fuse_ui_replay_deterministic`: a recorded session replays to identical draw-list hashes.<br>`fuse_lint_tests_no_sleep`. |
+| Budgets | Whole `fuse_ui` label ≤ 10 min on the CI runner. |
+| Tier and PRISM | T4. No PRISM job. |
+| Accept | Every widget package in this plan lands with goldens made by this tool. |
+| Deps / Size / Risks | Deps: FUSE-WP-04, FUSE-WP-55. Size M. Risks: floating-point differences between compilers in path rasterisation (fixed-point coverage if needed). |
+#### FUSE-WP-70 Performance CI
+| Row | Content |
+|---|---|
+| Goal | Every budget in this plan is measured on each merge, with regression limits; start-up, idle wake-ups, memory and size are gated. |
+| Owns | `Source/FUSE/UI/tests/bench/` (new), `scripts/ci/perf/` (new). |
+| Design | Each benchmark writes a record (median, 95th percentile, allocations, peak memory). On a pinned runner a result more than 10% above the rolling baseline fails; the budgets in this plan and in the FUSE UI plan's section 6 are hard caps. Start-up is measured on the Wayland path with FULL text and the system theme. Idle: zero frames, zero timers armed, zero wake-ups over 10 s; with a focused text field the caret blink may cost at most 2 wake-ups a second and stops when the window is inactive. Memory: resident size of `hello`, per-window overhead, and a glyph atlas shared across an app's windows (today each `UiContext` owns a 1024² atlas, Verified `ui.hpp:174,401`). Binary size gates named in the FUSE UI plan (`fuse_app_binary_size`) are added. Scripted scenarios (scroll a 10M-row table, type in the code editor, resize a window continuously) record frame-time histograms. |
+| Tasks | FUSE-WP-70.1 Benchmark harness and record format.<br>FUSE-WP-70.2 Baseline store and regression rule.<br>FUSE-WP-70.3 Start-up, idle, memory and size gates.<br>FUSE-WP-70.4 Shared glyph atlas across windows.<br>FUSE-WP-70.5 Scenario benchmarks.<br>FUSE-WP-70.6 Report page per commit. |
+| Gates | `fuse_ui_bench_suite`: runs every `fuse_ui_bench_*` and emits records.<br>`fuse_ui_bench_regression`.<br>`fuse_app_wl_hello_startup`: first frame ≤ 150 ms cold.<br>`fuse_app_idle_wakeups`.<br>`fuse_app_hello_rss`, `fuse_app_binary_size`: measured once, then held within +10%.<br>`fuse_app_resize_bench`.<br>`fuse_app_shared_atlas`.<br>Existing: `fuse_ui_bench_10k`, `fuse_ui_zero_alloc_steady`, `fuse_app_idle_zero_frames`, `fuse_app_hello_startup`. |
+| Budgets | The gates above are the budgets. Continuous resize at 1080p: frame ≤ 8 ms on the CPU path. |
+| Tier and PRISM | T4. No PRISM job. |
+| Accept | A regression in any budget blocks the merge that caused it. |
+| Deps / Size / Risks | Deps: FUSE-WP-04. Size M. Risks: noisy runners (pinned hardware, medians over 30 runs). |
+
+## 5. Sequencing
+### 5.1 Dependency graph
+Main edges only; each work package's own "Deps" row is the full list.
+
+```mermaid
+graph TD
+  WP01[01 HardenedBSD port] --> WP02[02 Offline build]
+  WP01 --> WP03[03 No writable-executable memory]
+  WP01 --> WP04[04 CI on HardenedBSD]
+  WP02 --> WP16[16 FULL text vendored]
+  WP01 --> WP05[05 Wayland core]
+  WP02 --> WP05
+  WP05 --> WP06[06 Presenters and scale]
+  WP06 --> WP07[07 Popups and subsurfaces]
+  WP05 --> WP08[08 Touch, pen, pointer lock]
+  WP05 --> WP09[09 Clipboard and drag]
+  WP07 --> WP10[10 Shell protocols]
+  WP06 --> WP11[11 Outputs and colour]
+  WP13[13 Models v2] --> WP12[12 Binding core]
+  WP14[14 Actions] --> WP12
+  WP05 --> WP15[15 Host seams]
+  WP12 --> M1((M1 hello app))
+  WP15 --> M1
+  WP07 --> M1
+  WP16 --> WP17[17 Fonts]
+  WP17 --> WP18[18 Text layout v2]
+  WP18 --> WP19[19 Piece tree]
+  WP23[23 Draw list v2] --> WP20[20 CSS additions]
+  WP20 --> WP21[21 System theme]
+  WP20 --> WP22[22 Animation]
+  WP23 --> WP24[24 Vulkan on HardenedBSD]
+  WP06 --> WP24
+  WP23 --> WP25[25 CPU renderer]
+  WP23 --> WP27[27 Images, SVG, icons]
+  WP11 --> WP26[26 Colour and HDR]
+  WP24 --> WP26
+  WP13 --> WP28[28 Item views]
+  WP18 --> WP28
+  WP21 --> WP29[29 Chrome kit]
+  WP14 --> WP29
+  WP07 --> WP30[30 Overlays]
+  WP09 --> WP33[33 In-app drag]
+  WP33 --> WP31[31 Tabs and docking]
+  WP18 --> WP55[55 A11y model]
+  WP55 --> WP56[56 A11y service adapter]
+  WP10 --> WP67[67 Trusted path]
+  WP56 --> WP67
+  WP12 --> WP67
+  WP18 --> WP39[39 Terminal grid]
+  WP28 --> M2((M2 self-hosting desktop))
+  WP29 --> M2
+  WP30 --> M2
+  WP39 --> M2
+  WP56 --> M2
+  WP67 --> M2
+  WP25 --> M2
+  WP19 --> WP35[35 Rich text]
+  WP35 --> WP36[36 Page layout]
+  WP19 --> WP37[37 Code editor core]
+  WP37 --> WP38[38 Diff and merge]
+  WP23 --> WP43[43 Canvas]
+  WP08 --> WP43
+  WP24 --> WP43
+  WP43 --> WP45[45 Page view]
+  WP23 --> WP46[46 Charts]
+  WP52[52 Audio] --> WP53[53 Video surface]
+  WP24 --> WP53
+  WP53 --> WP54[54 Subtitles and HDR video]
+  WP24 --> WP51[51 Remote and web surface]
+  WP36 --> WP61[61 Print and PDF]
+  WP23 --> WP61
+  WP35 --> M3((M3 daily driver))
+  WP43 --> M3
+  WP53 --> M3
+  WP51 --> M3
+  WP61 --> M3
+  WP46 --> M3
+  WP31 --> WP62[62 Editor without Qt]
+  WP64[64 Format v2] --> WP63[63 Designer]
+  WP62 --> M4((M4 full suite))
+  WP63 --> M4
+```
+
+### 5.2 Work packages against suite milestones
+| Milestone (`ROADMAP.md`) | FUSE work packages that must be done | FUSE exit evidence |
+|---|---|---|
+| M0 Foundations | 01, 02, 03, 04, 16; start 65, 66, 69, 70 | UI gates run on HardenedBSD in CI, offline, FULL text; W^X audit output stored. |
+| M1 Hello app | 05, 06, 07 (toplevel and popups), 09 (clipboard), 12, 13, 14, 15, 58, 64 (2.0 frozen), 21 (tokens) | A bundle's window opens through `fuse_app` on Wayland in capability mode, driven through the binding core. |
+| M2 Self-hosting desktop | 07 (rest), 08, 10, 11, 17, 18, 19, 20, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 37 (phase 1), 38, 39, 42, 55, 56, 57, 59, 60, 65, 67, 68, 69, 70 | Shell apps, Terminal, Text Editor, Files and Settings have every widget they list; a11y service works without Rust; trusted-path gates exist. |
+| M3 Daily driver | 26, 34, 35, 36, 37 (rest), 40, 43, 44, 45, 46, 51, 52, 53, 54, 61, 66 (clean list at zero) | Rich text, canvas, media, charts, web surface and print are in. |
+| M4 Full suite | 41, 47, 48, 49, 50, 62, 63 | Editor has no Qt; designer ships; remaining widgets in. |
+| M5 Extras | Phase 3 items inside 46 (3D plots), 54 (HDR passthrough), 31 (toplevel-drag tear-off), 17 (COLRv1 polish) | — |
+
+### 5.3 Critical path
+| Path | Chain | Why it is critical |
+|---|---|---|
+| To M1 | FUSE-WP-01 → 05 → 06 → 07 → 15, with FUSE-WP-13 and 14 → 12 beside it | No app can show a window or run script-driven UI before these. |
+| To M2 | FUSE-WP-16 → 17 → 18 → 28 and 39; FUSE-WP-07 → 10 → 67; FUSE-WP-55 → 56 | The shell needs layer surfaces and trusted path; every app needs text layout v2 and item views; Terminal needs the grid. |
+| To M3 (longest chain in the plan) | FUSE-WP-16 → 18 → 19 → 35 → 36 → 61 | Writer and printing sit at the end of five XL or L packages. Start FUSE-WP-18 and FUSE-WP-19 during M1. |
+| Second M3 chain | FUSE-WP-23 → 24 → 43 → 45, and FUSE-WP-52 → 53 → 54 | Canvas and media both need the draw-list and GPU work first. |
+
+### 5.4 What can run in parallel
+| Track | Packages | Needs only |
+|---|---|---|
+| A Build and CI | 01, 02, 03, 04, 66, 69, 70 | a HardenedBSD machine |
+| B Wayland | 05 → 06 → 07 → 08, 09, 10, 11, 59 | track A started |
+| C Binding and models | 13, 14, 12, 15, 64 | headless core (exists) |
+| D Text | 16 → 17 → 18 → 19, 58, 60 | headless core |
+| E Rendering | 23 → 25, 24, 26, 27 | headless core; a GPU for 24 |
+| F Styling and chrome | 20 → 21, 22 → 29, 30 | track E for transforms |
+| G Views and editors | 28, 31, 33, 37, 38, 39, 40, 41 | tracks C and D |
+| H Documents and graphics | 35, 36, 42, 43, 44, 45, 46, 47, 48, 49, 50 | tracks D and E |
+| I Media and remote | 52, 53, 54, 51 | track E |
+| J Accessibility and security | 55, 56, 57, 65, 67 | tracks C and D |
+| K Editor and designer | 62, 63 | most of the above |
+
+Tracks C, D and E need no Wayland and no HardenedBSD machine: they can start on day one on the headless core with the existing gates.
+
+### 5.5 Suggested first 20 tasks
+| # | Task | Why first |
+|---|---|---|
+| 1 | FUSE-WP-01.2 C++23 library probe | Turns observation O2 into a named list of fixes. |
+| 2 | FUSE-WP-04.3 Linux clang + libc++ pre-check job | Cheapest way to keep the HardenedBSD toolchain pairing green. |
+| 3 | FUSE-WP-01.1 Platform profile and `FUSE_OS_*` macros | Everything else on HardenedBSD hangs off it. |
+| 4 | FUSE-WP-04.1 HardenedBSD runner image | Needed to record any result at all. |
+| 5 | FUSE-WP-16.1 Vendor the four FULL-text archives | Removes the only configure-time network use in FUSE UI. |
+| 6 | FUSE-WP-02.1 `FuseOffline.cmake` and fatal guards | Makes "offline" checkable. |
+| 7 | FUSE-WP-03.2 ELF audit script | First half of the M0 exit evidence. |
+| 8 | FUSE-WP-03.3 Run-time mapping test | Second half of the M0 exit evidence. |
+| 9 | FUSE-WP-01.4 Vulkan loader and ICD discovery | Fixes O1; decides whether GPU gates can run. |
+| 10 | FUSE-WP-12.1 `ui_api.fbind` format, reviewed with FORGE-WP-12.1 | Both plans block on one agreed interface (Q-01). |
+| 11 | FUSE-WP-13.2 `ItemModel2` table, roles, flags | Views, binding and a11y all build on it. |
+| 12 | FUSE-WP-05.1 Vendor the Wayland client library, protocols and xkbcommon | After Q-02 is decided. |
+| 13 | FUSE-WP-05.7 In-tree test compositor | Every Wayland gate needs it. |
+| 14 | FUSE-WP-05.3 Connection, registry, `WlCaps` | First code against the real compositor; records which protocols it offers. |
+| 15 | FUSE-WP-18.1 Span and paragraph style model (header review) | Longest chain in the plan starts here. |
+| 16 | FUSE-WP-19.1 Piece tree with cached metrics | Pure data structure; a T1 target; unblocks 35 and 37. |
+| 17 | FUSE-WP-23.1 Draw-list v2 operation and arena layout | Unblocks rendering, CSS transforms, charts, canvas, print. |
+| 18 | FUSE-WP-55.1 Role, state and relation model | The a11y schema and AX01–AX06 specs wait on it. |
+| 19 | FUSE-WP-69.1 Golden helper and naming | Every later package lands with goldens. |
+| 20 | FUSE-WP-66.1 Read the safe-subset plugin's rules | Finds a Q-14 conflict before much new code exists. |
+
+## 6. Risk register and open questions
+### 6.1 Risks
+| ID | Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|---|
+| RK-01 | GPU drivers on HardenedBSD map writable-executable memory or are missing | medium | high | CPU renderer is a first-class presenter (FUSE-WP-25); run-time mapping gate with the GPU presenter; Q-04. |
+| RK-02 | The PBSD compositor lacks or mis-implements a protocol (management, lock, session, trusted surface, embedding) | high | high | `WlCaps` degrades cleanly; in-tree test compositor defines the expected behaviour; Q-05, Q-06. |
+| RK-03 | Binding interface drifts between this plan and the FORGE plan | medium | high | One description file, one `ffi.hpp`, one conformance test run in both CIs (FUSE-WP-12; FORGE RK-07). |
+| RK-04 | Text layout v2 is late and blocks rich text, code editor, terminal and a11y text | medium | high | Header review first (task 15 above); start in M1; keep `lineEdit` on the old layout until the port is green. |
+| RK-05 | Scope of rich text and page layout grows without limit | high | medium | The operation set and rule list in FUSE-WP-35 and FUSE-WP-36 are the scope; additions need an owner decision. |
+| RK-06 | Third-party C code (FreeType, HarfBuzz, Wayland client, xkbcommon) stays in every app process | certain | medium | Font sanitiser, boundary modules, fuzzing, embedded fonts only in helpers (FUSE-WP-65, 66); Q-02, Q-07. |
+| RK-07 | The memory-safe subset rejects FUSE UI's function-table style | medium | high | Read the rules first (FUSE-WP-66.1); ratchet, not a flag day; Q-14. |
+| RK-08 | Performance budgets were set from Linux and lavapipe records in the FUSE docs | high | medium | Every budget is re-measured on HardenedBSD by FUSE-WP-70 before it becomes a hard cap. |
+| RK-09 | Goldens differ between compilers or platforms | medium | medium | No-contraction flag, fixed-point coverage if needed, cross-platform hash gate (FUSE-WP-69). |
+| RK-10 | No HDR display, tablet or GPU variety in CI | certain | low | Maths and protocol gates in CI; a manual hardware checklist per release. |
+| RK-11 | Qt removal waits on sign-off while both shells need upkeep | medium | medium | Gate-twin lint; delete promptly after sign-off (FUSE-WP-62). |
+| RK-12 | Seventy packages, many XL, for a small team | certain | high | Tracks in section 5.4; M2 scope is the cut line; P2 and P3 widgets wait. |
+| RK-13 | App specs are still being written; requirements will move | certain | medium | Section 7 is regenerated when specs change; work package IDs are stable. |
+| RK-14 | Licence set: FUSE is AGPL-3.0; openal-soft is LGPL; fonts under OFL and Apache-2.0 | low | medium | App profile avoids openal-soft; SBOM gate (FUSE-WP-02); licence review of each new vendored tree. |
+| RK-15 | The design-system colours fail the contrast gate | medium | low | Contrast tool reports; owner adjusts tokens (FUSE-WP-21). |
+| RK-16 | Idle wake-ups creep in through timers (caret blink, animations, polling) | medium | medium | `fuse_app_idle_wakeups` on every merge. |
+
+### 6.2 Decisions the owner must make
+| ID | Question | Options | Recommendation |
+|---|---|---|---|
+| Q-01 | Binding interface: handle layout, batch record, who evaluates `.fuseui` expressions, where locale formatting lives | (a) FORGE's `ffi.hpp` is the single source and FUSE mirrors it; (b) FUSE defines its own and FORGE adapts; (c) a third neutral header | (a) for handles and batches (the 32+32 layout already matches `NodeHandle`). Expressions: FUSE's bytecode for the built-in subset, FORGE for the rest. Locale: FORGE provides, FUSE calls a hook. Settle before FUSE-WP-12.2. |
+| Q-02 | Wayland client implementation | (a) vendor the reference C client library; (b) write the wire protocol client in the safe C++ subset; (c) SDL3, as the FUSE UI plan's D1 chose | (a) now, behind a seam, because the Vulkan surface extension takes that library's objects. Revisit (b) with dmabuf presentation later. Not (c): it adds a large C tree for one platform. |
+| Q-03 | Who draws window decorations | (a) apps draw the header bar, compositor draws only the security border; (b) compositor draws title bars; (c) both by setting | (a): it matches DS 3 and keeps the unforgeable part in the compositor. |
+| Q-04 | Default presenter on PBSD | (a) GPU when a hardware Vulkan driver passes the mapping audit, else CPU; (b) CPU everywhere, GPU opt-in per app; (c) GPU only | (a), with (b) as the safe launch setting until FUSE-WP-03's audit has run on real drivers. |
+| Q-05 | Embedding another process's surface (panel applets, web, VM consoles) | (a) buffers handed to the embedder and drawn by FUSE (FUSE-WP-51); (b) a compositor embed protocol with tokens; (c) run everything in process | (a) for web, VM and previews; (b) only if applet isolation needs compositor-level input routing. Never (c) for third-party code. |
+| Q-06 | Compositor protocols FUSE needs that were not seen in `pbsd/compositor`: toplevel management, session lock, session management, trusted surface, window thumbnails | (a) adopt existing public protocols where they exist; (b) define PBSD protocols; (c) do without | (a) where one exists, (b) for trusted surface and thumbnails. Schedule compositor work with FUSE-WP-10 and FUSE-WP-67. |
+| Q-07 | Where hostile fonts and colour profiles are parsed | (a) in process after a sanitiser, installed fonts only; embedded fonts and ICC in helpers; (b) a font service process for all shaping and rasterising; (c) in process with no sanitiser | (a). (b) costs latency and a large protocol; (c) is not acceptable for this OS. |
+| Q-08 | Mapped files for huge buffers when the file can change underneath | (a) host passes a ZFS-snapshot or private copy handle; (b) editor copies on first touch; (c) accept a fault handler | (a) where the file is on ZFS, (b) otherwise. No signal-handler recovery. |
+| Q-09 | Shader toolchain for the engine (Slang is download-only today) | (a) ship precompiled SPIR-V for the engine as for the UI; (b) build Slang from source on HardenedBSD; (c) port engine shaders to GLSL with a vendored compiler | (a) for PBSD builds; it only affects Studio (CR04), not the app profile. |
+| Q-10 | LCD subpixel text | (a) keep greyscale only (the FUSE UI plan's non-goal); (b) opt-in LCD filtering at scale 1.0 | (a). It also serves the magnifier (AX02-GAP-3). |
+| Q-11 | Fonts to vendor: UI family, monospace family, wider script coverage | (a) keep Open Sans, add a monospace and more Noto faces; (b) choose a new variable UI family | (a) for M1; decide (b) with the design owner before FUSE-WP-21 goldens are made. |
+| Q-12 | Accessibility adapter | (a) native adapter on `svc.a11y` (FUSE-WP-56); (b) pinned, vendored AccessKit with a Rust toolchain in the build | (a), for the four reasons in FUSE-WP-56. |
+| Q-13 | How Studio (CR04) and the designer fit the "ForgeScript first" app model | (a) native editor process as a declared helper that owns its windows; (b) rewrite editor logic in ForgeScript; (c) widget-plus-binding split | (a) for Studio, (c) for the designer (FUSE-WP-63). |
+| Q-14 | If the safe subset forbids opaque `void* user` tables | (a) migrate public tables to `InlineFn` and handles; (b) allow a checked opaque reference type in the subset; (c) exempt FUSE UI | (a), staged by the ratchet. Not (c). |
+
+## 7. Traceability
+### 7.1 Platform gap → FUSE work packages
+| Gap | FUSE work packages | Note |
+|---|---|---|
+| G-01 Wayland backend | 05, 06, 07, 08, 09, 10, 11, 59 | plus compositor work (Q-05, Q-06) |
+| G-02 ForgeScript binding | 12, 13, 14 | FORGE-WP-12, FORGE-WP-13 on the other side |
+| G-03 FULL text offline, all scripts | 16, 17, 18, 02 | |
+| G-04 Accessibility adapter without Rust | 55, 56, 57 | |
+| G-05 No native code from ForgeScript | 03 (FUSE's own W^X evidence only) | owned by FORGE-WP-01, FORGE-WP-02 |
+| G-06 Capsicum tested on HardenedBSD | 15 (`fuse_app_capsicum_frame`) | owned by FORGE-WP-04 |
+| G-07 App host and bundles | 15, 12, 64 (cooked documents in bundles) | host is platform and FORGE work |
+| G-08 Session bus and schema compiler | 56 (a11y schema), 51 (record layouts) | FUSE defines records; transport is not FUSE's |
+| G-09 System services | 15 (settings backend), 32 (portal client), 52 (audio bus backend), 56 | clients only |
+| G-10 Rich text widget | 35, 36, 42, 18, 19 | |
+| G-11 Video and audio pipeline | 52, 53, 54, 24 (dmabuf import), 26 | decoders are helpers, not FUSE |
+| G-12 2D canvas | 43, 23, 08, 44, 45, 48 | |
+| G-13 Terminal grid | 39 | |
+| G-14 Web content engine | 51 (surface only), 42 (restricted path) | the engine itself is IN01's helper |
+| G-15 Model, GPU, serving bindings | none | FORGE work |
+| G-16 Print and scan | 61, 45, 36 | scan is a portal and helper |
+| G-17 Spell check and hyphenation | 18 (decoration and hyphenation hooks) | the service is platform work |
+| G-18 FUSE on HardenedBSD | 01, 02, 03, 04, 24, 25, 62 (engine) | |
+
+### 7.2 App → FUSE work packages it is blocked on
+**BASE** is needed by every app and is not repeated: FUSE-WP-01, 02, 03, 05, 06, 07, 09, 12, 13, 14, 15, 16, 17, 18, 20, 21, 25, 27, 28, 29, 30, 55, 56, 58, 59, 60. The column lists what each app needs beyond BASE. Apps without a spec are mapped from `CATALOGUE.md` and are provisional.
+
+| App | Beyond BASE | App | Beyond BASE |
+|---|---|---|---|
+| SH01 Desktop Shell | 10, 11, 22, 24, 33, 67 | SH02 Notifications | 10, 22, 24, 34, 52, 67 |
+| SH03 Login, Lock | 10, 67 | SH04 Portals | 10, 32, 45, 61, 67 |
+| SH05 Window Management | 08, 10, 11, 22, 67 | SY01 Settings | 11, 32, 43, 46, 49, 50 |
+| SY02 Files | 31, 32, 33, 41, 42, 44 | SY03 Terminal | 39, 31, 10 (shortcut inhibit) |
+| SY04 System Monitor | 46, 47, 31 | SY05 Software | 42 |
+| AD01 Installer | 23, 32, 42 | AD02 Disks | 23, 46, 47 |
+| AD03 Backup | 32, 46 | AD04 Logs | 46 |
+| AD05 Permissions | 50 | SE01 Security Centre | 38, 42, 46, 50 |
+| SE02 Firewall | 46, 50 | SE03 Anonymity | 46 |
+| SE04 Passwords and Keys | 32, 67 | SE05 Vault | 32 |
+| VM01 Virtual Machines | 08, 10 (shortcut inhibit), 37, 39, 46, 51 | VM02 Jails | 39, 46 |
+| VM03 Compatibility | 39, 51 | VM04 Remote Desktop | 08, 10 (shortcut inhibit), 39, 51 |
+| VM05 Devices | none | OF01 Text Editor | 19, 31, 37, 38, 42, 61 |
+| OF02 Notes | 19, 31, 33, 35, 37, 42, 61 | OF03 Document Viewer | 23, 26, 43, 45, 61 |
+| OF04 Writer | 19, 31, 35, 36, 45, 46, 61 | OF05 Sheets | 31, 35, 37, 40, 46, 61 |
+| OF06 Slides | 11, 22, 35, 36, 43, 45, 46, 61 | OF07 Calculator | 23, 37, 46 |
+| OF08 Draw | 08, 23, 26, 43, 61 | OF09 Data Studio | 37, 40, 46 |
+| CO01 Mail | 31, 32, 35, 42, 51 (optional), 61 | CO02 Calendar | 32, 34, 61 |
+| CO03 Contacts | 32, 44 | CO04 Tasks | 33, 34, 35 |
+| CO05 Messenger | 35, 42, 44, 52, 53 | IN01 Web Browser | 24, 26, 31, 51, 52, 53, 61, 67 |
+| IN02 Feeds | 42, 51, 52 | IN03 Transfers | 46 |
+| IN04 Maps | 08, 43, 48, 61 | IN05 Weather | 46, 48 |
+| ME01 Photos | 24, 26, 43, 44, 48, 61 | ME02 Music | 49, 52 |
+| ME03 Video | 11, 24, 26, 52, 53, 54 | ME04 Camera | 44, 52, 53 |
+| ME05 Screen Capture | 10 (portal buffers), 23, 43, 44, 53 | ME06 Sound Recorder | 49, 52 |
+| CR01 Image Editor | 08, 11, 24, 26, 31, 32, 43, 46, 50 | CR02 Video Editor | 24, 26, 31, 43, 49, 50, 52, 53 |
+| CR03 Audio Editor | 31, 49, 50, 52 | CR04 Studio | 08, 24, 31, 37, 46, 50, 62 |
+| DV01 IDE | 19, 31, 37, 38, 39, 42, 46 | DV02 UI Designer | 37, 50, 63, 64 |
+| DV03 Version Control | 23, 37, 38 | DV04 Hex Editor | 19, 38, 41, 46 |
+| DV05 Packet Analyser | 41, 46, 50 | DV06 Proof Workbench | 31, 37, 38, 42, 46, 47, 50 |
+| DV07 Reverse Engineering | 31, 37, 41, 50 | AI01 Assistant | 35, 38, 42, 46, 52 |
+| AI02 Model Manager | 42, 46 | AI03 Forecast | 46 |
+| AI04 Notebook | 23, 35, 37, 42, 46 | AI05 Kodai | not mapped (no spec; `CATALOGUE.md` marks it Unverified) |
+| UT01 Archives | 41, 42, 44 | UT02 Clocks | 23, 46, 52 |
+| UT03 Fonts and Characters | 23, 32 | UT04 Disk Usage | 46, 47 |
+| UT05 Help | 42, 61 | UT06 Printers and Scanners | 32, 45, 61 |
+| AX01 Screen Reader | 37, 42, 52 | AX02 Magnifier | 11 |
+| AX03 On-Screen Keyboard | 08, 10 (input-method provider) | AX04 Input Methods | 10 (input-method provider) |
+| AX05 Clipboard | 42, 44 (and task FUSE-WP-09.6) | AX06 Voice | 52 |
+| GM01 Games | 08, 22, 23, 52 | | |
+
+### 7.3 Spec gap IDs → FUSE work packages
+Gap IDs come from the specs' own tables as read on 12 Nov 2026. "Not FUSE" means the gap belongs to the compositor, the platform services or FORGE.
+
+| Spec | Gaps that are FUSE work | Gaps that are not FUSE work |
+|---|---|---|
+| SH01 | GAP-1 → FUSE-WP-10.3 (client side); GAP-2 → FUSE-WP-10.8; GAP-3 → FUSE-WP-30, FUSE-WP-28; GAP-4 → FUSE-WP-07, FUSE-WP-51 (Q-05) | GAP-1 and GAP-2 compositor side; GAP-5, GAP-6 |
+| SH02 | GAP-6 capture-exclusion flag → FUSE-WP-67 (client flag) | GAP-1 to GAP-5; GAP-6 indicator dot |
+| SY01 | GAP-1 → FUSE-WP-43.10; GAP-2 → FUSE-WP-58.7, FUSE-WP-14.8; GAP-3 → FUSE-WP-32.9; GAP-4 → FUSE-WP-49.5 | — |
+| SY02 | GAP-1 → FUSE-WP-29.4; GAP-2, GAP-4 → FUSE-WP-28.10; GAP-3 → FUSE-WP-29.4 | — |
+| AD01 | GAP-1 → FUSE-WP-29.5; GAP-2 → FUSE-WP-29.6; GAP-3 → FUSE-WP-29.8 | GAP-4, GAP-5, GAP-6 |
+| SE01 | GAP-1 → FUSE-WP-46.5; GAP-2 → FUSE-WP-50.8; GAP-3 → FUSE-WP-50.9 | — |
+| VM01 | GAP-2 → FUSE-WP-51.1; GAP-3 → FUSE-WP-08.5, FUSE-WP-10.7 | GAP-1, GAP-4 |
+| OF01 | none (its needs are FUSE-WP-19, 37, 38, 31, 28, 29, 30, 42) | GAP-1, GAP-2 |
+| OF05 | GAP-1 → FUSE-WP-40; GAP-2 → FUSE-WP-46; GAP-3 → FUSE-WP-30.8 | — |
+| CO01 | GAP-1 → FUSE-WP-29.4 (`tagInput`); GAP-2 → FUSE-WP-29.4 (`searchField`); GAP-3 → FUSE-WP-35.10, FUSE-WP-42 | — |
+| IN01 | GAP-1 → FUSE-WP-51 (the contract; the producer is the engine's); GAP-2 → FUSE-WP-29.9, FUSE-WP-67.5 | GAP-3, GAP-4, GAP-5 |
+| ME03 | GAP-1 → FUSE-WP-11, FUSE-WP-26, FUSE-WP-54; GAP-2 → FUSE-WP-06.5 (client hints) | GAP-1 and GAP-2 compositor side; GAP-3, GAP-4, GAP-5 |
+| CR01 | GAP-1 → FUSE-WP-46.3, FUSE-WP-49; GAP-2 → FUSE-WP-32.8; GAP-3 → FUSE-WP-24.8 | — |
+| DV01 | GAP-1 → FUSE-WP-46.11; GAP-3, GAP-5 → FUSE-WP-37.12, FUSE-WP-30.2; GAP-4 → FUSE-WP-29.4 | GAP-2 |
+| DV06 | GAP-1 → FUSE-WP-37.12 | GAP-2 to GAP-5 |
+| AI01 | GAP-1 → FUSE-WP-42.7; GAP-2 → FUSE-WP-38.2; GAP-3 → FUSE-WP-18.7 | — |
+| UT01 | GAP-2 → FUSE-WP-29.6 | GAP-1 |
+| UT02 | GAP-1 → FUSE-WP-23.9, FUSE-WP-12.10 | GAP-2 (owned by SH01) |
+| AX01 | GAP-1 → FUSE-WP-55; GAP-3 → FUSE-WP-58.7, FUSE-WP-14.8; GAP-4 → FUSE-WP-56.4 (client side) | GAP-2 (`svc.media`; FUSE-WP-52 is the client), GAP-5 |
+| AX02 | GAP-3 → FUSE-WP-06.4, FUSE-WP-17.7; GAP-4 → FUSE-WP-55.5, FUSE-WP-56.5 | GAP-1, GAP-2, GAP-5 |
+
+Could not be verified for this plan: anything on HardenedBSD (nothing was run there); the behaviour of the PBSD compositor's protocol modules (file names only); the MathScript Clang plugin's rules; PRISM; the FORGE repo itself (only `PLATFORM.md` facts V10–V18 and `FORGE_BUILD_PLAN.md` were used); whether the gates the FUSE docs record as passing still pass; the 57 app specs not yet written.

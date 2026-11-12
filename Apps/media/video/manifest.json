@@ -1,0 +1,47 @@
+{
+  "id": "org.pbsd.video",
+  "name": "Video",
+  "version": "0.1.0",
+  "category": "media",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:demux-helper", "proc.helper:decode-helper", "proc.helper:subtitle-helper",
+    "proc.helper:metadata-helper", "proc.helper:encode-helper", "proc.helper:net-fetch-helper",
+    "proc.helper:cast-helper", "proc.helper:disc-helper",
+    "dev.gpu.compute", "ai.local",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.intent", "svc.search", "svc.keyring",
+    "svc.clipboard", "svc.thumbnail", "svc.media", "svc.power", "svc.model", "svc.audit"
+  ],
+  "helpers": [
+    {"name": "demux-helper", "language": "c++23", "capabilities": []},
+    {"name": "decode-helper", "language": "c++23", "capabilities": []},
+    {"name": "subtitle-helper", "language": "c++23", "capabilities": []},
+    {"name": "metadata-helper", "language": "c++23", "capabilities": []},
+    {"name": "encode-helper", "language": "c++23", "capabilities": []},
+    {"name": "net-fetch-helper", "language": "c++23", "capabilities": ["net.user"]},
+    {"name": "cast-helper", "language": "c++23", "capabilities": ["net.user"]},
+    {"name": "disc-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "video/x-matroska", "video/webm", "video/mp4", "video/quicktime", "video/ogg", "video/mp2t",
+      "video/mpeg", "video/x-msvideo", "video/x-flv", "video/x-ms-wmv",
+      "application/vnd.apple.mpegurl", "application/dash+xml", "audio/x-mpegurl", "application/xspf+xml",
+      "application/x-subrip", "text/vtt", "text/x-ssa"
+    ],
+    "edit": [],
+    "import": ["application/x-subrip", "text/vtt", "text/x-ssa", "audio/x-mpegurl", "application/xspf+xml"],
+    "export": ["video/x-matroska", "video/webm", "video/mp4", "image/png", "image/jpeg", "image/webp",
+               "image/avif", "image/jxl", "image/gif", "application/x-subrip", "text/vtt", "audio/x-mpegurl"]
+  },
+  "intents": {"handles": ["open", "view"], "emits": ["share", "edit", "print", "open"]},
+  "url_schemes": ["rtsp", "rtsps", "rtmp", "srt"],
+  "services_provided": ["org.pbsd.video.Player1", "thumbnailer:video/*"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.media-pipeline >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE"],
+  "priority": "P1"
+}

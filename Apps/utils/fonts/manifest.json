@@ -1,0 +1,49 @@
+{
+  "id": "org.pbsd.fonts",
+  "name": "Fonts and Characters",
+  "version": "0.1.0",
+  "category": "utils",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:font-helper",
+    "proc.helper:subset-helper",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.undo-trash",
+    "svc.notify",
+    "svc.search",
+    "svc.audit",
+    "svc.thumbnail",
+    "dev.print"
+  ],
+  "helpers": [
+    {"name": "font-helper", "language": "c++23", "capabilities": []},
+    {"name": "subset-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "font/ttf", "font/otf", "font/collection", "font/woff", "font/woff2",
+      "application/x-font-type1", "application/x-font-pcf", "application/x-font-bdf"
+    ],
+    "edit": [],
+    "import": ["font/ttf", "font/otf", "font/collection", "font/woff", "font/woff2", "application/json"],
+    "export": ["font/ttf", "font/otf", "font/woff2", "image/svg+xml", "image/png", "text/csv", "application/json", "text/plain"]
+  },
+  "intents": {
+    "handles": ["open", "view", "search", "pick"],
+    "emits": ["print", "open"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.fonts.inspect.v1", "thumbnailer:font/*"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE"],
+  "priority": "P2"
+}

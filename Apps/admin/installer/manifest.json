@@ -1,0 +1,46 @@
+{
+  "id": "org.pbsd.installer",
+  "name": "Installer and First Run",
+  "version": "0.1.0",
+  "category": "admin",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.install",
+    "svc.storage",
+    "svc.settings",
+    "svc.notify",
+    "svc.power",
+    "svc.keyring",
+    "svc.accounts",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.audit",
+    "svc.update",
+    "dev.print",
+    "dev.usb:storage",
+    "proc.helper:probe-helper",
+    "proc.helper:import-helper"
+  ],
+  "helpers": [
+    {"name": "probe-helper", "language": "c++23", "capabilities": []},
+    {"name": "import-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/vnd.pbsd.install-plan+json"],
+    "edit": ["application/vnd.pbsd.install-plan+json"],
+    "import": [],
+    "export": ["application/vnd.pbsd.install-plan+json", "application/pdf", "text/markdown", "application/json"]
+  },
+  "intents": {"handles": ["open"], "emits": ["open", "print", "share"]},
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.software >= 0.1", "org.pbsd.disks >= 0.1"],
+  "backing_repos": ["ParanoidBSD", "FUSE", "FORGE"],
+  "priority": "P0",
+  "notes": "svc.install and svc.storage are Proposed privileged services (AD01-GAP-6); not yet in PLATFORM.md section 8."
+}

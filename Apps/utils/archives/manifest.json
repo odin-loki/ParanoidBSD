@@ -1,0 +1,58 @@
+{
+  "id": "org.pbsd.archives",
+  "name": "Archives",
+  "version": "0.1.0",
+  "category": "utils",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:archive-helper",
+    "proc.helper:crypto-helper",
+    "proc.helper:location-provider",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.keyring",
+    "svc.thumbnail",
+    "svc.power",
+    "svc.undo-trash",
+    "svc.audit",
+    "svc.backup",
+    "svc.search",
+    "dev.print",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "archive-helper", "language": "c++23", "capabilities": []},
+    {"name": "crypto-helper", "language": "c++23", "capabilities": []},
+    {"name": "location-provider", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "application/zip", "application/x-7z-compressed", "application/x-tar", "application/gzip",
+      "application/x-bzip2", "application/x-xz", "application/zstd", "application/x-lz4",
+      "application/vnd.rar", "application/x-cpio", "application/x-archive",
+      "application/x-iso9660-image", "application/vnd.ms-cab-compressed",
+      "application/vnd.debian.binary-package", "application/x-rpm", "application/x-xar",
+      "application/x-lzh-compressed", "application/x-age-archive"
+    ],
+    "edit": ["application/zip", "application/x-7z-compressed", "application/x-tar", "application/x-cpio", "application/x-archive"],
+    "import": [],
+    "export": ["application/zip", "application/x-7z-compressed", "application/x-tar", "application/zstd", "application/x-iso9660-image", "text/csv", "application/json"]
+  },
+  "intents": {
+    "handles": ["open", "view", "new", "extract-here", "extract-to", "test"],
+    "emits": ["open", "view", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.archives.v1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["hbsd/src/contrib/libarchive"],
+  "priority": "P1"
+}

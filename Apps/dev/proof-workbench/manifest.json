@@ -1,0 +1,52 @@
+{
+  "id": "org.pbsd.proof-workbench",
+  "name": "Proof Workbench",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "proc.helper:prism-runner",
+    "proc.helper:report-reader",
+    "proc.helper:subset-check",
+    "proc.helper:exec-jail",
+    "proc.exec",
+    "net.user",
+    "ai.local",
+    "svc.model",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.keyring",
+    "svc.audit",
+    "svc.power",
+    "svc.search",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "prism-runner", "language": "c++23", "capabilities": ["proc.exec"]},
+    {"name": "report-reader", "language": "c++23", "capabilities": []},
+    {"name": "subset-check", "language": "c++23", "capabilities": []},
+    {"name": "exec-jail", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-pbsd-proof-bundle", "application/sarif+json", "application/json"],
+    "edit": [],
+    "import": ["application/x-pbsd-proof-bundle"],
+    "export": ["application/x-pbsd-proof-bundle", "application/sarif+json", "text/markdown", "text/html", "application/pdf", "application/json"]
+  },
+  "intents": {
+    "handles": ["open", "view", "org.pbsd.proof-workbench.check"],
+    "emits": ["edit", "open", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.proofworkbench.Results/1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/PRISM", "odin-loki/MathScript", "odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P1"
+}

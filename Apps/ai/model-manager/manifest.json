@@ -1,0 +1,55 @@
+{
+  "id": "org.pbsd.model-manager",
+  "name": "Model Manager",
+  "version": "0.1.0",
+  "category": "ai",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "net.route:clear",
+    "net.route:vpn",
+    "net.route:tor",
+    "proc.helper:model-job",
+    "proc.helper:fetch-helper",
+    "proc.helper:serve-supervisor",
+    "ai.local",
+    "svc.model",
+    "svc.keyring",
+    "svc.settings",
+    "svc.notify",
+    "svc.audit",
+    "svc.power",
+    "svc.backup",
+    "svc.undo-trash",
+    "svc.update",
+    "svc.intent",
+    "svc.portal.file",
+    "dev.gpu.compute",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "model-job", "language": "c++23", "capabilities": []},
+    {"name": "fetch-helper", "language": "c++23", "capabilities": ["net.user"]},
+    {"name": "serve-supervisor", "language": "c++23", "capabilities": ["bg.run"]}
+  ],
+  "mime": {
+    "view": ["application/vnd.forge.fpk", "application/x-gguf", "application/onnx"],
+    "edit": [],
+    "import": ["application/vnd.forge.fpk", "application/x-gguf", "application/onnx", "inode/directory"],
+    "export": ["application/vnd.forge.fpk", "text/csv", "application/json", "text/markdown"]
+  },
+  "intents": {
+    "handles": ["open", "view", "pick"],
+    "emits": ["open", "share", "new"]
+  },
+  "url_schemes": ["model"],
+  "services_provided": ["svc.model", "svc.model.admin/1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.passwords >= 0.1"],
+  "backing_repos": ["odin-loki/FORGE"],
+  "priority": "P1"
+}

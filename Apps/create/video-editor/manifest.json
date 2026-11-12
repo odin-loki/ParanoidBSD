@@ -1,0 +1,47 @@
+{
+  "id": "org.pbsd.video-editor",
+  "name": "Video Editor",
+  "version": "0.1.0",
+  "category": "create",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "proc.helper:media-io", "proc.helper:render-engine", "proc.helper:encode",
+    "proc.helper:element-gen", "proc.helper:audio-engine",
+    "dev.gpu.compute", "dev.mic", "ai.local", "bg.run",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.mic", "svc.intent",
+    "svc.media", "svc.power", "svc.model", "svc.thumbnail", "svc.clipboard",
+    "svc.keyring", "svc.backup", "svc.a11y"
+  ],
+  "helpers": [
+    {"name": "media-io", "language": "c++23", "capabilities": []},
+    {"name": "render-engine", "language": "c++23", "capabilities": ["dev.gpu.compute"]},
+    {"name": "encode", "language": "c++23", "capabilities": []},
+    {"name": "element-gen", "language": "c++23", "capabilities": []},
+    {"name": "audio-engine", "language": "c++23", "capabilities": ["svc.media", "dev.mic"]}
+  ],
+  "mime": {
+    "view": [],
+    "edit": ["application/x-pbsd-video-project+json"],
+    "import": [
+      "video/webm", "video/x-matroska", "video/mp4", "video/quicktime", "video/mxf", "video/x-msvideo", "video/mp2t",
+      "audio/flac", "audio/ogg", "audio/opus", "audio/wav", "audio/aiff", "audio/mpeg", "audio/aac",
+      "image/png", "image/jpeg", "image/tiff", "image/x-exr", "image/openraster",
+      "application/x-subrip", "text/vtt", "application/ttml+xml", "text/x-ass",
+      "application/x-otio+json", "application/x-cube-lut"
+    ],
+    "export": [
+      "video/webm", "video/x-matroska", "video/mp4", "audio/flac", "audio/ogg", "audio/wav",
+      "image/png", "image/x-exr", "application/x-subrip", "text/vtt", "application/ttml+xml",
+      "application/x-otio+json", "application/x-cube-lut"
+    ]
+  },
+  "intents": {"handles": ["open", "edit", "new", "share"], "emits": ["share", "open", "view"]},
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/NeuralVFX", "odin-loki/FUSE", "odin-loki/FORGE"],
+  "priority": "P2"
+}

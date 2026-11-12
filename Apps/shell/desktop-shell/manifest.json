@@ -1,0 +1,53 @@
+{
+  "id": "org.pbsd.desktop-shell",
+  "name": "Desktop Shell",
+  "version": "0.1.0",
+  "category": "shell",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:path-lister",
+    "svc.settings",
+    "svc.search",
+    "svc.notify",
+    "svc.thumbnail",
+    "svc.intent",
+    "svc.portal.file",
+    "svc.audit",
+    "svc.media",
+    "svc.power",
+    "svc.a11y",
+    "bg.run",
+    "bg.autostart",
+    "shell.layer",
+    "shell.toplevels",
+    "shell.workspaces",
+    "shell.launch"
+  ],
+  "optional_capabilities": ["ai.local", "svc.model"],
+  "helpers": [
+    {"name": "path-lister", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {"view": [], "edit": [], "import": [], "export": []},
+  "intents": {"handles": ["search"], "emits": ["open", "new", "search", "compose"]},
+  "url_schemes": [],
+  "services_provided": [
+    "org.pbsd.shell.Shell1",
+    "org.pbsd.shell.Applet1",
+    "org.pbsd.shell.StatusItem1"
+  ],
+  "background": {"autostart": true, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.window-management >= 0.1",
+    "org.pbsd.notifications >= 0.1",
+    "org.pbsd.login-lock >= 0.1",
+    "org.pbsd.portals >= 0.1"
+  ],
+  "backing_repos": ["FUSE", "FORGE", "ParanoidBSD:pbsd/compositor"],
+  "priority": "P0",
+  "notes": "shell.* capabilities and optional_capabilities are Proposed extensions (SH01-GAP-6); system-key bundles only."
+}

@@ -1,0 +1,36 @@
+{
+  "id": "org.pbsd.feeds",
+  "name": "Feeds",
+  "version": "0.1.0",
+  "category": "internet",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:fetch", "proc.helper:parse", "proc.helper:extract", "proc.helper:image", "proc.helper:sync",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.print", "svc.intent", "svc.search",
+    "svc.keyring", "svc.accounts", "svc.power", "svc.backup", "svc.audit", "svc.media", "svc.model",
+    "ai.local", "bg.run"
+  ],
+  "helpers": [
+    {"name": "fetch", "language": "c++23", "capabilities": ["net.user", "net.route (exactly one per instance)"]},
+    {"name": "parse", "language": "c++23", "capabilities": []},
+    {"name": "extract", "language": "c++23", "capabilities": []},
+    {"name": "image", "language": "c++23", "capabilities": []},
+    {"name": "sync", "language": "c++23", "capabilities": ["net.host:<server>:<port> (granted per account)"]}
+  ],
+  "mime": {
+    "view": ["application/rss+xml", "application/atom+xml", "application/feed+json", "text/x-opml+xml"],
+    "edit": [],
+    "import": ["text/x-opml+xml"],
+    "export": ["text/x-opml+xml", "application/feed+json", "text/markdown", "text/html", "application/epub+zip"]
+  },
+  "intents": {"handles": ["open", "share"], "emits": ["open", "share", "print"]},
+  "url_schemes": ["feed"],
+  "services_provided": ["org.pbsd.feeds.episode-state"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}

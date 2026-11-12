@@ -1,0 +1,47 @@
+{
+  "id": "org.pbsd.mail",
+  "name": "Mail",
+  "version": "0.1.0",
+  "category": "comms",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:mail-proto", "proc.helper:mime", "proc.helper:html-safe",
+    "proc.helper:preview", "proc.helper:fetch", "proc.helper:import",
+    "svc.accounts", "svc.keyring", "svc.notify", "svc.portal.file", "svc.portal.print",
+    "svc.intent", "svc.search", "svc.thumbnail", "svc.settings", "svc.backup", "svc.audit",
+    "svc.power", "svc.clipboard", "svc.undo-trash", "svc.a11y", "svc.model", "ai.local",
+    "bg.run", "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "mail-proto", "language": "c++23", "capabilities": []},
+    {"name": "mime", "language": "c++23", "capabilities": []},
+    {"name": "html-safe", "language": "c++23", "capabilities": []},
+    {"name": "preview", "language": "c++23", "capabilities": []},
+    {"name": "fetch", "language": "c++23", "capabilities": []},
+    {"name": "import", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["message/rfc822", "application/mbox"],
+    "edit": [],
+    "import": ["message/rfc822", "application/mbox", "application/vnd.ms-outlook", "inode/directory"],
+    "export": ["message/rfc822", "application/mbox", "application/pdf"]
+  },
+  "intents": {
+    "handles": ["compose", "share", "open", "view"],
+    "emits": ["open", "view", "print", "share", "pick", "compose", "new"]
+  },
+  "url_schemes": ["mailto", "mid"],
+  "services_provided": ["org.pbsd.mail.send"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.passwords >= 0.1",
+    "org.pbsd.contacts >= 0.1",
+    "org.pbsd.calendar >= 0.1"
+  ],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P1"
+}

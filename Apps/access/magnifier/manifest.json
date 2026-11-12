@@ -1,0 +1,32 @@
+{
+  "id": "org.pbsd.magnifier",
+  "name": "Magnifier",
+  "version": "0.1.0",
+  "category": "access",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.a11y",
+    "svc.a11y:view.transform",
+    "svc.a11y:track",
+    "svc.a11y:overlay",
+    "svc.a11y:text.read",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "bg.run",
+    "bg.autostart"
+  ],
+  "helpers": [],
+  "mime": {"view": [], "edit": [], "import": ["application/json"], "export": ["application/json"]},
+  "intents": {"handles": [], "emits": ["view"]},
+  "url_schemes": [],
+  "services_provided": ["magnifier.get", "magnifier.set", "magnifier.toggle"],
+  "background": {"autostart": true, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE"],
+  "priority": "P1"
+}

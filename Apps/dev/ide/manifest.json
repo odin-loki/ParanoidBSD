@@ -1,0 +1,64 @@
+{
+  "id": "org.pbsd.ide",
+  "name": "IDE",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "proc.exec",
+    "proc.helper:ui-preview",
+    "proc.helper:index-helper",
+    "proc.helper:wire-helper",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.clipboard",
+    "svc.backup",
+    "svc.audit",
+    "svc.undo-trash",
+    "svc.a11y",
+    "svc.power",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "ui-preview", "language": "c++23", "capabilities": []},
+    {"name": "index-helper", "language": "c++23", "capabilities": ["fs.portal"]},
+    {"name": "wire-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["text/plain", "application/json", "text/markdown", "application/sarif+json"],
+    "edit": [
+      "text/x-forgescript", "text/x-c++src", "text/x-c++hdr", "text/x-csrc", "text/x-chdr",
+      "application/x-fuseui+json", "text/css", "text/x-cmake", "application/x-pbsd-workspace+json",
+      "application/x-pbsd-manifest+json", "text/x-pbsd-locale-table"
+    ],
+    "import": [],
+    "export": ["application/sarif+json", "text/markdown", "application/vnd.cyclonedx+json", "application/x-pbsd-app-bundle"]
+  },
+  "intents": {
+    "handles": ["open", "edit", "new"],
+    "emits": ["open", "edit", "view", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.ide.Open", "org.pbsd.ide.Diagnostics"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.text-editor >= 0.1",
+    "org.pbsd.version-control >= 0.1",
+    "org.pbsd.proof-workbench >= 0.1",
+    "org.pbsd.passwords >= 0.1"
+  ],
+  "backing_repos": ["FORGE", "FUSE", "MathScript", "PRISM", "ParanoidBSD"],
+  "priority": "P1"
+}

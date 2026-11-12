@@ -1,0 +1,41 @@
+{
+  "id": "org.pbsd.text-editor",
+  "name": "Text Editor",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:search-helper",
+    "dev.print",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.notify",
+    "svc.keyring",
+    "svc.audit",
+    "svc.a11y",
+    "svc.spell"
+  ],
+  "helpers": [
+    {"name": "search-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["text/plain", "text/markdown", "text/x-log", "text/x-diff", "application/json", "application/xml", "application/toml", "application/yaml", "text/x-forgescript", "text/x-c", "text/x-c++", "text/x-shellscript", "text/x-python", "text/x-lua", "text/x-rust", "text/css", "text/html", "inode/x-empty"],
+    "edit": ["text/plain", "text/markdown", "text/x-diff", "application/json", "application/xml", "application/toml", "application/yaml", "text/x-forgescript", "text/x-c", "text/x-c++", "text/x-shellscript", "text/x-python", "text/x-lua", "text/x-rust", "text/css", "text/html", "inode/x-empty"],
+    "import": ["application/x-tmlanguage+json", "application/x-sublime-syntax"],
+    "export": ["text/html", "application/pdf", "text/x-diff", "application/rtf"]
+  },
+  "intents": {"handles": ["open", "edit", "view", "new", "search"], "emits": ["open", "share", "print"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.text-editor.Open"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P0"
+}

@@ -1,0 +1,46 @@
+{
+  "id": "org.pbsd.music",
+  "name": "Music",
+  "version": "0.1.0",
+  "category": "media",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:demux-helper", "proc.helper:decode-helper", "proc.helper:tag-helper",
+    "proc.helper:tag-writer", "proc.helper:encode-helper", "proc.helper:rip-helper",
+    "proc.helper:net-fetch-helper", "proc.helper:cast-helper", "proc.helper:device-sync-helper",
+    "dev.usb:mtp", "ai.local", "bg.run",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.usb", "svc.intent", "svc.search",
+    "svc.keyring", "svc.thumbnail", "svc.media", "svc.power", "svc.model", "svc.undo-trash", "svc.audit"
+  ],
+  "helpers": [
+    {"name": "demux-helper", "language": "c++23", "capabilities": []},
+    {"name": "decode-helper", "language": "c++23", "capabilities": []},
+    {"name": "tag-helper", "language": "c++23", "capabilities": []},
+    {"name": "tag-writer", "language": "c++23", "capabilities": []},
+    {"name": "encode-helper", "language": "c++23", "capabilities": []},
+    {"name": "rip-helper", "language": "c++23", "capabilities": []},
+    {"name": "net-fetch-helper", "language": "c++23", "capabilities": ["net.user"]},
+    {"name": "cast-helper", "language": "c++23", "capabilities": ["net.user"]},
+    {"name": "device-sync-helper", "language": "c++23", "capabilities": ["dev.usb:mtp"]}
+  ],
+  "mime": {
+    "view": ["audio/flac", "audio/ogg", "audio/opus", "audio/vorbis", "audio/mpeg", "audio/mp4", "audio/aac",
+             "audio/x-alac", "audio/wav", "audio/x-aiff", "audio/x-wavpack", "audio/x-ape", "audio/x-tta",
+             "audio/x-musepack", "audio/x-dsf", "audio/x-dff", "audio/x-mod", "application/x-cue",
+             "audio/x-mpegurl", "audio/x-scpls", "application/xspf+xml"],
+    "edit": ["audio/flac", "audio/ogg", "audio/opus", "audio/mpeg", "audio/mp4"],
+    "import": ["audio/x-mpegurl", "audio/x-scpls", "application/xspf+xml", "application/x-cue", "text/x-lrc"],
+    "export": ["audio/flac", "audio/opus", "audio/ogg", "audio/wav", "audio/x-mpegurl", "application/xspf+xml",
+               "application/json"]
+  },
+  "intents": {"handles": ["open", "view"], "emits": ["share", "edit", "open"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.music.Player1", "thumbnailer:audio/*"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.media-pipeline >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE"],
+  "priority": "P1"
+}

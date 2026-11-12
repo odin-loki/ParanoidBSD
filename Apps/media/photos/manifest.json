@@ -1,0 +1,42 @@
+{
+  "id": "org.pbsd.photos",
+  "name": "Photos",
+  "version": "0.1.0",
+  "category": "media",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "proc.helper:image-codec-helper", "proc.helper:raw-helper", "proc.helper:render-helper",
+    "proc.helper:metadata-writer", "proc.helper:device-import-helper",
+    "dev.usb:ptp", "dev.usb:mtp", "dev.print", "dev.gpu.compute", "ai.local",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.print", "svc.portal.usb", "svc.intent",
+    "svc.search", "svc.keyring", "svc.clipboard", "svc.thumbnail", "svc.media", "svc.model",
+    "svc.backup", "svc.undo-trash", "svc.audit"
+  ],
+  "helpers": [
+    {"name": "image-codec-helper", "language": "c++23", "capabilities": []},
+    {"name": "raw-helper", "language": "c++23", "capabilities": []},
+    {"name": "render-helper", "language": "c++23", "capabilities": ["dev.gpu.compute"]},
+    {"name": "metadata-writer", "language": "c++23", "capabilities": []},
+    {"name": "device-import-helper", "language": "c++23", "capabilities": ["dev.usb:ptp", "dev.usb:mtp"]}
+  ],
+  "mime": {
+    "view": ["image/jpeg", "image/png", "image/apng", "image/webp", "image/avif", "image/heif", "image/heic",
+             "image/jxl", "image/tiff", "image/gif", "image/svg+xml", "image/bmp", "image/x-icon",
+             "image/x-portable-anymap", "image/x-tga", "image/x-pcx", "image/qoi", "image/x-exr",
+             "image/vnd.radiance", "image/jp2", "image/x-adobe-dng", "image/x-canon-cr2", "image/x-canon-cr3",
+             "image/x-nikon-nef", "image/x-sony-arw", "image/x-fuji-raf", "image/x-olympus-orf",
+             "image/x-panasonic-rw2", "image/x-pentax-pef", "image/x-samsung-srw"],
+    "edit": ["image/jpeg", "image/png", "image/webp", "image/avif", "image/jxl", "image/tiff"],
+    "import": ["application/rdf+xml", "application/gpx+xml"],
+    "export": ["image/jpeg", "image/png", "image/webp", "image/avif", "image/jxl", "image/tiff", "application/pdf"]
+  },
+  "intents": {"handles": ["open", "view", "pick", "share", "print"], "emits": ["share", "edit", "print", "compose", "open"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.photos.Library1", "thumbnailer:image/*"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.media-pipeline >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE"],
+  "priority": "P1"
+}

@@ -1,0 +1,41 @@
+{
+  "id": "org.pbsd.clocks",
+  "name": "Clocks",
+  "version": "0.1.0",
+  "category": "utils",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.settings",
+    "svc.notify",
+    "svc.power",
+    "svc.media",
+    "svc.portal.file",
+    "svc.intent",
+    "svc.backup",
+    "svc.a11y",
+    "svc.audit",
+    "bg.run",
+    "bg.autostart"
+  ],
+  "helpers": [],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["application/json"],
+    "export": ["application/json", "text/calendar", "text/csv", "text/plain"]
+  },
+  "intents": {
+    "handles": ["new", "search", "clocks.start-timer", "clocks.start-focus"],
+    "emits": ["compose", "pick", "open"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.clocks.v1"],
+  "background": {"autostart": true, "run": true, "entry": "daemon.fs"},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}

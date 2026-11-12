@@ -1,0 +1,68 @@
+{
+  "id": "org.pbsd.virtual-machines",
+  "name": "Virtual Machines",
+  "version": "0.1.0",
+  "category": "virt",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:image-helper",
+    "dev.usb:*",
+    "dev.mic",
+    "dev.camera",
+    "svc.vm",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.usb",
+    "svc.portal.mic",
+    "svc.portal.camera",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.clipboard",
+    "svc.power",
+    "svc.backup",
+    "svc.audit",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "image-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-pbsd-vm+toml"],
+    "edit": ["application/x-pbsd-vm+toml"],
+    "import": [
+      "application/ovf",
+      "application/x-virtualbox-ova",
+      "application/x-qemu-disk",
+      "application/x-vmdk-disk",
+      "application/x-vhd-disk",
+      "application/x-vhdx-disk",
+      "application/x-virtualbox-vdi",
+      "application/x-cd-image",
+      "application/x-raw-disk-image"
+    ],
+    "export": [
+      "application/x-virtualbox-ova",
+      "application/x-qemu-disk",
+      "application/x-raw-disk-image",
+      "application/pdf",
+      "text/csv"
+    ]
+  },
+  "intents": {"handles": ["open", "view", "new"], "emits": ["open", "share", "print"]},
+  "url_schemes": ["vm"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.service.vm >= 0.1"
+  ],
+  "backing_repos": ["odin-loki/ParanoidBSD:pbsd/bifrost"],
+  "priority": "P1"
+}

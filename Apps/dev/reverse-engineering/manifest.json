@@ -1,0 +1,68 @@
+{
+  "id": "org.pbsd.reverse-engineering",
+  "name": "Reverse Engineering",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:loader",
+    "proc.helper:decompiler",
+    "proc.helper:unpacker",
+    "proc.helper:rules",
+    "proc.helper:patcher",
+    "proc.helper:differ",
+    "ai.local",
+    "svc.model",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.keyring",
+    "svc.audit",
+    "svc.thumbnail",
+    "svc.clipboard"
+  ],
+  "helpers": [
+    {"name": "loader", "language": "c++ (RetDec fork code, C++17)", "capabilities": []},
+    {"name": "decompiler", "language": "c++ (RetDec fork code, C++17)", "capabilities": []},
+    {"name": "unpacker", "language": "c++ (RetDec fork code, C++17)", "capabilities": []},
+    {"name": "rules", "language": "c++ (libyara, yaramod)", "capabilities": []},
+    {"name": "patcher", "language": "c++23", "capabilities": []},
+    {"name": "differ", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "application/x-executable",
+      "application/x-sharedlib",
+      "application/x-object",
+      "application/x-elf",
+      "application/vnd.microsoft.portable-executable",
+      "application/x-mach-binary",
+      "application/x-archive",
+      "application/wasm",
+      "application/java-vm",
+      "application/x-dex",
+      "application/x-python-bytecode",
+      "application/x-lua-bytecode",
+      "application/octet-stream"
+    ],
+    "edit": ["application/x-pbsd-re-project"],
+    "import": ["application/x-retdec-project+json", "text/x-chdr", "application/json"],
+    "export": ["text/x-csrc", "application/json", "text/markdown", "text/html", "application/pdf", "image/svg+xml", "text/vnd.graphviz", "text/csv"]
+  },
+  "intents": {
+    "handles": ["open", "view", "org.pbsd.reverse-engineering.goto"],
+    "emits": ["open", "share", "print", "org.pbsd.virtual-machines.run-sample"]
+  },
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/RetDec-Decompiler", "odin-loki/FUSE", "odin-loki/FORGE"],
+  "priority": "P2"
+}

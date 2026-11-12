@@ -1,0 +1,57 @@
+{
+  "id": "org.pbsd.notifications",
+  "name": "Notifications and Quick Settings",
+  "version": "0.1.0",
+  "category": "shell",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:notify-service",
+    "svc.settings",
+    "svc.media",
+    "svc.power",
+    "svc.thumbnail",
+    "svc.intent",
+    "svc.audit",
+    "svc.a11y",
+    "svc.portal.file",
+    "svc.portal.camera",
+    "svc.portal.mic",
+    "svc.portal.screen",
+    "svc.portal.location",
+    "svc.portal.usb",
+    "bg.run",
+    "bg.autostart",
+    "shell.layer",
+    "shell.device-policy"
+  ],
+  "optional_capabilities": ["ai.local", "svc.model", "svc.search"],
+  "helpers": [
+    {"name": "notify-service", "language": "c++23", "capabilities": ["fs.app", "svc.audit", "svc.settings"]}
+  ],
+  "mime": {"view": [], "edit": [], "import": [], "export": ["application/jsonl", "text/csv"]},
+  "intents": {"handles": [], "emits": ["open", "compose"]},
+  "url_schemes": [],
+  "services_provided": [
+    "svc.notify",
+    "org.pbsd.status.Indicators1",
+    "org.pbsd.status.KillSwitch1",
+    "org.pbsd.status.Osd1"
+  ],
+  "applets": [
+    "privacy-indicators", "network-badge", "sound", "battery", "status-cluster", "bell", "clock"
+  ],
+  "background": {"autostart": true, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.desktop-shell >= 0.1",
+    "org.pbsd.login-lock >= 0.1",
+    "org.pbsd.portals >= 0.1"
+  ],
+  "backing_repos": ["FUSE", "FORGE", "ParanoidBSD:pbsd/compositor"],
+  "priority": "P0",
+  "notes": "shell.* capabilities, optional_capabilities and applets are Proposed manifest extensions (SH01-GAP-6); system-key bundles only."
+}

@@ -1,0 +1,125 @@
+{
+  "id": "org.pbsd.assistant",
+  "name": "Assistant",
+  "version": "0.1.0",
+  "category": "ai",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "net.route:clear",
+    "net.route:vpn",
+    "net.route:tor",
+    "proc.helper:store-helper",
+    "proc.helper:parse-helper",
+    "proc.helper:index-helper",
+    "proc.helper:tool-sandbox",
+    "proc.helper:remote-helper",
+    "ai.local",
+    "svc.model",
+    "svc.search",
+    "svc.keyring",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.audit",
+    "svc.backup",
+    "svc.power",
+    "svc.a11y",
+    "svc.portal.file",
+    "svc.portal.print"
+  ],
+  "helpers": [
+    {
+      "name": "store-helper",
+      "language": "c++23",
+      "capabilities": [
+        "fs.app",
+        "svc.keyring"
+      ]
+    },
+    {
+      "name": "parse-helper",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "index-helper",
+      "language": "c++23",
+      "capabilities": [
+        "fs.app",
+        "ai.local",
+        "svc.model"
+      ]
+    },
+    {
+      "name": "tool-sandbox",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "remote-helper",
+      "language": "c++23",
+      "capabilities": [
+        "net.user",
+        "svc.keyring"
+      ]
+    }
+  ],
+  "mime": {
+    "view": [
+      "application/vnd.pbsd.assistant.conversation+json"
+    ],
+    "edit": [],
+    "import": [
+      "application/vnd.pbsd.assistant.conversation+json",
+      "application/json"
+    ],
+    "export": [
+      "text/markdown",
+      "text/plain",
+      "text/html",
+      "application/vnd.pbsd.assistant.conversation+json"
+    ]
+  },
+  "intents": {
+    "handles": [
+      "share",
+      "edit",
+      "open",
+      "search"
+    ],
+    "emits": [
+      "open",
+      "view",
+      "compose",
+      "new",
+      "share",
+      "print",
+      "pick"
+    ]
+  },
+  "url_schemes": [
+    "assistant"
+  ],
+  "services_provided": [
+    "org.pbsd.assistant.Writing/1"
+  ],
+  "background": {
+    "autostart": false,
+    "run": false
+  },
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.model-manager >= 0.1"
+  ],
+  "backing_repos": [
+    "odin-loki/FORGE",
+    "odin-loki/Cypha"
+  ],
+  "priority": "P1"
+}

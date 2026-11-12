@@ -1,0 +1,50 @@
+{
+  "id": "org.pbsd.settings",
+  "name": "Settings",
+  "version": "0.1.0",
+  "category": "system",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:hardening-helper",
+    "proc.helper:import-helper",
+    "svc.settings",
+    "svc.config",
+    "svc.notify",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.thumbnail",
+    "svc.power",
+    "svc.media",
+    "svc.update",
+    "svc.audit",
+    "svc.a11y",
+    "svc.portal.file"
+  ],
+  "helpers": [
+    {"name": "hardening-helper", "language": "c++23", "capabilities": []},
+    {"name": "import-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-pbsd-settings+json"],
+    "edit": [],
+    "import": [
+      "application/x-pbsd-settings+json",
+      "application/x-wireguard-profile",
+      "application/x-openvpn-profile",
+      "application/vnd.iccprofile"
+    ],
+    "export": ["application/x-pbsd-settings+json", "text/plain"]
+  },
+  "intents": {"handles": ["open", "search"], "emits": ["open"]},
+  "url_schemes": ["settings"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["ParanoidBSD", "FUSE", "FORGE"],
+  "priority": "P0"
+}

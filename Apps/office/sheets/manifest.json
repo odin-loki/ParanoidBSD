@@ -1,0 +1,83 @@
+{
+  "id": "org.pbsd.sheets",
+  "name": "Sheets",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:calc-engine",
+    "proc.helper:sheet-io",
+    "proc.helper:macro-host",
+    "proc.helper:data-fetch",
+    "dev.print",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.search",
+    "svc.clipboard",
+    "svc.thumbnail",
+    "svc.keyring",
+    "svc.audit",
+    "svc.a11y",
+    "svc.backup"
+  ],
+  "optional_capabilities": [
+    {"capability": "net.user", "default": "off", "reason": "External data connections a workbook names; granted per workbook and per endpoint, used only by the data-fetch helper"},
+    {"capability": "ai.local", "default": "off", "reason": "Explain formula"},
+    {"capability": "svc.model", "default": "off", "reason": "Explain formula"}
+  ],
+  "helpers": [
+    {"name": "calc-engine", "language": "c++23", "capabilities": []},
+    {"name": "sheet-io", "language": "c++23", "capabilities": []},
+    {"name": "macro-host", "language": "c++23", "capabilities": []},
+    {"name": "data-fetch", "language": "c++23", "capabilities": ["net.user"]}
+  ],
+  "mime": {
+    "view": [
+      "application/vnd.oasis.opendocument.spreadsheet",
+      "application/vnd.oasis.opendocument.spreadsheet-template",
+      "application/vnd.oasis.opendocument.spreadsheet-flat-xml"
+    ],
+    "edit": [
+      "application/vnd.oasis.opendocument.spreadsheet",
+      "application/vnd.oasis.opendocument.spreadsheet-template",
+      "application/vnd.oasis.opendocument.spreadsheet-flat-xml"
+    ],
+    "import": [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+      "application/vnd.ms-excel.sheet.macroEnabled.12",
+      "application/vnd.ms-excel",
+      "text/csv",
+      "text/tab-separated-values",
+      "application/json",
+      "application/vnd.sqlite3",
+      "application/vnd.apache.parquet"
+    ],
+    "export": [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/csv",
+      "text/tab-separated-values",
+      "application/json",
+      "application/vnd.apache.parquet",
+      "application/pdf",
+      "text/html",
+      "text/markdown",
+      "image/png",
+      "image/svg+xml"
+    ]
+  },
+  "intents": {"handles": ["open", "edit", "view", "new", "print"], "emits": ["share", "print", "open", "edit"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.sheets.embed/1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE", "MathScript"],
+  "priority": "P1"
+}

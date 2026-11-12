@@ -1,0 +1,62 @@
+{
+  "id": "org.pbsd.notes",
+  "name": "Notes",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "proc.helper:vault-helper",
+    "proc.helper:import-helper",
+    "proc.helper:sync-helper",
+    "dev.print",
+    "ai.local",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.notify",
+    "svc.search",
+    "svc.keyring",
+    "svc.clipboard",
+    "svc.thumbnail",
+    "svc.media",
+    "svc.power",
+    "svc.backup",
+    "svc.undo-trash",
+    "svc.audit",
+    "svc.a11y",
+    "svc.model",
+    "svc.spell"
+  ],
+  "capability_notes": {
+    "net.user": "Off by default. Requested only when the user enables peer-to-peer sync; passed to sync-helper alone.",
+    "ai.local": "Off by default. Optional summaries and semantic search.",
+    "svc.model": "Used only with ai.local."
+  },
+  "helpers": [
+    {"name": "vault-helper", "language": "c++23", "capabilities": ["svc.keyring"]},
+    {"name": "import-helper", "language": "c++23", "capabilities": []},
+    {"name": "sync-helper", "language": "c++23", "capabilities": ["net.user"]}
+  ],
+  "mime": {
+    "view": ["text/markdown", "application/x-pbsd-notebook"],
+    "edit": ["text/markdown", "application/x-pbsd-notebook"],
+    "import": ["text/markdown", "application/x-enex+xml", "application/x-joplin-jex", "application/zip", "application/json", "text/html", "text/plain", "application/rtf", "text/x-opml+xml", "org.textbundle.package"],
+    "export": ["text/markdown", "text/html", "application/pdf", "text/plain", "application/x-enex+xml", "text/x-opml+xml", "application/epub+zip", "org.textbundle.package"]
+  },
+  "intents": {
+    "handles": ["open", "view", "edit", "new", "compose", "share", "search"],
+    "emits": ["open", "share", "print", "scan", "compose"]
+  },
+  "url_schemes": ["notes"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.passwords >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P1"
+}

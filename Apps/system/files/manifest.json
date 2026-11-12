@@ -1,0 +1,58 @@
+{
+  "id": "org.pbsd.files",
+  "name": "Files",
+  "version": "0.1.0",
+  "category": "system",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "fs.path:~:rw",
+    "fs.path:/media:rw",
+    "fs.path:/:r",
+    "net.user",
+    "net.route:clear",
+    "net.route:vpn",
+    "net.route:tor",
+    "proc.helper:dir-lister",
+    "proc.helper:remote-helper",
+    "proc.helper:hash-helper",
+    "svc.portal.file",
+    "svc.intent",
+    "svc.search",
+    "svc.thumbnail",
+    "svc.undo-trash",
+    "svc.notify",
+    "svc.keyring",
+    "svc.audit",
+    "svc.settings",
+    "svc.clipboard",
+    "svc.backup",
+    "svc.a11y",
+    "svc.model",
+    "ai.local",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "dir-lister", "language": "c++23", "capabilities": []},
+    {"name": "remote-helper", "language": "c++23", "capabilities": ["net.user"]},
+    {"name": "hash-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["inode/directory"],
+    "edit": [],
+    "import": [],
+    "export": ["text/csv", "text/plain", "application/pdf"]
+  },
+  "intents": {
+    "handles": ["open", "pick", "search"],
+    "emits": ["open", "edit", "view", "share", "print", "new", "compose"]
+  },
+  "url_schemes": ["file", "sftp", "davs", "smb", "nfs", "trash"],
+  "services_provided": ["org.pbsd.files.pane"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE", "ParanoidBSD"],
+  "priority": "P0"
+}

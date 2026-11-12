@@ -1,0 +1,48 @@
+{
+  "id": "org.pbsd.security-center",
+  "name": "Security Centre",
+  "version": "0.1.0",
+  "category": "security",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.security",
+    "svc.audit",
+    "svc.notify",
+    "svc.settings",
+    "svc.search",
+    "svc.update",
+    "svc.backup",
+    "svc.keyring",
+    "svc.portal.file",
+    "svc.portal.print",
+    "ai.local"
+  ],
+  "helpers": [],
+  "system_helpers": [
+    {"name": "security-monitor-service", "language": "c++23", "provides": "svc.security", "capabilities": ["svc.audit", "svc.notify", "proc.helper:boot-state-reader", "proc.helper:integrity-checker", "proc.helper:hardening-checker", "proc.helper:scan-service", "proc.helper:quarantine-store", "proc.helper:policy-applier"]},
+    {"name": "boot-state-reader", "language": "c++23", "capabilities": []},
+    {"name": "integrity-checker", "language": "c++23", "capabilities": []},
+    {"name": "hardening-checker", "language": "c++23", "capabilities": []},
+    {"name": "scan-service", "language": "c++23", "capabilities": ["proc.helper:content-matcher"]},
+    {"name": "content-matcher", "language": "c++23", "capabilities": []},
+    {"name": "quarantine-store", "language": "c++23", "capabilities": []},
+    {"name": "policy-applier", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/vnd.pbsd.security-profile+json", "application/vnd.pbsd.security-policy+json", "application/vnd.pbsd.integrity-baseline", "application/vnd.pbsd.detection-rule"],
+    "edit": ["application/vnd.pbsd.security-policy+json", "application/vnd.pbsd.detection-rule"],
+    "import": ["text/csv", "text/x-yara", "application/vnd.clamav.hash-list"],
+    "export": ["text/markdown", "text/html", "application/json", "text/csv", "application/pdf"]
+  },
+  "intents": {"handles": ["open", "view", "scan"], "emits": ["open", "share", "print"]},
+  "url_schemes": ["security"],
+  "services_provided": ["org.pbsd.security.v1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/SENTINEL", "odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P0"
+}

@@ -1,0 +1,41 @@
+{
+  "id": "org.pbsd.ui-designer",
+  "name": "UI Designer",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:ui-render",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.a11y",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "ui-render", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-fuseui+json", "text/css", "image/png"],
+    "edit": ["application/x-fuseui+json", "text/css"],
+    "import": ["text/csv", "application/json"],
+    "export": ["image/png", "application/pdf", "text/markdown", "application/sarif+json"]
+  },
+  "intents": {
+    "handles": ["open", "edit", "view", "new"],
+    "emits": ["edit", "open", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.ui-designer.Preview"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE"],
+  "priority": "P2"
+}
