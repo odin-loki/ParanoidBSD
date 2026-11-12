@@ -5,7 +5,7 @@
 # ONE continuous stream (11 Nov 2026): earlier versions ran batches and waited for each batch's slowest call (some take minutes, retries up to 15), so most workers idled
 # at the end of every batch (rate swung between 400 and 1 record a minute). Now xargs runs the whole list; a background watchdog enforces the budget and the credit stop
 # by touching $X/STOP (step4_chunk.sh checks it before every call). All data in /mnt/c/ParanoidBSD/mined-data/verify/
-HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data; V=$D/verify; X=$V/xcheck; mkdir -p "$X"
+HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data; V=${S4_V:-$D/verify}; X=${S4_X:-$V/xcheck}; mkdir -p "$X"   # S4_V / S4_X: run the same review on another data directory (repaired annotations: verify-repair)
 MAXREC=${1:-300}; BUDGET=${2:-20}; P=${3:-24}; OUT=$X/xcheck.jsonl; LED=$X/ledger.txt
 log() { echo "$(date '+%F %T') $*" | tee -a "$X/step4.log"; }
 # price: $0.12 / 1M input, $0.80 / 1M output (Morph list price on 17 Oct 2026; cached input is billed less, so this is an upper bound)
