@@ -1,0 +1,1 @@
+62	ad5446_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/iio/dac/ad5446.c	linux	ok	flexarrays=0 ok items=15177 kept=5 protos=3 rewrites=0 attrs=19566 auto=243 bitfields=0 

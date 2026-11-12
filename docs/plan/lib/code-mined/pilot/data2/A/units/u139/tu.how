@@ -1,0 +1,2 @@
+flags_from=drivers/media/platform/st/sti/delta/delta-mem.c mode=c probe=0
+cfg=x86

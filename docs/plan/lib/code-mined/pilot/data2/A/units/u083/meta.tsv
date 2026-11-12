@@ -1,0 +1,1 @@
+83	md8800_set_high_voltage2	error-path	scalar	/home/odin/pbsd-ref/linux/drivers/media/pci/saa7134/saa7134-dvb.c	linux	ok	flexarrays=17 ok items=17776 kept=1159 protos=20 rewrites=0 attrs=21422 auto=268 bitfields=2 

@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((cfg & AT_XDMAC_CC_TYPE_PER_TRAN) != 0); */

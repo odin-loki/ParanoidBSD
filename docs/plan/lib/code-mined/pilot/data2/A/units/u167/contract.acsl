@@ -1,0 +1,1 @@
+/*@ requires 0 <= debug_data_ptr->head < DEBUG_BUF_SIZE && 0 <= debug_data_ptr->tail < DEBUG_BUF_SIZE; ensures \result == (debug_data_ptr->head == debug_data_ptr->tail); */

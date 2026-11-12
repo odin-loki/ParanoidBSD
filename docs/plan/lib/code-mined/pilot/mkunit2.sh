@@ -1,11 +1,13 @@
 #!/bin/bash
 # mkunit2.sh <N> <outdir>   Build the verification unit for sample row N (SAMPLE=sample.tsv) from the REAL translation unit of its source file.
-#   1. tu_<tree>.sh preprocesses the source file (or a probe that includes the header) with the flags of its own build; cached in $TUCACHE (not committed, 2-5 MB each)
+#   1. tu_<tree>.sh preprocesses the source file (or the unit of a .c that includes the header / a probe) with the flags of its own build; cached in $TUCACHE (not committed, 2-5 MB each).
+#      Linux: kernel configurations are tried in this order until the function exists in the preprocessed unit (the function may live in the other arm of an #ifdef):
+#        file under arch/<a>/ : the configuration of <a> only;   anything else : x86 (allyesconfig-minus-sanitizers), then x86d (defconfig), then arm64 arm riscv powerpc mips s390.
 #   2. tuslice cuts the function out and keeps only the declarations it (transitively) needs; every other function becomes a prototype (no body, no spec)
 #   3. the mined contract: `result` -> `\result`; then every macro in it is expanded with the macro definitions that were live at the function (gcc -E -dD stream);
 #      an identifier that is a parameter of the function or an ACSL word is never expanded.  Nothing else is changed.
-#   4. gcc spellings the Frama-C parser cannot read are rewritten by compat.sed (listed in tu.how)
-# Output: <outdir>/uNNN/{meta.tsv, contract.acsl, contract.exp, unit.c, unit.c.callees, tu.how, build.err}.   meta.tsv: N name kind class file tree status(ok|notu|nofunc) detail
+#   4. gcc spellings the Frama-C parser cannot read are rewritten by compat.sed and the slicer (listed in slice.err)
+# Output: <outdir>/uNNN/{meta.tsv, contract.acsl, contract.exp, unit.c, unit.c.callees, unit.c.sig, tu.how, machdep, build.err}.   meta.tsv: N name kind class file tree status(ok|notu|nofunc) detail
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd); S=${SAMPLE:-/mnt/c/ParanoidBSD/mined-data/pilot/sample.tsv}; N=$1; O=$2
 TUCACHE=${TUCACHE:-$HOME/kb/tu}; SLICER=${SLICER:-$HOME/pbsd-tools/tuslice}; mkdir -p "$TUCACHE"
@@ -25,27 +27,47 @@ case "$name" in *[!A-Za-z0-9_]*|"") meta nofunc "function name is not an identif
 # contract
 c=$(printf '%s' "$contract" | tr -d '\r' | sed -E 's/(^|[^\\A-Za-z0-9_])result([^A-Za-z0-9_]|$)/\1\\result\2/g' | sed -E 's/(^|[^\\A-Za-z0-9_])result([^A-Za-z0-9_]|$)/\1\\result\2/g')
 printf '%s\n' "$c" >"$U/contract.acsl"
-# translation unit
-key2=$(printf '%s' "$file" | sha256sum | cut -c1-16)-$(basename "$file")
-TU=$TUCACHE/$key2.i
-if [ ! -s "$TU" ] || [ -f "$TU.fail" ]; then
-  rm -f "$TU.fail"
-  case "$tree" in
-    linux) bash "$HERE/tu_linux.sh" "$file" "$TU" ;;
-    bsd-kernel|bsd-user|linux-tools) bash "$HERE/tu_bsd.sh" "$tree" "$file" "$TU" ;;
-    *) echo "no flags for tree $tree" >"$TU.err"; false ;;
+# configurations to try
+cfgs="-"
+if [ "$tree" = linux ]; then
+  rel=${file#/home/odin/pbsd-ref/linux/}
+  case "$rel" in
+    arch/x86/*|arch/x86_64/*) cfgs="x86 x86d" ;;
+    arch/arm64/*) cfgs="arm64" ;; arch/arm/*) cfgs="arm" ;; arch/riscv/*) cfgs="riscv" ;; arch/powerpc/*) cfgs="powerpc" ;;
+    arch/mips/*) cfgs="mips" ;; arch/s390/*) cfgs="s390" ;;
+    arch/*) cfgs="" ;;
+    *) cfgs="x86 x86d arm64 arm riscv powerpc mips s390" ;;
   esac
-  rc=$?
-  if [ $rc -ne 0 ]; then touch "$TU.fail"; cp "$TU.err" "$U/build.err" 2>/dev/null; meta notu "preprocess failed: $(grep -m1 -E 'error|No such' "$TU.err" 2>/dev/null | cut -c1-140)"; fi
+  [ -z "$cfgs" ] && meta notu "architecture without a configured kernel tree (arch/${rel#arch/})"
+fi
+lastfail=""; got=""; TU=""
+for cfg in $cfgs; do
+  [ -d "$HOME/kb/$cfg" ] || [ "$cfg" = "-" ] || continue
+  key2=$(printf '%s' "$file" | sha256sum | cut -c1-16)-$(basename "$file")
+  [ "$cfg" != "-" ] && key2=$key2.$cfg
+  TU=$TUCACHE/$key2.i
+  if [ ! -s "$TU" ] || [ -f "$TU.fail" ]; then
+    rm -f "$TU.fail" "$TU.err"
+    case "$tree" in
+      linux) KO=$HOME/kb/$cfg bash "$HERE/tu_linux.sh" "$file" "$TU" ;;
+      bsd-kernel|bsd-user|linux-tools) bash "$HERE/tu_bsd.sh" "$tree" "$file" "$TU" ;;
+      *) echo "no flags for tree $tree" >"$TU.err"; false ;;
+    esac
+    rc=$?
+    if [ $rc -ne 0 ]; then touch "$TU.fail"; fi
+  fi
+  if [ -f "$TU.fail" ]; then lastfail="$(grep -m1 -E 'error|No such|kbuild produced' "$TU.err" 2>/dev/null | cut -c1-140)"; cp "$TU.err" "$U/build.err" 2>/dev/null; continue; fi
+  "$SLICER" "$TU" "$file" "$name" "$start" "$end" - "$U/unit.pass1.c" "$U/defs.txt" 2>"$U/slice.err" && { got=$cfg; break; }
+  lastfail="$(head -1 "$U/slice.err" | cut -c1-140) [cfg=$cfg]"
+done
+if [ -z "$got" ]; then
+  case "$lastfail" in notfound*|ambiguous*) meta nofunc "$lastfail" ;; *) meta notu "preprocess failed: $lastfail" ;; esac
 fi
 cp "$TU.how" "$U/tu.how" 2>/dev/null; cp "$TU.stubs" "$U/bsd.stubs" 2>/dev/null
-# pass 1: locate the function, get macro definitions in force at it and the identifiers of its head
-"$SLICER" "$TU" "$file" "$name" "$start" "$end" - "$U/unit.pass1.c" "$U/defs.txt" 2>"$U/slice.err" || meta nofunc "$(head -1 "$U/slice.err" | cut -c1-140)"
-head -c 20000 "$U/unit.pass1.c" >/dev/null
+echo "cfg=$got" >>"$U/tu.how"; [ "$got" != "-" ] && cp "$HOME/kb/$got/CONFIG.txt" "$U/kconfig.txt" 2>/dev/null
+case "$got" in arm) echo gcc_x86_32 >"$U/machdep" ;; *) echo gcc_x86_64 >"$U/machdep" ;; esac
 # identifiers never to expand: ACSL words + everything in the function head (parameters, types)
-awk 'BEGIN{RS="\\{"} NR==1{print; exit}' "$U/unit.pass1.c" >/dev/null 2>&1
-fnhead=$(awk -v n="$name" '{ if (!f && match($0, "(^|[^A-Za-z0-9_])" n "[ \t]*\\(")) f=1; if (f) { print; if (index($0, "{")) exit } }' "$U/unit.pass1.c" | tail -n +1 | tr -c 'A-Za-z0-9_\n' ' ' | tr ' ' '\n' | grep -E '^[A-Za-z_][A-Za-z0-9_]*$' | sort -u)
-# expand
+fnhead=$(awk -v n="$name" '{ if (!f && match($0, "(^|[^A-Za-z0-9_])" n "[ \t]*\\(")) f=1; if (f) { print; if (index($0, "{")) exit } }' "$U/unit.pass1.c" | tr -c 'A-Za-z0-9_\n' ' ' | tr ' ' '\n' | grep -E '^[A-Za-z_][A-Za-z0-9_]*$' | sort -u)
 inner=$(sed -E 's#^[[:space:]]*/\*@##; s#\*/[[:space:]]*$##' "$U/contract.acsl")
 {
   cat "$U/defs.txt"
@@ -60,7 +82,8 @@ rm -f "$U/contract.cpp.c" "$U/contract.cpp.out"
 # pass 2: with the expanded contract
 "$SLICER" "$TU" "$file" "$name" "$start" "$end" "$U/contract.exp" "$U/unit.raw.c" "$U/defs.txt" 2>"$U/slice.err" || meta nofunc "$(head -1 "$U/slice.err" | cut -c1-140)"
 sed -E -f "$HERE/compat.sed" "$U/unit.raw.c" >"$U/unit.c"
-rm -f "$U/unit.pass1.c" "$U/unit.pass1.c.callees" "$U/unit.raw.c"; mv "$U/unit.raw.c.callees" "$U/unit.c.callees" 2>/dev/null
-sort -u "$U/unit.c.callees" -o "$U/unit.c.callees" 2>/dev/null; mv "$U/unit.raw.c.sig" "$U/unit.c.sig" 2>/dev/null; rm -f "$U/unit.pass1.c.sig"
+rm -f "$U/unit.pass1.c" "$U/unit.pass1.c.callees" "$U/unit.pass1.c.sig" "$U/unit.raw.c"
+mv "$U/unit.raw.c.callees" "$U/unit.c.callees" 2>/dev/null; mv "$U/unit.raw.c.sig" "$U/unit.c.sig" 2>/dev/null
+sort -u "$U/unit.c.callees" -o "$U/unit.c.callees" 2>/dev/null
 gzip -f "$U/defs.txt"
-meta ok "$(cat "$U/slice.err")"
+meta ok "$(cat "$U/slice.err" | tr '\n' ' ')"

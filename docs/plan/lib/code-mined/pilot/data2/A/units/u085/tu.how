@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/realtek/rtw88/rtw8822c.c mode=c probe=0
+cfg=x86

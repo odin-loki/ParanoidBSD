@@ -1,0 +1,1 @@
+/*@ requires offset + 4 < 1468; ensures \result == 5 || \result == 0; */

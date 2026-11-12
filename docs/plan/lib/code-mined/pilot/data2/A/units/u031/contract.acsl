@@ -1,0 +1,1 @@
+/*@ requires true; ensures (x == 0 ==> \result == 0) && (x != 0 ==> 1 <= \result <= 32 && (x & (1 << (\result - 1))) != 0 && (x >> \result) == 0); */

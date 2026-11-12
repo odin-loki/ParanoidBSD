@@ -1,0 +1,1 @@
+198	vmx_ctl_allows_zero_setting	bitmask	scalar	FAILED	bsd-kernel	1	2	-	-	-	13.4	contract not proved; solver timeout	stub-headers:empty:offset.inc;

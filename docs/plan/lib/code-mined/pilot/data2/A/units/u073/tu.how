@@ -1,0 +1,2 @@
+flags_from=net/openvswitch/flow_netlink.c mode=c probe=0
+cfg=x86

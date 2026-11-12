@@ -1,0 +1,1 @@
+60	amiserial_console_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/tty/amiserial.c	linux	notu	preprocess failed: kbuild produced no flags for drivers/tty/amiserial.c (see /home/odin/kb/tu/fd823ff2a1fe0cb1-amiserial.c.s390.i.make.log)

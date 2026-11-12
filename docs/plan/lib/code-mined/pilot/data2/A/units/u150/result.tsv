@@ -1,0 +1,1 @@
+150	wlan_peerstate_to_snmp	bitmap	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/usr.sbin/bsnmpd/modules/snmp_wlan/wlan_sys.c:47:10: fatal error: errno.h: No such file or	

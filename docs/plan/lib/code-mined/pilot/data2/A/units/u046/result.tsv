@@ -1,0 +1,1 @@
+46	omap_usec_to_32k	arith-helper	ptr	PROVED	linux	2	2	4	4	no	12.4		pointer-or-memory-precondition;config:arm32-allyesconfig-modelled-with-machdep-gcc_x86_32(long=32bit,ABI-not-ARM);

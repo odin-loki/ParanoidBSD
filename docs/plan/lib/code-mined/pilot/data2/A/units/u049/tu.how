@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/marvell/octeontx2/af/rvu_npc.c mode=c probe=0
+cfg=x86

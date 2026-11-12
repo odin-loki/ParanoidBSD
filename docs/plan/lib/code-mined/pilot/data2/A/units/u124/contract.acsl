@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (\result == 0 || \result == ETIMEDOUT) && (\result == 0 || (sc->flags & ICH_IGNORE_PCR) == 0); */

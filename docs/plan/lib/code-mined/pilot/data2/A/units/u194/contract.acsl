@@ -1,0 +1,1 @@
+/*@ requires addr >= 0; ensures \result == (addr | GEN8_PAGE_PRESENT | ((flags & PTE_LM) ? GEN12_GGTT_PTE_LM : 0)); */

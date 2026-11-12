@@ -1,0 +1,1 @@
+177	ext4_inode_attach_jinode	refcount	scalar	/home/odin/pbsd-ref/linux/fs/ext4/inode.c	linux	ok	flexarrays=19 ok items=16746 kept=1230 protos=49 rewrites=1 attrs=23950 auto=458 bitfields=2 

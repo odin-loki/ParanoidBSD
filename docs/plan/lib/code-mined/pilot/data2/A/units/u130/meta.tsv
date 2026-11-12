@@ -1,0 +1,1 @@
+130	alloc_fw_msg_bufs	allocator	scalar	/home/odin/pbsd-ref/linux/drivers/staging/media/ipu7/ipu7-isys.c	linux	ok	flexarrays=17 ok items=17307 kept=1523 protos=51 rewrites=0 attrs=20720 auto=269 bitfields=2 

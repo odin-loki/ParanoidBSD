@@ -1,0 +1,1 @@
+/*@ requires baud > 0; ensures 0 <= \result <= 0xFFFF && (*frac >> 8) <= 0x1ff && (*frac & 0xf) <= 0xf; */

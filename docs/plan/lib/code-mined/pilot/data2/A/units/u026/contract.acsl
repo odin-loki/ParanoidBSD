@@ -1,0 +1,1 @@
+/*@ requires true; ensures iic_status == IIC_NOERR ? \result == 0 : (iic_status & IIC_ERRNO) == 0 ? \result == EIO : ((iic_status & 0xFFFF0000) != 0 ? \result == iic_status : \result == (iic_status & ~IIC_ERRNO)); */

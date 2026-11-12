@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c mode=c probe=0
+cfg=x86

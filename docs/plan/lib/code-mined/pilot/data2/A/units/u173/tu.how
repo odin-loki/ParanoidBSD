@@ -1,0 +1,2 @@
+flags_from=drivers/net/usb/huawei_cdc_ncm.c mode=c probe=0
+cfg=x86

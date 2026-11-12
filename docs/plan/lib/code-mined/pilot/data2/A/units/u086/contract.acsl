@@ -1,0 +1,1 @@
+/*@ requires minor_status != NULL; ensures \result == GSS_S_COMPLETE || (\result & GSS_ERROR) != 0; ensures \result == GSS_S_COMPLETE ==> *minor_status == 0 && *output_cred_handle == GSS_C_NO_CREDENTIAL && *actual_mechs == GSS_C_NULL_OID_SET && *time_rec == 0; */

@@ -1,0 +1,1 @@
+143	vntb_epf_db_clear	bitmap	scalar	/home/odin/pbsd-ref/linux/drivers/pci/endpoint/functions/pci-epf-vntb.c	linux	ok	flexarrays=13 ok items=13032 kept=1037 protos=42 rewrites=0 attrs=17980 auto=196 bitfields=2 

@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/fungible/funeth/funeth_ethtool.c mode=c probe=0
+cfg=x86

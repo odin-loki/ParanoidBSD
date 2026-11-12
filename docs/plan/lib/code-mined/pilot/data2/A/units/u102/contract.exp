@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == DA7218_DMIC_CLK_1_5MHZ || \result == DA7218_DMIC_CLK_3_0MHZ; */

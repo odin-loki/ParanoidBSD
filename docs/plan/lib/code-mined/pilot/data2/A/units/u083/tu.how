@@ -1,0 +1,2 @@
+flags_from=drivers/media/pci/saa7134/saa7134-dvb.c mode=c probe=0
+cfg=x86

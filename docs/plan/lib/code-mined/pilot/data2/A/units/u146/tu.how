@@ -1,0 +1,2 @@
+flags_from=drivers/ntb/hw/idt/ntb_hw_idt.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+163	xennet_tx_buf_gc	ring-buffer	scalar	CONTRACT-ONLY	linux	2	2	23	45	no	85.1	contract proved; run-time-error guards not all proved (23/45)	callees-without-spec:add_id_to_list,dev_kfree_skb_irq,netif_carrier_ok,xennet_maybe_wake_tx;

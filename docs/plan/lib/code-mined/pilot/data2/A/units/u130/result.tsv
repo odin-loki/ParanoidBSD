@@ -1,0 +1,1 @@
+130	alloc_fw_msg_bufs	allocator	scalar	CONTRACT-ONLY	linux	2	2	2	6	no	25.3	contract proved; run-time-error guards not all proved (2/6)	callees-without-spec:isys_driver_init,list_add,list_del,list_empty,spin_unlock_irqrestore,spinlock_check;

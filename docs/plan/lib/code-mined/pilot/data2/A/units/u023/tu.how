@@ -1,0 +1,2 @@
+flags_from=arch/x86/net/bpf_jit_comp.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,2 @@
+bool
+unsigned int	mask

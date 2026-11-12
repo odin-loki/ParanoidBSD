@@ -1,0 +1,1 @@
+1	is_10b_uint	arith-helper	scalar	/home/odin/pbsd-ref/linux/arch/riscv/net/bpf_jit.h	linux	ok	flexarrays=0 ok items=17437 kept=3 protos=0 rewrites=0 attrs=22899 auto=310 bitfields=0 

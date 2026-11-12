@@ -1,0 +1,1 @@
+9	skl_get_dimm_width	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/i915/soc/intel_dram.c	linux	ok	flexarrays=0 ok items=19308 kept=6 protos=1 rewrites=1 attrs=22083 auto=301 bitfields=0 

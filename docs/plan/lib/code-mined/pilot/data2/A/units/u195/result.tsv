@@ -1,0 +1,1 @@
+195	wps_fix_config_methods	bitmask	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/wpa_supplicant/wps_supplicant.c:9:10: fatal error: includes.h: No such file o	

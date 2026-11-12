@@ -1,0 +1,1 @@
+/*@ requires 0 <= x <= 3; ensures \result == (x & 3) << 14; */

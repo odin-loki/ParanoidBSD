@@ -1,0 +1,1 @@
+184	archive_entry_sparse_reset	list-op	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/libarchive/libarchive/archive_entry_sparse.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/libarchive/libarchive/archive_platform.h:50:2: error: #error Oops: No config.h an

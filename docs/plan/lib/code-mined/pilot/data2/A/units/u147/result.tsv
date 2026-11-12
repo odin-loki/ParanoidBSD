@@ -1,0 +1,1 @@
+147	arch_validate_prot	bitmap	scalar	PROVED	linux	2	2	2	2	no	9.7		header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

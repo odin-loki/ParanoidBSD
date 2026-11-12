@@ -1,0 +1,2 @@
+flags_from=drivers/mtd/tests/mtd_nandecctest.c mode=c probe=0
+cfg=x86

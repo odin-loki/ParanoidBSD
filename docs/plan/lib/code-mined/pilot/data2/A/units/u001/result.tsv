@@ -1,0 +1,1 @@
+1	is_10b_uint	arith-helper	scalar	PROVED	linux	2	2	2	2	no	10.6		config:riscv-allyesconfig-modelled-with-machdep-gcc_x86_64(endianness-and-ABI-not-riscv);

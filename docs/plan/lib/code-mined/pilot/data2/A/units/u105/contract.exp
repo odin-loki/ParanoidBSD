@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result == (id == PACKET_WREG_32 || id == PACKET_WREG_BULK || id == PACKET_MSG_LONG || id == PACKET_MSG_SHORT || id == PACKET_CP_DMA || id == PACKET_MSG_PROT || id == PACKET_FENCE || id == PACKET_LIN_DMA || id == PACKET_NOP || id == PACKET_STOP); */

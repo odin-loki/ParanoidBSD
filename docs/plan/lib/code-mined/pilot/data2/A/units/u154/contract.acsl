@@ -1,0 +1,1 @@
+/*@ requires \valid(hwmgr); ensures \result == 0; */

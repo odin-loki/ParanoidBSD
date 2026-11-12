@@ -1,0 +1,1 @@
+110	allegro_dec_create_channel	parser	ptr	FAILED	linux	1	2	-	-	-	13.9	contract not proved; solver timeout	pointer-or-memory-precondition;

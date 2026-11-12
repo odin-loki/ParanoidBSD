@@ -1,0 +1,1 @@
+/*@ requires fpdu_len >= 0; ensures \result == 0 || \result == -ENOBUFS || \result == -ERANGE; */

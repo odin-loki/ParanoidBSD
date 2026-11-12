@@ -1,0 +1,1 @@
+5	current_task_runtime_100ns	arith-helper	scalar	PROVED	linux	2	2	2	2	no	18.9		callees-without-spec:div_u64,get_current;

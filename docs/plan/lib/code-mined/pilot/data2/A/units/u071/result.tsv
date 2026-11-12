@@ -1,0 +1,1 @@
+71	perf_allow_kernel	error-path	scalar	FAILED	linux	1	2	-	-	-	12.3	contract not proved; solver timeout	callees-without-spec:perfmon_capable;

@@ -1,0 +1,5 @@
+__curthread
+atomic_fcmpset_long
+hhook_add_hook
+refcount_acquire
+refcount_release

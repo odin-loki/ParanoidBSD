@@ -1,0 +1,1 @@
+58	clear	init-teardown	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/llvm-project/compiler-rt/lib/asan/asan_allocator.h	bsd-user	nofunc	notfound: no definition of clear in the preprocessed unit [cfg=-]

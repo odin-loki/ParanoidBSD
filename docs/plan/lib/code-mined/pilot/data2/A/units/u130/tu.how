@@ -1,0 +1,2 @@
+flags_from=drivers/staging/media/ipu7/ipu7-isys.c mode=c probe=0
+cfg=x86

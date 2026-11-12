@@ -1,0 +1,1 @@
+/*@ requires 0 <= bitpos && bitpos < 32; ensures \result == ((msr_val >> bitpos) & 1) == 0; */

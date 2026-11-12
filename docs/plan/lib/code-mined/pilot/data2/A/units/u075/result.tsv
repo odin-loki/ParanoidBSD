@@ -1,0 +1,1 @@
+75	b43_gphy_op_switch_channel	error-path	scalar	PROVED	linux	3	3	3	3	no	11.7		callees-without-spec:b43_gphy_channel_switch;

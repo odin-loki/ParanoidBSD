@@ -1,0 +1,1 @@
+/*@ requires true; ensures \exists u32 d; d == (u32)in_timestamp - (u32)cached_phc_time && (d <= ((u32)~0U)/2 ==> \result == cached_phc_time + d) && (d > ((u32)~0U)/2 ==> \result == cached_phc_time - ((u32)cached_phc_time - in_timestamp)); */

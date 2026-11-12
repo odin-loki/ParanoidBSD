@@ -1,0 +1,1 @@
+/*@ requires devi->npins >= 0; ensures \result == 0 || \result == EBUSY; */

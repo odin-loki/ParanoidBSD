@@ -1,0 +1,1 @@
+30	get_pcie_gen_support	arith-helper	scalar	UNBUILT	linux	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:16: Warning: unbound logic variable PP_PCIEGen3. Ignoring logic specification of function get_pcie_gen_support	callees-without-spec:is_pcie_gen2_supported,is_pcie_gen3_supported;header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

@@ -1,0 +1,1 @@
+114	qlcnic_83xx_cam_lock	lock-or-sync	scalar	CONTRACT-ONLY	linux	2	2	6	14	no	27.2	contract proved; run-time-error guards not all proved (6/14)	callees-without-spec:readl,usleep_range,writel;

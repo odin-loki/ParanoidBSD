@@ -1,0 +1,4 @@
+name=riscv arch=riscv target=allyesconfig args=LLVM=1
+config_sha256=1eb3de30b33d96ab
+prepare_rc=0
+kernel=6.18.60

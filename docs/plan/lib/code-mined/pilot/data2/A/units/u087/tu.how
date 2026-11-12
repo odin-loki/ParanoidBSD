@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/msm/msm_fbdev.c mode=c probe=0
+cfg=x86

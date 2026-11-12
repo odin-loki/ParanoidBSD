@@ -1,0 +1,1 @@
+131	mlx5_frag_buf_alloc_node	allocator	scalar	CONTRACT-ONLY	linux	2	2	13	34	no	91.9	contract proved; run-time-error guards not all proved (13/34)	callees-without-spec:dma_free_coherent,get_current,kmalloc_array_noprof,mem_alloc_profiling_enabled,mlx5_core_dma_dev,mlx5_dma_zalloc_coherent_node,page_shift;

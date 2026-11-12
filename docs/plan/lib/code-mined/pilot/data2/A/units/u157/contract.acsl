@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (write_offset == read_offset); */

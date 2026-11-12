@@ -1,0 +1,1 @@
+/*@ requires val >= 0; ensures \result == 0 || \result == 8 << ((val & (0x3 << 8)) >> 8); */

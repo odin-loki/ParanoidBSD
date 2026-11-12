@@ -1,0 +1,1 @@
+82	should_fail_futex	error-path	scalar	/home/odin/pbsd-ref/linux/kernel/futex/futex.h	linux	ok	flexarrays=10 ok items=11950 kept=814 protos=15 rewrites=0 attrs=17704 auto=232 bitfields=2 

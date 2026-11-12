@@ -1,0 +1,1 @@
+/*@ requires on == 0 || on == 1; ensures \result == 0; */

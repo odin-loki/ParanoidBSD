@@ -1,0 +1,1 @@
+78	sk_psock_skb_ingress_self	error-path	scalar	FAILED	linux	1	2	-	-	-	2.1	contract not proved	callees-without-spec:alloc_sk_msg,sk_psock,sk_psock_skb_ingress_enqueue,skb_set_owner_r;

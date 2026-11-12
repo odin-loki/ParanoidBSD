@@ -1,0 +1,1 @@
+122	efi_enter	lock-or-sync	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/efidev/efirt.c	bsd-kernel	ok	bitfield width not evaluated: 40 __attribute__((__packed__)) bitfield width not evaluated: 64 __attribute__((__packed__)) flexarrays=1 ok items=2738 kept=242 protos=2 rewrites=0 attrs=145 auto=0 bitfields=0 

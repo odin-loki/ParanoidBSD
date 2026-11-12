@@ -1,0 +1,1 @@
+197	is_uv_hubbed	bitmask	scalar	/home/odin/pbsd-ref/linux/arch/x86/kernel/apic/x2apic_uv_x.c	linux	ok	flexarrays=0 ok items=15150 kept=5 protos=0 rewrites=0 attrs=19098 auto=224 bitfields=0 

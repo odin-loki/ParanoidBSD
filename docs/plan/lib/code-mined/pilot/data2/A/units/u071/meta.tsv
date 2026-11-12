@@ -1,0 +1,1 @@
+71	perf_allow_kernel	error-path	scalar	/home/odin/pbsd-ref/linux/kernel/events/core.c	linux	ok	flexarrays=0 ok items=20681 kept=8 protos=1 rewrites=0 attrs=25331 auto=520 bitfields=0 

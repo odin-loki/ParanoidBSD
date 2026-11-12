@@ -1,0 +1,2 @@
+flags_from=drivers/staging/media/atomisp/pci/hive_isp_css_common/host/debug.c mode=includer:drivers/staging/media/atomisp/pci/hive_isp_css_common/host/debug.c probe=0
+cfg=x86

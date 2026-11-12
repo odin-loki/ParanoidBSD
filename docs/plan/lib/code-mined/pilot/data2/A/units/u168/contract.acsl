@@ -1,0 +1,1 @@
+/*@ requires size >= LDC_PACKET_SIZE; ensures (\result == LDC_PACKET_SIZE) || (\result == 0 && lp->rx_head == lp->rx_tail) || \result < 0; */

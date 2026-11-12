@@ -1,0 +1,1 @@
+11	feclearexcept	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/lib/msun/aarch64/fenv.c	bsd-user	nofunc	notfound: no definition of feclearexcept in the preprocessed unit [cfg=-]

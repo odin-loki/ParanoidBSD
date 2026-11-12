@@ -1,0 +1,1 @@
+/*@ requires skb != ((void *)0); ensures \result == 0; */

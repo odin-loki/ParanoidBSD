@@ -1,0 +1,1 @@
+121	imx6q_enter_wait	lock-or-sync	scalar	UNBUILT	linux	-	-	-	-	-	0.0	preprocess failed: kbuild produced no flags for arch/arm/mach-imx/cpuidle-imx6q.c (see /home/odin/kb/tu/d102bb9b0ebaed79-cpuidle-imx6q.c.arm.i.make.log)	

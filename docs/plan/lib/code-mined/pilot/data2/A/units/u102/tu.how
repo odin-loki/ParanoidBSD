@@ -1,0 +1,2 @@
+flags_from=sound/soc/codecs/da7218.c mode=c probe=0
+cfg=x86

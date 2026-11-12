@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result == (((pstate ^ (pstate << 3)) & PSR_N_BIT) != 0); */

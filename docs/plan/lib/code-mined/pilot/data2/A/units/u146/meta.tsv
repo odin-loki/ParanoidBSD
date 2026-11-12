@@ -1,0 +1,1 @@
+146	idt_ntb_db_clear	bitmap	scalar	/home/odin/pbsd-ref/linux/drivers/ntb/hw/idt/ntb_hw_idt.c	linux	ok	flexarrays=11 ok items=12329 kept=911 protos=42 rewrites=0 attrs=17468 auto=199 bitfields=2 

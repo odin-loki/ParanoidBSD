@@ -1,0 +1,2 @@
+flags_from=drivers/infiniband/hw/bnxt_re/debugfs.c mode=includer:drivers/infiniband/hw/bnxt_re/debugfs.c probe=0
+cfg=x86

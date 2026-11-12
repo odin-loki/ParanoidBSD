@@ -1,0 +1,1 @@
+169	qm_eqcr_get_avail	ring-buffer	ptr	UNBUILT	linux	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:390: Warning: unbound logic variable eqcr. Ignoring logic specification of function qm_eqcr_get_avail	callees-without-spec:qm_mc_result;pointer-or-memory-precondition;

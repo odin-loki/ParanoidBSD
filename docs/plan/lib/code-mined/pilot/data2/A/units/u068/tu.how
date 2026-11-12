@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/intel/ipw2x00/ipw2200.c mode=c probe=0
+cfg=x86

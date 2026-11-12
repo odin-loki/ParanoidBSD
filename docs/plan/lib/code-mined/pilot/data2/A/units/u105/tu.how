@@ -1,0 +1,2 @@
+flags_from=drivers/accel/habanalabs/goya/goya.c mode=c probe=0
+cfg=x86

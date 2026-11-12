@@ -1,0 +1,1 @@
+/*@ requires true; ensures (vector > 0 ==> \result == 0) && (vector == 0 ==> \result == (1LL << PLX_NUM_DB) - 1); */

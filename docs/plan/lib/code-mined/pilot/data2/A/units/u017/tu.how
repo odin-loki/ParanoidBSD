@@ -1,0 +1,2 @@
+flags_from=drivers/media/platform/allegro-dvt/allegro-core.c mode=includer:drivers/media/platform/allegro-dvt/allegro-core.c probe=0
+cfg=x86

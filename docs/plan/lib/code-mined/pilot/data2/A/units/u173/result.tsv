@@ -1,0 +1,1 @@
+173	huawei_cdc_ncm_manage_power	refcount	scalar	CONTRACT-ONLY	linux	2	2	4	6	no	27.5	contract proved; run-time-error guards not all proved (4/6)	callees-without-spec:atomic_add_return,atomic_dec_and_test;

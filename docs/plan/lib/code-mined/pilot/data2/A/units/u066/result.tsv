@@ -1,0 +1,1 @@
+66	t1_tp_reset	init-teardown	ptr	CONTRACT-ONLY	linux	2	2	2	4	no	23.1	contract proved; run-time-error guards not all proved (2/4)	callees-without-spec:tp_init,writel;pointer-or-memory-precondition;

@@ -1,0 +1,1 @@
+/*@ requires \valid_read(ci); ensures (\result >= 0) && ((\result & CEPH_CAP_FILE_EXCL) != 0 ==> ((\result & CEPH_CAP_ANY_DIR_OPS) != 0 || (\result & CEPH_CAP_FILE_BUFFER) != 0)); */

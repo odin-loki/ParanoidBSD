@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/broadcom/b43/phy_g.c mode=c probe=0
+cfg=x86

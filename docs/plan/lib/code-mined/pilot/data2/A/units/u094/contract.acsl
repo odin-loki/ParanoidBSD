@@ -1,0 +1,1 @@
+/*@ requires skb != NULL; ensures \result == 0; */

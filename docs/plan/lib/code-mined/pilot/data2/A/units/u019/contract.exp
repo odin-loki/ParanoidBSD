@@ -1,0 +1,1 @@
+/*@ requires size == 256 || size != 256; ensures \result < 24 && (size != 256 || (\result != 16 && \result != 17)); */

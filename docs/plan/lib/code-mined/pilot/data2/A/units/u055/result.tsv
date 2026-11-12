@@ -1,0 +1,1 @@
+55	tpcl_init	init-teardown	scalar	FAILED	bsd-kernel	1	2	-	-	-	12.7	contract not proved; solver timeout	callees-without-spec:scsi_ulto2b,tpcl_datamove,tpcl_done,tpcl_shutdown;stub-headers:empty:offset.inc,empty:opt_cam.h;

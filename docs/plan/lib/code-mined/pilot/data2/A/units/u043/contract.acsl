@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result==(u32)(uaddr-(u32)arena->user_vm_start)>>PAGE_SHIFT; */

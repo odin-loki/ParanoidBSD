@@ -1,0 +1,1 @@
+9	skl_get_dimm_width	arith-helper	BV-SKIP	0.0	inline asm / target builtin in the function: CBMC has no semantics for it (neither proof nor counterexample is trusted)

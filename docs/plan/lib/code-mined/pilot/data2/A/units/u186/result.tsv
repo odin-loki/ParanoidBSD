@@ -1,0 +1,1 @@
+186	irdma_ieq_create_pbufl	list-op	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/irdma/osdep.h:38:10: fatal error: linux/dma-mapping.h: No such file or directory	

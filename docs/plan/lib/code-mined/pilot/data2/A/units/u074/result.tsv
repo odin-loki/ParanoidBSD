@@ -1,0 +1,1 @@
+74	test_uffd_api	error-path	scalar	PROVED	linux-tools	2	2	2	2	no	11.6		callees-without-spec:ksft_inc_fail_cnt,uffd_test_pass,uffd_test_skip;

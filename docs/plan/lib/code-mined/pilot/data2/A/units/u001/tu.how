@@ -1,0 +1,2 @@
+flags_from=arch/riscv/net/bpf_jit_comp32.c mode=includer:arch/riscv/net/bpf_jit_comp32.c probe=0
+cfg=riscv

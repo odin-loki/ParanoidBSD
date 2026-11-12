@@ -1,0 +1,3 @@
+flags_from=drivers/gpu/host1x/hw/cdma_hw.c mode=probe probe=1
+extra=+
+cfg=x86

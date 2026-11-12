@@ -1,0 +1,1 @@
+143	vntb_epf_db_clear	bitmap	scalar	CONTRACT-ONLY	linux	2	2	3	4	no	22.8	contract proved; run-time-error guards not all proved (3/4)	callees-without-spec:epf_ntb_init;

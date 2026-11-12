@@ -1,0 +1,2 @@
+flags_from=drivers/staging/media/atomisp/pci/runtime/isys/src/isys_init.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+2	__to_ib_port_num	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/infiniband/hw/bnxt_re/ib_verbs.h	linux	ok	flexarrays=0 ok items=21265 kept=5 protos=0 rewrites=0 attrs=25445 auto=361 bitfields=0 

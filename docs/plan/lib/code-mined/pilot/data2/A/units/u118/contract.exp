@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((flags & (((1UL)) << (9))) == 0); */

@@ -1,0 +1,1 @@
+146	idt_ntb_db_clear	bitmap	scalar	PROVED	linux	2	2	2	2	no	10.4		callees-without-spec:idt_nt_write,idt_pci_driver_init;

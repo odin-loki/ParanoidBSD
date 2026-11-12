@@ -1,0 +1,1 @@
+19	random_ecc_bit	arith-helper	scalar	FAILED	linux	1	2	-	-	-	14.2	contract not proved; solver timeout	callees-without-spec:get_random_u32_below;

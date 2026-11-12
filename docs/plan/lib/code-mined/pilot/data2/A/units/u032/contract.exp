@@ -1,0 +1,1 @@
+/*@ requires 0 <= xcvr <= 4294967295; ensures (xcvr == 0 ==> \result == 0xef) && ((xcvr & 7) == FUN_XCVR_BASET ==> \result == 0x00) && ((xcvr & 7) == FUN_XCVR_CU ==> \result == 0x05) && (xcvr != 0 && (xcvr & 7) != FUN_XCVR_BASET && (xcvr & 7) != FUN_XCVR_CU ==> \result == 0x03); */

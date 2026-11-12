@@ -1,0 +1,1 @@
+181	hfi1_netdev_rx_destroy	refcount	ptr	/home/odin/pbsd-ref/linux/drivers/infiniband/hw/hfi1/netdev_rx.c	linux	ok	flexarrays=92 ok items=23561 kept=2170 protos=47 rewrites=0 attrs=27300 auto=369 bitfields=2 

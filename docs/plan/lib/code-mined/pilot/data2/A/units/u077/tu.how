@@ -1,0 +1,2 @@
+flags_from=drivers/block/mtip32xx/mtip32xx.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+/*@ requires is_fail == 0 || is_fail == 1; ensures \result != 0 ==> is_fail == 0; */

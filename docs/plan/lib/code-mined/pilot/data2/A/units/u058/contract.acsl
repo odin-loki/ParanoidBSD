@@ -1,0 +1,1 @@
+/*@ requires \true; ensures size_ == 0; */

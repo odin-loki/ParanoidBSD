@@ -1,0 +1,1 @@
+33	hostapd_get_nr_chan_width	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/src/ap/neighbor_db.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/src/utils/includes.h:23:10: fatal error: stdarg.h: No such file or directory

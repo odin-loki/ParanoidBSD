@@ -1,0 +1,1 @@
+85	rtw8822c_dpk_check_pass	error-path	scalar	/home/odin/pbsd-ref/linux/drivers/net/wireless/realtek/rtw88/rtw8822c.c	linux	ok	flexarrays=68 ok items=18972 kept=1823 protos=29 rewrites=0 attrs=23041 auto=327 bitfields=2 

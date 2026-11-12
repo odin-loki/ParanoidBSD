@@ -1,0 +1,3 @@
+uint16_t
+uint32_t	pcie_link_speed_cap
+uint16_t	ns_pcie_gen

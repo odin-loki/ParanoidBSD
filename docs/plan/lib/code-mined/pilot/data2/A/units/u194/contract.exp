@@ -1,0 +1,1 @@
+/*@ requires addr >= 0; ensures \result == (addr | ((((1ULL))) << (0)) | ((flags & ((((1UL))) << (1))) ? ((((1ULL))) << (1)) : 0)); */

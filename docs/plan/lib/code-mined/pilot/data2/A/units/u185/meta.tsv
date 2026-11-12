@@ -1,0 +1,1 @@
+185	snd_seq_delete_port	list-op	scalar	/home/odin/pbsd-ref/linux/sound/core/seq/seq_ports.c	linux	ok	flexarrays=9 ok items=10164 kept=846 protos=45 rewrites=0 attrs=14834 auto=173 bitfields=2 

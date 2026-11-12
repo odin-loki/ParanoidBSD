@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/microchip/wilc1000/wlan_cfg.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+15	kona_pwmc_config	arith-helper	scalar	CONTRACT-ONLY	linux	2	2	6	11	no	32.5	contract proved; run-time-error guards not all proved (6/11)	callees-without-spec:kona_pwmc_apply_settings,kona_pwmc_prepare_for_settings,mul_u64_u64_div_u64,readl,to_kona_pwmc,writel;

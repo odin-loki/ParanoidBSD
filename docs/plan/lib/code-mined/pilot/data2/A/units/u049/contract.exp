@@ -1,0 +1,1 @@
+/*@ requires \valid_read(mcam); ensures \result >= 0; */

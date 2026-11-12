@@ -1,0 +1,2 @@
+flags_from=drivers/pci/endpoint/functions/pci-epf-vntb.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+101	riscv_insn_is_system	parser	scalar	/home/odin/pbsd-ref/linux/arch/riscv/include/asm/insn.h	linux	ok	flexarrays=3 ok items=6948 kept=321 protos=28 rewrites=0 attrs=11221 auto=120 bitfields=2 

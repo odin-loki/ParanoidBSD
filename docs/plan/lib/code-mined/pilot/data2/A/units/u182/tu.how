@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/netronome/nfp/flower/main.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,2 @@
+flags_from=sound/core/seq/seq_ports.c mode=c probe=0
+cfg=x86

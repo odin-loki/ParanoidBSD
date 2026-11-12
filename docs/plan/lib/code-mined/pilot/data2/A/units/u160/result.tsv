@@ -1,0 +1,1 @@
+160	ish_send	ring-buffer	scalar	FAILED	linux	1	2	-	-	-	24.5	contract not proved; solver timeout	callees-without-spec:arch_static_branch,arch_static_branch_jump,might_resched,static_key_false,static_key_true;

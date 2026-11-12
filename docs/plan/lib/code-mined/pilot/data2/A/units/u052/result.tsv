@@ -1,0 +1,1 @@
+52	init_chip	init-teardown	scalar	FAILED	linux	1	2	-	-	-	18.9	contract not proved; solver timeout	callees-without-spec:chip_rcv_contexts,chip_sdma_engines,chip_send_contexts,is_ax,read_csr,reset_cce_csrs,reset_misc_csrs,reset_rxe_csrs,reset_txe_csrs,rvt_get_ibdev_name,setextled,write_csr,write_kctxt_csr;

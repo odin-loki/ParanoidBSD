@@ -1,0 +1,1 @@
+23	is_imm8_jmp_offset	arith-helper	scalar	/home/odin/pbsd-ref/linux/arch/x86/net/bpf_jit_comp.c	linux	ok	flexarrays=0 ok items=17955 kept=3 protos=0 rewrites=0 attrs=23048 auto=326 bitfields=0 

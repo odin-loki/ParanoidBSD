@@ -1,0 +1,1 @@
+/*@ requires 0 <= val <= 0x7FFF; ensures 0 <= \result <= 7; */

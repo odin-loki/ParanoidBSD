@@ -1,0 +1,1 @@
+/*@ requires kernel >= 0; ensures 0 <= \result && \result < mmu_slb_size && \result >= SLB_NUM_BOLTED && (local_paca->slb_used_bitmap & (1U << \result)) != 0 && (!kernel || (local_paca->slb_kern_bitmap & (1U << \result)) != 0); */

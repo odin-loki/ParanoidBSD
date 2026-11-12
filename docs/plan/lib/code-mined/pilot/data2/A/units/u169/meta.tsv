@@ -1,0 +1,1 @@
+169	qm_eqcr_get_avail	ring-buffer	ptr	/home/odin/pbsd-ref/linux/drivers/soc/fsl/qbman/qman.c	linux	ok	flexarrays=0 ok items=12708 kept=53 protos=1 rewrites=0 attrs=17873 auto=248 bitfields=0 

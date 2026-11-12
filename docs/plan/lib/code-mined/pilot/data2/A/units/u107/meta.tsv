@@ -1,0 +1,1 @@
+107	dsi_10nm_phy_parse_dt	parser	ptr	/home/odin/pbsd-ref/linux/drivers/gpu/drm/msm/dsi/phy/dsi_phy_10nm.c	linux	notu	preprocess failed: kbuild produced no flags for drivers/gpu/drm/msm/dsi/phy/dsi_phy_10nm.c (see /home/odin/kb/tu/ebb38e7f45ff114a-dsi_phy_10nm.c.s390.i.make.lo

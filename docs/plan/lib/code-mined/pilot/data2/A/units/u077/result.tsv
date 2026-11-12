@@ -1,0 +1,1 @@
+77	mtip_quiesce_io	error-path	scalar	CONTRACT-ONLY	linux	2	2	3	9	no	31.8	contract proved; run-time-error guards not all proved (3/9)	callees-without-spec:_test_bit,const_test_bit,msecs_to_jiffies,mtip_check_surprise_removal,mtip_commands_active;

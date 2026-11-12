@@ -1,0 +1,1 @@
+36	host1x_uclass_load_syncpt_payload_32_r	arith-helper	scalar	PROVED	linux	2	2	2	2	no	14.3		header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

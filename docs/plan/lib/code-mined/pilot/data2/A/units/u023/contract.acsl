@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (value <= 123 && value >= -128); */

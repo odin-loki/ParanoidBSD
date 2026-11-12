@@ -30,11 +30,14 @@ for round in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   [ -z "$miss" ] && break
   bn=$(basename "$miss")
   case "$bn" in
-    opt_*.h) : >"$D/$bn"; echo "empty:$bn" >>"$o.stubs" ;;
-    *_if.h)  m=$(find "$S/sys" "$S" -maxdepth 6 -name "${bn%_if.h}.m" 2>/dev/null | head -1)
-             if [ -n "$m" ]; then awk -f "$S/sys/tools/makeobjops.awk" -- -h "$m" >/dev/null 2>&1; (cd "$D" && awk -f "$S/sys/tools/makeobjops.awk" -- -h "$m" >/dev/null 2>&1); echo "generated:$bn from ${m#$S/}" >>"$o.stubs"; [ -f "$D/$bn" ] || { echo "makeobjops failed for $bn" >>"$o.err"; break; }
+    opt_*.h|offset.inc|*.inc) : >"$D/$bn"; echo "empty:$bn" >>"$o.stubs" ;;
+    *_if.h)  m=$(find "$S/sys" "$S" -maxdepth 6 -name "${bn%.h}.m" 2>/dev/null | head -1)
+             if [ -n "$m" ]; then (cd "$D" && awk -f "$S/sys/tools/makeobjops.awk" -- -h "$m" >/dev/null 2>&1); echo "generated:$bn from ${m#$S/}" >>"$o.stubs"; [ -f "$D/$bn" ] || { echo "makeobjops failed for $bn" >>"$o.err"; break; }
              else break; fi ;;
-    *) break ;;
+    *)  # a header the real build would find in an installed include directory (userland: /usr/include = include/ + sys/sys/ + libc private ...): alias by basename
+        a=""; for dd in "$S/include" "$S/sys/sys" "$S/lib/libc/include" "$S/lib/msun/src" "$S/lib/libsys" "$S/lib/libc/stdlib" "$S/lib/libc"; do [ -f "$dd/$bn" ] && { a="$dd/$bn"; break; }; done
+        [ -z "$a" ] && break
+        mkdir -p "$D/$(dirname "$miss")"; ln -sf "$a" "$D/$miss"; echo "alias:$miss->${a#$S/}" >>"$o.stubs" ;;
   esac
 done
 [ -s "$o" ] && ! grep -q "fatal error" "$o.err" || exit 2

@@ -1,0 +1,1 @@
+/*@ requires 0 <= width; ensures \result == 0 || \result == 1 || \result == -1; */

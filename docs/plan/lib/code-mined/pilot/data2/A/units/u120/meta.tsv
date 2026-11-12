@@ -1,0 +1,1 @@
+120	_atomic_lock_stub	lock-or-sync	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/lib/libc/gen/_spinlock_stub.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/lib/libc/include/libc_private.h:40:10: fatal error: libsys.h: No such file or directory

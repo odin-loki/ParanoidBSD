@@ -1,0 +1,1 @@
+144	test_compression_spec	bitmap	scalar	/home/odin/pbsd-ref/linux/fs/f2fs/super.c	linux	ok	flexarrays=0 ok items=23571 kept=2 protos=0 rewrites=0 attrs=27125 auto=627 bitfields=0 

@@ -1,0 +1,1 @@
+117	claim_dma_lock	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/arch/parisc/include/asm/dma.h	linux	notu	architecture without a configured kernel tree (arch/parisc/include/asm/dma.h)

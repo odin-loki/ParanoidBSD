@@ -1,0 +1,1 @@
+72	xe_vm_userptr_check_repin	error-path	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/xe/xe_userptr.h	linux	nofunc	notfound: no definition of xe_vm_userptr_check_repin in the preprocessed unit [cfg=s390]

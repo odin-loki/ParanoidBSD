@@ -1,0 +1,1 @@
+/*@ requires tp != NULL && tp->adapter != NULL; ensures \result == 0; */

@@ -1,0 +1,1 @@
+/*@ requires count >= 0; ensures \result == 0 || \result == count || \result < 0; */

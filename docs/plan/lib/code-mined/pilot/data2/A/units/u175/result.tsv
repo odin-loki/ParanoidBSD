@@ -1,0 +1,1 @@
+175	hhook_add_hook_lookup	refcount	scalar	WPERROR	bsd-kernel	-	-	-	-	-	2.5	[wp] unit.final.c:203: User Error: 	callees-without-spec:__curthread,atomic_fcmpset_long,hhook_add_hook,refcount_acquire,refcount_release;pointer-or-memory-precondition;stub-headers:empty:offset.inc;

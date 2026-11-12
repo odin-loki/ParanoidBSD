@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (val < (1UL << 10)); */

@@ -1,0 +1,1 @@
+/*@ requires \valid_read(p_hwfn); ensures \result == 0 || \result == -EAGAIN || \result == -EBUSY; */

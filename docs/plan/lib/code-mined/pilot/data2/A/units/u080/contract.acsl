@@ -1,0 +1,1 @@
+/*@ requires bcache != 0; ensures \result == 0 || \result < 0; */

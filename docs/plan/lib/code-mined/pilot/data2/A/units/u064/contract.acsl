@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == INPUT_SYSTEM_ERR_NO_ERROR || \result == INPUT_SYSTEM_ERR_GENERIC; */

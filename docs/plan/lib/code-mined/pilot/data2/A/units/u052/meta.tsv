@@ -1,0 +1,1 @@
+52	init_chip	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/infiniband/hw/hfi1/chip.c	linux	ok	flexarrays=92 ok items=27593 kept=2215 protos=60 rewrites=0 attrs=33128 auto=582 bitfields=2 

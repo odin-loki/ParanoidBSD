@@ -1,0 +1,1 @@
+144	test_compression_spec	bitmap	BV-FALSE	0.2	violates ensures under C semantics:   mask=1u (00000000 00000000 00000000 00000001)   mask=1u (00000000 00000000 00000000 00000001)   return_value_test_compression_spec=FALSE (00000000)   bv_r=FALSE (00000000) 

@@ -1,0 +1,1 @@
+167	is_debug_buffer_empty	ring-buffer	ptr	/home/odin/pbsd-ref/linux/drivers/staging/media/atomisp/pci/hive_isp_css_common/host/debug_private.h	linux	ok	flexarrays=0 ok items=10010 kept=10 protos=0 rewrites=0 attrs=15423 auto=178 bitfields=0 

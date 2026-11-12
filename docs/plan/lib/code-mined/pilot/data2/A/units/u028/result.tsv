@@ -1,0 +1,1 @@
+28	get_mmcr1_rsq	arith-helper	scalar	UNBUILT	linux-tools	-	-	-	-	-	0.0	preprocess failed: /home/odin/pbsd-ref/linux/tools/testing/selftests/powerpc/pmu/sampling_tests/../event.h:12:10: fatal error: utils.h: No such file or directo	

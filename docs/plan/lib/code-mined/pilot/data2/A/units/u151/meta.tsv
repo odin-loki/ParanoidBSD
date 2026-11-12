@@ -1,0 +1,1 @@
+151	uniphier_gpio_set_multiple	bitmap	scalar	/home/odin/pbsd-ref/linux/drivers/gpio/gpio-uniphier.c	linux	ok	flexarrays=12 ok items=11031 kept=820 protos=17 rewrites=0 attrs=15640 auto=168 bitfields=2 

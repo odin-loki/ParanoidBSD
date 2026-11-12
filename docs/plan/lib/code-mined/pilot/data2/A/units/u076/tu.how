@@ -1,0 +1,2 @@
+flags_from=drivers/mtd/nand/ecc-sw-hamming.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+70	sq_release_buffers	init-teardown	ptr	/home/odin/pbsd-ref/linux/sound/oss/dmasound/dmasound_core.c	linux	ok	flexarrays=7 ok items=9412 kept=681 protos=16 rewrites=0 attrs=14401 auto=153 bitfields=2 

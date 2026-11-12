@@ -1,0 +1,1 @@
+192	rds_still_queued	list-op	ptr	CONTRACT-ONLY	linux	2	2	5	6	no	31.2	contract proved; run-time-error guards not all proved (5/6)	callees-without-spec:arch_static_branch,arch_static_branch_jump,list_del_init,list_empty,rds_inc_put,rds_recv_rcvbuf_delta,rds_rs_to_sk,static_key_false,static_key_true;pointer-or-memory-precondition;

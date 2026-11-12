@@ -1,0 +1,1 @@
+/*@ requires 0 <= port_id <= 65534; ensures \result == (u32)port_id + 1; */

@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == NO_POLL_CHAR || (0 <= \result <= 255); */

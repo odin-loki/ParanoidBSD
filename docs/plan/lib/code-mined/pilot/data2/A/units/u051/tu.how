@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/arm/display/komeda/d71/d71_dev.c mode=c probe=0
+cfg=x86

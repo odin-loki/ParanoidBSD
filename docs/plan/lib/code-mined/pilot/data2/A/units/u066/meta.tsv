@@ -1,0 +1,1 @@
+66	t1_tp_reset	init-teardown	ptr	/home/odin/pbsd-ref/linux/drivers/net/ethernet/chelsio/cxgb/tp.c	linux	ok	flexarrays=53 ok items=17705 kept=1578 protos=24 rewrites=0 attrs=22129 auto=300 bitfields=2 

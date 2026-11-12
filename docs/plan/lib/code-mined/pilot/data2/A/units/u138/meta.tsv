@@ -1,0 +1,1 @@
+138	__mlx4_qp_reserve_range	allocator	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_qp.c	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_qp.c:36:10: fatal error: linux/types.h: No such file or direc

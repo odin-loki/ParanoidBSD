@@ -1,0 +1,1 @@
+153	alloc_slb_index	bitmap	ptr	/home/odin/pbsd-ref/linux/arch/powerpc/mm/book3s64/slb.c	linux	notu	preprocess failed: kbuild produced no flags for arch/powerpc/mm/book3s64/slb.c (see /home/odin/kb/tu/a60f10aa5c3e856c-slb.c.powerpc.i.make.log)

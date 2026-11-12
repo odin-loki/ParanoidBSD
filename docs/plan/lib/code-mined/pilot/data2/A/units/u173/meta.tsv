@@ -1,0 +1,1 @@
+173	huawei_cdc_ncm_manage_power	refcount	scalar	/home/odin/pbsd-ref/linux/drivers/net/usb/huawei_cdc_ncm.c	linux	ok	flexarrays=58 ok items=17533 kept=1598 protos=24 rewrites=0 attrs=22179 auto=301 bitfields=2 

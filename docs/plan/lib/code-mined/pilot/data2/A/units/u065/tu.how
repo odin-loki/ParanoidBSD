@@ -1,0 +1,2 @@
+flags_from=drivers/hwtracing/intel_th/gth.c mode=c probe=0
+cfg=x86

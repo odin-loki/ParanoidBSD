@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (db_raw_cnt < DB_RAW_SIZE); */

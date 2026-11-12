@@ -1,0 +1,2 @@
+flags_from=net/bluetooth/hci_core.c mode=c probe=0
+cfg=x86

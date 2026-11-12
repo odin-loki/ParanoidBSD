@@ -1,0 +1,1 @@
+151	uniphier_gpio_set_multiple	bitmap	scalar	CONTRACT-ONLY	linux	2	2	3	5	no	21.7	contract proved; run-time-error guards not all proved (3/5)	callees-without-spec:bitmap_read,uniphier_gpio_bank_write;

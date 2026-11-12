@@ -1,0 +1,3 @@
+flags_from=drivers/gpu/drm/drm_atomic.c mode=probe probe=1
+extra=+
+cfg=x86

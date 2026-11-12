@@ -1,0 +1,1 @@
+141	peerflag_bits	bitmap	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/ntp/ntpd/ntp_config.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/ntp/ntpd/ntp_config.c:34:10: fatal error: isc/net.h: No such file or directory

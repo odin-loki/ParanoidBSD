@@ -1,0 +1,1 @@
+51	d71_reset	init-teardown	scalar	CONTRACT-ONLY	linux	2	2	3	4	no	27.6	contract proved; run-time-error guards not all proved (3/4)	callees-without-spec:malidp_read32,malidp_write32,usleep_range;

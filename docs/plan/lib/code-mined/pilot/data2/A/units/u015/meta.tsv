@@ -1,0 +1,1 @@
+15	kona_pwmc_config	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/pwm/pwm-bcm-kona.c	linux	ok	flexarrays=13 ok items=11155 kept=842 protos=21 rewrites=0 attrs=15768 auto=166 bitfields=2 

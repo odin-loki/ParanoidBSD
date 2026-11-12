@@ -1,0 +1,1 @@
+78	sk_psock_skb_ingress_self	error-path	scalar	/home/odin/pbsd-ref/linux/net/core/skmsg.c	linux	ok	flexarrays=80 ok items=21088 kept=1806 protos=50 rewrites=0 attrs=26710 auto=384 bitfields=2 

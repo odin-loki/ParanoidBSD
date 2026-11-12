@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result == 1 <==> (expected_len == attr_len || expected_len == -1 || expected_len == -2); */

@@ -1,0 +1,2 @@
+flags_from=drivers/platform/chrome/cros_ec_ishtp.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,2 @@
+flags_from=net/rds/recv.c mode=c probe=0
+cfg=x86

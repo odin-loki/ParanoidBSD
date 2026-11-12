@@ -1,0 +1,2 @@
+int
+struct dentry *	dentry

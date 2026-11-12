@@ -1,0 +1,1 @@
+57	zswap_swapon	init-teardown	scalar	/home/odin/pbsd-ref/linux/include/linux/zswap.h	linux	ok	flexarrays=0 ok items=9331 kept=2 protos=0 rewrites=0 attrs=14251 auto=93 bitfields=0 

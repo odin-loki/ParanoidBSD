@@ -1,0 +1,1 @@
+50	addcarryx_u26	arith-helper	ptr	UNBUILT	bsd-user	-	-	-	-	-	0.2	 syntax error: Location: "unit.c", line 3, before or at token: u8	pointer-or-memory-precondition;

@@ -1,0 +1,1 @@
+193	mcp251xfd_tx_fifo_sta_empty	bitmask	scalar	/home/odin/pbsd-ref/linux/drivers/net/can/spi/mcp251xfd/mcp251xfd-tef.c	linux	ok	flexarrays=0 ok items=20128 kept=5 protos=0 rewrites=0 attrs=24143 auto=336 bitfields=0 

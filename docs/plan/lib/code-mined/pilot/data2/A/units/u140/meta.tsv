@@ -1,0 +1,1 @@
+140	luaM_growaux_	allocator	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/lua/src/lmem.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/lua/src/lua.h:12:10: fatal error: stdarg.h: No such file or directory

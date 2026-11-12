@@ -1,0 +1,1 @@
+84	mm_put_stat	error-path	scalar	PROVED	linux	2	2	2	2	no	11.8		callees-without-spec:nla_put_u64_64bit;

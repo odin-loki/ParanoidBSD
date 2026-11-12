@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (MACH_IS_AMIGA ==> \result == 0) && (!MACH_IS_AMIGA ==> \result == -ENODEV); */

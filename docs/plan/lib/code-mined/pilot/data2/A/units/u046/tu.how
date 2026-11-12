@@ -1,0 +1,2 @@
+flags_from=arch/arm/mach-omap2/vc.c mode=c probe=0
+cfg=arm

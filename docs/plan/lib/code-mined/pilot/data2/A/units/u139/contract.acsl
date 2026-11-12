@@ -1,0 +1,1 @@
+/*@ requires size >= 0; ensures (\result == 0 ==> \true) && (\result != 0 ==> ctx->sys_errors == \old(ctx->sys_errors) + 1); */

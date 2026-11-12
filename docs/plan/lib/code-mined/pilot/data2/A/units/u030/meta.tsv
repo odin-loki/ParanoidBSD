@@ -1,0 +1,1 @@
+30	get_pcie_gen_support	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/amd/include/amd_pcie_helpers.h	linux	ok	flexarrays=0 ok items=9809 kept=11 protos=2 rewrites=0 attrs=14722 auto=166 bitfields=0 

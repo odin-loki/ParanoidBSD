@@ -1,0 +1,1 @@
+171	ipack_get_carrier	refcount	scalar	CONTRACT-ONLY	linux	2	2	2	4	no	25.7	contract proved; run-time-error guards not all proved (2/4)	header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

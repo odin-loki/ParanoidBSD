@@ -1,0 +1,1 @@
+159	cache_read	ring-buffer	scalar	/home/odin/pbsd-ref/linux/net/sunrpc/cache.c	linux	ok	bitfield width not evaluated:  ( __builtin_constant_p(5) ? ( ((5) == 0 || (5) == 1) ? 1 :  bitfield width not evaluated:  ( __builtin_constant_p((1L << 10)) ? ( (((1L << 10)) == 0 | flexarrays=68 ok items=21060 kept=1746 protos=74 rewrites=1 attrs=27827 auto=490 bitfields=0 

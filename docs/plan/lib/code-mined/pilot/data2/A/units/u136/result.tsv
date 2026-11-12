@@ -1,0 +1,1 @@
+136	atusb_alloc_urbs	allocator	scalar	CONTRACT-ONLY	linux	2	2	2	3	no	23.2	contract proved; run-time-error guards not all proved (2/3)	callees-without-spec:atusb_free_urbs,atusb_set_channel,atusb_set_txpower;

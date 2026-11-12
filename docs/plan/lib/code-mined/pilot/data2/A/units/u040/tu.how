@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/google/gve/gve_adminq.c mode=includer:drivers/net/ethernet/google/gve/gve_adminq.c probe=0
+cfg=x86

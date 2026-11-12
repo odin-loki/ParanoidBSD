@@ -1,0 +1,1 @@
+29	smb_ntencrypt	arith-helper	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.2	 syntax error: Location: "unit.c", line 48, before or at token: static	callees-without-spec:smb_E;pointer-or-memory-precondition;stub-headers:empty:offset.inc,empty:opt_netsmb.h;

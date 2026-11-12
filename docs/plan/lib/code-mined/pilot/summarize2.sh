@@ -15,7 +15,7 @@ for r in u*/result.tsv; do
   d=$(dirname "$r"); bv=$d/result.bv.tsv
   awk -F'\t' -v bvf="$bv" 'BEGIN{OFS="\t"; bs=""; bd=""; if ((getline l < bvf) > 0) { split(l, b, "\t"); bs=b[4]; bd=b[6] } }
     { n=$1; name=$2; kind=$3; cls=$4; st=$5; tree=$6; as=$14; cause=$13;
-      down = (as ~ /callees-without-spec|pointer-or-memory-precondition|x86_64-config-used-for-non-x86-arch-file|header-function-in-probe-unit|probe-adds|stub-headers/);
+      down = (as ~ /callees-without-spec|pointer-or-memory-precondition|x86_64-config-used-for-non-x86-arch-file|header-function-in-probe-unit|probe-adds|stub-headers|config:|termination-not-proved/);
       lab=st; how="WP";
       if (st=="PROVED") lab = down ? "PROVED-ASSUMING" : "PROVED";
       else if (st=="CONTRACT-ONLY") { lab="CONTRACT-ONLY" }

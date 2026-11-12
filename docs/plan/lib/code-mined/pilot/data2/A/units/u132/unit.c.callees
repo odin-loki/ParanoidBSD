@@ -1,0 +1,5 @@
+fb_copy_cmap
+fb_dealloc_cmap
+fb_default_cmap
+kzalloc_noprof
+mem_alloc_profiling_enabled

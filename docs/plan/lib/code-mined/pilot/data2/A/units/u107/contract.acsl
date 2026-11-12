@@ -1,0 +1,1 @@
+/*@ requires phy != NULL; ensures \result == 0 ==> phy->tuning_cfg != NULL; ensures \result < 0 ==> phy->tuning_cfg == \null || \true; */

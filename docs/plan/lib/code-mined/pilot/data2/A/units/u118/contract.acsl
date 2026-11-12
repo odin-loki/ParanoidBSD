@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((flags & X86_EFLAGS_IF) == 0); */

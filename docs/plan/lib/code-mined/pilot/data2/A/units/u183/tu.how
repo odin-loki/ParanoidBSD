@@ -1,0 +1,2 @@
+flags_from=drivers/pci/hotplug/ibmphp_ebda.c mode=c probe=0
+cfg=x86

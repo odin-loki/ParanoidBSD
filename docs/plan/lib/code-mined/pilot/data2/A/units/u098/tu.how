@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/xe/xe_vm_madvise.c mode=c probe=0
+cfg=x86

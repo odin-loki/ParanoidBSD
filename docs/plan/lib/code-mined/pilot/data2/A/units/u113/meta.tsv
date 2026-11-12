@@ -1,0 +1,1 @@
+113	lock_system_sleep	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/include/linux/suspend.h	linux	nofunc	notfound: no definition of lock_system_sleep in the preprocessed unit [cfg=s390]

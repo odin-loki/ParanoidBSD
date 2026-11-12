@@ -1,0 +1,2 @@
+flags_from=net/xfrm/xfrm_compat.c mode=c probe=0
+cfg=x86

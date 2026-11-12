@@ -1,0 +1,1 @@
+135	map_tboot_pages	allocator	scalar	/home/odin/pbsd-ref/linux/arch/x86/kernel/tboot.c	linux	ok	flexarrays=27 ok items=16142 kept=1154 protos=18 rewrites=0 attrs=20850 auto=274 bitfields=2 

@@ -1,0 +1,1 @@
+53	isp1760_udc_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/usb/isp1760/isp1760-udc.c	linux	ok	flexarrays=10 ok items=12070 kept=828 protos=20 rewrites=0 attrs=17305 auto=197 bitfields=2 

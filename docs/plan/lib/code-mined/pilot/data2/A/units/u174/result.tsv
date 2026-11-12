@@ -1,0 +1,1 @@
+174	amdtee_close_session	refcount	scalar	CONTRACT-ONLY	linux	2	2	2	5	no	26.5	contract proved; run-time-error guards not all proved (2/5)	callees-without-spec:arch_static_branch,arch_static_branch_jump,clear_bit,destroy_session,find_session,get_session_index,get_ta_handle,kref_put_mutex,spin_lock,spin_unlock,static_key_false,static_key_true;

@@ -1,0 +1,1 @@
+126	sqlite3_release_memory	allocator	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c:354:10: fatal error: stdarg.h: No such file or directory	

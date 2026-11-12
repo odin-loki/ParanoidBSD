@@ -1,0 +1,1 @@
+114	qlcnic_83xx_cam_lock	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c	linux	ok	flexarrays=74 ok items=19695 kept=1776 protos=38 rewrites=0 attrs=24855 auto=343 bitfields=2 

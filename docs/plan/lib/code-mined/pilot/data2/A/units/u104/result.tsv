@@ -1,0 +1,1 @@
+104	kgdbfdc_read_char	parser	scalar	UNBUILT	linux	-	-	-	-	-	0.0	preprocess failed: kbuild produced no flags for drivers/tty/mips_ejtag_fdc.c (see /home/odin/kb/tu/9ea7f6ba4238529b-mips_ejtag_fdc.c.s390.i.make.log)	

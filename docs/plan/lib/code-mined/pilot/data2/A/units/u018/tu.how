@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/intel/iwlwifi/fw/rs.c mode=c probe=0
+cfg=x86

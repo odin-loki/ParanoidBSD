@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result == A && A <= B) || (\result == B && B < A); */

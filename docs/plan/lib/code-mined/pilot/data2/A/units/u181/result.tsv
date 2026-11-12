@@ -1,0 +1,1 @@
+181	hfi1_netdev_rx_destroy	refcount	ptr	CONTRACT-ONLY	linux	2	2	2	3	no	26.8	contract proved; run-time-error guards not all proved (2/3)	callees-without-spec:atomic_fetch_add_unless,hfi1_netdev_rxq_deinit;pointer-or-memory-precondition;

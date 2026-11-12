@@ -1,0 +1,1 @@
+/*@ requires lim > 0; ensures \result == (i == 0 ? lim : i - 1); */

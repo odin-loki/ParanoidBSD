@@ -1,0 +1,1 @@
+/*@ requires client != ((void *)0); ensures \result == 0 || \result == -2; */

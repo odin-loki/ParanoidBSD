@@ -1,0 +1,2 @@
+flags_from=kernel/futex/core.c mode=includer:kernel/futex/core.c probe=0
+cfg=x86

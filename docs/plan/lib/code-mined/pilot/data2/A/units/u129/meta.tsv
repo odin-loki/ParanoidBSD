@@ -1,0 +1,1 @@
+129	fb_alloc_cmap	allocator	scalar	/home/odin/pbsd-ref/linux/drivers/video/fbdev/core/fbcmap.c	linux	ok	flexarrays=0 ok items=14952 kept=10 protos=1 rewrites=0 attrs=19259 auto=239 bitfields=0 

@@ -1,0 +1,1 @@
+122	efi_enter	lock-or-sync	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:1150: Warning: unbound logic variable td. Ignoring logic specification of function efi_enter	callees-without-spec:__curthread,atomic_fcmpset_long;pointer-or-memory-precondition;stub-headers:empty:opt_acpi.h,empty:offset.inc;

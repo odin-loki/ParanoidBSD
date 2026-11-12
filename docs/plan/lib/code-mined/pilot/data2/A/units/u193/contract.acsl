@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((fifo_sta & MCP251XFD_REG_FIFOSTA_TFERFFIF) != 0); */

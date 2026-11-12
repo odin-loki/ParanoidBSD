@@ -1,0 +1,2 @@
+flags_from=drivers/iio/accel/adxl345_core.c mode=c probe=0
+cfg=x86

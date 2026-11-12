@@ -1,0 +1,1 @@
+67	_qed_vf_pf_release	init-teardown	ptr	/home/odin/pbsd-ref/linux/drivers/net/ethernet/qlogic/qed/qed_vf.c	linux	ok	flexarrays=53 ok items=19590 kept=1904 protos=28 rewrites=0 attrs=22109 auto=303 bitfields=2 

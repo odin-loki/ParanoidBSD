@@ -1,0 +1,1 @@
+154	set_platform_caps	bitmap	ptr	/home/odin/pbsd-ref/linux/drivers/gpu/drm/amd/pm/powerplay/hwmgr/processpptables.c	linux	notu	preprocess failed: kbuild produced no flags for drivers/gpu/drm/amd/pm/powerplay/hwmgr/processpptables.c (see /home/odin/kb/tu/c86dcf4e92350e79-processpptables

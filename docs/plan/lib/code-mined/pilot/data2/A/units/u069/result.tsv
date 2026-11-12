@@ -1,0 +1,1 @@
+69	k5_populate_gic_opt	init-teardown	ptr	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/crypto/krb5/src/lib/krb5/krb/get_in_tkt.c:27:10: fatal error: k5-int.h: No such file or d	

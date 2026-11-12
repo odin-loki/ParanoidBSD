@@ -1,0 +1,1 @@
+/*@ requires apwd != NULL && C8 != NULL && RN != NULL; ensures \result == 0; */

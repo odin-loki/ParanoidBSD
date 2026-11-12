@@ -1,0 +1,1 @@
+199	at_xdmac_chan_is_peripheral_xfer	bitmask	scalar	/home/odin/pbsd-ref/linux/drivers/dma/at_xdmac.c	linux	ok	flexarrays=0 ok items=12514 kept=5 protos=0 rewrites=0 attrs=18061 auto=190 bitfields=0 

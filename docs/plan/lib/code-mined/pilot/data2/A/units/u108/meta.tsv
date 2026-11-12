@@ -1,0 +1,1 @@
+108	xfrm_xlate64_attr	parser	ptr	/home/odin/pbsd-ref/linux/net/xfrm/xfrm_compat.c	linux	ok	flexarrays=75 ok items=19166 kept=1700 protos=45 rewrites=0 attrs=24504 auto=360 bitfields=2 

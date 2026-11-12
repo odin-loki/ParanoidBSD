@@ -1,0 +1,2 @@
+flags_from=sound/oss/dmasound/dmasound_core.c mode=c probe=0
+cfg=x86

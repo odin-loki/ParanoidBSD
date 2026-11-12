@@ -1,0 +1,1 @@
+/*@ requires channel <= 0xffff; ensures \result == 0x720 + channel * 4; */

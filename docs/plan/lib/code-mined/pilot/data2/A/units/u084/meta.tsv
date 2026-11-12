@@ -1,0 +1,1 @@
+84	mm_put_stat	error-path	scalar	/home/odin/pbsd-ref/linux/net/ethtool/mm.c	linux	ok	flexarrays=70 ok items=17823 kept=1621 protos=35 rewrites=0 attrs=22904 auto=321 bitfields=2 

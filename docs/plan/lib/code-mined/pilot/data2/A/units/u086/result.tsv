@@ -1,0 +1,1 @@
+86	val_acq_cred_impersonate_name_args	error-path	ptr	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/mglueP.h:13:10: fatal error: autoconf.h: No such file	

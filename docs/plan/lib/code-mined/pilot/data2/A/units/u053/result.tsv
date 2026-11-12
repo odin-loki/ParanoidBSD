@@ -1,0 +1,1 @@
+53	isp1760_udc_init	init-teardown	scalar	CONTRACT-ONLY	linux	2	2	3	9	no	30.3	contract proved; run-time-error guards not all proved (3/9)	callees-without-spec:isp1760_reg_write,isp1760_udc_read,isp1760_udc_set,isp1760_udc_write,usleep_range;

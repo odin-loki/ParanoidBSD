@@ -1,0 +1,1 @@
+25	adxl345_set_freefall_time	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/iio/accel/adxl345_core.c	linux	ok	flexarrays=0 ok items=10718 kept=14 protos=0 rewrites=0 attrs=15644 auto=180 bitfields=0 

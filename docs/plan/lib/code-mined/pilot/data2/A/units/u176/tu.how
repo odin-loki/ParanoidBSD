@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/mscc/ocelot_vcap.c mode=c probe=0
+cfg=x86

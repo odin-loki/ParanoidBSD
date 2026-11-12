@@ -1,0 +1,2 @@
+flags_from=drivers/net/ieee802154/atusb.c mode=c probe=0
+cfg=x86

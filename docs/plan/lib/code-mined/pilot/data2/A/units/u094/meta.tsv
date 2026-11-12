@@ -1,0 +1,1 @@
+94	hci_recv_diag	parser	scalar	/home/odin/pbsd-ref/linux/net/bluetooth/hci_core.c	linux	ok	flexarrays=71 ok items=19574 kept=1703 protos=37 rewrites=0 attrs=24343 auto=350 bitfields=2 

@@ -1,0 +1,1 @@
+196	__is_raid10_far	bitmask	scalar	FAILED	linux	1	2	-	-	-	13.4	contract not proved; solver timeout	callees-without-spec:__is_raid10_offset,__raid10_far_copies;

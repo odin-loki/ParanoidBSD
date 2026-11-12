@@ -1,0 +1,1 @@
+64	ia_css_isys_2400_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/staging/media/atomisp/pci/runtime/isys/src/isys_init.c	linux	ok	flexarrays=0 ok items=17161 kept=24 protos=1 rewrites=0 attrs=20217 auto=268 bitfields=0 

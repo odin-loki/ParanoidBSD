@@ -1,0 +1,1 @@
+6	calculate_chan_offset	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/src/drivers/driver_nl80211_event.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/src/drivers/driver_nl80211_event.c:11:10: fatal error: includes.h: No such fi

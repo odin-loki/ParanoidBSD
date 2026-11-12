@@ -1,0 +1,2 @@
+int
+struct inode *	inode

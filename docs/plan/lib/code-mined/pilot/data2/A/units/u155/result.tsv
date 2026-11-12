@@ -1,0 +1,1 @@
+155	smu_v14_0_2_is_od_feature_supported	bitmap	ptr	UNBUILT	linux	-	-	-	-	-	0.0	preprocess failed: kbuild produced no flags for drivers/gpu/drm/amd/pm/swsmu/smu14/smu_v14_0_2_ppt.c (see /home/odin/kb/tu/999f047ec1554024-smu_v14_0_2_ppt.c.s	

@@ -1,0 +1,1 @@
+116	rcu_torture_read_lock_trivial	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/kernel/rcu/rcutorture.c	linux	ok	flexarrays=0 ok items=13520 kept=3 protos=0 rewrites=1 attrs=19628 auto=334 bitfields=0 

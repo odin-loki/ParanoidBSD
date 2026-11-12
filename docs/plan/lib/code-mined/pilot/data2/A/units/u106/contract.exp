@@ -1,0 +1,1 @@
+/*@ requires \valid(iph); ensures \result == 20; */

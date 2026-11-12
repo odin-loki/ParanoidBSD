@@ -1,0 +1,1 @@
+/*@ requires \valid_read(r+(0..2)) && \valid_read(imm); ensures \result == (r[0] != r[1] && r[2] == imm[0]); */

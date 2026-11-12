@@ -1,0 +1,1 @@
+42	host1x_sync_cbread_r	arith-helper	ptr	/home/odin/pbsd-ref/linux/drivers/gpu/host1x/hw/hw_host1x02_sync.h	linux	ok	flexarrays=0 ok items=9836 kept=3 protos=0 rewrites=0 attrs=14797 auto=166 bitfields=0 

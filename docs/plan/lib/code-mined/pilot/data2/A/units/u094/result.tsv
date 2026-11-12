@@ -1,0 +1,1 @@
+94	hci_recv_diag	parser	scalar	CONTRACT-ONLY	linux	2	2	2	4	no	24.2	contract proved; run-time-error guards not all proved (2/4)	callees-without-spec:__net_timestamp,queue_work;pointer-or-memory-precondition;

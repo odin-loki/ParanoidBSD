@@ -1,0 +1,4 @@
+name=arm arch=arm target=allyesconfig args=LLVM=1
+config_sha256=b4e5337b1389c790
+prepare_rc=0
+kernel=6.18.60

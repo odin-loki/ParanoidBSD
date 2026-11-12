@@ -1,0 +1,1 @@
+/*@ requires step_size == 256 || step_size == 512; ensures \result == 0 || \result == 1 || \result == -74; */

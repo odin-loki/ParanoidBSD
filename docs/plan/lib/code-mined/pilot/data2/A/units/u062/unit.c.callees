@@ -1,0 +1,3 @@
+ad5446_i2c_register_driver
+ad5446_spi_register_driver
+ad5446_spi_unregister_driver

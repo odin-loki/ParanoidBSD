@@ -1,0 +1,1 @@
+22	fpscr_to_spefscr	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/powerpc/booke/spe.c	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/powerpc/booke/spe.c:39:10: fatal error: machine/altivec.h: No such file or directory

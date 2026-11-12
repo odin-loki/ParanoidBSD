@@ -1,0 +1,1 @@
+/*@ requires client != NULL; ensures \result == 0 || \result == -ENOENT; */

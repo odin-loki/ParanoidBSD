@@ -1,0 +1,2 @@
+flags_from=drivers/infiniband/hw/hfi1/netdev_rx.c mode=c probe=0
+cfg=x86

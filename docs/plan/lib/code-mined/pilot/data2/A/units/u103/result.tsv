@@ -1,0 +1,1 @@
+103	wilc_wlan_cfg_set_byte	parser	scalar	CONTRACT-ONLY	linux	2	2	2	3	no	22.1	contract proved; run-time-error guards not all proved (2/3)	callees-without-spec:put_unaligned_le16;

@@ -1,0 +1,1 @@
+37	__check_lt	arith-helper	scalar	UNBUILT	linux	-	-	-	-	-	0.0	preprocess failed: kbuild produced no flags for arch/arm64/kernel/traps.c (see /home/odin/kb/tu/59b99bc6730167e0-traps.c.arm64.i.make.log)	

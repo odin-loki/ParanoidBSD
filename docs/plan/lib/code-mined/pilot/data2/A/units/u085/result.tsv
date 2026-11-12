@@ -1,0 +1,1 @@
+85	rtw8822c_dpk_check_pass	error-path	scalar	PROVED	linux	2	2	2	2	no	12.9		callees-without-spec:rtw8822c_dpk_coef_read,rtw8822c_dpk_fill_result;

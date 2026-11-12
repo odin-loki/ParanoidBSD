@@ -1,0 +1,1 @@
+102	da7218_of_dmic_clkrate	parser	scalar	CONTRACT-ONLY	linux	4	4	4	5	no	23.5	contract proved; run-time-error guards not all proved (4/5)	

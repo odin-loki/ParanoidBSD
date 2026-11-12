@@ -1,0 +1,1 @@
+/*@ requires 1; ensures \result == 0 ==> (td->td_pflags & 0x20000000) != 0; */

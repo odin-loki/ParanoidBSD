@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((v & 0xffff) << 2); */

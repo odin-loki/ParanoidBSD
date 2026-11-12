@@ -1,0 +1,1 @@
+115	pt_section_on_map_lock	lock-or-sync	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/processor-trace/libipt/test/src/ptunit-image.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/processor-trace/libipt/test/src/ptunit-image.c:29:10: fatal error: ptunit.h: No s

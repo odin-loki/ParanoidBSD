@@ -1,0 +1,1 @@
+/*@ requires 0 <= mask <= 4294967295; ensures \result == 1 <==> (mask & 0x3f) != 0; */
