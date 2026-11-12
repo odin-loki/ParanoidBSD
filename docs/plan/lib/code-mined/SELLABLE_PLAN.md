@@ -70,3 +70,18 @@ S1 -> S2 -> S3 (can start once S1 is done) -> S4 -> S5 -> S6. S5's audit design 
 - Reviewer bias: DeepSeek and GLM share blind spots; the human-readable audit in S5 is the backstop.
 - Proof of a weaker statement than the claim: addressed by the statement comparison in S4 and the audit in S5.
 - Credit runs out mid-stage: every runner stops cleanly and resumes; stage exits are by count, not by money.
+
+## 8. Estimate to prove "the whole thing" (12 Nov 2026; extrapolated from two measured tasks, to be replaced by the 200-function pilot)
+
+Measured: IF task about 5-20 min and $0.03-0.05; MODEL task 48 min and $0.77 (345 requests, 26 M input tokens, 71% cache hits). One PRISM prove about 118 s of CPU on the PC. These are tester tasks, not mined functions, so the per-function price is a range, not a measurement.
+
+| Scope | Functions | Cost at $0.05 (simple) | at $0.20 (middle) | at $0.77 (heavy) |
+|---|---|---|---|---|
+| Core kinds (arith, bit, bitmap, allocator, refcount, ring-buffer, list, lock, parser, error-path, init-teardown, other) | about 32,000 | $1,600 | $6,400 | $25,000 |
+| All reviewed + repaired (415,923 + 67,865) | about 484,000 | $24,000 | $97,000 | $373,000 |
+
+Time: the PC runs one PRISM prove at a time at about 118 s, so 32,000 functions is about 44 days on the PC alone, and 484,000 is about 18 months. With the GCP burst workers (about 100 in parallel, billing not yet enabled) 32,000 is about 10 days and 484,000 about 6 months. Model calls alone (100 parallel, 10 min average) would be 600 functions an hour.
+
+Not every function can be PROVED: driver glue (322,000 of the reviewed set) depends on hardware and concurrency that the proofs cannot model, so most of it ends BOUNDED or TESTED. A realistic sellable proved tier is the core kinds (about 32,000) plus whatever of the rest passes the T2 policy; the pilot sets the proved share.
+
+Decision rule: run the 200-function pilot (about $10-150), then quote the core tier with its measured price before spending.
