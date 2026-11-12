@@ -28,7 +28,7 @@ Read from shallow clones of `odin-loki/FUSE` and `odin-loki/FORGE` at `main`, an
 | V13 | OS sandbox mapping exists for Capsicum on FreeBSD; only the Linux mechanism has an automated test. | `FORGE:docs/scripting.md` |
 | V14 | Scripts and plugins can be signed: Ed25519 over BLAKE3, detached `.sig`, bound to the file name; `integrity.scripts = required` refuses unsigned code. | `FORGE:docs/scripting.md` |
 | V15 | Embedding: `forge::script::engine` with `define(name, min, max, fn)` host bindings. Values cross as JSON text; script callbacks arrive as `{"$callback": id}`. | `FORGE:docs/scripting.md` |
-| V16 | `engine::options` has a field `jit_threshold` ("calls before a function is compiled"). What it compiles to is not established here. | `FORGE:script/include/forge/script/script.hpp:23` |
+| V16 | `engine::options::jit_threshold` is a call count after which a function's AST is compiled to **bytecode**, not native code; the VM is a switch loop over `Instr` records and `script/src` maps no executable memory. Executable mappings can still arrive through `dlopen` (native plugins, GPU and OS libraries). Read in source, not run. | `FORGE:script/include/forge/script/script.hpp:23`, `FORGE:script/src/runtime.cpp:729-730`, `FORGE:script/src/vm.cpp:220-229,329-337` |
 | V17 | ForgeScript has no script bindings for models, GPU or serving yet. | `FORGE:docs/scripting.md` |
 | V18 | FORGE runs models from `.fpk` files, has an OpenAI-compatible server `forge-serve`, and an OS layer with sandboxing, keystore, IPC, services and text/locale. | `FORGE:README.md` |
 | V19 | PBSD's native model is handles with rights and lineage: rights only narrow (SI-1), no ambient authority (SI-2), W^X everywhere (SI-3), revocation is total (SI-6). | `docs/security/INVARIANTS.md`, `docs/specs/HANDLES.md` |
@@ -78,7 +78,7 @@ system services (settings store, notifications, search index, keyring, portals, 
 - **App host**: one C++23 binary shared by every app. It verifies the bundle signature, builds the FSS policy from the manifest, enters capability mode, creates the engine and the UI context, and exposes the bindings in section 5. Apps do not ship their own host.
 - **No ambient authority**: the host starts with only the handles the manifest allows. Anything else arrives later as a handle from a portal after the user chose it.
 - **Crash containment**: an app, a helper or a system service can crash and restart without taking the session down. Windows of a restarted app reattach by session token.
-- **No JIT, no W+X**: the host maps no writable-executable memory. `jit_threshold` (V16) must be shown to produce bytecode only, or be forced off; this is gap G-05.
+- **No JIT, no W+X**: the host maps no writable-executable memory. The interpreter compiles to bytecode only (V16); what remains is to enforce and test it on HardenedBSD and to close the `dlopen` paths (gap G-05).
 
 ## 5. Script-to-UI binding (Proposed)
 
@@ -211,7 +211,7 @@ Work the platform needs before the apps can be built. IDs are referenced from th
 | G-02 | ForgeScript binding for FUSE UI with typed handles and view models | V4, V15 | every app |
 | G-03 | FULL text profile vendored for offline builds; text shaping for all scripts | V6 | all text |
 | G-04 | Accessibility adapter that does not need Rust at build time, or a pinned vendored AccessKit | V7 | a11y tools |
-| G-05 | Proof or switch that ForgeScript never emits native code (`jit_threshold`) | V16 | no-JIT rule |
+| G-05 | A run-time assertion and a HardenedBSD test that the script host never maps executable memory (the interpreter itself emits bytecode only, V16); native plugins and other `dlopen` paths closed for apps | V16 | no-JIT rule |
 | G-06 | Capsicum sandbox path tested on HardenedBSD | V13 | confinement |
 | G-07 | App host, bundle format, signature check, manifest-to-policy compiler | section 3, 4 | every app |
 | G-08 | Session bus and schema compiler | section 7 | every app |
