@@ -1,0 +1,59 @@
+{
+  "id": "org.pbsd.software",
+  "name": "Software",
+  "version": "0.1.0",
+  "category": "system",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "fs.path:/var/db/pbsd/software:r",
+    "net.none",
+    "svc.update",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.power",
+    "svc.audit",
+    "svc.thumbnail",
+    "svc.portal.file",
+    "svc.search",
+    "svc.a11y",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [],
+  "mime": {
+    "view": [
+      "application/x-pbsd-package",
+      "application/x-pbsd-manifest",
+      "application/x-pbsd-repo+json",
+      "application/x-pbsd-lockfile",
+      "application/spdx+json",
+      "application/vnd.cyclonedx+json"
+    ],
+    "edit": [],
+    "import": [
+      "application/x-pbsd-package",
+      "application/x-pbsd-manifest",
+      "application/x-pbsd-repo+json",
+      "application/x-pbsd-lockfile"
+    ],
+    "export": [
+      "application/x-pbsd-manifest",
+      "application/x-pbsd-lockfile",
+      "application/spdx+json",
+      "application/vnd.cyclonedx+json",
+      "application/json",
+      "text/plain"
+    ]
+  },
+  "intents": {"handles": ["open", "search"], "emits": ["open"]},
+  "url_schemes": ["pbsd-app"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["ParanoidBSD", "FORGE", "FUSE"],
+  "priority": "P0"
+}
