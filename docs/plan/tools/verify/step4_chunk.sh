@@ -30,7 +30,10 @@ for attempt in 1 2 3; do
   if echo "$RESP" | jq -e '.choices[0].message.content' > /dev/null 2>&1; then
     TXT=$(echo "$RESP" | jq -r '.choices[0].message.content')
     TOK="$(echo "$RESP" | jq -r '.usage.prompt_tokens // 0') $(echo "$RESP" | jq -r '.usage.completion_tokens // 0') $(echo "$RESP" | jq -r '.usage.prompt_tokens_details.cached_tokens // 0')"
-    V=$(printf '%s\n' "$TXT" | awk -F': ' '/^[A-Za-z_][A-Za-z0-9_]*: (AGREE|DISAGREE)/ {n=$1; v=$2; r=""; if (v ~ /^DISAGREE/) { r=$0; sub(/^[^:]*: DISAGREE:? ?/, "", r) } sub(/ .*/, "", v); gsub(/"/, "\\\"", r); gsub(/\\/, "\\\\", r); printf "%s{\"name\":\"%s\",\"verdict\":\"%s\",\"reason\":\"%s\"}", (c++ ? "," : ""), n, tolower(v), r}')
+    # one line per function: "<name>: AGREE" or "<name>: DISAGREE: <reason>"; the name can be a macro invocation with commas and parentheses (manual rounds), so split at the first ": AGREE|DISAGREE", not at the first ": "
+    V=$(printf '%s\n' "$TXT" | awk 'function esc(x) { gsub(/\\/, "\\\\", x); gsub(/"/, "\\\"", x); return x }
+      match($0, /: (AGREE|DISAGREE)( |:|$)/) { n=substr($0, 1, RSTART-1); rest=substr($0, RSTART+2); v=rest; sub(/[ :].*/, "", v); r=""; if (v == "DISAGREE") { r=rest; sub(/^DISAGREE:? ?/, "", r) }
+        printf "%s{\"name\":\"%s\",\"verdict\":\"%s\",\"reason\":\"%s\"}", (c++ ? "," : ""), esc(n), tolower(v), esc(r) }')
     JL=$(jq -c -n --arg key "$KEY" --arg raw "$TXT" --argjson v "[$V]" --arg tok "$TOK" '{key:$key, verdicts:$v, tokens:$tok, raw:$raw}' 2>/dev/null)
     if [ -n "$JL" ]; then
       ( flock 9; printf '%s\n' "$JL" >> "$OUT"; echo "$TOK" >> "$D/ledger.txt" ) 9> "$OUT.lock"

@@ -35,7 +35,7 @@ for prio in main low; do
   [ $prio = low ] && [ -z "$LOW" ] && { echo "low priority (never attempted, driver-glue): assignments listed in functions.tsv, packets not written (LOW=1 writes them)"; continue; }
   # write the packets
   rm -rf "$M/work/pk_$prio"; mkdir -p "$M/work/pk_$prio"
-  awk -F'\t' -v d="$M/work/pk_$prio" '{ f = d "/" $13 ".tsv"; print > f; close(f) }' "$M/work/assign_$prio.tsv"
+  awk -F'\t' -v d="$M/work/pk_$prio" '{ f = d "/" $13 ".tsv"; print >> f; close(f) }' "$M/work/assign_$prio.tsv"
   for pkf in "$M/work/pk_$prio"/*.tsv; do
     pk=$(basename "$pkf" .tsv); : > "$dir/packet-$pk.jsonl"
     cut -f1,7,8,9 "$pkf" | uniq | while IFS="$T" read -r key file s e; do
