@@ -5,6 +5,9 @@
 VB=${1:?review budget}; VPAR=${2:-100}
 HERE=$(cd "$(dirname "$0")" && pwd); DW=/mnt/c/ParanoidBSD/mined-data/dsv; REPO=/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79
 log() { echo "$(date '+%F %T') [finish] $*" | tee -a "$DW/finish.log"; }
+until [ -f "$DW/DONE" ] || [ -f "$DW/STOP" ] || [ -f "$DW/ingest.started" ]; do sleep 30; done   # the repair stage ends by finishing the list (DONE) or by the budget (STOP)
+[ -f "$DW/ingest.started" ] || while pgrep -f 'dsv_chunk.sh|dsv_all.sh' > /dev/null; do sleep 10; done   # in-flight calls finish first
+if [ ! -f "$DW/ingest.started" ] && tail -n 5 "$DW/repair.log" | grep -q "ALERT credit"; then log "credit/auth alert in the repair stage: not ingesting; top up, restart start_dsv.cmd"; exit 2; fi
 busy() { pgrep -f 'ingest_manual.sh|/state.sh|tag_final.sh|export_manual.sh|round_run.sh' | grep -vx "$$" > /dev/null; }
 [ -f "$DW/ingest.started" ] || {
   while busy; do log "waiting: another ingest/state/tag_final/export/round process is running"; sleep 120; done
