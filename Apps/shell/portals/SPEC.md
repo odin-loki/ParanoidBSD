@@ -262,3 +262,601 @@ Personas:
 | SH04-F146 | Broker crash | Handles already passed stay valid (they are kernel objects); remembered grants reload from the store; pending requests fail closed | M | 1 |
 | SH04-F147 | Timeouts | A prompt with no answer for 5 min is cancelled; a chooser never times out | S | 1 |
 | SH04-F148 | Help | `F1` opens built-in help text for the surface | S | 2 |
+
+## 5. GUI
+
+Two families of surface. **Choosers** (file, share, open-with, print, colour dialog) are system windows with a compositor-drawn "System" strip. **Prompts** (capability, keyring, account, USB, screen picker) are on SH03's trusted layer. Neither can be drawn by an app.
+
+### 5.1 Window map
+```
+Portals and Prompts
+├─ File chooser (system window, tethered to the requesting window)
+│  ├─ Open mode · Save mode · Folder mode
+│  ├─ Places sidebar · path bar · view · preview pane · footer (grant line)
+│  ├─ Quick look sheet
+│  ├─ Replace confirmation (inline) · folder scope warning (inline)
+│  ├─ Earlier versions popover
+│  └─ Context menus
+├─ Capability prompt (trusted layer)
+│  ├─ Device chooser row · preview / level meter
+│  ├─ Location precision row
+│  └─ "What does this allow?" sheet
+├─ Request chip (drawn by SH05 in the window header; opens the prompt)
+├─ Install-time review sheet (hosted in SY05)
+├─ Share sheet (system window)
+├─ Open-with chooser (system window)
+├─ External-open confirmation (trusted layer)
+├─ Print dialog (system window)
+│  └─ Preset editor
+├─ Screen and window picker (trusted layer)
+│  └─ Region selection overlay (per output)
+├─ Colour loupe (trusted layer overlay) · Colour dialog (system window)
+├─ Account chooser · Contact picker · Keyring item prompt · USB device chooser (trusted layer)
+└─ Remote-control prompt (trusted layer)
+Settings: pages in SY01. No window.
+```
+
+### 5.2 Main window
+File chooser in open mode, 920×600 by default (resizable, minimum 640×420), shown on the whole 1440×900 screen with the requesting window behind it.
+
+```
++----------------------------------------------------------------------------------------+
+| Text Editor — notes.md                                            [net] [▁] [▢] [✕]   |
+| ░░░░░░░░░░░░░░░░░░░░░░░░ requesting window, dimmed ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ |
+| ░░┃(1) tether                                                                          |
+| +=╋====================================================================================+
+| ‖ System · Open a file for Text Editor ✓                                     [✕]  (2) ‖
+| ‖ [<][>][^]  Home ▸ Documents ▸ Projects ▸               [🔍 Search   ] [≣][▦][◫] (3) ‖
+| ‖ +-------------+----------------------------------------------+-------------------+  ‖
+| ‖ | Recent      | Name ▲            Size    Type      Modified |  report.md    (6) |  ‖
+| ‖ | Home        | [▤] archive                 Folder  3 Nov    | +---------------+ |  ‖
+| ‖ | Desktop     | [▤] drafts                  Folder  9 Nov    | | # Report      | |  ‖
+| ‖ | Documents   | [≡] budget.csv     12 kB    CSV     Tue      | | Draft of the… | |  ‖
+| ‖ | Downloads   |>[≡] report.md      48 kB    Markdown 14:02   | +---------------+ |  ‖
+| ‖ | Pictures    | [≡] todo.md         2 kB    Markdown Wed     | Markdown · 48 kB  |  ‖
+| ‖ |-------------| [≡] setup.sh ⚠      1 kB    Script  Mon      | Modified 14:02    |  ‖
+| ‖ | ★ Projects  | [≡] letter.odt     31 kB    ODF text 1 Nov   | Created here      |  ‖
+| ‖ | ★ Scans     |                                          (5) | Tags: work        |  ‖
+| ‖ |-------------|                                              |                   |  ‖
+| ‖ | ⏏ USB stick |                                              |                   |  ‖
+| ‖ | 🔒 Vault    |                                              |                   |  ‖
+| ‖ | nas (sftp)  |                                              |                   |  ‖
+| ‖ +---------(4)-+----------------------------------------------+-------------------+  ‖
+| ‖ Show [Text files (txt, md, csv) v]  [ ] Open read-only  [ ] Give the app a copy (7) ‖
+| ‖ Text Editor will be able to read and change "report.md"  · Keep access [This session v] (8)‖
+| ‖ [🦉] amber · lantern (9)                               [Cancel  Esc]   [Open] (10)  ‖
+| +======================================================================================+
++----------------------------------------------------------------------------------------+
+```
+
+1. **Tether and dim.** Drawn by the compositor from the chooser's strip to the requester's header (F133).
+2. **System strip.** Compositor-drawn. Text: the mode, the real app name and trust badge. Apps cannot have this strip.
+3. **Toolbar.** Back, forward, up `toolButton`s; breadcrumb path bar (a row of `toolButton`s; `Ctrl+L` swaps in a `lineEdit` with completion); search `lineEdit`; view switch.
+4. **Places sidebar.** `listView` with sections: places, bookmarks (★), devices and remote locations. 180 px. `F9` collapses.
+5. **File view.** `tableView` (list), `gridView` (thumbnails) or `listView` (compact). `⚠` marks dangerous types (F028). Virtualised.
+6. **Preview pane.** `image` from `svc.thumbnail`, read-only `propertyGrid`, provenance line. 220 px. `F4` toggles.
+7. **Options row.** Filter `comboBox`, `checkBox`es for read-only and copy.
+8. **Grant line.** `label` stating exactly what the app gets, and the duration `comboBox` (Once, This session, Always).
+9. **Trust mark.** `image` and `label`.
+10. **Buttons.** Cancel and the primary verb (Open, Save, Choose folder). The primary enables when the selection is valid.
+
+Save mode adds a row above (7): `Name [report-final        ] . [md v]` with the format `comboBox`, the inline replace question, and app options (F040). Folder mode replaces (7) with the sub-scope options (F045) and (8) with the folder sentence (F043).
+
+States: loading a folder (rows appear incrementally, spinner in the path bar); empty folder ("This folder is empty"); no match for the filter ("No text files here. [Show all files]"); location unavailable ("nas is not reachable. [Retry]"); locked location (lock icon and [Unlock…]); permission denied by the system ("You cannot read this folder"); read-only location in save mode (Save disabled with the reason); policy cap (duration options removed with "Managed"); narrow (< 640 px: sidebar becomes a `comboBox`, preview a sheet).
+
+### 5.3 Other views and dialogs
+#### 5.3.1 Capability prompt (520×auto on the trusted layer; whole 1440×900 screen shown)
+```
++----------------------------------------------------------------------------------------+
+|░░░░░░░░░░░░░░░░░░░░░░░░░░░░ everything else dimmed to 40% ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|
+|░░+------------------------------------+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|
+|░░| Messenger — Ada            (1)     |░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|
+|░░+----------------┃-------------------+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░+=======╋==================================================+░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ Allow Messenger to use the camera and microphone?    (2) ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ [M] Messenger ✓ · signed by system key · sandboxed · route: Tor (3)‖░░░░░░░|
+|░░░░░░░░░░░‖ +------------------------------------------------------+ ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ | The app says: "To make a video call with Ada."    (4) | ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ +------------------------------------------------------+ ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ ◉ Camera      [Integrated camera        v]  +---------+  ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖   ( ) Deny (•) Once ( ) Session ( ) Always  | preview |  ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖                                             +---------+(5)‖░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ 🎙 Microphone  [Headset (USB)            v]  ▮▮▮▯▯▯       ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖   ( ) Deny (•) Once ( ) Session ( ) Always           (6) ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ ⚠ The camera kill switch is off. [Turn camera on]    (7) ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ An indicator shows while these are in use. You can stop  ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ at any time from the panel. [What does this allow?]  (8) ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖ [🦉] amber · lantern   [ ] Do not ask again              ‖░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░‖                         [Deny all  Esc]   [▓▓▒ Confirm] (9)‖░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░+==========================================================+░░░░░░░░░░░░░░░░|
+|░░░░░░░░░░░░░░░░░░░░░ Press Ctrl+Alt+Delete if you are unsure this is real ░░░░░░░░░░░░░|
++----------------------------------------------------------------------------------------+
+```
+1. The requesting window, the only thing not fully dimmed, with the tether.
+2. Question built from system strings and the real app name.
+3. Identity line: trust badge, signer, security label word (SH05 vocabulary), route.
+4. The app's reason, boxed and prefixed "The app says:"; 200 characters; plain `label`.
+5. Camera row: device `comboBox`, choice `radioButton`s, live preview (`viewportWidget` fed by the camera portal, 160×120). The app receives nothing yet.
+6. Microphone row with a level meter (`progressBar`).
+7. Kill switch notice (F067).
+8. Fixed system text and the explain `link`.
+9. Deny all (always enabled) and Confirm with the 800 ms fill. Confirm applies the per-row choices. For a single-capability prompt the buttons are `[Deny] [Allow once] [Allow this session] [Always allow]` instead of radio rows.
+
+States: single or combined; no device present ("No camera found"); device busy; managed by policy (choices fixed, shown read-only); requester exited (closes); waiting as a chip (not shown); denied-again cooldown (not shown; app refused).
+
+#### 5.3.2 Share sheet (560×auto system window)
+```
++==============================================================================+
+‖ System · Share from Photos ✓                                          [✕]    ‖
+‖ +--------+ +--------+ 2 items · 7.4 MB                                 (1)   ‖
+‖ | beach  | | dunes  | beach.jpg  4.1 MB   [✕]                                ‖
+‖ +--------+ +--------+ dunes.jpg  3.3 MB   [✕]                                ‖
+‖ [x] Remove metadata (location, camera, dates)   Send as [Original     v] (2) ‖
+‖ People and places                                                      (3)   ‖
+‖  (●) Ada · Messenger   (●) Family · Messenger   [≡] Trip notes · Notes       ‖
+‖ Apps                                                                   (4)   ‖
+‖  [1 Messenger net·Tor] [2 Mail net] [3 Notes] [4 Image Editor] [5 Vault] […] ‖
+‖ Actions                                                                (5)   ‖
+‖  [Copy] [Save to file…] [Print…] [Nearby device…] [Add to archive…] [Open with…]‖
+‖ [🦉] amber · lantern                                         [Cancel  Esc]   ‖
++==============================================================================+
+```
+1. Items: `gridView` of thumbnails and a `listView` of names with remove buttons.
+2. `checkBox` and `comboBox` (Original, Smaller image, PDF, Plain text; only those that apply).
+3. Direct targets (F083), `gridView`; hidden when none.
+4. App targets, `gridView`; `net` and the route shown as words on network-capable targets.
+5. Built-in actions, `button`s.
+
+States: no target for these types ("No app accepts these items. [Save to file…]"); converting (progress line); metadata cleaner unavailable (tick box disabled with the reason); vault-origin warning before a network target.
+
+#### 5.3.3 Open-with chooser (480×auto system window)
+```
++============================================================+
+‖ System · Open "invoice-1182.pdf"                    [✕]    ‖
+‖ PDF document · 214 kB · downloaded from mail.example.org   ‖
+‖ ⚠ Quarantined: not opened since it was downloaded    (1)   ‖
+‖ Recommended                                                ‖
+‖ > [D] Document Viewer ✓      view, annotate          (2)   ‖
+‖   [B] Web Browser ✓          view                          ‖
+‖ Other apps                                                 ‖
+‖   [H] Hex Editor ✓           view bytes                    ‖
+‖   [T] Text Editor ✓          view as text                  ‖
+‖ [x] In a disposable sandbox   [x] Read-only          (3)   ‖
+‖ [ ] Always use Document Viewer for PDF documents     (4)   ‖
+‖ [🦉] amber · lantern   [Search Software]  [Cancel] [Open]  ‖
++============================================================+
+```
+1. Type from content sniffing, size, provenance, quarantine state; a mismatch line when the name and content disagree (F093).
+2. `modelListView` with sections.
+3. Options; "disposable" is ticked by default for quarantined files.
+4. Default-setting `checkBox`; disabled when "disposable" is ticked.
+
+#### 5.3.4 Print dialog (880×620 system window)
+```
++======================================================================================+
+‖ System · Print from Writer ✓                                                 [✕]     ‖
+‖ +-----------------------------------------+ +--------------------------------------+ ‖
+‖ |                                         | | Printer [Office laser (ready)     v] | ‖
+‖ |        +-----------------------+        | |         duplex · mono · network  (2) | ‖
+‖ |        |                       |        | | [General] [Layout] [Quality] [Writer]| ‖
+‖ |        |   page 2 preview      |        | | Copies  [ 1 ^v]  [x] Collate         | ‖
+‖ |        |                       |        | | Pages   ( ) All (•) [2-5        ]    | ‖
+‖ |        |                       |        | |         ( ) Current  ( ) Selection   | ‖
+‖ |        +-----------------------+        | | Sides   [Two-sided, long edge   v]   | ‖
+‖ |  [<]  page 2 of 12 · sheet 1 of 2  [>]  | | Paper   [A4                     v]   | ‖
+‖ |  [▭][▭][▭][▭] thumbnails          (1)  | | Orient. (•) Portrait ( ) Landscape   | ‖
+‖ +-----------------------------------------+ | Colour  [Greyscale              v]   | ‖
+‖                                             | Preset  [Default v] [Save preset…](3)| ‖
+‖                                             +--------------------------------------+ ‖
+‖ 4 pages on 2 sheets                                                                  ‖
+‖ [🦉] amber · lantern        [Save as PDF…]   [Cancel  Esc]   [Print]                 ‖
++======================================================================================+
+```
+1. Preview: `viewportWidget` showing bitmaps from the sandboxed PDF renderer; thumbnails in a horizontal `listView`.
+2. Printer `comboBox` with a capability summary line.
+3. `tabWidget`: General, Layout, Quality, and one tab named after the app for its typed options. Widgets: `spinBox`, `checkBox`, `radioButton`, `lineEdit`, `comboBox`.
+
+States: no printers ("No printer set up. [Save as PDF…] [Add a printer]"); printer offline (`--warn`, Print still queues); preview rendering (skeleton page); the app is regenerating the PDF (preview dimmed); spool error.
+
+#### 5.3.5 Screen and window picker (760×540, trusted layer)
+```
++================================================================================+
+‖ Choose what Messenger ✓ can see                                         (1)    ‖
+‖ [Windows] [Screens] [Region]                                                   ‖
+‖ +----------------+ +----------------+ +----------------+ +----------------+    ‖
+‖ | (thumbnail)    | | (thumbnail)    | | (thumbnail)    | | (thumbnail)    |    ‖
+‖ +----------------+ +----------------+ +----------------+ +----------------+    ‖
+‖ >Slides — deck     Files — Scans      Terminal           Browser — docs  (2)   ‖
+‖  native            native             exec               sandboxed · net       ‖
+‖ 2 windows are not listed because they hold protected content.           (3)    ‖
+‖ [x] Show pointer   [ ] Share sound from this window   [x] Hide notifications   ‖
+‖ Keep access (•) Until I stop   ( ) This session for this window         (4)    ‖
+‖ A red outline and a panel indicator show while sharing. [Stop] is in the panel.‖
+‖ [🦉] amber · lantern                         [Cancel  Esc]   [▓▓▒ Share]        ‖
++================================================================================+
+```
+1. Question with the real app identity.
+2. `gridView` of sources: live thumbnail (`image` from compositor buffers), title, security label word.
+3. Protected-content notice (F113, F119).
+4. Options and duration; no "always".
+
+Region tab: closes the picker and shows a full-output overlay with a frozen frame, a drag rectangle with eight handles, a size readout and `[Cancel] [Use this region]`.
+
+#### 5.3.6 Colour loupe, account chooser and USB chooser
+```
+   colour loupe (follows the pointer)       account chooser (480×auto, trusted layer)
+   +-----------------------+          +====================================================+
+   | ▓▓▓▓▓▒▒▒▒▒▒           |          ‖ Which account can Mail ✓ use?                      ‖
+   | ▓▓▓▓▓▒▒▒▒▒▒           |          ‖ > [✉] ada@example.org        IMAP · SMTP           ‖
+   | ▓▓▓▓[▣]▒▒▒▒  ×12      |          ‖   [✉] work@example.com       JMAP                  ‖
+   | ▓▓▓▓▓▒▒▒▒▒▒           |          ‖   [+] Add an account…                              ‖
+   +-----------------------+          ‖ Mail will be able to read and send mail for this  ‖
+   | #4C8DFF  76 141 255   |          ‖ account. It will not see the password.            ‖
+   | sRGB · click to pick  |          ‖ Keep access ( ) Session (•) Always                ‖
+   +-----------------------+          ‖ [🦉] amber · lantern        [Deny  Esc] [▓▒ Allow] ‖
+                                      +====================================================+
+   USB chooser: same frame; rows "Arduino Uno · 2341:0043 · …9A1F · serial"; one row selectable.
+```
+The loupe is a trusted-layer overlay drawn from compositor pixels; it holds the pointer until click or `Esc`.
+
+#### 5.3.7 Install-time review sheet (hosted in SY05, 560×auto)
+```
++----------------------------------------------------------------+
+| Demo Chat 1.2 ⚠ unverified publisher (key 9F3A…C210)           |
+| This app asks for:                                             |
+|  Always                                                        |
+|   [net]  Connect to chat.example.net:443                       |
+|   [▤]    Read and change ~/Chat (a fixed folder)        ⚠      |
+|  Will ask when first used                                      |
+|   [◉] Camera   [🎙] Microphone   [🔔] Notifications            |
+|  Background                                                    |
+|   Keeps running with no window; starts at login          ⚠     |
+|  Not asked for: your files, other apps, location, USB          |
+| New since 1.1:  + Read and change ~/Chat   + starts at login   |
+| [Details…]                           [Cancel]   [Install]      |
++----------------------------------------------------------------+
+```
+A `treeView` grouped by when the capability applies; `--warn` rows for fixed paths, `proc.exec`, background use and unverified signers. The same component is shown by AD05 for an installed app.
+
+### 5.4 Menus
+No menu bar. Context menus (`popupMenu`):
+
+| Menu | Items (shortcut) |
+|---|---|
+| File row (chooser) | Open / Choose (`Enter`) · Quick look (`Space`) · Rename (`F2`) · Move to trash (`Delete`) · Add to bookmarks (`Ctrl+D`) · Copy location (`Ctrl+Shift+C`) · Earlier versions… · Show in Files · Properties (`Alt+Enter`) |
+| Empty area (chooser) | New folder (`Ctrl+Shift+N`) · Paste location (`Ctrl+V`) · Sort by ▸ · View ▸ · Show hidden files (`Ctrl+H`) · Refresh (`F5`) |
+| Sidebar item | Open · Rename bookmark · Remove bookmark · Eject (devices) · Unlock / Lock (vaults) |
+| Column header | Column chooser: Size, Type, Modified, Created, Tags, Provenance |
+| Share target | Share · Pin / Unpin · Hide this target |
+| Open-with row | Open · Open in a disposable sandbox · Set as default · Show permissions |
+| Print preview | Zoom in (`Ctrl++`) · Zoom out (`Ctrl+-`) · Fit page (`Ctrl+0`) · First / Last page |
+| Picker source | Share this · Show window (raises it briefly behind the picker) |
+
+### 5.5 Keyboard and pointer
+| Keys | Action |
+|---|---|
+| `Ctrl+L` / `/` or `~` typed in the view | Edit the path with completion |
+| `Alt+Up`, `Backspace` / `Alt+Left`, `Alt+Right` | Parent / history |
+| `Ctrl+1`, `Ctrl+2`, `Ctrl+3` | List, grid, compact |
+| `Ctrl+F` / `Ctrl+H` / `F5` | Search / hidden files / refresh |
+| `F4` / `F9` / `Space` | Preview pane / sidebar / quick look |
+| `Ctrl+D` / `Ctrl+Shift+N` / `F2` / `Delete` | Bookmark / new folder / rename / trash |
+| `Alt+N` / `Alt+T` | Focus the name field / the format or filter drop-down |
+| `Alt+R` | Toggle read-only |
+| `Enter` / `Esc` | Primary verb (after the delay on prompts) / cancel or deny |
+| In prompts: `Alt+D`, `Alt+O`, `Alt+S`, `Alt+A` | Deny, once, session, always |
+| In share sheet: `1–9` | Pick target n |
+| In loupe: arrows, `Shift+arrows`, `Enter` | Move 1 px, 10 px, pick |
+| In print: `PgUp` / `PgDn` | Previous or next preview page |
+| In region overlay: arrows, `Shift+arrows` | Move, resize the rectangle by 1 px (`Ctrl` for 10 px) |
+
+Pointer: double click opens; middle click on a folder does nothing (no tabs in the chooser); drag bookmarks to reorder; drag a file from SY02 into the chooser (F020). Nothing can be dragged out of a chooser or prompt. Rubber-band selection in multi-select grid view. Touch: long press for the context menu; pinch in the print preview.
+
+### 5.6 States
+| State | Behaviour |
+|---|---|
+| Empty | Empty folder, no targets, no printers, no accounts: one line and one action each, as listed per view |
+| Loading | Incremental lists; thumbnails fill in; never a blocked dialog |
+| Error | Inline message with Retry; a broker failure cancels the request and tells the app "cancelled" |
+| Offline | Remote locations show "not reachable"; nearby-device action disabled |
+| Locked | Vault and encrypted locations ask to unlock; while the session is locked no portal UI exists and pending requests are denied |
+| Read-only | Save disabled in read-only locations; snapshot files open read-only |
+| Policy | Fixed choices with "Managed by your administrator" |
+| Narrow | Chooser collapses sidebar and preview; prompts keep 520 px or the output width minus 32 px |
+| Guest / disposable | "Always" durations are not offered; recents are session-only |
+
+### 5.7 Widgets
+| Region | FUSE widget |
+|---|---|
+| File views | `tableView`, `gridView`, `listView` (models from the broker's listing service) |
+| Sidebar, target and source lists | `listView`, `modelListView`, `gridView` |
+| Review sheet | `treeView` |
+| Path bar, toolbar | `toolButton`, `lineEdit` |
+| Name, search, range fields | `lineEdit` |
+| Filters, formats, durations, devices, printers | `comboBox` |
+| Choices and options | `radioButton`, `checkBox`, `spinBox`, `toggleSwitch` |
+| Preview images, thumbnails, trust mark | `image`, `viewportWidget` |
+| Metadata | `propertyGrid` (read-only) |
+| Print options | `tabWidget` |
+| Level meter, input-delay fill, progress | `progressBar` |
+| Colour dialog | `colorPicker` |
+| Panes | `splitter`, `scrollArea`, `panel`, `separator` |
+| Menus, tooltips | `popupMenu`, `tooltip` |
+
+FUSE has an in-process `fileDialog` widget (PLATFORM.md V3). Confined apps must not use it: it would need ambient file access. The app host maps `ui::dialog` file requests to this portal (FUSE-WP-32, FORGE-WP-24). SH04 may reuse that widget's view code inside the portal UI agent.
+
+Missing:
+
+| Gap | What is missing | Where it lands |
+|---|---|---|
+| SH03-GAP-2 | Trusted layer, trust frame, capture exclusion | compositor (owned by SH03) |
+| SH04-GAP-1 | Portal broker services and handle minting on PBSD handles with lineage | G-09, FORGE-WP-06, FORGE-WP-20 |
+| SH04-GAP-2 | Window token so a system window or prompt can be tied to another client's window, the "System" strip and the tether. No `xdg_foreign` module is in `pbsd/compositor/`; `…wayland.xdg_dialog_v1.cppm` covers only modal hints within one client | compositor |
+| SH04-GAP-3 | Compositor thumbnails and a capture source for the screen portal (same need as SH01-GAP-2) | compositor |
+| SH04-GAP-4 | Pixel sampling and magnified loupe for the colour pick | compositor |
+| SH04-GAP-5 | Grant store shared with AD05 (schema in 6.2) | AD05, G-09 |
+| SH04-GAP-6 | Sandboxed PDF renderer for the print preview | G-16, OF03 helper |
+| SH04-GAP-7 | Breadcrumb path bar widget; sectioned list headers; rubber-band selection in `gridView` | FUSE-WP-28, FUSE-WP-32 |
+| SH04-GAP-8 | Transfer tokens in drag and drop and clipboard offers | FUSE-WP-09, compositor data device |
+
+## 6. Architecture
+
+### 6.1 Components
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| Portal broker | C++23 | `portal-broker`, session service | Receives requests, checks the manifest and policy, runs the decision state machine, opens files, narrows rights, passes descriptors, records grants, revokes |
+| Listing service | C++23 | `portal-lister`, capability mode with directory descriptors | Lists directories, stats files, resolves links inside granted roots; gives the UI agent typed rows |
+| Type sniffer | C++23 | `type-sniffer`, capability mode, read-only descriptor | Detects MIME type from the first 64 kB |
+| Portal UI agent | ForgeScript + FUSE UI | app host with `shell.trusted-path` | All choosers and prompts; holds no file descriptors to user files |
+| Review sheet component | ForgeScript + FUSE UI | loaded by SY05 and AD05 through an interface, drawn in the agent | Install-time and update review |
+| PDF preview renderer | C++23 (G-16, shared with OF03) | helper, capability mode | Page bitmaps for the print dialog |
+| Device portals (camera, mic, location, USB, screen) | C++23, platform | one service each | Own the devices; SH04 asks them to grant or revoke |
+| Grant store | SQLite, owned by the broker | `portal-broker` | Durable grants and denials |
+
+The broker and its helpers are native because they hold broad file access and parse untrusted bytes (PLATFORM.md section 2, a and c). The UI agent is the only part with complex UI code, and it has no authority of its own: it returns the user's choice to the broker as a typed record.
+
+```
+ app ──request(svc.portal.*, svc.intent)──▶ +----------- portal-broker (C++23) -----------+
+  ▲                                          | manifest + policy check · decision machine  |
+  │ handle (descriptor, narrowed rights)     | open + cap_rights_limit · grant store · audit|
+  └──────────────────────────────────────────+----^-----------^--------------^-------------+
+                                                  | choice     | rows         | grant/revoke
+                           +----------------------+--+   +-----+--------+  +--v-------------+
+                           | portal UI agent         |   | portal-lister|  | device portals |
+                           | (ForgeScript + FUSE UI) |   | type-sniffer |  | camera mic usb |
+                           | choosers and prompts    |   +--------------+  | location screen|
+                           +----+---------------+----+                     +----------------+
+                  trusted layer |               | thumbnails, preview
+                        +-------v-----+   +-----v--------+   svc.thumbnail · PDF renderer
+                        | compositor  |   | sandboxes    |   svc.accounts · svc.keyring · UT06
+                        +-------------+   +--------------+
+```
+
+### 6.2 Data model
+Grant store: `~/.local/share/org.pbsd.portals/grants.db` (SQLite, `PRAGMA user_version`), readable by the broker and, read-only through an interface, by AD05.
+
+| Entity | Fields |
+|---|---|
+| `grant` | `id INTEGER PK`, `app_id TEXT`, `kind TEXT` (file, folder, camera, mic, screen, location, usb, print, gpu, bg, ai, exec, account, keyring_item, external_open), `object_id TEXT` (document id, device id, account id, target app), `rights INTEGER` (bit set: read, write, list, create, delete), `options TEXT` (JSON: precision, include_hidden, show_location), `duration INTEGER` (0 once, 1 session, 2 always), `session_id TEXT NULL`, `granted_at INTEGER`, `last_used INTEGER`, `expires_at INTEGER NULL`, `parent_handle TEXT` (lineage id), `source INTEGER` (0 user, 1 policy, 2 drag-drop, 3 intent) |
+| `denial` | `app_id`, `kind`, `object_id NULL`, `sticky INTEGER`, `denied_at`, `count INTEGER` |
+| `document` | `doc_id TEXT PK` (random 128-bit), `fs_id TEXT` (dataset guid + object number), `last_path TEXT`, `display_name TEXT`, `mime TEXT` |
+| `recent` | `app_id`, `doc_id`, `mode INTEGER` (open, save), `used_at` |
+| `chooser_state` | `app_id`, `mode`, `last_folder_doc_id`, `view INTEGER`, `sort_key`, `sort_desc`, `preview_on`, `width`, `height` |
+| `default_handler` (owned by `svc.intent`, written through it) | `mime_or_scheme`, `app_id`, `set_at` |
+| `PortalRequest` (memory) | `id`, `app_id`, `window_token?`, `input_serial?`, `kind`, `params`, `state: enum{received,checked,queued_chip,shown,granted,denied,cancelled}` |
+| `PrintTicket` (to UT06) | `printer_id`, `copies: u16`, `collate`, `ranges: [(from,to)]`, `sides: enum`, `paper`, `orientation`, `colour`, `nup: u8`, `scale`, `margins_mm: [f32;4]`, `quality`, `tray`, `hold_pin?` |
+
+Handles follow `docs/specs/HANDLES.md`: each granted handle is derived from the broker's handle with rights that only narrow (SI-1) and a recorded parent, so AD05 can show the lineage and revoke the subtree (SI-6). On FreeBSD-level descriptors the same narrowing is done with Capsicum rights limits (`docs/specs/CAPSICUM_LINEAGE.md`).
+
+Bookmarks are shared with SY02 in `svc.settings` namespace `files.bookmarks`. Migration is forward only; the store is backed up as `grants.db.bak.<version>` before a schema change.
+
+### 6.3 File formats and protocols
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| Portal request and reply records (bus schemas v1) | yes | yes | schema compiler (G-08); re-validated in the broker | `portal-broker` |
+| Directory listings | yes | — | own code over `openat`, `fstatat`, `getdents` on directory descriptors | `portal-lister` |
+| File content sniffing (magic numbers) | yes | — | own table-driven matcher, first 64 kB | `type-sniffer` |
+| Thumbnails and previews of any file type | pixels only | — | `svc.thumbnail` | thumbnail sandbox |
+| PDF (print preview, save as PDF) | yes (render) | pass-through | PDF renderer of G-16 | PDF helper |
+| Manifest capability lists | typed records | — | parsed by the launch service or SY05 | not SH04 |
+| Policy file (JSON, signed) | yes | — | own JSON reader with schema | `portal-broker` |
+| Grant store (SQLite) | yes | yes | SQLite (public domain) | `portal-broker` |
+| Wayland data offers with transfer tokens | yes | yes | FUSE data device (FUSE-WP-09) plus broker | broker resolves tokens |
+| Print ticket | — | yes | typed bus record to UT06 | UT06 |
+| Image metadata removal | — | — | SE05 cleaner | SE05 helper |
+
+### 6.4 Integration
+- Intents: SH04 resolves `open`, `edit`, `view`, `share`, `print`, `pick` and URL schemes on behalf of `svc.intent` when a choice by the user is needed. It emits `open` (to the chosen app) and `search` (to SY05 for "Search Software").
+- Services provided (UI and broker side): `svc.portal.file` (`open_file`, `save_file`, `choose_folder`, `reopen(doc_id)`, `recent()`, `commit_save`), `svc.portal.print`, `svc.portal.screen` (`pick_source`, `screenshot`), `org.pbsd.portal.Prompt1` used by the device portals (`ask(app, capability, resource, reason) -> decision`), `org.pbsd.portal.Review1` (review sheet for SY05, AD05), `org.pbsd.portal.Share1`, `org.pbsd.portal.OpenWith1`, `org.pbsd.portal.Colour1`, `org.pbsd.portal.Account1`.
+- Services used: `svc.settings`, `svc.thumbnail`, `svc.search`, `svc.audit`, `svc.undo-trash`, `svc.accounts`, `svc.keyring` (prompt only), `svc.intent`, `svc.a11y`, SY02's file operation service, UT06's print service, SE05's cleaner, SH02's `KillSwitch1` and `Indicators1`, SH03's trust mark through `shell.trusted-path`.
+- Other apps: every app (as callers); SH01 (wallpaper pick, results drag), SH02 (Wi-Fi password prompt uses the keyring prompt frame), SH03 (trusted path; "Keep these files…"), SH05 (request chip, tether target, capture outline, security labels), SY02, SY05, AD05, SE04, SE05, IN03, ME04, ME05, UT01, UT06, CO03, VM03, VM04, VM05.
+- Compositor (module files Verified present in `PBSD:pbsd/compositor/`): `…wayland.security_context.cppm` (`wp_security_context_manager_v1`: lets the compositor know a client is sandboxed and attach its app id, the basis for F134), `…wayland.xdg_dialog_v1.cppm`, `…wayland.xdg_activation.cppm` (input serials for the user gesture rule F063), `…wayland.data_device.cppm` and `…wayland.abstract_data_source.cppm` (drag and drop, F049), `…wayland.data_control.cppm` (`zwlr_data_control_manager_v1`, which must be restricted to AX05 and the shell or paste-as-grant can be bypassed), `…wayland.pointerwarp_v1.cppm` (F137), `…wayland.content_type.cppm`. Only headers were read. Not found: capture, cross-client parenting (SH04-GAP-2, -3).
+- FORGE: FSS path-scoped policy and Capsicum mapping exist (PLATFORM.md V12, V13); mapping grants onto PBSD handles is planned as FORGE-WP-06 and file access through handles as FORGE-WP-20.
+
+## 7. Security and privacy
+
+Capabilities requested (UI agent bundle; the broker and helpers are session services with their own fixed rights):
+
+| Capability | Why |
+|---|---|
+| `fs.app` | Chooser state, caches |
+| `net.none` | No network use |
+| `proc.helper:portal-lister`, `proc.helper:type-sniffer` | Listings and type detection without file access in the UI |
+| `svc.settings`, `svc.thumbnail`, `svc.search`, `svc.audit`, `svc.undo-trash`, `svc.accounts`, `svc.intent`, `svc.a11y` | As in 6.4 |
+| `svc.portal.file`, `.print`, `.screen`, `.camera`, `.mic`, `.location`, `.usb` (provider side) | Drawing their UI |
+| `dev.camera`, `dev.mic` (preview only) | Live preview and level meter inside the prompt (F061); frames never leave the agent |
+| `bg.run`, `bg.autostart` | Session component |
+| `shell.trusted-path` (Proposed) | Draw prompts; read the trust mark |
+| `shell.system-window` (Proposed) | Windows with the "System" strip and tether |
+
+The broker holds the user's file authority (`fs.path:~:rw` in effect). It is the one place where that authority is narrowed and handed out. Not requested by anything in SH04: `net.*` beyond none, `proc.exec`, `ai.local`.
+
+Threat model:
+
+| Asset | Adversary | Attack | Mitigation |
+|---|---|---|---|
+| The user's files | Confined app | Asks for a path directly, or reaches outside a granted folder with `..` or a link | Apps hold only descriptors; `openat` under capability mode cannot escape a directory descriptor; links resolved by the broker (F027) |
+| The user's consent | Hostile app | Draws a fake chooser or prompt to learn habits or get a password | System strip, tether, trust mark, trusted layer (4.9); nothing in a portal ever asks for the login password |
+| The user's consent | Hostile app | Misleading reason or title text | App text boxed and marked (F135); system text fixed |
+| The user's consent | Hostile app | Clickjacking: prompt appears under a click or keypress | Gesture rule, input delay, no default allow, dropped early keys, pointer warp ignored (F137, F138) |
+| The user's patience | Hostile app | Prompt flooding | Rate limits and chips (F063, F065) |
+| Broker integrity | Any app | Malformed request, huge filter lists, path-like display names | Schema and bounds checks; display names sanitised; T2 target on the decoder |
+| UI agent | Hostile file names, hostile files | Crafted names (control characters, right-to-left override) or files that exploit a decoder | Names rendered with control characters visible and direction isolated; no decoding in the agent; thumbnails from the sandbox |
+| Grants over time | Updated app | Gains new capability silently | Update diff (F077); grants tied to the signing key and bundle id |
+| Screen content | App with capture | Captures more than chosen | Capture source fixed by the picker; protected windows excluded; outline and indicator; session-only |
+| Data in transit between apps | Share target | Receives hidden metadata | Remove-metadata option, on by default towards network apps |
+| Clipboard and drag data | Background app | Reads file paths from offers | Transfer tokens instead of paths (F049); `data_control` restricted |
+| Accounts and secrets | App | Gets the password | Scoped account handles; keyring items stay in `svc.keyring` |
+| Location | App | Gets exact position when a city is enough | Precision choice is part of the grant (F062) |
+
+Stored: grants, denials, document ids and last paths, recents, chooser state. Paths in the store are sensitive: the store is in the user's encrypted home and is cleared of session grants at logout. Leaves the machine: nothing.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `chooser.default_view` | enum{list,grid,compact} | list | F005 |
+| `chooser.show_hidden` | bool | false | F010 |
+| `chooser.folders_first` | bool | true | F006 |
+| `chooser.preview_pane` | bool | false | F011 |
+| `chooser.show_provenance` | bool | false | F025 |
+| `chooser.start_in_recent` | bool | true | Open mode starts on Recent when the app has no current document |
+| `chooser.exclude_from_capture` | bool | true | F140 |
+| `grant.file_default` | enum{once,session,always} | session | F034 |
+| `grant.folder_default` | enum{once,session,always} | once | F034 |
+| `grant.max_duration` | enum{once,session,always} | always | Policy cap |
+| `grant.expire_unused_days` | u16 (0 = never) | 90 | F078 |
+| `grant.warn_broad_folders` | bool | true | F044; cannot be turned off under default policy |
+| `prompt.input_delay_ms` | u16 (≥ 500) | 800 | F059 |
+| `prompt.gesture_window_s` | u8 | 5 | F063 |
+| `prompt.timeout_s` | u16 | 300 | F147 |
+| `prompt.retry_cooldown_s` | u16 | 30 | F065 |
+| `prompt.network_first_contact` | enum{log,ask} | log | F069 |
+| `prompt.device_preview` | bool | true | F061 |
+| `location.default_precision` | enum{exact,approximate,city,fixed} | approximate | F062 |
+| `location.fixed_place` | {lat, lon, label} | none | F062 |
+| `share.remove_metadata_default` | enum{never,network_targets,always} | network_targets | F085 |
+| `share.pinned_targets` | list<app_id> | [] | F082 |
+| `openwith.confirm_external_open` | bool | true | F097 |
+| `openwith.disposable_for_quarantined` | bool | true | 5.3.3 |
+| `print.default_printer` | string | "" | Last used if empty |
+| `print.presets` | json | {} | F107 |
+| `screen.hide_notifications` | bool | true | F114 |
+| `screen.show_pointer` | bool | true | F114 |
+| `recent.enabled` | bool | true | Recent lists |
+| `recent.max` | u16 | 200 | Per app |
+
+## 9. Accessibility and languages
+
+- Prompts are announced as alert dialogs: question first, then the app, then "the app says" and its reason, then the choices. The input delay is announced as "available in a moment" and its end as "you can answer now".
+- The file view is a table with row and column headers in the a11y tree; type-ahead announces the match; selection counts are a polite live region.
+- The print preview exposes page text (from the PDF renderer's text layer) so screen-reader users can check what prints.
+- The screen picker lists sources by title and app; thumbnails are not required to choose.
+- The colour loupe speaks the colour name (nearest of 140 named colours) and hex on movement pauses.
+- App-supplied strings are shown in the app's language; system strings in the system language; mixed-direction text is isolated per field.
+- File names keep their script; sorting uses the locale's collation with natural number order.
+- All drag actions have menu or key equivalents; rubber-band selection is never the only way to multi-select.
+
+## 10. Performance budgets
+
+| Item | Budget |
+|---|---|
+| Request to chooser first frame | ≤ 150 ms (agent kept warm); ≤ 400 ms cold |
+| Request to prompt on screen | ≤ 150 ms |
+| Folder with 10,000 entries: first rows | ≤ 50 ms; full sort ≤ 300 ms |
+| Folder with 1,000,000 entries | Usable within 200 ms (incremental); memory ≤ 150 MB for the listing |
+| Path completion | ≤ 30 ms per key |
+| Handle delivery after "Open" | ≤ 20 ms per file; 1,000 files ≤ 2 s |
+| Print preview first page | ≤ 300 ms for a 100-page PDF |
+| Picker thumbnails | 5 frames per second per source, 320 px wide; 0 when the picker is closed |
+| Idle | The agent has 0 frames and 0 wake-ups with no surface open; the broker wakes only on requests |
+| Memory | Agent ≤ 60 MB idle; broker ≤ 15 MB plus 200 bytes per live grant |
+
+## 11. Testing and proof
+
+Test plan (targets; nothing has run):
+
+- Unit: decision state machine (table-driven over capability × manifest × policy × prior grants × gesture), name validation, range parser (`1-3,7,10-`), duration and expiry rules, start-folder choice, MIME match and mismatch logic.
+- Golden renders: every view in 5.2–5.3 in all themes, densities, RTL and scales; chooser in open, save and folder modes; prompts for each capability.
+- Scripted UI through the a11y tree: tasks T1–T15 against a fake file tree and fake devices.
+- Escape tests: a confined test app with a folder grant tries `..`, absolute paths, links out of the folder, hard links, renames across the boundary and descriptor passing to a helper; all must fail or stay inside.
+- Spoofing tests: an app tries to create a window with the "System" strip, to cover a prompt, to capture it, to warp the pointer, to inject keys, to trigger a prompt with no gesture.
+- Revocation tests: revoke during read, during write, during save commit; the handle must fail at once and no partial file may appear under the final name.
+- Fuzz: request decoders, policy file reader, type sniffer, file-name rendering (random Unicode), print range parser, transfer-token resolver.
+- Differential: type sniffer against the `file` utility's results on a corpus; listing service against `ls -la` on a generated tree.
+- Fault injection: kill the agent with a chooser open; kill the broker with live grants; pull a USB stick while its folder is shown.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Decision state machine (broker) | A grant is issued only if the manifest declares the capability, policy allows it, and a user choice record exists for this request id; denial is the outcome of every other path | T1 | PRISM model check against the C++ | Policy format must be frozen |
+| Rights narrowing | Rights on a passed handle are a subset of the requested rights and of the broker's own (SI-1) | T1 | Proof over the rights bit-set function; ties to the handle model in `docs/specs/HANDLES.md` | Kernel handle interface must exist |
+| Revocation | After `revoke(grant)`, no descriptor derived from it remains usable (SI-6) | T1 at the handle layer; T3 here | Relies on the kernel property; integration tests here | Outside this component |
+| Request decoders | No runtime error on any input | T2 | PRISM; fuzz | — |
+| Listing service | Never follows a link out of its root; bounded memory per batch | T2 | PRISM on path handling; escape tests | — |
+| Save commit | Final name appears only with complete content (rename after fsync) | T2 | Proof of the sequence; crash-injection tests | File system semantics assumed |
+| Type sniffer | Total, bounded read (64 kB), no runtime error | T2 | PRISM; fuzz | — |
+| Range parser | Accepts exactly the stated grammar | T2 | PRISM; unit | — |
+| UI agent (ForgeScript) | Holds no file descriptor to user files; no runtime error in tests | T3/T4 | Capability audit of the agent's manifest and FSS policy; scripted UI | Interpreted code |
+
+## 12. Build plan
+
+Phase 1 — usable core:
+
+| Item | Work | Depends on |
+|---|---|---|
+| SH04-W01 | Broker skeleton: request schemas, manifest check, decision machine, audit | G-08, G-07, SH04-GAP-1 |
+| SH04-W02 | Listing service and type sniffer | G-06 |
+| SH04-W03 | Grant store, document ids, recents; read interface for AD05 | SH04-GAP-5 |
+| SH04-W04 | File chooser open mode: places, path bar, list view, filters, type-ahead, keyboard | G-01, FUSE-WP-28, SH04-W02 |
+| SH04-W05 | Handle delivery with narrowed rights; read-only option; grant line and durations | FORGE-WP-06, FORGE-WP-20, SH04-W01 |
+| SH04-W06 | Save mode: name checks, formats, replace, atomic commit | SH04-W05, `svc.undo-trash` |
+| SH04-W07 | Folder mode with scope warnings | SH04-W05 |
+| SH04-W08 | System-window strip, trust mark footer; prompts on the trusted layer | SH03-W07, SH03-W08, SH04-GAP-2 |
+| SH04-W09 | Capability prompt: single capability, choices, input delay, deny memory, rate limits | SH04-W08, device portals |
+| SH04-W10 | Open-with chooser, defaults, no-handler state, executables rule | `svc.intent`, SH04-W02 |
+| SH04-W11 | Install-time review sheet for SY05 | SY05 |
+| SH04-W12 | App host mapping of `ui::dialog` file calls to the portal | FUSE-WP-32, FORGE-WP-24 |
+| SH04-W13 | Settings schema, a11y announcements, crash behaviour | SY01, G-04 |
+
+Phase 2 — full feature:
+
+| Item | Work | Depends on |
+|---|---|---|
+| SH04-W14 | Grid and compact views, preview pane, quick look, search, provenance column | `svc.thumbnail`, `svc.search` |
+| SH04-W15 | Re-open by document id, follow renames, give-a-copy, show-location | SH04-W05 |
+| SH04-W16 | Drag and drop and paste as grants (transfer tokens) | SH04-GAP-8 |
+| SH04-W17 | Combined prompts, device preview, location precision, gesture rule and chips, kill switch awareness | SH05, SH02 |
+| SH04-W18 | Share sheet with app targets, built-in actions, remove metadata | SE05, IN03, UT01 |
+| SH04-W19 | Print dialog: printers, preview, basic and layout options, app options | G-16, UT06, SH04-GAP-6 |
+| SH04-W20 | Screen and window picker, region overlay, restore tokens | SH04-GAP-3, SH05, ME05 |
+| SH04-W21 | Colour loupe | SH04-GAP-4 |
+| SH04-W22 | Account chooser, keyring item prompt, USB chooser | `svc.accounts`, SE04, VM05 |
+| SH04-W23 | Tether, capture exclusion, secure-attention listing | SH04-GAP-2, SH03 |
+| SH04-W24 | Disposable open, external-open confirm, URL schemes, update diff | SY05, launch service |
+| SH04-W25 | Removable, remote and locked locations | SY02, SE05 |
+
+Phase 3 — advanced:
+
+| Item | Work | Depends on |
+|---|---|---|
+| SH04-W26 | Snapshots ("Earlier versions"), tags filter | SY02, ZFS |
+| SH04-W27 | Direct share targets, convert on share, save-encrypted | CO05, OF02, SE05 |
+| SH04-W28 | Print quality, presets, privacy, held jobs | UT06 |
+| SH04-W29 | Multi-source capture, protected content, remote-control prompt | VM04, SH04-W20 |
+| SH04-W30 | Colour dialog, contact picker, camera and scan hand-off | CO03, ME04, UT06 |
+| SH04-W31 | Policy file, expiring grants, network first-contact ask mode, route in prompts | SE02, SE03 |
+| SH04-W32 | Look-alike window refusal; foreign app handlers | compositor, VM03 |
+
+## 13. Open questions and risks
+
+1. **Paths versus handles.** Some tools (IDE, Terminal, build systems) need real paths. "Show location" (F053) and `fs.path` cover them, but every path given out weakens the model. Which apps may ask needs a rule.
+2. **File chooser on the trusted layer or as a system window?** A chooser is large and long-lived; dimming the whole screen for it is heavy. The plan uses a system window with a compositor-drawn strip. This needs SH04-GAP-2 and a review of whether the strip is spoof-proof enough without the full dim.
+3. **Gesture rule (F063)** needs reliable input serials from the compositor and will surprise apps that ask at start-up. Apps must be written to ask in response to a user action.
+4. **Following renamed files** needs stable file ids; ZFS object numbers within a dataset should do, across datasets they do not.
+5. **Camera preview in the prompt** means the agent opens the camera before consent to the app. The indicator must show "System prompt" as the user, and frames must never leave the agent.
+6. **`zwlr_data_control_manager_v1`** is present in the compositor tree. Left open to all clients it lets any app read the clipboard, including file offers. It must be gated.
+7. **Broker is a high-value target.** It holds the user's whole file authority. It must stay small; all UI and all decoding stay outside it.
+8. **Print pipeline (G-16)** does not exist; the dialog cannot be finished before the spool format and UT06's service are fixed.
+9. **Capture source (SH04-GAP-3)** is shared with SH01 and SH05; one compositor design should serve thumbnails, the picker and ME05.
+10. **Remembered grants and app identity.** A grant is tied to bundle id plus signing key. Key rotation by a publisher needs a migration rule or users will be re-prompted for everything.
+11. Risk: users trained by other systems to click "Allow". The input delay and chips reduce reflex approvals but do not remove them.

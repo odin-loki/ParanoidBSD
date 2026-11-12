@@ -1,0 +1,39 @@
+{
+  "id": "org.pbsd.studio",
+  "name": "Studio",
+  "version": "0.1.0",
+  "category": "create",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "proc.helper:studio-engine", "proc.helper:cook", "proc.helper:export",
+    "dev.gpu.compute",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.intent", "svc.keyring",
+    "svc.thumbnail", "svc.power", "svc.clipboard", "svc.backup", "svc.search",
+    "svc.audit", "svc.a11y"
+  ],
+  "helpers": [
+    {"name": "studio-engine", "language": "c++23", "capabilities": ["fs.portal", "dev.gpu.compute"]},
+    {"name": "cook", "language": "c++23", "capabilities": []},
+    {"name": "export", "language": "c++23", "capabilities": ["svc.keyring"]}
+  ],
+  "mime": {
+    "view": ["application/x-fuse-level"],
+    "edit": ["application/x-fuse-project+json", "application/x-fuse-level"],
+    "import": [
+      "model/gltf+json", "model/gltf-binary", "model/obj",
+      "image/png", "image/x-tga", "image/jpeg", "image/vnd.radiance", "image/ktx2",
+      "audio/wav", "audio/flac", "audio/ogg",
+      "application/x-fuse-project-archive", "application/x-nvfx-pack"
+    ],
+    "export": ["application/x-pbsd-app-bundle", "application/x-fuse-project-archive", "text/csv", "image/png", "image/x-exr"]
+  },
+  "intents": {"handles": ["open", "edit", "new"], "emits": ["open", "edit", "share"]},
+  "url_schemes": [],
+  "services_provided": ["thumbnailer:application/x-fuse-mesh", "thumbnailer:application/x-fuse-material"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE", "odin-loki/FORGE", "odin-loki/NeuralVFX"],
+  "priority": "P2"
+}

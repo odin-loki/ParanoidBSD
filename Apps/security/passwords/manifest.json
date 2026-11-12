@@ -1,0 +1,55 @@
+{
+  "id": "org.pbsd.passwords",
+  "name": "Passwords and Keys",
+  "version": "0.1.0",
+  "category": "security",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.keyring",
+    "svc.clipboard",
+    "svc.notify",
+    "svc.settings",
+    "svc.audit",
+    "svc.backup",
+    "svc.search",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.portal.usb",
+    "svc.portal.camera",
+    "dev.usb:hid",
+    "dev.usb:ccid",
+    "dev.camera",
+    "proc.helper:import-parser",
+    "proc.helper:token-helper"
+  ],
+  "keyring_scope": "manage",
+  "helpers": [
+    {"name": "import-parser", "language": "c++23", "capabilities": []},
+    {"name": "token-helper", "language": "c++23", "capabilities": ["dev.usb:hid", "dev.usb:ccid"]}
+  ],
+  "system_helpers": [
+    {"name": "vault-service", "language": "c++23", "part_of": "svc.keyring", "capabilities": ["svc.audit", "svc.notify"]},
+    {"name": "key-service", "language": "c++23", "part_of": "svc.keyring", "capabilities": ["svc.audit", "proc.helper:token-helper"]}
+  ],
+  "mime": {
+    "view": ["application/vnd.pbsd.vault", "application/x-x509-ca-cert", "application/x-pem-file", "application/pkix-cert", "application/x-pkcs7-certificates", "application/pkcs10", "application/pgp-keys"],
+    "edit": ["application/vnd.pbsd.vault"],
+    "import": ["application/x-keepass2", "text/csv", "application/json", "application/x-pkcs12", "application/x-pem-file", "application/pgp-keys", "application/x-ssh-key", "application/x-putty-private-key", "image/png"],
+    "export": ["application/vnd.pbsd.vault", "application/x-keepass2", "application/age", "text/csv", "application/json", "application/x-pem-file", "application/pgp-keys", "application/pkcs10", "application/pdf"]
+  },
+  "intents": {"handles": ["open", "view", "pick", "new"], "emits": ["open", "print", "share"]},
+  "url_schemes": ["otpauth", "passwords"],
+  "services_provided": ["org.pbsd.vault.v1", "org.pbsd.autofill.v1", "org.pbsd.webauthn.v1", "org.pbsd.keys.v1"],
+  "global_shortcuts": [
+    {"id": "fill", "default": "Ctrl+Shift+L"},
+    {"id": "quick-access", "default": "Ctrl+Shift+Space"}
+  ],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/FORGE", "odin-loki/FUSE", "odin-loki/ParanoidBSD"],
+  "priority": "P0"
+}

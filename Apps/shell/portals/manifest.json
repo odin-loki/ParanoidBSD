@@ -1,0 +1,69 @@
+{
+  "id": "org.pbsd.portals",
+  "name": "Portals and Prompts",
+  "version": "0.1.0",
+  "category": "shell",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "net.none",
+    "proc.helper:portal-lister",
+    "proc.helper:type-sniffer",
+    "svc.settings",
+    "svc.thumbnail",
+    "svc.search",
+    "svc.audit",
+    "svc.undo-trash",
+    "svc.accounts",
+    "svc.intent",
+    "svc.a11y",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.portal.screen",
+    "svc.portal.camera",
+    "svc.portal.mic",
+    "svc.portal.location",
+    "svc.portal.usb",
+    "dev.camera",
+    "dev.mic",
+    "bg.run",
+    "bg.autostart",
+    "shell.trusted-path",
+    "shell.system-window"
+  ],
+  "helpers": [
+    {"name": "portal-lister", "language": "c++23", "capabilities": []},
+    {"name": "type-sniffer", "language": "c++23", "capabilities": []}
+  ],
+  "system_components": [
+    {"name": "portal-broker", "language": "c++23", "kind": "session-service",
+     "provides": ["svc.portal.file", "svc.portal.print", "svc.portal.screen"],
+     "authority": ["fs.path:~:rw"]}
+  ],
+  "mime": {"view": [], "edit": [], "import": [], "export": ["application/pdf"]},
+  "intents": {
+    "handles": ["open", "edit", "view", "share", "print", "pick"],
+    "emits": ["open", "search"]
+  },
+  "url_schemes": [],
+  "services_provided": [
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.portal.screen",
+    "org.pbsd.portal.Prompt1",
+    "org.pbsd.portal.Review1",
+    "org.pbsd.portal.Share1",
+    "org.pbsd.portal.OpenWith1",
+    "org.pbsd.portal.Colour1",
+    "org.pbsd.portal.Account1"
+  ],
+  "background": {"autostart": true, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.login-lock >= 0.1"
+  ],
+  "backing_repos": ["FUSE", "FORGE", "ParanoidBSD:pbsd/compositor", "ParanoidBSD:docs/specs/HANDLES.md"],
+  "priority": "P0",
+  "notes": "shell.* capabilities and system_components are Proposed manifest extensions; system-key bundles only. dev.camera and dev.mic are for the in-prompt preview only."
+}

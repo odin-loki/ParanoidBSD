@@ -510,7 +510,7 @@ Transfer  Start Ctrl+Enter · Pause Space · Stop · Retry Ctrl+R · Move up Ctr
 Site      Upload F6 (two-pane) · Download F7 · New folder Ctrl+Shift+F · Rename F2 · Delete Delete · Permissions… ·
           Compare folders Ctrl+Shift+C · Synchronised browsing · Edit remote file F3 · Bookmark path ·
           Disconnect · Reconnect · Site manager… · Known hosts…
-Tools     Pause all Ctrl+Shift+P · Resume all · Speed limits… · Schedule… · History Ctrl+H · Statistics ·
+Tools     Pause all Ctrl+Shift+P · Resume all · Speed limits… · Schedule… · History Ctrl+Y · Statistics ·
           Paired devices…
 Help      Transfers help F1 · Keyboard shortcuts · About
 ```
