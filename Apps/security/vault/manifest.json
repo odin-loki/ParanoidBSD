@@ -1,0 +1,65 @@
+{
+  "id": "org.pbsd.vault",
+  "name": "Vault",
+  "version": "0.1.0",
+  "category": "security",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.keyring",
+    "svc.audit",
+    "svc.notify",
+    "svc.settings",
+    "svc.backup",
+    "svc.search",
+    "svc.thumbnail",
+    "svc.undo-trash",
+    "svc.power",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.storage",
+    "proc.helper:crypto-worker",
+    "proc.helper:signature-checker",
+    "proc.helper:metadata-image",
+    "proc.helper:metadata-pdf",
+    "proc.helper:metadata-office",
+    "proc.helper:metadata-av",
+    "proc.helper:metadata-archive",
+    "proc.helper:indicator",
+    "proc.helper:container-service",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "crypto-worker", "language": "c++23", "capabilities": []},
+    {"name": "signature-checker", "language": "c++23", "capabilities": []},
+    {"name": "metadata-image", "language": "c++23", "capabilities": []},
+    {"name": "metadata-pdf", "language": "c++23", "capabilities": []},
+    {"name": "metadata-office", "language": "c++23", "capabilities": []},
+    {"name": "metadata-av", "language": "c++23", "capabilities": []},
+    {"name": "metadata-archive", "language": "c++23", "capabilities": []},
+    {"name": "indicator", "language": "c++23", "capabilities": []},
+    {"name": "container-service", "language": "c++23", "capabilities": ["svc.keyring"]}
+  ],
+  "system_helpers": [
+    {"name": "storage-helper", "language": "c++23", "provides": "svc.storage (encrypted-folder scope)", "capabilities": ["svc.audit"]}
+  ],
+  "mime": {
+    "view": ["application/age", "application/vnd.pbsd.box", "application/pgp-encrypted", "application/pgp-signature", "application/vnd.forge.signature", "application/x-minisign", "text/x-checksum"],
+    "edit": ["application/vnd.pbsd.box"],
+    "import": ["application/x-veracrypt-volume", "application/x-luks"],
+    "export": ["application/age", "application/vnd.pbsd.box", "application/pgp-encrypted", "application/pgp-signature", "application/vnd.forge.signature", "text/x-checksum", "text/markdown", "application/pdf"]
+  },
+  "intents": {
+    "handles": ["open", "view", "encrypt", "decrypt", "sign", "verify", "hash", "clean-metadata", "erase"],
+    "emits": ["pick", "open", "print", "share"]
+  },
+  "url_schemes": ["vault"],
+  "services_provided": ["org.pbsd.vault-jobs.v1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.passwords >= 0.1"],
+  "backing_repos": ["odin-loki/ParanoidBSD", "odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P1"
+}

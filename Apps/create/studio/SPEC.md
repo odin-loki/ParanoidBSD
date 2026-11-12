@@ -10,13 +10,14 @@ By Odin Loch
 | Category | create |
 | Priority | P2 |
 | Backing repos | FUSE (engine, editor controller, Qt-free editor shell, tools), FORGE (ForgeScript), NeuralVFX (effect library, optional) |
+| App kind | Native app (documented exception to PLATFORM.md section 2; see section 2 and 13) |
 | Status | Planned. Nothing built as an app for this OS. The FUSE editor exists upstream (see 6.4). |
 
 Labels: **Verified** = read in a repo at the cited path. **Proposed** = design in this plan. **Unverified** = could not be read.
 
 ## 1. Purpose
 
-Studio is the FUSE editor shipped as an app: a workbench for building 2D, 3D and hybrid worlds, simulations and games, and for exporting them as signed app bundles for this OS. It is for game developers, simulation authors, teachers and hobbyists. It replaces the Qt 6 FUSE editor on this OS and stands where Godot, Unity or Unreal editors would.
+Studio is the FUSE editor shipped as an app: a workbench for building 2D, 3D and hybrid worlds, simulations and games, and for exporting them as signed app bundles for this OS. It is for game developers, simulation authors, teachers and hobbyists. It replaces the Qt 6 FUSE editor on this OS and stands where Godot, Unity or Unreal editors would. By owner decision the app is FUSE's existing Qt-free C++ editor shell (`fuse_editor_fuse` on `EditorController`), shipped directly.
 
 ## 2. Scope
 
@@ -57,7 +58,7 @@ Personas: **Game developer** (levels, scripts, play-test, export). **Simulation 
 | T11 | Run a simulation 100 times with a seed sweep and get a CSV | 4 |
 | T12 | Open an untrusted project safely | 1 (it opens restricted by default) |
 | T13 | See what changed since the last commit | 1 |
-| T14 | Recover after a crash of the engine process | 0 (automatic) |
+| T14 | Recover work after a crash | 1 (accept the restore offer) |
 
 ## 4. Features
 
@@ -77,7 +78,7 @@ Priority: M must, S should, C could. Phase 1 usable core, 2 full feature, 3 adva
 | CR04-F008 | Project trust state | Each project is Trusted or Restricted. Restricted: scripts do not run, play mode is off, import of executable content is off. New projects made here are trusted; projects from elsewhere start restricted. | N | M | 1 |
 | CR04-F009 | Project health check | Lists missing assets, broken references, schema versions, unsigned scripts, declared capabilities. | N | S | 2 |
 | CR04-F010 | Project archive | Export and import a project as one signed archive without caches. | N | S | 2 |
-| CR04-F011 | Multiple projects | One window per project; each has its own engine process. | N | S | 2 |
+| CR04-F011 | Multiple projects | One window and one Studio process per project. | N | S | 2 |
 
 ### 4.2 Viewports
 
@@ -271,7 +272,7 @@ Priority: M must, S should, C could. Phase 1 usable core, 2 full feature, 3 adva
 | CR04-F137 | UI Designer hand-off | A `.fuseui` asset opens in DV02; Studio shows a live preview of the game UI layer and reloads on save. | N | S | 2 |
 | CR04-F138 | Version control hand-off | File status badges in the asset browser and hierarchy (modified, added, untracked); "Show changes" and "Commit…" open DV03 at the project. Studio never runs VCS commands itself. | N | S | 2 |
 | CR04-F139 | Text-friendly files | Worlds, prefabs, materials and settings are saved as stable, diffable text. Upstream lists native world files as later work. | P | M | 2 |
-| CR04-F140 | Engine crash recovery | The engine runs in a helper. If it crashes, Studio keeps its window, restarts the engine and replays the edit journal. | N | M | 1 |
+| CR04-F140 | Crash recovery | Editor and engine share one process. After a crash the shell offers to reopen Studio; it reloads the last saved world and replays the edit journal. | N | M | 1 |
 | CR04-F141 | Autosave | Journal of editor commands; snapshot every 2 minutes; restore offered at start. | N | M | 1 |
 | CR04-F142 | Untrusted import | Imported files are parsed only in the cook helper; a failed cook gives a labelled placeholder (the cook tool has a lenient mode) and a report. | P | M | 1 |
 | CR04-F143 | Help and tours | Offline help in a `markdownView` dock; first-run tour of the workbench. | N | S | 2 |
@@ -341,7 +342,7 @@ Shown at 1600 × 900, default layout (left 260, right 320, bottom 200 px, as the
 4. **Viewport.** `viewportWidget` showing the engine frame; the gizmo and overlays are a vector overlay. A 4 px green frame and a badge show play state.
 5. **Inspector**, 320 px. `propertyGrid` with one group per component.
 6. **Bottom dock**, 200 px. Tabs; Asset Browser shown with breadcrumb, filter, type filter, grid toggle and status line.
-7. **Status bar.** Trust state, save state, engine process state, cook queue, version-control summary.
+7. **Status bar.** Trust state, save state, renderer state (GPU or software), cook queue, version-control summary.
 
 ### 5.3 Other views and dialogs
 
@@ -488,7 +489,7 @@ Drag and drop: files from SY02 into the asset browser (import); asset to viewpor
 | Loading | Hub row shows progress; the workbench opens with docks filled as the engine reports; assets show placeholders until cooked. |
 | Playing / paused | Green frame and badge / amber badge; edits in the inspector are marked temporary. |
 | Restricted | Banner "Restricted project: scripts and play are off" with "Review and trust…". Viewing and editing worlds still works. |
-| Engine restarting | Viewport shows the last frame dimmed with "Engine restarting…"; docks stay; edits are queued and replayed. |
+| Recovered | After a crash and restart: banner "Restored N edits from the journal" with "Review" (history list) and "Discard". |
 | No GPU | Banner "No GPU device: software viewport"; lit view modes disabled with the reason. |
 | Error | Cook and script errors go to Problems with "go to"; a failed world load offers the last autosave. |
 | Offline (network) | No change for Studio. A game that declared network capabilities is tested only if the user grants them. |
@@ -517,7 +518,8 @@ Drag and drop: files from SY02 into the asset browser (import); asset to viewpor
 Gaps:
 
 - **G-01**: the app shell has X11 and Win32 windows only (V5); Studio needs the Wayland backend like every app.
-- **CR04-GAP-1**: sharing the engine's rendered frame from the engine helper to the app's UI context without a copy. Upstream does this inside one process through a `ui_vk` external-texture slot on an adopted device (Verified). Across processes it needs an exportable GPU image and a compositor or UI-side import. Not in G-01..G-18.
+- **CR04-GAP-1**: showing the play instance's frames inside the Studio viewport without a copy. The editor's own viewport needs nothing new: upstream shares the frame inside one process through a `ui_vk` external-texture slot on an adopted device (Verified). The play instance is another process, so its surface must be handed over by the shell or imported as a GPU image. Not in G-01..G-18.
+- **CR04-GAP-5**: a native-entry path in the app host: verify the bundle, compile the manifest policy, enter capability mode, then start a signed native binary as the app instead of a ForgeScript engine. Needed by the decision in section 13. Not in G-01..G-18.
 - **CR04-GAP-2**: flame-graph widget (rectangles with labels, zoom, virtualised).
 - **CR04-GAP-3**: development launch of an unsigned or developer-signed bundle as its own confined app instance, started by the shell on Studio's request. Not in G-01..G-18.
 - **CR04-GAP-4**: engine shaders on HardenedBSD. The FUSE build plan notes that the shader compiler it depends on has no vendored source and no known FreeBSD binary (FUSE-WP-02 risks, Q-09 there). Studio's lit viewport depends on the answer.
@@ -527,34 +529,49 @@ Gaps:
 
 ### 6.1 Components
 
+Studio is a native app (decision in section 13): the upstream Qt-free shell `fuse_editor_fuse` is the app process. Editor chrome, controller and engine run in that one process, as they do upstream.
+
 | Component | Language | Process | Responsibility |
 |---|---|---|---|
-| App logic | ForgeScript | app host | Project hub, workbench state, action table, panel view models, edit journal, export wizard, hand-offs, trust state |
-| UI | FUSE UI (`.fuseui` + CSS) | app host | Docks, panels, dialogs, viewport widget and overlays |
-| `studio-engine` | C++23 (FUSE engine, `fuse_editor_api`, `fuse_editor_controller`, scene host) | helper, one per open project | Owns the edited world: `EditorHost`, command drain on the game thread, undo stack, panel models, scene rendering for the viewport, picking, gizmo maths. PLATFORM.md section 2 (d). |
-| `cook` | C++23 (FUSE tools: cook, import, convert, asset check, lint) | helper, one per job, no capabilities | Parses untrusted source assets and writes cooked files to the passed output handle. Section 2 (a). |
-| `play-runner` | C++23 (`fuse_runtime`) + the project's scripts | separate confined app instance | Runs the project in play mode with the project's capabilities only. Section 2 (d). |
-| `export` | C++23 + ForgeScript | helper | Packs content, writes the bundle, calls the signer, runs the linter |
-| Script tools | ForgeScript | child engine in app host | Signed editor scripts with a narrowed policy |
+| Editor shell | C++23 on FUSE UI (`Source/FUSE/EditorShell/Fuse`) | app process (`org.pbsd.studio`), UI thread | Docks, menus and toolbar from the action table, panels, dialogs, viewport widget and overlays |
+| Editor controller and panel models | C++23 (`fuse_editor_controller`, `EditorPanels`) | app process | Qt-free `EditorController`, stable action table, panel models, gizmo, preferences |
+| Editor host and engine | C++23 (`fuse_editor_api`, FUSE engine, scene host) | app process, game thread and job workers | `EditorHost`, command drain, undo stack, the edited world, viewport rendering, picking |
+| Platform glue | C++23 | app process | Portal file access, `svc.*` clients, intents, trust state, edit journal, system theme and shortcuts |
+| Extension engine | ForgeScript in an embedded `forge::script::engine` | app process | Signed editor extensions with a policy narrowed to the editor API |
+| `cook` | C++23 (FUSE tools: cook, import, convert, asset check, lint) | helper, one per job, no capabilities | Parses untrusted source assets and writes cooked files to the passed output handle; pre-checks foreign project files |
+| `play-runner` | C++23 (`fuse_runtime`) + the project's scripts (ForgeScript; Lua for development) | separate confined app instance | Runs the project in play mode with the project's capabilities only |
+| `export` | C++23 | helper | Packs content, writes the bundle, calls the signer, runs the linter |
 
 ```
- +------------------------ app host (org.pbsd.studio) --------------------------+
- | ForgeScript: hub, panels' view models, action table, journal, wizards       |
- | FUSE UI: docks, viewportWidget ◀── engine frame (GPU image; shm fallback)   |
- +------┬--------------------------┬----------------------┬---------------------+
-        │ EditorCommand records,   │ source + output      │ launch request
-        │ model snapshots          │ handles              │ (through the shell)
-        ▼                          ▼                      ▼
-   studio-engine              cook (no caps)        play-runner = the project as its
-   (project folder rw,                               own confined app instance, with
-    dev.gpu.compute)                                 its own manifest and prompts
-        ▲                                                 │
-        └──────── debug and profile channel (opt-in) ─────┘
+ +---------------- app process: org.pbsd.studio (fuse_editor_fuse, native, confined) ----------------+
+ | UI thread: FUSE UI shell ── EditorController, action table, panel models                         |
+ |      │ posts EditorCommand (handles only)                ▲ viewport image (zero-copy, same device)|
+ |      ▼                                                   │                                        |
+ | game thread: EditorHost::gameTick() ── FUSE engine ── scene host ── job workers                   |
+ | embedded ForgeScript engine: signed editor extensions (editor API only)                           |
+ +------┬--------------------------------┬-------------------------------┬---------------------------+
+        │ source + output handles        │ launch request (shell)        │ pack + sign request
+        ▼                                ▼                               ▼
+   cook (no caps)              play-runner = the project as its     export ── svc.keyring
+                               own confined app instance, with
+                               its own manifest and prompts
+                                         │ frames (surface from the shell), debug channel (opt-in)
+                                         └──────────────▶ back to the Studio viewport
 ```
 
-The upstream boundary already fits this split. Verified: the UI thread only posts `EditorCommand` envelopes; the game thread drains them in `EditorHost::gameTick()`; no raw scene pointers cross, only `fuse::Handle<T>` in payloads (`FUSE:docs/editor.md`). Here the same envelopes become session-bus records between the app host and `studio-engine`. Panel state comes back as model snapshots (hierarchy rows, property lists, asset lists).
+Verified upstream rules that this keeps: the UI thread only posts `EditorCommand` envelopes; the game thread drains them in `EditorHost::gameTick()`; no raw scene pointers cross, only `fuse::Handle<T>` in payloads (`FUSE:docs/editor.md`). The viewport shows the engine frame zero-copy through a `ui_vk` external-texture slot on the adopted device (`FUSE_EDITOR_QT_FIRST_PLAN.md` §11). Nothing is re-implemented in ForgeScript.
 
-Interim option (see 13.1): ship the upstream C++ shell `fuse_editor_fuse` itself, wrapped as the app, before the ForgeScript front end exists.
+Where Studio departs from PLATFORM.md and where it does not:
+
+| Rule | Studio |
+|---|---|
+| App logic in ForgeScript (section 2) | **Exception.** Logic and UI are native C++23. Allowed because the whole app is a wrapped existing engine (ground (d)), by owner decision. |
+| Shared app host (section 4) | The host verifies the bundle and builds the policy as usual, then starts the native entry instead of a script engine (CR04-GAP-5). |
+| Default-deny capabilities, portals, prompts by the shell (section 6) | Unchanged. |
+| Signed, read-only bundle (section 3) | Unchanged; the binary is in the tree hash. |
+| No JIT, no W+X (section 4) | Unchanged; checked on the binary (CR04-W35). |
+| Native code under the safe subset and PRISM (section 2, row 3) | Applies to all of Studio, with the gates the FUSE build plan sets for FUSE code (CR04-W37). |
+| ForgeScript for extension | Used for project scripting and editor extensions (CR04-W12, CR04-W32). |
 
 ### 6.2 Data model
 
@@ -596,21 +613,22 @@ Schema versions: `project.json` carries `schemaVersion`; every Proposed file car
 
 | Format | Read | Write | Library or own code | Parser runs in |
 |---|---|---|---|---|
-| `project.json` | yes | yes | `fuse_project` loader (Verified); ForgeScript writer | `studio-engine`; app host for the hub list |
-| `.fuselevel` worlds | yes | yes | FUSE | `studio-engine` (trusted projects); `cook` for a first check of foreign projects |
+| `project.json` | yes | yes | `fuse_project` loader (Verified) and writer | app process |
+| `.fuselevel` worlds | yes | yes | FUSE | app process; `cook` first for a check of foreign projects |
 | glTF 2.0 / GLB, OBJ | yes | glTF export (phase 3) | FUSE importers; which source formats the mesh cooker accepts today is Unverified beyond the cook tool's usage text | `cook` |
 | FBX | optional | no | Only if a reader with an acceptable licence is chosen | `cook` |
 | PNG, TGA, JPEG, HDR, KTX2 | yes | PNG, EXR (captures) | FUSE cook (Verified list in `fuse_cook.cpp`) | `cook` |
 | WAV, FLAC, Ogg | yes | no | FUSE cook (Verified list) | `cook` |
-| FMSH, `.fusetex`, `.fusemat`, `.fuseaudio`, `.fusecol` | yes | yes | FUSE asset readers and cookers | `cook` writes; `studio-engine` and the runtime read |
-| Lua scripts | run | edit | Lua VM (optional backend, Verified) | `play-runner` only; never in the app host |
-| ForgeScript gameplay scripts | run | edit | FORGE engine embedded as a script backend (Proposed) | `play-runner`; `studio-engine` for editor-time callbacks if enabled |
-| `.fuseui`, CSS | preview | no (DV02 edits) | FUSE UI | `studio-engine` preview |
+| FMSH, `.fusetex`, `.fusemat`, `.fuseaudio`, `.fusecol` | yes | yes | FUSE asset readers and cookers | `cook` writes; the app process and the runtime read |
+| Lua scripts | run | edit | Lua VM (optional backend, Verified) | `play-runner` only; never in the Studio process |
+| ForgeScript project scripts | run | edit | FORGE engine embedded as a script backend (Proposed) | `play-runner` |
+| ForgeScript editor extensions (signed) | run | no | Embedded `forge::script::engine` (Proposed) | app process, narrowed policy |
+| `.fuseui`, CSS | preview | no (DV02 edits) | FUSE UI | app process |
 | NeuralVFX `.nvfxp` | yes | no | `libnvfx` (optional) | `cook` (check), runtime (play) |
 | CSV, Parquet (simulation output) | no | yes | Own CSV; Parquet writer shared with OF09 | `play-runner` writes to the passed handle |
 | App bundle (`.app/`, `SIGNATURES`) | lint | yes | Platform bundle tools (FORGE-WP-09, FORGE-WP-38) | `export` |
-| Editor IPC | — | — | Session-bus schema `org.pbsd.studio.engine.v1` (commands, model snapshots, picking, frames) | both ends validate |
-| Debug and profile channel | — | — | FORGE debugger protocol (FORGE-WP-36) plus an engine profile stream | `play-runner` ↔ app host, opt-in per run |
+| Helper IPC | — | — | Session-bus schemas `org.pbsd.studio.cook.v1` and `.export.v1` (jobs, progress, reports) | both ends validate |
+| Debug and profile channel | — | — | FORGE debugger protocol (FORGE-WP-36) plus an engine profile stream | `play-runner` ↔ app process, opt-in per run |
 
 ### 6.4 Integration
 
@@ -654,6 +672,8 @@ Schema versions: `project.json` carries `schemaVersion`; every Proposed file car
 
 ## 7. Security and privacy
 
+Studio is one native process (decision in section 13). It is confined exactly like a ForgeScript app: the app host verifies the bundle signature, compiles the manifest to a policy, and starts the binary already in Capsicum capability mode with only the handles the manifest allows. The difference is inside the process: there is no memory-safe interpreter between hostile data and the app's handles, so the safe-subset and PRISM gates of section 11 and the restricted-project rules below carry that weight.
+
 Capabilities requested by Studio itself:
 
 | Capability | Reason |
@@ -661,10 +681,9 @@ Capabilities requested by Studio itself:
 | `fs.app` | Settings, templates, hub list, caches |
 | `fs.portal` | Project folders (remembered grants), imports, export destinations |
 | `net.none` | Studio has no network use |
-| `proc.helper:studio-engine` | Engine process per project |
 | `proc.helper:cook` | Sandboxed import and cook |
 | `proc.helper:export` | Bundle writing |
-| `dev.gpu.compute` | Viewport rendering and compute kernels in the engine helper |
+| `dev.gpu.compute` | Viewport rendering and compute kernels, in the app process |
 | `svc.intent` | Hand-offs, and the request to the shell to launch a project as a development app |
 | `svc.keyring` | Ask the key service to sign an export; Studio never sees the private key |
 | `svc.audit` | Read the capability log of the project instance Studio launched (only that instance) |
@@ -680,22 +699,26 @@ Not requested: `proc.exec`, any `net.*` beyond `net.none`, `dev.camera`, `dev.mi
 4. The play instance gets read access to the cooked content and scripts of the project and write access to its own `fs.app` area only. It cannot write the project sources.
 5. Its frames come back to the Studio viewport as a surface handed over by the shell; input is forwarded while the viewport has focus.
 6. Everything it uses or is denied lands in `svc.audit`; Studio shows that as the capability log and reuses it in the export review.
-7. A restricted project cannot play at all. Editor-time script callbacks in `studio-engine` are off unless the project is trusted, and even then scripts there run with no capabilities.
-8. "Play in editor process" (upstream's in-process play) is kept only for trusted projects with no scripts or with scripts confined to no capabilities, as a fast path. It is a setting, default off on this OS.
+7. A restricted project cannot play at all. Project scripts never run inside the Studio process: editor-time script callbacks are off on this OS.
+8. In-process play (upstream's behaviour) is kept only for trusted projects with no scripts, as a fast path. It is a setting, default off.
 
 **Assets:** project sources and unreleased content, the developer's signing key, the user's other files, the user's trust in exported bundles.
 
-**Adversaries:** a downloaded project or template (scripts, crafted assets, crafted world files, a manifest that asks for too much); a crafted asset file; a hostile editor script; a compromised dependency inside a project; a game under test that tries to reach beyond its declaration.
+**Adversaries:** a downloaded project or template (scripts, crafted assets, crafted world files, a manifest that asks for too much); a crafted asset file; a hostile editor extension; a compromised dependency inside a project; a game under test that tries to reach beyond its declaration.
+
+**What a compromise of the Studio process could reach:** the project folders the user granted (read and write), the GPU, Studio's own data, a request to the key service, a request to launch a development app. It could not reach other files, the network, devices or other apps.
 
 | Surface | Mitigation |
 |---|---|
-| Source asset parsers (meshes, images, audio) | Only in `cook`, no capabilities, one job per process, time and memory limits. |
-| World and project files from elsewhere | Projects from elsewhere open Restricted. World files are first checked in `cook` before `studio-engine` loads them. `studio-engine` holds only the project folder and the GPU. |
-| Gameplay scripts | Run only in the play instance under the project's policy. ForgeScript must be signed for export; bytecode only, no native code (Verified: `FORGE:script/src/runtime.cpp:729-730`, `script/src/vm.cpp:220-229`). Lua projects are allowed for development; export of Lua projects needs an owner decision (13.4). |
-| Editor scripts | Signed ForgeScript only, narrowed to the editor API. |
+| Source asset parsers (meshes, images, audio) | Only in `cook`: no capabilities, one job per process, time and memory limits. The app process reads only cooked formats written by `cook`. |
+| World, prefab and project files from elsewhere | Parsed in the app process, so this is the main surface. Projects from elsewhere open Restricted; their files are first checked in `cook` (structure, sizes, references) before the app loads them; the loaders are T2 targets and fuzzed. |
+| Memory-safety bugs in native editor and engine code | Safe-subset check and PRISM gates before release (CR04-W37); handles instead of raw pointers across threads (Verified upstream rule); W^X, ASLR and the hardened allocator of the OS; capability mode limits the damage. |
+| Signing misuse by a compromised Studio | The key service shows its own confirmation with the bundle id and hash for every signature; Studio cannot sign silently. |
+| Project scripts | Run only in the play instance under the project's policy. ForgeScript must be signed for export; bytecode only, no native code (Verified: `FORGE:script/src/runtime.cpp:729-730`, `script/src/vm.cpp:220-229`). Lua projects are allowed for development; export of Lua projects needs an owner decision (13.4). |
+| Editor extensions | Signed ForgeScript only, run by an embedded FORGE engine in the app with a policy narrowed to the editor API: no `fs`, `net`, `proc` or `env`. |
 | Native plugins | None. The engine's quarantined compatibility script VMs (`fuse_compat_ts*`) are never built into Studio or exports; upstream forces them off in shipping builds (Verified, `FUSE:docs/modules.md`). |
 | Export | Capability review step; linter; signature by the key service; reproducible manifest with hashes. An exported bundle contains no editor code. |
-| GPU | Engine shaders come from the signed Studio bundle or the project's cooked materials; user shader source (material graphs) is compiled by the engine's own compiler inside `cook`. |
+| GPU | Engine shaders come from the signed Studio bundle or the project's cooked materials; user shader source (material graphs) is compiled inside `cook`. |
 | Samples and templates | Shipped signed and read-only. |
 
 **Stored:** projects where the user keeps them; hub list as portal tokens; no personal data in exports unless typed. **Leaves the machine:** nothing from Studio. A game under test may use the network only if it declared it and the user granted it.
@@ -751,78 +774,86 @@ Not requested: `proc.exec`, any `net.*` beyond `net.none`, `dev.camera`, `dev.mi
 | UI frame while hovering | ≤ 16.7 ms (upstream reports 1.5 ms on Linux for its hover-frame gate; not measured on this OS) |
 | Idle | 0 UI frames; the engine renders no frame when nothing changes (upstream behaviour) |
 | Viewport frame, edit mode | ≤ 16.7 ms on the reference GPU for the reference world |
-| Viewport frame hand-off (engine → UI) | 0 copies with CR04-GAP-1; ≤ 2 ms at 1080p with the shared-memory fallback |
-| Edit command round trip (UI → engine → model snapshot) | ≤ 8 ms |
+| Viewport frame hand-off | Editor: 0 copies (same process, same device). Play instance: 0 copies with CR04-GAP-1; ≤ 2 ms at 1080p with the shared-memory fallback |
+| Edit command applied (UI post → game-thread drain → panel update) | ≤ 1 frame |
 | Hierarchy | 100 000 entities virtualised; filter results in ≤ 100 ms |
 | Import and cook of a 100 MiB glTF | Progress within 200 ms; UI never blocks |
 | Play start | ≤ 1.5 s from key press to first game frame |
-| Engine crash to restored viewport | ≤ 3 s |
-| Memory | App host ≤ 250 MiB; engine helper depends on the world |
+| Restart after a crash to restored world | ≤ 5 s for the reference world |
+| Memory | ≤ 400 MiB with an empty project; beyond that it depends on the world |
 | Export of a 1 GiB project | ≤ 2 min when the cook cache is warm |
 
 ## 11. Testing and proof
 
 Nothing below has run for this app. Upstream gates are cited as existing, not as results obtained here.
 
-- **Reuse of upstream gates:** the 45 `fuse_editor_ui` gates and the `fuse_editor_panel_models` and `fuse_editor_controller_api` suites (Verified to exist) are the base. They must first be made to run on HardenedBSD (G-18).
-- **Unit (ForgeScript):** hub list, trust state machine, journal and replay, export preset handling, capability diff (declared against used).
-- **IPC conformance:** every `EditorCommand` type round-trips through the session-bus schema; the engine rejects malformed records.
-- **Golden renders:** each dock and dialog at scale 1, 1.5, 2 in three themes; viewport overlays (gizmo, bounds, navmesh).
+- **Upstream gates, used directly:** the 45 `fuse_editor_ui` gates and the `fuse_editor_panel_models` and `fuse_editor_controller_api` suites (Verified to exist) test the very binary Studio ships. They must first run on HardenedBSD (G-18).
+- **Confinement tests:** start Studio under its manifest policy and check that it opens no path, socket or device outside its handles; every file action goes through the portal; no writable-executable mapping exists at any time.
+- **Unit (C++):** hub list, trust state machine, journal and replay, export preset handling, capability diff (declared against used).
+- **Golden renders:** each dock and dialog at scale 1, 1.5, 2 in the system themes; viewport overlays (gizmo, bounds, navmesh).
 - **Scripted UI through the a11y tree:** the 14 top tasks, including Play and Stop restoring the world byte for byte.
-- **Fuzz:** every importer in `cook`; `.fuselevel` and `project.json` loaders; prefab, sequence and graph JSON; the IPC decoders.
+- **Fuzz:** every importer in `cook`; the `.fuselevel` and `project.json` loaders (these also run in the app process, so they get the longest fuzz budget); prefab, sequence and graph JSON; the play-instance debug channel decoder.
 - **Sandbox tests:** a test project whose scripts try to read outside `fs.app`, open sockets, start processes and use devices without declaring them; each attempt must be denied and logged. A crafted asset set must not escape `cook`.
-- **Crash tests:** kill `studio-engine` during edits and during save; no edit older than the last journal flush is lost.
+- **Crash tests:** kill Studio during edits and during save; on restart no edit older than the last journal flush is lost.
 - **Export tests:** the bundle passes the linter, verifies its signatures, runs with only declared capabilities, and two exports of the same inputs are byte-identical.
 - **Determinism:** a simulation run with single-thread jobs and a fixed seed gives identical recorder output twice.
 
+Because Studio is a native app, its own code carries the proof burden that ForgeScript would otherwise remove. All Studio and FUSE code in the app process must pass the MathScript safe-subset check and the PRISM gates that the FUSE build plan sets for FUSE code before a release is signed.
+
 | Module | Property | Target tier | How it would be checked | What blocks a higher tier |
 |---|---|---|---|---|
+| Editor shell and controller (`EditorShell/Fuse`, `Controller`) | Safe subset; no runtime errors in command handling | T3, T2 for the command queue and undo stack | Subset check, PRISM job, sanitizers, the UI gates | Size of the shell; UI code is hard to specify |
+| `EditorHost` command drain | Every command is applied once, in order, on the game thread | T2 | PRISM on the queue; model check of the post/drain protocol | Whole-engine concurrency |
+| `.fuselevel` and `project.json` loaders (in the app process) | No out-of-bounds read or unchecked index on any input | T2 | PRISM plus fuzzing | — |
 | Edit journal and replay | Replay reproduces the same world hash | T3 | Property tests | Engine state is too large for proof now |
-| IPC decoders (both ends) | No runtime errors on any input | T2 | PRISM plus fuzzing | — |
 | Manifest draft → policy for play runs | Policy never exceeds the manifest | T1 | Covered by the platform compiler's own proof target (FORGE-WP-08) | Depends on that work |
-| Capability diff (declared vs used) | Sound: never reports unused when used | T3 | Tests | ForgeScript has no prover yet |
+| Capability diff (declared vs used) | Sound: never reports unused when used | T2 | PRISM on the small pure module | — |
 | `cook` parsers | Contained; own parsers free of out-of-bounds reads | T2 for own code, T4 for third-party readers | PRISM, fuzzing, sandbox tests | Third-party code outside the subset |
 | Handle maps (`fuse::Handle<T>`, generation checks) | No use of a stale handle | T2 | PRISM on the handle module | Upstream code must first pass the safe-subset check (Unverified) |
 | Navigation grid A* | Path is shortest in steps; deterministic | T1 | Proof on the small pure module | — |
-| Engine at large (renderer, physics, jobs) | No sanitizer findings on the gate suite | T3 | ASan/UBSan runs (upstream sets this bar in its roadmap) | Size and concurrency |
-| Lua VM | Contained | T4 | Sandbox only | C code outside the subset |
+| Engine at large (renderer, physics, jobs) | Safe subset; no sanitizer findings on the gate suite | T3 | Subset check, ASan/UBSan runs (upstream sets this bar in its roadmap) | Size and concurrency |
+| Embedded ForgeScript engine (extensions) and its host bindings | Bindings validate every argument; scripts cannot reach beyond the editor API | T3, T2 for the binding layer | PRISM on bindings; language guarantees | FORGE's own tiers |
+| Lua VM | Contained in the play instance; never in the Studio process | T4 | Sandbox only | C code outside the subset |
 | Bundle writer | Output matches the bundle schema; signatures verify | T2 | PRISM plus round-trip tests | — |
 
 ## 12. Build plan
 
-### Phase 1 — the upstream shell's feature set, as an app on this OS
+IDs are stable. CR04-W03, W05 and W06 (a `studio-engine` helper and a ForgeScript re-implementation of the editor chrome) are retired by the decision in section 13 and are not reused. New items start at W34.
+
+### Phase 1 — the upstream shell, bundled and confined as an app on this OS
 
 | ID | Work item | Depends on |
 |---|---|---|
-| CR04-W01 | Build FUSE engine, editor API, controller and scene host on HardenedBSD (clang, libc++), offline | G-18, FUSE-WP-01, FUSE-WP-02, FUSE-WP-03 |
+| CR04-W01 | Build FUSE engine, editor API, controller, scene host and `fuse_editor_fuse` on HardenedBSD (clang, libc++), offline | G-18, FUSE-WP-01, FUSE-WP-02, FUSE-WP-03 |
 | CR04-W02 | Engine shaders and Vulkan path on HardenedBSD; decide the shader compiler question | CR04-GAP-4, FUSE-WP-24 |
-| CR04-W03 | `studio-engine` helper: wrap `EditorHost` + controller + scene host behind the session-bus schema | G-08, FORGE-WP-27, FORGE-WP-28, W01 |
-| CR04-W04 | Viewport frame hand-off: shared-memory path first, then zero-copy | CR04-GAP-1, W03 |
-| CR04-W05 | ForgeScript workbench: docks, action table, hub, wizard | G-01, G-02, G-07, FUSE-WP-12, FUSE-WP-14, FUSE-WP-31 |
-| CR04-W06 | Panels on view models: Hierarchy, Inspector, Console, Asset Browser, Material Editor, SDF Sculpt, Profiler, Sequencer, Timeline, Navigation, Terrain, Preferences | W03, W05 |
-| CR04-W07 | Port the upstream UI gates to drive the ForgeScript front end | W06, FORGE-WP-35 |
-| CR04-W08 | `cook` helper around the FUSE tools; import by drag and drop; placeholders on failure | G-06, W01 |
-| CR04-W09 | Edit journal, autosave, engine crash recovery | W03 |
-| CR04-W10 | Project trust states and restricted mode | W05 |
-| CR04-W11 | Play in engine for trusted, script-free projects (interim) | W03 |
+| CR04-W34 | Bundle: package `fuse_editor_fuse` as `org.pbsd.studio` with a native entry, manifest, signed files; app host starts it under the manifest policy | CR04-GAP-5, G-07, FORGE-WP-08, FORGE-WP-09, FORGE-WP-10 |
+| CR04-W35 | Confinement: run in Capsicum capability mode from start; replace direct file access and the built-in `fileDialog` with portal handles; settings through `svc.settings`; no ambient paths; W^X and no-JIT audit of the binary | G-06, G-09, FORGE-WP-04, FUSE-WP-03, W34 |
+| CR04-W36 | Platform integration: Wayland window, system theme tokens and header bar, command palette and shortcut settings fed from the action table, a11y bridge, notifications, intents | G-01, G-04, FUSE-WP-05, FUSE-WP-21, FUSE-WP-29, FUSE-WP-30, W34 |
+| CR04-W37 | Safe-subset and PRISM gates for the editor shell, controller, scene host and the engine libraries Studio links, as the FUSE build plan sets for FUSE code; record tiers per module | FUSE-WP-04, PRISM, MathScript plugin |
+| CR04-W07 | Run the upstream UI gates (`fuse_editor_ui`, panel models, controller) on this OS against the shipped binary; add gates for portal file access | W01, W35 |
+| CR04-W08 | `cook` helper around the FUSE tools; import by drag and drop; placeholders on failure | G-06, FORGE-WP-27, FORGE-WP-28, W01 |
+| CR04-W09 | Edit journal, autosave, restore after a crash of the app | W34 |
+| CR04-W10 | Project trust states and restricted mode; pre-check of foreign worlds in `cook` | W08, W34 |
+| CR04-W11 | In-process play for trusted, script-free projects (interim, upstream behaviour) | W34 |
 
 ### Phase 2 — the complete editor
 
 | ID | Work item | Depends on |
 |---|---|---|
-| CR04-W12 | ForgeScript gameplay backend for `ScriptVM`; engine API bindings; signed scripts | FORGE-WP-10, FORGE-WP-12, FORGE-WP-14, FORGE-WP-33 |
+| CR04-W12 | ForgeScript as the project scripting language: a `ScriptVM` backend, engine API bindings, signed scripts | FORGE-WP-10, FORGE-WP-12, FORGE-WP-14, FORGE-WP-33 |
 | CR04-W13 | Sandboxed play as a separate confined instance; capability log dock | CR04-GAP-3, FORGE-WP-08, G-09 (`svc.audit`), W12 |
-| CR04-W14 | Export wizard, bundle writer, signing, linter, install hand-off | FORGE-WP-09, FORGE-WP-38, SE04, SY05, W13 |
-| CR04-W15 | Prefabs, layers, tags, multi-edit, typed property editors | W06 |
+| CR04-W04 | Play-instance frames in the Studio viewport: surface handed over by the shell, shared-memory path first, then zero-copy; input forwarding | CR04-GAP-1, W13 |
+| CR04-W14 | Export wizard, bundle writer, signing through the key service, linter, install hand-off | FORGE-WP-09, FORGE-WP-38, SE04, SY05, W13 |
+| CR04-W15 | Prefabs, layers, tags, multi-edit, typed property editors | W34 |
 | CR04-W16 | Import settings, auto re-import, dependencies, provenance, thumbnails | W08 |
-| CR04-W17 | 2D viewport and tools; hybrid view | W04 |
+| CR04-W17 | 2D viewport and tools; hybrid view | W34 |
 | CR04-W18 | Timeline tracks, auto-key, curve dock; skeletal and sprite animation views | FUSE-WP-50 |
-| CR04-W19 | Physics set-up and debug views; audio sources; particle editor | W06 |
+| CR04-W19 | Physics set-up and debug views; audio sources; particle editor | W34 |
 | CR04-W20 | Quick script editor, Problems dock, API reference; DV01 hand-off | FUSE-WP-37, DV01 |
 | CR04-W21 | DV02 and DV03 hand-offs; status badges; text-friendly world, prefab and material files | DV02, DV03 |
 | CR04-W22 | Templates, samples browser, project archive, health check | W10 |
 | CR04-W23 | Profiler detail: flame graph, GPU passes, memory, capture | CR04-GAP-2 |
-| CR04-W24 | Lighting, GI and post panels; terrain brushes and heightmap I/O | W06 |
+| CR04-W24 | Lighting, GI and post panels; terrain brushes and heightmap I/O | W34 |
 
 ### Phase 3 — advanced
 
@@ -835,18 +866,22 @@ Nothing below has run for this app. Upstream gates are cited as existing, not as
 | CR04-W29 | World partition tools, foliage, terrain painting, navigation volumes | W24 |
 | CR04-W30 | Cinematic render to image sequence; CR02 hand-off | W18, CR02 |
 | CR04-W31 | NeuralVFX effect packs as assets | NeuralVFX port (Unverified), W16 |
-| CR04-W32 | Editor scripts (signed ForgeScript tools) | W12 |
+| CR04-W32 | ForgeScript as the editor extension language: an embedded engine in the app, the editor API as host bindings, signed tools with a narrowed policy | W12, FORGE-WP-10 |
 | CR04-W33 | Input record and replay; joints; quality presets; environment | W19 |
 
 ## 13. Open questions and risks
 
-1. **Front end in ForgeScript or the upstream C++ shell?** The upstream Qt-free shell is a C++ program. PLATFORM.md says an app is ForgeScript first. This spec plans a ForgeScript front end over the Qt-free controller in a helper. A faster interim is to ship `fuse_editor_fuse` itself as the app's one native process. That breaks the app model (UI in native code, engine and UI in one process, no helper boundary). Owner decision; if taken, mark it as a time-limited exception.
-2. **Process split cost.** Upstream runs UI and engine in one process and shares the frame through an adopted Vulkan device. Splitting adds IPC latency to every gizmo drag and needs CR04-GAP-1. If the latency is felt, picking and gizmo maths stay in the engine and only pointer events cross (planned), but it must be measured.
+**Decided (owner, 12 Nov 2026):** Studio ships FUSE's existing Qt-free C++ editor shell (`fuse_editor_fuse` on `EditorController`) directly as the app. There is no ForgeScript front end and no `studio-engine` helper. Reason: functionality and simplicity; the shell already has the panels and gates. Studio is a documented native-app exception to PLATFORM.md section 2 (section 2 of this spec). Retired by this decision: work items CR04-W03, W05 and W06, and the earlier open question about process-split cost.
+
+1. **Exception must stay narrow.** Studio's own UI and logic are native C++. Every other rule still applies: signed bundle, manifest-derived confinement, no JIT, no W+X, portals for files, safe-subset and PRISM gates. The platform needs a native-entry path in the app host for this (CR04-GAP-5). No other app should use it without its own owner decision.
+2. **One process holds the editor and the engine.** A memory-safety bug in the engine while it loads a hostile world is a bug in the whole app. Mitigations are in section 7 (restricted projects, pre-check in `cook`, capability mode, gates). There is no automatic engine restart; a crash closes the window and the journal restores the work.
 3. **Development launch (CR04-GAP-3)** is new platform work: the shell must run an unsigned or developer-signed bundle as a confined app, clearly marked, for the developer only. Without it, sandboxed play cannot honour "the project's declared capabilities".
-4. **Lua.** It is the only real script backend upstream today and is C code. For development it runs confined in the play instance. Whether exported bundles may contain a Lua VM and unsigned Lua (against "signed ForgeScript" for app logic) needs a decision. Proposal: ForgeScript only for export on this OS.
-5. **ForgeScript as a gameplay language** is Proposed. Per-frame script cost without JIT may be too high for heavy game logic; the rule "script is glue, not the kernel" (upstream) helps, and heavy logic belongs in engine modules.
-6. **Engine on HardenedBSD** is Unverified end to end: Vulkan drivers, the shader toolchain (CR04-GAP-4), fibers under hardening, CUDA is not expected. The software viewport fallback exists upstream.
-7. **Games as app bundles.** PLATFORM.md section 3 expects `main.fs` plus helpers. A game is mostly a native runtime helper plus content. The bundle format must allow a large signed content pack and a runtime helper per game, or a shared system runtime. Decide with FORGE-WP-09.
+4. **Lua.** It is the only real script backend upstream today and is C code. For development it runs confined in the play instance. Whether exported bundles may contain a Lua VM and unsigned Lua needs a decision. Proposal: ForgeScript only for export on this OS.
+5. **ForgeScript as the project scripting and extension language** is Proposed. Per-frame script cost without JIT may be too high for heavy game logic; the upstream rule "script is glue, not the kernel" helps, and heavy logic belongs in engine modules.
+6. **Engine on HardenedBSD** is Unverified end to end: Vulkan drivers, the shader toolchain (CR04-GAP-4), fibers under hardening; CUDA is not expected. The software viewport fallback exists upstream.
+7. **Games as app bundles.** PLATFORM.md section 3 expects `main.fs` plus helpers. A game is mostly a native runtime plus content. The bundle format must allow a large signed content pack and a runtime per game, or a shared system runtime. Decide with FORGE-WP-09 and CR04-GAP-5.
 8. **Upstream documents disagree** on editor status (roadmap against editor plan). Before planning from the feature table, run the upstream gates and record which pass on this OS.
 9. **Scope.** The feature table describes a complete engine editor. Many rows marked N depend on engine features that are scaffolding upstream (physics detail, animation, net). Editor work must follow the engine, not lead it.
-10. **Third-party asset formats.** FBX has no open specification; glTF is the supported interchange format. Which source formats the mesh importer accepts today was not established here.
+10. **Safe-subset distance.** How much of the editor shell, controller and engine already passes MathScript's subset check and PRISM is Unverified. The gate work (CR04-W37) may be large; it decides when Studio can ship.
+11. **Look and behaviour.** The upstream shell has its own theme tokens and builds chrome from C++, not `.fuseui`. It must adopt the system tokens, header bar, command palette and shortcut settings (CR04-W36) or it will not match the suite.
+12. **Third-party asset formats.** FBX has no open specification; glTF is the supported interchange format. Which source formats the mesh importer accepts today was not established here.
