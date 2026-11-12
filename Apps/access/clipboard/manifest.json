@@ -1,0 +1,52 @@
+{
+  "id": "org.pbsd.clipboard",
+  "name": "Clipboard",
+  "version": "0.1.0",
+  "category": "access",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "net.route:clear",
+    "proc.helper:clipboard-service",
+    "proc.helper:html-helper",
+    "proc.helper:sync-helper",
+    "svc.clipboard",
+    "svc.clipboard:manage",
+    "svc.a11y",
+    "svc.a11y:track",
+    "svc.a11y:act.paste",
+    "svc.input-method",
+    "svc.keyring",
+    "svc.settings",
+    "svc.notify",
+    "svc.audit",
+    "svc.intent",
+    "svc.thumbnail",
+    "svc.backup",
+    "svc.portal.file",
+    "bg.run",
+    "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "clipboard-service", "language": "c++23", "capabilities": ["fs.app", "svc.keyring", "svc.audit"]},
+    {"name": "html-helper", "language": "c++23", "capabilities": []},
+    {"name": "sync-helper", "language": "c++23", "capabilities": ["net.user", "net.route:clear"]}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["application/json"],
+    "export": ["application/json"]
+  },
+  "intents": {"handles": ["view", "pick"], "emits": ["open", "edit", "search"]},
+  "url_schemes": [],
+  "services_provided": ["svc.clipboard", "clipboard.popup", "clipboard.paste_plain", "clipboard.paste_slot"],
+  "background": {"autostart": true, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.input-methods >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE", "odin-loki/FORGE"],
+  "priority": "P2"
+}
