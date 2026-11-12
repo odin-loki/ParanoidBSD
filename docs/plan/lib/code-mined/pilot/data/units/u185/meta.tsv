@@ -1,0 +1,1 @@
+185	snd_seq_delete_port	list-op	scalar	/home/odin/pbsd-ref/linux/sound/core/seq/seq_ports.c	264-284	9629ce502ffbee55	87fd772629980274	4c210645a258c152	ok

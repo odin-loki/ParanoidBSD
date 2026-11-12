@@ -1,0 +1,1 @@
+/*@ requires two_layer_capable == 0 || num_pbes <= MAX_PBES_TWO_LAYER; ensures \result == 0; */

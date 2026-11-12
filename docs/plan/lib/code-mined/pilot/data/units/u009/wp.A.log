@@ -1,0 +1,22 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:19: Warning: 
+  Calling undeclared function skl_get_dimm_size. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:29: Warning: 
+  Calling undeclared function MISSING_CASE. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:19: Warning: 
+  Neither code nor specification for function skl_get_dimm_size, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:29: Warning: 
+  Neither code nor specification for function MISSING_CASE, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 6 goals scheduled
+[wp] [Cache] updated:3
+[wp] Proved goals:    6 / 6
+  Qed:               5 (0.94ms)
+  Alt-Ergo 2.6.4:    1 (60ms)
+[wp:pedantic-assigns] unit.final.c:17: Warning: 
+  No 'assigns' specification for function 'skl_get_dimm_width'.
+  Callers assumptions might be imprecise.

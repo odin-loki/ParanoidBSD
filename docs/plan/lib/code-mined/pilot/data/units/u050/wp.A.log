@@ -1,0 +1,16 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 7 goals scheduled
+[wp] [Timeout] typed_addcarryx_u26_assert_4 (Qed 5ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_addcarryx_u26_assert_3 (Qed 5ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:18
+[wp] Proved goals:    7 / 9
+  Terminating:       1
+  Unreachable:       1
+  Qed:               1 (3ms-4ms-9ms)
+  Alt-Ergo 2.6.4:    4 (25ms-75ms-179ms)
+  Timeout:           2
+[wp:pedantic-assigns] unit.final.c:5: Warning: 
+  No 'assigns' specification for function 'addcarryx_u26'.
+  Callers assumptions might be imprecise.

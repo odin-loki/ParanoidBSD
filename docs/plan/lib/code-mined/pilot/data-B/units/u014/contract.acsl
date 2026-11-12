@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == max_sockaddr_size && \result > 0; */

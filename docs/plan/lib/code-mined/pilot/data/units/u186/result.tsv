@@ -1,0 +1,1 @@
+186	irdma_ieq_create_pbufl	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	19.9	unresolved symbol: ENOBUFS (macro with 6 different definitions in the headers)	

@@ -1,0 +1,55 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:57: Warning: 
+  Calling undeclared function vector_str_init. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:59: Warning: 
+  Calling undeclared function vector_str_push. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:59: Warning: 
+  Calling undeclared function strlen. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:75: Warning: 
+  Calling undeclared function cpp_demangle_push_str. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:80: Warning: 
+  Calling undeclared function cpp_demangle_push_subst_v. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:156: Warning: 
+  Calling undeclared function malloc. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:158: Warning: 
+  Calling undeclared function snprintf. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:162: Warning: 
+  Calling undeclared function free. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:289: Warning: 
+  Calling undeclared function vector_str_dest. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:57: Warning: 
+  Neither code nor specification for function vector_str_init, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:59: Warning: 
+  Neither code nor specification for function vector_str_push, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:59: Warning: 
+  Neither code nor specification for function strlen, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:75: Warning: 
+  Neither code nor specification for function cpp_demangle_push_str, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:80: Warning: 
+  Neither code nor specification for function cpp_demangle_push_subst_v,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:156: Warning: 
+  Neither code nor specification for function malloc, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:158: Warning: 
+  Neither code nor specification for function snprintf, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:162: Warning: 
+  Neither code nor specification for function free, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:289: Warning: 
+  Neither code nor specification for function vector_str_dest, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] unit.final.c:177: User Error: Invalid infinite range buf_1+(0..)
+[kernel] Plug-in wp aborted: invalid user input.

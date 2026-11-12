@@ -1,0 +1,1 @@
+17	mt8192_dai_i2s_set_priv	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	21.7	unresolved symbol: mt8192_i2s_priv (not a one-line #define: enum constant, variable or function from a header)	

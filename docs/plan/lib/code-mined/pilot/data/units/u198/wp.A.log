@@ -1,0 +1,16 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 5 goals scheduled
+[wp] [Timeout] typed_vmx_ctl_allows_zero_setting_assert_2 (Qed 1ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_vmx_ctl_allows_zero_setting_ensures (Qed 5ms) (Alt-Ergo) (Cached)
+[wp] [Cache] updated:12
+[wp] Proved goals:    5 / 7
+  Terminating:       1
+  Unreachable:       1
+  Qed:               1 (1ms-2ms-5ms)
+  Alt-Ergo 2.6.4:    2 (32ms-37ms)
+  Timeout:           2
+[wp:pedantic-assigns] unit.final.c:4: Warning: 
+  No 'assigns' specification for function 'vmx_ctl_allows_zero_setting'.
+  Callers assumptions might be imprecise.

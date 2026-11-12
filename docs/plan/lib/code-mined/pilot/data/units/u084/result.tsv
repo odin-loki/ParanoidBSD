@@ -1,0 +1,1 @@
+84	mm_put_stat	error-path	scalar	UNBUILT	none	1	-	-	-	-	-	29.6	unresolved symbol: EMSGSIZE (macro with 7 different definitions in the headers)	ETHTOOL_STAT_NOT_SET,

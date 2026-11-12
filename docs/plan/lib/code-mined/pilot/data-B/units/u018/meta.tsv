@@ -1,0 +1,1 @@
+18	emu_dspmixer_init	init-teardown	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/sound/pci/emu10kx-pcm.c	200-252	b2038f55b67497b2	c9f4dfc0274894f4	4c210645a258c152	ok

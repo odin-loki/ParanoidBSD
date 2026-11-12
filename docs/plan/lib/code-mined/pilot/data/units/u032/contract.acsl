@@ -1,0 +1,1 @@
+/*@ requires 0 <= xcvr <= 4294967295; ensures (xcvr == 0 ==> \result == PORT_NONE) && ((xcvr & 7) == FUN_XCVR_BASET ==> \result == PORT_TP) && ((xcvr & 7) == FUN_XCVR_CU ==> \result == PORT_DA) && (xcvr != 0 && (xcvr & 7) != FUN_XCVR_BASET && (xcvr & 7) != FUN_XCVR_CU ==> \result == PORT_FIBRE); */

@@ -1,0 +1,31 @@
+2026-11-12 13:09:51 alive=no proved-phase=0/200 annotated=0 spent_usd= last: 
+2026-11-12 13:09:51 runner died; restarting (1)
+2026-11-12 13:09:51 runner started (pid 2244303)
+2026-11-12 13:10:29 runner started (pid 2264472)
+2026-11-12 13:10:29 alive=yes proved-phase=0/200 annotated=0 spent_usd= last: 2026-11-12 13:10:29 pilot run start: 60 units, P_prove=8 P_annot=14
+2026-11-12 13:10:52 alive=yes proved-phase=9/200 annotated=0 spent_usd= last: 2026-11-12 13:10:41 phase 1: 60 units to prove
+2026-11-12 13:11:30 alive=yes proved-phase=35/200 annotated=0 spent_usd= last: 2026-11-12 13:10:41 phase 1: 60 units to prove
+2026-11-12 13:11:54 alive=yes proved-phase=49/200 annotated=0 spent_usd= last: 2026-11-12 13:10:41 phase 1: 60 units to prove
+2026-11-12 13:12:30 alive=yes proved-phase=60/200 annotated=0 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:12:55 alive=yes proved-phase=60/200 annotated=0 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:13:31 alive=yes proved-phase=60/200 annotated=1 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:13:55 alive=yes proved-phase=60/200 annotated=1 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:14:31 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:14:56 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:15:32 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:15:56 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:16:32 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:16:57 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:17:33 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:17:57 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:18:33 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:18:57 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:19:34 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:19:58 alive=yes proved-phase=60/200 annotated=3 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:20:34 alive=yes proved-phase=60/200 annotated=4 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:20:58 alive=yes proved-phase=60/200 annotated=4 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:21:35 alive=yes proved-phase=60/200 annotated=4 spent_usd= last: 2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:21:59 alive=no proved-phase=60/200 annotated=5 spent_usd= last: 2026-11-12 13:21:47 phase 3 done
+2026-11-12 13:21:59 DONE
+2026-11-12 13:22:36 alive=no proved-phase=60/200 annotated=5 spent_usd= last: 2026-11-12 13:21:47 phase 3 done
+2026-11-12 13:22:36 DONE

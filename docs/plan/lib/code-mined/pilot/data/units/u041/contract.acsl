@@ -1,0 +1,1 @@
+/*@ requires \valid_read(t); ensures \result == 0 || \result == 1; */

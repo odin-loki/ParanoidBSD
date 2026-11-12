@@ -1,0 +1,1 @@
+/*@ requires max >= 1; ensures KillRingMax == max; */

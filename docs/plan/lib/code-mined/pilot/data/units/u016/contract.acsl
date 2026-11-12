@@ -1,0 +1,1 @@
+/*@ requires true; ensures -2 <= \result && \result <= 37; */

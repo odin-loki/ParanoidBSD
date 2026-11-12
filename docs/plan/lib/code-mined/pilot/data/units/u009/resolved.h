@@ -1,0 +1,10 @@
+#undef SKL_DRAM_WIDTH_MASK
+#define SKL_DRAM_WIDTH_MASK			(0x3 << 8)
+#undef SKL_DRAM_WIDTH_SHIFT
+#define SKL_DRAM_WIDTH_SHIFT			8
+#undef SKL_DRAM_WIDTH_X8
+#define SKL_DRAM_WIDTH_X8			(0x0 << 8)
+#undef SKL_DRAM_WIDTH_X16
+#define SKL_DRAM_WIDTH_X16			(0x1 << 8)
+#undef SKL_DRAM_WIDTH_X32
+#define SKL_DRAM_WIDTH_X32			(0x2 << 8)

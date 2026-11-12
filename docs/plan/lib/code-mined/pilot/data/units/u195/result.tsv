@@ -1,0 +1,1 @@
+195	wps_fix_config_methods	bitmask	scalar	UNBUILT	none	6	-	-	-	-	-	74.7	unresolved symbol: MSG_INFO (macro with 2 different definitions in the headers)	WPS_CONFIG_VIRT_DISPLAY,WPS_CONFIG_VIRT_PUSHBUTTON,WPS_CONFIG_PUSHBUTTON,WPS_CONFIG_PHY_PUSHBUTTON,WPS_CONFIG_DISPLAY,WPS_CONFIG_PHY_DISPLAY,

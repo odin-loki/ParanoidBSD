@@ -1,0 +1,1 @@
+28	lapic_calibrate_initcount_cpuid_vm	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/x86/x86/local_apic.c	1060-1087	a82dcf8cb88abc21	7c9fb996bb1fa5c4	4c210645a258c152	ok

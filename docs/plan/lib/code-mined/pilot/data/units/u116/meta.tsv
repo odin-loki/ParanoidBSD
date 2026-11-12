@@ -1,0 +1,1 @@
+116	rcu_torture_read_lock_trivial	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/kernel/rcu/rcutorture.c	989-993	13cf23798d0410cf	5d62722f245ef2e7	4c210645a258c152	ok

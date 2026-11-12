@@ -1,0 +1,1 @@
+33	hostapd_get_nr_chan_width	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	17.8	unresolved symbol: NR_CHAN_WIDTH_20 (not a one-line #define: enum constant, variable or function from a header)	

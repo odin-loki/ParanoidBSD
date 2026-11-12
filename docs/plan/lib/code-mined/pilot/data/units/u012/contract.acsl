@@ -1,0 +1,1 @@
+/*@ requires g_rng_state != 0; ensures -2147483648 <= \result && \result <= 2147483647; */

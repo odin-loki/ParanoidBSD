@@ -6,12 +6,13 @@ R=$OUTD/results.tsv; : >"$R"
 for d in "$U"/u*; do
   [ -f "$d/result.tsv" ] || continue
   IFS=$'\t' read -r N name kind cls st level nres ap at bp bt vac secs cause resolved <"$d/result.tsv"
+  if [ "$st" = FAILED ]; then cause="contract not proved; solver timeout"; awk -f "$HERE/has_loop.awk" "$d/fn.c" && cause="contract not proved (function has a loop; needs loop invariants); solver timeout"; fi
   an="-	-	0	0	0	0	0"; [ -f "$d/annot.tsv" ] && an=$(cut -f2- "$d/annot.tsv")
   asecs=$(echo "$an" | cut -f7); tot=$(awk -v a="$secs" -v b="${asecs:-0}" 'BEGIN{printf "%.1f", a+b}')
   # label per SELLABLE_PLAN section 1: PROVED needs nothing assumed beyond the stated contract; names resolved from other headers or a pointer precondition make it PROVED-ASSUMING
   label="not-proved"; real=$(grep -c . "$d/fn.c" 2>/dev/null)
   sigptr=$(head -3 "$d/fn.c" 2>/dev/null | tr '\n' ' ' | sed -E 's/\{.*//' | grep -c '\*')
-  callees=$(grep -o "specification for function '[^']*'" "$d/wp.A.log" "$d/wp.B.log" 2>/dev/null | sed "s/.*function '//; s/'//" | sort -u | grep -v -x "$name" | wc -l)
+  callees=$( { grep -h -o "Calling undeclared function [A-Za-z0-9_]*" "$d/wp.A.log" "$d/wp.B.log" 2>/dev/null | awk '{print $4}'; grep -h -o "specification for function '[^']*'" "$d/wp.A.log" "$d/wp.B.log" 2>/dev/null | sed "s/.*function '//; s/'//"; } | sort -u | grep -v -x "$name" | wc -l)
   if [ "$st" = PROVED ]; then
     if [ "${nres:-0}" -gt 0 ] || [ "$cls" = ptr ] || [ "$sigptr" -gt 0 ] || [ "$callees" -gt 0 ]; then label=PROVED-ASSUMING; else label=PROVED; fi
   fi
@@ -49,13 +50,16 @@ awk -F'\t' '$5=="not-proved"{c=$13; gsub(/[0-9]+/,"N",c); sub(/unresolved symbol
 echo '```'
 echo "## Wall time per function, seconds (Frama-C WP phases + annotation attempts)"; echo '```'
 echo "all:         $(cut -f22 "$R" | stats)"
+echo "WP phases only (build, A, B, vacuity; no model wait), all:    $(cut -f12 "$R" | stats)"
+echo "WP phases only, built units (level L1/L2):                    $(awk -F'\t' '$7!="none"{print $12}' "$R" | stats)"
+echo "WP phases only, units that did not build:                     $(awk -F'\t' '$7=="none"{print $12}' "$R" | stats)"
 echo "proved:      $(awk -F'\t' '$5 ~ /^PROVED/{print $22}' "$R" | stats)"
 echo "not-proved:  $(awk -F'\t' '$5=="not-proved"{print $22}' "$R" | stats)"
 for k in $(cut -f3 "$R" | sort -u); do echo "$k: $(awk -F'\t' -v k=$k '$3==k{print $22}' "$R" | stats)"; done
 echo '```'
 echo "## Model tokens and USD (GLM-5.3-Flash via Morph; only FAILED functions with a loop/goal left were sent to the model)"
 echo; echo "Functions sent to the model: $(awk -F'\t' '$17>0' "$R" | wc -l), PROVED by that route: $(awk -F'\t' '$16=="PROVED"' "$R" | wc -l)"
-echo "Ledger: $(wc -l <"$D/morph_ledger.tsv") calls (incl. the smoke test); USD at the conservative price $(awk -F'\t' '{s+=$8} END{printf "%.4f", s}' "$D/morph_ledger.tsv"); at Morph's listed price $(awk -F'\t' '{s+=$9} END{printf "%.4f", s}' "$D/morph_ledger.tsv")"
+echo "Ledger: $(wc -l <"${LEDGER:-$D/morph_ledger.tsv}") calls (incl. the smoke test); USD at the conservative price $(awk -F'\t' '{s+=$8} END{printf "%.4f", s}' "${LEDGER:-$D/morph_ledger.tsv}"); at Morph's listed price $(awk -F'\t' '{s+=$9} END{printf "%.4f", s}' "${LEDGER:-$D/morph_ledger.tsv}")"
 echo '```'
 echo "USD per function (conservative price), over ALL sampled functions (most cost 0):  $(awk -F'\t' '{print $19}' "$R" | stats)"
 echo "USD per function, over the functions sent to the model only:                      $(awk -F'\t' '$17>0{print $19}' "$R" | stats)"
@@ -63,5 +67,16 @@ echo "tokens in per sent function:  $(awk -F'\t' '$17>0{print $17}' "$R" | stats
 echo "tokens out per sent function: $(awk -F'\t' '$17>0{print $18}' "$R" | stats)"
 for k in $(cut -f3 "$R" | sort -u); do echo "USD $k (all of kind): $(awk -F'\t' -v k=$k '$3==k{print $19}' "$R" | stats)"; done
 echo '```'
+echo "## Replay of the PROVED units (fresh directory, WP cache off, 60 s per goal, banned-construct scan, contract text equal)"; echo '```'
+cat "$U"/u*/replay.tsv 2>/dev/null | cut -f7 | sort | uniq -c; echo '```'
+echo "## Mutation test of the PROVED units (one operator flipped in the C code, contract unchanged)"; echo '```'
+cat "$U"/u*/mutants.tsv 2>/dev/null | cut -f3 | sort | uniq -c
+echo "by operator:"; cat "$U"/u*/mutants.tsv 2>/dev/null | awk -F'\t' '{print $2, $3}' | sort | uniq -c
+echo "units with at least one mutant: $(for f in "$U"/u*/mutants.tsv; do [ -s "$f" ] && echo x; done | wc -l)"; echo '```'
+echo "## Route (c): GLM writes a Lean model + theorem (units built by WP, not proved, scalar, loop-free)"; echo '```'
+cat "$U"/u*/lean.tsv 2>/dev/null | awk -F'\t' '{n++; s[$3]++; tin+=$5; tout+=$6; usd+=$7; usdl+=$8; t+=$9; a+=$2} END{ for (k in s) print k, s[k]; printf "units %d, attempts %d, tokens in %d, tokens out %d, USD (conservative) %.4f, USD (listed) %.4f, wall seconds per unit mean %.0f\n", n, a, tin, tout, usd, usdl, t/n }'
+echo "USD per unit:   $(cat "$U"/u*/lean.tsv 2>/dev/null | cut -f7 | stats)"
+echo "tokens out per unit: $(cat "$U"/u*/lean.tsv 2>/dev/null | cut -f6 | stats)"
+echo "seconds per unit:    $(cat "$U"/u*/lean.tsv 2>/dev/null | cut -f9 | stats)"; echo '```'
 } >"$OUTD/summary.md"
 cat "$OUTD/summary.md"

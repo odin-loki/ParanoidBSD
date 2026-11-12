@@ -1,0 +1,1 @@
+194	gen8_ggtt_pte_encode	bitmask	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/i915/gt/intel_ggtt.c	280-290	0dd6169fda358f24	d67d9ba809b99de6	4c210645a258c152	ok

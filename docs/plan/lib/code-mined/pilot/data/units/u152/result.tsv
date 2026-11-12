@@ -1,0 +1,1 @@
+152	__ceph_caps_wanted	bitmap	ptr	UNBUILT	none	5	-	-	-	-	-	24.1	unresolved symbol: CEPH_CAP_ANY_DIR_OPS (not a one-line #define: enum constant, variable or function from a header)	CEPH_CAP_FILE_BUFFER,CEPH_CAP_FILE_EXCL,CEPH_CAP_GBUFFER,CEPH_CAP_GEXCL,CEPH_CAP_SFILE,

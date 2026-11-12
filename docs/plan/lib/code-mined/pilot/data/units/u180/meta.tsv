@@ -1,0 +1,1 @@
+180	gpiobus_acquire_child_pins	refcount	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/gpio/gpiobus.c	465-490	25b6b588e6538df6	afb72607f9b3e8b6	4c210645a258c152	ok

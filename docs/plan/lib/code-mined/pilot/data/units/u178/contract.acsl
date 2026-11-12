@@ -1,0 +1,1 @@
+/*@ requires nr_shrink >= 0; ensures \result <= nr_shrink; */

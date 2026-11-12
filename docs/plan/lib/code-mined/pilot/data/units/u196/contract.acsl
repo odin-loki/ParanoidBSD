@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (!(layout & (1 << 16)) && ((layout >> 8) & 0xFF) > 1); */

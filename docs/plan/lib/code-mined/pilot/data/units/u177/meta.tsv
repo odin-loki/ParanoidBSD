@@ -1,0 +1,1 @@
+177	ext4_inode_attach_jinode	refcount	scalar	/home/odin/pbsd-ref/linux/fs/ext4/inode.c	4515-4543	3c80454748426725	8743b41b0882521c	4c210645a258c152	ok

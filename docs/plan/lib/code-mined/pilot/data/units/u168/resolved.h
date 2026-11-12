@@ -1,0 +1,2 @@
+#undef LDC_PACKET_SIZE
+#define LDC_PACKET_SIZE		64

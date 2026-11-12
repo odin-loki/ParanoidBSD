@@ -1,0 +1,1 @@
+/*@ requires mode_edid_bpp > 0; ensures 18 <= \result <= 30 && \result <= mode_edid_bpp; */

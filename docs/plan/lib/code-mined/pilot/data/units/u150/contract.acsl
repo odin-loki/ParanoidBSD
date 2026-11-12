@@ -1,0 +1,1 @@
+/*@ requires pstate >= 0; ensures \result >= 0 && (\result & (1 << WlanIfacePeerFlagsType_authorizedForData)) != 0 <==> (pstate & IEEE80211_NODE_AUTH) != 0; */

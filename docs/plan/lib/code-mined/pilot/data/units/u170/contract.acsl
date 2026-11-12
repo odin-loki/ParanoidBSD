@@ -1,0 +1,1 @@
+/*@ requires \valid_read(p_sb_desc); ensures \result == (\old(p_sb_desc->index) != p_sb_desc->sb_attn->sb_index ? QED_SB_ATT_IDX : 0); ensures p_sb_desc->index == p_sb_desc->sb_attn->sb_index; */

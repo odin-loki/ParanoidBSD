@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (errors == 0 ==> \result == 0) && (errors > 0 ==> \result == -1); */

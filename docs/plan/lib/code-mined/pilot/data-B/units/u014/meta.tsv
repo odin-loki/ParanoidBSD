@@ -1,0 +1,1 @@
+14	krb5_max_sockaddr_size	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/crypto/heimdal/lib/krb5/addr_families.c	948-958	d59a03fbb94542d0	138213fa42adf725	4c210645a258c152	ok

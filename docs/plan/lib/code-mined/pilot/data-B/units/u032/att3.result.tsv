@@ -1,0 +1,1 @@
+32	altera_bits_req	arith-helper	scalar	FAILED	L2	0	12	15	-	-	-	13.5	contract not proved (function has a loop; needs loop invariants); solver timeout	

@@ -1,0 +1,18 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:6: Warning: 
+  Calling undeclared function rng_below. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:6: Warning: 
+  Neither code nor specification for function rng_below, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 12 goals scheduled
+[wp] [Timeout] typed_random_base_ensures_part2 (Qed 2ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_random_base_ensures_part1 (Qed 3ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:6
+[wp] Proved goals:   10 / 12
+  Qed:            10 (2ms-0.42ms-3ms)
+  Timeout:         2
+[wp:pedantic-assigns] unit.final.c:4: Warning: 
+  No 'assigns' specification for function 'random_base'.
+  Callers assumptions might be imprecise.

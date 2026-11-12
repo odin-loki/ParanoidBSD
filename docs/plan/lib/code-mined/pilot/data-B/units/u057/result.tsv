@@ -1,0 +1,1 @@
+57	vfp_double_fsqrt	arith-helper	scalar	UNBUILT	none	1	-	-	-	-	-	29.1	unresolved symbol: vfp_double_default_qnan (not a one-line #define: enum constant, variable or function from a header)	FPSCR_IOC,

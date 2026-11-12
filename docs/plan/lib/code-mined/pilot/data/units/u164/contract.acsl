@@ -1,0 +1,1 @@
+/*@ requires ti_begin <= ti_linestart; ensures \result == ti_linestart - ti_begin; */

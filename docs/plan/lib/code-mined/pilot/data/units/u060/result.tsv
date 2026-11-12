@@ -1,0 +1,1 @@
+60	amiserial_console_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	16.7	unresolved symbol: MACH_IS_AMIGA (macro with 3 different definitions in the headers)	

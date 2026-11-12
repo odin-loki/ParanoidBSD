@@ -1,0 +1,1 @@
+/*@ requires out != \null; ensures (\result == 0 ==> *out != \null) && (\result != 0 ==> *out == \null); */

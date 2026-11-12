@@ -1,0 +1,1 @@
+63	ext4_ext_truncate	init-teardown	scalar	/home/odin/pbsd-ref/linux/fs/ext4/extents.c	4522-4551	bbac832690c2844a	975b661e4f1bf6e0	4c210645a258c152	ok

@@ -1,0 +1,1 @@
+/*@ requires 0 <= type; ensures 0 <= \result && \result <= MINSTREL_SAMPLE_RATES; */

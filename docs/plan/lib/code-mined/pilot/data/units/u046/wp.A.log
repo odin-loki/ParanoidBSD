@@ -1,0 +1,18 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:35: Warning: 
+  Calling undeclared function DIV_ROUND_UP_ULL. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:35: Warning: 
+  Neither code nor specification for function DIV_ROUND_UP_ULL, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 3 goals scheduled
+[wp] [Timeout] typed_omap_usec_to_32k_ensures (Qed 2ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:3
+[wp] Proved goals:    2 / 3
+  Qed:             2 (0.80ms)
+  Timeout:         1
+[wp:pedantic-assigns] unit.final.c:33: Warning: 
+  No 'assigns' specification for function 'omap_usec_to_32k'.
+  Callers assumptions might be imprecise.

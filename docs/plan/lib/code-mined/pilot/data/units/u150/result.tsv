@@ -1,0 +1,1 @@
+150	wlan_peerstate_to_snmp	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	20.3	unresolved symbol: WlanIfacePeerFlagsType_authorizedForData (not a one-line #define: enum constant, variable or function from a header)	

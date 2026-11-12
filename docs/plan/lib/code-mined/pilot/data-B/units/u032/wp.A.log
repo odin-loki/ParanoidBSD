@@ -1,0 +1,18 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 13 goals scheduled
+[wp] [Timeout] typed_altera_bits_req_loop_invariant_4_preserved (Qed 7ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_altera_bits_req_loop_invariant_3_established (Qed 1ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_altera_bits_req_ensures_2 (Qed 7ms) (Alt-Ergo) (Cached)
+[wp] [Cache] updated:19
+[wp] Proved goals:   12 / 15
+  Terminating:       1
+  Unreachable:       1
+  Qed:               6 (1ms-3ms-8ms)
+  Alt-Ergo 2.6.4:    3 (45ms-85ms-157ms)
+  Z3 4.8.12:         1 (597ms)
+  Timeout:           3
+[wp:pedantic-assigns] unit.final.c:15: Warning: 
+  No 'assigns' specification for function 'altera_bits_req'.
+  Callers assumptions might be imprecise.

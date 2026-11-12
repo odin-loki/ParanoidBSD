@@ -1,0 +1,1 @@
+/*@ requires block >= 0; ensures (\result & ~(ATTR_S1_AP_MASK | ATTR_S1_XN | ATTR_S1_IDX_MASK | ATTR_S1_GP)) == 0; */

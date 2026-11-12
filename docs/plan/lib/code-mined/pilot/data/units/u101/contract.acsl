@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((code & RV_INSN_OPCODE_MASK) == RVG_OPCODE_SYSTEM); */

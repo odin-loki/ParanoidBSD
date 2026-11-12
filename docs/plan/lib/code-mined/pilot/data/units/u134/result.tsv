@@ -1,0 +1,1 @@
+134	map_guarded_stack	allocator	scalar	UNBUILT	none	3	-	-	-	-	-	40.3	unresolved symbol: page_size (not a one-line #define: enum constant, variable or function from a header)	SHADOW_STACK_SET_MARKER,SHADOW_STACK_SET_TOKEN,page_size,

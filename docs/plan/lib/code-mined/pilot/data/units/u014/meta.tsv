@@ -1,0 +1,1 @@
+14	lkpi_pci_bar_id_valid	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/compat/linuxkpi/common/src/linux_pci.c	160-167	59183bd2c8820675	270686f0837eb6ec	4c210645a258c152	ok

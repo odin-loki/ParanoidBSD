@@ -1,0 +1,1 @@
+28	lapic_calibrate_initcount_cpuid_vm	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	34.9	unresolved symbol: vm_guest (not a one-line #define: enum constant, variable or function from a header)	

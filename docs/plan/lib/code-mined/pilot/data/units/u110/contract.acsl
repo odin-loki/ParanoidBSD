@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result >= 10 * sizeof(u32); */

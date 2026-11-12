@@ -1,0 +1,1 @@
+/*@ requires m != NULL; ensures \result == 0; */

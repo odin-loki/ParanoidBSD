@@ -1,0 +1,1 @@
+34	wpas_p2p_select_go_freq	arith-helper	scalar	UNBUILT	none	1	-	-	-	-	-	24.4	C++ source (Frama-C reads C only)	P2P_MAX_PREF_CHANNELS,

@@ -1,0 +1,1 @@
+/*@ requires true; ensures 0 < \result.__mantissa && \result.__exponent == __e10 + __removed; */

@@ -1,8 +1,8 @@
 #!/bin/bash
 # export_data.sh   Copy the small, committable evidence of the pilot from /mnt/c/ParanoidBSD/mined-data/pilot into pilot/data/ : sample, toolchain manifest, ledger (no key is ever in it), logs, the per-function result table,
 # and for every unit the files needed to re-check or audit it (contract, extracted function, the exact proved unit, WP logs, model replies, Lean files). The macro index (hundreds of MB) is not copied; its sha256 is in toolchain.txt.
-D=${PILOT_DATA:-/mnt/c/ParanoidBSD/mined-data/pilot}; HERE=$(cd "$(dirname "$0")" && pwd); O=$HERE/data; mkdir -p "$O/units"
-cp "$D/sample.tsv" "$D/toolchain.txt" "$D/morph_ledger.tsv" "$O/" 2>/dev/null
+D=${PILOT_DATA:-/mnt/c/ParanoidBSD/mined-data/pilot}; HERE=$(cd "$(dirname "$0")" && pwd); O=${OUTD:-$HERE/data}; mkdir -p "$O/units"
+cp "$D/sample.tsv" "$D/toolchain.txt" "$O/" 2>/dev/null; cp "${LEDGER:-$D/morph_ledger.tsv}" "$O/morph_ledger.tsv" 2>/dev/null
 for f in run.log watch.log run1.log lean.log; do [ -f "$D/$f" ] && grep -v '^test$' "$D/$f" >"$O/$f"; done
 bash "$HERE/summarize.sh" >/dev/null
 for d in "$D"/units/u*; do

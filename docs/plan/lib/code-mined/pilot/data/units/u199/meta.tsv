@@ -1,0 +1,1 @@
+199	at_xdmac_chan_is_peripheral_xfer	bitmask	scalar	/home/odin/pbsd-ref/linux/drivers/dma/at_xdmac.c	357-360	5e585c3cd4a74b4e	3b6bbbfc7b7e2187	4c210645a258c152	ok

@@ -85,3 +85,7 @@ Time: the PC runs one PRISM prove at a time at about 118 s, so 32,000 functions 
 Not every function can be PROVED: driver glue (322,000 of the reviewed set) depends on hardware and concurrency that the proofs cannot model, so most of it ends BOUNDED or TESTED. A realistic sellable proved tier is the core kinds (about 32,000) plus whatever of the rest passes the T2 policy; the pilot sets the proved share.
 
 Decision rule: run the 200-function pilot (about $10-150), then quote the core tier with its measured price before spending.
+
+## 9. S4 pilot result (12 Nov 2026, measured; replaces the extrapolation in section 8 for the proving cost)
+
+Full report: [pilot/PILOT_REPORT.md](pilot/PILOT_REPORT.md); data and scripts in `pilot/`. 200 core-kind functions (+ 60 loop-bearing): route Frama-C WP, 29 of 200 proved (15 PROVED, 14 PROVED-ASSUMING; all replayed clean), 149 did not build because the mined code needs real kernel headers; GLM proved nothing (0 of 24 loop/assert attempts; 6 Lean theorems, none acceptable as PROVED). Model spend USD 0.55 of the USD 40 cap; about 10 s of CPU and USD 0 of model per proved function. The cost per function in section 8 ($0.05-$0.77) does not apply: the proving cost is compute, not tokens. Open items before the main run are in the report, section 7 (headers per translation unit first).

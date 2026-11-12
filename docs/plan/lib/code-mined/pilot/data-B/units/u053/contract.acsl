@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result <= U32_MAX; ensures ux >> 8 > U16_MAX ==> \result == 0; */

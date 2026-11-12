@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result == PP_PCIEGen1 || \result == PP_PCIEGen2 || \result == PP_PCIEGen3) && ((pcie_link_speed_cap & CAIL_ASIC_PCIE_LINK_SPEED_SUPPORT_MASK) == CAIL_ASIC_PCIE_LINK_SPEED_SUPPORT_GEN3 ==> \result == PP_PCIEGen3); */

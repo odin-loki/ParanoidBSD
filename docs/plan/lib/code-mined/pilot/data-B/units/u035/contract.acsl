@@ -1,0 +1,1 @@
+/*@ requires s >= 0; ensures -1 <= \result <= 0; */

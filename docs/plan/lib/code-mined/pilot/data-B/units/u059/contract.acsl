@@ -1,0 +1,1 @@
+/*@ requires -2147483648 <= i <= 2147483647; ensures (0 <= i < 10000) ==> (\result >= 0 && \result <= 0x9999 && ((\result & 0xf) == i % 10)); ensures (i < 0 || i >= 10000) ==> \result == -1; */

@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result == 1) ==> 0 < count_freq && lapic_timer_divisor <= 128; */

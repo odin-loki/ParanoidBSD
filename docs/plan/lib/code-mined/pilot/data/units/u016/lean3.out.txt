@@ -1,0 +1,9 @@
+lean3.chk.lean:33:40: error: Expected type must not contain free variables
+  -2 ≤ (r40 - 2#32).toInt ∧ (r40 - 2#32).toInt ≤ 37
+
+Hint: Use the `+revert` option to automatically clean up and revert free variables
+lean3.chk.lean:33:40: error: Expected type must not contain free variables
+  -2 ≤ r37.toInt ∧ r37.toInt ≤ 37
+
+Hint: Use the `+revert` option to automatically clean up and revert free variables
+'contract' depends on axioms: [sorryAx]

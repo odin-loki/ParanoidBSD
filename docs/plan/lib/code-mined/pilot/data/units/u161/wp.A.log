@@ -1,0 +1,5 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:298: Warning: 
+  Calling undeclared function unlikely. Old style K&R code?
+[wp] User Error: incorrect argument for option -wp-fct (no function 'nm_prev').
+[kernel] Plug-in wp aborted: invalid user input.

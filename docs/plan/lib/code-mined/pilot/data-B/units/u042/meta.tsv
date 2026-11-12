@@ -1,0 +1,1 @@
+42	ena_clean_tx_irq	ring-buffer	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/amazon/ena/ena_netdev.c	819-906	dd6090d993ef5d34	d8b0ee18ab5485af	4c210645a258c152	ok

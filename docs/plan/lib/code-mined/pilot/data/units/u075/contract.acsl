@@ -1,0 +1,1 @@
+/*@ requires true; ensures (1 <= new_channel <= new_channel <= 14) ==> \result == 0; ensures (new_channel < 1 || new_channel > 14) ==> \result == -EINVAL; */

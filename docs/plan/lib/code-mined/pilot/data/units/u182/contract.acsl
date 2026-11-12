@@ -1,0 +1,1 @@
+/*@ requires non_repr_priv != \null; ensures non_repr_priv->ref_count == \old(non_repr_priv->ref_count) + 1; */

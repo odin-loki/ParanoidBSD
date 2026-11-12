@@ -1,0 +1,1 @@
+78	sk_psock_skb_ingress_self	error-path	scalar	/home/odin/pbsd-ref/linux/net/core/skmsg.c	626-646	be88ac4175197e91	582131c7c678d816	4c210645a258c152	ok

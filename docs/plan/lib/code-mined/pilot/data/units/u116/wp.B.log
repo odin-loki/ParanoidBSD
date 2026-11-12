@@ -1,0 +1,18 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:103: Warning: 
+  Calling undeclared function preempt_disable. Old style K&R code?
+[wp] Running WP plugin...
+[wp] Warning: Skipped RTE guards: unaligned pointers (\aligned not supported)
+[wp] Warning: Skipped RTE guards: invalid function pointer calls (\valid_function not supported)
+[rte:annot] annotating function rcu_torture_read_lock_trivial
+[kernel:annot:missing-spec] unit.final.c:103: Warning: 
+  Neither code nor specification for function preempt_disable, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] 3 goals scheduled
+[wp] [Cache] not used
+[wp] Proved goals:    3 / 3
+  Qed:             3
+[wp:pedantic-assigns] unit.final.c:101: Warning: 
+  No 'assigns' specification for function 'rcu_torture_read_lock_trivial'.
+  Callers assumptions might be imprecise.

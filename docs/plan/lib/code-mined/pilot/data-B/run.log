@@ -1,0 +1,14 @@
+2026-11-12 13:09:51 pilot run start:  units, P_prove=8 P_annot=14
+2026-11-12 13:09:51 phase 1: 0 units to prove
+2026-11-12 13:09:51 phase 1 done: 
+2026-11-12 13:09:51 phase 2: 0 units to annotate
+2026-11-12 13:09:51 phase 2 done; spent  USD (conservative price)
+2026-11-12 13:09:51 phase 3: PRISM cross-check on 0 units
+2026-11-12 13:09:51 phase 3 done
+2026-11-12 13:10:29 pilot run start: 60 units, P_prove=8 P_annot=14
+2026-11-12 13:10:41 phase 1: 60 units to prove
+2026-11-12 13:12:24 phase 1 done:       5 FAILED      55 UNBUILT 
+2026-11-12 13:12:25 phase 2: 5 units to annotate
+2026-11-12 13:21:44 phase 2 done; spent  USD (conservative price)
+2026-11-12 13:21:45 phase 3: PRISM cross-check on 5 units
+2026-11-12 13:21:47 phase 3 done

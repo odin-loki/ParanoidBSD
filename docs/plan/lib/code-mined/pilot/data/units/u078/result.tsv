@@ -1,0 +1,1 @@
+78	sk_psock_skb_ingress_self	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	17.1	unresolved symbol: GFP_ATOMIC (macro with 4 different definitions in the headers)	

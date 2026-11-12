@@ -1,0 +1,1 @@
+27	snd_vortex_new_pcm	init-teardown	scalar	/home/odin/pbsd-ref/linux/sound/pci/au88x0/au88x0_pcm.c	595-682	add8479c1b4f87a3	c37495576c29cbeb	4c210645a258c152	ok

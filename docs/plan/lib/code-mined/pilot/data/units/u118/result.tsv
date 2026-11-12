@@ -1,0 +1,1 @@
+118	arch_irqs_disabled_flags	lock-or-sync	scalar	UNBUILT	none	4	-	-	-	-	-	29.3	unresolved symbol: UL (macro with 2 different definitions in the headers)	X86_EFLAGS_IF,X86_EFLAGS_IF_BIT,_BITUL,_UL,

@@ -1,0 +1,1 @@
+48	dmi_checksum	arith-helper	scalar	FAILED	L2	0	2	3	-	-	-	12.8	contract not proved (function has a loop; needs loop invariants); solver timeout	

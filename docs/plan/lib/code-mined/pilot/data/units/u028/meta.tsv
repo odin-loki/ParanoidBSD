@@ -1,0 +1,1 @@
+28	get_mmcr1_rsq	arith-helper	scalar	/home/odin/pbsd-ref/linux/tools/testing/selftests/powerpc/pmu/sampling_tests/misc.h	120-123	cf0119d4b7d913d6	4bfb265cf00ba0d4	4c210645a258c152	ok

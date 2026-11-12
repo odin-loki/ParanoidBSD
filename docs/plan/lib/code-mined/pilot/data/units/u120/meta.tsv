@@ -1,0 +1,1 @@
+120	_atomic_lock_stub	lock-or-sync	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/lib/libc/gen/_spinlock_stub.c	43-47	aa9d02ba727ae18d	eff7e5d0be521f9f	4c210645a258c152	ok

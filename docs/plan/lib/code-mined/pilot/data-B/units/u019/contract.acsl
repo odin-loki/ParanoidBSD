@@ -1,0 +1,1 @@
+/*@ requires argc >= 0; ensures (\result == 1 || \result == 0) && optind == 1; */

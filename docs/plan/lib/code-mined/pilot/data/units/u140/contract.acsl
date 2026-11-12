@@ -1,0 +1,1 @@
+/*@ requires nelems >= 0 && limit > 0 && size_elems > 0; ensures nelems + 1 <= *psize; */

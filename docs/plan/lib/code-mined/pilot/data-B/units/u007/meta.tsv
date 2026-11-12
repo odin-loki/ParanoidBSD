@@ -1,0 +1,1 @@
+7	parse_amd_iommu_intr	parser	scalar	/home/odin/pbsd-ref/linux/drivers/iommu/amd/init.c	3731-3744	9ef9df91cf556cc3	9513ad14b3a96457	4c210645a258c152	ok

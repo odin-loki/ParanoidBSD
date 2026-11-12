@@ -1,0 +1,1 @@
+61	mlx5e_ethtool_alloc	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/mellanox/mlx5/core/en/fs_ethtool.h	23-24	aa9d02ba727ae18d	8362c80d62755c9b	4c210645a258c152	ok

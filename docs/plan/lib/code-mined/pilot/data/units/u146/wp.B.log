@@ -1,0 +1,22 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:15: Warning: 
+  Calling undeclared function to_ndev_ntb. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:17: Warning: 
+  Calling undeclared function idt_nt_write. Old style K&R code?
+[wp] Running WP plugin...
+[wp] Warning: Skipped RTE guards: unaligned pointers (\aligned not supported)
+[wp] Warning: Skipped RTE guards: invalid function pointer calls (\valid_function not supported)
+[rte:annot] annotating function idt_ntb_db_clear
+[kernel:annot:missing-spec] unit.final.c:15: Warning: 
+  Neither code nor specification for function to_ndev_ntb, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:17: Warning: 
+  Neither code nor specification for function idt_nt_write, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[wp] 3 goals scheduled
+[wp] [Cache] not used
+[wp] Proved goals:    3 / 3
+  Qed:             3
+[wp:pedantic-assigns] unit.final.c:13: Warning: 
+  No 'assigns' specification for function 'idt_ntb_db_clear'.
+  Callers assumptions might be imprecise.

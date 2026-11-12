@@ -1,0 +1,13 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 1 goal scheduled
+[wp] [Cache] updated:3
+[wp] Proved goals:    3 / 3
+  Terminating:       1
+  Unreachable:       1
+  Qed:               0 (3ms)
+  Alt-Ergo 2.6.4:    1 (37ms)
+[wp:pedantic-assigns] unit.final.c:9: Warning: 
+  No 'assigns' specification for function '__to_ib_port_num'.
+  Callers assumptions might be imprecise.

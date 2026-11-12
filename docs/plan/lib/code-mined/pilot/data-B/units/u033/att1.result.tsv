@@ -1,0 +1,1 @@
+33	hisi_ptt_trace_valid_type	bitmap	scalar	FAILED	L2	0	8	12	-	-	-	13.0	contract not proved (function has a loop; needs loop invariants); solver timeout	

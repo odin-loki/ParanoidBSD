@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (0 <= bar && bar <= PCIR_MAX_BAR_0); */

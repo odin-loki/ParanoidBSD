@@ -1,0 +1,1 @@
+/*@ requires chan < 16; ensures \old(*muxsg0) <= *muxsg0 && \old(*muxsg1) <= *muxsg1; */

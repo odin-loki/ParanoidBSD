@@ -1,0 +1,1 @@
+154	set_platform_caps	bitmap	ptr	UNBUILT	none	0	-	-	-	-	-	20.3	unresolved symbol: PHM_PlatformCaps_PowerPlaySupport (not a one-line #define: enum constant, variable or function from a header)	

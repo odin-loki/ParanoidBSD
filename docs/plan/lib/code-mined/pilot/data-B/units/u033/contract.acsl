@@ -1,0 +1,1 @@
+/*@ requires val < 4294967296; ensures \result == 0 <==> val != 0 && (val & ~7) == 0; ensures \result == -EINVAL <==> val == 0 || (val & ~7) != 0; */

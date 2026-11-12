@@ -1,0 +1,1 @@
+150	wlan_peerstate_to_snmp	bitmap	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/usr.sbin/bsnmpd/modules/snmp_wlan/wlan_sys.c	2640-2683	d5eca0a2aa4e5de6	f201a1b7f27ea360	4c210645a258c152	ok

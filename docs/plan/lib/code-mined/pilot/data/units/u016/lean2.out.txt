@@ -1,0 +1,29 @@
+lean2.chk.lean:16:10: error: unexpected token '#'; expected command
+lean2.chk.lean:26:12: error: omega could not prove the goal:
+a possible counterexample may satisfy the constraints
+  c ≤ -3
+  0 ≤ b ≤ 36
+  0 ≤ a ≤ 39
+where
+ a := ↑r40.toNat
+ b := ↑r37.toNat
+ c := (0#32).toInt
+lean2.chk.lean:26:12: error: omega could not prove the goal:
+a possible counterexample may satisfy the constraints
+  d ≤ -3
+  0 ≤ c ≤ 36
+  0 ≤ b ≤ 39
+  1 ≤ a ≤ 7
+where
+ a := ↑r8.toNat
+ b := ↑r40.toNat
+ c := ↑r37.toNat
+ d := (if r8.toNat = 1 % 2 ^ 32 then 10#32
+  else
+    if r8.toNat = 2 % 2 ^ 32 then 16#32
+    else
+      if r8.toNat = 3 % 2 ^ 32 then 8#32
+      else
+        if r8.toNat = 4 % 2 ^ 32 then 2#32
+        else if r8.toNat = 5 % 2 ^ 32 then 36#32 else if r8.toNat = 6 % 2 ^ 32 then r40 - 2#32 else r37).toInt
+'contract' depends on axioms: [sorryAx]

@@ -1,0 +1,13 @@
+frama-c 33.0 (Arsenic)
+why3 Why3 platform, version 1.8.2
+alt-ergo v2.6.4
+z3 Z3 version 4.8.12 - 64 bit
+cvc5 This is cvc5 version 1.1.2
+sample.tsv sha256 38d3306dcd9be42da21c95c76ff880be4be054eddab346ddd54d849efd8c903a
+prelude.h sha256 4c210645a258c1521058db960a4023b946a3a5631df02b78c9a3e3d9981421b8
+macros.uniq.tsv sha256 f350915d58f7f15880a96f99cf29e231571a4ce2bdac68c94e4cca376d254018
+scripts git 
+lean Lean (version 4.34.0, x86_64-unknown-linux-gnu, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)
+prism prism 0.1.0 (C++ engine) commit 3d00fba25bf1282baf5fa278b7f0b462ad2a26df
+model morph-glm53flash (Morph, fp8) via https://api.morphllm.com/v1; reasoning_effort low (attempts 1-2), high (attempt 3); max_tokens 14000/20000; prices USD per 1M tokens: conservative in 0.15 / cache-hit 0.02 / out 0.42, listed 0.047 / 0.02 / 0.268
+machdep gcc_x86_64 (Frama-C), WP timeout 10 s per goal, vacuity 5 s, replay 60 s, provers alt-ergo,z3,cvc5

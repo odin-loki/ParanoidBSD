@@ -1,0 +1,1 @@
+71	perf_allow_kernel	error-path	scalar	/home/odin/pbsd-ref/linux/kernel/events/core.c	14347-14353	9730706b718ffb63	0e7ac689e1d1f721	4c210645a258c152	ok

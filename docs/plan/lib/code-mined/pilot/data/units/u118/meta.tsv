@@ -1,0 +1,1 @@
+118	arch_irqs_disabled_flags	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/arch/x86/include/asm/irqflags.h	144-147	61d29b73202e35d0	1abba7abc8eb1de1	4c210645a258c152	ok

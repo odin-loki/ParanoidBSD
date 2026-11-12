@@ -1,0 +1,1 @@
+76	ecc_sw_hamming_correct	error-path	scalar	/home/odin/pbsd-ref/linux/drivers/mtd/nand/ecc-sw-hamming.c	373-442	622822fb5f6388f0	856a2f4e8501dbba	4c210645a258c152	ok

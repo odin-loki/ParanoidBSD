@@ -1,0 +1,1 @@
+15	msm_dp_panel_get_supported_bpp	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/msm/dp/dp_panel.c	141-160	749cda1bbae3c7c6	3207c60d0caa9f88	4c210645a258c152	ok

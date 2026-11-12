@@ -1,0 +1,1 @@
+12	snp_cpuid_calc_xsave_size	arith-helper	scalar	/home/odin/pbsd-ref/linux/arch/x86/boot/startup/sev-shared.c	225-259	6b563519bb124ba4	258871115e1d2d83	4c210645a258c152	ok

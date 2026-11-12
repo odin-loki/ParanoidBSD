@@ -1,0 +1,1 @@
+136	atusb_alloc_urbs	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	19.1	unresolved symbol: GFP_KERNEL (macro with 4 different definitions in the headers)	

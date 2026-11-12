@@ -1,0 +1,1 @@
+/*@ requires val >= 0; ensures \result == 0 || \result == 8 << ((val & SKL_DRAM_WIDTH_MASK) >> SKL_DRAM_WIDTH_SHIFT); */

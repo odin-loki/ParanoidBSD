@@ -1,0 +1,1 @@
+/*@ requires offset + 4 < WILC_MAX_CFG_FRAME_SIZE; ensures \result == 5 || \result == 0; */

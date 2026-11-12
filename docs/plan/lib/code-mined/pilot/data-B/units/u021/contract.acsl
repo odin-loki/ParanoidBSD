@@ -1,0 +1,1 @@
+/*@ requires src == BNAD_INTR_TX || src == BNAD_INTR_RX; ensures \result == 0 || \result == -ENOMEM; */

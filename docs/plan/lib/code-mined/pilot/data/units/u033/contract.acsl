@@ -1,0 +1,1 @@
+/*@ requires ht >= 0 && vht >= 0 && he >= 0; ensures (!ht && !vht && !he) ==> \result == NR_CHAN_WIDTH_20; ensures \result == NR_CHAN_WIDTH_20 || \result == NR_CHAN_WIDTH_40 || \result == NR_CHAN_WIDTH_80 || \result == NR_CHAN_WIDTH_160 || \result == NR_CHAN_WIDTH_80P80; */

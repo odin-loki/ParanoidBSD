@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (uv_hubbed_system & uvtype); */

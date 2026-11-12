@@ -1,0 +1,1 @@
+/*@ requires \valid_read(clip); ensures (clip->x1 < clip->x2 && clip->y1 < clip->y2) || \result == 0; */

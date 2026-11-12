@@ -1,0 +1,1 @@
+39	pci_oxsemi_tornado_get_divisor	arith-helper	ptr	/home/odin/pbsd-ref/linux/drivers/tty/serial/8250/8250_pci.c	1154-1264	d07d14955348e242	e9126fcf65dda882	4c210645a258c152	ok

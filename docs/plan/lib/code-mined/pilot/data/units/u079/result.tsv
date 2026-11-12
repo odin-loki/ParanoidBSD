@@ -1,0 +1,1 @@
+79	wpabuf_tests	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	26.0	unresolved symbol: MSG_INFO (macro with 2 different definitions in the headers)	

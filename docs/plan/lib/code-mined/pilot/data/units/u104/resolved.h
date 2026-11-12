@@ -1,0 +1,2 @@
+#undef NO_POLL_CHAR
+#define NO_POLL_CHAR		0x00ff0000

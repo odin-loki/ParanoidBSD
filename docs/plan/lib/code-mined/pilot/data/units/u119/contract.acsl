@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == stream_wait_count; */

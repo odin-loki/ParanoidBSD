@@ -1,0 +1,14 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 2 goals scheduled
+[wp] [Timeout] typed_get_mmcr1_rsq_ensures (Qed 1ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:3
+[wp] Proved goals:    3 / 4
+  Terminating:     1
+  Unreachable:     1
+  Qed:             1 (0.74ms)
+  Timeout:         1
+[wp:pedantic-assigns] unit.final.c:25: Warning: 
+  No 'assigns' specification for function 'get_mmcr1_rsq'.
+  Callers assumptions might be imprecise.

@@ -1,0 +1,159 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:57: Warning: 
+  Calling undeclared function vector_str_init. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:59: Warning: 
+  Calling undeclared function vector_str_push. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:59: Warning: 
+  Calling undeclared function strlen. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:73: Warning: 
+  Calling undeclared function cpp_demangle_push_str. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:78: Warning: 
+  Calling undeclared function cpp_demangle_push_subst_v. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:154: Warning: 
+  Calling undeclared function malloc. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:156: Warning: 
+  Calling undeclared function snprintf. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:160: Warning: 
+  Calling undeclared function free. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:287: Warning: 
+  Calling undeclared function vector_str_dest. Old style K&R code?
+[wp] Running WP plugin...
+[wp] Warning: Skipped RTE guards: unaligned pointers (\aligned not supported)
+[wp] Warning: Skipped RTE guards: invalid function pointer calls (\valid_function not supported)
+[rte:annot] annotating function cpp_demangle_push_type_qualifier
+[kernel:annot:missing-spec] unit.final.c:57: Warning: 
+  Neither code nor specification for function vector_str_init, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:59: Warning: 
+  Neither code nor specification for function vector_str_push, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:59: Warning: 
+  Neither code nor specification for function strlen, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:73: Warning: 
+  Neither code nor specification for function cpp_demangle_push_str, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:78: Warning: 
+  Neither code nor specification for function cpp_demangle_push_subst_v,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:154: Warning: 
+  Neither code nor specification for function malloc, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:156: Warning: 
+  Neither code nor specification for function snprintf, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:160: Warning: 
+  Neither code nor specification for function free, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:287: Warning: 
+  Neither code nor specification for function vector_str_dest, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] unit.final.c:67: Warning: 
+  Missing assigns clause (assigns 'everything' instead)
+[wp] 91 goals scheduled
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_7 (Qed 930ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_6 (Qed 965ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_5 (Qed 979ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_4 (Qed 1s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_3 (Qed 441ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_2 (Qed 441ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access (Qed 39ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_20 (Qed 969ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_19 (Qed 2s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_16 (Qed 1s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_13 (Qed 1.9s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_12 (Qed 2.8s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_10 (Qed 2.3s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_9 (Qed 2.8s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_8 (Qed 964ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_32 (Qed 2.0s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_31 (Qed 1s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_29 (Qed 1.2s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_28 (Qed 1s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_27 (Qed 3.0s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_24 (Qed 2.3s) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_cpp_demangle_push_type_qualifier_assert_rte_mem_access_23 (Qed 4.9s) (Alt-Ergo) (Cached)
+[wp] [Cache] updated:102
+[wp] Proved goals:   69 / 91
+  Qed:              57 (39ms-885ms-9.6s)
+  Alt-Ergo 2.6.4:   12 (28ms-60ms)
+  Timeout:          22
+[wp:pedantic-assigns] unit.final.c:39: Warning: 
+  No 'assigns' specification for function 'cpp_demangle_push_type_qualifier'.
+  Callers assumptions might be imprecise.
+[wp] unit.final.c:39: Warning: 
+  Memory model hypotheses for function 'cpp_demangle_push_type_qualifier':
+  /*@
+     behavior wp_typed:
+       requires
+         \separated(
+           ddata + (..), &(__fc_lit_string1[0]) + (..),
+           &(__fc_lit_string2[0]) + (..), &(__fc_lit_string3[0]) + (..),
+           &(__fc_lit_string4[0]) + (..), &(__fc_lit_string5[0]) + (..),
+           &(__fc_lit_string6[0]) + (..), &(__fc_lit_string7[0]) + (..),
+           &(__fc_lit_string8[0]) + (..), &(__fc_lit_string9[0]) + (..),
+           &(__fc_lit_string10[0]) + (..), &(__fc_lit_string11[0]) + (..),
+           &(__fc_lit_string12[0]) + (..), &(__fc_lit_string13[0]) + (..),
+           &(__fc_lit_string14[0]) + (..), &(__fc_lit_string15[0]) + (..),
+           &(__fc_lit_string16[0]) + (..), &(__fc_lit_string17[0]) + (..),
+           &(__fc_lit_string18[0]) + (..), &(__fc_lit_string19[0]) + (..),
+           &(__fc_lit_string20[0]) + (..), &(__fc_lit_string21[0]) + (..),
+           &(__fc_lit_string22[0]) + (..), &(__fc_lit_string23[0]) + (..),
+           &(__fc_lit_string24[0]) + (..), &(__fc_lit_string25[0]) + (..),
+           &(__fc_lit_string26[0]) + (..), &(__fc_lit_string27[0]) + (..),
+           &(__fc_lit_string28[0]) + (..), &(__fc_lit_string29[0]) + (..),
+           &(__fc_lit_string30[0]) + (..), &(__fc_lit_string31[0]) + (..),
+           &(__fc_lit_string32[0]) + (..), &(__fc_lit_string33[0]) + (..),
+           &(__fc_lit_string34[0]) + (..)
+           );
+       requires
+         \separated(
+           type_str + (..), &(__fc_lit_string1[0]) + (..),
+           &(__fc_lit_string2[0]) + (..), &(__fc_lit_string3[0]) + (..),
+           &(__fc_lit_string4[0]) + (..), &(__fc_lit_string5[0]) + (..),
+           &(__fc_lit_string6[0]) + (..), &(__fc_lit_string7[0]) + (..),
+           &(__fc_lit_string8[0]) + (..), &(__fc_lit_string9[0]) + (..),
+           &(__fc_lit_string10[0]) + (..), &(__fc_lit_string11[0]) + (..),
+           &(__fc_lit_string12[0]) + (..), &(__fc_lit_string13[0]) + (..),
+           &(__fc_lit_string14[0]) + (..), &(__fc_lit_string15[0]) + (..),
+           &(__fc_lit_string16[0]) + (..), &(__fc_lit_string17[0]) + (..),
+           &(__fc_lit_string18[0]) + (..), &(__fc_lit_string19[0]) + (..),
+           &(__fc_lit_string20[0]) + (..), &(__fc_lit_string21[0]) + (..),
+           &(__fc_lit_string22[0]) + (..), &(__fc_lit_string23[0]) + (..),
+           &(__fc_lit_string24[0]) + (..), &(__fc_lit_string25[0]) + (..),
+           &(__fc_lit_string26[0]) + (..), &(__fc_lit_string27[0]) + (..),
+           &(__fc_lit_string28[0]) + (..), &(__fc_lit_string29[0]) + (..),
+           &(__fc_lit_string30[0]) + (..), &(__fc_lit_string31[0]) + (..),
+           &(__fc_lit_string32[0]) + (..), &(__fc_lit_string33[0]) + (..),
+           &(__fc_lit_string34[0]) + (..)
+           );
+       requires
+         \separated(
+           v + (..), &(__fc_lit_string1[0]) + (..),
+           &(__fc_lit_string2[0]) + (..), &(__fc_lit_string3[0]) + (..),
+           &(__fc_lit_string4[0]) + (..), &(__fc_lit_string5[0]) + (..),
+           &(__fc_lit_string6[0]) + (..), &(__fc_lit_string7[0]) + (..),
+           &(__fc_lit_string8[0]) + (..), &(__fc_lit_string9[0]) + (..),
+           &(__fc_lit_string10[0]) + (..), &(__fc_lit_string11[0]) + (..),
+           &(__fc_lit_string12[0]) + (..), &(__fc_lit_string13[0]) + (..),
+           &(__fc_lit_string14[0]) + (..), &(__fc_lit_string15[0]) + (..),
+           &(__fc_lit_string16[0]) + (..), &(__fc_lit_string17[0]) + (..),
+           &(__fc_lit_string18[0]) + (..), &(__fc_lit_string19[0]) + (..),
+           &(__fc_lit_string20[0]) + (..), &(__fc_lit_string21[0]) + (..),
+           &(__fc_lit_string22[0]) + (..), &(__fc_lit_string23[0]) + (..),
+           &(__fc_lit_string24[0]) + (..), &(__fc_lit_string25[0]) + (..),
+           &(__fc_lit_string26[0]) + (..), &(__fc_lit_string27[0]) + (..),
+           &(__fc_lit_string28[0]) + (..), &(__fc_lit_string29[0]) + (..),
+           &(__fc_lit_string30[0]) + (..), &(__fc_lit_string31[0]) + (..),
+           &(__fc_lit_string32[0]) + (..), &(__fc_lit_string33[0]) + (..),
+           &(__fc_lit_string34[0]) + (..)
+           );
+     */
+  static int cpp_demangle_push_type_qualifier(struct cpp_demangle_data *ddata,
+                                              struct vector_type_qualifier *v,
+                                              char const *type_str);

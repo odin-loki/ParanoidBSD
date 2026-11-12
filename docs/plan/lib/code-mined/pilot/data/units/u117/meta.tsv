@@ -1,0 +1,1 @@
+117	claim_dma_lock	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/arch/parisc/include/asm/dma.h	76-79	aa9d02ba727ae18d	6e95926910b52c54	4c210645a258c152	ok

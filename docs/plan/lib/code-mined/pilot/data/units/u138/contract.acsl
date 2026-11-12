@@ -1,0 +1,1 @@
+/*@ requires cnt > 0 && base != NULL; ensures \result == 0 ==> *base >= 0; ensures \result != 0 ==> \result < 0; */

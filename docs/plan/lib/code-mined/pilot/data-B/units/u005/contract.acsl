@@ -1,0 +1,1 @@
+/*@ requires test_alloc_len > 0 && test_alloc_len <= PAGE_SIZE; ensures \result == -EAGAIN; */

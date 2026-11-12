@@ -1,0 +1,1 @@
+/*@ requires true; ensures elements <= 0 ==> \result == PRE + 64 + POST; ensures \result <= 32749ULL * 8 + 8; */

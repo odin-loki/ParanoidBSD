@@ -1,0 +1,1 @@
+/*@ requires dd->netdev_rx != NULL; ensures \result == 0; */

@@ -1,0 +1,1 @@
+/*@ requires chip != NULL && 0 <= idx < VORTEX_PCM_LAST; ensures (\result == 0 || \result < 0); */

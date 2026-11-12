@@ -1,0 +1,1 @@
+48	dmi_checksum	arith-helper	scalar	CONTRACT-ONLY	L2	0	12	12	15	16	no	15.6	contract proved; run-time-error guards not all proved (15/16)	

@@ -1,0 +1,1 @@
+56	kfree_scale_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	20.1	unresolved symbol: kfree_rcu_test_single (not a one-line #define: enum constant, variable or function from a header)	

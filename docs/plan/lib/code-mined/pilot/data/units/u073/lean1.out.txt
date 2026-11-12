@@ -1,0 +1,13 @@
+lean1.chk.lean:14:8: warning: `if_pos` has been deprecated: Use `ite_eq_left` instead
+lean1.chk.lean:16:15: error: Type mismatch
+  h
+has type
+  expected_len = attr_len ∨ expected_len = 4294967295#32 ∨ expected_len = 4294967294#32
+but is expected to have type
+  expected_len = attr_len ∨ expected_len.toNat = 4294967295 ∨ expected_len.toNat = 4294967294
+lean1.chk.lean:18:8: warning: `if_neg` has been deprecated: Use `ite_eq_right` instead
+lean1.chk.lean:24:41: error: omega could not prove the goal:
+No usable constraints found. You may need to unfold definitions so `omega` can see linear arithmetic facts about `Nat` and `Int`, which may also involve multiplication, division, and modular remainder by constants.
+lean1.chk.lean:25:41: error: omega could not prove the goal:
+No usable constraints found. You may need to unfold definitions so `omega` can see linear arithmetic facts about `Nat` and `Int`, which may also involve multiplication, division, and modular remainder by constants.
+'contract' depends on axioms: [sorryAx]

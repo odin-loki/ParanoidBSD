@@ -1,0 +1,1 @@
+/*@ requires line != NULL && kp != NULL && vp != NULL; ensures \result == 1 ==> (*kp != NULL && *vp != NULL); */

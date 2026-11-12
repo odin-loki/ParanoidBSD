@@ -1,0 +1,1 @@
+103	wilc_wlan_cfg_set_byte	parser	scalar	CONTRACT-ONLY	L2	1	3	3	3	4	no	26.6	contract proved; run-time-error guards not all proved (3/4)	WILC_MAX_CFG_FRAME_SIZE,

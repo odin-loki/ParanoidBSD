@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((rate_n_flags & RATE_MCS_HE_TYPE_MSK) == RATE_MCS_HE_TYPE_SU || (rate_n_flags & RATE_MCS_HE_TYPE_MSK) == RATE_MCS_HE_TYPE_EXT_SU) && ((rate_n_flags & RATE_MCS_HE_GI_LTF_MSK) == RATE_MCS_HE_SU_4_LTF_08_GI); */

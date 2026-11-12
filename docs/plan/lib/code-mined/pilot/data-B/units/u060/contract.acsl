@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result == 0 ==> range_count > 0 && range_count <= MAX_RANGES_SUPPORTED) || \result < 0; */

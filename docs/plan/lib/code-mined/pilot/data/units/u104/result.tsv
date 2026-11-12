@@ -1,0 +1,1 @@
+104	kgdbfdc_read_char	parser	scalar	UNBUILT	none	1	-	-	-	-	-	18.9	unresolved symbol: kgdbfdc_rpos (not a one-line #define: enum constant, variable or function from a header)	NO_POLL_CHAR,

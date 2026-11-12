@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (event == EVENT_CYCLES_ID ==> (\result == EVENT_CYCLES_COUNTER || \result == -ENOENT)) && (event != EVENT_CYCLES_ID ==> (1 <= \result < NUM_COUNTERS || \result == -ENOENT)); */

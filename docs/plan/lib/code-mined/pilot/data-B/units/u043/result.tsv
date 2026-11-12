@@ -1,0 +1,1 @@
+43	cx25821_risc_decode	parser	scalar	UNBUILT	none	5	-	-	-	-	-	55.1	unresolved symbol: RISC_JUMP (macro with 2 different definitions in the headers)	RISC_SYNC,RISC_WRITE,RISC_WRITEC,RISC_READ,RISC_READC,

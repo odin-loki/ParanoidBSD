@@ -1,0 +1,1 @@
+/*@ requires baud > 0; ensures 0 <= \result <= UART_DIV_MAX && (*frac >> 8) <= OXSEMI_TORNADO_CPR_MASK && (*frac & 0xf) <= OXSEMI_TORNADO_TCR_MASK; */

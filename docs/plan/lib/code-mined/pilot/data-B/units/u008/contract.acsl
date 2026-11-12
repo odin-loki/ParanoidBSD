@@ -1,0 +1,1 @@
+/*@ requires cpu_idx >= 0 && thread_idx >= 0; ensures \result == 0 || \result < 0; */

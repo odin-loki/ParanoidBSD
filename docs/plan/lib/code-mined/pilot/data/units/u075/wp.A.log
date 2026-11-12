@@ -1,0 +1,16 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:25: Warning: 
+  Calling undeclared function b43_gphy_channel_switch. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:25: Warning: 
+  Neither code nor specification for function b43_gphy_channel_switch,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 4 goals scheduled
+[wp] [Cache] not used
+[wp] Proved goals:    4 / 4
+  Qed:             4
+[wp:pedantic-assigns] unit.final.c:20: Warning: 
+  No 'assigns' specification for function 'b43_gphy_op_switch_channel'.
+  Callers assumptions might be imprecise.

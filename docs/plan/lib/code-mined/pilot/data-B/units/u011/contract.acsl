@@ -1,0 +1,1 @@
+/*@ requires pmu_state != uninitialized; ensures (\result == 0 ==> pmu_fully_inited == 1 && pmu_state == idle) && (\result == -ENODEV ==> pmu_fully_inited == 0); */

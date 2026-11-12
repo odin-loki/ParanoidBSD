@@ -1,0 +1,1 @@
+/*@ requires quota >= 0; ensures 0 <= \result <= \old(quota); */

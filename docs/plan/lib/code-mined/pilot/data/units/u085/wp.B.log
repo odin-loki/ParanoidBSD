@@ -1,0 +1,24 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:213: Warning: 
+  Calling undeclared function rtw8822c_dpk_coef_read. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:221: Warning: 
+  Calling undeclared function rtw8822c_dpk_fill_result. Old style K&R code?
+[wp] Running WP plugin...
+[wp] Warning: Skipped RTE guards: unaligned pointers (\aligned not supported)
+[wp] Warning: Skipped RTE guards: invalid function pointer calls (\valid_function not supported)
+[rte:annot] annotating function rtw8822c_dpk_check_pass
+[kernel:annot:missing-spec] unit.final.c:213: Warning: 
+  Neither code nor specification for function rtw8822c_dpk_coef_read,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:221: Warning: 
+  Neither code nor specification for function rtw8822c_dpk_fill_result,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] 3 goals scheduled
+[wp] [Cache] not used
+[wp] Proved goals:    3 / 3
+  Qed:             3
+[wp:pedantic-assigns] unit.final.c:207: Warning: 
+  No 'assigns' specification for function 'rtw8822c_dpk_check_pass'.
+  Callers assumptions might be imprecise.

@@ -1,0 +1,1 @@
+/*@ requires out_size > 0 && in_size > 0; ensures \result >= 0 ==> \result <= in_size; */

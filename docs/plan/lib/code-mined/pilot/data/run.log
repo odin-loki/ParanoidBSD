@@ -1,0 +1,32 @@
+2026-11-12 12:00:03 phase 1 done:       2 CONTRACT-ONLY      19 FAILED      29 PROVED     149 UNBUILT       1 WPERROR 
+2026-11-12 12:00:04 phase 2: 19 units to annotate
+2026-11-12 12:13:02 phase 2 done; spent 0.1781 USD (conservative price)
+2026-11-12 12:13:03 phase 3: PRISM cross-check on 51 units
+2026-11-12 12:13:08 phase 3 done
+2026-11-12 12:13:20 pilot run start: 200 units, P_prove=8 P_annot=4
+2026-11-12 12:13:25 phase 1: 0 units to prove
+2026-11-12 12:13:26 phase 1 done:       2 CONTRACT-ONLY      19 FAILED      29 PROVED     149 UNBUILT       1 WPERROR 
+2026-11-12 12:13:28 phase 2: 19 units to annotate
+2026-11-12 12:18:16 phase 2 done; spent 0.2140 USD (conservative price)
+2026-11-12 12:18:16 STOP file present: 
+2026-11-12 12:18:41 pilot run start: 200 units, P_prove=8 P_annot=14
+2026-11-12 12:18:46 phase 1: 0 units to prove
+2026-11-12 12:18:48 phase 1 done:       2 CONTRACT-ONLY      19 FAILED      29 PROVED     149 UNBUILT       1 WPERROR 
+2026-11-12 12:18:49 phase 2: 11 units to annotate
+2026-11-12 12:26:57 phase 2 done; spent 0.2607 USD (conservative price)
+2026-11-12 12:26:57 phase 3: PRISM cross-check on 0 units
+2026-11-12 12:26:57 phase 3 done
+2026-11-12 12:28:07 pilot run start: 200 units, P_prove=8 P_annot=14
+2026-11-12 12:28:13 phase 1: 0 units to prove
+2026-11-12 12:28:14 phase 1 done:       2 CONTRACT-ONLY      19 FAILED      29 PROVED     149 UNBUILT       1 WPERROR 
+2026-11-12 12:28:16 phase 2: 3 units to annotate
+2026-11-12 12:35:55 phase 2 done; spent 0.3012 USD (conservative price)
+2026-11-12 12:35:55 phase 3: PRISM cross-check on 0 units
+2026-11-12 12:35:55 phase 3 done
+2026-11-12 12:36:05 pilot run start: 200 units, P_prove=8 P_annot=14
+2026-11-12 12:36:10 phase 1: 2 units to prove
+2026-11-12 12:36:40 phase 1 done:       2 CONTRACT-ONLY      19 FAILED      29 PROVED     149 UNBUILT       1 WPERROR 
+2026-11-12 12:36:42 phase 2: 0 units to annotate
+2026-11-12 12:36:42 phase 2 done; spent 0.3012 USD (conservative price)
+2026-11-12 12:36:42 phase 3: PRISM cross-check on 0 units
+2026-11-12 12:36:42 phase 3 done

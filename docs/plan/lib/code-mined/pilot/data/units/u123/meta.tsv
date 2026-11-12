@@ -1,0 +1,1 @@
+123	arch_atomic64_dec_if_positive	lock-or-sync	ptr	/home/odin/pbsd-ref/linux/arch/arm64/include/asm/atomic.h	97-100	cc5e8c29e031d3e5	1b367b6243032ff7	4c210645a258c152	ok

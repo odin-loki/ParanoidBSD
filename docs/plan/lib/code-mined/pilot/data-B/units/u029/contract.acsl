@@ -1,0 +1,1 @@
+/*@ requires cma_dev_cnt >= 0; ensures \result == 0 || (\result <= -1 && \result >= -ERRNO_MAX); */

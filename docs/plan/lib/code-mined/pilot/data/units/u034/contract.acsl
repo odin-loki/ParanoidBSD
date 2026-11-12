@@ -1,0 +1,1 @@
+/*@ requires r < 12289 && (gamma2 == 384 || gamma2 == 140); ensures gamma2 == 384 ? \result < 16 : \result < 44; */

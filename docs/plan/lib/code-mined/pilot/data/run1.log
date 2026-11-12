@@ -1,0 +1,7 @@
+2026-11-12 11:36:12 pilot run start: 200 units, P_prove=8 P_annot=4
+2026-11-12 11:37:18 phase 1: 200 units to prove
+2026-11-12 11:42:26 phase 1 done:       3 CONTRACT-ONLY      18 FAILED      26 PROVED     152 UNBUILT       1 WPERROR 
+2026-11-12 11:42:27 phase 2: 18 units to annotate
+2026-11-12 11:53:42 phase 2 done; spent 0.0828 USD (conservative price)
+2026-11-12 11:53:42 phase 3: PRISM cross-check on 48 units
+2026-11-12 11:53:48 phase 3 done

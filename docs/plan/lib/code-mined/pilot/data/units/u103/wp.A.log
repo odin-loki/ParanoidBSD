@@ -1,0 +1,16 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:19: Warning: 
+  Calling undeclared function put_unaligned_le16. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:19: Warning: 
+  Neither code nor specification for function put_unaligned_le16, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 3 goals scheduled
+[wp] [Cache] not used
+[wp] Proved goals:    3 / 3
+  Qed:             3
+[wp:pedantic-assigns] unit.final.c:14: Warning: 
+  No 'assigns' specification for function 'wilc_wlan_cfg_set_byte'.
+  Callers assumptions might be imprecise.

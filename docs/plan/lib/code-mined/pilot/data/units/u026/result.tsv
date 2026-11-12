@@ -1,0 +1,1 @@
+26	iic2errno	arith-helper	scalar	UNBUILT	none	4	-	-	-	-	-	49.6	unresolved symbol: EALREADY (macro with 6 different definitions in the headers)	IIC_NOERR,IIC_EBUSERR,IIC_ERRNO,__INT_MIN,

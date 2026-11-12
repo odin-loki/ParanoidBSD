@@ -1,0 +1,1 @@
+/*@ requires hki != NULL; ensures \result == 0 || (\result >= 1 && \result <= 134); */

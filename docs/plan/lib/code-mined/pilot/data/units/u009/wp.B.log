@@ -1,0 +1,27 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:19: Warning: 
+  Calling undeclared function skl_get_dimm_size. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:29: Warning: 
+  Calling undeclared function MISSING_CASE. Old style K&R code?
+[wp] Running WP plugin...
+[wp] Warning: Skipped RTE guards: unaligned pointers (\aligned not supported)
+[wp] Warning: Skipped RTE guards: invalid function pointer calls (\valid_function not supported)
+[rte:annot] annotating function skl_get_dimm_width
+[kernel:annot:missing-spec] unit.final.c:19: Warning: 
+  Neither code nor specification for function skl_get_dimm_size, generating
+  default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:29: Warning: 
+  Neither code nor specification for function MISSING_CASE, generating default
+  exits, assigns and terminates. See -generated-spec-* options for more info.
+[wp] 8 goals scheduled
+[wp] [Timeout] typed_skl_get_dimm_width_assert_rte_signed_overflow (Qed 5ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_skl_get_dimm_width_assert_rte_shift (Qed 4ms) (Alt-Ergo) (Cached)
+[wp] [Cache] updated:9
+[wp] Proved goals:    6 / 8
+  Qed:               5 (4ms-2ms-8ms)
+  Alt-Ergo 2.6.4:    1 (71ms)
+  Timeout:           2
+[wp:pedantic-assigns] unit.final.c:17: Warning: 
+  No 'assigns' specification for function 'skl_get_dimm_width'.
+  Callers assumptions might be imprecise.

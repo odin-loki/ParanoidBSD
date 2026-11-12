@@ -1,0 +1,1 @@
+20	ath10k_hw_qca6174_enable_pll_clock	init-teardown	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/contrib/dev/athk/ath10k/hw.c	745-932	8f2dc483fc9b99ac	3d4f993cf1b4dddb	4c210645a258c152	ok

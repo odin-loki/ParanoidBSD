@@ -1,0 +1,1 @@
+/*@ requires 0 <= c <= 255; ensures \result == ((c & 0xC0) == 0x80); */

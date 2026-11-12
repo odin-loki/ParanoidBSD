@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == 0 || (\result & (SPEFSCR_FINV|SPEFSCR_FOVF|SPEFSCR_FUNF|SPEFSCR_FDBZ|SPEFSCR_FX)) != 0; */

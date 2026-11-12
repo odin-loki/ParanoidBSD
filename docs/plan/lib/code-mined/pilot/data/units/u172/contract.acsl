@@ -1,0 +1,1 @@
+/*@ requires l440gx_vpp_refcnt >= 0; ensures vpp != 0 ==> l440gx_vpp_refcnt == \old(l440gx_vpp_refcnt) + 1; ensures vpp == 0 ==> l440gx_vpp_refcnt == \old(l440gx_vpp_refcnt) - 1; ensures l440gx_vpp_refcnt >= 0; */

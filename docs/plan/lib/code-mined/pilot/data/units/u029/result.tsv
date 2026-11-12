@@ -1,0 +1,1 @@
+29	smb_ntencrypt	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	17.5	unresolved symbol: MD4_CTX (not a one-line #define: enum constant, variable or function from a header)	

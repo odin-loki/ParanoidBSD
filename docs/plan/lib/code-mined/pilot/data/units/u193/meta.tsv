@@ -1,0 +1,1 @@
+193	mcp251xfd_tx_fifo_sta_empty	bitmask	scalar	/home/odin/pbsd-ref/linux/drivers/net/can/spi/mcp251xfd/mcp251xfd-tef.c	19-22	51d42c868908ae42	1d8e8a11610f7eda	4c210645a258c152	ok

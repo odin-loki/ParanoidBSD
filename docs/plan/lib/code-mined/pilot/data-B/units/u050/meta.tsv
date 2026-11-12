@@ -1,0 +1,1 @@
+50	kvfree_rcu_1_arg_vmalloc_test	refcount	scalar	/home/odin/pbsd-ref/linux/lib/test_vmalloc.c	325-341	253cd54e00a4040a	215b4a7bbdf98655	4c210645a258c152	ok

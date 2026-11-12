@@ -1,0 +1,1 @@
+/*@ requires usec <= 4294967295; ensures \result == (32768 * usec + 999999) / 1000000; */

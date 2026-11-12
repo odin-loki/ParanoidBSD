@@ -6,7 +6,8 @@ say() { echo "$(date '+%F %T') $*" >>"$LOG"; }
 for d in "$U"/u*; do
   [ -f "$d/lean.tsv" ] && continue
   st=$(cut -f5 "$d/result.tsv" 2>/dev/null); [ "$st" = FAILED ] || [ "$st" = CONTRACT-ONLY ] || continue
-  grep -qE '__asm__|\basm\b|\b(for|while|do)\b' "$d/fn.c" && continue
+  grep -qE '__asm__|\basm\b' "$d/fn.c" && continue
+  awk -f "$HERE/has_loop.awk" "$d/fn.c" && continue
   head -3 "$d/fn.c" | tr '\n' ' ' | sed -E 's/\{.*//' | grep -q '\*' && continue
   echo "$d"
 done >"$D/todo.lean"

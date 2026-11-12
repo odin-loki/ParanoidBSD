@@ -1,0 +1,1 @@
+/*@ requires 0 <= dd && dd < 32 && 0 <= dm && dm < 32; ensures \result == 0 || (\result & FPSCR_IOC) != 0; */

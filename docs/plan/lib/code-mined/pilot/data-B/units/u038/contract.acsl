@@ -1,0 +1,1 @@
+/*@ requires max_w > 0; ensures \result == 0 || \result == -ENOMEM; */

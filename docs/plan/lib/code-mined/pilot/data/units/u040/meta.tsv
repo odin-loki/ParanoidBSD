@@ -1,0 +1,1 @@
+40	gve_get_rx_pages_per_qpl_dqo	arith-helper	ptr	/home/odin/pbsd-ref/linux/drivers/net/ethernet/google/gve/gve.h	1151-1157	3dc8e061e405f07f	cda97c1aec9a0cf3	4c210645a258c152	ok

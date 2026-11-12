@@ -1,0 +1,60 @@
+1	parse_signal	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	15.7	unresolved symbol: sys_nsig (macro with 2 different definitions in the headers)		-	-	0	0	0	0	0	15.7	1	range	-	-	-
+2	minstrel_ht_move_sample_rates	list-op	scalar	not-proved	UNBUILT	none	1	-/-	-/-	-	8.6	missing struct type (field)	MINSTREL_SAMPLE_RATES,	-	-	0	0	0	0	0	8.6	1	range	-	-	-
+3	mvpp2_prs_etype_init	parser	scalar	not-proved	UNBUILT	none	1	-/-	-/-	-	29.9	unresolved symbol: MVPP2_PE_MAC_RANGE_START (not a one-line #define: enum constant, variable or function from a header)	MVPP2_PE_LAST_FREE_TID,	-	-	0	0	0	0	0	29.9	1	functional	-	-	-
+4	hoontech_init	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.0	missing struct type (field)		-	-	0	0	0	0	0	1.0	1	functional	-	-	-
+5	page_frag_test_init	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.1	0	functional	-	-	-
+6	fetch_sysinfo	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	15.6	unresolved symbol: sysb_leap (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	15.6	0	functional	-	-	-
+7	parse_amd_iommu_intr	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	15.7	unresolved symbol: amd_iommu_guest_ir (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	15.7	1	range	-	-	-
+8	prepare_metric	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.3	missing struct type (field)		-	-	0	0	0	0	0	1.3	1	functional	-	-	-
+9	setup_hd64461	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.1	0	functional	-	-	-
+10	close_node	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	15.6	unresolved symbol: cut (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	15.6	0	functional	-	-	-
+11	via_pmu_start	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	15.6	unresolved symbol: pmu_state (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	15.6	0	functional	-	-	-
+12	snp_cpuid_calc_xsave_size	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	missing struct type (field)		-	-	0	0	0	0	0	1.1	0	functional	-	-	-
+13	uaudio20_check_rate	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.2	1	functional	-	-	-
+14	krb5_max_sockaddr_size	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.2	0	functional	-	-	-
+15	msm_dp_panel_get_supported_bpp	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	missing struct type (field)		-	-	0	0	0	0	0	1.1	1	range	-	-	-
+16	sja1110_vl_forwarding_params_entry_packing	parser	scalar	not-proved	UNBUILT	none	1	-/-	-/-	-	42.3	unresolved symbol: UNPACK (not a one-line #define: enum constant, variable or function from a header)	SJA1105_SIZE_VL_FORWARDING_PARAMS_ENTRY,	-	-	0	0	0	0	0	42.3	1	functional	-	-	-
+17	mt8192_dai_i2s_set_priv	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	21.7	unresolved symbol: mt8192_i2s_priv (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	21.7	1	functional	-	-	-
+18	emu_dspmixer_init	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	missing struct type (field)		-	-	0	0	0	0	0	1.1	1	range	-	-	-
+19	get_verbose	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	19.5	unresolved symbol: optind (macro with 3 different definitions in the headers)		-	-	0	0	0	0	0	19.5	1	functional	-	-	-
+20	ath10k_hw_qca6174_enable_pll_clock	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	missing struct type (field)		-	-	0	0	0	0	0	1.1	1	functional	-	-	-
+21	bnad_txrx_irq_alloc	allocator	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	19.8	unresolved symbol: BNAD_INTR_RX (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	19.8	1	functional	-	-	-
+22	parse_setup_node_list	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	14.7	unresolved symbol: g (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	14.7	0	functional	-	-	-
+23	c_can_read_objects	list-op	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	missing struct type (field)		-	-	0	0	0	0	0	1.1	1	range	-	-	-
+24	dbprog_discid	arith-helper	scalar	not-proved	UNBUILT	none	2	-/-	-/-	-	17.0	syntax error (macro or kernel syntax not parsed)	CDIOREADTOCHEADER,n,	-	-	0	0	0	0	0	17.0	0	functional	-	-	-
+25	nge_list_rx_init	ring-buffer	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.2	1	functional	-	-	-
+26	dlg_calc_listw	arith-helper	scalar	not-proved	FAILED	L2	0	2/4	-/-	-	13.3	contract not proved (function has a loop; needs loop invariants); solver timeout		3	FAILED	1825	9464	0.004249	0.002622	103	116.3	1	range	NEEDS-HARNESS	NEEDS-HARNESS	NEEDS-HARNESS
+27	snd_vortex_new_pcm	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.2	1	functional	-	-	-
+28	lapic_calibrate_initcount_cpuid_vm	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	34.9	unresolved symbol: vm_guest (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	34.9	0	functional	-	-	-
+29	ucma_init_all	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	13.1	unresolved symbol: cma_dev_cnt (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	13.1	0	functional	-	-	-
+30	__f2d	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	C++ source (Frama-C reads C only)		-	-	0	0	0	0	0	1.2	0	range	-	-	-
+31	scan_dump	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.1	1	functional	-	-	-
+32	altera_bits_req	arith-helper	scalar	not-proved	FAILED	L2	0	2/4	-/-	-	12.9	contract not proved (function has a loop; needs loop invariants); solver timeout		3	FAILED	1463	39098	0.016640	0.010547	473	485.9	0	range	NEEDS-HARNESS	NEEDS-HARNESS	PROVED-UNBOUNDED
+33	hisi_ptt_trace_valid_type	bitmap	scalar	not-proved	FAILED	L2	0	1/4	-/-	-	13.4	contract not proved (function has a loop; needs loop invariants); solver timeout		3	FAILED	2039	15965	0.007011	0.004374	119	132.4	0	functional	NEEDS-HARNESS	NEEDS-HARNESS	PROVED
+34	wpas_p2p_select_go_freq	arith-helper	scalar	not-proved	UNBUILT	none	1	-/-	-/-	-	24.4	C++ source (Frama-C reads C only)	P2P_MAX_PREF_CHANNELS,	-	-	0	0	0	0	0	24.4	1	functional	-	-	-
+35	rtsock_input	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	missing struct type (field)		-	-	0	0	0	0	0	1.1	0	range	-	-	-
+36	tse_tx_complete	ring-buffer	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.3	missing struct type (field)		-	-	0	0	0	0	0	1.3	1	range	-	-	-
+37	s3fb_setup	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	14.7	unresolved symbol: mtrr (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	14.7	1	range	-	-	-
+38	tpg_alloc	allocator	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.5	missing struct type (field)		-	-	0	0	0	0	0	1.5	1	functional	-	-	-
+39	r21a_init_bcnq1_boundary	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	21.0	unresolved symbol: R21A_BCNQ0_BOUNDARY (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	21.0	1	functional	-	-	-
+40	i5400_get_devices	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.4	missing struct type (field)		-	-	0	0	0	0	0	1.4	1	functional	-	-	-
+41	in_cksum	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.3	[kernel] unit.cur.c:24: User Error: operand of operator '+' with incomplete pointer type 'struct cksum_vec con		-	-	0	0	0	0	0	1.3	1	range	-	-	-
+42	ena_clean_tx_irq	ring-buffer	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.3	missing struct type (field)		-	-	0	0	0	0	0	1.3	1	range	-	-	-
+43	cx25821_risc_decode	parser	scalar	not-proved	UNBUILT	none	5	-/-	-/-	-	55.1	unresolved symbol: RISC_JUMP (macro with 2 different definitions in the headers)	RISC_SYNC,RISC_WRITE,RISC_WRITEC,RISC_READ,RISC_READC,	-	-	0	0	0	0	0	55.1	0	range	-	-	-
+44	gsi_trans_tre_reserve	refcount	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	20.9	unresolved symbol: tre_avail (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	20.9	1	functional	-	-	-
+45	SetKillRing	ring-buffer	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	34.2	unresolved symbol: CStr (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	34.2	0	trivial	-	-	-
+46	ddr_perf_alloc_counter	allocator	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	missing struct type (field)		-	-	0	0	0	0	0	1.2	1	functional	-	-	-
+47	efx_vpd_hunk_reinit	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.2	0	functional	-	-	-
+48	dmi_checksum	arith-helper	scalar	not-proved	FAILED	L2	0	2/3	-/-	-	12.8	contract not proved (function has a loop; needs loop invariants); solver timeout		3	FAILED	1469	1642	0.000909	0.000510	56	68.8	1	functional	NEEDS-HARNESS	NEEDS-HARNESS	NEEDS-HARNESS
+49	xbd_attach	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.1	0	functional	-	-	-
+50	kvfree_rcu_1_arg_vmalloc_test	refcount	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	22.1	unresolved symbol: PAGE_SIZE (macro with 14 different definitions in the headers)		-	-	0	0	0	0	0	22.1	0	functional	-	-	-
+51	main	parser	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	22.0	unresolved symbol: EXIT_FAILURE (macro with 2 different definitions in the headers)		-	-	0	0	0	0	0	22.0	1	functional	-	-	-
+52	sbd_init	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	15.6	unresolved symbol: sbd_reg (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	15.6	0	functional	-	-	-
+53	nexp_u32	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.1	0	range	-	-	-
+54	qedr_prepare_pbl_tbl	arith-helper	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.1	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.1	1	range	-	-	-
+55	setup	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	20.5	unresolved symbol: size (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	20.5	0	range	-	-	-
+56	kfree_scale_init	init-teardown	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	20.1	unresolved symbol: kfree_rcu_test_single (not a one-line #define: enum constant, variable or function from a header)		-	-	0	0	0	0	0	20.1	0	functional	-	-	-
+57	vfp_double_fsqrt	arith-helper	scalar	not-proved	UNBUILT	none	1	-/-	-/-	-	29.1	unresolved symbol: vfp_double_default_qnan (not a one-line #define: enum constant, variable or function from a header)	FPSCR_IOC,	-	-	0	0	0	0	0	29.1	0	functional	-	-	-
+58	testfunc	ring-buffer	scalar	not-proved	UNBUILT	none	0	-/-	-/-	-	1.2	syntax error (macro or kernel syntax not parsed)		-	-	0	0	0	0	0	1.2	0	functional	-	-	-
+59	int2bcd	arith-helper	scalar	not-proved	FAILED	L2	0	2/4	-/-	-	13.2	contract not proved (function has a loop; needs loop invariants); solver timeout		3	FAILED	1725	48000	0.020418	0.012945	559	572.2	0	range	NOTRUN	NOTRUN	PROVED
+60	build_memory_map	parser	scalar	not-proved	UNBUILT	none	1	-/-	-/-	-	24.0	unresolved symbol: range_count (not a one-line #define: enum constant, variable or function from a header)	FILE,	-	-	0	0	0	0	0	24.0	0	functional	-	-	-

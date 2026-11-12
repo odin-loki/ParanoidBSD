@@ -1,0 +1,30 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:19: Warning: 
+  Calling undeclared function ad5446_spi_register_driver. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:23: Warning: 
+  Calling undeclared function ad5446_i2c_register_driver. Old style K&R code?
+[kernel:typing:implicit-function-declaration] unit.final.c:25: Warning: 
+  Calling undeclared function ad5446_spi_unregister_driver. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:19: Warning: 
+  Neither code nor specification for function ad5446_spi_register_driver,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:23: Warning: 
+  Neither code nor specification for function ad5446_i2c_register_driver,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[kernel:annot:missing-spec] unit.final.c:25: Warning: 
+  Neither code nor specification for function ad5446_spi_unregister_driver,
+  generating default exits, assigns and terminates.
+  See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 3 goals scheduled
+[wp] [Timeout] typed_ad5446_init_ensures (Qed 11ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:3
+[wp] Proved goals:    2 / 3
+  Qed:             2 (4ms)
+  Timeout:         1
+[wp:pedantic-assigns] unit.final.c:15: Warning: 
+  No 'assigns' specification for function 'ad5446_init'.
+  Callers assumptions might be imprecise.

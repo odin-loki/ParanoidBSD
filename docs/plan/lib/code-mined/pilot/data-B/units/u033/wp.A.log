@@ -1,0 +1,18 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 10 goals scheduled
+[wp] [Timeout] typed_hisi_ptt_trace_valid_type_assert (Qed 7ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_hisi_ptt_trace_valid_type_loop_invariant_2_preserved (Qed 7ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_hisi_ptt_trace_valid_type_ensures_2 (Qed 20ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_hisi_ptt_trace_valid_type_ensures (Qed 21ms) (Alt-Ergo) (Cached)
+[wp] [Cache] updated:15
+[wp] Proved goals:    8 / 12
+  Terminating:       1
+  Unreachable:       1
+  Qed:               5 (4ms-6ms-21ms)
+  Alt-Ergo 2.6.4:    1 (93ms)
+  Timeout:           4
+[wp:pedantic-assigns] unit.final.c:17: Warning: 
+  No 'assigns' specification for function 'hisi_ptt_trace_valid_type'.
+  Callers assumptions might be imprecise.

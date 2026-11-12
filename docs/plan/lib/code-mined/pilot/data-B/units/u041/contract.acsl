@@ -1,0 +1,1 @@
+/*@ requires veclen >= 0; ensures \result <= 65535; */

@@ -1,0 +1,1 @@
+181	hfi1_netdev_rx_destroy	refcount	ptr	/home/odin/pbsd-ref/linux/drivers/infiniband/hw/hfi1/netdev_rx.c	327-339	2ecb78aa2a0ef7d0	2c7a1c855d17776a	4c210645a258c152	ok

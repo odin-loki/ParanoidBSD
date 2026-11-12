@@ -1,0 +1,1 @@
+198	vmx_ctl_allows_zero_setting	bitmask	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/amd64/vmm/intel/vmx_msr.c	51-56	6ee2f2b3dc1388fa	cf84aabbd62f7fc0	4c210645a258c152	ok

@@ -1,0 +1,1 @@
+/*@ requires level >= n; ensures \result == level - n; */

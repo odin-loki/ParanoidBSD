@@ -1,0 +1,1 @@
+/*@ requires op == PACK || op == UNPACK; ensures \result == SJA1105_SIZE_VL_FORWARDING_PARAMS_ENTRY; */

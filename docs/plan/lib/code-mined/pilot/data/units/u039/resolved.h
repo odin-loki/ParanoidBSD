@@ -1,0 +1,2 @@
+#undef UART_DIV_MAX
+#define UART_DIV_MAX	0xFFFF

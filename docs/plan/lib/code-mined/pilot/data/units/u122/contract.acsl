@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == 0 ==> (td->td_pflags & TDP_EFIRT) != 0; */

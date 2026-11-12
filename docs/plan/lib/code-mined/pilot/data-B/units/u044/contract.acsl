@@ -1,0 +1,1 @@
+/*@ requires tre_count >= 0; ensures (\result == 1 ==> \old(tre_avail) >= tre_count && tre_avail == \old(tre_avail) - tre_count) && (\result == 0 ==> tre_avail == \old(tre_avail)); */

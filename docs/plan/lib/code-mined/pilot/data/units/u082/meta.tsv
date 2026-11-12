@@ -1,0 +1,1 @@
+82	should_fail_futex	error-path	scalar	/home/odin/pbsd-ref/linux/kernel/futex/futex.h	123-126	e80a4397283aae13	b88dff981f59bd07	4c210645a258c152	ok

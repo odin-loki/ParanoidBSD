@@ -1,0 +1,36 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[kernel:typing:implicit-function-declaration] unit.final.c:35: Warning: 
+  Calling undeclared function strcmp. Old style K&R code?
+[wp] Running WP plugin...
+[kernel:annot:missing-spec] unit.final.c:35: Warning: 
+  Neither code nor specification for function strcmp, generating default exits,
+  assigns and terminates. See -generated-spec-* options for more info.
+[wp] Warning: Missing RTE guards
+[wp] 5 goals scheduled
+[wp] [Timeout] typed_parse_mode_ensures_2 (Qed 68ms) (Alt-Ergo) (Cached)
+[wp] [Timeout] typed_parse_mode_ensures (Qed 103ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:6
+[wp] Proved goals:    3 / 5
+  Qed:             3 (68ms-34ms-103ms)
+  Timeout:         2
+[wp:pedantic-assigns] unit.final.c:31: Warning: 
+  No 'assigns' specification for function 'parse_mode'.
+  Callers assumptions might be imprecise.
+[wp] unit.final.c:31: Warning: 
+  Memory model hypotheses for function 'parse_mode':
+  /*@
+     behavior wp_typed:
+       requires
+         \separated(
+           mode + (..), &(__fc_lit_string1[0]) + (..),
+           &(__fc_lit_string2[0]) + (..), &(__fc_lit_string3[0]) + (..),
+           &(__fc_lit_string4[0]) + (..)
+           );
+       requires
+         \separated(
+           val + (..), &(__fc_lit_string1[0]) + (..),
+           &(__fc_lit_string2[0]) + (..), &(__fc_lit_string3[0]) + (..),
+           &(__fc_lit_string4[0]) + (..)
+           );
+     */
+  static int parse_mode(char *val, u32 *mode);

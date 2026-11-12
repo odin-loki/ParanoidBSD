@@ -1,0 +1,1 @@
+/*@ requires 0 <= od_feature_bit < 32; ensures \result == ((overdrive_upperlimits->FeatureCtrlMask & (1U << od_feature_bit)) != 0); */

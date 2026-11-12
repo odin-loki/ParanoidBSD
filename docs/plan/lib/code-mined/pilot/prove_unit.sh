@@ -79,7 +79,7 @@ echo "$OUT" >wp.A.log
 Ap=$(echo "$OUT" | sed -n 's/.*Proved goals: *\([0-9]*\) *\/ *\([0-9]*\).*/\1/p' | tail -1); At=$(echo "$OUT" | sed -n 's/.*Proved goals: *\([0-9]*\) *\/ *\([0-9]*\).*/\2/p' | tail -1)
 if [ -z "$At" ]; then emit WPERROR "$level" "$(echo "$OUT" | grep -m1 -E 'rror|Aborted|aborted' | cut -c1-100)"; fi
 if [ "$Ap" != "$At" ]; then
-  why="contract not proved"; grep -qE '\b(for|while|do)\b' "$FN" && why="contract not proved (function has a loop; needs loop invariants)"
+  why="contract not proved"; awk -f "$HERE/has_loop.awk" "$FN" && why="contract not proved (function has a loop; needs loop invariants)"
   echo "$OUT" | grep -q -i 'timeout' && why="$why; solver timeout"
   emit FAILED "$level" "$why"
 fi

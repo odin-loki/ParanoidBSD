@@ -1,0 +1,1 @@
+26	dlg_calc_listw	arith-helper	scalar	FAILED	L2	0	2	4	-	-	-	13.3	contract not proved (function has a loop; needs loop invariants); solver timeout	

@@ -1,0 +1,1 @@
+/*@ requires clockid <= 255 && iface_no <= 255; ensures \result == 0 || \result == USB_ERR_INVAL; */

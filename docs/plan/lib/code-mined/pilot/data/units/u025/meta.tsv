@@ -1,0 +1,1 @@
+25	adxl345_set_freefall_time	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/iio/accel/adxl345_core.c	398-409	e92a5f58c458c4ce	7907192ffa72fc41	4c210645a258c152	ok

@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result >= 30 && \result <= 1860) || \result == -EINVAL; */

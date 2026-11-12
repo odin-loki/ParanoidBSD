@@ -1,0 +1,4 @@
+#undef ML_DSA_GAMMA2_Q_MINUS1_DIV32
+#define ML_DSA_GAMMA2_Q_MINUS1_DIV32 ((ML_DSA_Q - 1) / 32)
+#undef ML_DSA_Q
+#define ML_DSA_Q 8380417

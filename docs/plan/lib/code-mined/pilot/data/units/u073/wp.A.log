@@ -1,0 +1,14 @@
+[kernel] Parsing unit.final.c (with preprocessing)
+[wp] Running WP plugin...
+[wp] Warning: Missing RTE guards
+[wp] 1 goal scheduled
+[wp] [Timeout] typed_check_attr_len_ensures (Qed 14ms) (Alt-Ergo) (Cached)
+[wp] [Cache] found:3
+[wp] Proved goals:    2 / 3
+  Terminating:     1
+  Unreachable:     1
+  Qed:             0 (14ms)
+  Timeout:         1
+[wp:pedantic-assigns] unit.final.c:22: Warning: 
+  No 'assigns' specification for function 'check_attr_len'.
+  Callers assumptions might be imprecise.
