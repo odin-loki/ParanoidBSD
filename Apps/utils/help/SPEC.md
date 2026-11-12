@@ -60,7 +60,7 @@ Personas:
 | T1 | Open help for the app in front (`F1`) | 1 |
 | T2 | Open a manual page by name | 2 (`Ctrl+L`, `zfs 8` Enter) |
 | T3 | Search all documentation for a phrase | 2 |
-| T4 | Jump to a section inside a long page | 2 (outline click) or `Ctrl+G` type |
+| T4 | Jump to a section inside a long page | 2 (outline click) or `Ctrl+Shift+G` type |
 | T5 | Follow a cross-reference and come back | 1 + 1 (`Alt+Left`) |
 | T6 | Bookmark a page | 1 (`Ctrl+D`) |
 | T7 | Find a flag inside a manual page | 2 (`Ctrl+F`, `-o`) |
@@ -80,7 +80,7 @@ Personas:
 | UT05-F002 | Collection discovery | Collections come from a registry: bundles with `help/` are added at install by the platform; manual and Info directories come from system configuration. No scanning of user files. | M | 1 |
 | UT05-F003 | Home page | Search field, "Start here" pages, recently read, bookmarks, tours, and a status line (what is indexed, in which languages). | M | 1 |
 | UT05-F004 | Page view | One scrolling page with headings, paragraphs, lists, tables, code blocks, notes and warnings, images, definition lists, keyboard-key styling. | M | 1 |
-| UT05-F005 | Outline | Right-hand outline of the page's headings; the current section is marked; click or `Ctrl+G` jumps. | M | 1 |
+| UT05-F005 | Outline | Right-hand outline of the page's headings; the current section is marked; click or `Ctrl+Shift+G` jumps. | M | 1 |
 | UT05-F006 | Tabs | Pages open in tabs; middle click or `Ctrl+Enter` opens a link in a new tab; tabs restore on start. | M | 1 |
 | UT05-F007 | History | Back and forward per tab with scroll position; a global history list by day. | M | 1 |
 | UT05-F008 | Bookmarks | `Ctrl+D`; folders; a bookmark can point at a heading. Stored locally. Import and export as JSON. | M | 1 |
@@ -402,7 +402,7 @@ A `modelListView` with group headers; `Enter` opens, `Ctrl+Enter` opens in a new
 File    New Tab Ctrl+T · New Window Ctrl+N · Open File… Ctrl+O · Print… Ctrl+P
         Export Page ▸ (Markdown, Text, PDF) · Close Tab Ctrl+W · Quit Ctrl+Q
 Edit    Copy Ctrl+C · Copy Link to Section Ctrl+Shift+C · Select All Ctrl+A
-        Find in Page Ctrl+F · Find Next Ctrl+G(F3) · Add Note Ctrl+M · Preferences Ctrl+,
+        Find in Page Ctrl+F · Find Next Ctrl+G · Add Note Ctrl+M · Preferences Ctrl+,
 View    Sidebar F9 · Outline F4 · Contents Ctrl+1 · Bookmarks Ctrl+2 · History Ctrl+3
         Pin Synopsis · Text Size Ctrl++ / Ctrl+- / Ctrl+0 · Line Width ▸ · View Source Ctrl+U
         Language ▸ · Full Screen F11

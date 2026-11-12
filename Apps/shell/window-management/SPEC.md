@@ -338,7 +338,6 @@ The overview on a 1440×900 output with a bottom panel. This is the most complet
 | | 1 Main  ▣ | | 2 Mail    | | 3 Research| | 4 VM work | | + | (2)                      |
 | | [▭][▭][▭] | | [▭]       | | [▭][▭]·Tor| | [▭] ▌green| |   |                          |
 | +=====▲=====+ +-----------+ +-----------+ +-----------+ +---+                          |
-|                                                                                        |
 |  ┌N Files┐                         ┌S Web Browser · net clear┐                         |
 |  +-----------------------+        +================================+                   |
 |  |                       |        ‖                                ‖   ┌D Disposable 3┐|
@@ -352,7 +351,6 @@ The overview on a 1440×900 output with a bottom panel. This is the most complet
 |  ┃ Disks             ┃     +═════════════════+        minimised:                       |
 |  ┃ (live thumbnail)  ┃     ║ 🔒 secret (5)    ║        [▫ Notes] [▫ Music]   (6)        |
 |  +━━━━━━━━━━━━━━━━━━━+     +═════════════════+                                         |
-|                                                                                        |
 |[◉]|[1][2][3][4][+]| [▤]▁ [◍]▁ [D]▁ [⛁]▁ [V]▁                 |[net 1][🔔]| 14:32 |[▭]|(7)|
 +----------------------------------------------------------------------------------------+
 ```
@@ -381,7 +379,6 @@ States: empty workspace (F102); searching with no match ("No window matches 'x'.
   ‖                                                                  ‖
   +==================================================================+
    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░ shadow ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   (5)
-
   Foreign or undecorated client, with a server-side title bar:
   ┌ F  Linux: gimp ┐
   +┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈+
@@ -389,7 +386,6 @@ States: empty workspace (F102); searching with no match ("No window matches 'x'.
   ┊------------------------------------------------------------------┊
   ┊                        client surface                            ┊
   +┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈+
-
   Maximised: the tab folds into a 3 px label bar
   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ (7)
   | [=] Web Browser — docs.example.org   [search ⌘K]   [net][▁][▢][✕] |
@@ -430,7 +426,6 @@ States: focused; unfocused (60% strength); attention (one pulse, then a steady `
 #### 5.3.3 Window switcher (`Alt+Tab`; strip layout, centred, up to 1200 px wide)
 ```
 +----------------------------------------------------------------------------------------+
-|                                                                                        |
 |   +--------------------------------------------------------------------------------+   |
 |   | +------------+ +============+ +------------+ +┄┄┄┄┄┄┄┄┄┄┄┄+ +━━━━━━━━━━━━+     |   |
 |   | | (thumb)    | ‖ (thumb)    ‖ | (thumb)    | ┆ (thumb)    ┆ ┃ (thumb)    ┃     |   |
@@ -440,7 +435,6 @@ States: focused; unfocused (60% strength); attention (one pulse, then a steady `
 |   |  Documents    >docs.example…   ~/src          invoice.pdf     da1          (1) |   |
 |   +--------------------------------------------------------------------------------+   |
 |   Web Browser — docs.example.org · sandboxed · Tor · workspace 1                 (2)   |
-|                                                                                        |
 +----------------------------------------------------------------------------------------+
 ```
 1. Tiles, `gridView` in one row: thumbnail with the label border pattern, letter and app name, window title (elided in the middle). `>` marks the selection, which also gets the accent outline.
@@ -790,7 +784,6 @@ Stored: rules, layouts, saved geometry, workspace names, shortcut bindings. Wind
 | `rules` | json | [] | `Rule` list |
 
 ## 9. Accessibility and languages
-
 - Labels use colour, pattern, letter and word together; the high-contrast theme thickens borders to 4 and 6 px and enlarges the tab one step.
 - The screen reader announces on focus change: app name, window title, label kind word ("disposable"), then state ("maximised"). Moving between label kinds adds an earcon (setting).
 - Move and resize modes announce position and size every 500 ms while changing; snap targets are announced by name ("left half").
@@ -801,7 +794,6 @@ Stored: rules, layouts, saved geometry, workspace names, shortcut bindings. Wind
 - Window titles are shown as given by the app, bidi-isolated; the kind word and menus follow the system language.
 
 ## 10. Performance budgets
-
 | Item | Budget |
 |---|---|
 | Interactive move and resize | Every frame at the output's refresh rate; no policy-service round trip during a drag |
@@ -815,7 +807,6 @@ Stored: rules, layouts, saved geometry, workspace names, shortcut bindings. Wind
 | Limits | 2,000 windows, 36 workspaces, 16 outputs, 1,000 rules (matched in ≤ 1 ms per window) |
 
 ## 11. Testing and proof
-
 Test plan (targets; nothing has run):
 
 - Unit (ForgeScript and the C++ mirror): every layout as a pure function (inputs: work area, windows with hints, parameters; outputs: rectangles) with properties: no overlap, inside the work area, hints honoured or window floated; snap zone maths; rule matching and ordering; placement; workspace add, remove and renumber; output-set keying.
@@ -841,7 +832,6 @@ Test plan (targets; nothing has run):
 | Shell surfaces (ForgeScript) | No runtime error in tests | T3/T4 | Scripted UI | Interpreted code |
 
 ## 12. Build plan
-
 Phase 1 — usable core:
 
 | Item | Work | Depends on |
@@ -894,7 +884,6 @@ Phase 3 — advanced:
 | SH05-W36 | Policy rules, per-kind default rules, debug overlay | SH05-W19 |
 
 ## 13. Open questions and risks
-
 1. **Policy in a separate process.** The plan puts policy in a ForgeScript service behind a new protocol (SH05-GAP-1) with a C++ fallback in the compositor. The alternative is policy as C++23 modules inside the compositor: simpler and faster, but a policy bug then crashes the compositor and the rule "app logic is ForgeScript" is broken. Needs an early prototype to measure map-time latency.
 2. **Where the label tab goes.** A tab above the window costs 18 px of vertical space per floating window and must fold away when maximised. Users may miss the 3 px bar. The `Super`-hold overlay is the backstop; whether that is enough needs user testing.
 3. **Client-side header bars and label trust.** Suite apps draw their own header inside the surface (DESIGN_SYSTEM.md section 3). A hostile app can draw a header that looks like another app's. Only the compositor-drawn tab is authoritative; this must be taught (AD01 tour) and may still confuse.

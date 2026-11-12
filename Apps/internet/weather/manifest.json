@@ -1,0 +1,46 @@
+{
+  "id": "org.pbsd.weather",
+  "name": "Weather",
+  "version": "0.1.0",
+  "category": "internet",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.host:api.open-meteo.com:443",
+    "net.host:air-quality-api.open-meteo.com:443",
+    "net.host:api.met.no:443",
+    "net.host:api.weather.gov:443",
+    "net.route:clear", "net.route:vpn", "net.route:tor",
+    "dev.location",
+    "proc.helper:fetch", "proc.helper:parse", "proc.helper:image",
+    "svc.settings", "svc.notify", "svc.portal.location", "svc.portal.file", "svc.intent",
+    "svc.power", "svc.audit", "svc.model",
+    "ai.local", "bg.run"
+  ],
+  "helpers": [
+    {"name": "fetch", "language": "c++23", "capabilities": ["net.host (manifest hosts only)", "net.route (exactly one per instance)"]},
+    {"name": "parse", "language": "c++23", "capabilities": []},
+    {"name": "image", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["application/json"],
+    "export": ["text/plain", "text/csv", "image/png", "application/json"]
+  },
+  "intents": {"handles": ["view"], "emits": ["open", "share"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.weather.forecast"],
+  "applet": {
+    "entry": "applet.fs",
+    "zones": ["start", "centre", "end", "desktop"],
+    "sizes": {"panel_min_px": 56, "panel_max_px": 120, "widget_cells": ["2x2", "4x2", "4x4"]},
+    "popover": {"width": 320, "height": 360},
+    "capabilities": ["fs.app"]
+  },
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": [],
+  "priority": "P3"
+}

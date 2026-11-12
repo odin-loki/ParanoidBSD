@@ -1,0 +1,59 @@
+{
+  "id": "org.pbsd.games",
+  "name": "Games",
+  "version": "0.1.0",
+  "category": "games",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:chess-engine",
+    "proc.helper:puzzle-helper",
+    "proc.helper:showcase-runtime",
+    "dev.gpu.compute",
+    "dev.print",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.media",
+    "svc.power",
+    "svc.backup",
+    "svc.notify",
+    "svc.a11y"
+  ],
+  "helpers": [
+    {"name": "chess-engine", "language": "c++23", "capabilities": []},
+    {"name": "puzzle-helper", "language": "c++23", "capabilities": []},
+    {"name": "showcase-runtime", "language": "c++23", "capabilities": ["dev.gpu.compute", "svc.media"]}
+  ],
+  "mime": {
+    "view": ["application/vnd.chess-pgn", "application/x-chess-fen", "text/x-sudoku"],
+    "edit": ["application/vnd.chess-pgn"],
+    "import": ["application/vnd.chess-pgn", "application/x-chess-fen", "text/x-sudoku", "application/x-pbsd-games-data"],
+    "export": ["application/vnd.chess-pgn", "application/x-chess-fen", "text/plain", "application/x-pbsd-games-data"]
+  },
+  "intents": {
+    "handles": ["open", "view", "search"],
+    "emits": ["open", "print", "share"]
+  },
+  "url_schemes": ["games"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE"],
+  "priority": "P3",
+  "launcher_entries": [
+    {"id": "klondike", "name": "Klondike", "url": "games:klondike"},
+    {"id": "spider", "name": "Spider", "url": "games:spider"},
+    {"id": "freecell", "name": "FreeCell", "url": "games:freecell"},
+    {"id": "mines", "name": "Mines", "url": "games:mines"},
+    {"id": "sudoku", "name": "Sudoku", "url": "games:sudoku"},
+    {"id": "chess", "name": "Chess", "url": "games:chess"},
+    {"id": "tiles", "name": "Tiles", "url": "games:tiles"},
+    {"id": "mahjong", "name": "Mahjong", "url": "games:mahjong"},
+    {"id": "marble", "name": "Marble 3D", "url": "games:marble"}
+  ]
+}

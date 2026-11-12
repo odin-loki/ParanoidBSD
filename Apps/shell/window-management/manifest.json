@@ -1,0 +1,47 @@
+{
+  "id": "org.pbsd.window-management",
+  "name": "Window Management",
+  "version": "0.1.0",
+  "category": "shell",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "net.none",
+    "svc.settings",
+    "svc.audit",
+    "svc.media",
+    "svc.a11y",
+    "bg.run",
+    "bg.autostart",
+    "shell.layer",
+    "shell.window-policy",
+    "shell.toplevels",
+    "shell.workspaces",
+    "shell.shortcuts"
+  ],
+  "helpers": [],
+  "system_components": [
+    {"name": "compositor frame painter, identity resolver, fallback policy, policy protocol",
+     "language": "c++23", "kind": "compositor-module", "location": "pbsd/compositor"}
+  ],
+  "mime": {"view": [], "edit": [], "import": [], "export": []},
+  "intents": {"handles": [], "emits": []},
+  "url_schemes": [],
+  "services_provided": [
+    "org.pbsd.wm.Windows1",
+    "org.pbsd.wm.Workspaces1",
+    "org.pbsd.wm.Shortcuts1",
+    "org.pbsd.wm.Labels1",
+    "org.pbsd.wm.Rules1",
+    "org.pbsd.wm.Chips1"
+  ],
+  "background": {"autostart": true, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.login-lock >= 0.1"
+  ],
+  "backing_repos": ["ParanoidBSD:pbsd/compositor", "FUSE", "FORGE"],
+  "priority": "P0",
+  "notes": "shell.* capabilities and system_components are Proposed manifest extensions; system-key bundles only."
+}

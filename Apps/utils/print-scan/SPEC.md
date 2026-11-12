@@ -395,16 +395,15 @@ Edit    Undo Ctrl+Z · Redo Ctrl+Shift+Z · Select All Pages Ctrl+A · Delete Pa
         Rotate Left Ctrl+[ · Rotate Right Ctrl+] · Rename Device F2 · Preferences Ctrl+,
 View    Printers Ctrl+1 · Scanners Ctrl+2 · All Jobs Ctrl+3 · History Ctrl+4
         Inspector F4 · Sidebar F9 · Zoom In/Out/Fit Ctrl++ / Ctrl+- / Ctrl+0 · Refresh Status F5
-Printer Set as Default Ctrl+D · Pause/Resume Ctrl+Shift+P(→ Ctrl+Alt+P) · Test Page Ctrl+T
+Printer Set as Default Ctrl+D · Pause/Resume Ctrl+Alt+P · Test Page Ctrl+T
         Defaults and Presets… · Colour Profile… · Troubleshoot… · Identify · Disable · Remove…
-Job     Cancel Delete · Hold Ctrl+H(→ Ctrl+Shift+H) · Release Ctrl+R · Move To ▸ · Reprint… · Show Details Alt+Enter
+Job     Cancel Delete · Hold Ctrl+Shift+H · Release Ctrl+R · Move To ▸ · Reprint… · Show Details Alt+Enter
 Scan    Preview Ctrl+Shift+V · Scan Ctrl+Enter · Add Page Ctrl+Shift+N · Rescan Page
         Clean Up… Ctrl+L · Split Document Here · Recognise Text (OCR) · Copy to Printer…
 Tools   Exposure Summary · Sharing… (administrator) · Colour Profiles… · Open Spool Folder Size
 Help    Printers and Scanners Help F1 · What a Printer Receives · About
 ```
 
-Final bindings: Pause/Resume is `Ctrl+Alt+P`; Hold is `Ctrl+Shift+H` (`Ctrl+H` is reserved for replace, `Ctrl+Shift+P` for the palette).
 
 ### 5.5 Keyboard and pointer
 
