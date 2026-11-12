@@ -23,11 +23,12 @@ Rules:
   * the requires must state only what the code needs; never write ensures \true.
 - If a problem says the contract is false for an input, check that input against the code and fix the contract so it is true.'
 NL=$'\n'
+SYS="$SYS${REPAIR_SYS_EXTRA:+$NL$REPAIR_SYS_EXTRA}"   # later rounds add the reviewer rule (REPAIR_SYS_EXTRA, see start_round.sh)
 FLIST=$(printf '%s' "$FUNCS" | awk 'BEGIN{RS=" ¶ "; FS=" ¦ "} { gsub(/\n$/, "", $5); printf "[#%s] %s\ncurrent prose contract: %s\ncurrent formal contract: %s\nrejected because: %s\n\n", $1, $2, $3, ($4 == "" ? "(none)" : $4), $5 }')
 USER="Source (lines ${S}-${E} of ${FILE##*/}):${NL}${CODE}${NL}${NL}Functions to repair:${NL}${FLIST}"
 MAXTOK=14000   # the remaining records are large slices: at 6000 the reasoning used the whole budget and the reply was empty (money spent for nothing)
 for attempt in 1 2 3; do
-  REQ=$(jq -n --arg sys "$SYS" --arg user "$USER" --argjson mt $MAXTOK '{model:"morph-glm53flash", messages:[{role:"system",content:$sys},{role:"user",content:$user}], max_tokens:$mt, reasoning_effort:"low", temperature:0.2}')
+  REQ=$(jq -n --arg sys "$SYS" --arg user "$USER" --argjson mt $MAXTOK --arg eff "${REPAIR_EFFORT:-low}" '{model:"morph-glm53flash", messages:[{role:"system",content:$sys},{role:"user",content:$user}], max_tokens:$mt, reasoning_effort:$eff, temperature:0.2}')
   RESP=$(curl -sS --max-time 300 https://api.morphllm.com/v1/chat/completions -H "Authorization: Bearer $MORPH_API_KEY" -H 'Content-Type: application/json' -d "$REQ" 2>&1)
   if echo "$RESP" | jq -e '.usage.prompt_tokens' > /dev/null 2>&1; then
     ( flock 9; echo "$(echo "$RESP" | jq -r '.usage.prompt_tokens // 0') $(echo "$RESP" | jq -r '.usage.completion_tokens // 0')" >> "$D/ledger.txt" ) 9> "$OUT.lock"

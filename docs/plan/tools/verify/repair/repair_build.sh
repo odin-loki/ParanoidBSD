@@ -3,7 +3,7 @@
 # Reasons come from: step 1 (s1_why), step 2 stub grammar (s2_why), Frama-C (its message), step 3 (the counterexample), step 4 (DeepSeek's reason; a tiebreak
 # OVERTURN removes it). Output: mined-data/verify/repair/todo.tsv  (key, file, start, end, functions) where functions = "idx ¦ name ¦ prose ¦ contract ¦ problems"
 # joined by " ¶ ". Records are ordered: formal contracts first, then the rest.
-V=/mnt/c/ParanoidBSD/mined-data/verify; RP=$V/repair; mkdir -p "$RP"
+V=/mnt/c/ParanoidBSD/mined-data/verify; RP=${RP:-$V/repair}; mkdir -p "$RP"
 jq -r 'select(.status=="rejected") | "\(.key)\t\(.i)"' "$V/tags.jsonl" > "$RP/rejected.tsv"
 jq -r 'select(.s1=="fail" or .s2=="fail") | "\(.key)\t\(.i)\t" + ([(if .s1=="fail" then "mechanical: " + .s1_why else empty end), (if .s2=="fail" then "syntax: " + .s2_why else empty end)] | join(" | "))' "$V/step12.jsonl" > "$RP/p12.tsv"
 jq -r 'select(.frama=="fail" or (.frama=="type" and (.msg|test("𝔹")))) | "\(.key)\t\(.i)\tFrama-C rejects the formal contract: \(.msg|.[0:120])"' "$V/frama12.jsonl" > "$RP/pfr.tsv"

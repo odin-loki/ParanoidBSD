@@ -2,7 +2,7 @@
 # repair_watch.sh <budget-usd> [parallel]   Starts and supervises repair_all.sh: checks every 60 s for the first hour, then every 10 minutes.
 # Restarts it if it died or stalled (it resumes), at most 6 times an hour; stops everything on a credit/auth error (writes STOP).
 # Log: /mnt/c/ParanoidBSD/mined-data/verify/repair/watch.log ; status.json beside it.
-HERE=$(cd "$(dirname "$0")" && pwd); X=/mnt/c/ParanoidBSD/mined-data/verify/repair; mkdir -p "$X"
+HERE=$(cd "$(dirname "$0")" && pwd); X=${RP:-/mnt/c/ParanoidBSD/mined-data/verify/repair}; mkdir -p "$X"
 BUDGET=${1:-60}; P=${2:-48}; LOG=$X/watch.log; LED=$X/ledger.txt
 say() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
 alive() { pgrep -f "repair_all.sh" > /dev/null; }

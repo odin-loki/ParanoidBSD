@@ -3,13 +3,13 @@
 # are skipped), spend-capped (GLM-5.3-Flash on Morph: $0.047 / $0.268 per 1M tokens, an upper bound). A background watchdog enforces the budget and the credit stop by
 # touching $RP/STOP, which repair_chunk.sh checks before every call (no batch barrier: batches left the workers idle while their slowest call finished).
 # Output: mined-data/verify/repair/repair.jsonl
-HERE=$(cd "$(dirname "$0")" && pwd); RP=/mnt/c/ParanoidBSD/mined-data/verify/repair; OUT=$RP/repair.jsonl; LED=$RP/ledger.txt
+HERE=$(cd "$(dirname "$0")" && pwd); RP=${RP:-/mnt/c/ParanoidBSD/mined-data/verify/repair}; TODO=${TODO:-$RP/todo.tsv}; OUT=$RP/repair.jsonl; LED=$RP/ledger.txt
 MAXREC=${1:-100}; BUDGET=${2:-40}; P=${3:-48}
 log() { echo "$(date '+%F %T') $*" | tee -a "$RP/repair.log"; }
 cost() { awk '{i+=$1; o+=$2} END{printf "%.4f", (i*0.047+o*0.268)/1000000}' "$LED" 2>/dev/null || echo 0; }
 rm -f "$RP/DONE"
 [ -s "$OUT" ] && jq -r '.key' "$OUT" | sort -u > "$RP/done.keys" || : > "$RP/done.keys"
-head -n "$MAXREC" "$RP/todo.tsv" | awk -F'\t' 'FILENAME == ARGV[1] { d[$1] = 1; next } !($1 in d)' "$RP/done.keys" - > "$RP/todo.now"
+head -n "$MAXREC" "$TODO" | awk -F'\t' 'FILENAME == ARGV[1] { d[$1] = 1; next } !($1 in d)' "$RP/done.keys" - > "$RP/todo.now"
 TOTAL=$(wc -l < "$RP/todo.now"); log "repair: $TOTAL records to do (cap $MAXREC), budget \$$BUDGET, spent so far \$$(cost), parallel $P (continuous stream)"
 ( while [ ! -f "$RP/DONE" ] && [ ! -f "$RP/STOP" ]; do
     sleep 20
