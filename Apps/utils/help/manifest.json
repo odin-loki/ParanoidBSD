@@ -1,0 +1,52 @@
+{
+  "id": "org.pbsd.help",
+  "name": "Help",
+  "version": "0.1.0",
+  "category": "utils",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "fs.path:/usr/share/man:r",
+    "fs.path:/usr/local/share/man:r",
+    "fs.path:/usr/share/doc:r",
+    "fs.path:/usr/local/share/doc:r",
+    "fs.path:/usr/local/share/info:r",
+    "net.none",
+    "proc.helper:doc-helper",
+    "proc.helper:index-helper",
+    "svc.settings",
+    "svc.intent",
+    "svc.search",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.clipboard",
+    "svc.a11y",
+    "svc.notify",
+    "svc.model",
+    "ai.local",
+    "dev.print",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "doc-helper", "language": "c++23", "capabilities": []},
+    {"name": "index-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["text/markdown", "text/troff", "application/x-troff-man", "application/x-info", "text/plain"],
+    "edit": [],
+    "import": ["application/json"],
+    "export": ["text/markdown", "text/plain", "application/pdf", "application/json"]
+  },
+  "intents": {
+    "handles": ["help", "open", "view", "search"],
+    "emits": ["open", "print"]
+  },
+  "url_schemes": ["help"],
+  "services_provided": ["org.pbsd.help.v1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["hbsd/src/contrib/mandoc", "FUSE", "FORGE"],
+  "priority": "P1"
+}

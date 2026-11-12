@@ -1,0 +1,57 @@
+{
+  "id": "org.pbsd.login-lock",
+  "name": "Login, Lock and Session",
+  "version": "0.1.0",
+  "category": "shell",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "net.none",
+    "proc.helper:token-helper",
+    "svc.settings",
+    "svc.audit",
+    "svc.power",
+    "svc.media",
+    "svc.thumbnail",
+    "svc.a11y",
+    "svc.keyring",
+    "svc.auth",
+    "dev.usb:hid-fido",
+    "bg.run",
+    "bg.autostart",
+    "shell.lock",
+    "shell.trusted-path",
+    "shell.session"
+  ],
+  "helpers": [
+    {"name": "token-helper", "language": "c++23", "capabilities": ["dev.usb:hid-fido"]}
+  ],
+  "entry_points": {
+    "greeter": "src/greeter.fs",
+    "lock": "src/lock.fs",
+    "prompt-agent": "src/prompt_agent.fs"
+  },
+  "system_components": [
+    {"name": "auth-service", "language": "c++23", "kind": "system-service", "provides": ["svc.auth"]},
+    {"name": "disk-unlock-screen", "language": "c++23", "kind": "boot-image"}
+  ],
+  "mime": {"view": [], "edit": [], "import": [], "export": []},
+  "intents": {"handles": [], "emits": []},
+  "url_schemes": [],
+  "services_provided": [
+    "svc.auth",
+    "org.pbsd.auth.Authenticate1",
+    "org.pbsd.auth.Authorise1",
+    "org.pbsd.auth.Enrol1",
+    "org.pbsd.session.Session1"
+  ],
+  "background": {"autostart": true, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.notifications >= 0.1"
+  ],
+  "backing_repos": ["FUSE", "FORGE", "ParanoidBSD:pbsd/compositor"],
+  "priority": "P0",
+  "notes": "shell.* capabilities, svc.auth, entry_points and system_components are Proposed manifest extensions; system-key bundles only."
+}

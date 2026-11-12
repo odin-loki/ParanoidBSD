@@ -1,0 +1,53 @@
+{
+  "id": "org.pbsd.notebook",
+  "name": "Notebook",
+  "version": "0.1.0",
+  "category": "ai",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "proc.helper:kernel-mathscript",
+    "proc.helper:kernel-forgescript",
+    "proc.helper:import",
+    "proc.helper:export",
+    "net.user",
+    "dev.gpu.compute",
+    "ai.local",
+    "svc.model",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.keyring",
+    "svc.audit",
+    "svc.search",
+    "svc.clipboard",
+    "svc.backup",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "kernel-mathscript", "language": "c++23", "capabilities": ["dev.gpu.compute"]},
+    {"name": "kernel-forgescript", "language": "c++23", "capabilities": ["net.user", "ai.local", "svc.model", "dev.gpu.compute"]},
+    {"name": "import", "language": "c++23", "capabilities": []},
+    {"name": "export", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-pbsd-notebook", "application/x-pbsd-notebook-packed"],
+    "edit": ["application/x-pbsd-notebook"],
+    "import": ["application/x-ipynb+json", "text/csv", "text/tab-separated-values", "text/x-mathscript", "text/x-forgescript"],
+    "export": ["application/pdf", "text/html", "text/markdown", "application/x-ipynb+json", "application/x-pbsd-notebook-packed", "image/svg+xml", "image/png", "text/csv"]
+  },
+  "intents": {
+    "handles": ["open", "edit", "view", "new"],
+    "emits": ["open", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.notebook.Merge/1", "org.pbsd.notebook.Render/1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/MathScript", "odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P2"
+}

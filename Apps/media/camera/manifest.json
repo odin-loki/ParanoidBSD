@@ -1,0 +1,40 @@
+{
+  "id": "org.pbsd.camera",
+  "name": "Camera",
+  "version": "0.1.0",
+  "category": "media",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "dev.camera", "dev.mic", "dev.location", "dev.gpu.compute", "ai.local",
+    "net.user",
+    "proc.helper:decode-helper", "proc.helper:encode-helper", "proc.helper:frame-analysis-helper",
+    "proc.helper:pdf-writer",
+    "bg.run",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.camera", "svc.portal.mic",
+    "svc.portal.location", "svc.intent", "svc.clipboard", "svc.media", "svc.power", "svc.model",
+    "svc.undo-trash", "svc.audit"
+  ],
+  "helpers": [
+    {"name": "decode-helper", "language": "c++23", "capabilities": []},
+    {"name": "encode-helper", "language": "c++23", "capabilities": []},
+    {"name": "frame-analysis-helper", "language": "c++23", "capabilities": []},
+    {"name": "pdf-writer", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["image/jpeg", "image/png", "image/webp"],
+    "export": ["image/jpeg", "image/png", "image/webp", "image/avif", "image/jxl", "image/x-adobe-dng",
+               "video/webm", "video/x-matroska", "video/mp4", "application/pdf", "text/plain", "text/markdown",
+               "image/svg+xml"]
+  },
+  "intents": {"handles": ["scan", "pick"], "emits": ["open", "share", "edit", "compose"]},
+  "url_schemes": [],
+  "services_provided": ["camera-source:virtual"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.media-pipeline >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE"],
+  "priority": "P2"
+}

@@ -1,0 +1,34 @@
+{
+  "id": "org.pbsd.audio-editor",
+  "name": "Audio Editor",
+  "version": "0.1.0",
+  "category": "create",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "proc.helper:audio-engine", "proc.helper:audio-codec", "proc.helper:plugin-host", "proc.helper:analysis",
+    "dev.mic", "dev.usb:midi", "dev.gpu.compute", "ai.local", "bg.run",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.mic", "svc.portal.usb", "svc.intent",
+    "svc.media", "svc.power", "svc.model", "svc.clipboard", "svc.keyring", "svc.backup", "svc.a11y"
+  ],
+  "helpers": [
+    {"name": "audio-engine", "language": "c++23", "capabilities": ["fs.app", "dev.mic", "svc.media"]},
+    {"name": "audio-codec", "language": "c++23", "capabilities": []},
+    {"name": "plugin-host", "language": "c++23", "capabilities": []},
+    {"name": "analysis", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": ["application/x-pbsd-audio-session+json", "audio/wav", "audio/flac", "audio/ogg", "audio/opus", "audio/aiff"],
+    "import": ["audio/mpeg", "audio/aac", "audio/mp4", "audio/x-wavpack", "audio/midi", "audio/x-sfz", "audio/x-soundfont"],
+    "export": ["audio/wav", "audio/flac", "audio/ogg", "audio/opus", "audio/aiff", "audio/mpeg", "audio/mp4", "audio/x-wavpack", "audio/midi", "text/vtt", "application/x-subrip", "application/x-cue"]
+  },
+  "intents": {"handles": ["open", "edit", "new", "share"], "emits": ["share", "open"]},
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P3"
+}

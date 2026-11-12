@@ -1,0 +1,52 @@
+{
+  "id": "org.pbsd.input-methods",
+  "name": "Input Methods and Emoji",
+  "version": "0.1.0",
+  "category": "access",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "fs.path:/usr/local/share/pbsd/input:r",
+    "net.none",
+    "proc.helper:input-broker",
+    "proc.helper:engine-host",
+    "proc.helper:engine-pinyin",
+    "proc.helper:engine-kana-kanji",
+    "svc.a11y",
+    "svc.a11y:textinput.broker",
+    "svc.a11y:track",
+    "svc.settings",
+    "svc.notify",
+    "svc.audit",
+    "svc.clipboard",
+    "svc.model",
+    "svc.backup",
+    "svc.portal.file",
+    "svc.portal.print",
+    "ai.local",
+    "dev.print",
+    "bg.run",
+    "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "input-broker", "language": "c++23", "capabilities": ["fs.app", "svc.a11y:textinput.broker"]},
+    {"name": "engine-host", "language": "c++23", "capabilities": []},
+    {"name": "engine-pinyin", "language": "c++23", "capabilities": []},
+    {"name": "engine-kana-kanji", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["text/csv", "application/json", "text/plain"],
+    "export": ["text/csv", "application/json", "text/plain"]
+  },
+  "intents": {"handles": ["pick"], "emits": ["search", "open"]},
+  "url_schemes": [],
+  "services_provided": ["input-method.panel", "text.predict", "input.sources"],
+  "background": {"autostart": true, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE", "odin-loki/FORGE"],
+  "priority": "P1"
+}

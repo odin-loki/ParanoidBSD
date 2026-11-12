@@ -1,0 +1,48 @@
+{
+  "id": "org.pbsd.disk-usage",
+  "name": "Disk Usage",
+  "version": "0.1.0",
+  "category": "utils",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:scan-helper",
+    "proc.helper:hash-helper",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.undo-trash",
+    "svc.backup",
+    "svc.audit",
+    "svc.power",
+    "svc.thumbnail",
+    "svc.storage",
+    "dev.print",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "scan-helper", "language": "c++23", "capabilities": []},
+    {"name": "hash-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["inode/directory"],
+    "edit": [],
+    "import": [],
+    "export": ["text/csv", "application/json", "text/markdown", "application/pdf", "image/png", "image/svg+xml"]
+  },
+  "intents": {
+    "handles": ["open", "view", "disk-usage.low-space"],
+    "emits": ["open", "new", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}

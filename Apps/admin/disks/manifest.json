@@ -18,22 +18,66 @@
     "svc.portal.file",
     "svc.portal.usb",
     "dev.usb:storage",
-    "proc.helper:image-helper"
+    "proc.helper:image-helper",
+    "ai.local",
+    "svc.model"
   ],
-  "optional_capabilities": ["ai.local", "svc.model"],
-  "helpers": [{"name": "image-helper", "language": "c++23", "capabilities": []}],
+  "helpers": [
+    {
+      "name": "image-helper",
+      "language": "c++23",
+      "capabilities": []
+    }
+  ],
   "mime": {
-    "view": ["application/x-iso9660-image", "application/x-raw-disk-image"],
+    "view": [
+      "application/x-iso9660-image",
+      "application/x-raw-disk-image"
+    ],
     "edit": [],
-    "import": ["application/x-iso9660-image", "application/x-raw-disk-image", "application/zstd", "application/x-xz", "application/gzip"],
-    "export": ["application/x-raw-disk-image", "application/zstd", "text/markdown", "application/json", "application/pdf", "image/svg+xml", "image/png"]
+    "import": [
+      "application/x-iso9660-image",
+      "application/x-raw-disk-image",
+      "application/zstd",
+      "application/x-xz",
+      "application/gzip"
+    ],
+    "export": [
+      "application/x-raw-disk-image",
+      "application/zstd",
+      "text/markdown",
+      "application/json",
+      "application/pdf",
+      "image/svg+xml",
+      "image/png"
+    ]
   },
-  "intents": {"handles": ["open", "view"], "emits": ["open", "share", "print"]},
-  "url_schemes": ["pbsd-storage"],
+  "intents": {
+    "handles": [
+      "open",
+      "view"
+    ],
+    "emits": [
+      "open",
+      "share",
+      "print"
+    ]
+  },
+  "url_schemes": [
+    "pbsd-storage"
+  ],
   "services_provided": [],
-  "background": {"autostart": false, "run": false},
-  "depends_on": ["org.pbsd.platform >= 0.1"],
-  "backing_repos": ["ParanoidBSD", "FUSE", "FORGE"],
-  "priority": "P1",
-  "notes": "svc.storage is a Proposed privileged service shared with AD01 and AD03; scrub and self-test schedules run in that service, so the app needs no bg.run."
+  "background": {
+    "autostart": false,
+    "run": false
+  },
+  "depends_on": [
+    "org.pbsd.platform >= 0.1"
+  ],
+  "backing_repos": [
+    "ParanoidBSD",
+    "FUSE",
+    "FORGE"
+  ],
+  "priority": "P1"
 }

@@ -269,3 +269,572 @@ Priority: M must, S should, C could. Phase 1, 2, 3 as in section 12.
 | OF03-F153 | Previous versions | Shows each incremental-save revision of a PDF as its own read-only view and can compare two. | S | 3 |
 | OF03-F154 | EPUB metadata | View and edit title, creators, language, identifiers, series, cover; stored in the library record, written to the file only on request. | S | 3 |
 | OF03-F155 | Tracking defence | No external resource is ever fetched on open, view or print: remote images, fonts, XObject references, "phone home" form actions and URL actions on open are inert and listed in F150. | M | 1 |
+
+### 4.11 Library and reading progress
+
+| ID | Feature | Detail | Pri | Ph |
+|---|---|---|---|---|
+| OF03-F156 | Bookshelf | A library view of documents the user added: cover grid or table. Adding stores a remembered portal grant and a record; files are not copied unless "Copy into library" is chosen. | S | 2 |
+| OF03-F157 | Watched folders | Granted folders are scanned for supported files and kept in step with changes. | S | 2 |
+| OF03-F158 | Metadata extraction | Title, authors, series and number, publisher, language, year, identifiers (ISBN, DOI), subjects, cover: from OPF, PDF Info/XMP, `ComicInfo.xml`, file name patterns. Editable; edits live in the library record. | S | 2 |
+| OF03-F159 | Covers | From the declared cover, else the first page; rendered by the helper; cached in the app cache. | S | 2 |
+| OF03-F160 | Collections and tags | User collections (a document can be in many), tags, series grouping, shelves "Reading", "Unread", "Finished", "Recently added". | S | 2 |
+| OF03-F161 | Sort and filter | By title, author, series, added, last read, progress, format, size, language; filter chips; type-ahead. | S | 2 |
+| OF03-F162 | Reading progress | Last position (page or EPUB CFI), percentage, time read, finished date; shown as a bar on the cover. Updated on page turns, saved at most once per 5 s. | M | 2 |
+| OF03-F163 | Continue reading | The start view lists the last five documents with progress; one click resumes. | M | 2 |
+| OF03-F164 | Library search | Full-text index of library documents (option per folder): SQLite FTS5 over text extracted in the helper; search hits open at the page. | S | 3 |
+| OF03-F165 | Reading statistics | Local only: pages and minutes per day, per book; can be turned off and erased. | C | 3 |
+| OF03-F166 | Sidecar portability | Annotations, bookmarks and progress for a document can be exported as one JSON file (`<name>.annot.json`) and imported on another device; OF02's sync can carry the folder. No built-in sync. | S | 3 |
+| OF03-F167 | Missing files | Records whose file is gone show "missing" with [Locate…]; state is kept by content hash so a re-added file reconnects. | S | 2 |
+| OF03-F168 | Duplicates | Same content hash listed once; same work in several formats can be grouped by the user. | C | 3 |
+| OF03-F169 | Metadata lookup | Not offered online. Import of metadata from a local file (OPF, BibTeX, CSV) only. | C | 3 |
+| OF03-F170 | Bibliography export | Selected records as BibTeX, RIS or CSL-JSON for OF04's citations. | C | 3 |
+| OF03-F171 | Private library option | Per collection: exclude from recent lists, system search, thumbnails and statistics. | S | 3 |
+| OF03-F172 | Remove from library | Removes the record and, by choice, the sidecar data; never deletes the file unless asked, then through the trash. | S | 2 |
+
+### 4.12 Hostile-document handling
+
+| ID | Feature | Detail | Pri | Ph |
+|---|---|---|---|---|
+| OF03-F173 | One sandbox per document | Each open document gets its own `render-helper` process in Capsicum capability mode. It holds: a read-only descriptor of the file, a shared-memory region for tiles, and an IPC pipe. It has no directory handle, no socket, no clock beyond monotonic, no keyring, no other document. | M | 1 |
+| OF03-F174 | No ambient anything | The helper starts with an empty capability list in the manifest; it cannot open paths, create sockets, start processes, or read the environment. Fonts it needs are passed as read-only descriptors by the app host on request by name hash. | M | 1 |
+| OF03-F175 | No scripts, by construction | The PDF engine is built with no JavaScript interpreter. Document, page, field and annotation scripts are parsed only far enough to list them in the hidden-data report. EPUB scripts and PostScript beyond the page description are not run in the viewer. | M | 1 |
+| OF03-F176 | No automatic actions | Open actions, additional actions, launch, URI, submit, import, named "print" and rendition actions do nothing. Only "go to" inside the document is performed, and only on a user click. | M | 1 |
+| OF03-F177 | Resource limits | Per helper: memory cap (`RLIMIT_DATA`), CPU time per page (default 10 s, then the page shows "too complex" with a Retry at lower quality), recursion and object-count limits, image dimensions (default 16 384 px a side, 256 megapixels), decompression ratio guard (default 1 000:1 and 2 GiB per stream). | M | 1 |
+| OF03-F178 | Helper output is untrusted | Every size, count, offset and string from the helper is validated in the app host before use (FUSE-WP-45 contract). Tiles are plain RGBA of a requested size. Text is length-capped and normalised. | M | 1 |
+| OF03-F179 | Crash containment | A helper crash shows "This document made the renderer stop" on the affected tab with [Reload] and [Report details]; other tabs are unaffected. Three crashes on one page mark the page as skipped. | M | 1 |
+| OF03-F180 | Write path is separate | Saving, redaction, signing and page operations run in a second helper instance that additionally holds a write-only descriptor to a new temporary file. The app host renames it into place through the portal. The reader instance can never write. | M | 2 |
+| OF03-F181 | Untrusted provenance default | Files tagged as downloaded or received (IN01, CO01, CO05, IN03) open with: forms read-only, links showing targets but needing two clicks, embedded files not savable until "Trust this document" is clicked. A `--warn` chip says "From <origin>". | M | 2 |
+| OF03-F182 | Disposable viewing | "Open in a disposable sandbox" (DESIGN_SYSTEM.md section 5): no sidecar, no recent entry, no cache on disk, no thumbnail offered; everything is gone on close. | S | 2 |
+| OF03-F183 | Convert to trusted PDF | Rebuild an untrusted document as a new PDF from its rendered pages plus re-extracted text (rasterise and OCR-free text overlay from the text layer). The output has none of the original objects. | S | 3 |
+| OF03-F184 | Password handling | Passwords are passed to the helper over IPC, held in `secure_buffer`, and never logged. Saved passwords live in `svc.keyring` under the file hash. | M | 1 |
+| OF03-F185 | Font safety | Embedded fonts are parsed inside the helper only. System fonts come through the host. Hinting bytecode is not executed (auto-hinting or none). | M | 1 |
+| OF03-F186 | Thumbnailer isolation | The thumbnail provider registered with `svc.thumbnail` is the same helper with the same limits and a 2 s budget; it renders page 1 only and reads no sidecar. | M | 2 |
+| OF03-F187 | Security panel | `View > Document Safety` shows for the open document: sandbox state, limits hit, scripts found (count, not run), actions found, external references found, embedded files, encryption, signature state, provenance. | M | 2 |
+| OF03-F188 | Network honesty | `net.none` by default. The only network uses are the user-triggered OCSP/CRL fetch and time-stamp request; they run in a third short-lived `net-helper` that sees only the request bytes, and the `[net]` badge shows while it runs. | M | 2 |
+
+### 4.13 Print, export, share and general
+
+| ID | Feature | Detail | Pri | Ph |
+|---|---|---|---|---|
+| OF03-F189 | Print | `Ctrl+P` through the print portal (G-16): ranges, odd/even, reverse, copies, scale (fit, shrink, actual, custom), auto-rotate and centre, n-up, booklet, poster tiling, with or without annotations and form values, as image (for stubborn files), greyscale. PDF goes to the spooler as PDF after a sanitising rewrite. | M | 2 |
+| OF03-F190 | Save and save as | `Ctrl+S` writes in-file annotations and form values by incremental update (keeps signatures) or full rewrite (option "optimise on save"); atomic rename. Read-only handles lead to Save As. | M | 1 |
+| OF03-F191 | Export pages as images | PNG, JPEG, WebP, TIFF; DPI 36–1200; ranges; transparent background option. | S | 2 |
+| OF03-F192 | Export to other formats | PDF from EPUB, DjVu, XPS, comics and PostScript; PDF/A-2b attempt with a list of what blocked it; SVG per page (vector where possible). | S | 3 |
+| OF03-F193 | Encrypt on save | Set or remove passwords with AES-256 (revision 6) only; certificate encryption to recipients from SE04. Older algorithms are read-only. | S | 3 |
+| OF03-F194 | Share | `share` intent with the file, selected pages as a new PDF, a snapshot image, or selected text; sanitise option (F152). | S | 2 |
+| OF03-F195 | Command palette | `Ctrl+K`: commands, outline entries, pages ("p 120"), open tabs, library titles, settings. | M | 1 |
+| OF03-F196 | Session restore | Open tabs, positions and panels return after restart or crash. Disposable tabs never return. | M | 1 |
+| OF03-F197 | Open in other apps | Hand-offs: OF04 (import as editable text), OF08 (page as vector drawing), ME01 (extracted images), OF01 (extracted text), OF02 (make a note linked to this page), CO01 (attach), UT06 (print queue), SE05 (encrypt, erase). | S | 2 |
+| OF03-F198 | Command line | `document-viewer [file] [--page n] [--dest name] [--find text] [--present] [--disposable]`; arguments resolved to handles by the launcher. | S | 1 |
+| OF03-F199 | Touch and e-reader ergonomics | Tap zones (left, right, centre for chrome), swipe paging, double-tap to fit a column, brightness-independent themes. | S | 2 |
+| OF03-F200 | Keyboard reading | Space and Shift+Space page with overlap marker; `J`/`K` lines; `N`/`P` pages; `G` go to page; Vim-like keys are a preset. | M | 1 |
+| OF03-F201 | Continuous background save of state | Position and sidecar are saved without prompts; closing never asks unless in-file changes are unsaved. | M | 1 |
+| OF03-F202 | Help and first run | A short tour document (a PDF in the bundle) shows sandbox, annotations and redaction basics. | S | 1 |
+| OF03-F203 | Thumbnail and preview provider | Provides `svc.thumbnail` renderers and the quick-preview pane for SY02 for all supported types. | M | 2 |
+| OF03-F204 | Search provider | Offers library titles and, by option, text to `svc.search`; never for private collections or disposable tabs. | S | 3 |
+| OF03-F205 | Accessibility of content | Exposes tagged PDF structure (headings, lists, tables, figures with alt text, reading order, language) and EPUB semantics to the a11y tree; untagged pages expose text lines in detected order with a notice. | M | 2 |
+
+## 5. GUI
+
+### 5.1 Window map
+
+```
+Main window
+├─ Header bar: menu, title, search/palette, [net] (only during OCSP/time-stamp), lock (encrypted), provenance chip
+├─ Tab strip
+├─ Sidebar (F9): Thumbnails | Outline | Bookmarks | Annotations | Search | Attachments | Layers | Signatures
+├─ Toolbar: page field, zoom, layout, tools (select, hand, highlight, note, ink, shape, text, stamp, sign, redact)
+├─ Page area (page view; one or two panes) with banner stack and find bar
+├─ Inspector (F4): Properties | Annotation | Form fields | Document Safety
+├─ Full views: Library · Organise Pages · Presentation · Presenter · Compare
+├─ Sheets: Password · Merge · Split · Extract · Insert · Crop · Print options · Export · Sanitise · Redaction apply
+│          and report · Sign · Signature details · OCR · Metadata edit · Encrypt · Library add
+├─ Popovers: zoom, layout, colour presets, note pop-up, link preview, footnote, reading settings (EPUB), TTS bar
+└─ Settings tab
+Drawn by the shell: file portal, print dialog, share sheet, key-use prompt (SE04), capability prompts
+```
+
+### 5.2 Main window
+
+Shown at 1360×840 with a signed, untrusted PDF open.
+
+```
++------------------------------------------------------------------------------------------+
+| [=] Document Viewer — contract.pdf   [ Search  Ctrl+K ]  (⚠ From: mail)  [🔒][▁][▢][✕]  | (1)
++------------------------------------------------------------------------------------------+
+| contract.pdf × | paper.pdf | Dune.epub                                              [+]  | (2)
++------------------------------------------------------------------------------------------+
+| [◀][ 3 ]/12[▶] | [−][ 110% v][+] [Fit v] [▯▯ v] | [I][✋][H][🗨][✎][▭][T][⎙][✍][█] | [⋯]    | (3)
++------------+-----------------------------------------------------------+-----------------+
+| [▦][≡][🔖] | ✓ Signed by A. Citizen · valid · not changed since signing [Details]    (4) | Properties      |
+| [✎][🔍][📎]| ! Opened with limits: forms read-only, links held. [Trust this document]    | Title  Contract |
+|  +------+  +-----------------------------------------------------------+ Author —        |
+|  |  1   |  |                                                           | Pages  12       |
+|  +------+  |        +---------------------------------------+          | PDF    1.7      |
+|  +------+  |        |  3. TERM                              |          | Size   412 KiB  |
+|  |  2   |  |        |  This agreement starts on ▓▓▓▓▓▓▓▓▓▓  |          | SHA-256 9f2c…   |
+|  +------+  |        |  and runs for [ 24      ] months.     |          |-----------------|
+|  +======+  |        |  ~~~~~ highlighted text ~~~~~    🗨    |          | Document Safety |
+|  |> 3   |  |        |                                       |          | Sandbox  on     |
+|  +======+  |        |  Signature: [ A. Citizen ✓ ]          |          | Scripts  2 found|
+|  +------+  |        +---------------------------------------+          |          not run|
+|  |  4   |  |                          (5)                              | Actions  1 held |
+|     (6)    | Find [ months      ] [Aa][W][.*]  1 of 4 [<][>] [List] (7)| Ext. refs 0     |
++------------+-----------------------------------------------------------+-----------------+
+| Page 3 of 12 (label "3") · 210 × 297 mm · 1 selected · Annotations: in file ● unsaved     | (8)
++------------------------------------------------------------------------------------------+
+```
+
+1. Header bar (`headerBar`): provenance chip and lock chip are `toolButton`s opening details.
+2. Tabs (`tabView`, FUSE-WP-31); a format icon per tab; disposable tabs have a dashed outline.
+3. Toolbar (`toolbar`, FUSE-WP-29): `spinBox`-like page field accepting labels, zoom `comboBox`, fit and layout menus, tool `toolButton`s (radio group), overflow.
+4. Banner stack (`banner`): signature verdict, provenance limits, OCR offer, damaged-file report, password, "has scripts that were not run".
+5. Page area (`pageView`, FUSE-WP-45) with overlay layer for annotations (ink through canvas input) and real widgets (`lineEdit`, `checkBox`, `comboBox`) over form fields.
+6. Sidebar (`sidebar` with `tabBar` icons): thumbnails `gridView`, outline `treeView`, others `listView`.
+7. Find bar.
+8. Status bar (`statusBar`): page and label, page size, selection, annotation storage mode with unsaved dot, background jobs (rendering, search, OCR).
+
+States: start view when no document is open ("Continue reading" row, [Open…], drop target); loading (first page tiles progressive, sidebar fills); password needed (sheet); damaged (banner + per-page error cards); helper crashed (card with [Reload]); read-only; narrow.
+
+### 5.3 Other views and dialogs
+
+**Library** (full view, 1360×840).
+
+```
++------------------------------------------------------------------------------------------+
+| Library      [ Search library ]   [Grid v] Sort [Last read v]        [+ Add…] [Folders…] |
++--------------+---------------------------------------------------------------------------+
+| SHELVES      | Continue reading                                                          |
+|  Reading   4 |  +-------+  +-------+  +-------+                                          |
+|  Unread   31 |  | cover |  | cover |  | cover |                                          |
+|  Finished 12 |  |▓▓▓░░░░|  |▓▓▓▓▓▓░|  |▓░░░░░░|   progress bars                          |
+| COLLECTIONS  |  Dune 42%   PBSD 88%   Capsicum 9%                                        |
+|  Papers   58 | All (104)                                                                 |
+|  Manuals   9 |  +-------+  +-------+  +-------+  +-------+  +-------+  +-------+         |
+|  Comics   22 |  | cover |  | cover |  | cover |  | PDF   |  | DjVu  |  | ! miss|         |
+| FORMAT       |  +-------+  +-------+  +-------+  +-------+  +-------+  +-------+         |
+|  PDF EPUB …  |  …                                                                        |
++--------------+---------------------------------------------------------------------------+
+```
+
+`gridView` (covers) or `tableView`; `sidebar`. States: empty ("Add books or a folder" + [Add…]), scanning, missing files.
+
+**Organise pages** (full view).
+
+```
++------------------------------------------------------------------------------------------+
+| Organise — contract.pdf    [Rotate ↺][↻] [Delete] [Extract…] [Insert v] [Split…] [Merge…]|
++------------------------------------------------------------------------------------------+
+|  +-----+  +-----+  +=====+  +=====+  +-----+  +-----+   |  appendix.pdf (drag pages in)  |
+|  |  1  |  |  2  |  |> 3  |  |> 4  |  |  5  |  |  6  |   |  +-----+  +-----+  +-----+     |
+|  +-----+  +-----+  +=====+  +=====+  +-----+  +-----+   |  |  1  |  |  2  |  |  3  |     |
+|  +-----+  +-----+   …        ┆ drop marker              |  +-----+  +-----+  +-----+     |
++------------------------------------------------------------------------------------------+
+| 2 of 12 selected · ! Saving will remove 1 signature          [Cancel] [Save As New File…]|
++------------------------------------------------------------------------------------------+
+```
+
+`gridView` with multi-select and drag reorder (FUSE-WP-28, FUSE-WP-33).
+
+**Redaction apply and report** (sheet, 640×520).
+
+```
++----------------------------------------------------------------+
+| Remove the marked content for good?                            |
+| 14 areas on 6 pages · 9 text, 3 image, 2 vector                |
+| Fill [■ Black v]   Overlay text [ s 47F      ]                 |
+| [x] Remove metadata and hidden data (11 items) [Review…]       |
+| [ ] Fixed-width fill (hides length of removed words)           |
+| [ ] Maximum safety: turn affected pages into images            |
+| i The original file stays as it is. 1 signature will be lost.  |
+|                         [Cancel] [Redact and Save As New File…]|
++----------------------------------------------------------------+
+| Verification of contract-redacted.pdf                          |
+|  ✓ None of 9 removed strings found in text, streams, metadata  |
+|  ✓ 14 of 14 areas render as fill only                          |
+|  ✓ 0 source objects marked for removal remain                  |
+|  ! 2 pages have text close to a redacted area: check visually  |
+|                                   [Save Report…] [Open Result] |
++----------------------------------------------------------------+
+```
+
+The lower half replaces the upper after the write finishes. A failed check is `--danger`, keeps the output in a temporary place and offers only [Discard] and [Show Problem].
+
+**Signature details** (sheet, 600×480).
+
+```
++--------------------------------------------------------------+
+| Signature 1 of 1                                   ✓ Valid   |
+| Signer      A. Citizen <a@example.org>                       |
+| Signed      2026-11-10 09:14 UTC (time-stamp authority)      |
+| Covers      whole document as signed (revision 2 of 3)       |
+| After it    form values changed: allowed by certification    |
+| Chain       A. Citizen ← Example CA ← Example Root (trusted  |
+|             for documents in Passwords and Keys)             |
+| Revocation  embedded OCSP response, good at signing time     |
+| Algorithm   ECDSA P-256, SHA-256                             |
+| [View Signed Version] [Certificate…] [Check Online…] [Close] |
++--------------------------------------------------------------+
+```
+
+`propertyGrid` in a `sheet`. [Check Online…] states the endpoint and that it uses the network before doing anything.
+
+**Sign sheet** (560×420): field or drawn rectangle preview (`image`), key `comboBox` (from SE04), reason and location `lineEdit`s, appearance template, [ ] certify with level `comboBox`, [ ] add time-stamp (endpoint shown), pre-sign findings list (F108), [Cancel] [Sign…]. [Sign…] leads to the shell's key-use prompt.
+
+**Merge sheet** (600×460): `listView` of files with drag order, a range `lineEdit` per row ("all", "1-3,7"), [x] keep bookmarks, [x] add a bookmark per file, total pages, [Add Files…] [Merge to New File…].
+
+**EPUB reading settings popover**: font `comboBox`, size `slider`, line height `slider`, margins `slider`, theme swatches, [x] justify, [x] hyphenate, [x] publisher styles, layout ( ) paged ( ) scrolled, columns ( ) 1 ( ) 2.
+
+**Read-aloud bar** (inline above the status bar): [▶/⏸] [⏮ sentence] [⏭] speed `slider`, voice name (from AX01), "Reading page 14", [x] follow.
+
+**Document safety inspector**: `propertyGrid` rows as in callout area of 5.2 plus [Inspect Document…] [Sanitise…] [Convert to Trusted PDF…].
+
+### 5.4 Menus
+
+```
+File    Open… Ctrl+O · Open in Disposable Sandbox… · Open Recent ▸ · Library Ctrl+Shift+L
+        Save Ctrl+S · Save As… Ctrl+Shift+S · Save a Sanitised Copy… · Export ▸ (Images, Text, PDF, PDF/A, SVG, Annotations)
+        Print… Ctrl+P · Share… · Properties Ctrl+I · Document Safety · Close Tab Ctrl+W · Quit Ctrl+Q
+Edit    Undo Ctrl+Z · Redo Ctrl+Shift+Z · Copy Ctrl+C · Copy as Image Ctrl+Shift+C · Select All Ctrl+A
+        Find Ctrl+F · Find Next Ctrl+G · Find Previous Ctrl+Shift+G · Search Library…
+        Snapshot Tool · Edit Metadata… · Preferences Ctrl+,
+View    Sidebar F9 ▸ (Thumbnails, Outline, Bookmarks, Annotations, Search, Attachments, Layers, Signatures)
+        Inspector F4 · Zoom ▸ (In Ctrl++, Out Ctrl+-, Actual Ctrl+0, Fit Page Ctrl+1, Fit Width Ctrl+2, Fit Content Ctrl+3)
+        Layout ▸ (Single, Continuous, Two-Up, Book, Horizontal, Right-to-Left) · Rotate View Ctrl+R / Ctrl+Shift+R
+        Reading Theme ▸ · Trim Margins · Split View · Compare With… · Text Layer · Layers
+        Presentation F5 · Full Screen F11 · Read Aloud Ctrl+Shift+A
+Go      Previous Page PgUp · Next Page PgDn · First Ctrl+Home · Last Ctrl+End · Go to Page… Ctrl+L
+        Back Alt+Left · Forward Alt+Right · Add Bookmark Ctrl+D · Bookmarks ▸
+Annotate Highlight H · Underline U · Strike Out K · Note N · Ink D · Shape ▸ · Text T · Stamp ▸ · Image…
+        Annotations Panel · Flatten… · Import… · Export Summary… · Send Highlights to Notes · Storage ▸ (In File, Sidecar)
+Forms   Highlight Fields · Next Field Tab · Reset Form · Fill and Sign Tool · Import Data… · Export Data… · Field List
+Protect Sign… · Certify… · Signatures Panel · Mark for Redaction R · Search and Mark… · Apply Redactions…
+        Inspect Document… · Sanitise… · Encrypt… · Convert to Trusted PDF…
+Pages   Organise Pages · Rotate ▸ · Delete… · Extract… · Insert ▸ · Merge… · Split…
+        Crop… · Page Labels… · Edit Outline · Optimise… · Recognise Text (OCR)…
+Help    Document Viewer Help F1 · Keyboard Reference · How Redaction Works · How the Sandbox Works · About
+```
+
+"Organise Pages" has no default key; `Ctrl+Shift+P` stays the command palette.
+
+### 5.5 Keyboard and pointer
+
+- Reading keys: Space / Shift+Space, arrows, PgUp / PgDn, Home / End, `J` `K` `N` `P` `G`, `+` `-`, `Z` hold for the loupe, `B` blank in presentation, `Esc` leaves a tool.
+- Tools are single letters when no text field has focus (5.4). Pressing the letter twice makes the tool sticky.
+- Pointer: drag selects text (select tool) or pans (hand tool, or middle button, or Space held); double click selects a word, triple a line; `Ctrl+wheel` zooms at the pointer; `Shift+wheel` scrolls sideways; `Alt+drag` selects a rectangle; `Ctrl+drag` marquee zoom.
+- Context menu, text selection: Copy, Highlight, Underline, Strike Out, Add Note, Mark for Redaction, Search Library, Look Up, Read Aloud from Here, Send to Notes.
+- Context menu, page: Add Bookmark Here, Rotate, Extract Page, Snapshot, Properties of Page, Copy Link to Page.
+- Context menu, annotation: Edit Comment, Reply, Set Status, Properties, Copy, Delete, Flatten, Bring Forward, Send Back.
+- Context menu, thumbnail: Rotate, Delete, Extract, Insert Before/After, Print Page, Export as Image.
+- Context menu, library item: Open, Open in New Window, Add to Collection, Edit Details, Mark Finished, Reveal in Files, Export Sidecar, Remove.
+- Drag and drop: files onto the window open; onto the organise grid insert; thumbnails out to SY02 extract pages as a PDF; selected text out as `text/plain`; an image region out as PNG; a document onto a collection adds it.
+- Pen: draws with the active ink tool; barrel button erases; hover shows the tool cursor. Touch: swipe pages, pinch zoom, long press for the context menu.
+
+### 5.6 States
+
+| State | Behaviour |
+|---|---|
+| Empty | Start view: Continue reading, recent, [Open…], [Library]. |
+| Loading | First page within budget; grey tiles never shown without a scaled preview once any tile exists; "Rendering" job in status bar. |
+| Password needed | Sheet with secret field, attempts unlimited, [x] remember in keyring. Wrong password says so; nothing is shown. |
+| Error | Unsupported or DRM-locked: full-pane message with the reason and [Open With…]. Damaged: repaired with a report or per-page cards. |
+| Helper stopped | Card on the tab; other tabs unaffected (F179). |
+| Offline | Normal. [Check Online…] and time-stamp show "No network" from the helper's failure; verification falls back to embedded data. |
+| Locked (encrypted document) | Lock chip; contents excluded from thumbnails and system search unless the password is saved. |
+| Read-only | Annotation tools still work in sidecar mode; Save becomes Save As. |
+| Untrusted | Limits banner (F181) until trusted. |
+| Narrow (< 640) | Sidebar and inspector become overlays; toolbar collapses into the overflow; two-up turns into single page. |
+
+### 5.7 Widgets
+
+| Region | Widget | Exists today (V3) | Needs |
+|---|---|---|---|
+| Page area | `pageView` | no | FUSE-WP-45 (text-layer contract reviewed against this spec) |
+| Ink, shapes, measure, loupe | canvas input and overlay | no (G-12) | FUSE-WP-43, FUSE-WP-08 (pen) |
+| Form fields | `lineEdit`, `checkBox`, `radioButton`, `comboBox`, `listView` | yes | Placement over pages (FUSE-WP-45) |
+| Thumbnails, covers, organise grid | `gridView` | yes, single select | FUSE-WP-28 (multi-select, drag reorder), FUSE-WP-33 |
+| Outline, annotations, results | `treeView`, `listView` | limited | FUSE-WP-28 |
+| EPUB reflow | pages rendered by the helper into `pageView` | — | Helper-side layout (this spec, W16) |
+| Presentation | second window on another output | no | FUSE-WP-07, FUSE-WP-11 |
+| Header, toolbar, status, banners, sheets, popovers, palette | chrome kit | no | FUSE-WP-29, FUSE-WP-30 |
+| Tabs | `tabView` | basic | FUSE-WP-31 |
+| Properties | `propertyGrid` | yes | — |
+| Colour management | — | no | FUSE-WP-26 |
+
+`OF03-GAP-1`: `pageView`'s `PageSource` must support variable page counts after a relayout (EPUB font change) and anchors that are not page numbers (CFI). `OF03-GAP-2`: a keyring operation "sign this digest with key K after a shell prompt" exposed to apps (PLATFORM.md section 8 lists `svc.keyring` for secrets only). `OF03-GAP-3`: a system font service that hands a helper read-only font descriptors by name.
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App logic | ForgeScript | app host | Tabs, tools, annotation model, sidecar store, library, form values, verdict presentation, hand-offs |
+| Views and styles | FUSE UI | app host | All windows |
+| `render-helper` | C++23 wrapper around the document engines | one per open document; capability mode; no capabilities | Parse, render tiles, text layer, outline, links, annotations and fields as records, object inspection, signature byte ranges and CMS parsing, script and action listing |
+| `write-helper` (same binary, write role) | C++23 | short-lived, one per save; adds one write-only descriptor | Incremental save, full rewrite, redaction, sanitise, page operations, appearance generation, signature container embedding, verification pass (in a fresh instance) |
+| `convert-helper` | C++23 wrapper | short-lived; capability mode | PostScript to PDF; other formats to PDF; image pre-processing for OCR |
+| `net-helper` | C++23 | short-lived; only process with a socket | OCSP, CRL and RFC 3161 requests to one shown endpoint |
+| Signature verifier | C++23 (in `render-helper` for parsing; chain building asks SE04) | helper + SE04 | CMS and certificate parsing in the sandbox; trust decisions in SE04's service |
+| Library index | SQLite FTS5 | app host | Records, progress, text index |
+| Model client | ForgeScript | app host | OCR and optional AI through `svc.model` |
+
+```
+ SY02/CO01/IN01 ──open intent + handle──▶ app host (ForgeScript + FUSE UI: pageView, overlays, forms)
+                                           │  validates every record from helpers
+       read-only fd, shm tiles, IPC        ├──▶ render-helper  #1 (doc A)   no caps, no net, no fs
+                                           ├──▶ render-helper  #2 (doc B)
+       + write-only fd to a temp file      ├──▶ write-helper   (save / redact / sign container) ─▶ verify instance
+       request bytes only                  ├──▶ net-helper     (OCSP, CRL, time-stamp; user-triggered)
+       digest to sign, after shell prompt  ├──▶ SE04 key service ── returns signature bytes
+       page images (shm)                   └──▶ svc.model (OCR)        AX01 speech interface ◀── text, ranges
+```
+
+Document engines inside the helpers (third-party, each named with licence and reason; all C, all confined; see section 13 for the plan to replace or prove them):
+
+| Library | Licence | Used for | Why not own code |
+|---|---|---|---|
+| MuPDF (built without its JavaScript engine and without network code) | AGPL-3.0-or-later (compatible with this project's licence) | PDF, XPS, EPUB, CBZ, FB2 parsing, rendering, text extraction, PDF writing | A full PDF imaging model is many person-years |
+| jbig2dec, OpenJPEG, libjpeg-turbo, zlib, FreeType, HarfBuzz (as bundled by MuPDF) | AGPL-3.0, BSD-2-Clause, IJG/BSD, zlib, FTL, MIT | Image filters, fonts | Standard codecs |
+| DjVuLibre | GPL-2.0-or-later | DjVu | Format is niche; own decoder later if wanted |
+| libarchive | BSD-2-Clause (in the HardenedBSD base system) | CBR (RAR), CB7, CBT | Already in base |
+| Ghostscript (only inside `convert-helper`) | AGPL-3.0-or-later | PostScript interpretation | PostScript is a full language; conversion only, never in the viewer path |
+
+All must be vendored at pinned versions and build offline. Their merge is gated by fuzzing, not by the safe-subset check; that is why they live only in processes with no capabilities.
+
+### 6.2 Data model
+
+Sidecar and library store: `~/.local/share/org.pbsd.document-viewer/library.sqlite` (schema version in `meta`); covers and tile cache in `~/.cache/…`.
+
+| Table | Fields |
+|---|---|
+| `document` | `hash: blob(32) pk` (BLAKE3 of the file), `grant_token: text`, `display_path: text`, `format: u8`, `size: u64`, `title`, `authors: json`, `series`, `series_index: f32`, `language`, `publisher`, `year: i16`, `identifiers: json`, `page_count: u32`, `added: i64`, `missing: bool`, `private: bool`, `provenance: text`, `trusted: bool` |
+| `progress` | `hash`, `position: text` (page index or CFI), `fraction: f32`, `last_read: i64`, `seconds_read: u32`, `finished: i64?` |
+| `view_state` | `hash`, `zoom: f32`, `fit: u8`, `layout: u8`, `rotation: u16`, `theme: u8`, `sidebar: u8`, `reflow: json` |
+| `annotation` (sidecar mode) | `id: uuid`, `hash`, `page: u32`, `kind: u8`, `rects: blob` (quads, f32), `ink: blob`, `colour: u32`, `opacity: f32`, `border: json`, `contents: text`, `rich: text`, `author`, `created`, `modified`, `reply_to: uuid?`, `state: u8`, `anchor_text: text` (for re-anchoring), `cfi: text?` |
+| `bookmark` | `id`, `hash`, `position`, `title`, `order: u32` |
+| `ocr_text` | `hash`, `page`, `lang`, `words: blob` (text + box + confidence), `model: text` |
+| `collection`, `collection_item`, `tag`, `document_tag` | names and joins |
+| `text_fts` | FTS5: `hash`, `page`, `text` |
+| `saved_password_ref` | `hash`, `keyring_item: text` |
+| `journal` | `hash`, `seq`, `op: json` (pending in-file edits: annotations, form values, page ops) |
+| `stats_day` | `day`, `hash`, `pages: u32`, `seconds: u32` |
+
+Helper IPC records (schema-compiled, G-08): `DocInfo`, `PageInfo{w,h,rotation,label}`, `TileRequest{page,scale,rect,appearance}`, `TextLayer{glyph boxes, unicode, flags}`, `OutlineNode`, `LinkRecord{rect, kind, target}`, `AnnotRecord`, `FieldRecord`, `SignatureRecord{byte_range, cms, field, revision}`, `HiddenItem{class, object, summary}`, `EditOp` (for the write role), `VerifyReport`.
+
+Migration: forward only, with a copy of the previous database. The cache can be deleted at any time.
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| PDF 1.0–2.0 | yes | yes | MuPDF + own C++23 layers (redaction verifier, sanitiser, signature container, appearance generator) | `render-helper` / `write-helper` |
+| CMS, X.509, OCSP, CRL, RFC 3161 tokens | yes | CMS, TSQ | own C++23 ASN.1 DER reader and writer (strict, no BER indefinite forms); chain and trust by SE04 | `render-helper` (parse); SE04 (trust); `net-helper` (transport only) |
+| EPUB 2/3, FB2 | yes | no | MuPDF HTML/CSS layout; own OPF, nav and CFI code | `render-helper` |
+| MOBI/KF8 (no DRM) | yes | no | own code (Proposed) | `render-helper` |
+| DjVu | yes | no | DjVuLibre | `render-helper` |
+| CBZ, CBR, CB7, CBT | yes | CBZ (export) | libarchive; images by MuPDF codecs | `render-helper` |
+| XPS / OpenXPS | yes | no | MuPDF | `render-helper` |
+| PostScript, EPS | convert | no | Ghostscript in safer mode | `convert-helper` |
+| TIFF, PNG, JPEG, WebP (export, insert) | yes | yes | MuPDF codecs; own WebP not planned (libwebp, BSD-3-Clause, if wanted) | helper |
+| XFDF, FDF | yes | yes | own code | `render-helper` |
+| Web Annotation JSON, sidecar JSON | yes | yes | ForgeScript JSON | app host (own schema, validated) |
+| BibTeX, RIS, CSL-JSON | no | yes | ForgeScript | app host |
+| Speech hand-off | — | — | AX01 interface (Proposed in AX01) | app host |
+
+### 6.4 Integration
+
+- Intents handled: `open`, `view`, `print` (a file sent for printing opens the print sheet), `search`. Emitted: `open` (URLs, embedded files, hand-offs), `share`, `print`, `scan` (UT06), `compose` (CO01 with attachment).
+- MIME: `application/pdf`, `application/epub+zip`, `image/vnd.djvu`, `application/vnd.comicbook+zip`, `application/vnd.comicbook-rar`, `application/x-cb7`, `application/x-cbt`, `application/vnd.ms-xpsdocument`, `application/oxps`, `application/postscript`, `image/x-eps`, `application/x-fictionbook+xml`, `application/x-mobipocket-ebook`, `image/tiff`.
+- Services: `svc.settings`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.clipboard`, `svc.notify`, `svc.keyring`, `svc.thumbnail` (as a provider too), `svc.search` (provider, optional), `svc.audit`, `svc.a11y`, `svc.backup` (library and sidecar included; cache excluded), `svc.model` (optional).
+- Services provided: thumbnailer and quick preview for the MIME types above; `org.pbsd.document-viewer.Convert(handle, target_mime) -> handle` so OF04, UT06 and CO01 can get a PDF or page images without linking a PDF engine.
+- Other apps: SE04 (keys, trust store, signing), AX01 (speech), OF02 (page links, highlights), OF04 (PDF import, bibliography), UT06 (scan, print), SE05 (erase, encrypt), ME05 and UT06 share the OCR model class.
+- Verified in repos: only that FUSE has no page view or canvas today (`widgets.hpp`, whole file) and that FORGE lists OCR as a model class to be built (FORGE_BUILD_PLAN.md FORGE-R-090). The third-party libraries were not inspected here; their capabilities are stated from general knowledge and are Unverified in this plan.
+
+## 7. Security and privacy
+
+| Capability | Reason |
+|---|---|
+| `fs.app` | Library database, sidecar, journal, cache |
+| `fs.portal` | Open, save, export, watched folders |
+| `net.none` | Default for the app and for every render and write helper |
+| `net.user` | Only for the user-triggered OCSP, CRL and time-stamp requests; passed to `net-helper` alone; off until first use; each endpoint logged |
+| `proc.helper:render-helper`, `proc.helper:convert-helper`, `proc.helper:net-helper` | Section 6.1 |
+| `dev.print` | Printing |
+| `ai.local`, `svc.model` | OCR and optional summaries; off by default |
+| `svc.settings`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.clipboard`, `svc.notify`, `svc.keyring`, `svc.thumbnail`, `svc.search`, `svc.audit`, `svc.a11y`, `svc.backup` | Section 6.4 |
+
+Not requested: `proc.exec`, camera, microphone, screen, location, USB, GPU compute, `bg.*`, `net.host`, `fs.path`.
+
+Assets: the user's documents; signing keys (never in this app); the trust decision shown to the user; what the user reads (library, progress, statistics); redacted secrets.
+
+| Threat | Mitigation |
+|---|---|
+| Memory-corruption exploit in a document engine | Engine runs with no capabilities: no files, no network, no processes; per-document process; resource limits; W^X and ASLR from the base system; host validates all output; fuzzing corpus per format |
+| Script execution (PDF JavaScript, EPUB script, PostScript) | No interpreter is built in; PostScript only in `convert-helper`, safer mode, no descriptors but input and output |
+| Phone-home on open (tracking, IP disclosure, NTLM-style leaks) | No sockets in helpers; no external references followed; actions inert (F155, F176) |
+| Decompression and complexity bombs | Limits (F177); per-page failure, not app failure |
+| UI spoofing by the document (fake signature panels, fake dialogs drawn on the page) | Verdicts appear only in app chrome (banner, sidebar) never on the page; presentation mode cannot draw chrome-like overlays outside the page box |
+| Signature forgery tricks (byte-range gaps, incremental-save shadow content, certification bypass) | F099, F100, F102; "View signed version"; verdict wording never says "valid" for partial coverage |
+| Malicious certificate or CMS data | Strict DER parser in the sandbox; trust decided by SE04 |
+| Key theft through the viewer | Private-key operations happen in SE04 after a shell prompt showing the document hash; the viewer handles only the digest and the returned signature |
+| Signing something other than what was shown | The digest is computed over the bytes the write helper produced from the displayed revision; pre-sign checks (F108); the shell prompt shows the hash that the signature panel shows afterwards |
+| Failed redaction (text under black boxes, old revisions, metadata, image remnants) | Content removal, full rewrite, hidden-data removal, independent verification pass, rasterise mode (4.7) |
+| Privacy of reading habits | All state local; private collections; disposable mode; statistics optional; nothing offered to system search unless enabled |
+| Hostile embedded files | Never auto-opened; saved with provenance tag; untrusted documents hold them back (F181) |
+| Helper returns hostile records to exploit the host | Schema-checked IPC, clamped sizes and counts (FUSE-WP-45), ForgeScript bounds checks |
+| Malicious thumbnail request path | Same sandbox and limits; 2 s budget (F186) |
+
+Stored: library records, sidecars, journal, view state, optional statistics, optional saved-password references. Leaves the machine: nothing by default; on explicit request only, an OCSP/CRL query (reveals the certificate serial to its issuer) or a time-stamp request (reveals a hash to the authority). Both facts are stated in the confirmation.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `view.default_layout` | enum single, continuous, two_up, book | continuous | |
+| `view.default_fit` | enum page, width, content, actual | width | |
+| `view.theme` | enum document, sepia, dark, system, custom | document | |
+| `view.smooth_scroll` | bool | true | Honours reduced motion |
+| `view.remember_per_document` | bool | true | |
+| `render.tile_cache_bytes` | int | 268435456 | |
+| `render.helper_memory_bytes` | int | 1073741824 | Per document |
+| `render.page_cpu_seconds` | int | 10 | |
+| `render.max_image_megapixels` | int | 256 | |
+| `text.copy_join_hyphens` | bool | true | |
+| `annot.storage_default` | enum sidecar, in_file | sidecar | |
+| `annot.author` | string | "" | Blank means none written |
+| `annot.utc_times` | bool | true | |
+| `annot.default_highlight` | colour token | `--warn` at 40% | |
+| `forms.highlight_fields` | bool | true | |
+| `forms.honour_restrictions` | bool | true | F003 |
+| `sign.default_key` | key reference | none | From SE04 |
+| `sign.timestamp_url` | string | "" | Empty disables time-stamps |
+| `sign.allow_online_revocation` | enum never, ask | ask | |
+| `sign.weak_algorithms` | enum warn, reject | warn | SHA-1, RSA under 2048 bits |
+| `redact.fill` | colour | black | |
+| `redact.sanitise_by_default` | bool | true | |
+| `redact.fixed_width` | bool | false | |
+| `safety.untrusted_limits` | bool | true | F181 |
+| `safety.disposable_for_untrusted` | bool | false | Open untrusted files disposably |
+| `library.watch_folders` | list of grant tokens | [] | |
+| `library.index_text` | bool | false | |
+| `library.statistics` | bool | false | |
+| `library.offer_to_system_search` | bool | false | |
+| `epub.font_family`, `epub.font_size`, `epub.line_height`, `epub.margin`, `epub.justify`, `epub.hyphenate`, `epub.publisher_styles` | mixed | system serif, 16, 1.5, 48, true, true, true | Reflow defaults |
+| `ocr.languages` | list | [system locale] | |
+| `ocr.write_mode` | enum sidecar, copy | sidecar | |
+| `ai.enabled` | bool | false | Summaries, translation |
+| `recent.enabled` | bool | true | |
+| `keys.preset` | enum default, vim | default | |
+
+## 9. Accessibility and languages
+
+- Tagged structure is mapped to a11y roles (F205). For untagged documents the reading-order analysis of F141 feeds the tree, with a notice that order is guessed.
+- Text ranges, caret browsing (`F7` toggles a caret in the page text) and selection by keyboard work in every format with a text layer.
+- Form fields are native widgets, so labels (`TU` tooltips), required state and errors reach assistive tools.
+- Every annotation is in the a11y tree with type, author and comment; annotating by keyboard: select text with the caret, press the tool letter.
+- Signature and safety verdicts are words plus icons, announced when the document opens.
+- Reading themes, reflow and font controls serve low vision; high-contrast mode remaps page colours.
+- Right-to-left documents: page order and two-up side follow the viewer preference in the file; text selection follows the bidi run order (needs G-03 on the host side for the UI only; page glyphs come from the helper).
+- Scanned documents without text announce "image only, n pages" and offer OCR.
+
+## 10. Performance budgets
+
+| Measure | Budget |
+|---|---|
+| Cold start to first frame (start view) | ≤ 200 ms |
+| Open to first page, 10 MiB PDF | ≤ 300 ms including helper start (helper pre-spawn pool of 1) |
+| Open to first page, linearised 1 GiB PDF | ≤ 500 ms |
+| Page render, text page at 150 DPI | ≤ 30 ms in the helper; complex map page ≤ 1 s, progressive |
+| Scroll and zoom frame | ≤ 4 ms in the host (FUSE-WP-45) |
+| Search, 1 000 pages | first hit ≤ 200 ms; full scan ≤ 3 s |
+| Signature verification, 5 signatures | ≤ 300 ms without network |
+| Redaction with verification, 100 pages | ≤ 10 s |
+| Merge 10 files of 100 pages | ≤ 2 s |
+| Helper memory | ≤ 1 GiB cap; typical 60–150 MiB per document |
+| Host memory | ≤ 120 MiB plus tile cache (256 MiB default) |
+| Library, 20 000 records | list frame ≤ 4 ms; open view ≤ 150 ms |
+| Idle | zero frames, zero wake-ups; helpers of background tabs are suspended after 60 s and killed after 10 min (state kept for instant respawn) |
+
+## 11. Testing and proof
+
+Nothing has run. All rows are plans.
+
+- Unit (ForgeScript): annotation model, re-anchoring, form format patterns, range parser (`1-3,7,10-`), verdict logic from signature records, library queries.
+- Golden renders: reference pages per format compared with stored images (tolerance stated); chrome in each state; redaction report; signature banners.
+- Scripted UI through the a11y tree: tasks T1–T14.
+- Fuzz: every format entry point of the helper (PDF objects, xref, each filter, fonts, CMS/X.509 DER, XFDF, EPUB OPF/XHTML/CSS, DjVu chunks, archives, `ComicInfo.xml`), the host-side record validator, sidecar JSON import.
+- Differential: rendering against a second engine on a public corpus; text extraction against the same; signature verdicts against a reference validator on a signed-document corpus, including published attack samples (byte-range, shadow, certification).
+- Redaction tests: a corpus where the secret appears as text, in images, in vector outlines, in metadata, in bookmarks, in form values, in previous revisions, in object streams, in ToUnicode maps; after redaction a brute-force scanner (all streams decompressed, every encoding) must not find it.
+- Confinement tests: helper syscalls outside the capability-mode set fail; no socket, no `open` by path; write role cannot read anything but its input; `net-helper` cannot read the document.
+- Limit tests: bombs for each limit of F177; crash injection in the helper.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Host-side record validator | Every size, index and count checked before use | T2 | PRISM (FUSE-WP-45 job) | — |
+| DER reader, CMS and X.509 parser (own C++23) | No runtime errors; accepts only canonical DER | T2 | PRISM plus fuzz | Full RFC conformance is test-based |
+| Byte-range and revision classifier | A verdict "covers whole document" implies the ranges cover all bytes but the signature value | T1 | PRISM proof on the range arithmetic | — |
+| Redaction verifier | If it reports clean, no removed string occurs in any decoded stream of the output | T2 for the scanner; T3 overall | PRISM on the scanner; corpus tests | Depends on the third-party decoder for stream decoding |
+| Sanitiser and full rewrite | Output contains only objects reachable from the new catalogue | T2 | PRISM on the graph walk | — |
+| Document engines (MuPDF, DjVuLibre, Ghostscript, codecs) | Memory safety | T4 | Fuzzing and sandboxing only | Third-party C outside the safe subset |
+| Helper confinement | No capability beyond the passed descriptors | T3 | Capsicum tests on HardenedBSD (G-06) | Kernel enforcement, not proved here |
+| Annotation appearance generator | Bounded output, valid content stream | T2 | PRISM plus round-trip tests | — |
+| App logic | — | T4 | Tests | Interpreted |
+
+## 12. Build plan
+
+Phase 1, usable core (read PDF safely):
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF03-W01 | Bundle, manifest, actions, window, tabs, sidebar, status | G-02, G-07, FUSE-WP-29, FUSE-WP-30, FUSE-WP-31 |
+| OF03-W02 | Vendor and build the PDF engine offline, without JavaScript and network code; licence review | FUSE-WP-02 practice, G-18 |
+| OF03-W03 | `render-helper`: capability-mode start, descriptors, limits, IPC schema, tile and text records | FORGE-WP-27, FORGE-WP-28, G-06, G-08 |
+| OF03-W04 | Page view integration: layouts, zoom, progressive tiles, links, outline, thumbnails | FUSE-WP-45, W03 |
+| OF03-W05 | Text selection, copy, find, results list | W04 |
+| OF03-W06 | Passwords, damaged files, format detection, properties, tracking defence | W03, `svc.keyring` |
+| OF03-W07 | Sidecar store; highlights, notes, bookmarks; view state; session restore; recent | W04 |
+| OF03-W08 | Save (incremental) with the write role; journal | W03 |
+| OF03-W09 | Fuzzing harnesses and limit tests for PDF | W03 |
+| OF03-W10 | Font hand-off to helpers | OF03-GAP-3 |
+
+Phase 2, full feature:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF03-W11 | Full annotation set, panel, properties, ink and shapes, XFDF | G-12 (FUSE-WP-43), FUSE-WP-08, W07 |
+| OF03-W12 | Forms: widgets over pages, native format patterns, appearance generation | W08 |
+| OF03-W13 | Signature verification: DER/CMS parser, byte-range classifier, SE04 trust queries, panel and banner | SE04, W03 |
+| OF03-W14 | Hidden-data inspection, sanitise, full rewrite, verification pass | W08 |
+| OF03-W15 | Redaction: marking, content removal for text, images, vectors; report | W14 |
+| OF03-W16 | EPUB (reflow, CFI, reading settings), DjVu, comics | W03, OF03-GAP-1, G-17 |
+| OF03-W17 | Organise pages, merge, split, insert, extract | W08, FUSE-WP-28, FUSE-WP-33 |
+| OF03-W18 | Library, covers, progress, collections, watched folders | W07 |
+| OF03-W19 | Print and export images and text; share; thumbnail and preview provider | G-16, `svc.thumbnail` |
+| OF03-W20 | Untrusted-provenance limits, disposable mode, safety panel | SY02 provenance tags, W06 |
+| OF03-W21 | Presentation and presenter view; read-aloud hand-off | FUSE-WP-07, FUSE-WP-11, AX01 |
+
+Phase 3, advanced:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF03-W22 | Signing, certifying, appearance templates, pre-sign checks | OF03-GAP-2, SE04, SH03, W13 |
+| OF03-W23 | `net-helper`: OCSP, CRL, time-stamps; long-term validation data | W22, FORGE-WP-21 |
+| OF03-W24 | OCR and pre-processing; optional AI features | G-15, FORGE-WP-31, AI02 |
+| OF03-W25 | XPS, PostScript (`convert-helper`), FB2, MOBI, TIFF; Convert service for other apps | W03 |
+| OF03-W26 | Crop, labels, outline editing, imposition, watermark, optimise, encrypt on save, PDF/A attempt | W17 |
+| OF03-W27 | Compare, measure, loupe, reflow for PDF, colour management | FUSE-WP-26 |
+| OF03-W28 | Library text index, statistics, sidecar export, bibliography export, shadow-attack checks, convert to trusted PDF | W18, W14 |
+
+## 13. Open questions and risks
+
+1. The document engines are large third-party C code bases. The plan confines them rather than proving them. A staged replacement with own memory-safe C++23 code (object parser and xref first, then filters, then the content interpreter) is possible but is not scheduled here; it needs an owner decision.
+2. Licences: MuPDF and Ghostscript are AGPL-3.0-or-later, DjVuLibre GPL-2.0-or-later; they fit an AGPL-3.0-or-later bundle, but the bundle as a whole then cannot be relicensed. RAR 5 support through libarchive is partial (Unverified here).
+3. EPUB layout through the PDF engine's HTML and CSS support is limited. A better result needs either the web content engine (G-14) in a no-script, no-network mode or an own reflow layout on FUSE-WP-36. Decision pending; `OF03-GAP-1` applies either way.
+4. Signing depends on SE04 offering a digest-signing operation with a shell prompt (OF03-GAP-2) and on hardware-token support there.
+5. Redaction of text in complex fonts can shift neighbouring glyphs; the verifier flags "text close to a redacted area", but a human check remains necessary. The app says so.
+6. Honouring owner restrictions (F003) is a policy choice; the default follows common practice, the override is one click.
+7. Helper-per-document memory cost with many tabs; suspension and respawn (section 10) reduce it but add latency on return.
+8. OCR depends on a model class that does not exist yet (FORGE-WP-31) and on which models may ship (owner decision Q11 in FORGE_BUILD_PLAN.md).
+9. Unverified: none of the third-party libraries was read in this session; build flags named here (no JavaScript, safer mode) must be confirmed against their sources when vendored.

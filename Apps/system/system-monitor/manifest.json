@@ -1,0 +1,41 @@
+{
+  "id": "org.pbsd.system-monitor",
+  "name": "System Monitor",
+  "version": "0.1.0",
+  "category": "system",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:history-reader",
+    "svc.monitor",
+    "svc.config",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.audit",
+    "svc.power",
+    "svc.portal.file",
+    "svc.a11y",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "history-reader", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": [],
+    "export": ["text/csv", "application/json", "image/png", "image/svg+xml", "text/plain"]
+  },
+  "intents": {"handles": ["open"], "emits": ["open"]},
+  "url_schemes": ["monitor"],
+  "services_provided": ["org.pbsd.monitor.summary"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE", "ParanoidBSD"],
+  "priority": "P0"
+}

@@ -453,7 +453,7 @@ The continuation prompt `. ` is the REPL's own (FORGE:docs/scripting.md). The li
 [=] menu / F10
 ├─ File
 │   ├─ New tab                            Ctrl+Shift+T
-│   ├─ New window                         Ctrl+Shift+W… see note
+│   ├─ New window                         (no default key; see note)
 │   ├─ New tab with profile ▸
 │   ├─ New scoped shell…                  Ctrl+Shift+N
 │   ├─ New administrator shell…
@@ -463,7 +463,7 @@ The continuation prompt `. ` is the REPL's own (FORGE:docs/scripting.md). The li
 │   ├─ Print…
 │   ├─ Close pane                         Ctrl+Shift+X
 │   ├─ Detach session                     Ctrl+Shift+B
-│   └─ Quit                               Ctrl+Shift+Q… see note
+│   └─ Quit                               (no default key; see note)
 ├─ Edit
 │   ├─ Copy                               Ctrl+Shift+C
 │   ├─ Copy as ▸ (HTML, ANSI)
@@ -483,7 +483,7 @@ The continuation prompt `. ` is the REPL's own (FORGE:docs/scripting.md). The li
 │   ├─ Split down                         Ctrl+Shift+E
 │   ├─ Zoom pane                          Ctrl+Shift+Enter
 │   ├─ Equalise panes
-│   ├─ Sessions panel                     Ctrl+Shift+P… see note
+│   ├─ Sessions panel                     (no default key; see note)
 │   ├─ SSH hosts panel                    Ctrl+Shift+H
 │   ├─ Command history panel
 │   ├─ Pane headers · Status bar · Timestamps

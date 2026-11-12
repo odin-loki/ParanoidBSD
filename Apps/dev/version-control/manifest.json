@@ -1,0 +1,51 @@
+{
+  "id": "org.pbsd.version-control",
+  "name": "Version Control",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.user",
+    "net.route:clear",
+    "proc.exec",
+    "proc.helper:repo-reader",
+    "proc.helper:diff-helper",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.keyring",
+    "svc.clipboard",
+    "svc.accounts",
+    "svc.audit",
+    "svc.undo-trash",
+    "svc.search",
+    "svc.model",
+    "ai.local",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "repo-reader", "language": "c++23", "capabilities": ["fs.portal"]},
+    {"name": "diff-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["text/x-patch", "text/x-diff", "application/mbox", "application/x-git-bundle", "inode/directory"],
+    "edit": [],
+    "import": ["text/x-patch", "text/x-diff", "application/mbox", "application/x-git-bundle"],
+    "export": ["text/x-patch", "application/x-git-bundle", "application/x-tar", "application/zip", "text/markdown"]
+  },
+  "intents": {
+    "handles": ["open", "view"],
+    "emits": ["open", "edit", "compose", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.version-control.Repository"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.passwords >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}

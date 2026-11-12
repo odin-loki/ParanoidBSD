@@ -1,0 +1,50 @@
+{
+  "id": "org.pbsd.anonymity",
+  "name": "Anonymity",
+  "version": "0.1.0",
+  "category": "security",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.route",
+    "svc.firewall",
+    "svc.keyring",
+    "svc.audit",
+    "svc.notify",
+    "svc.settings",
+    "svc.search",
+    "svc.backup",
+    "svc.portal.file",
+    "svc.portal.camera",
+    "dev.camera",
+    "proc.helper:profile-parser"
+  ],
+  "optional_capabilities": ["net.host:<user-chosen check service>:443"],
+  "helpers": [
+    {"name": "profile-parser", "language": "c++23", "capabilities": []}
+  ],
+  "system_helpers": [
+    {"name": "route-service", "language": "c++23", "provides": "svc.route", "capabilities": ["svc.firewall", "svc.keyring", "svc.audit", "svc.notify", "proc.helper:vpn-helper", "proc.helper:onion-routing-helper", "proc.helper:mix-helper", "proc.helper:leak-test-runner"]},
+    {"name": "vpn-helper", "language": "c++23", "capabilities": ["svc.keyring"]},
+    {"name": "onion-routing-helper", "language": "third-party (rust or c), proposed", "capabilities": ["net.user"]},
+    {"name": "transport-helper", "language": "third-party, undecided", "capabilities": ["net.user"]},
+    {"name": "mix-helper", "language": "rust", "provides": "svc.mix", "capabilities": ["net.host:<first hop>:<port>", "svc.keyring"]},
+    {"name": "leak-test-runner", "language": "c++23", "capabilities": ["net.user", "net.route:clear", "net.route:vpn", "net.route:tor"]}
+  ],
+  "mime": {
+    "view": ["application/x-wireguard-profile", "application/vnd.pbsd.anonymity-preset+json", "application/vnd.aegis.roster+json"],
+    "edit": ["application/x-wireguard-profile", "application/vnd.pbsd.anonymity-preset+json"],
+    "import": ["application/x-wireguard-profile", "application/vnd.aegis.roster+json", "text/plain"],
+    "export": ["application/x-wireguard-profile", "application/vnd.pbsd.anonymity-preset+json", "text/markdown"]
+  },
+  "intents": {"handles": ["open", "view", "open-with-route", "open-with-identity"], "emits": ["open", "identity-reset", "share"]},
+  "url_schemes": ["anonymity"],
+  "services_provided": ["org.pbsd.route.v1", "org.pbsd.mix.v1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.firewall >= 0.1"],
+  "backing_repos": ["odin-loki/ANONYMOUS", "odin-loki/ParanoidBSD", "odin-loki/FORGE", "odin-loki/FUSE"],
+  "priority": "P1"
+}

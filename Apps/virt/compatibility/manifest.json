@@ -1,0 +1,61 @@
+{
+  "id": "org.pbsd.compatibility",
+  "name": "Compatibility",
+  "version": "0.1.0",
+  "category": "virt",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:probe-helper",
+    "proc.helper:diff-helper",
+    "svc.compat",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.audit",
+    "svc.update",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "probe-helper", "language": "c++23", "capabilities": []},
+    {"name": "diff-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": [
+      "application/vnd.microsoft.portable-executable",
+      "application/x-msi",
+      "application/x-ms-shortcut",
+      "application/vnd.appimage",
+      "application/x-executable",
+      "application/vnd.debian.binary-package",
+      "application/x-rpm",
+      "application/vnd.android.package-archive",
+      "application/x-pbsd-compat-report+tar"
+    ],
+    "export": [
+      "application/x-pbsd-compat-report+tar",
+      "text/plain"
+    ]
+  },
+  "intents": {"handles": ["open"], "emits": ["open", "share"]},
+  "url_schemes": [],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.service.compat >= 0.1",
+    "org.pbsd.service.jail >= 0.1",
+    "org.pbsd.desktop-shell >= 0.1"
+  ],
+  "backing_repos": ["odin-loki/ParanoidBSD:docs/plan/PBSD_PLAN.md#phase-4"],
+  "priority": "P2"
+}

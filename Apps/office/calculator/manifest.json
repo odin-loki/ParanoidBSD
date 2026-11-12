@@ -1,0 +1,55 @@
+{
+  "id": "org.pbsd.calculator",
+  "name": "Calculator",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:math-engine",
+    "proc.helper:rates-fetch",
+    "dev.print",
+    "svc.settings",
+    "svc.clipboard",
+    "svc.intent",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.update",
+    "svc.a11y",
+    "svc.audit",
+    "svc.notify"
+  ],
+  "optional_capabilities": [
+    {"capability": "net.host:www.ecb.europa.eu:443", "default": "off", "reason": "Direct currency rate update, used only by the rates-fetch helper"},
+    {"capability": "dev.gpu.compute", "default": "off", "reason": "Faster 3D plots"}
+  ],
+  "helpers": [
+    {"name": "math-engine", "language": "c++23", "capabilities": []},
+    {"name": "rates-fetch", "language": "c++23", "capabilities": ["net.host:www.ecb.europa.eu:443"]}
+  ],
+  "mime": {
+    "view": ["text/x-pbsd-calc-session"],
+    "edit": [],
+    "import": ["text/csv"],
+    "export": [
+      "text/plain",
+      "text/markdown",
+      "text/csv",
+      "application/x-latex",
+      "application/mathml+xml",
+      "image/png",
+      "image/svg+xml",
+      "application/pdf"
+    ]
+  },
+  "intents": {"handles": ["open", "view"], "emits": ["share", "print", "open"]},
+  "url_schemes": ["calc"],
+  "services_provided": ["org.pbsd.calculator.eval/1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["MathScript", "FUSE", "FORGE"],
+  "priority": "P1"
+}

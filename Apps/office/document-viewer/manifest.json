@@ -1,0 +1,54 @@
+{
+  "id": "org.pbsd.document-viewer",
+  "name": "Document Viewer",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "proc.helper:render-helper",
+    "proc.helper:convert-helper",
+    "proc.helper:net-helper",
+    "dev.print",
+    "ai.local",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.notify",
+    "svc.keyring",
+    "svc.thumbnail",
+    "svc.search",
+    "svc.audit",
+    "svc.a11y",
+    "svc.backup",
+    "svc.model"
+  ],
+  "capability_notes": {
+    "net.user": "Off until the user asks for an online revocation check or a time-stamp; passed to net-helper alone.",
+    "ai.local": "Off by default. OCR and optional summaries through svc.model."
+  },
+  "helpers": [
+    {"name": "render-helper", "language": "c++23", "capabilities": []},
+    {"name": "convert-helper", "language": "c++23", "capabilities": []},
+    {"name": "net-helper", "language": "c++23", "capabilities": ["net.user"]}
+  ],
+  "mime": {
+    "view": ["application/pdf", "application/epub+zip", "image/vnd.djvu", "application/vnd.comicbook+zip", "application/vnd.comicbook-rar", "application/x-cb7", "application/x-cbt", "application/vnd.ms-xpsdocument", "application/oxps", "application/postscript", "image/x-eps", "application/x-fictionbook+xml", "application/x-mobipocket-ebook", "image/tiff"],
+    "edit": ["application/pdf"],
+    "import": ["application/vnd.fdf", "application/vnd.adobe.xfdf", "image/png", "image/jpeg", "image/tiff", "application/postscript"],
+    "export": ["application/pdf", "image/png", "image/jpeg", "image/webp", "image/tiff", "image/svg+xml", "text/plain", "text/markdown", "application/vnd.adobe.xfdf", "application/vnd.fdf", "application/json", "application/x-bibtex"]
+  },
+  "intents": {"handles": ["open", "view", "print", "search"], "emits": ["open", "share", "print", "scan", "compose"]},
+  "url_schemes": [],
+  "services_provided": ["svc.thumbnail:provider", "org.pbsd.document-viewer.Convert"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.passwords >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P1"
+}

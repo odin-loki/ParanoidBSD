@@ -1,0 +1,38 @@
+{
+  "id": "org.pbsd.tasks",
+  "name": "Tasks",
+  "version": "0.1.0",
+  "category": "comms",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:dav", "proc.helper:ical", "proc.helper:import",
+    "svc.accounts", "svc.keyring", "svc.notify", "svc.settings", "svc.intent",
+    "svc.portal.file", "svc.portal.print", "svc.search", "svc.backup", "svc.audit",
+    "svc.power", "svc.clipboard", "svc.undo-trash", "svc.a11y", "svc.model", "ai.local",
+    "bg.run", "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "dav", "language": "c++23", "capabilities": []},
+    {"name": "ical", "language": "c++23", "capabilities": []},
+    {"name": "import", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["text/x-todo-txt"],
+    "edit": ["text/x-todo-txt"],
+    "import": ["text/calendar", "text/markdown", "text/plain", "text/x-todo-txt", "text/csv", "application/json"],
+    "export": ["text/calendar", "text/markdown", "text/x-todo-txt", "text/csv", "application/json", "application/pdf"]
+  },
+  "intents": {
+    "handles": ["new", "share", "open", "view"],
+    "emits": ["open", "view", "new", "pick", "print", "share"]
+  },
+  "url_schemes": ["pbsd-tasks"],
+  "services_provided": ["org.pbsd.tasks.dated", "org.pbsd.tasks.links", "org.pbsd.tasks.add"],
+  "background": {"autostart": true, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE"],
+  "priority": "P2"
+}

@@ -521,3 +521,306 @@ Gaps:
 - **CR03-GAP-2**: real-time scheduling for a helper process. PLATFORM.md section 6 has no capability for it (see section 7 and 13).
 - **CR03-GAP-3**: a MIDI device portal. PLATFORM.md lists `dev.usb:<class>`; MIDI needs a class-specific portal with hot-plug and timestamps.
 - **CR03-GAP-4**: EQ curve widget with draggable band nodes over a live spectrum (can be built on `curveEditor` if it gains custom node shapes).
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App logic | ForgeScript | app host | Session model, edit operations, undo journal, automation data, MIDI data, presets, jobs, intents |
+| UI | FUSE UI (`.fuseui` + CSS) | app host | Workbench, docks, dialogs, effect panels |
+| `audio-engine` | C++23 | helper, real-time thread | Device I/O, disk streaming, mixing graph, built-in DSP, instruments, delay compensation, metering, recording to disk, offline render. PLATFORM.md section 2 (b). |
+| `audio-codec` | C++23 (wraps decoders and encoders) | helper, one per file or job, no capabilities | Decode and encode compressed formats; metadata parsing. Section 2 (a). |
+| `plugin-host` | C++23 | helper, one per plugin instance, no capabilities | Loads one LV2 or CLAP plugin, runs its process call on shared buffers. Section 2 (a) and (d). |
+| `analysis` | C++23 | helper, no capabilities | Peaks, spectrogram tiles, loudness scans, transient and tempo detection, stretch rendering (non-real-time work kept off the engine) |
+| Model client | ForgeScript | app host | Sends audio to `svc.model` for stems, enhancement and transcription |
+
+```
+ +---------------------- app host (org.pbsd.audio-editor) -----------------------+
+ | ForgeScript: session model, edits, journal, automation, MIDI                  |
+ | FUSE UI: arrangement, mixer, editors  ◀── peaks, meter frames (shm ring)      |
+ +-----┬--------------------┬------------------┬-----------------┬---------------+
+       │ graph + edits      │ file handles     │ ranges          │ PCM
+       ▼                    ▼                  ▼                 ▼
+   audio-engine ◀──PCM── audio-codec       analysis          svc.model
+   (RT thread, dev.mic,   (no caps)        (no caps)         (ai.local)
+    svc.media, fs.app)
+       ▲  shared audio buffers + event queues (lock-free)
+       ▼
+   plugin-host × N  (no capabilities; one plugin each)
+```
+
+Rules for the engine: the real-time thread never allocates, never takes a lock that another thread can hold for long, never does file or IPC calls; it reads commands from a lock-free queue and audio from pre-filled ring buffers. The UI learns positions and meter values from a shared-memory ring, never by round-trip calls. A plugin host that misses its deadline is bypassed for that buffer (its last output is faded) and counted.
+
+### 6.2 Data model
+
+Session folder:
+
+```
+<name>.asession/
+  session.json           settings, tracks, clips, routing, automation, markers, schema version
+  versions/              earlier session.json files
+  audio/                 recorded and imported sources (WAV/BWF or FLAC)
+  midi/<uuid>.mid        MIDI clips
+  plugins/<uuid>.state   opaque plugin states (from the plugin's own state interface)
+  peaks/                 peak and spectrogram caches (not backed up)
+  transcripts/<uuid>.json
+  autosave/              journal, in-progress recordings
+```
+
+| Entity | Fields |
+|---|---|
+| `Session` | `schema: u32`, `id: uuid`, `name`, `rate: u32`, `rec_depth: enum{i16,i24,f32}`, `tempo_map: [{pos: i64, bpm: f64, ramp: bool}]`, `signatures: [{bar: u32, num: u8, den: u8}]`, `tc_rate: rational`, `pan_law: f32`, `loudness_target: f32` |
+| `Source` | `id: uuid`, `file: path or handle_token`, `blake3: hex`, `frames: u64`, `rate: u32`, `channels: u8`, `origin: enum{recorded,imported,rendered,model}`, `model: {name, hash}?` |
+| `Track` | `id`, `kind: enum{audio,midi,instrument,bus,vca,master,folder,marker,picture}`, `name`, `channels`, `input: Port?`, `output: BusId`, `gain_db: f32`, `pan: f32`, `mute`, `solo`, `arm`, `monitor: enum`, `phase: bool`, `inserts: [Insert]`, `sends: [Send]`, `lanes: [Lane]`, `colour: u8`, `folder: TrackId?`, `frozen: SourceId?` |
+| `Clip` | `id`, `track`, `source: SourceId or MidiId`, `pos: i64` (session samples), `len: i64`, `src_in: i64`, `gain_db: f32`, `fade_in: {len: i64, shape: enum}`, `fade_out`, `stretch: f64`, `pitch_cents: i32`, `algo: enum`, `warp: [{src: i64, dst: i64}]`, `env: [{t: i64, db: f32}]`, `reverse`, `mute`, `lock`, `group: uuid?`, `take: u16`, `name` |
+| `Insert` | `id`, `kind: enum{builtin,script,lv2,clap}`, `type: string` (built-in name or plugin URI/id), `hash: hex?`, `params: map<string,f64>`, `state: path?`, `bypass`, `wet: f32`, `latency: u32` |
+| `Send` | `to: BusId`, `level_db: f32`, `pan: f32`, `pre: bool` |
+| `Lane` (automation) | `target: {insert?: id, param: string}`, `mode: enum`, `points: [{t: i64, v: f64, curve: f32}]` |
+| `Marker` | `id`, `pos: i64`, `len: i64`, `name`, `kind: enum{marker,region,chapter,punch}`, `colour` |
+| `MidiClip` | `id`, `file`, `ppq: u16`; notes as `{tick: u32, len: u32, key: u8, vel: u8, ch: u8}`; controllers as `{tick, cc, value}` |
+| `Snapshot` | `name`, `mixer: json` (gains, pans, mutes, insert params) |
+
+Positions are integer samples at the session rate; musical positions are ticks resolved through the tempo map. `session.json` is written with sorted keys and one entity per line so DV03 can diff it. Schema changes migrate forward in memory and keep the old file in `versions/`.
+
+### 6.3 File formats and protocols
+
+| Format | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| WAV, RF64, BWF (bext, iXML), AIFF | yes | yes | Own code | `audio-codec` (import); `audio-engine` writes its own recordings |
+| FLAC | yes | yes | libFLAC (BSD) or own decoder (format is small and public) | `audio-codec` |
+| Ogg Vorbis | yes | yes | libogg, libvorbis (BSD) | `audio-codec` |
+| Opus | yes | yes | libopus (BSD) | `audio-codec` |
+| MP3 | yes | yes | Decode: minimp3 (CC0) or own; encode: LAME (LGPL) as a separate optional helper build | `audio-codec` |
+| AAC / M4A | yes | optional | Decode and encode through the platform media pipeline (G-11) if present; else off | `audio-codec` |
+| WavPack | yes | yes | WavPack (BSD) | `audio-codec` |
+| Standard MIDI File | yes | yes | Own code | app host (ForgeScript, bounded) |
+| SFZ, SF2 | yes | no | Own code | `audio-codec` (parse to a checked instrument description) |
+| LV2 (C ABI, Turtle manifests) | host | — | Own minimal host; own Turtle subset parser (no librdf stack) | `plugin-host` (throwaway instance for scanning) |
+| CLAP (C ABI) | host | — | CLAP headers (MIT) | `plugin-host` |
+| Cue sheet, chapters JSON, VTT, SRT | yes | yes | Own code | app host |
+| Impulse responses (WAV, FLAC) | yes | no | As above | `audio-codec` |
+| Engine IPC | — | — | Session-bus schema `org.pbsd.audio-editor.engine.v1` for control; shared-memory rings for audio and meters | both ends validate |
+
+Resampling and time-stretch are own code (windowed-sinc resampler; phase vocoder and WSOLA). Third-party alternatives if own quality falls short: libsamplerate (BSD), Rubber Band (GPL-2+, compatible with AGPL-3.0-or-later). VST2, VST3 and AU are not supported: the first is closed to new licences, the second pulls a large SDK, the third is tied to another OS.
+
+### 6.4 Integration
+
+- **Intents handled:** `open`, `edit`, `new`, `share` target (receive audio). **Emitted:** `share`, `open` (ME02 plays an export; CR02 round trip).
+- **MIME:** edit `application/x-pbsd-audio-session+json`, `audio/wav`, `audio/flac`, `audio/ogg`, `audio/opus`, `audio/aiff`; import `audio/mpeg`, `audio/aac`, `audio/mp4`, `audio/x-wavpack`, `audio/midi`; export the same audio types plus `text/vtt`.
+- **Services:** `svc.portal.file`, `svc.portal.mic`, `svc.portal.usb` (MIDI), `svc.media` (devices, routing, transport keys, media session), `svc.settings`, `svc.notify`, `svc.power` (inhibit sleep while recording or exporting; performance profile request), `svc.model`, `svc.clipboard`, `svc.keyring`, `svc.backup` (excludes `peaks/`), `svc.intent`, `svc.a11y`.
+- **Other apps:** ME06 "Open in Audio Editor"; CR02 sends clips and mixes and takes them back; ME02 plays exports; AX06 and ME06 share the transcription model class; AI02 installs models; DV03 versions sessions; SE04 holds signing keys.
+- **Backing repos.** Verified: FORGE has signal-processing headers `forge/signal/audio.hpp` (at `FORGE:support/include/forge/signal/audio.hpp`) and `forge/signal/fft.hpp`, and a streaming inference session `FORGE:inference/include/forge/inference/streaming.hpp`; the sample `FORGE:examples/integrations/neuralvfx_stream.cpp` uses a biquad low-pass, a real FFT, and a session with `window`, `hop` and `deadline` options that reports frames, dropped, overruns and worst time. FUSE has a spatial audio library `fuse_audio` (`FUSE:docs/modules.md`), which is a game-audio engine and is not used here. Proposed: the audio engine may reuse FORGE's FFT and biquad code after review; everything else in this spec. Unverified: the full contents and quality of `forge/signal`; whether it is allocation-free and safe for a real-time thread.
+
+## 7. Security and privacy
+
+Capabilities requested:
+
+| Capability | Reason |
+|---|---|
+| `fs.app` | Settings, presets, default session location, autosave |
+| `fs.portal` | Sessions, imports, exports, plugin folders, impulse and sample files |
+| `net.none` | No network use |
+| `proc.helper:audio-engine`, `:audio-codec`, `:plugin-host`, `:analysis` | The helpers of 6.1 |
+| `dev.mic` | Recording and monitoring; prompt on first use; indicator while armed |
+| `dev.usb:midi` | MIDI keyboards and control surfaces through the device portal |
+| `dev.gpu.compute` | Optional: spectrogram tiles on GPU |
+| `ai.local`, `svc.model` | Stems, enhancement, transcription |
+| `svc.media` | Audio devices and routing, media session |
+| `svc.power` | Sleep inhibit, performance profile while the engine runs |
+| `svc.settings`, `svc.notify`, `svc.portal.file`, `svc.portal.mic`, `svc.portal.usb`, `svc.clipboard`, `svc.keyring`, `svc.backup`, `svc.intent`, `svc.a11y` | As listed in 6.4 |
+| `bg.run` | Keep recording or exporting when the window is closed; always shown by the shell |
+
+Not requested: `net.host`, `net.user`, `proc.exec`, `dev.camera`, `dev.screen`, `dev.location`, `bg.autostart`.
+
+**Decision on plugins, with reasons.** Arbitrary native plugins are off by default. When the user turns the host on, LV2 and CLAP plugins run one per process in `plugin-host` with an empty capability list.
+
+1. A native plugin is unreviewed third-party machine code. In-process it would have the app's microphone grant and every open file. In a no-capability helper it can only compute on the buffers it is given.
+2. One process per instance means a crash or hang costs one insert, not the session.
+3. Plugin GUIs are not loaded. They need X11, GTK, Qt or a web view, none of which exist on this OS, and a window from an untrusted process would break the rule that prompts and chrome come from the shell. A generated parameter panel replaces them. Some plugins will be less pleasant to use; a few that work only through their GUI will not work at all.
+4. Plugins that need writable-executable memory (their own JIT) fail under W^X. That is intended.
+5. LV2 and CLAP are chosen because both are open (ISC and MIT), have a plain C ABI and do not need a vendor SDK.
+6. The cost is latency and CPU: each hop to a helper adds a context switch per buffer. Budget in section 10. Plugins can be chained inside one host process only if the user marks them trusted (setting, off by default).
+7. Signed ForgeScript effect graphs are the preferred way to extend the app: they add no machine code.
+
+**What the OS must provide for low-latency audio (stated requirements, all Proposed or Unverified on HardenedBSD):**
+
+| Need | Why | Status |
+|---|---|---|
+| Real-time scheduling class for the engine's audio thread and for plugin-host threads, granted by the system, bounded (CPU share cap, watchdog) | Without it, buffers under 256 frames under-run when the system is busy | Not in PLATFORM.md section 6: CR03-GAP-2. FreeBSD has `rtprio(2)`; a capability-mode process cannot raise itself, so the launcher or `svc.media` must set it. |
+| Locked memory (`mlock`) for audio buffers and engine code, with a raised limit | No page faults in the audio thread | Needs a resource-limit grant in the helper launcher (FORGE-WP-27) |
+| Direct, exclusive, bit-exact device path with a chosen buffer size and no mixing resampler in between | Predictable latency and no rate conversion | Through `svc.media`; Unverified. FreeBSD's sound(4) offers bit-perfect mode and small fragments; USB audio class support exists in the base system (Unverified on HardenedBSD here). |
+| Device time stamps and a sample-accurate position call | Sync of record and playback, latency measurement | G-11 (FUSE-WP-52) |
+| Low timer jitter; a way to ask for the performance CPU profile and to stop deep idle states while the engine runs | Wake-up latency adds to buffer time | `svc.power` request; Unverified |
+| MIDI device access with time stamps and hot-plug | MIDI input timing | CR03-GAP-3 |
+| Shared memory and wake-up primitives usable in capability mode between helpers (no syscall that can block for long in the audio path) | Engine to plugin-host hand-off | FORGE-WP-27, FORGE-WP-28; G-06 |
+| Hardened-allocator and PaX settings that do not add faults in the audio thread | Real-time safety | Unverified; to be measured |
+
+**Assets:** recordings (voices, unreleased music), the live microphone, session files, plugin states, signing keys.
+
+**Adversaries:** crafted audio, MIDI, SFZ/SF2 or session files; a malicious or buggy plugin; a session from someone else that names plugins or scripts; another app trying to hear the microphone through this app; a hostile model.
+
+| Surface | Mitigation |
+|---|---|
+| Decoders and metadata | Only in `audio-codec` with no capabilities; frame counts and channel counts checked before the engine accepts audio. |
+| Plugins | Policy above; hash-pinned; no capabilities; time-outs; no GUI. |
+| Sessions from elsewhere | Parsed in ForgeScript; files referenced by token and hash, not raw paths; plugins and scripts disabled until allowed (feature F133); plugin state blobs go only to the sandboxed plugin. |
+| Microphone | Portal prompt; indicator while armed; arming is cleared on session close; no background capture without `bg.run` shown. |
+| Real-time priority abuse | The grant is to the helper only, with a CPU cap and a watchdog that demotes a thread that runs past its budget. |
+| Export metadata | Only what the user typed. Recording device names are not written. |
+| Hearing damage | Output limiter option and jump warning (feature F134). |
+| Models | Loaded by `svc.model` from signed `.fpk` files only. |
+
+**Stored:** sessions where the user saves them; presets, device calibrations, plugin scan results in the app's data directory. **Leaves the machine:** nothing.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `engine.output_device` | string | system default | Output device id |
+| `engine.input_device` | string | none | Input device id |
+| `engine.sample_rate` | int | `48000` | Engine rate when no session is open |
+| `engine.buffer_frames` | int | `256` | Device buffer size |
+| `engine.exclusive` | bool | `true` | Ask for an exclusive bit-exact device |
+| `engine.realtime` | bool | `true` | Ask for real-time scheduling |
+| `engine.performance_profile` | bool | `true` | Ask `svc.power` for the performance profile while running |
+| `record.depth` | enum | `i24` | i16, i24, f32 |
+| `record.file_format` | enum | `bwf` | bwf, flac |
+| `record.pre_buffer_s` | int | `0` | Pre-record buffer length |
+| `record.continue_when_locked` | bool | `true` | Keep recording when the session locks |
+| `record.count_in_bars` | int | `1` | Count-in length |
+| `edit.auto_crossfade_ms` | float | `5.0` | Crossfade on every cut; 0 = off |
+| `edit.default_fade_shape` | enum | `equal_power` | Fade shape |
+| `edit.snap_zero_crossing` | bool | `false` | Snap cuts to zero crossings |
+| `edit.automation_follows_clips` | bool | `true` | Move automation with clips |
+| `view.waveform_scale` | enum | `linear` | linear, db |
+| `view.spectrogram_fft` | int | `4096` | Default window |
+| `view.follow` | enum | `page` | none, page, centred |
+| `meter.loudness_target` | float | `-16.0` | Default LUFS target |
+| `meter.true_peak_ceiling` | float | `-1.0` | dBTP ceiling |
+| `export.default_format` | enum | `flac` | Default export format |
+| `export.write_report` | bool | `true` | Write a loudness report |
+| `plugins.native_host` | bool | `false` | Enable LV2 and CLAP |
+| `plugins.process_per` | enum | `instance` | instance, plugin |
+| `plugins.folders` | list | empty | Portal grants for plugin folders |
+| `plugins.deadline_factor` | float | `0.5` | Share of the buffer time a plugin may use |
+| `safety.monitor_limiter` | bool | `true` | Limit monitor output to −1 dBFS |
+| `ai.enabled` | bool | `false` | Show model tools |
+| `scripts.allow_foreign` | bool | `false` | Run signed effect graphs from received sessions without asking |
+
+## 9. Accessibility and languages
+
+- **Editing by ear and keys.** Every selection change can be announced: start, end, length, track. `Ctrl+Alt+Left/Right` moves the edit cursor by the grid with an audible click or a short audition of the audio at the cursor.
+- **Audible meters.** An optional tone or spoken read-out of peak level and loudness on demand (`Ctrl+Alt+L`), so meters do not need sight.
+- **Mixer as a table.** The a11y tree presents the mixer as rows (tracks) and columns (gain, pan, mute, solo, inserts), each adjustable with arrow keys and typed values.
+- **Spectral view** has a text summary of the selection (time range, frequency range, peak frequency) since the picture cannot be read aloud.
+- **No colour-only state.** Mute, solo, arm and clip states use letters and shapes; clipping shows a number.
+- **Screen-reader audio must not be recorded by accident.** The engine never captures system output unless the user granted system capture (feature F022).
+- Note names follow the locale (C D E or Do Re Mi; B or H). Time and number formats follow the locale. Transcripts support any language the installed model supports and right-to-left text (G-03).
+
+## 10. Performance budgets
+
+| Measure | Budget |
+|---|---|
+| Cold start to first frame | ≤ 400 ms |
+| Engine start to audio running | ≤ 300 ms |
+| Round-trip latency at 48 kHz, 64-frame buffer, class-compliant USB interface | ≤ 6 ms (target; depends on the device) |
+| Under-runs | 0 in a 1-hour run at 128 frames with 32 tracks and 64 built-in inserts on the reference machine |
+| Extra cost per sandboxed plugin instance | ≤ 30 µs per buffer hand-off on the reference machine; no added latency when it meets its deadline |
+| Tracks | 128 audio tracks playing from disk at 48 kHz 24-bit |
+| Edit operation applied and audible | ≤ 50 ms |
+| Waveform draw | Any zoom in ≤ 4 ms per frame (peak pyramid) |
+| Open a session with 10 hours of audio | ≤ 2 s to usable (peaks cached) |
+| Offline export | ≥ 20× real time for a 16-track session with light processing |
+| Spectrogram tile | ≤ 20 ms per 1024 × 256 tile on CPU |
+| Memory | ≤ 600 MiB for app and helpers with a 32-track session, plus the disk stream buffers |
+| Idle | 0 UI frames when stopped; the engine may be stopped entirely after 30 s idle (setting) |
+
+## 11. Testing and proof
+
+Nothing below has run. All are plans and targets.
+
+- **Unit (ForgeScript):** edit operations with invariants (clips on a track do not overlap unless crossfaded, fades fit inside clips, automation points stay ordered, routing has no loops); tempo-map conversions; journal replay.
+- **Unit (C++):** each DSP block against closed-form or reference responses (EQ magnitude, compressor static curve, limiter never exceeds its ceiling, resampler passband ripple and stopband); delay compensation sums; denormal handling.
+- **Null tests:** import → export with no edits is bit-identical; a clip split and rejoined nulls against the original; bypassed inserts null.
+- **Standards:** loudness and true peak against the EBU Tech 3341/3342 and ITU-R BS.1770 conformance signals.
+- **Real-time safety:** a build that traps on allocation, lock or system call in the audio thread; a stress run with CPU and disk load counting under-runs.
+- **Golden renders:** each dock, dialog and effect panel; waveform and spectrogram drawings from fixed signals.
+- **Scripted UI through the a11y tree:** the 14 top tasks.
+- **Fuzz:** each decoder, the WAV/BWF chunk parser, MIDI files, SFZ/SF2, session JSON, the LV2 manifest subset parser, plugin state blobs passed back to plugins (host side), the engine IPC.
+- **Plugin host:** a set of deliberately bad test plugins (crash, hang, write out of bounds, try to open a file, try to open a socket) must each be contained and reported.
+- **Recovery:** kill the engine and the app during recording; no more than 1 s of audio is lost.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Sample and tick arithmetic, tempo map | No overflow; conversions monotonic | T1 | PRISM proof | — |
+| Lock-free queues and rings (engine ↔ UI, engine ↔ plugin host) | No data race; no out-of-bounds index | T2 | PRISM plus model checking of the algorithm | Concurrency proof of the full engine |
+| Limiter | Output never exceeds the ceiling | T1 | Proof on the gain computation with look-ahead | Oversampled true-peak estimate stays T3 |
+| DSP blocks | No runtime errors (index, division, NaN traps) | T2 | PRISM absence-of-runtime-error | Float accuracy is tested, not proved |
+| WAV/BWF/MIDI parsers | No out-of-bounds read on any input | T2 | PRISM plus fuzzing | — |
+| Third-party codecs | Contained | T4 | Sandbox tests | Not in the safe subset |
+| Native plugins | Contained | T4 | Bad-plugin test set | Unreviewed machine code by definition |
+| Edit operations (ForgeScript) | Invariants hold | T3 | Property tests | No ForgeScript prover yet |
+| Real-time thread | No allocation, lock or blocking call | T3 | Trap build and static call-graph check | A proof of the whole call graph |
+
+## 12. Build plan
+
+### Phase 1 — usable core (record, edit, export)
+
+| ID | Work item | Depends on |
+|---|---|---|
+| CR03-W01 | Session model, edit operations, journal, undo | G-02 |
+| CR03-W02 | `audio-engine` v1: device I/O, disk streaming, mixing, fades, gain, pan, metering, recording with a journal | G-11 (FUSE-WP-52), FORGE-WP-27, FORGE-WP-28, CR03-GAP-2 |
+| CR03-W03 | `audio-codec` helper: WAV, BWF, AIFF, FLAC, Vorbis, Opus, MP3 decode; FLAC, Opus, WAV encode | G-06 |
+| CR03-W04 | `analysis` helper: peak pyramids | W03 |
+| CR03-W05 | Workbench, transport, arrangement with waveforms, inspector | G-01, G-07, G-08, FUSE-WP-49, FUSE-WP-50 |
+| CR03-W06 | Built-in effects v1: EQ, compressor, limiter, utility; effect chain and panels | W02 |
+| CR03-W07 | Mixer v1: strips, master, peak/RMS meters | W02, W05 |
+| CR03-W08 | Export mix, single-file mode, autosave and recovery | W02, W03 |
+| CR03-W09 | Audio engine set-up panel and system checks | W02, G-09 (`svc.media`, `svc.power`) |
+| CR03-W10 | Markers, loop, metronome, count-in | W02, W05 |
+
+### Phase 2 — full feature
+
+| ID | Work item | Depends on |
+|---|---|---|
+| CR03-W11 | Buses, sends, delay compensation, automation lanes and modes | W07 |
+| CR03-W12 | Punch and loop recording, takes, comping, latency calibration | W02 |
+| CR03-W13 | Time-stretch and pitch (vocoder, WSOLA), resampler quality pass, varispeed | W04 |
+| CR03-W14 | Spectrogram view and spectral edits | W04, FUSE-WP-49 |
+| CR03-W15 | Effects v2: de-noise, de-ess, gate, reverb, delay; offline apply; voice chain | W06 |
+| CR03-W16 | Loudness (LUFS, true peak), targets, report, dither | W07 |
+| CR03-W17 | MIDI tracks, piano roll, controller lanes, device input, SMF | CR03-GAP-1, CR03-GAP-3 |
+| CR03-W18 | Strip silence, clip envelopes, groups, tempo track | W01 |
+| CR03-W19 | Podcast workflow: template, ducking, chapters, metadata | W11, W16 |
+| CR03-W20 | Stems export, batch convert, export queue | W08 |
+| CR03-W21 | ForgeScript effect graphs, untrusted-session mode | FORGE-WP-14, FORGE-WP-33 |
+| CR03-W22 | Screen-reader editing pass | G-04 |
+
+### Phase 3 — advanced
+
+| ID | Work item | Depends on |
+|---|---|---|
+| CR03-W23 | `plugin-host`: CLAP then LV2, scan, generic panels, trust list, bad-plugin tests | W11, G-06 |
+| CR03-W24 | Instruments: sampler (SFZ, SF2), synth, drum machine; freeze | W17 |
+| CR03-W25 | Stem separation, speech enhancement | G-15, FORGE-WP-29, FORGE-WP-31, AI02 |
+| CR03-W26 | Transcription and text-based editing | W25, FUSE-WP-18 |
+| CR03-W27 | Mastering chain, multiband, reference tracks, album assembly | W16 |
+| CR03-W28 | Restoration: de-click, de-hum, de-clip; pitch correction; warp markers | W13, W14 |
+| CR03-W29 | Surround buses and panner; routing matrix; VCAs | W11 |
+| CR03-W30 | Control surfaces, pre-record buffer, system audio capture | W17, `svc.media` |
+| CR03-W31 | Reference picture track; CR02 round trip; signed export; archive session | G-11 (FUSE-WP-53), CR02, SE04 |
+
+## 13. Open questions and risks
+
+1. **Real-time scheduling (CR03-GAP-2) is the gating risk.** PLATFORM.md has no capability for it. Proposal: a `sched.realtime` grant given only to named helpers through `svc.media`, with a CPU cap and watchdog. Without it, the app works only at large buffers (1024 frames or more) and is not fit for monitoring through effects.
+2. **Audio stack on HardenedBSD is Unverified.** Bit-exact exclusive mode, USB audio class 2 devices, device time stamps and jitter under the hardened kernel all need measurement before the latency budget means anything.
+3. **Plugin usefulness without GUIs.** Many plugins are usable from parameters alone; some are not. If users need plugin windows, the only route consistent with the platform is a plugin drawing into a buffer that the shell composites as an untrusted surface (FUSE-WP-51 remote surfaces). Not planned here.
+4. **Per-plugin process cost.** A session with 100 plugin instances means 100 helper processes and 100 hand-offs per buffer. The trusted-chain option reduces this at a security cost. Needs measurement.
+5. **MIDI portal (CR03-GAP-3)** does not exist in the platform list.
+6. **Own DSP quality.** Time-stretch, de-noise and reverb take long to make good. Rubber Band (GPL-2+) is a fallback for stretching; owner decision on adding it.
+7. **Patent-encumbered formats** (AAC; MP3 patents have expired) are optional and depend on the platform media pipeline.
+8. **Models** for stem separation and transcription must exist as signed `.fpk` files with licences that allow shipping. None is named here.
+9. **`forge/signal` reuse** is attractive but its real-time safety is Unverified.
+10. **Priority.** The catalogue ranks this app P3. CR02 needs the same `audio-engine` core at P2, so phase 1 items W02–W04 should be scheduled with CR02, not left to P3.

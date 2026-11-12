@@ -26,21 +26,57 @@
     "proc.helper:import-helper"
   ],
   "helpers": [
-    {"name": "probe-helper", "language": "c++23", "capabilities": []},
-    {"name": "import-helper", "language": "c++23", "capabilities": []}
+    {
+      "name": "probe-helper",
+      "language": "c++23",
+      "capabilities": []
+    },
+    {
+      "name": "import-helper",
+      "language": "c++23",
+      "capabilities": []
+    }
   ],
   "mime": {
-    "view": ["application/vnd.pbsd.install-plan+json"],
-    "edit": ["application/vnd.pbsd.install-plan+json"],
+    "view": [
+      "application/vnd.pbsd.install-plan+json"
+    ],
+    "edit": [
+      "application/vnd.pbsd.install-plan+json"
+    ],
     "import": [],
-    "export": ["application/vnd.pbsd.install-plan+json", "application/pdf", "text/markdown", "application/json"]
+    "export": [
+      "application/vnd.pbsd.install-plan+json",
+      "application/pdf",
+      "text/markdown",
+      "application/json"
+    ]
   },
-  "intents": {"handles": ["open"], "emits": ["open", "print", "share"]},
+  "intents": {
+    "handles": [
+      "open"
+    ],
+    "emits": [
+      "open",
+      "print",
+      "share"
+    ]
+  },
   "url_schemes": [],
   "services_provided": [],
-  "background": {"autostart": false, "run": false},
-  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.software >= 0.1", "org.pbsd.disks >= 0.1"],
-  "backing_repos": ["ParanoidBSD", "FUSE", "FORGE"],
-  "priority": "P0",
-  "notes": "svc.install and svc.storage are Proposed privileged services (AD01-GAP-6); not yet in PLATFORM.md section 8."
+  "background": {
+    "autostart": false,
+    "run": false
+  },
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.software >= 0.1",
+    "org.pbsd.disks >= 0.1"
+  ],
+  "backing_repos": [
+    "ParanoidBSD",
+    "FUSE",
+    "FORGE"
+  ],
+  "priority": "P0"
 }

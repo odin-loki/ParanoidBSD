@@ -1,0 +1,40 @@
+{
+  "id": "org.pbsd.transfers",
+  "name": "Transfers",
+  "version": "0.1.0",
+  "category": "internet",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:http", "proc.helper:torrent", "proc.helper:ssh", "proc.helper:ftp", "proc.helper:rsync",
+    "proc.helper:device-send", "proc.helper:parse", "proc.helper:hash",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.intent", "svc.keyring", "svc.clipboard",
+    "svc.power", "svc.backup", "svc.audit", "svc.accounts", "svc.undo-trash",
+    "bg.run", "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "http", "language": "c++23", "capabilities": ["net.user", "net.route (exactly one per instance)"]},
+    {"name": "torrent", "language": "c++23", "capabilities": ["net.user (peer-to-peer; see IN03-GAP-2)", "net.route (exactly one per instance)"]},
+    {"name": "ssh", "language": "c++23 wrapper + libssh2 (BSD-3-Clause)", "capabilities": ["net.host:<host>:<port> (one per instance)"]},
+    {"name": "ftp", "language": "c++23", "capabilities": ["net.host:<host>:<port> (one per instance)"]},
+    {"name": "rsync", "language": "c++23 wrapper + openrsync (ISC)", "capabilities": ["net.host:<host>:<port> (one per instance)"]},
+    {"name": "device-send", "language": "c++23", "capabilities": ["local link only (see IN03-GAP-3)"]},
+    {"name": "parse", "language": "c++23", "capabilities": []},
+    {"name": "hash", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-bittorrent", "application/metalink4+xml", "application/metalink+xml"],
+    "edit": [],
+    "import": ["application/x-bittorrent", "application/metalink4+xml", "application/xml", "text/plain"],
+    "export": ["application/x-bittorrent", "application/json"]
+  },
+  "intents": {"handles": ["open", "share"], "emits": ["open", "view", "share", "scan"]},
+  "url_schemes": ["magnet", "sftp", "ftp", "ftps", "dav", "davs", "s3", "rsync"],
+  "services_provided": ["org.pbsd.transfers.submit", "org.pbsd.transfers.pairing", "org.pbsd.transfers.remote-fs"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.vault >= 0.1", "org.pbsd.passwords >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}
