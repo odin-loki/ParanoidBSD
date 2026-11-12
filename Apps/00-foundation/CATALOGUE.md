@@ -3,7 +3,7 @@
 
 By Odin Loch
 
-The full suite: 78 apps in 15 categories. Each app lives at `Apps/<category>/<slug>/` with a `SPEC.md` and a draft `manifest.json`. Bundle id is `org.pbsd.<slug>`.
+The full suite: 78 apps in 15 categories. Roles of the backing repos were corrected after the repos were read; see [DECISIONS.md](DECISIONS.md) section 1. Each app lives at `Apps/<category>/<slug>/` with a `SPEC.md` and a draft `manifest.json`. Bundle id is `org.pbsd.<slug>`.
 
 Priority: **P0** the system cannot be used without it. **P1** needed for a daily-driver desktop. **P2** completes the suite. **P3** extra.
 
@@ -41,9 +41,9 @@ Priority: **P0** the system cannot be used without it. **P1** needed for a daily
 
 | ID | Slug | Name | What it is | Pri |
 |---|---|---|---|---|
-| SE01 | `security-center` | Security Centre | Security posture dashboard, integrity and verified-boot state, intrusion detection; front end for SENTINEL | P0 |
+| SE01 | `security-center` | Security Centre | Security posture dashboard, integrity and verified-boot state, intrusion detection (new sensors); reuses SENTINEL's statistics, provenance and export code | P0 |
 | SE02 | `firewall` | Firewall | pf rules, per-app network policy, live connections, blocklists, DNS policy | P0 |
-| SE03 | `anonymity` | Anonymity | Anonymous routing and VPN control, per-app routes, identity separation; front end for ANONYMOUS / AEGIS | P1 |
+| SE03 | `anonymity` | Anonymity | Network routes per app: clear, VPN, onion, and the AEGIS mix network for messages; identity separation | P1 |
 | SE04 | `passwords` | Passwords and Keys | Password manager, passkeys, TOTP, SSH / OpenPGP / age / signing keys, certificates, hardware tokens | P0 |
 | SE05 | `vault` | Vault | Encrypted containers and folders, file encryption and signing, secure erase, metadata cleaner, hash verify | P1 |
 
@@ -107,9 +107,9 @@ Priority: **P0** the system cannot be used without it. **P1** needed for a daily
 | ID | Slug | Name | What it is | Pri |
 |---|---|---|---|---|
 | CR01 | `image-editor` | Image Editor | Raster editor: layers, masks, brushes, filters, colour management | P2 |
-| CR02 | `video-editor` | Video Editor | Non-linear video editor with effects and compositing; NeuralVFX engine | P2 |
+| CR02 | `video-editor` | Video Editor | Non-linear video editor with effects and compositing; NeuralVFX supplies generated effects | P2 |
 | CR03 | `audio-editor` | Audio Editor | Multitrack audio editing, effects, MIDI, mastering | P3 |
-| CR04 | `studio` | Studio | The FUSE editor on its Qt-free shell: 2D and 3D worlds, simulation, games | P2 |
+| CR04 | `studio` | Studio | The FUSE editor on its Qt-free shell, shipped as the one native app: 2D and 3D worlds, simulation, games | P2 |
 
 ## dev — development
 
@@ -127,9 +127,9 @@ Priority: **P0** the system cannot be used without it. **P1** needed for a daily
 
 | ID | Slug | Name | What it is | Pri |
 |---|---|---|---|---|
-| AI01 | `assistant` | Assistant | Local assistant on CyphaLM / FORGE: chat, documents, tools with capability prompts, no cloud | P1 |
+| AI01 | `assistant` | Assistant | Local assistant on FORGE models: chat, documents, tools with capability prompts, no cloud; CyphaLM as an optional mode | P1 |
 | AI02 | `model-manager` | Model Manager | Import, verify, sign, benchmark and serve `.fpk` models with FORGE | P1 |
-| AI03 | `forecast` | Forecast | Time-series forecasting studio on Cypha's forecasting module | P2 |
+| AI03 | `forecast` | Forecast | Time-series forecasting studio: classical methods plus Cypha regressors and uncertainty | P2 |
 | AI04 | `notebook` | Notebook | Computational notebook for MathScript and ForgeScript: cells, plots, symbolic maths | P2 |
 | AI05 | — | Kodai | Unverified: private repo, not read. No spec until its purpose is known. | — |
 

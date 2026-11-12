@@ -3,7 +3,7 @@
 
 By Odin Loch
 
-The order to build the platform and the 78 apps. Everything here is Proposed. Each app's own phases and work items are in its `SPEC.md` section 12; this file orders the apps against each other and against the platform gaps in [PLATFORM.md](PLATFORM.md) section 13 and [GAPS.md](GAPS.md).
+The order to build the platform and the 78 apps. Everything here is Proposed. Each app's own phases and work items are in its `SPEC.md` section 12; this file orders the apps against each other and against the platform gaps in [PLATFORM.md](PLATFORM.md) section 13 and [GAPS.md](GAPS.md). The work inside FUSE and FORGE is in [build-plans/](build-plans/). Choices are in [DECISIONS.md](DECISIONS.md).
 
 ## 1. Dependency shape
 
@@ -54,7 +54,7 @@ graph TD
 
 ### M2 (P0)
 
-1. SH04 Portals and SH03 Login/Lock first: every other app needs the trusted prompts and a session.
+1. SH03 Login and Lock first (it owns the trusted path), then SH04 Portals: every other app needs the trusted prompts and a session.
 2. SH05 Window Management, SH01 Desktop Shell, SH02 Notifications.
 3. SY03 Terminal and OF01 Text Editor (they make the system developable from inside).
 4. SY02 Files, SY01 Settings, AD05 Permissions.
@@ -98,11 +98,18 @@ Several apps need the same engine. Build each once as a helper library or servic
 | Image codecs in sandboxes | ME01 | every app that shows images, svc.thumbnail |
 | Archive engine | UT01 | SY02, SY05, IN03 |
 | Git engine | DV03 | DV01, CR04 |
+| SSH (OpenSSH in a helper) | SY03 | IN03, VM04, DV03, SY02, DV01, DV05 |
+| Audio engine | CR03 | CR02, ME02, ME06 |
 | Terminal grid (G-13) | SY03 | DV01, VM01, VM02, VM04 |
-| Web content engine (G-14) | IN01 | CO01, IN02, UT05 |
+| Script-free document renderer | IN01 | CO01, IN02, reader mode |
+| Web content engine (G-14) | IN01 | IN01 only |
 | OCR, speech, vision models through svc.model | AI02 | ME05, OF03, ME04, ME06, AX01, AX06, ME01 |
 | OpenPGP, S/MIME, age, signing | SE04 | CO01, SE05, DV03, SY05, CO05 |
 | Sync between own devices (no server account) | OF02 | IN01, AX05, CO04, SE04 |
+
+### What the shell waits on
+
+The compositor is a scaffold today. Milestone M2 cannot start until the compositor work in [GAPS.md](GAPS.md) section 1 is scheduled (trusted layer, session lock, capture, toplevel management, input method), and Permissions (AD05) needs the kernel revoke and lineage listing in GAPS.md section 2. Virtual Machines, Jails, Compatibility and Devices wait on the OS plan's Phases 3 to 5.
 
 ## 5. Relation to the existing OS plan
 

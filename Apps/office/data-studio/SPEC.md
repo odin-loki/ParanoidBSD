@@ -272,3 +272,574 @@ Personas:
 | OF09-F135 | Themes for grids and editor | Follow the system theme; compact density by default; monospace option for the grid. | S | 1 |
 | OF09-F136 | Print | Print or PDF a result, a table definition, an ER diagram or a plan through `svc.portal.print`. | C | 3 |
 | OF09-F137 | Scripting | Signed ForgeScript modules may add result formatters and exporters through a narrow API with no capabilities. They cannot open connections or run SQL. | C | 3 |
+
+## 5. GUI
+
+Layout pattern: workbench with docks (DESIGN_SYSTEM.md section 4). Default density: compact.
+
+### 5.1 Window map
+
+```
+Data Studio
+├─ Main window
+│  ├─ Header bar: menu, title (connection — object), quick open / command palette,
+│  │              environment word, [net] badge, pending-transaction badge
+│  ├─ Environment stripe (4 px, under the header; colour and a repeated word for production)
+│  ├─ Sidebar (F9): Connections and schema tree | Saved queries | History | Files | Jobs
+│  ├─ Centre tabs: SQL editor | Table data | Table details | ER diagram | Plan | Diff |
+│  │               Parquet inspector | JSON explorer | Server information | Start view
+│  ├─ Bottom dock (per editor tab): Results 1..n | Messages | Chart | Plan | Parameters
+│  ├─ Inspector (F4): Cell viewer | Row (record view) | Column statistics | Object properties
+│  └─ Status bar: session mode, transaction state, rows, time, selection aggregates, jobs
+├─ Dialogs
+│  ├─ New / edit connection (wizard)        ├─ Export result / table
+│  ├─ Connection test                       ├─ Import wizard
+│  ├─ Leave read-only mode                  ├─ Copy table to connection
+│  ├─ Review and commit changes             ├─ Data diff set-up
+│  ├─ Dangerous statement confirmation      ├─ Schema diff set-up
+│  ├─ Open SQLite file options              ├─ Table designer
+│  ├─ CSV options (shared with OF05)        ├─ Formatter options
+│  ├─ Save query                            ├─ History privacy and redaction rules
+│  └─ Preferences                           └─ SQLite maintenance
+├─ Popovers: column filter, foreign-key peek, column statistics, parameter values,
+│            net badge details, session list, NULL / default menu, completion list
+└─ Inline bars: read-only bar, disconnected bar, trust bar (external file), stale-metadata bar,
+               open-transaction bar, partial-result bar
+```
+
+### 5.2 Main window
+
+Shown at 1440×860, wide layout, connected to a production PostgreSQL in read-only mode.
+
+```
++------------------------------------------------------------------------------------------+
+| [=] Data Studio — orders-db / public        [Ctrl+P quick open]  (1) PRODUCTION [net] [▁▢✕]|
++==== PRODUCTION · READ-ONLY ==== PRODUCTION · READ-ONLY ==== PRODUCTION · READ-ONLY ======+ (2)
+| (3) Connections  [+] | (5) [orders.sql ●][customers ▦][Plan]              [▶ Run][■][⚙]  |
+| [/ filter_______]    |  1  SELECT c.name, count(*) AS orders, sum(o.total) AS revenue    |
+| ▾ ● orders-db  PROD  |  2  FROM   customers c                                            |
+|   ▾ public           |  3  JOIN   orders o ON o.customer_id = c.id                       |
+|     ▾ Tables (14)    |  4  WHERE  o.placed_at >= :since                                  |
+|       ▸ customers    |  5  GROUP  BY c.name                                              |
+|       ▸ orders       |  6  ORDER  BY revenue DESC;|                                      |
+|       ▸ order_items  |                                                                   |
+|     ▸ Views (3)      +-------------------------------------------------------------------+
+|     ▸ Functions (9)  | (6) [Results][Messages][Chart][Plan]   :since [2026-01-01]  [Run] |
+| ▸ ○ dev-local  DEV   | +----+----------------------+--------+-------------+              |
+| ▸ ▣ app-cache.sqlite | | #  | name            text | orders | revenue num |              |
+| (4) Saved queries    | +----+----------------------+--------+-------------+              |
+|   ★ Revenue by cust. | |  1 | Acme Pty Ltd         |    412 |  188,204.50 |              |
+|   ★ Late orders      | |  2 | Birch & Co           |    377 |  141,090.00 |              |
+|   History (Ctrl+H)   | |  3 | NULL                 |     12 |    1,204.75 |              |
+|                      | |  … | …                    |      … |           … |              |
++----------------------+-------------------------------------------------------------------+
+| (7) Read-only · no transaction · 1,000 of 8,412+ rows · 184 ms · Sum 330,499.25  · Jobs 0 |
++------------------------------------------------------------------------------------------+
+```
+
+1. Environment word and `[net]` badge. The word and stripe (2) are drawn by app chrome that the SQL content cannot affect.
+3. Connection and schema tree (`treeView`), state dot (connected ●, idle ○, file ▣), environment tag.
+4. Saved queries and history sections of the sidebar (also full tabs).
+5. Centre tabs; `●` marks unsaved text; `[▶ Run]` runs the statement at the caret, `[■]` cancels, `[⚙]` opens tab options (session, limit, time-out).
+6. Bottom dock with the result grid (OF09-GAP-1 grid), parameter bar on its tab row.
+7. Status bar: mode, transaction, fetched and known rows, duration, aggregates of the selection, job count.
+
+States: empty (start view: recent connections and files, "Open SQLite file…", "New connection…", "Explore files…"), loading (tree nodes show a spinner word "loading…"; grid shows arriving rows), error (message tab with the server text and position; red squiggle in the editor), offline or unreachable (disconnected bar on tabs of that connection, cached schema usable, Run disabled with the reason in its tooltip), locked (keyring locked: a bar "Unlock the keyring to connect" that asks the shell prompt), read-only (bar and status word; write actions disabled with a tooltip naming how to leave read-only).
+
+### 5.3 Other views and dialogs
+
+**New connection** (640×600).
+
+```
++-- New connection -----------------------------------------------------------+
+| Kind  (•) PostgreSQL ( ) MySQL ( ) MariaDB ( ) SQLite file ( ) Files         |
+| Name        [orders-db__________________]   Group [Work v]                   |
+| Environment [Production v]  → opens read-only, statement time-out 60 s       |
+| Host        [db1.internal.example____]  Port [5432]                          |
+| Database    [orders___________]  User [report_ro________]                    |
+| Password    [••••••••••••] (hold to reveal)                                  |
+|             (•) Save in keyring  ( ) Ask every time                          |
+| TLS         [Verify certificate and host name v]   CA [System store v]       |
+| Route       [Clear v]            Tunnel [None v]                             |
+| (1) Network access: this app may not reach db1.internal.example:5432 yet.    |
+|     [Request access…]  → the system asks you to allow this one host and port |
++------------------------------------------------------------------------------+
+| (2) [Test connection]   DNS ok · TCP ok · TLS 1.3 ok · auth ok · PostgreSQL 17|
+|                                               [Cancel]   [Save and connect]  |
++------------------------------------------------------------------------------+
+```
+
+1. Grant row: shows the state of the `net.host` grant; the button raises the shell prompt. 2. Test results appear as words, not colour alone.
+
+**Table data with staged changes and the commit review** (centre tab, then a 760×520 dialog).
+
+```
++------------------------------------------------------------------------------------------+
+| customers   WHERE [country = 'AU'________________] [Apply]   Sort: name ↑    [+ Row] [−] |
++---+----+----------------------+---------+------------------+-----------------------------+
+|   | id | name                 | country | email            | updated_at                  |
++---+----+----------------------+---------+------------------+-----------------------------+
+|   | 17 | Acme Pty Ltd         | AU      | ap@acme.example  | 2026-10-02 08:14:11+10      |
+| ~ | 21 | Birch & Co           | AU      |~bills@birch.exa… | 2026-09-30 17:02:40+10      |
+| − | 34 | Cedar Trading        | AU      | hi@cedar.example | 2026-03-12 11:45:09+11      |
+| + |  ∅ | Dune Supplies        | AU      | NULL             | DEFAULT                     |
++---+----+----------------------+---------+------------------+-----------------------------+
+| 3 pending changes: 1 update · 1 delete · 1 insert        [Discard]  [Review and commit…] |
++------------------------------------------------------------------------------------------+
+
++-- Review and commit: customers on dev-local -------------------------------------+
+| BEGIN;                                                                           |
+| UPDATE customers SET email = $1 WHERE id = $2 AND email = $3;   -- 1 row expected|
+| DELETE FROM customers WHERE id = $1 AND name = $2 …;            -- 1 row expected|
+| INSERT INTO customers (name, country) VALUES ($1, $2);          -- 1 row         |
+| COMMIT;                                                                          |
++----------------------------------------------------------------------------------+
+| Parameters are bound, not spliced.  [Show values]   If any count differs: roll   |
+| back everything.                         [Copy SQL]   [Cancel]   [Commit 3 changes]|
++----------------------------------------------------------------------------------+
+```
+
+**Execution plan tab**.
+
+```
++------------------------------------------------------------------------------------------+
+| Plan for orders.sql (statement 1)   [Text][>Tree][Graph]   EXPLAIN (ANALYZE off)  [Re-run]|
++------------------------------------------+--------+---------+--------+-------------------+
+| Node                                     | Est.rows| Cost    | Width  | Notes             |
++------------------------------------------+--------+---------+--------+-------------------+
+| ▾ Sort (revenue DESC)                    |  2,100 | 9,420.1 |   48   |                   |
+|   ▾ HashAggregate (c.name)               |  2,100 | 9,300.5 |   48   |                   |
+|     ▾ Hash Join (o.customer_id = c.id)   | 84,000 | 7,950.0 |   26   |                   |
+|       ▸ Seq Scan on orders o             | 84,000 | 6,112.0 |   12   | ⚠ filter on       |
+|       ▸ Hash → Seq Scan on customers c   |  2,100 |    44.0 |   22   |   placed_at, no   |
+|                                          |        |         |        |   usable index    |
++------------------------------------------+--------+---------+--------+-------------------+
+| EXPLAIN ANALYZE runs the query. In read-only mode it is allowed for SELECT only.         |
++------------------------------------------------------------------------------------------+
+```
+
+Tree view is a `treeView` with columns; graph view draws the same tree on the canvas (or `nodeGraph` read-only) with edge width by rows.
+
+**Import wizard, mapping step** (860×600).
+
+```
++-- Import: sales-2026.csv → dev-local.public.sales (new table) ----------------------------+
+| (1) Source ✓   (2) Target ✓   (3) > Mapping   (4) Options   (5) Preview and run           |
++-------------------------------------------------------------------------------------------+
+| Source column   Sample            → Target column   Type            Transform        Use  |
+| order_id        000418227         → order_id        text            —                [x]  |
+| date            2026-03-01        → placed_on       date            ISO 8601         [x]  |
+| amount          1,204.50          → amount          numeric(12,2)   strip thousands  [x]  |
+| sku             MARCH1            → sku             text            —                [x]  |
+| notes           =cmd|…            → notes           text            —                [x]  |
+| qty             4                 → qty             integer         —                [x]  |
+| (none)                            → imported_at     timestamptz     constant now()   [x]  |
++-------------------------------------------------------------------------------------------+
+| ⚠ order_id looks numeric but has leading zeros: kept as text.     [Reset] [Load profile…] |
+|                                                         [Back]  [Cancel]  [Next]          |
++-------------------------------------------------------------------------------------------+
+```
+
+**ER diagram tab**.
+
+```
++------------------------------------------------------------------------------------------+
+| ER: public (14 tables)   Detail [Keys only v]   [Layout v] [Fit] [Find table_]  [Export v]|
++------------------------------------------------------------------------------------------+
+|   +----------------+            +------------------+           +-------------------+     |
+|   | customers      |            | orders           |           | order_items       |     |
+|   | 🔑 id          |1──────────<| 🔑 id            |1─────────<| 🔑 id             |     |
+|   |    name        |            | ⚷ customer_id    |           | ⚷ order_id        |     |
+|   +----------------+            |    placed_at     |           | ⚷ product_id      |>──┐ |
+|                                 +------------------+           +-------------------+   │ |
+|                                                                +-------------------+   │ |
+|                                                                | products          |1──┘ |
+|                                                                | 🔑 id             |     |
+|                                                                +-------------------+     |
++------------------------------------------------------------------------------------------+
+```
+
+Key marks are icons with text alternatives ("primary key", "foreign key"). Drawn on the canvas widget (G-12) in view-and-move mode.
+
+**Data diff tab**.
+
+```
++------------------------------------------------------------------------------------------+
+| Diff: staging.customers ↔ prod.customers   key: id   [Options…]            [Sync script…]|
+| Only in A 12 (+) · Only in B 3 (−) · Changed 41 (~) · Same 20,518    Show [x]+ [x]− [x]~ |
++---+------+----------------------+----------------------------+---------------------------+
+|   | id   | name                 | email (A)                  | email (B)                 |
++---+------+----------------------+----------------------------+---------------------------+
+| ~ | 21   | Birch & Co           | bills@birch.example        | accounts@birch.example    |
+| + | 9001 | Dune Supplies        | NULL                       |                           |
+| − | 344  | Elm Partners         |                            | office@elm.example        |
++---+------+----------------------+----------------------------+---------------------------+
+```
+
+**Parquet inspector tab**: left `treeView` of the schema; right tabs `[Row groups][Column chunks][Metadata][Preview]`, each a `tableView`; a header line with file size, rows, row groups, created-by, compression summary.
+
+**Leave read-only mode** (480×320): explains what changes, a field to type the connection name, duration `comboBox` (15 min, 1 h, until disconnect), `[Cancel] [Allow writes for 15 minutes]`; the destructive-outline button is not the default.
+
+### 5.4 Menus
+
+```
+File      New SQL tab (Ctrl+N) · New connection… (Ctrl+Shift+N) · Open SQLite file… (Ctrl+O) · Open SQL file… · Explore files…
+          Open in disposable sandbox… · Save (Ctrl+S: SQL file, or commit staged changes in a data tab) · Save as… (Ctrl+Shift+S)
+          Save query… (Ctrl+Alt+S) · Import… · Export… (Ctrl+E) · Print… (Ctrl+P) · Close tab (Ctrl+W) · Quit (Ctrl+Q)
+Edit      Undo (Ctrl+Z) · Redo (Ctrl+Shift+Z) · Cut · Copy · Copy as ▸ TSV · CSV · Markdown · JSON · SQL INSERT · IN list
+          Paste · Find (Ctrl+F) · Replace (Ctrl+Alt+F) · Format SQL (Ctrl+Shift+F)
+          Toggle comment (Ctrl+/) · Upper case keywords · Preferences… (Ctrl+,)
+View      Sidebar (F9) ▸ Connections · Saved queries · History (Ctrl+H) · Files · Jobs · Inspector (F4) · Record view (F6)
+          Results dock (Ctrl+J) · Split editor · Zoom ▸ · Full screen (F11)
+Connection  Connect · Disconnect · Reconnect · Test… · Edit… · Duplicate · Sessions… · Refresh metadata (F5)
+          Mode ▸ Read-only · Confirm writes · Manual commit · Auto-commit · Leave read-only… · Network access…
+Query     Run statement (Ctrl+Enter) · Run selection or script (Ctrl+Shift+Enter) · Cancel (Esc) · Explain (Ctrl+Shift+E)
+          Explain analyse… · Parameters… · Begin (Ctrl+Alt+B) · Commit (Ctrl+Alt+C) · Rollback (Ctrl+Alt+R)
+          Row limit ▸ · Time limit ▸ · Open result in new tab · Pin result
+Data      Filter… · Clear filters · Sort ▸ · Add row (Ctrl+I) · Delete rows (Ctrl+Delete) · Set NULL (Ctrl+0) · Set default
+          Review and commit… · Discard changes · Column statistics · Chart result · Send to Sheets
+Schema    Quick open (Ctrl+P) · Table details (F4 on a table) · Show DDL · ER diagram (Ctrl+Shift+D) · Generate SQL ▸
+          Table designer… · Search definitions… · Data dictionary…
+Tools     Data diff… · Schema diff… · Profile… · Convert file… · Copy table to… · SQLite ▸ Integrity check · Vacuum… · Analyse · Recover…
+          History privacy… · Snippets… · Jobs
+Help      Data Studio help (F1) · Safety modes · Dialect notes · Keyboard shortcuts · About
+```
+
+### 5.5 Keyboard and pointer
+
+Reserved keys keep their meaning with two documented exceptions inside this app: `Ctrl+H` opens history (replace is `Ctrl+Alt+F`), and `Ctrl+S` in a data tab opens "Review and commit" (it never commits without the review). Both can be rebound.
+
+Grid keys: arrows, `Ctrl+Arrow` to edge, `Home/End`, `Ctrl+Home/End`, `PageUp/Down`; `Enter` or `F2` edit; `Esc` cancel edit; `Ctrl+0` NULL; `Ctrl+D` copy value from the cell above (staged); `Space` peek a foreign key; `F6` record view; `Ctrl+Shift+C` copy with headers; `Alt+Down` column filter. Tree keys: type-ahead, `Enter` opens data, `F4` details, `F5` refresh node. Editor: `Ctrl+Space` completion, `Ctrl+Enter` run, `Alt+Up/Down` move line, `Ctrl+D` select next occurrence.
+
+Context menus: connection (connect, mode, edit, test, duplicate, network access, remove); table (open data, details, DDL, generate SQL, import, export, diff with…, designer, truncate…, drop…); column (copy name, statistics, filter, hide, add to query); grid cell (copy, copy as, filter by value, set NULL, peek reference, open viewer, save BLOB); grid header (sort, filter, hide, freeze, statistics, mask); result tab (pin, rename, export, chart, close); history entry (open, copy, save, delete); editor (run, explain, format, copy as string literal for a language).
+
+Drag and drop: table or column from the tree into the editor (inserts the quoted name; with `Shift` a `SELECT` template); files onto the window (SQLite opens; CSV, Parquet, JSON join the file workspace; `.sql` opens in a tab); a result tab out to a new window; rows out as TSV; a table onto another connection (starts "Copy table to…"); ER boxes to move.
+
+### 5.6 States
+
+| State | Behaviour |
+|---|---|
+| Empty | Start view with recent items and three actions. |
+| Connecting | Tree node shows steps (resolving, connecting, TLS, authenticating); cancel available. |
+| Running | Run becomes Stop; elapsed time ticks once a second (no other frames); rows appear as they arrive. |
+| Partial result | Bar "Showing the first 1,000 rows — scroll or [Fetch all]". |
+| Error | Messages tab with server text, SQLSTATE or error number, position mapped to the editor. |
+| Disconnected | Bar on each affected tab; staged edits kept; open transaction reported lost. |
+| Offline | Local files and SQLite work; server connections show unreachable. |
+| Locked keyring | Bar with unlock action; no secret prompts from the app itself. |
+| Read-only | Status word, bar, disabled write actions with reasons. |
+| Grant revoked | Connection closes at once; bar "Network access to host was revoked" with a link to request it again. |
+| Narrow (<640) | Sidebar becomes an overlay; results dock becomes a tab beside the editor; inspector a sheet. |
+
+### 5.7 Widgets
+
+| Region | FUSE widget | Notes |
+|---|---|---|
+| Schema tree, plans, JSON tree, Parquet schema | `treeView` | Needs model-backed lazy trees with columns (today: tab-indented text, 64 collapsible rows; FUSE build plan 2.2; FUSE-WP-28) |
+| SQL editor | `codeEdit` | Needs grammars, completion popup, multi-cursor, squiggles (FUSE build plan 2.2 lists these as missing; shared with OF01 and DV01) |
+| Result and data grids | `tableView` + a typed remote model (**OF09-GAP-1**) | Needs cell and range selection, inline editors, frozen columns, 64-bit rows (FUSE-WP-28). The spreadsheet grid of OF05-GAP-1 would also serve |
+| App-store lists (history, saved queries) | `tableView` / `modelListView` over `fuse_ui_sql::SqliteModel` | Direct use of the existing model on the app's own database |
+| Charts | `chart` now; chart widget v2 (OF05-GAP-2) for pie, box, heat map, axes | |
+| ER diagram, plan graph | 2D canvas (G-12); `nodeGraph` as a fallback for the plan graph | |
+| Inspector | `tabWidget`, `propertyGrid`, `codeEdit` (JSON, text viewers) | |
+| Dialogs and wizards | `dialog`, `lineEdit`, `comboBox`, `spinBox`, `checkBox`, `radioButton`, `progressBar` | Secret field pattern from DESIGN_SYSTEM.md section 5 |
+| Date and time cell editors | `dateTimeEdit`, `calendar` | |
+| Help | `markdownView` | |
+
+What exists and where it stops (Verified, `FUSE:Source/FUSE/UI/Sql/include/fuse/ui/sql/sqlite_model.hpp`, `FUSE:Source/FUSE/UI/Sql/src/sqlite_model.cpp`, `FUSE:Source/FUSE/UI/CMakeLists.txt:98-111`, `FUSE:docs/ui/README.md`):
+
+- `SqliteModel` has `open(path)`, `attach(sqlite3*)`, `exec`, `setQuery(select)`, `sortBy(col, ascending)`, `refresh`, `rows()`, `columns()`, `header(col)`, `cell(row, col)`, `model()`, `setWindow(rowsPerFetch)` (default 256), `lastError()`.
+- It fetches windows with `LIMIT ?1 OFFSET ?2` around the query and takes the row count from `SELECT count(*)` over it.
+- It is single-threaded on the UI thread; cells are strings; row counts are `u32`.
+- The bundled SQLite is built with `SQLITE_THREADSAFE=0`, `SQLITE_OMIT_LOAD_EXTENSION=1`, `SQLITE_DQS=0`.
+
+Consequences for this app:
+
+| Limit | Effect | Plan |
+|---|---|---|
+| `open` takes a path | The app host has no path access; it receives handles from the portal | Use `attach()` with a connection opened through a descriptor-based VFS (Proposed), or run the model in a worker |
+| Queries run on the UI thread | A slow query or a `count(*)` on a large table freezes the window | Worker-backed model (OF09-GAP-1) |
+| `OFFSET` paging | Deep scroll cost grows with the offset | Keyset paging in the worker |
+| String cells | NULL, empty text, numbers and BLOBs cannot be told apart or typed | Typed cell roles in the model |
+| `u32` rows | Tables beyond 4.29 billion rows | 64-bit rows in the new model |
+| Hostile database files parsed in the UI process | A corrupt file reaches SQLite inside the app host | User databases are opened in the `sqlite-worker` helper |
+
+Gaps:
+
+- **OF09-GAP-1 Typed, asynchronous, worker-backed item model** for `tableView`: windows requested by row range and delivered later; typed values (null, integer, real, text, blob, plus logical types); 64-bit row index; estimated and exact counts; change notifications; edit staging overlay. `SqliteModel` stays for small trusted stores.
+- **OF09-GAP-2 Run-time `net.host` grants.** PLATFORM.md section 6 lists `net.host:<host>:<port>` as a manifest capability shown at install. This app learns its hosts from the user later. Needed: a way to declare "user-added named endpoints, each prompted" that is narrower than `net.user`. (OF05's data connections need the same.)
+- **OF09-GAP-3 Handle-based SQLite VFS** as a platform library: open a database from a portal descriptor (and its journal and WAL siblings through a directory handle), for every app that opens user SQLite files under Capsicum.
+- G-12 for the ER diagram; G-16 for print.
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App logic | ForgeScript | app host | Tabs, connection manager, safety modes, statement splitter and classifier front, staging of edits, history, saved queries, jobs, settings |
+| UI documents and styles | FUSE UI | app host | Window, docks, dialogs |
+| App store access | FUSE `fuse_ui_sql::SqliteModel` + ForgeScript | app host | The app's own `app.sqlite` (history, saved queries, metadata cache) shown in lists |
+| SQL language service | C++23 | helper `sql-lang` | Tokeniser, dialect-aware splitter, statement classifier, completion context parser, formatter. Justification: speed on keystrokes; parses untrusted text. No handles |
+| SQLite worker | C++23 + SQLite (public domain) | helper `sqlite-worker`, one per open database | Opens user database files from passed descriptors with the hardening settings; runs queries; streams typed row windows; integrity and recovery tools. Justification: untrusted bytes |
+| Network database client | C++23 | helper `db-net`, one per connection | PostgreSQL frontend/backend protocol 3.0 and MySQL/MariaDB client/server protocol; TLS; authentication; cancel; `COPY`; streams typed rows. Holds the secret only in its own memory. Has only the socket rights for its granted host. Justification: holds a secret, parses untrusted bytes |
+| File engine | C++23 + SQLite virtual tables | helper `file-engine` | CSV, JSON, Parquet scanning as virtual tables; profiling; conversion; export writers (CSV, JSON, Parquet, ODS, XLSX, SQLite); diff engine. Justification: untrusted bytes, speed |
+| Graph layout | C++23 | OF08's `vector-core` source built into `file-engine` | ER and plan layout |
+| Script host | C++23 embedding the ForgeScript engine | helper `macro-host` | Signed formatter and exporter modules with no capabilities |
+
+```
+                +------------------------- app host --------------------------+
+                | FUSE UI  <->  ForgeScript: tabs, modes, staging, history     |
+                |   grids <- typed remote model (OF09-GAP-1)   app.sqlite via  |
+                |                                              SqliteModel     |
+                +---|-------------|----------------|----------------|----------+
+        text only   |    fd of a  |      secret id |   file handles |
+                    v    database v     + grant    v                v
+              +----------+  +---------------+  +---------+   +-------------+
+              | sql-lang |  | sqlite-worker |  | db-net  |   | file-engine |
+              +----------+  +---------------+  +----|----+   +-------------+
+               no handles    one file, no net       | TLS      files, no net
+                                                    v
+                                 granted host:port only (net.host), secret from svc.keyring
+```
+
+The secret path: the app host asks `svc.keyring` to deliver the item to the `db-net` helper's endpoint (Proposed keyring feature: "release to my helper"); if the keyring cannot do that, the app host receives the secret and forwards it once, zeroing its copy.
+
+### 6.2 Data model
+
+App store `~/.local/share/org.pbsd.data-studio/app.sqlite` (WAL, `schema_version` table, forward-only migration with a copy kept):
+
+| Table | Columns |
+|---|---|
+| `connection` | `id TEXT PRIMARY KEY` (uuid), `name TEXT`, `kind TEXT` (`sqlite`, `postgres`, `mysql`, `mariadb`, `files`, `memory`), `group_id TEXT`, `env_tag TEXT`, `colour TEXT`, `host TEXT`, `port INTEGER`, `database TEXT`, `username TEXT`, `secret_ref TEXT` (keyring item id), `secret_policy TEXT` (`keyring`, `ask`), `tls_mode TEXT`, `tls_ca_token TEXT`, `tls_pin_sha256 BLOB`, `client_cert_ref TEXT`, `route TEXT`, `tunnel_json TEXT`, `file_token TEXT` (portal token), `default_mode TEXT`, `session_json TEXT`, `record_history INTEGER`, `created INTEGER`, `last_used INTEGER` |
+| `connection_group` | `id`, `name`, `parent_id`, `position` |
+| `saved_query` | `id`, `name`, `description`, `folder_id`, `tags TEXT`, `dialect`, `connection_id`, `sql TEXT`, `params_json`, `chart_json`, `created`, `modified` |
+| `history` | `id INTEGER PRIMARY KEY`, `time INTEGER`, `connection_id`, `env_tag`, `statement TEXT` (after redaction), `class TEXT`, `duration_ms INTEGER`, `rows INTEGER`, `outcome TEXT`, `error TEXT`, `plan_ref TEXT` |
+| `history_fts` | FTS5 index over `history.statement` |
+| `snippet` | `id`, `name`, `dialect`, `body`, `builtin INTEGER` |
+| `workspace` / `tab` | `workspace(id, name, layout_json, active)`; `tab(id, workspace_id, kind, connection_id, title, buffer_ref, state_json, position)` |
+| `meta_object` | `connection_id`, `kind`, `schema`, `name`, `parent`, `ddl TEXT`, `comment`, `extra_json`, `fetched INTEGER` |
+| `meta_column` | `connection_id`, `schema`, `table_name`, `ordinal`, `name`, `type`, `nullable`, `default_expr`, `key_role`, `fk_target`, `comment` |
+| `er_layout` | `connection_id`, `schema`, `table_name`, `x`, `y`, `collapsed` |
+| `import_profile` | `id`, `name`, `source_kind`, `config_json` |
+| `redaction_rule` | `id`, `pattern`, `replacement`, `enabled` |
+| `job` | `id`, `kind`, `state`, `progress`, `started`, `finished`, `summary`, `log_ref` |
+
+Other stores: unsaved buffers and staged edits in `~/.local/share/org.pbsd.data-studio/recovery/` (journal records with a BLAKE3 chain); result spill files and file indexes in `~/.cache/org.pbsd.data-studio/` (columnar chunks, deleted on tab close and at start); secrets only in `svc.keyring`.
+
+In-memory entities: `Session{id, connection_id, mode, in_transaction, started, server_version, pid}`; `ResultSet{id, columns: [Column{name, db_type, logical_type, nullable?}], row_count_known: u64?, fetched: u64, complete: bool, spill: FileRef?}`; `StagedEdit{table, key: [Value], kind: enum{update, insert, delete}, old: map, new: map}`; `Value` = tagged union `Null | Bool | Int64 | UInt64 | Float64 | Decimal{text} | Text | Bytes | Date | Time | Timestamp{micros, tz?} | Interval | Uuid | Json | Array | Other{type_name, text}`.
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| SQLite database file | yes | yes | SQLite (public domain), vendored, built with extension loading omitted, defensive configuration | `sqlite-worker` |
+| PostgreSQL protocol 3.0 (simple and extended query, `COPY`, cancel, SCRAM-SHA-256) | yes | yes | Own client in C++23. libpq (PostgreSQL Licence) is not used: C code outside the safe subset, and it reads environment variables and files such as `.pgpass` by itself | `db-net` |
+| MySQL / MariaDB client/server protocol (text and binary result sets, prepared statements) | yes | yes | Own client in C++23. MariaDB Connector/C (LGPL-2.1) is not used for the same reasons | `db-net` |
+| TLS 1.2 / 1.3 | yes | yes | Platform TLS library (which one is a platform decision; Unverified) | `db-net` |
+| SSH (tunnel) | yes | yes | Platform SSH facility through SE04's agent (Unverified); else not built | `db-net` |
+| CSV, TSV | yes | yes | Own code (shared source with OF05) | `file-engine` |
+| JSON, JSON Lines | yes | yes | Own code | `file-engine` |
+| Parquet | yes | yes | Own reader and writer (shared source with OF05); Zstandard (BSD-3-Clause) and own Snappy and gzip codecs | `file-engine` |
+| gzip, Zstandard streams | yes | yes | zlib (zlib licence), Zstandard | `file-engine` |
+| ODS, XLSX (values only) | no | yes | Own writers (shared source with OF05) | `file-engine` |
+| SQL text | yes | yes | Own tokeniser, splitter, classifier, formatter | `sql-lang` |
+| SVG, PNG, PDF (diagrams, charts) | no | yes | Own SVG writer; platform image and print pipelines | app host / spooler |
+| ODG (ER diagram to Draw) | no | yes | Own writer (shared source with OF08) | `file-engine` |
+| Helper IPC `org.pbsd.data-studio.rows/1` | — | — | Bus schema (G-08): typed row windows in shared memory | — |
+
+### 6.4 Integration
+
+- Intents handled: `open` and `view` for SQLite, Parquet, CSV, JSON and `.sql` files; `new`. Emitted: `share`, `print`, `open` (send to OF05), `edit` (ER diagram to OF08, BLOB to DV04).
+- MIME view/edit: `application/vnd.sqlite3`, `application/sql`. View: `application/vnd.apache.parquet`, `text/csv`, `text/tab-separated-values`, `application/json`, `application/x-ndjson`. Export: those plus `application/vnd.oasis.opendocument.spreadsheet`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `text/markdown`, `text/html`, `image/svg+xml`, `image/png`, `application/pdf`. Sheets (OF05) stays the default handler for `text/csv`; Data Studio is offered in "Open with".
+- Services: `svc.settings`, `svc.notify`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.search` (saved query names only), `svc.keyring`, `svc.clipboard`, `svc.audit`, `svc.a11y`, `svc.backup`, `svc.power`, `svc.model` (optional).
+- Other apps: OF05 (results hand-off; shared CSV and Parquet code), OF08 (ER diagram editing; shared layout code), SE04 (client certificates, SSH keys), AD05 (network grants per host), SE02 (the firewall shows the same endpoints), SE03 (routes), DV04 (BLOBs), AD04 (reads the audit lines), SY02 (opens files).
+- Backing repos. Verified: the `SqliteModel` facts in 5.7. Verified: `tableView` has virtualised rows, header-click sort, column resize and single-row selection only (FUSE build plan 2.2 citing `widgets.hpp:125-132,151-159,171-178`). Verified: `vendor/sqlite` is used by `fuse_ui_sql` (`FUSE:Source/FUSE/UI/CMakeLists.txt:100-105`). Verified: FORGE has an OS layer with a keystore and IPC (PLATFORM.md V18); its API was not read for this spec. Proposed: all helpers and protocols above.
+
+## 7. Security and privacy
+
+| Capability | Why |
+|---|---|
+| `fs.app` | App store, recovery, cache |
+| `fs.portal` | Database files, data files, SQL files, exports, CA certificates |
+| `net.none` | Default. The app host itself never opens a socket |
+| `net.host:<host>:<port>` (one per server connection, requested at run time; OF09-GAP-2) | Database servers and, for tunnels, SSH hosts the user added. Used only by `db-net` |
+| `net.route:<clear\|vpn\|tor>` (optional) | Bind a connection to a route |
+| `proc.helper:sql-lang`, `proc.helper:sqlite-worker`, `proc.helper:db-net`, `proc.helper:file-engine`, `proc.helper:macro-host` | Helpers of 6.1 |
+| `dev.print` | Printing |
+| `svc.keyring` | Connection secrets |
+| `svc.settings`, `svc.notify`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.search`, `svc.clipboard`, `svc.audit`, `svc.a11y`, `svc.backup`, `svc.power` | As in 6.4 |
+| `ai.local`, `svc.model` (optional, off) | Explain and draft SQL |
+
+Assets: database credentials; the data in the databases (often the most sensitive data a person or organisation has); the integrity of production data; query history (reveals schema and sometimes values); the user's files.
+
+Adversaries: a crafted SQLite, Parquet, CSV or JSON file; a malicious or compromised database server (hostile protocol messages, oversized fields, a request for client files, credential downgrade); a network attacker between client and server; a pasted SQL script that does more than it seems; the user's own slip on production; another local app wanting the secrets or history.
+
+Mitigations:
+
+| Threat | Mitigation |
+|---|---|
+| Accidental writes on production | Read-only default at server session and client classifier; timed, typed, audited exit; dangerous-statement guard; reviewed commits; visible environment word and stripe |
+| Classifier bypass (function with side effects in a `SELECT`) | Server-side read-only transaction is the backstop; the UI says a read-only database role is the only complete protection and shows the connected role's write rights where they can be read |
+| Credential theft | Secrets only in `svc.keyring`; held only by `db-net`; never in definitions, history, logs, exports or crash data; secret fields follow the system pattern |
+| Downgrade and interception | TLS with verification by default; weak authentication methods warned or refused; no cleartext password without verified TLS; pinning option |
+| Hostile server | Own protocol parser with length checks, in a helper with one socket and no file access; `LOAD DATA LOCAL` never honoured; field and message size caps (1 GiB hard, 64 MiB default per field); result spill limits |
+| Hostile files | Parsed only in `sqlite-worker` and `file-engine` in capability mode; SQLite defensive mode, `trusted_schema` off, no extensions, limits, progress-handler time-out; disposable open |
+| Hostile SQL text | Never run without a user action; history and saved queries open in a tab, never auto-run; no URL scheme is registered |
+| Exfiltration | The only network reach is the granted hosts; grants listed and revocable; exports go through the file portal |
+| History leakage | Parameter values not stored; redaction rules; per-connection "no history"; history not indexed by system search; local store only |
+| Formula injection in exports | CSV, ODS and XLSX exports escape leading `= + - @` by default |
+| Shoulder surfing and screen sharing | Masked sensitive columns; secret fields hidden |
+| Model misuse | Model sees schema names and typed text only; never rows; never runs SQL |
+
+Stored: connection definitions (no secrets), history, saved queries, metadata cache, layouts in `app.sqlite`; recovery journal; cache spill files (deleted on close). Leaves the machine: only traffic to granted database hosts over TLS, started by user action; application name sent to servers is the fixed string `pbsd-data-studio` with no user, host or version detail.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `safety.default_mode.production` | enum | `read_only` | |
+| `safety.default_mode.staging` | enum | `manual_commit` | |
+| `safety.default_mode.other` | enum | `confirm_writes` | |
+| `safety.leave_readonly_minutes` | int | `15` | |
+| `safety.guard_dangerous` | bool | `true` | Cannot be turned off for production |
+| `safety.sqlite_external_readonly` | bool | `true` | Files with outside provenance open read-only |
+| `safety.backup_before_write` | bool | `true` | SQLite files |
+| `connect.tls_default` | enum | `verify_full` | |
+| `connect.statement_timeout_s.production` | int | `60` | |
+| `connect.idle_disconnect_min` | int | `15` | |
+| `connect.auto_reconnect_readonly` | bool | `true` | |
+| `editor.dialect_default` | enum | `sqlite` | |
+| `editor.completion` | bool | `true` | |
+| `editor.format.keyword_case` | enum | `upper` | |
+| `editor.format.indent` | int | `2` | |
+| `editor.run_on_ctrl_enter` | enum | `statement` | `statement`, `selection_or_statement` |
+| `result.window_rows` | int | `1000` | |
+| `result.memory_mib` | int | `512` | Before spilling to cache |
+| `result.null_text` | text | `NULL` | Display only |
+| `result.date_format` | enum | `iso` | `iso`, `locale` |
+| `result.mask_patterns` | list | `password, passwd, secret, token, api_key, ssn` | Column-name patterns |
+| `export.csv.escape_formulas` | bool | `true` | |
+| `export.csv.encoding` | enum | `utf-8` | |
+| `history.enabled` | bool | `true` | |
+| `history.keep_days` / `history.keep_entries` | int | `90` / `50000` | |
+| `history.store_parameters` | bool | `false` | |
+| `history.production_default` | enum | `ask` | `record`, `no_record`, `ask` when a production connection is created |
+| `files.csv.safe_typing` | bool | `true` | Ambiguous values stay text |
+| `files.cache_mib` | int | `2048` | Cache directory budget |
+| `diff.numeric_epsilon` | float | `0` | |
+| `ai.sql_help` | bool | `false` | Needs `ai.local` |
+| `view.density` | enum | `compact` | |
+
+## 9. Accessibility and languages
+
+- Grids expose table, row, column header and cell roles with the type and state in the name ("revenue, number, 188,204.50", "email, null", "changed, was bills@…"). Needs the table roles missing from today's a11y model (FUSE build plan 2.2).
+- The environment tag is a word in the header and in the status bar, announced on tab change ("production, read-only").
+- Plans, ER diagrams and charts each have a text or table equivalent (plan tree table; ER as a list of tables and relations; chart data table).
+- Staged-change marks are characters (`+`, `−`, `~`) with colour, never colour alone.
+- SQL keywords are not translated; UI strings are. Data is shown as stored: no locale conversion of numbers in cells unless the display option is on; bidi text in cells is isolated per cell (G-03).
+- Every drag action has a key route (copy name to editor, move ER box by arrows, reorder columns from the header menu).
+
+## 10. Performance budgets
+
+| Measure | Target |
+|---|---|
+| Cold start to start view | 400 ms |
+| Open a SQLite file and list tables | 150 ms after the file handle arrives (10,000 tables: 500 ms) |
+| First rows of a table view | 100 ms local, network round trip plus 50 ms remote |
+| Scroll in a 100-million-row keyed table | each window under 50 ms (keyset paging) |
+| Result streaming | 1 million rows × 10 columns received and spilled in under 5 s on a LAN |
+| Grid frame time | under 8 ms |
+| Completion popup | under 30 ms from keystroke, from the cache |
+| CSV scan in the file engine | 150 MB/s; Parquet column scan 1 GB/s of decoded data on 8 cores |
+| Cancel | server acknowledges within 500 ms; UI responsive at all times |
+| Memory | app host under 120 MiB with 10 tabs; each helper under 64 MiB idle |
+| Idle | zero frames; no polling of servers; keep-alive only if set per connection |
+
+## 11. Testing and proof
+
+Test plan (targets; nothing has run):
+
+- **Unit**: statement splitter and classifier per dialect (large accept and class tables, including dollar quotes, nested comments, `DELIMITER`, CTEs with data-modifying parts, `SELECT … INTO`, `EXPLAIN ANALYZE`), type mapping tables, staged-edit to SQL generation, redaction rules, keyset paging query builder.
+- **Protocol tests**: `db-net` against real PostgreSQL and MariaDB/MySQL servers of several versions in jails (test infrastructure only); recorded-session replay for regression; every authentication method; cancel; large fields; `COPY`.
+- **Hostile server tests**: a scripted fake server sends malformed lengths, endless rows, wrong sequence numbers, authentication downgrade requests and `LOCAL INFILE` requests; the helper must fail closed.
+- **Safety tests**: on a read-only connection every write-class and unknown-class statement in a corpus is refused before sending, and when forced through a test hook is rejected by the server.
+- **Differential**: file-engine query results on CSV and Parquet compared with the same data loaded into SQLite tables; Parquet reader compared with reference files from the Apache `parquet-testing` data set (test data only).
+- **Fuzz**: PostgreSQL and MySQL message parsers, SQL tokeniser and splitter, CSV, JSON, Parquet footer and pages, SQLite files through the worker (with SQLite's own fuzz corpus as seeds), IPC row windows, journal.
+- **Golden renders**: grid with every type and NULL, staged marks, plan tree, ER diagram, dialogs, production chrome, at two scales and three themes.
+- **Scripted UI**: the 15 top tasks through the a11y tree against a local SQLite file and a test PostgreSQL.
+- **Performance**: section 10 budgets with fixed data sets (TPC-H-shaped generated data at scale 1 and 10 as files and tables).
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Statement classifier | Never classes a writing statement of the corpus grammar as read; unknown is treated as write | T1 for the decision function over the token grammar it defines | PRISM proof that the function returns `read` only on the listed productions; corpus tests | Server-side semantics (functions with side effects) are outside any client proof |
+| Read-only gate | No statement reaches the socket in read-only mode unless classed `read` or a fixed session command | T1 | Proof over the send path state machine | — |
+| PostgreSQL and MySQL message parsers | No runtime errors on any byte stream; bounded allocation | T2 | PRISM plus fuzzing | — |
+| SCRAM-SHA-256 client | Follows RFC 5802 and 7677 message flow; rejects a wrong server signature | T2, T1 for the state machine | PRISM; test vectors from the RFCs | Crypto primitives are platform code |
+| Staged-edit SQL generator | Generated statements touch only keyed rows; all values bound | T1 | Proof over the generator: no value reaches statement text | — |
+| CSV, JSON, Parquet readers | No runtime errors | T2 | Shared with OF05; PRISM plus fuzzing | — |
+| SQLite (third party) | — | T4 | Confinement in the worker, hardening settings | Not our code (SQLite's own testing is extensive but is not a PRISM result) |
+| TLS library (third party) | — | T4 | Confinement in `db-net` | Platform choice |
+| Diff engine | Reports every differing key for sorted inputs | T1 for the merge core | Proof of the merge invariant | Hash-bucket prefilter is T3 |
+| App logic (ForgeScript) | Memory safe by the language | T3 | Unit and UI tests | Interpreter is trusted base |
+
+## 12. Build plan
+
+Phase 1 — usable core (SQLite first):
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF09-W01 | App store schema; lists over `SqliteModel` (history, saved queries) | G-07, G-02 |
+| OF09-W02 | `sqlite-worker` helper with hardening, descriptor-based open, typed row windows | G-06, OF09-GAP-3 |
+| OF09-W03 | Typed asynchronous item model and grid (OF09-GAP-1) | FUSE-WP-13, FUSE-WP-28 |
+| OF09-W04 | Main window, connection tree for SQLite, table details, DDL, SQLite file information | OF09-W02, OF09-W03 |
+| OF09-W05 | `sql-lang` helper: tokeniser, splitter, classifier, highlighting data | G-08 |
+| OF09-W06 | SQL editor tabs, run, cancel, multiple results, messages, row limit | OF09-W05, code editor work shared with OF01 |
+| OF09-W07 | Table data view with filter and sort bar (read-only) | OF09-W03 |
+| OF09-W08 | Result copy formats, find, export to CSV, JSON, SQL | OF09-W03 |
+| OF09-W09 | Safety modes, dangerous-statement guard, environment chrome | OF09-W05 |
+| OF09-W10 | History, saved queries, quick open, generate SQL, recovery | OF09-W01 |
+| OF09-W11 | Trust bar, external-file read-only default, palette, help | G-09 |
+
+Phase 2 — servers, editing, files:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF09-W12 | Run-time `net.host` grants and the connection wizard | OF09-GAP-2, AD05, SH04 |
+| OF09-W13 | `db-net`: PostgreSQL client, TLS, SCRAM, cancel, cursors | Platform TLS decision, G-06 |
+| OF09-W14 | `db-net`: MySQL and MariaDB client | OF09-W13 |
+| OF09-W15 | Keyring integration, secret release to helper, idle lock | G-09, SE04 |
+| OF09-W16 | Server schema browser, metadata cache, completion | OF09-W13, OF09-W05 |
+| OF09-W17 | Inline editing, staged changes, reviewed commit, record view, cell viewers | OF09-W07 |
+| OF09-W18 | Execution plans (text, tree), parameters, formatter, diagnostics, transactions | OF09-W06 |
+| OF09-W19 | `file-engine`: CSV, JSON, Parquet virtual tables; file workspace; Parquet inspector; JSON explorer | Shared CSV and Parquet sources with OF05 |
+| OF09-W20 | Import wizard, bulk load paths, export to Parquet, ODS, XLSX | OF09-W19 |
+| OF09-W21 | Charts on results; column statistics; masking | OF05 chart widget (OF05-GAP-2) |
+| OF09-W22 | ER diagram with layout and export | G-12, OF08 layout code |
+| OF09-W23 | Audit lines, net badge details, jobs, leave-read-only flow, history privacy | G-09 |
+
+Phase 3 — advanced:
+
+| ID | Work item | Depends on |
+|---|---|---|
+| OF09-W24 | Data diff, file diff, sync script | OF09-W19 |
+| OF09-W25 | Schema diff and migration script | OF09-W16 |
+| OF09-W26 | Table designer, maintenance actions, SQLite recovery tools | OF09-W17 |
+| OF09-W27 | Profile, convert, copy between connections, compressed inputs | OF09-W20 |
+| OF09-W28 | SSH tunnel, routes | SE04, SE03 |
+| OF09-W29 | Plan graph and compare, query builder, related rows, inferred relations | OF09-W18, OF09-W22 |
+| OF09-W30 | Server information, roles view, data dictionary | OF09-W16 |
+| OF09-W31 | SQL help with `svc.model`; scripted formatters and exporters | G-15, FORGE signing |
+
+## 13. Open questions and risks
+
+- **Run-time host grants (OF09-GAP-2).** Without a platform answer the app must either declare `net.user` (too broad for a tool that touches production) or cannot reach servers at all. This is the main platform dependency.
+- **Own protocol clients.** Writing PostgreSQL and MySQL clients is bounded work but must track server versions and authentication changes. The alternative (libpq, Connector/C in the helper) is less work and puts large C libraries, with their environment and file reading, into the process that holds the secret.
+- **TLS and SSH libraries** are platform decisions not read here. `db-net` cannot be built before them.
+- **Classifier limits.** A client cannot know whether a function call writes. The spec is honest about it in the UI; real safety on production needs a read-only database role, which the app encourages in the wizard.
+- **`SqliteModel` path.** It serves the app's own lists as it is. For user databases it needs descriptor-based open and must not run on the UI thread; whether FUSE extends it or the app supplies a new model is undecided (OF09-GAP-1).
+- **SQLite as the file query engine.** Row-at-a-time virtual tables will be slower than a vectorised engine on wide aggregations. A dedicated columnar executor could come later; DuckDB (MIT) would fit the purpose but is a large C++ code base outside the safe subset, so it is not proposed.
+- **Parquet nested types** are shown in the inspector but only flat and simple-list columns are queryable at first.
+- **Overlap with OF05** on CSV and Parquet import is deliberate; the parsing sources are shared so behaviour matches.
+- **Secret release to a helper** needs a keyring feature that may not exist; the fallback passes the secret through the app host once.
+- **Encrypted SQLite variants** (SQLCipher and the like) are common in app stores; not supported, and adding one means another third-party cipher layer.

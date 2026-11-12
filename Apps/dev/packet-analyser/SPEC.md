@@ -308,3 +308,558 @@ Priority: M must, S should, C could. Phase 1, 2, 3 as in section 12.
 | DV05-F216 | Helper recovery | Dissect helper or capture store crash: restart with back-off; capture continues in the service and no packets are lost from the ring up to its size. | M | 1 |
 | DV05-F217 | Screen-reader support | Packet rows read as "number, time, source to destination, protocol, app, info, mark"; the detail tree and bytes are in the a11y tree; expert severity is spoken. | M | 2 |
 | DV05-F218 | Audit | Capture start and stop, scope, interface, promiscuous flag and remote captures are written to `svc.audit`. | M | 1 |
+
+## 5. GUI
+
+### 5.1 Window map
+
+```
+Packet Analyser
+├─ Main window
+│  ├─ Header bar, toolbar (capture controls, filter bar, saved-filter buttons)
+│  ├─ Sidebar: Interfaces · Apps · Flows · Saved filters · Profiles
+│  ├─ Content: start page │ packet list / detail tree / bytes (three panes) │ flow table
+│  ├─ Inspector: packet attribution, capability context, expert notes for the selection
+│  └─ Bottom dock: Expert · Conversations · Endpoints · Protocol hierarchy · I/O graph · Decryption · Comments
+├─ Windows: Follow stream · Sequence diagram · TCP stream graphs · Statistics tables · Packet in its own window
+├─ Dialogs: Capture options, Capture filter check, Decode as, Protocol preferences, Colour rules, Key logs,
+│           Export objects, Export packets, Scrub wizard, Remote capture, Merge, File properties, Preferences
+├─ Popovers: field browser, filter completion, name source, rule draft preview
+└─ Sheets (narrow): detail tree, inspector
+```
+
+### 5.2 Main window
+
+Shown at 1440×900 during a live capture scoped to this user's apps.
+
+```
++------------------------------------------------------------------------------------------+
+| [=] Packet Analyser — em0 (live)      [ Search or run a command  Ctrl+K ]  ◉REC [▁][▢][✕] | (1)
++------------------------------------------------------------------------------------------+
+| [■ Stop] [⟳] [Save]  [ app.id == "org.pbsd.browser" && tls            ✓] [→] [TLS][DNS]  | (2)
++----------------+-------------------------------------------------------------------------+
+| INTERFACES     | No.   Time      Source         Destination    Proto  Len  App      Info |
+| > em0  ▂▃▅▂ ◉  | 1041  12.0412   192.168.1.20   203.0.113.9    TLS    571  Browser  Clie…|
+|   lo0  ▁▁▁▁    | 1042  12.0688   203.0.113.9    192.168.1.20   TLS   1414  Browser  Serv…|
+|   pflog0       |>1043  12.0689   203.0.113.9    192.168.1.20   TCP   1414  Browser  [seg…|
+| -------------- | 1044  12.0701   192.168.1.20   192.168.1.1    DNS     74  Mail     Quer…|
+| APPS       (3) | 1045  12.0702 ⚠ 192.168.1.20   198.51.100.7   TCP     66  Feeds    [Ret…|
+|  Browser  812  |                                                                     (4) |
+|  Mail      96  +---------------------------------------+---------------------------------+
+|  Feeds     41  | v Frame 1043: 1414 bytes on em0       | 0000  52 54 00 12 34 56 00 1c …  |
+|  kernel    12  | v Ethernet II  00:1c:… → 52:54:…      | 0010  05 78 9a 2b 40 00 36 06 …  |
+| -------------- | v Internet Protocol v4  203.0.113.9 → | 0020 [01 14 01 bb c3 5a 8f 31 …] |
+| FLOWS          | v Transmission Control Protocol       | 0030  …                      (6) |
+|  ⇄ 203.0.113.9 |     Source port: 443                  +---------------------------------+
+|    :443 Browser|   > Sequence: 2921 (relative)     (5) | APP  Browser (org.pbsd.browser) |
+|  ⇄ 192.168.1.1 |     [Stream index: 7]                 | via  net.user · route clear (7) |
+|    :53  Mail   |     [Reassembled in: 1046]            | [Block this flow…] [Follow]     |
++----------------+---------------------------------------+---------------------------------+
+| EXPERT  CONVERSATIONS  ENDPOINTS  HIERARCHY  I/O GRAPH  DECRYPTION                    (8) |
+| ⚠ Warning  Sequence   Retransmission (suspected)        3   › 1045, 1102, 1340           |
++------------------------------------------------------------------------------------------+
+| ◉ em0 · 1 045 packets · 1 045 shown · 0 dropped · scope: my apps · profile Default   (9) |
++------------------------------------------------------------------------------------------+
+```
+
+1. Header bar. `◉REC` is this app's capture chip, mirrored by the system-wide indicator. The `[net]` badge appears only for remote capture.
+2. Toolbar: start or stop, restart, save `toolButton`s; filter `lineEdit` with validity mark; apply; saved-filter buttons.
+3. Sidebar (220 px): interfaces `listView` with sparklines and a capture dot; apps `listView` with packet counts; flows `listView`.
+4. Packet list (`tableView`, virtualised, 64-bit rows); the App column and a Mark column with tags and severity icons.
+5. Detail tree (`treeView`); generated fields in brackets.
+6. Bytes pane (hex view, FUSE-WP-41) with the selected field highlighted.
+7. Attribution card: app, the capability that allowed the socket, route, actions.
+8. Bottom dock (`tabWidget`, 160 px).
+9. Status bar: capture state, counts, drops (turns `--warn` with an icon when not zero), scope, profile.
+
+States: empty (start page: interface list with sparklines, "Open a capture file", recent files, a note on what the capture grant means); loading (file indexing progress; first packets appear at once); error (file truncated: packets up to the break are shown with a banner; capture refused: the prompt's denial is stated with "Open Permissions"); offline (normal; remote capture unavailable with reason); locked (session lock stops live captures unless "keep capturing while locked" was part of the grant; the window content is hidden by the shell); read-only (files opened from snapshots or read-only handles: saving is "Save As").
+
+### 5.3 Other views and dialogs
+
+#### Capture options (dialog 820×560)
+
+```
++------------------------------------------------------------------------------+
+| Capture options                                                               |
+| Interface   Traffic   Link type   Snap len   Promisc   Filter                 |
+| [x] em0     ▂▃▅▂      Ethernet    [262144]   [ ]       [tcp || udp       ✓]   |
+| [ ] lo0     ▁▁▁▁      Loopback    [262144]   —         [                  ]   |
+| [ ] pflog0  ▁▂▁▁      pflog       [   160]   —         [                  ]   |
++------------------------------------------------------------------------------+
+| Whose traffic                                                                 |
+|  ( ) Only this app's          (•) Apps I choose: [Browser ×][Mail ×] [+]      |
+|  ( ) All my apps              ( ) Everything on the interface (administrator) |
+| Stop after  [ ] [1000] packets  [ ] [100] MiB  [x] [10] min  [ ] when [____]  |
+| Output      (•) Temporary  ( ) File [________] [Pick…]  [ ] Ring of [5] files |
+| Filter compiles to BPF: 14 instructions                           [Show]  (1) |
+|                                              [Cancel]  [Start capture]        |
++------------------------------------------------------------------------------+
+```
+
+1. Opens the compiled program listing. Starting may raise the shell's capture prompt; the dialog says so when no matching grant exists. States: filter not compilable to BPF (the row explains which part needs dissection and offers "apply as display filter instead").
+
+#### Follow stream (window 900×640)
+
+```
++------------------------------------------------------------------------------+
+| Follow TLS stream 7 (decrypted) — Browser ⇄ 203.0.113.9:443                   |
+| GET /api/items?page=2 HTTP/1.1                                    ← client    |
+| Host: example.org                                                             |
+| Accept: application/json                                                      |
+|                                                                               |
+| HTTP/1.1 200 OK                                                   ← server    |
+| Content-Type: application/json                                                |
+| {"items":[…]}                                                                 |
++------------------------------------------------------------------------------+
+| Show [Both v]  As [UTF-8 v]  Stream [ 7 ]◂▸   Find [________]                 |
+| 2 client packets · 3 server packets · 4.1 KiB      [Filter out] [Save as…]    |
++------------------------------------------------------------------------------+
+```
+
+Sides are marked by a margin label and tint (not tint alone). View choices: text encodings, hex dump, raw, C arrays. Click a line to select its packet in the main window.
+
+#### I/O graph (bottom dock, expanded or own window)
+
+```
++------------------------------------------------------------------------------+
+| I/O GRAPH   interval [1 s v]   y [bits/s v]   [x] log   [+ series]            |
+| 8M ┤              ▄                                                           |
+| 4M ┤      ▂▄▆    ███▆▂       ── all                                           |
+|  0 ┼▁▂▃▅▇███▇▅▃▂▁█████▇▅▃▂▁  ── app.id == "org.pbsd.browser"                  |
+|    0 s        10 s        20 s  ·· tcp.analysis.retransmission (count)        |
+| Series                 Filter                              Style   Colour     |
+| [x] all                                                    line    ■          |
+| [x] Browser            app.id == "org.pbsd.browser"        line    ■          |
+| [x] Retransmissions    tcp.analysis.retransmission         dots    ■          |
++------------------------------------------------------------------------------+
+```
+
+`chart` plus a series `tableView`. Series differ by line style as well as colour.
+
+#### Scrub wizard, step "Identities" (dialog 760×560)
+
+```
++--------------------------------------------------------------------------+
+| Scrub for sharing   1 Scope ✓  2 Addresses ✓  3 Payloads ✓  ▶4 Identities |
+|                     5 Review  6 Save                                      |
++--------------------------------------------------------------------------+
+| Found in this capture                          Action                     |
+| [x] DNS names                    214           [Hash v]                   |
+| [x] TLS server names              37           [Hash v]                   |
+| [x] HTTP hosts and URLs           12           [Blank v]                  |
+| [x] Cookies and authorisation      9           [Blank v]                  |
+| [x] User agents                    5           [Blank v]                  |
+| [x] Email addresses                2           [Blank v]                  |
+| [x] DHCP host names                1           [Blank v]                  |
+| [x] App attribution             all            Remove (always, unless ▾)  |
+| [x] Decryption secrets            1 block      Remove (always)            |
++--------------------------------------------------------------------------+
+| Profile [Share with support v]              [Back]  [Cancel]  [Next]      |
++--------------------------------------------------------------------------+
+```
+
+Step 5 shows the report and residual scan (strings that still look sensitive, each with "show packet"); step 6 saves through the portal. The original file is never modified.
+
+#### Key logs and decryption status (dialog 720×460)
+
+```
++----------------------------------------------------------------------+
+| TLS and QUIC keys for this capture                                    |
+| Key log files                                                         |
+|   browser-keys.log   1 204 secrets   [Remove]            [Add file…]  |
+|   Embedded in file   none                                             |
+| [ ] Embed secrets when saving (the file will then contain keys)       |
++----------------------------------------------------------------------+
+| Flow                         Version  Suite              Status       |
+| 203.0.113.9:443  Browser     TLS 1.3  AES_128_GCM        ✓ decrypted  |
+| 198.51.100.7:443 Feeds       TLS 1.3  CHACHA20_POLY1305  — no keys    |
+| 192.0.2.4:8443   Mail        TLS 1.2  ECDHE-RSA-AES256…  ✕ keys do not match |
++----------------------------------------------------------------------+
+|                                                   [Close]  [Reload]  |
++----------------------------------------------------------------------+
+```
+
+#### Create firewall rule (popover 420×260)
+
+```
++----------------------------------------------------+
+| Block this flow                                     |
+| App        Feeds (org.pbsd.feeds)                   |
+| Direction  out                                      |
+| To         198.51.100.7  port 443  TCP              |
+| On         em0                                      |
+| Would have matched 41 packets in this capture.      |
+| The rule is created in Firewall after you confirm   |
+| it there.                 [Cancel] [Open in Firewall]|
++----------------------------------------------------+
+```
+
+Other choices in a `comboBox` at the top: this host, this port, this app to any host.
+
+#### Flow table (content view, `Ctrl+3`)
+
+```
++------------------------------------------------------------------------------------------+
+| FLOWS  [filter________]  [state v] [app v]                                   128 flows   |
+| App      Local            Remote               Proto  State   ↑ bytes  ↓ bytes  Retx  SNI |
+| Browser  :51514           203.0.113.9:443      TLS1.3 open    4.1 K    1.2 M    0     example.org |
+| Mail     :40022           192.0.2.4:993        TLS1.2 idle    812      9.6 K    0     mail.example |
+| Feeds    :51720           198.51.100.7:443     TCP    reset   264      0        3     —   |
+| Feeds    —                198.51.100.9:443     —      blocked 0        0        —     —  ⛔ pf rule 12 |
++------------------------------------------------------------------------------------------+
+```
+
+"blocked" rows are synthetic (F178). Double click filters the packet list to the flow.
+
+### 5.4 Menus
+
+| Menu | Items |
+|---|---|
+| File | Open… (`Ctrl+O`) · Open Recent ▸ · Merge… · Import from Hex Dump… · Save (`Ctrl+S`) · Save As… (`Ctrl+Shift+S`) · Export Specified Packets… · Export Dissections ▸ Text, CSV, JSON · Export Objects ▸ HTTP, SMB, TFTP, FTP, Mail · Scrub for Sharing… (`Ctrl+Shift+X`) · File Properties (`Ctrl+Alt+Shift+C`) · Print… (`Ctrl+P`) · Close (`Ctrl+W`) · Quit (`Ctrl+Q`) |
+| Edit | Copy ▸ Summary, Value, As Filter, Bytes (`Ctrl+C` copies the summary) · Find Packet… (`Ctrl+F`) · Find Next, Previous (`Ctrl+G`, `Ctrl+Shift+G`) · Mark or Unmark (`Ctrl+M`) · Mark All Displayed · Next, Previous Mark (`Ctrl+Shift+N`, `Ctrl+Shift+B`) · Ignore Packet (`Ctrl+D`) · Set Time Reference (`Ctrl+T`) · Time Shift… · Packet Comment… · Profiles… · Preferences (`Ctrl+,`) |
+| View | Command Palette (`Ctrl+K`) · Packets (`Ctrl+1`) · Start Page (`Ctrl+2`) · Flows (`Ctrl+3`) · Packet List, Details, Bytes (toggles) · Layout ▸ · Time Format ▸ · Name Resolution ▸ MAC, Network, Transport · Colour Rules… · Colourise (toggle) · Auto-Scroll (`Ctrl+Shift+L`) · Expand All (`Ctrl+Right`) · Collapse All (`Ctrl+Left`) · Show Packet in New Window · Sidebar (`F9`) · Inspector (`F4`) · Reload (`F5`) · Zoom (`Ctrl++/-/0`) · Full Screen (`F11`) |
+| Go | Go to Packet… (`Ctrl+L`) · Linked Packet · First, Last (`Ctrl+Home`, `Ctrl+End`) · Next, Previous in Conversation (`Ctrl+.`, `Ctrl+Shift+.`) · Back, Forward (`Alt+Left/Right`) |
+| Capture | Options… (`Ctrl+Shift+E`) · Start or Stop (`Ctrl+E`) · Restart (`Ctrl+R`) · Capture Filters… · Check Filter… · Remote Capture… · Refresh Interfaces |
+| Analyse | Apply as Filter ▸ · Prepare as Filter ▸ · Conversation Filter ▸ · Display Filters… · Enabled Protocols… (`Ctrl+Shift+P`) · Decode As… · Follow ▸ TCP (`Ctrl+Alt+Shift+T`), UDP (`Ctrl+Alt+Shift+U`), TLS (`Ctrl+Alt+Shift+S`), HTTP (`Ctrl+Alt+Shift+H`), QUIC · Keys and Decryption… · Expert Information · Create Firewall Rule… (`Ctrl+Shift+F`) · Open Bytes in Hex Editor |
+| Statistics | Capture Summary · Protocol Hierarchy · Conversations · Endpoints · Per-App · Packet Lengths · I/O Graph · Sequence Diagram · TCP Stream Graphs ▸ · DNS · HTTP · TLS · Service Response Time ▸ |
+| Help | Handbook (`F1`) · Filter Language Reference · Field Browser · Keyboard Shortcuts · About |
+
+### 5.5 Keyboard and pointer
+
+- Packet list: `Up/Down`, `PageUp/Down`, `Home/End`; `Enter` focuses the detail tree; `Space` toggles mark; `Tab` cycles list, details, bytes.
+- Detail tree: `Left/Right` collapse and expand; `Shift+Right` expands the subtree; `Enter` on a link field jumps.
+- Filter bar: `Ctrl+/` focuses it; `Ctrl+Space` completion; `Esc` clears; `Up/Down` history.
+- Packet context menu: Mark, Ignore, Set Time Reference, Packet Comment, Apply as Filter ▸, Conversation Filter ▸, Colourise Conversation ▸, Follow ▸, Decode As, Create Firewall Rule ▸, Show App in Permissions, Copy ▸, Open Bytes in Hex Editor, Show in New Window.
+- Field context menu: Expand Subtree, Apply as Column, Apply as Filter ▸, Prepare as Filter ▸, Colour with Filter, Copy ▸, Export Bytes, Protocol Preferences, Decode As, Go to Linked Packet, Field Help.
+- Sidebar context menus: interface (Start, Options, Details); app (Filter to App, Colour, Statistics, Open in Permissions, Create Rule); flow (Filter, Follow, Colour, Create Rule, Label).
+- Drag and drop: a capture file onto the window (open; with a capture open, ask merge or new window); a field onto the filter bar (adds `field == value`); a field onto the list header (new column); a key log file onto the window (add after confirm); column headers to reorder; an exported object dragged to Files (saves through the portal).
+
+### 5.6 States
+
+| State | Behaviour |
+|---|---|
+| Empty | Start page with interfaces, recent files, Open. |
+| Loading | Index progress; list usable for the indexed part; statistics show "partial". |
+| Capturing | `◉REC` chip, live counters, Stop is the primary action; closing the window asks Stop and keep, Stop and discard, or (with `bg.run`) Keep capturing. |
+| Error | Truncated or corrupt file: readable part shown. Dissector failure: packet marked, helper restarted. Capture service unavailable: banner with the reason. |
+| Offline | Normal. |
+| Locked | Live capture pauses unless the grant allows capture while locked. |
+| Read-only | Read-only handle: Save As only. |
+| Grant revoked during capture | Capture stops at once (SI-6); banner "Capture permission was revoked"; captured packets are kept. |
+| Narrow (< 640 px) | Columns reduce to No., Time, Proto, App, Info; detail and bytes become tabs under the list; sidebar overlay; bottom dock as a sheet. |
+
+### 5.7 Widgets
+
+| Region | FUSE widget |
+|---|---|
+| Packet list, flow table, conversations, endpoints, expert, statistics tables | `tableView` with `SortFilterProxy` and cell delegates (FUSE-WP-28 for 64-bit row counts) |
+| Detail tree, protocol hierarchy, field browser | `treeView` |
+| Bytes pane | hex view (FUSE-WP-41), read-only |
+| Filter bar | `lineEdit` with completion popup and syntax colours (DV05-GAP-3) |
+| I/O graph, lengths, per-app charts | `chart` |
+| Sequence diagram, TCP graphs, packet diagram | `viewportWidget` with app drawing (DV05-GAP-4) |
+| Sidebar lists and sparklines | `listView` with a delegate |
+| Follow stream | code editor (FUSE-WP-37) read-only, or `tableView` for hex dump mode |
+| Dialogs, wizard | `dialog`, `checkBox`, `radioButton`, `comboBox`, `spinBox`, `lineEdit`, `progressBar`, `tabWidget` |
+| Docks | `dockArea`, `dockWidget`, `splitter` |
+
+| ID | Missing | Note |
+|---|---|---|
+| DV05-GAP-1 | System capture service (`svc.capture`): privileged BPF holder, verified filters, per-app scoping, shared-memory ring, capture indicator, grant prompt | Platform; not in PLATFORM.md section 8 |
+| DV05-GAP-2 | Socket-owner feed: for each local socket, its app identity, domain, route and granting capability, available to the capture service; a kernel or network-service interface | Platform; relates to the network service (FORGE-WP-21) and SE02 |
+| DV05-GAP-3 | Single-line editor with syntax colours and inline completion | Could be the code editor in one-line mode (FUSE-WP-37) |
+| DV05-GAP-4 | Zoomable 2D plot surface for ladder and time-sequence graphs with hit testing | `chart` covers the I/O graph only |
+| DV05-GAP-5 | A capture capability name in the manifest grammar (proposed `net.capture`) so installs can show "can capture network traffic" | PLATFORM.md section 6 has no such row |
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App shell and view models | ForgeScript + FUSE UI | app host | Windows, tables, filter bar, profiles, colour rules, statistics presentation, wizards |
+| Capture service (platform, DV05-GAP-1) | C++23, T1 and T2 targets | system service, privileged only to open `/dev/bpf`; after set-up in capability mode with: the locked BPF descriptors, the ring memory, its bus endpoint | Opens BPF on granted interfaces, sets snapshot length, installs the verified filter, sets `BIOCLOCK`, applies per-app scoping from the socket-owner feed, copies packets plus owner index into the ring, counts drops. Does not parse beyond the fixed offsets needed for the flow key |
+| Filter compiler | C++23 | library in the dissect helper (display filters) and in the capture service (capture filters, with the verifier) | Parses the filter language; emits display-filter bytecode or a classic BPF program; verifies BPF programs |
+| Capture store `capture-store` | C++23 | bundle helper; holds file handles from the portal and the ring handle; no network | Reads the ring, writes the temporary pcapng, indexes packets (offset, length, time, interface), reads and writes pcap and pcapng block framing, merge, split, serves packet bytes by number through shared memory |
+| Dissect helper `dissect-helper` | C++23 | bundle helper; **no capabilities**; read-only shared-memory window on packet bytes; CPU and memory limits | All dissectors, reassembly, stream state, decryption, display-filter evaluation, field tables, statistics taps, expert notes, object extraction (returns byte ranges), template and script dissectors |
+| Scrubber | C++23, inside `dissect-helper` (needs dissection) writing through `capture-store` | — | Rewrites packets per the scrub plan; recomputes checksums |
+| Remote capture client | ForgeScript + system SSH client service | app host / that service | Streams a remote capture into `capture-store` |
+| Firewall bridge | ForgeScript | app host | Builds rule drafts; intents to SE02 |
+
+```
+ NIC ─ kernel BPF ─▶ [ capture service ]  ◀─ socket-owner feed (network service / kernel)
+                          │ shared-memory ring (packets + owner index), drop counters
+                          ▼
+                    [ capture-store ] ── temp .pcapng, user files (portal handles)
+                          │ read-only window: packet bytes by number
+                          ▼
+                    [ dissect-helper ]   no capabilities; hostile bytes are parsed only here
+                          │ field tables, rows, statistics, notes (typed bus records)
+                          ▼
+ user ─ FUSE UI ─ [ app host ] ── intents ──▶ SE02 (rule), DV04 (bytes), AD05 (grant), SE04 (certificate)
+```
+
+Why three processes: the service has privilege and so must be tiny and must not parse; the store has file handles and so must not parse; the dissectors parse and so must have nothing.
+
+### 6.2 Data model
+
+In memory (dissect helper):
+
+| Entity | Fields |
+|---|---|
+| `PacketRef` | `no: u64`, `ts_ns: i64`, `iface: u16`, `cap_len: u32`, `wire_len: u32`, `dir: in\|out\|unknown`, `owner: u32` (index into `AppRecord`), `flags` (marked, ignored, reference) |
+| `Field` | `id: u32` (registered field), `start: u32`, `length: u32`, `value: variant<u64, i64, f64, bytes_ref, str_ref, ipv4, ipv6, mac, time>`, `flags` (generated, hidden, error), `parent: u32` |
+| `FieldDef` | `name: string` (`tcp.flags.syn`), `type`, `base`, `description`, `enum_values` |
+| `Flow` | `key: {l3, proto, a_addr, a_port, b_addr, b_port, iface}`, `stream_index: u32`, `first_no`, `last_no`, `bytes_ab`, `bytes_ba`, `state`, `owner: u32`, `sni: str_ref`, `retx: u32` |
+| `AppRecord` | `app_id: string`, `name`, `helper`, `domain_id: u64`, `route: clear\|vpn\|tor`, `capability: string`, `signer: string`; or `kind: kernel\|forwarded\|remote\|unknown` |
+| `ExpertNote` | `no`, `severity`, `group`, `proto: u16`, `text` |
+| `NameEntry` | `addr`, `name`, `source: dns\|mdns\|dhcp\|sni\|hosts\|table`, `first_no` |
+
+On disk:
+
+- Captures: pcapng. Attribution uses a custom block (`AppRecord` table) and a custom option on enhanced packet blocks (owner index), both under a private enterprise number to be registered; until then a clearly marked provisional number, and readers accept both.
+- App store `~/.local/share/org.pbsd.packet-analyser/`: `profiles/<name>.json` (columns, colour rules, saved filters, protocol preferences, layout), `filters.json`, `decode_as.json`, `remote.json` (no secrets), `hosts/` (user files), `dissectors/` (user templates and scripts), `recent.db` (SQLite: `recent(path_ref, grant_id, opened_at, packets, span_ns)`). Schema field in each JSON; forward-only migration with backup.
+- Cache `~/.cache/org.pbsd.packet-analyser/`: temporary live captures, per-file indexes keyed by file hash.
+- Nothing about captured traffic is kept after a capture is discarded.
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| pcapng block framing | yes | yes | own | `capture-store` (framing only: lengths, types, bounds) |
+| pcap classic | yes | yes | own | `capture-store` |
+| pcapng options, name blocks, secrets blocks, custom blocks | yes | yes | own | `dissect-helper` |
+| Every network protocol (section 4.5) | yes | no | own dissectors; no Wireshark code (GPL-2.0, C) is used | `dissect-helper` |
+| NSS key log | yes | filtered export | own | `dissect-helper` |
+| gzip, zstd capture files | yes | yes | UT01 archive helper | that helper |
+| Filter language text | yes | — | own | app host (syntax colours only) and `dissect-helper` (compile) |
+| Classic BPF programs | — | yes | own compiler and verifier | capture service |
+| Hosts, `ethers`, OUI and service tables | yes | no | own | `dissect-helper` |
+| MaxMind DB (optional, user supplied) | yes | no | own reader | `dissect-helper` |
+| Exported objects | — | yes (bytes as found) | — | written by `capture-store` to a portal folder handle |
+| CSV, JSON, text exports | no | yes | own | app host |
+| SSH (remote capture) | — | — | system SSH client service (section 13) | that service |
+| `usbdump`, HCI, ERF, snoop, hex dump text | yes | no | own | `capture-store` (framing), `dissect-helper` (content) |
+
+#### Filter language
+
+One language for display filters and capture filters. A capture filter is an expression that uses only fields at offsets computable without dissection state (see "BPF subset").
+
+```
+filter     = or_expr ;
+or_expr    = and_expr { ( "||" | "or" ) and_expr } ;
+and_expr   = not_expr { ( "&&" | "and" ) not_expr } ;
+not_expr   = [ "!" | "not" ] primary ;
+primary    = "(" filter ")" | test | field ;                  (* a bare field means "is present" *)
+test       = operand relop operand
+           | operand "in" "{" range { "," range } "}"
+           | operand "contains" operand                        (* bytes or text *)
+           | operand "matches" regex ;                         (* linear-time regex *)
+relop      = "==" | "!=" | "<" | "<=" | ">" | ">=" | "&" ;     (* "&" is bitwise-and non-zero *)
+operand    = field [ slice ] | literal | call ;
+field      = ident { "." ident } [ "#" number ] ;              (* "#2" = second occurrence in the packet *)
+slice      = "[" number ":" number "]" | "[" number "]" ;      (* offset:length in bytes *)
+range      = literal [ ".." literal ] ;
+call       = ( "len" | "lower" | "upper" | "count" | "any" | "all" ) "(" operand ")" ;
+literal    = number | hex | string | ipv4 [ "/" n ] | ipv6 [ "/" n ] | mac | time | bytes | "true" | "false" ;
+bytes      = hex2 { ":" hex2 } ;                               (* de:ad:be:ef *)
+```
+
+Semantics:
+
+- Fields are typed. A comparison whose types do not fit is a compile error, not a silent false.
+- A field that occurs several times (tunnels) matches if any occurrence matches; `all(f) == v` requires all; `f#2` picks one. `!=` means "present and not equal for every occurrence", avoiding the classic trap where `ip.addr != x` matches almost everything.
+- Addresses accept prefixes: `ip.src == 10.0.0.0/8`.
+- Pseudo-fields join pairs: `ip.addr`, `tcp.port`, `eth.addr`.
+- Attribution fields: `app.id`, `app.name`, `app.helper`, `app.route`, `app.kind`.
+- Analysis fields: `tcp.analysis.retransmission`, `frame.time_delta`, `expert.severity >= warning`.
+- Evaluation is total: no loops, bounded by the packet's field count.
+
+BPF subset (capture filters): boolean combinations of tests on `eth.*`, `vlan.id`, `ip.*` (fixed header and options length), `ip6.*` (fixed header; next-header chain up to 4 extension headers), `tcp.port`, `tcp.flags.*`, `udp.port`, `icmp.type`, `icmp.code`, `arp.*`, `frame.len`, and raw slices `frame[o:l]`. The compiler emits classic BPF with forward jumps only. The verifier in the capture service rejects any program that is not: bounded length (≤ 4096 instructions), forward-jumping, in-bounds for every load given the snapshot length check, and ending in a return on every path. `app.*` scoping is not BPF; the service applies it after the BPF match.
+
+Examples: `tcp.port == 443 && ip.addr == 192.0.2.0/24`; `dns && dns.qry.name contains "example"`; `app.id == "org.pbsd.mail" && !tls`; `tcp.flags.syn && !tcp.flags.ack && ip.dst in {10.0.0.1 .. 10.0.0.20}`.
+
+### 6.4 Integration
+
+- Intents handled: `open`, `view` for capture types. Emitted: `open` to SE02 (rule draft; blocklist query), DV04 (bytes), AD05 (grant), SE04 (certificate), IN04 (location, optional), DV07 (extracted executable); `share` (offers "Scrub first"); `print`.
+- Services: `svc.capture` (Proposed), `svc.settings`, `svc.notify`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.clipboard`, `svc.audit` (write capture events; read first-contact and denial records for the user's own apps), `svc.keyring` (remote capture credentials through SE04's agent), `svc.thumbnail`, `svc.model` (optional).
+- IPC used: DV04's `org.pbsd.hex-editor.Templates/1` grammar implementation is linked as a library into the dissect helper (same source, no cross-process call per packet).
+- IPC offered: `org.pbsd.packet-analyser.Dissect/1` — dissect a byte buffer with a named dissector and return the field tree (for DV01's dissector test harness and DV04's "decode as packet").
+- Backing repos: none. All Proposed. BPF device behaviour (`/dev/bpf`, `BIOCLOCK`, `pflog`) is standard FreeBSD and was not re-verified on HardenedBSD 15-STABLE for this spec.
+
+## 7. Security and privacy
+
+| Capability | Reason |
+|---|---|
+| `fs.app` | Profiles, filters, user dissectors, temporary captures |
+| `fs.portal` | Capture files, key logs, hosts files, export folders |
+| `proc.helper:capture-store`, `proc.helper:dissect-helper` | Bundle helpers |
+| `svc.capture` (Proposed service; manifest name `net.capture` proposed in DV05-GAP-5) | Live capture, prompted per interface and scope |
+| `net.none` | Default. Analysis never uses the network |
+| `net.user` | Only for remote capture over SSH to hosts the user types |
+| `svc.settings`, `svc.notify`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.clipboard`, `svc.audit`, `svc.keyring`, `svc.thumbnail` | As in 6.4 |
+| `svc.model`, `ai.local` | Optional explanations and filter drafts; off by default |
+| `bg.run` | Only for background capture; off by default |
+
+Assets: the contents of the user's and other users' traffic (passwords, tokens, messages); which apps the user runs and whom they contact; TLS session keys; the integrity of the machine (a capture tool is a classic privilege-escalation target).
+
+Adversaries: a remote attacker who sends crafted packets to exploit a dissector (reachable over the network with no user action during a capture); a hostile capture file; a local app trying to use this app to see other apps' traffic; a person who receives a shared capture; a hostile remote capture host.
+
+| Threat | Mitigation |
+|---|---|
+| Dissector memory-safety bug exploited by a crafted packet | Dissectors are safe-subset C++23 over a bounds-checked reader, fuzzed, with fuel and depth limits; they run in `dissect-helper` with no capabilities, so a compromise yields only the packets already in view and cannot write files, open sockets or reach the bus beyond its reply channel |
+| Privileged capture code exploited | The capture service does not parse; its only input from the app is a BPF program it verifies and a scope request the shell approved; after set-up it runs in capability mode with locked BPF descriptors |
+| Malicious BPF program | Verifier (bounds, forward jumps, termination); kernel BPF validation remains as a second check |
+| App sees traffic of other apps or users without consent | Scope is enforced in the service; "everything on the interface" and promiscuous mode need an administrator and are named in the prompt; a visible system indicator runs during capture; all captures are audited |
+| Covert long-running capture | No background capture without `bg.run` and a persistent indicator; grants expire per the chosen duration |
+| Leaking secrets when sharing | Scrub wizard with residual scan; attribution and secrets blocks removed by default; "Share" always offers scrubbing first |
+| TLS keys mishandled | Held in helper memory only; never in settings; embedding in files is explicit and marked |
+| Exported object is malware or has a hostile name | Sanitised names, written only under the chosen folder handle, tagged untrusted, never opened automatically |
+| Decompression or reassembly bombs | Per-stream reassembly cap, content-decoding output cap, helper memory limit |
+| Hostile remote capture host | Stream treated as an untrusted capture; SSH host key pinned; no command output is interpreted except as pcap or pcapng |
+| Name resolution leaks what is being inspected | No lookups at all (F150) |
+| Filter or regex denial of service | Total filter semantics; linear-time regex |
+
+Stored: section 6.2. Leaves the machine: nothing, except SSH traffic for remote capture to the host the user typed. Captures the user saves are the user's files; temporary captures are deleted on exit.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `capture.default_iface` | string | first active non-loopback | Interface for one-key start |
+| `capture.scope` | enum | `this_user_apps` | `this_app`, `chosen_apps`, `this_user_apps`, `everything` |
+| `capture.snaplen` | int | 262144 | Bytes per packet |
+| `capture.promiscuous` | bool | false | Promiscuous mode |
+| `capture.ring_bytes` | int | 64 MiB | Shared ring size |
+| `capture.autoscroll` | bool | true | Follow new packets |
+| `capture.keep_temp_on_exit` | bool | false | Keep unsaved captures |
+| `capture.while_locked` | bool | false | Continue when the session locks (also needs the grant) |
+| `view.time_format` | enum | `since_start` | Time column format |
+| `view.time_precision` | enum | `auto` | Digits |
+| `view.layout` | enum | `stacked` | Pane layout |
+| `view.colourise` | bool | true | Apply colour rules |
+| `resolve.mac`, `resolve.network`, `resolve.transport` | bool | true, true, true | Offline name resolution |
+| `dissect.validate_checksums` | bool | false | Checksum validation default |
+| `dissect.reassemble_tcp` | bool | true | Stream reassembly |
+| `dissect.max_reassembly_bytes` | int | 64 MiB | Per stream |
+| `dissect.fuel_per_packet` | int | 1 000 000 | Dissector steps |
+| `dissect.mem_bytes` | int | 4 GiB | Dissect helper cap |
+| `tls.embed_secrets_on_save` | bool | false | Write secrets blocks |
+| `export.sanitise_names` | bool | true | Cannot be turned off; listed for clarity |
+| `scrub.default_profile` | string | `Share with support` | Wizard default |
+| `scrub.remove_attribution` | bool | true | Default for the wizard |
+| `filter.history` | int | 50 | Entries kept |
+| `remote.rate_limit_bytes_s` | int | 0 | 0 = no limit |
+| `ai.enabled` | bool | false | Local explanations and filter drafts |
+
+## 9. Accessibility and languages
+
+- No information is carried by row colour alone: the Mark column carries the rule tag and the severity icon; the colour rules editor checks contrast of each rule against both themes and warns under 4.5:1.
+- Graphs have table equivalents (`Statistics` tables) and series differ by line style.
+- The packet list supports type-ahead on the packet number and reads rows in a fixed, short order; verbosity levels (brief, full) for screen readers.
+- Live capture can flood announcements; live regions announce only counts every 5 s and expert items of severity warning or above.
+- Protocol and field names are not translated; descriptions and UI strings are. Addresses, hex and numbers stay left-to-right in right-to-left UIs.
+- All three panes resize and reflow at 300% scale; the bytes pane drops to 8 bytes per row when narrow.
+
+## 10. Performance budgets
+
+| Metric | Budget |
+|---|---|
+| Cold start to first frame | ≤ 300 ms |
+| Open and index a 1 GiB pcapng (about 1 million packets) | first packets ≤ 200 ms; index complete ≤ 3 s |
+| First-pass dissection | ≥ 500 000 packets/s per core for Ethernet/IP/TCP headers; ≥ 150 000 packets/s with TLS and HTTP |
+| Apply a display filter to 1 million dissected packets | ≤ 1 s |
+| Live capture | no drops at 1 Gbit/s of 1500-byte packets to file with a 64 MiB ring; live dissection may lag and catch up |
+| Scroll the list | 60 Hz with 100 million rows |
+| Select a packet to detail tree and bytes shown | ≤ 20 ms |
+| Follow a 100 MiB stream | first screen ≤ 300 ms |
+| Memory | app host ≤ 250 MiB; `capture-store` ≤ 128 MiB plus index (16 bytes per packet); `dissect-helper` ≤ 4 GiB cap, about 400 bytes per packet of retained state |
+| Largest capture | 2^32 packets or 1 TiB per file |
+| Idle (no capture) | zero frames and wake-ups |
+| Capture service CPU at 1 Gbit/s | ≤ 15% of one core |
+
+## 11. Testing and proof
+
+Test plan:
+
+- Unit: filter parser and type checker; BPF compiler (each field test) and verifier (accepts all compiler output, rejects a corpus of bad programs); display-filter evaluator; pcap and pcapng readers and writers (round trip keeps unknown blocks byte-identical); scrub mappings (prefix preservation, consistency, checksum repair).
+- Dissector goldens: for each protocol a set of capture files with expected field trees as JSON; public sample captures where licences allow, otherwise generated.
+- Differential: field values for the phase 1 protocols compared with `tshark -T json` output on the same files (run as an external reference in the test environment only; no code shared); BPF programs compared with `tcpdump -d` semantics by running both over packet corpora.
+- Fuzz: every dissector (per-protocol targets and a whole-stack target), reassembly, pcap and pcapng framing, key log parser, filter parser, BPF verifier, MaxMind reader, hex dump importer. Fuzzing runs continuously; every crash becomes a regression capture.
+- Capture service: privilege tests (cannot open files, cannot create sockets after set-up), scope tests (packets of an unselected app never appear in the ring), revocation test (capture stops within one ring flush).
+- Scrub: after scrubbing with the strict profile, a search for every original address, name and token in the output must find nothing; the output must load in this app and in a reference reader.
+- Golden renders of the main window, dialogs and graphs; scripted UI for the 14 top tasks.
+- Robustness: kill each helper during capture and during file load.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| BPF verifier (capture service) | Accepts only programs that terminate and never load out of bounds | T1 | Lean model of classic BPF and the verifier; PRISM on the code | — |
+| BPF compiler | Compiled program accepts exactly the packets the filter's BPF-subset semantics accept | T1 for the core field set; T3 beyond | Lean semantics for the subset; differential tests | Size of the field set |
+| Capture service | No runtime errors; no parsing beyond the flow key; scope filter never passes a packet of an unselected owner | T2 | PRISM; scope tests | Depends on the correctness of the socket-owner feed |
+| pcap and pcapng framing (`capture-store`) | No runtime errors on any input; writes are well-formed | T2 | PRISM + fuzz | — |
+| Bounds-checked reader used by all dissectors | Never reads outside the packet | T1 | PRISM proof; all dissectors use only this reader (lint rule) | — |
+| Dissectors | No runtime errors (T2) for link, IP, TCP, UDP, DNS, DHCP, TLS record layer; safe subset plus fuzz (T3) for the rest | T2 / T3 | PRISM per dissector; fuzz | Number of dissectors |
+| Display-filter evaluator | Total; type-safe | T2 | PRISM + property tests | — |
+| Scrubber address mapping | Injective and prefix-preserving | T1 | Small pure function; PRISM | — |
+| Scrubber as a whole | No original identifier remains for the ticked classes | T3 | Search tests on corpora | Free-form payloads cannot be fully classified |
+| App ForgeScript | Engine safety only | T4 | Tests | — |
+
+Nothing here has been run.
+
+## 12. Build plan
+
+Phase 1: usable core.
+
+| ID | Work item | Depends on |
+|---|---|---|
+| DV05-W01 | Shell: three-pane layout, sidebar, status bar, command palette | G-01, G-02, G-07 |
+| DV05-W02 | `capture-store`: pcap and pcapng read and write, index, packet service | FORGE-WP-28.1, G-08 |
+| DV05-W03 | `dissect-helper` framework: bounds-checked reader, field registry, limits, restart | FORGE-WP-28.1, G-06 |
+| DV05-W04 | Phase 1 dissectors: link, IPv4, IPv6, ICMP, TCP with reassembly and analysis, UDP | DV05-W03 |
+| DV05-W05 | Phase 1 application dissectors: DNS, DHCP, HTTP/1.x, TLS records and handshake, NTP, SSH, syslog | DV05-W04 |
+| DV05-W06 | Filter language: parser, type checker, display-filter bytecode, filter bar | DV05-W03, DV05-GAP-3 |
+| DV05-W07 | Packet list, detail tree, bytes pane, find, marks, columns | FUSE-WP-28, FUSE-WP-41, DV05-W02 |
+| DV05-W08 | Capture service and grant flow; BPF compiler and verifier; live capture path | DV05-GAP-1, SH04 (prompt), SH02 (indicator) |
+| DV05-W09 | Conversations, endpoints, protocol hierarchy, capture summary, follow stream | DV05-W04 |
+| DV05-W10 | Colour rules, expert panel, offline name tables, save subsets | DV05-W07 |
+
+Phase 2: full feature.
+
+| ID | Work item | Depends on |
+|---|---|---|
+| DV05-W20 | Per-app attribution: owner feed, fields, pcapng storage, app view, per-app statistics | DV05-GAP-2, DV05-W08 |
+| DV05-W21 | TLS and QUIC decryption with key logs; decryption status; secrets blocks | DV05-W05, platform crypto |
+| DV05-W22 | Phase 2 dissectors (tunnels, QUIC, HTTP/2 and 3, mail, file, directory, real-time, routing) | DV05-W04 |
+| DV05-W23 | I/O graph, sequence diagram, TCP graphs, protocol statistics | DV05-GAP-4 |
+| DV05-W24 | Export objects and dissections; safe export | DV05-W05, `svc.thumbnail` |
+| DV05-W25 | Scrub wizard and scrubber | DV05-W04, DV05-W21 |
+| DV05-W26 | Firewall integration: rule drafts, pflog fields | SE02 |
+| DV05-W27 | Flow table, request and response pairing, decode as, protocol preferences UI | DV05-W09 |
+| DV05-W28 | Compressed files, merge, ring-buffer files, stop conditions, capture profiles, comments | DV05-W02, UT01 |
+| DV05-W29 | Security notes, certificate view | DV05-W05, SE04 |
+
+Phase 3: advanced.
+
+| ID | Work item | Depends on |
+|---|---|---|
+| DV05-W40 | Remote capture over SSH | SSH client service (section 13), SE04 |
+| DV05-W41 | Declarative and scripted dissectors; dissector test harness; Dissect IPC | DV04 template engine, FORGE-WP-16 and 20 (`bytes`), DV01 |
+| DV05-W42 | Phase 3 dissectors (databases, industrial, USB, Bluetooth) | DV05-W22 |
+| DV05-W43 | Denied-connection rows, first-contact marks, blocklist and DNS policy checks | SE02, `svc.audit` |
+| DV05-W44 | Key log from IDE debug runs; WireGuard, IPsec, WPA decryption | DV01, SE04 |
+| DV05-W45 | Background capture, wireless details, other link types | DV05-W08 |
+| DV05-W46 | Location database, service response time, top talkers, split, imports | DV05-W23 |
+| DV05-W47 | Local AI explain and filter draft | G-15 |
+
+## 13. Open questions and risks
+
+1. **Capture service (DV05-GAP-1).** Nothing in PLATFORM.md section 8 provides capture. It must be a platform service, not a bundle helper, because a helper cannot hold more rights than its app. Its prompt, indicator and grant model need SH02, SH04 and AD05 to agree.
+2. **Socket-owner feed (DV05-GAP-2).** Per-app attribution depends on the kernel or the network service exposing socket ownership with app identity for every packet direction, including packets that are dropped by policy. Where that lives (pf tags, a kernel interface, the network service of FORGE-WP-21) is undecided. Races between socket close and late packets need a short history.
+3. **Manifest capability for capture (DV05-GAP-5).** Section 6 of PLATFORM.md has no row for it. `svc.capture` works as a service capability; a clearer `net.capture` row is proposed.
+4. **Dissector volume.** Wireshark has thousands of dissectors; this plan lists about 120 over three phases, written from the protocol specifications in safe-subset C++23. Coverage will lag for years. Declarative dissectors reduce the cost of the long tail.
+5. **No reuse of Wireshark code.** It is GPL-2.0 C and the main historical source of dissector vulnerabilities. Using `tshark` as a differential test oracle only is the plan.
+6. **Display-filter compatibility.** The language is close to the familiar one but stricter (`!=` semantics, type errors). An import that translates common foreign filters is possible; full compatibility is not a goal.
+7. **Checksum and offload artefacts.** Captures on the sending host show unfilled checksums and large segments; defaults avoid false errors but need testing on the target drivers.
+8. **SSH client service.** Shared need with DV01, DV03, SY03, VM04, IN03; not in PLATFORM.md section 8.
+9. **Private enterprise number** for the pcapng custom blocks must be registered before files are shared widely.
+10. **Unverified.** BPF behaviour (`BIOCLOCK`, direction flags, nanosecond timestamps), `pflog` header layout and `usbdump` on HardenedBSD 15-STABLE; whether Capsicum capability mode permits the BPF ioctls the service needs after set-up.

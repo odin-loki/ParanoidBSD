@@ -46,6 +46,8 @@ Unverified: `distro-build-plan-v4.md` (on the author's PC, not in any repo read 
 
 An app is ForgeScript first. Native code is allowed only as a **helper service** in its own process when one of these holds: (a) it parses untrusted bytes, (b) it needs more speed than the interpreter gives, (c) it holds a secret, or (d) it wraps an existing engine (FORGE, Cypha, RetDec, PRISM, NeuralVFX, SENTINEL, AEGIS). Rust code (ANONYMOUS/AEGIS) is treated as a native helper behind the same IPC boundary.
 
+Two exceptions, both decided in [DECISIONS.md](DECISIONS.md): one native app is allowed (Studio, D-27), and existing C or C++ engines that are outside the safe subset may be imported into helpers that hold no capabilities (D-28); the list is DECISIONS.md section 6.
+
 ## 3. App bundle
 
 ```
@@ -225,3 +227,61 @@ Work the platform needs before the apps can be built. IDs are referenced from th
 | G-16 | Print pipeline (PDF as the spool format) and scan pipeline | none read | Printers, all documents |
 | G-17 | Spell check, hyphenation and dictionaries as a service | none read | all text apps |
 | G-18 | FUSE build and test status on HardenedBSD | Unverified | everything |
+
+## 14. Amendments from the app specs
+
+Writing the 78 specs showed what sections 6, 8, 9 and 12 were missing. These additions are adopted (DECISIONS.md D-30, D-31). The detail and the specs that raised each one are in [GAPS.md](GAPS.md).
+
+### 14.1 Capabilities added to section 6
+
+| Capability | Grants | Default |
+|---|---|---|
+| `net.listen:<addr>:<port>` (and a Unix-socket form) | Accept connections on one address | off |
+| `net.local` | Local-link discovery and one-shot listeners | off, prompt |
+| `net.p2p:<route>` | Unnamed peers, an inbound port and UDP, bound to one route | off |
+| `net.device:<type>` | Endpoints the user adds for one device type | off |
+| `net.capture` | Packet capture through the capture service, scoped per app | off, prompt, indicator |
+| `net.route:mix` | The message-only mix route | off |
+| Run-time `net.host` grants | Hosts the user adds while the app runs; each is a visible, revocable grant | prompt |
+| `dev.bluetooth:<profile>`, `dev.audio-capture`, `dev.midi`, `dev.optical`, `dev.input-inject`, `dev.gamepad`, `dev.haptics`, `dev.sensors` | Further device portals | off, prompt |
+| `shell.*` | Shell surfaces and powers (layer, toplevels, workspaces, launch, lock, trusted-path, session, shortcuts, device-policy, system-window) | system-signed bundles only |
+| `svc.a11y:<right>` | One narrow accessibility right each | system-signed bundles only, after the user enables the tool |
+
+Administrator actions are not capabilities. Anything no per-app capability covers goes through `svc.auth`: a signed registry of named actions, each approved on the trusted path.
+
+Drawing with the GPU needs no capability; every app with a window may do it. `dev.gpu.compute` stays as written.
+
+### 14.2 Services added to section 8
+
+`svc.auth`, `svc.session`, `svc.config`, `svc.network`, `svc.bluetooth`, `svc.display`, `svc.audio`, `svc.users`, `svc.time`, `svc.services`, `svc.storage`, `svc.install`, `svc.logs`, `svc.policy`, `svc.monitor`, `svc.security`, `svc.firewall`, `svc.route`, `svc.mix`, `svc.vm`, `svc.jail`, `svc.compat`, `svc.remote`, `svc.device`, `svc.timer`, `svc.fonts`, `svc.spell`, `svc.docs`, `svc.shortcuts`, `svc.discovery`, `svc.capture`, `svc.debug`, `svc.input-method`, `svc.print`, and `svc.model` (built in FORGE, administered by Model Manager).
+
+Apps may also provide services of their own (`services_provided` in the manifest). The bus starts a headless bundle entry on demand, and Permissions shows who may call it.
+
+### 14.3 Intents and data added to section 9
+
+- Intents: `scan`, `encrypt`, `decrypt`, `sign`, `verify`, `hash`, `clean-metadata`, `erase`, `identity-reset`, `open-with-route`, `set-wallpaper`, `check`, `convert`. An intent may carry a reply channel and a "disposable sandbox" flag.
+- Every file written through a portal carries a provenance tag (`user.pbsd.origin`): where it came from, which app wrote it, and whether it is quarantined.
+- One trust scale for people and keys: unknown, seen, introduced, verified, changed, revoked (D-34).
+- One vocabulary for window security labels: native, sandboxed, disposable, vm, foreign, elevated (D-64).
+
+### 14.4 Manifest fields added to section 12
+
+| Field | Meaning |
+|---|---|
+| `optional_capabilities` | Capabilities that are off until the user turns on the feature that needs them |
+| `capability_notes` | One line per capability saying why it is asked for; shown at install |
+| `system_helpers` | Platform helpers the app uses (image codecs, archive, PDF and so on) |
+| `keyring_scope` | Which keyring items the app may see |
+| `global_shortcuts` | Shortcuts the app asks the shell to register |
+| `applet` | A panel applet the bundle provides |
+| `backup` | Per-app include, exclude and cache rules |
+| `entry_kind`, `native_exception` | The native-app exception (Studio only) |
+| `extensions` | Whether the app loads signed ForgeScript extensions, and against which interface |
+
+The index tool accepts these fields.
+
+### 14.5 Corrections to section 1
+
+- V16 and G-05 were corrected when the FORGE source was read: the interpreter compiles to bytecode only.
+- V20 stands: the repo's plan still ships Plasma until milestone M2.
+- The catalogue's first descriptions of Cypha, NeuralVFX, SENTINEL and AEGIS were wrong; see DECISIONS.md section 1.

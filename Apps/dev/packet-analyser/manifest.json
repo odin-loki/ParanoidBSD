@@ -1,0 +1,49 @@
+{
+  "id": "org.pbsd.packet-analyser",
+  "name": "Packet Analyser",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "net.user",
+    "proc.helper:capture-store",
+    "proc.helper:dissect-helper",
+    "svc.capture",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.audit",
+    "svc.keyring",
+    "svc.thumbnail",
+    "svc.model",
+    "ai.local",
+    "bg.run"
+  ],
+  "helpers": [
+    {"name": "capture-store", "language": "c++23", "capabilities": ["fs.portal", "fs.app"]},
+    {"name": "dissect-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/vnd.tcpdump.pcap", "application/x-pcapng", "application/x-pcapng+gzip", "application/x-pcapng+zstd"],
+    "edit": ["application/x-pcapng"],
+    "import": ["application/vnd.tcpdump.pcap", "application/x-snoop", "application/x-erf", "text/x-hexdump", "application/x-nss-keylog"],
+    "export": ["application/x-pcapng", "application/vnd.tcpdump.pcap", "text/plain", "text/csv", "application/json", "image/png", "application/x-nss-keylog"]
+  },
+  "intents": {
+    "handles": ["open", "view"],
+    "emits": ["open", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.packet-analyser.Dissect"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.firewall >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}
