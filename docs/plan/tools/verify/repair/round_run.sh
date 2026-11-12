@@ -14,8 +14,9 @@ say "start: repair budget \$$RB, review budget \$$VB"
 if [ "$N" = 2 ] && [ ! -f "$RP/retry-review.done" ]; then
   W1=$D/verify-repair; [ -s "$W1/xcheck/failed.txt" ] && mv "$W1/xcheck/failed.txt" "$W1/xcheck/failed.round1.txt"
   rm -f "$W1/xcheck/STOP" "$W1/xcheck/DONE-batch"
-  say "re-review of round 1's failed reviews (budget \$3)"
-  S4_V=$W1 S4_X=$W1/xcheck bash "$VH/step4_watch.sh" 3 "$VPAR"
+  B0=$(bash "$HERE/spend.sh" review "$W1/xcheck/ledger.txt")   # step4_all's budget counts the whole ledger, so the cap is what is already spent plus $3
+  say "re-review of round 1's failed reviews (cap \$3 above the \$$B0 already spent)"
+  S4_V=$W1 S4_X=$W1/xcheck bash "$VH/step4_watch.sh" "$(awk -v b="$B0" 'BEGIN{printf "%.2f", b + 3}')" "$VPAR"
   touch "$RP/retry-review.done"
 fi
 # 1. state and todo
@@ -26,8 +27,14 @@ fi
 if [ ! -f "$RP/repair.stage.done" ]; then
   rm -f "$RP/STOP"
   export RP TODO=$RP/todo.tsv REPAIR_EFFORT=${REPAIR_EFFORT:-medium} REPAIR_SYS_EXTRA="$(cat "$HERE/repair_rule.txt")"
-  bash "$HERE/repair_watch.sh" "$RB" "$RPAR"
-  if alarm "$RP/watch.log"; then say "credit/auth alert: round halted"; exit 2; fi
+  for pass in 1 2 3; do
+    bash "$HERE/repair_watch.sh" "$RB" "$RPAR"
+    if alarm "$RP/watch.log" || alarm "$RP/repair.log"; then say "credit/auth alert: round halted"; exit 2; fi
+    [ -f "$RP/DONE" ] || break          # stopped by the budget or by hand: no retry pass
+    nfail=$(sort -u "$RP/failed.txt" 2>/dev/null | wc -l); [ "$nfail" -eq 0 ] && break
+    say "pass $pass: $nfail records failed (API overload or empty reply); retrying them"
+    mv "$RP/failed.txt" "$RP/failed.pass$pass.txt"; rm -f "$RP/DONE"
+  done
   touch "$RP/repair.stage.done"
   unset RP TODO
 fi
@@ -43,7 +50,7 @@ if [ ! -f "$RP/review.stage.done" ]; then
   W=$W bash "$HERE/s4_repaired_build.sh" | tee -a "$RP/round.log"
   rm -f "$X/STOP" "$X/DONE-batch"
   S4_V=$W S4_X=$X bash "$VH/step4_watch.sh" "$VB" "$VPAR"
-  if alarm "$X/watch.log"; then say "credit/auth alert: round halted"; exit 2; fi
+  if alarm "$X/watch.log" || alarm "$X/step4.log"; then say "credit/auth alert: round halted"; exit 2; fi
   touch "$RP/review.stage.done"
 fi
 say "review stage over: $(wc -l < "$X/xcheck.jsonl") records, spent \$$(bash "$HERE/spend.sh" review "$X/ledger.txt"), failed keys $(sort -u "$X/failed.txt" 2>/dev/null | wc -l)"

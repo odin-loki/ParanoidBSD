@@ -6,7 +6,7 @@ HERE=$(cd "$(dirname "$0")" && pwd); X=${RP:-/mnt/c/ParanoidBSD/mined-data/verif
 BUDGET=${1:-60}; P=${2:-48}; LOG=$X/watch.log; LED=$X/ledger.txt
 say() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
 alive() { pgrep -f "repair_all.sh" > /dev/null; }
-start() { rm -f "$X/DONE"; ( setsid nohup bash "$HERE/repair_all.sh" 999999 "$BUDGET" "$P" >> "$X/repair.out" 2>&1 < /dev/null & ); say "repair started (budget \$$BUDGET, parallel $P)"; }
+start() { rm -f "$X/DONE"; ( setsid nohup bash "$HERE/repair_all.sh" "${MAXREC:-999999}" "$BUDGET" "$P" >> "$X/repair.out" 2>&1 < /dev/null & ); say "repair started (budget \$$BUDGET, parallel $P)"; }
 spent() { awk '{i+=$1; o+=$2} END{printf "%.2f", (i*0.047+o*0.268)/1000000}' "$LED" 2>/dev/null; }
 n=0; restarts=0; t0=$(date +%s); stall=0
 last=$(wc -l < "$X/repair.jsonl" 2>/dev/null || echo 0); laste=$(wc -l < "$X/errors.log" 2>/dev/null || echo 0)
