@@ -1,1 +1,1 @@
-173	huawei_cdc_ncm_manage_power	refcount	BV-SKIP	0.0	pointer parameter usbnet_dev
+173	huawei_cdc_ncm_manage_power	refcount	BV-CONTRACT-ONLY	5.4	undefined behaviour possible: huawei_cdc_ncm_manage_power.pointer_dereference.1 huawei_cdc_ncm_manage_power.pointer_dereference.3 huawei_cdc_ncm_manage_power.pointer_dereference.4 

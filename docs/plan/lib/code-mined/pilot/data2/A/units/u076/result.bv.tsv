@@ -1,1 +1,1 @@
-76	ecc_sw_hamming_correct	error-path	BV-SKIP	0.0	pointer parameter buf
+76	ecc_sw_hamming_correct	error-path	BV-CONTRACT-ONLY	1.3	undefined behaviour possible: ecc_sw_hamming_correct.pointer_dereference.1 ecc_sw_hamming_correct.pointer_dereference.3 ecc_sw_hamming_correct.pointer_dereference.4 

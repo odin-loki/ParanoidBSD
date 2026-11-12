@@ -1,1 +1,1 @@
-178	f2fs_shrink_read_extent_tree	refcount	BV-SKIP	0.0	pointer parameter sbi
+178	f2fs_shrink_read_extent_tree	refcount	BV-CONTRACT-ONLY	8.7	contract admits undefined behaviour (ensures also fails there): f2fs_shrink_read_extent_tree.pointer_dereference.1 f2fs_shrink_read_extent_tree.pointer_dereference.3 f2fs_shrink_read_extent_tree.pointer_dereference.4 

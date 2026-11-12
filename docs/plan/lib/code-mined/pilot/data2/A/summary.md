@@ -4,27 +4,27 @@ Functions: 200
 
 ### Label by kind
 
-| **all** | 200 | 17 | 21 | 31 | 11 | 31 | 86 | **38 (19.0%)** |
-| allocator | 15 | 1 | 1 | 3 | 1 | 4 | 5 | 2 (13%) |
-| arith-helper | 50 | 6 | 8 | 3 | 3 | 6 | 24 | 14 (28%) |
-| bitmap | 15 | 0 | 3 | 2 | 1 | 1 | 8 | 3 (20%) |
-| bitmask | 8 | 4 | 1 | 0 | 1 | 1 | 1 | 5 (62%) |
-| error-path | 20 | 1 | 5 | 2 | 2 | 3 | 7 | 6 (30%) |
-| init-teardown | 20 | 1 | 1 | 4 | 3 | 4 | 6 | 2 (10%) |
-| kind | n | PROVED | PROVED-ASSUMING | CONTRACT-ONLY | FALSE | FAILED | UNBUILT | proved (P+PA) |
-| list-op | 10 | 0 | 0 | 2 | 0 | 2 | 6 | 0 (0%) |
-| lock-or-sync | 15 | 1 | 1 | 1 | 0 | 1 | 11 | 2 (13%) |
-| parser | 20 | 2 | 0 | 6 | 0 | 4 | 7 | 2 (10%) |
-| refcount | 12 | 0 | 0 | 5 | 0 | 3 | 3 | 0 (0%) |
-| ring-buffer | 15 | 1 | 1 | 3 | 0 | 2 | 8 | 2 (13%) |
-|---|---|---|---|---|---|---|---|---|
+| **all** | 200 | 17 | 22 | 42 | 15 | 15 | 86 | 0 | **39 (19.5%)** |
+| allocator | 15 | 1 | 1 | 5 | 2 | 1 | 5 | 0 | 2 (13%) |
+| arith-helper | 50 | 6 | 8 | 7 | 4 | 1 | 24 | 0 | 14 (28%) |
+| bitmap | 15 | 0 | 3 | 2 | 2 | 0 | 8 | 0 | 3 (20%) |
+| bitmask | 8 | 4 | 1 | 0 | 1 | 1 | 1 | 0 | 5 (62%) |
+| error-path | 20 | 1 | 5 | 3 | 2 | 2 | 7 | 0 | 6 (30%) |
+| init-teardown | 20 | 1 | 1 | 7 | 3 | 1 | 6 | 0 | 2 (10%) |
+| kind | n | PROVED | PROVED-ASSUMING | CONTRACT-ONLY | FALSE | FAILED | UNBUILT | BOUNDED | proved (P+PA) |
+| list-op | 10 | 0 | 0 | 2 | 0 | 2 | 6 | 0 | 0 (0%) |
+| lock-or-sync | 15 | 1 | 1 | 1 | 0 | 1 | 11 | 0 | 2 (13%) |
+| parser | 20 | 2 | 1 | 5 | 1 | 3 | 7 | 0 | 3 (15%) |
+| refcount | 12 | 0 | 0 | 7 | 0 | 1 | 3 | 0 | 0 (0%) |
+| ring-buffer | 15 | 1 | 1 | 3 | 0 | 2 | 8 | 0 | 2 (13%) |
+|---|---|---|---|---|---|---|---|---|---|
 
 ### Label by tree
 
-- linux: 119 functions, PROVED 13, PROVED-ASSUMING 17, CONTRACT-ONLY 29, FALSE 8, FAILED 26, UNBUILT 25
+- linux: 119 functions, PROVED 13, PROVED-ASSUMING 17, CONTRACT-ONLY 39, FALSE 12, FAILED 12, UNBUILT 25
 - bsd-kernel: 33 functions, PROVED 1, PROVED-ASSUMING 3, CONTRACT-ONLY 0, FALSE 3, FAILED 2, UNBUILT 23
-- linux-tools: 7 functions, PROVED 0, PROVED-ASSUMING 1, CONTRACT-ONLY 1, FALSE 0, FAILED 1, UNBUILT 4
-- bsd-user: 41 functions, PROVED 3, PROVED-ASSUMING 0, CONTRACT-ONLY 1, FALSE 0, FAILED 2, UNBUILT 34
+- linux-tools: 7 functions, PROVED 0, PROVED-ASSUMING 2, CONTRACT-ONLY 1, FALSE 0, FAILED 0, UNBUILT 4
+- bsd-user: 41 functions, PROVED 3, PROVED-ASSUMING 0, CONTRACT-ONLY 2, FALSE 0, FAILED 1, UNBUILT 34
 
 ### Why not built (UNBUILT causes, normalised)
 
@@ -45,11 +45,12 @@ Functions: 200
 
 ### Per-unit assumptions on proved functions (count)
 
-- bv-sat-uncertified: 2
-- callees-without-spec: 7
+- bv-sat-uncertified: 3
+- callees-without-spec: 8
 - config: 3
 - header-function-in-probe-unit: 7
-- pointer-or-memory-precondition: 4
+- pointer-or-memory-precondition: 5
+- pointers-modelled-as-disjoint-malloc-objects(no-aliasing,sizes-from-valid): 1
 - probe-adds-module.h-kernel.h-slab.h-device.h: 7
 - stub-headers-EMPTY(option-headers-assumed-off): 1
 - stub-headers: 2

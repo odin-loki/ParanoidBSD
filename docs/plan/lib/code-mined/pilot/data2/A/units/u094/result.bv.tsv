@@ -1,1 +1,1 @@
-94	hci_recv_diag	parser	BV-SKIP	0.0	pointer parameter hdev
+94	hci_recv_diag	parser	BV-SKIP	0.0	unexpected token ')'

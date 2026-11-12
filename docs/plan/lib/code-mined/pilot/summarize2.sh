@@ -20,7 +20,8 @@ for r in u*/result.tsv; do
       if (st=="PROVED") lab = down ? "PROVED-ASSUMING" : "PROVED";
       else if (st=="CONTRACT-ONLY") { lab="CONTRACT-ONLY" }
       if ((st=="FAILED"||st=="CONTRACT-ONLY") && bs!="") {
-        if (bs=="BV-PROVED") { lab="PROVED-ASSUMING"; how="CBMC-bitvector"; as=as "bv-sat-uncertified;"; cause="" }
+        if (bs=="BV-PROVED") { lab="PROVED-ASSUMING"; how="CBMC-bitvector"; as=as bd; cause="" }
+        else if (bs=="BV-BOUNDED") { lab="BOUNDED"; how="CBMC-bitvector"; as=as bd; cause="" }
         else if (bs=="BV-FALSE") { lab="FALSE"; how="CBMC"; cause=bd }
         else if (bs=="BV-CONTRACT-ONLY") { lab="CONTRACT-ONLY"; how="CBMC"; cause=bd }
         else if (bs=="BV-VACUOUS") { lab="FAILED"; cause="vacuous requires (CBMC)" }
@@ -33,9 +34,9 @@ echo "## $T"; echo
 echo "Functions: $(wc -l <labels.tsv)"; echo
 echo "### Label by kind"; echo
 awk -F'\t' '{k=$3; l=$6; n[k,l]++; kinds[k]=1; labs[l]=1; tot[k]++}
-  END{ split("PROVED PROVED-ASSUMING CONTRACT-ONLY FALSE FAILED UNBUILT", L, " "); printf "| kind | n |"; for(i=1;i<=6;i++) printf " %s |", L[i]; printf " proved (P+PA) |\n|---|---|"; for(i=1;i<=6;i++) printf "---|"; printf "---|\n";
-    for(k in kinds){ printf "| %s | %d |", k, tot[k]; for(i=1;i<=6;i++) printf " %d |", n[k,L[i]]; printf " %d (%.0f%%) |\n", n[k,"PROVED"]+n[k,"PROVED-ASSUMING"], 100*(n[k,"PROVED"]+n[k,"PROVED-ASSUMING"])/tot[k] }
-    printf "| **all** | %d |", NR; for(i=1;i<=6;i++){ s=0; for(k in kinds) s+=n[k,L[i]]; printf " %d |", s } p=0; for(k in kinds) p+=n[k,"PROVED"]+n[k,"PROVED-ASSUMING"]; printf " **%d (%.1f%%)** |\n", p, 100*p/NR }' labels.tsv | sort -t'|' -k2,2 | awk 'NR==1||1'
+  END{ split("PROVED PROVED-ASSUMING CONTRACT-ONLY FALSE FAILED UNBUILT BOUNDED", L, " "); printf "| kind | n |"; for(i=1;i<=7;i++) printf " %s |", L[i]; printf " proved (P+PA) |\n|---|---|"; for(i=1;i<=7;i++) printf "---|"; printf "---|\n";
+    for(k in kinds){ printf "| %s | %d |", k, tot[k]; for(i=1;i<=7;i++) printf " %d |", n[k,L[i]]; printf " %d (%.0f%%) |\n", n[k,"PROVED"]+n[k,"PROVED-ASSUMING"], 100*(n[k,"PROVED"]+n[k,"PROVED-ASSUMING"])/tot[k] }
+    printf "| **all** | %d |", NR; for(i=1;i<=7;i++){ s=0; for(k in kinds) s+=n[k,L[i]]; printf " %d |", s } p=0; for(k in kinds) p+=n[k,"PROVED"]+n[k,"PROVED-ASSUMING"]; printf " **%d (%.1f%%)** |\n", p, 100*p/NR }' labels.tsv | sort -t'|' -k2,2 | awk 'NR==1||1'
 echo; echo "### Label by tree"; echo
 awk -F'\t' '{n[$5,$6]++; t[$5]++} END{for(k in t){ printf "- %s: %d functions, PROVED %d, PROVED-ASSUMING %d, CONTRACT-ONLY %d, FALSE %d, FAILED %d, UNBUILT %d\n", k, t[k], n[k,"PROVED"], n[k,"PROVED-ASSUMING"], n[k,"CONTRACT-ONLY"], n[k,"FALSE"], n[k,"FAILED"], n[k,"UNBUILT"]}}' labels.tsv
 echo; echo "### Why not built (UNBUILT causes, normalised)"; echo

@@ -1,1 +1,1 @@
-187	m_dup_pkthdr	list-op	BV-SKIP	0.0	pointer parameter to
+187	m_dup_pkthdr	list-op	BV-CONTRACT-ONLY	2.0	contract admits undefined behaviour (ensures also fails there): m_dup_pkthdr.pointer_dereference.1 m_dup_pkthdr.pointer_dereference.3 m_dup_pkthdr.pointer_dereference.4 

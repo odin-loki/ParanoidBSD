@@ -1,1 +1,1 @@
-15	kona_pwmc_config	arith-helper	BV-SKIP	0.0	pointer parameter chip
+15	kona_pwmc_config	arith-helper	BV-CONTRACT-ONLY	22.4	undefined behaviour possible: kona_pwmc_config.pointer_dereference.1 kona_pwmc_config.pointer_dereference.3 kona_pwmc_config.pointer_dereference.4 

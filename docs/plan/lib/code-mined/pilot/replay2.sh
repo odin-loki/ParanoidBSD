@@ -30,7 +30,7 @@ one() {
     rm -rf "$W"
   elif [ "$bv" = BV-PROVED ]; then
     W=$(mktemp -d); cp "$d/bv.h.c" "$W/"; cd "$W"
-    L=$(awk -f "$HERE/has_loop.awk" "$d/unit.c.fn" && echo 66 || echo 2)
+    L=$(sed -n 's/.*unwind=\([0-9]*\).*/\1/p' "$d/result.bv.tsv" | head -1); [ -z "$L" ] && L=2
     a=$(timeout 600 cbmc bv.h.c --function main --unwind $L --unwinding-assertions --object-bits 12 2>&1 | grep -c "VERIFICATION SUCCESSFUL")
     b=$(timeout 600 cbmc bv.h.c --function main --unwind $L --unwinding-assertions --object-bits 12 --signed-overflow-check --div-by-zero-check --undefined-shift-check --pointer-check --bounds-check 2>&1 | grep -c "VERIFICATION SUCCESSFUL")
     stt=OK; [ "$a" = 1 ] && [ "$b" = 1 ] || stt=MISMATCH

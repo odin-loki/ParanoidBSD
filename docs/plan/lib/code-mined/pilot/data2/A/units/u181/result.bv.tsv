@@ -1,1 +1,1 @@
-181	hfi1_netdev_rx_destroy	refcount	BV-SKIP	0.0	pointer parameter dd
+181	hfi1_netdev_rx_destroy	refcount	BV-SKIP	0.1	unexpected token ')'

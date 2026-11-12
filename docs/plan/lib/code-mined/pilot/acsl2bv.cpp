@@ -16,6 +16,9 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <regex>
+#include <cstring>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -28,6 +31,8 @@ struct Tok { enum K { Num, Id, Op, End } k; string s; };
 
 static const set<string> kIntWords = {"char", "short", "int", "long", "unsigned", "signed", "_Bool", "bool", "__int128"};
 static set<string> typedefs; // names declared with typedef in the unit
+// pointer support (round 3): pointer parameters are modelled as malloc objects of the size the requires clause gives with alid; see header comment
+static set<string> g_ptrs; static map<string, pair<string, string>> g_valid; /* name -> (lo, hi) as __int128 C expressions */ static bool g_inreq = false, g_inold = false, g_bounded = false;
 
 class Lexer {
  public:
@@ -44,14 +49,14 @@ class Lexer {
         else while (j < s_.size() && isdigit((unsigned char)s_[j])) j++;
         string num = s_.substr(i_, j - i_);
         while (j < s_.size() && (s_[j] == 'u' || s_[j] == 'U' || s_[j] == 'l' || s_[j] == 'L')) j++;
-        if (j < s_.size() && (isalpha((unsigned char)s_[j]) || s_[j] == '.')) throw Skip("unsupported number literal");
+        if (j < s_.size() && (isalpha((unsigned char)s_[j]) || (s_[j] == '.' && !(j + 1 < s_.size() && s_[j + 1] == '.')))) throw Skip("unsupported number literal");
         out.push_back({Tok::Num, num}); i_ = j; continue;
       }
       if (isalpha((unsigned char)c) || c == '_' || c == '\\') {
         size_t j = i_ + 1; while (j < s_.size() && (isalnum((unsigned char)s_[j]) || s_[j] == '_')) j++;
         out.push_back({Tok::Id, s_.substr(i_, j - i_)}); i_ = j; continue;
       }
-      static const char* ops[] = {"<==>", "==>", "^^", "<<", ">>", "<=", ">=", "==", "!=", "&&", "||", "->", "(", ")", "!", "~", "-", "+", "*", "/", "%", "<", ">", "&", "^", "|", "?", ":", "[", "]", ".", ","};
+      static const char* ops[] = {"<==>", "==>", "^^", "<<", ">>", "<=", ">=", "==", "!=", "&&", "||", "->", "(", ")", "!", "~", "-", "+", "*", "/", "%", "<", ">", "&", "^", "|", "?", ":", "[", "]", "..", ".", ","};
       bool hit = false;
       for (const char* o : ops) { string op(o); if (s_.compare(i_, op.size(), op) == 0) { out.push_back({Tok::Op, op}); i_ += op.size(); hit = true; break; } }
       if (!hit) throw Skip(string("unsupported character '") + c + "'");
@@ -100,7 +105,22 @@ class Parser {
     if (kIntWords.count(t_[q].s)) return true;
     return typedefs.count(t_[q].s) && !params_.count(t_[q].s);
   }
+  // postfix chain on a pointer parameter:  name[idx]  name->f  name.f  (value is widened); bare name = its address as integer
+  string postfix(const string& name, bool deref) {
+    if (g_inold) throw Skip("memory read inside old");
+    string lv = name; bool any = deref;
+    if (deref) lv = "(*" + name + ")";
+    while (true) {
+      if (isop("[")) { p_++; string ix = iff(); expect("]"); lv = "(" + lv + ")[(long)(" + ix + ")]"; any = true; }
+      else if (isop("->")) { p_++; if (peek().k != Tok::Id) throw Skip("field name expected"); lv = "(" + lv + ")->" + peek().s; p_++; any = true; }
+      else if (isop(".") && any) { p_++; if (peek().k != Tok::Id) throw Skip("field name expected"); lv = "(" + lv + ")." + peek().s; p_++; }
+      else break;
+    }
+    if (!any) return "((__int128)(unsigned long)(" + name + "))";
+    return "((__int128)(" + lv + "))";
+  }
   string un() {
+    if (isop("*") && t_[p_ + 1].k == Tok::Id && g_ptrs.count(t_[p_ + 1].s)) { p_++; string nm = peek().s; p_++; return postfix(nm, true); }
     if (isop("!")) { p_++; return "(__int128)(!" + b(un()) + ")"; }
     if (isop("~")) { p_++; return "(~" + un() + ")"; }
     if (isop("-")) { p_++; return "bv_neg(" + un() + ")"; }
@@ -121,9 +141,22 @@ class Parser {
       if (s == "\\result" || s == "result") return "((__int128)bv_r)";
       if (s == "\\true" || s == "true") return "((__int128)1)";
       if (s == "\\false" || s == "false") return "((__int128)0)";
-      if (s == "\\old") { expect("("); string e = iff(); expect(")"); return e; }
+      if (s == "\\old") { expect("("); bool sv = g_inold; g_inold = true; string e = iff(); g_inold = sv; expect(")"); return e; }
+      if (s == "\\null") return "((__int128)0)";
+      if (s == "\\valid" || s == "\\valid_read") {
+        if (!g_inreq) throw Skip(s + " in ensures");
+        expect("("); if (peek().k != Tok::Id || !g_ptrs.count(peek().s)) throw Skip(s + " of a non-parameter");
+        string nm = peek().s; p_++;
+        string lo = "((__int128)0ULL)", hi = "((__int128)0ULL)";
+        if (isop("+")) { p_++; expect("("); lo = iff(); expect(".."); hi = iff(); expect(")"); }
+        expect(")");
+        if (g_valid.count(nm)) throw Skip("two valid clauses for " + nm);
+        g_valid[nm] = {lo, hi};
+        return "((__int128)1)";
+      }
       if (s[0] == '\\') throw Skip("unsupported ACSL construct " + s);
       if (isop("(")) throw Skip("function call " + s + "(...)");
+      if (g_ptrs.count(s)) return postfix(s, false);
       if (isop("->") || isop(".") || isop("[")) throw Skip("field or array access on " + s);
       if (params_.count(s)) return "((__int128)(" + s + "))";
       consts_.insert(s);  // must be an integer constant expression (enumerator): checked by the C compiler in the harness (enum { x = (name) })
@@ -146,9 +179,17 @@ int main(int argc, char** argv) {
     if (ret.empty() || ret == "?") throw Skip("signature not parsed");
     if (ret == "void") throw Skip("void function");
     if (ret.find('*') != string::npos) throw Skip("pointer result");
-    vector<pair<string, string>> params; string ln;
+    vector<pair<string, string>> params; string ln; map<string, string> elem;
     while (getline(sf, ln)) { size_t tb = ln.find('\t'); string ty = ln.substr(0, tb), nm = tb == string::npos ? "" : ln.substr(tb + 1); if (ty == "?" || nm == "?") throw Skip("parameter that is not a plain declaration");
-      if (ty.find('*') != string::npos) throw Skip("pointer parameter " + nm); params.push_back({ty, nm}); }
+      if (ty.find('*') != string::npos) {
+        string el = ty; el.erase(el.rfind('*'));
+        { static const char* qs[] = {"const", "volatile", "__restrict", "restrict"}; for (const char* q : qs) { size_t pq; while ((pq = el.find(q)) != string::npos && (pq == 0 || !isalnum((unsigned char)el[pq - 1])) && (pq + strlen(q) >= el.size() || !(isalnum((unsigned char)el[pq + strlen(q)]) || el[pq + strlen(q)] == '_'))) el.erase(pq, strlen(q)); } }
+        el = trim(el);
+        if (el.find('*') != string::npos) throw Skip("pointer to pointer parameter " + nm);
+        if (el == "void" || el.empty()) throw Skip("void pointer parameter " + nm);
+        g_ptrs.insert(nm); elem[nm] = el;
+      }
+      params.push_back({ty, nm}); }
     // typedef names of the unit
     { ifstream uf(argv[3]); stringstream us; us << uf.rdbuf(); string u = us.str(); size_t p = 0;
       while ((p = u.find("typedef", p)) != string::npos) { size_t e = u.find(';', p); if (e == string::npos) break; string d = u.substr(p + 7, e - p - 7); p = e;
@@ -162,6 +203,8 @@ int main(int argc, char** argv) {
       string kw = clause.substr(0, clause.find_first_of(" \t(\\")); string body = trim(clause.substr(kw.size()));
       if (kw != "requires" && kw != "ensures") throw Skip("clause " + kw + " not supported");
       if (body.find("\\forall") != string::npos || body.find("\\exists") != string::npos) throw Skip("quantifier");
+      g_inreq = (kw == "requires");
+      if (g_inreq && body.find("\\valid") != string::npos && (body.find("==>") != string::npos || body.find("||") != string::npos || body.find('?') != string::npos || body.find('!') != string::npos)) throw Skip("valid under a connective");
       string e = Parser(Lexer(body).run(), pn, consts).parse();
       (kw == "requires" ? req : ens).push_back(e);
     }
@@ -185,12 +228,22 @@ int main(int argc, char** argv) {
     h << "int main(void) {\n";
     for (auto& p : params) h << "  " << p.first << " " << p.second << ";\n";
     h << "  __CPROVER_assume(" << join(req) << ");\n";
+    if (!g_ptrs.empty()) h << "  extern void *malloc(unsigned long);\n";
+    for (auto& pp : g_ptrs) {
+      auto it = g_valid.find(pp);
+      if (it == g_valid.end()) { h << "  { int c_" << pp << "; " << pp << " = c_" << pp << " ? 0 : malloc(sizeof(" << elem[pp] << ")); }\n"; continue; }
+      static const regex lit("\\(\\(__int128\\)([0-9]+)ULL\\)");
+      smatch m1, m2;
+      if (!regex_match(it->second.first, m1, lit) || m1[1] != "0") throw Skip("valid range does not start at 0 for " + pp);
+      if (regex_match(it->second.second, m2, lit)) h << "  " << pp << " = malloc(sizeof(" << elem[pp] << ") * " << (atol(m2[1].str().c_str()) + 1) << "UL);\n";
+      else { g_bounded = true; h << "  { __int128 hi_" << pp << " = " << it->second.second << "; __CPROVER_assume(hi_" << pp << " >= 0 && hi_" << pp << " <= 7); " << pp << " = malloc(sizeof(" << elem[pp] << ") * (unsigned long)(hi_" << pp << " + 1)); }\n"; }
+    }
     string call = argv[4]; call += "(";
     for (size_t i = 0; i < params.size(); i++) call += (i ? ", " : "") + params[i].second;
     call += ")";
     h << "  " << ret << " bv_r = " << call << ";\n";
     h << "  __CPROVER_assert(" << join(ens) << ", \"ensures\");\n  return 0;\n}\n";
-    cout << "OK\n";
+    cout << "OK" << (g_bounded ? " bounded=8" : "") << (g_ptrs.empty() ? "" : " pointers") << "\n";
     return 0;
   } catch (const Skip& s) { cout << "SKIP " << s.what() << "\n"; return 3; }
 }

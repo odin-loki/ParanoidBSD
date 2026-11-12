@@ -1,1 +1,1 @@
-195	phy_packet_self_id_zero_get_scode	bitmask	BV-PROVED	0.3	
+195	phy_packet_self_id_zero_get_scode	bitmask	BV-PROVED	0.3	bv-sat-uncertified;

@@ -1,1 +1,1 @@
-186	acpi_ut_add_address_range	list-op	BV-SKIP	0.0	pointer parameter region_node
+186	acpi_ut_add_address_range	list-op	BV-CONTRACT-ONLY	3.3	undefined behaviour possible: acpi_ut_add_address_range.pointer_dereference.1 acpi_ut_add_address_range.pointer_dereference.2 acpi_ut_add_address_range.pointer_dereference.3 

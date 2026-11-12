@@ -1,1 +1,1 @@
-52	init_chip	init-teardown	BV-SKIP	0.0	pointer parameter dd
+52	init_chip	init-teardown	BV-CONTRACT-ONLY	20.6	contract admits undefined behaviour (ensures also fails there): init_chip.pointer_dereference.1 init_chip.pointer_dereference.3 init_chip.pointer_dereference.4 

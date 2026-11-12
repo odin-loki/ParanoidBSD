@@ -1,1 +1,1 @@
-43	compute_pgoff	arith-helper	BV-SKIP	0.0	pointer parameter arena
+43	compute_pgoff	arith-helper	BV-CONTRACT-ONLY	4.2	contract admits undefined behaviour (ensures also fails there): compute_pgoff.overflow.1 compute_pgoff.pointer_dereference.1 compute_pgoff.pointer_dereference.3 

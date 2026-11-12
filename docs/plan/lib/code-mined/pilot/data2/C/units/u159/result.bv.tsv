@@ -1,1 +1,1 @@
-159	saa7164_bus_setup	ring-buffer	BV-SKIP	0.0	pointer parameter dev
+159	saa7164_bus_setup	ring-buffer	BV-CONTRACT-ONLY	35.4	undefined behaviour possible: saa7164_bus_setup.pointer_dereference.1 saa7164_bus_setup.pointer_dereference.3 saa7164_bus_setup.pointer_dereference.4 

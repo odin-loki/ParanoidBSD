@@ -1,1 +1,1 @@
-132	fb_alloc_cmap_gfp	allocator	BV-SKIP	0.0	pointer parameter cmap
+132	fb_alloc_cmap_gfp	allocator	BV-CONTRACT-ONLY	0.5	contract admits undefined behaviour (ensures also fails there): fb_alloc_cmap_gfp.pointer_dereference.1 fb_alloc_cmap_gfp.pointer_dereference.3 fb_alloc_cmap_gfp.pointer_dereference.4 

@@ -1,1 +1,1 @@
-143	vntb_epf_db_clear	bitmap	BV-SKIP	0.0	pointer parameter ndev
+143	vntb_epf_db_clear	bitmap	BV-CONTRACT-ONLY	97.1	undefined behaviour possible: vntb_epf_db_clear.pointer_dereference.1 vntb_epf_db_clear.pointer_dereference.3 vntb_epf_db_clear.pointer_dereference.4 

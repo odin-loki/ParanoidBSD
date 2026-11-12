@@ -1,1 +1,1 @@
-76	aq_rule_is_not_support	error-path	BV-SKIP	0.0	pointer parameter aq_nic
+76	aq_rule_is_not_support	error-path	BV-CONTRACT-ONLY	7.9	undefined behaviour possible: aq_rule_is_not_support.pointer_dereference.1 aq_rule_is_not_support.pointer_dereference.3 aq_rule_is_not_support.pointer_dereference.4 

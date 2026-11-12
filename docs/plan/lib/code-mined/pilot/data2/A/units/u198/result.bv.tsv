@@ -1,1 +1,1 @@
-198	vmx_ctl_allows_zero_setting	bitmask	BV-PROVED	0.3	
+198	vmx_ctl_allows_zero_setting	bitmask	BV-PROVED	0.7	bv-sat-uncertified;

@@ -1,1 +1,1 @@
-27	cpufreq_power2state	arith-helper	BV-SKIP	0.0	pointer parameter cdev
+27	cpufreq_power2state	arith-helper	BV-CONTRACT-ONLY	1.9	undefined behaviour possible: cpufreq_power2state.pointer_dereference.1 cpufreq_power2state.pointer_dereference.3 cpufreq_power2state.pointer_dereference.4 

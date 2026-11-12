@@ -1,1 +1,1 @@
-196	acpi_ex_write_with_update_rule	bitmask	BV-SKIP	0.0	pointer parameter obj_desc
+196	acpi_ex_write_with_update_rule	bitmask	BV-CONTRACT-ONLY	1.0	contract admits undefined behaviour (ensures also fails there): acpi_ex_write_with_update_rule.pointer_dereference.1 acpi_ex_write_with_update_rule.pointer_dereference.3 acpi_ex_write_with_update_rule.pointer_dereference.4 

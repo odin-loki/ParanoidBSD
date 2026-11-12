@@ -1,1 +1,1 @@
-171	ipack_get_carrier	refcount	BV-SKIP	0.0	pointer parameter dev
+171	ipack_get_carrier	refcount	BV-CONTRACT-ONLY	2.3	contract admits undefined behaviour (ensures also fails there): ipack_get_carrier.pointer_dereference.1 ipack_get_carrier.pointer_dereference.3 ipack_get_carrier.pointer_dereference.4 

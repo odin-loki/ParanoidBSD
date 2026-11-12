@@ -1,1 +1,1 @@
-11	smc_llc_active_link_count	arith-helper	BV-SKIP	0.0	pointer parameter lgr
+11	smc_llc_active_link_count	arith-helper	BV-PROVED	58.5	bv-sat-uncertified;pointers-modelled-as-disjoint-malloc-objects(no-aliasing,sizes-from-valid);unwind=10;

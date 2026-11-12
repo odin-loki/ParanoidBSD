@@ -1,1 +1,1 @@
-67	_qed_vf_pf_release	init-teardown	BV-SKIP	0.0	pointer parameter p_hwfn
+67	_qed_vf_pf_release	init-teardown	BV-CONTRACT-ONLY	6.2	contract admits undefined behaviour (ensures also fails there): _qed_vf_pf_release.pointer_dereference.7 _qed_vf_pf_release.pointer_dereference.8 _qed_vf_pf_release.pointer_dereference.9 

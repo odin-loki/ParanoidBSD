@@ -1,1 +1,1 @@
-134	vdo_allocate_cache_aligned	allocator	BV-SKIP	0.0	pointer parameter what
+134	vdo_allocate_cache_aligned	allocator	BV-SKIP	0.0	void pointer parameter ptr

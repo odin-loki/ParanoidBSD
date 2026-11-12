@@ -1,1 +1,1 @@
-51	d71_reset	init-teardown	BV-SKIP	0.0	pointer parameter d71
+51	d71_reset	init-teardown	BV-CONTRACT-ONLY	5.4	undefined behaviour possible: d71_reset.pointer_dereference.1 d71_reset.pointer_dereference.3 d71_reset.pointer_dereference.4 

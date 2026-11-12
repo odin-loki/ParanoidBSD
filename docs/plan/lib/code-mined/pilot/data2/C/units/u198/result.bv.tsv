@@ -1,1 +1,1 @@
-198	phy_packet_phy_config_get_gap_count_optimization	bitmask	BV-PROVED	0.3	
+198	phy_packet_phy_config_get_gap_count_optimization	bitmask	BV-PROVED	0.3	bv-sat-uncertified;

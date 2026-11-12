@@ -1,1 +1,1 @@
-151	uniphier_gpio_set_multiple	bitmap	BV-SKIP	0.0	pointer parameter chip
+151	uniphier_gpio_set_multiple	bitmap	BV-UNWIND	5.5	loop not fully unwound at 130

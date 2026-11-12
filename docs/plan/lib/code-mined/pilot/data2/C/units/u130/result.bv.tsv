@@ -1,1 +1,1 @@
-130	udf_prealloc_blocks	allocator	BV-SKIP	0.0	pointer parameter sb
+130	udf_prealloc_blocks	allocator	BV-CONTRACT-ONLY	19.1	contract admits undefined behaviour (ensures also fails there): udf_prealloc_blocks.pointer_dereference.1 udf_prealloc_blocks.pointer_dereference.2 udf_prealloc_blocks.pointer_dereference.3 

@@ -1,1 +1,1 @@
-49	npc_get_nixlf_mcam_index	arith-helper	BV-SKIP	0.0	pointer parameter mcam
+49	npc_get_nixlf_mcam_index	arith-helper	BV-CONTRACT-ONLY	6.5	contract admits undefined behaviour (ensures also fails there): npc_get_nixlf_mcam_index.pointer_dereference.5 npc_get_nixlf_mcam_index.pointer_dereference.7 npc_get_nixlf_mcam_index.pointer_dereference.8 

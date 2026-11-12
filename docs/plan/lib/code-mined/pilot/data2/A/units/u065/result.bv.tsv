@@ -1,1 +1,1 @@
-65	intel_th_gth_probe	init-teardown	BV-SKIP	0.0	pointer parameter thdev
+65	intel_th_gth_probe	init-teardown	BV-CONTRACT-ONLY	194.1	contract admits undefined behaviour (ensures also fails there): intel_th_gth_probe.pointer_dereference.1 intel_th_gth_probe.pointer_dereference.3 intel_th_gth_probe.pointer_dereference.4 

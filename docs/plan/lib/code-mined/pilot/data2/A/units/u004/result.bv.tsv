@@ -1,1 +1,1 @@
-4	raw_checksum	arith-helper	BV-SKIP	0.0	pointer parameter buf
+4	raw_checksum	arith-helper	BV-CONTRACT-ONLY	0.7	contract admits undefined behaviour (ensures also fails there): raw_checksum.pointer_dereference.1 raw_checksum.pointer_dereference.3 raw_checksum.pointer_dereference.4 

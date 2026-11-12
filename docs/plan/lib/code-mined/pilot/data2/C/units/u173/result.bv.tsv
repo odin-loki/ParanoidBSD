@@ -1,1 +1,1 @@
-173	vfio_unpin_pages_remote	refcount	BV-SKIP	0.0	pointer parameter dma
+173	vfio_unpin_pages_remote	refcount	BV-CONTRACT-ONLY	2.6	contract admits undefined behaviour (ensures also fails there): vfio_unpin_pages_remote.pointer_dereference.1 vfio_unpin_pages_remote.pointer_dereference.3 vfio_unpin_pages_remote.pointer_dereference.4 

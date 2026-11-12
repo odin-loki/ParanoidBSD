@@ -1,1 +1,1 @@
-102	da7218_of_dmic_clkrate	parser	BV-SKIP	0.0	pointer parameter component
+102	da7218_of_dmic_clkrate	parser	BV-CONTRACT-ONLY	2.6	undefined behaviour possible: da7218_of_dmic_clkrate.pointer_dereference.1 da7218_of_dmic_clkrate.pointer_dereference.3 da7218_of_dmic_clkrate.pointer_dereference.4 
