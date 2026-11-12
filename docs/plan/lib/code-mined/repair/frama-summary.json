@@ -1,0 +1,55 @@
+{
+  "contracts": 25544,
+  "frama": {
+    "fail": 402,
+    "pass": 24646,
+    "type": 387,
+    "unknown": 109
+  },
+  "signature": {
+    "fallback": 451,
+    "real": 25093
+  },
+  "top_fail_messages": [
+    {
+      "m": "unexpected token ')' ",
+      "n": 96
+    },
+    {
+      "m": "unexpected token ';' ",
+      "n": 59
+    },
+    {
+      "m": "unexpected token '(' ",
+      "n": 24
+    },
+    {
+      "m": "unexpected token '-' ",
+      "n": 21
+    },
+    {
+      "m": "unexpected token 'integer' ",
+      "n": 17
+    },
+    {
+      "m": "lexical error, illegal character \\ ",
+      "n": 13
+    },
+    {
+      "m": "unexpected token '_Q_' ",
+      "n": 11
+    },
+    {
+      "m": "unexpected token ':' ",
+      "n": 10
+    },
+    {
+      "m": "syntax error (expression expected but predicate fo",
+      "n": 9
+    },
+    {
+      "m": "unexpected token '::' ",
+      "n": 8
+    }
+  ]
+}
