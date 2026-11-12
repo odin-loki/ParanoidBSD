@@ -13,7 +13,11 @@ BEGIN {
   for (k in kwl) KW[kwl[k]] = 1
   ERRNO_RE = "E(PERM|NOENT|SRCH|INTR|IO|NXIO|2BIG|NOEXEC|BADF|CHILD|AGAIN|NOMEM|ACCES|FAULT|BUSY|EXIST|XDEV|NODEV|NOTDIR|ISDIR|INVAL|NFILE|MFILE|NOTTY|FBIG|NOSPC|SPIPE|ROFS|MLINK|PIPE|DOM|RANGE|DEADLK|NAMETOOLONG|NOLCK|NOSYS|NOTEMPTY|LOOP|NOTSUP|OPNOTSUPP|TIMEDOUT|OVERFLOW|PROTO|NOBUFS|CONNRESET|NOTCONN|ALREADY|INPROGRESS|HOSTUNREACH|NETUNREACH|ADDRINUSE|ADDRNOTAVAIL|AFNOSUPPORT|MSGSIZE|NOTSOCK|DESTADDRREQ|WOULDBLOCK|RESTARTSYS|NODATA|BADMSG|ILSEQ|IDRM|NOMSG|STALE|NOTBLK|NOPROTOOPT|CANCELED|OWNERDEAD|NOTRECOVERABLE|UCLEAN|NOKEY|NOMEDIUM|NOLINK|REMOTEIO|DQUOT|SHUTDOWN|TOOMANYREFS|HOSTDOWN|CONNREFUSED|CONNABORTED|NETDOWN|NETRESET|ISCONN|NOTUNIQ|PROTONOSUPPORT|PFNOSUPPORT|SOCKTNOSUPPORT|NOTCAPABLE|INTEGRITY)"
   curfile = ""; curkey = ""
+  WHOLE = (ENVIRON["NAME_WHOLE_FILE"] == "1")   # opt-in (manual results): the name may be found anywhere in the file, not only in the slice
 }
+
+# whitespace-free form, so runs of blanks/tabs inside macro invocations compare equal
+function squash(t) { gsub(/[ \t\r\n]+/, "", t); return t }
 
 function load(f,    line, n, w, i, ws) {
   delete src; delete fwords; nsrc = 0
@@ -21,7 +25,9 @@ function load(f,    line, n, w, i, ws) {
   src[++nsrc] = line
   while ((getline line < f) > 0) src[++nsrc] = line
   close(f)
-  for (i = 1; i <= nsrc; i++) { w = src[i]; gsub(/[^A-Za-z0-9_]+/, " ", w); n = split(w, ws, " "); for (k = 1; k <= n; k++) fwords[ws[k]] = 1 }
+  ftext = ""
+  for (i = 1; i <= nsrc; i++) { w = src[i]; if (WHOLE) ftext = ftext src[i] "\n"; gsub(/[^A-Za-z0-9_]+/, " ", w); n = split(w, ws, " "); for (k = 1; k <= n; k++) fwords[ws[k]] = 1 }
+  if (WHOLE) ftext = squash(ftext)
   return 1
 }
 
@@ -54,18 +60,34 @@ function add(s, r) { return (s == "" ? r : s "; " r) }
 function esc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
 
 # step 1 ---------------------------------------------------------------------------------------------------------------------------------
+# name found as the exact text of the source (macro invocation). With WHOLE (NAME_WHOLE_FILE=1): whitespace-insensitive, a prefix of the invocation
+# head is enough (SYSCALL_DEFINE6(io_pgetevents) where the source has more after the name), and anywhere in the file (s1note then records it)
+function name_in_text(    q, qq) {
+  if (index(stext, name)) return 1
+  if (!WHOLE) return 0
+  q = squash(name); qq = q; sub(/\)$/, "", qq)
+  if (qq == "") return 0
+  if (index(sstext, qq)) return 1
+  if (index(ftext, qq)) { s1note = "name outside slice"; return 1 }
+  return 0
+}
+
 function step1(    why, rt, c, t, w, n, ws, k, unk, nun, codes, p, omitted, generic, e, hasreq, hasens) {
-  why = ""
+  why = ""; s1note = ""
   if (name !~ /^[A-Za-z_][A-Za-z0-9_]*$/) {
     # not a plain C identifier (this also protects the regexes below from names like BPF_PROG(sub). Accepted when it is the exact text of the source
     # (SYSCALL_DEFINE0(getpid)) or a C++ name whose last component is in the slice (File::flush, ~iscsi_connection, Ns::Class::operator==); rejected otherwise
     # ("<unnamed VRAM size probe>", "sys_mac_syscall (stub)", "write_gic_<name>_intr_reg")
-    if (index(stext, name)) return ""
+    if (name_in_text()) return ""
     last = name; sub(/.*::/, "", last); sub(/^~/, "", last)
     if (name ~ /::|^~/ && (last ~ /^operator/ || ((last ~ /^[A-Za-z_][A-Za-z0-9_]*$/) && (last in swords)))) return ""
+    if (WHOLE && name ~ /::|^~/ && (last ~ /^[A-Za-z_][A-Za-z0-9_]*$/) && (last in fwords)) { s1note = "name outside slice"; return "" }
     return "function name is not a C or C++ name found in the slice"
   }
-  if (!(name in swords)) why = add(why, "function name not in the source slice")
+  if (!(name in swords)) {
+    if (WHOLE && (name in fwords)) s1note = "name outside slice"
+    else why = add(why, "function name not in the source slice")
+  }
   if (contract != "") {
     hasreq = (contract ~ /requires/); hasens = (contract ~ /ensures/)
     if (!hasreq) why = add(why, "contract has no requires")
@@ -133,11 +155,12 @@ function step2(    c, depth, i, ch, clauses, nc, body, t, k) {
   key = $1; file = $2; start = $3 + 0; endl = $4 + 0; idx = $5; name = $6; kind = $7; contract = $8; prose = $9
   if (file != curfile) { src_ok = load(file); curfile = file; curkey = "" }
   if (key != curkey) {
-    delete swords; curkey = key; stext = ""
-    if (src_ok) { for (i = start; i <= endl && i <= nsrc; i++) { stext = stext src[i] "\n"; w = src[i]; gsub(/[^A-Za-z0-9_]+/, " ", w); n = split(w, ws, " "); for (k = 1; k <= n; k++) swords[ws[k]] = 1 } }
+    delete swords; curkey = key; stext = ""; sstext = ""
+    if (src_ok) { for (i = start; i <= endl && i <= nsrc; i++) { stext = stext src[i] "\n"; if (WHOLE) sstext = sstext squash(src[i]); w = src[i]; gsub(/[^A-Za-z0-9_]+/, " ", w); n = split(w, ws, " "); for (k = 1; k <= n; k++) swords[ws[k]] = 1 } }
   }
   if (src_ok) { why1 = step1(); s1 = (why1 == "" ? "pass" : "fail") } else { s1 = "skip"; why1 = "source file not found" }
+  if (s1 != "pass") s1note = ""
   step2()
-  printf "{\"key\":\"%s\",\"i\":%s,\"name\":\"%s\",\"kind\":\"%s\",\"has_contract\":%s,\"s1\":\"%s\",\"s1_why\":\"%s\",\"s2\":\"%s\",\"s2_why\":\"%s\"}\n", \
-         esc(key), idx, esc(name), esc(kind), (contract != "" ? "true" : "false"), s1, esc(why1), s2, esc(s2why)
+  printf "{\"key\":\"%s\",\"i\":%s,\"name\":\"%s\",\"kind\":\"%s\",\"has_contract\":%s,\"s1\":\"%s\",\"s1_why\":\"%s\",\"s2\":\"%s\",\"s2_why\":\"%s\"%s}\n", \
+         esc(key), idx, esc(name), esc(kind), (contract != "" ? "true" : "false"), s1, esc(why1), s2, esc(s2why), (s1note != "" ? ",\"s1_note\":\"" s1note "\"" : "")
 }

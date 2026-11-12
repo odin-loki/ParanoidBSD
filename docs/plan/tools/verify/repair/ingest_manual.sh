@@ -5,6 +5,7 @@
 # steps 1-3 + Frama-C (repair_verify.sh), the DeepSeek review of the fixed ones (step 4, spend capped by the budget), and state.sh merges the outcome into the status table.
 # Afterwards: export_manual.sh again removes what now passes; tag_final.sh re-tags everything. Manual results are listed in repair<K>/manual-notes.jsonl (the notes).
 RES=${1:?result.jsonl}; VB=${2:-5}; VPAR=${3:-100}
+export NAME_WHOLE_FILE=1   # manual results: the function name may be found anywhere in the source file (the slice often cuts off the head); recorded as note "name outside slice"
 HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data
 [ -s "$RES" ] || { echo "empty or missing $RES"; exit 1; }
 jq -e -s 'all(.[]; has("key") and has("i") and (.action == "fix" or .action == "drop"))' "$RES" > /dev/null || { echo "bad result file: every line needs key, i, action fix|drop"; exit 1; }

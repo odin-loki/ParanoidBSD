@@ -35,12 +35,15 @@ while true; do
   else : > "$E/x_byname.tsv"; fi
   awk -F'\t' 'FILENAME == ARGV[1] { k = $1 SUBSEP $2; if (!(k in v) || $3 == "disagree") { v[k] = $3; r[k] = $4 } next }
               (($1 SUBSEP $6) in v) { print $1 "\t" $5 "\t" v[$1 SUBSEP $6] "\t" r[$1 SUBSEP $6] }' "$E/x_byname.tsv" "$W/rows.tsv" > "$E/x.tsv"
-  awk -F'\t' -v k=$k -v OFS='\t' 'FILENAME == ARGV[1] { mech[$1 SUBSEP $2] = $3; next } FILENAME == ARGV[2] { xv[$1 SUBSEP $2] = $3; xr[$1 SUBSEP $2] = $4; next }
+  # non-failing notes of the free checks (s1_note, e.g. "name outside slice": manual results whose name is not in the slice), kept visible on the fixed-* statuses
+  jq -r 'select(.s1_note) | "\(.key)\t\(.i)\t\(.s1_note)"' "$W/step12.jsonl" > "$E/notes.tsv" 2>/dev/null || : > "$E/notes.tsv"
+  awk -F'\t' -v k=$k -v OFS='\t' 'FILENAME == ARGV[1] { mech[$1 SUBSEP $2] = $3; next } FILENAME == ARGV[2] { xv[$1 SUBSEP $2] = $3; xr[$1 SUBSEP $2] = $4; next } FILENAME == ARGV[3] { note[$1 SUBSEP $2] = $3; next }
        { q = $1 SUBSEP $2; st = $3; why = ""
          if (st == "dropped") { st = "dropped" }
          else if (st == "still-rejected") { why = (q in mech) ? mech[q] : "a check fails"; st = "still-rejected" }
-         else if (st == "fixed") { if (!(q in xv)) st = "fixed-unreviewed"; else if (xv[q] == "agree") st = "fixed-agree"; else { st = "fixed-disagree"; why = "second reviewer: " xr[q] } }
-         print $1, $2, k, st, why }' "$E/mech.tsv" "$E/x.tsv" "$E/tags.tsv" >> "$F/ev/events.tsv"
+         else if (st == "fixed") { if (!(q in xv)) st = "fixed-unreviewed"; else if (xv[q] == "agree") st = "fixed-agree"; else { st = "fixed-disagree"; why = "second reviewer: " xr[q] }
+                                   if (q in note) why = (why == "" ? "" : why " | ") "note: " note[q] }
+         print $1, $2, k, st, why }' "$E/mech.tsv" "$E/x.tsv" "$E/notes.tsv" "$E/tags.tsv" >> "$F/ev/events.tsv"
   k=$((k+1))
 done
 NR_ROUNDS=$((k-1))
