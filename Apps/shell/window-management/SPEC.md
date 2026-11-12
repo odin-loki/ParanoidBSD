@@ -148,10 +148,10 @@ Personas:
 | SH05-F055 | Tiling per workspace and output | Toggle with `Super+Y`; each workspace on each output is floating or has a layout | S | 2 |
 | SH05-F056 | Layouts | Master and stack (left, top), columns, rows, spiral, binary tree, grid, monocle (one visible, tabs strip), centred master | S | 2 |
 | SH05-F057 | Scrolling columns | An endless horizontal strip of columns; focus scrolls the view; each column 1/3, 1/2 or 2/3 wide | C | 3 |
-| SH05-F058 | Layout cycle | `Super+Space`... is the keyboard layout; layouts cycle with `Super+Shift+Y`; a layout picker popover on `Super+Ctrl+Y` | S | 2 |
+| SH05-F058 | Layout cycle | `Super+Shift+Y` cycles layouts; `Super+Ctrl+Y` opens a layout picker popover (`Super+Space` stays the keyboard-layout key) | S | 2 |
 | SH05-F059 | Focus by direction | `Super+H/J/K/L` or `Super+Alt+arrows` in tiling mode move focus left, down, up, right, across outputs | S | 2 |
 | SH05-F060 | Swap and move | `Super+Shift+H/J/K/L` swaps with the neighbour; dragging a tile onto another swaps; dropping on an edge splits | S | 2 |
-| SH05-F061 | Master controls | Grow or shrink the master ratio (`Super+[`, `Super+]`), change master count (`Super+,`, `Super+.`), promote to master (`Super+Enter` is Terminal by default, so `Super+M`) | S | 2 |
+| SH05-F061 | Master controls | Grow or shrink the master ratio (`Super+[`, `Super+]`), change master count (`Super+,`, `Super+.`), promote to master (`Super+M`; `Super+Enter` stays the Terminal key) | S | 2 |
 | SH05-F062 | Gaps | Inner and outer gaps 0–32 px; smart gaps (none when one window) | S | 2 |
 | SH05-F063 | Float exceptions | Dialogs, fixed-size windows, picture-in-picture and rule-marked apps float above the layout; `Super+Shift+F` toggles float for one window | S | 2 |
 | SH05-F064 | Minimum sizes | If hints make a layout impossible, the window floats and a toast says why | S | 2 |
@@ -295,3 +295,614 @@ Personas:
 | SH05-F170 | Slow policy | If the service does not answer a placement query within 50 ms the compositor places the window by fallback and applies the late answer only if the user has not touched the window | M | 1 |
 | SH05-F171 | Audit | Label changes, shortcut-inhibit grants, cross-label paste confirmations and force stops are written to `svc.audit` | M | 2 |
 | SH05-F172 | Debug view | `Super+Ctrl+Shift+I` (developer setting): overlay listing each window's app id, domain, label, rule matches, geometry and scale | C | 3 |
+
+## 5. GUI
+
+SH05's visible parts are of two kinds. **Compositor-drawn** parts (frames, label tabs, snap previews, outlines, the fallback switcher) are data-driven: the policy service sends a theme and geometry, the compositor paints. **Shell surfaces** (overview, switcher, snap layout picker, window menu, shortcut sheet) are FUSE UI on layer surfaces (`PBSD:pbsd/compositor/pbsd.compositor.wayland.layer.cppm`) that show window thumbnails by reference.
+
+### 5.1 Window map
+```
+Window Management
+├─ Per-window frame (compositor-drawn)
+│  ├─ Border · shadow · resize zones
+│  ├─ Label tab / label bar · label detail popover
+│  ├─ Server-side title bar (foreign and undecorated clients)
+│  ├─ Not-responding bar
+│  ├─ Capture outline · System strip and tether (for SH04)
+│  └─ PiP controls
+├─ Window menu (popup)
+│  └─ "Remember for this app…" sheet
+├─ Snap preview (compositor-drawn) · Snap layout picker · Snap assist
+├─ Overview (layer Overlay, one surface per output)
+│  ├─ Workspace strip · window grid · search field
+│  └─ All-workspaces grid · per-app mode
+├─ Window switcher (layer Overlay) · app switcher · workspace switcher strip
+│  └─ Built-in minimal switcher (compositor)
+├─ Tiling: layout picker popover · drop zones (compositor-drawn)
+├─ Enlarged labels overlay (Super held)
+├─ Fullscreen entry hint · cross-label paste chip (compositor-drawn)
+├─ Shortcut help sheet
+├─ Zone editor (per output, phase 3)
+├─ Debug overlay
+└─ Settings pages in SY01: Windows, Workspaces, Tiling, Edges and gestures, Window rules
+   └─ Rule editor · window picker cross-hair
+```
+
+### 5.2 Main window
+The overview on a 1440×900 output with a bottom panel. This is the most complete single view of what SH05 manages.
+
+```
++----------------------------------------------------------------------------------------+
+| [🔍 Type to find a window…                    ] (1)                    All workspaces ▾ |
+| +-----------+ +-----------+ +-----------+ +-----------+ +---+                          |
+| | 1 Main  ▣ | | 2 Mail    | | 3 Research| | 4 VM work | | + | (2)                      |
+| | [▭][▭][▭] | | [▭]       | | [▭][▭]·Tor| | [▭] ▌green| |   |                          |
+| +=====▲=====+ +-----------+ +-----------+ +-----------+ +---+                          |
+|                                                                                        |
+|  ┌N Files┐                         ┌S Web Browser · net clear┐                         |
+|  +-----------------------+        +================================+                   |
+|  |                       |        ‖                                ‖   ┌D Disposable 3┐|
+|  |   Files — Documents   |        ‖   Web Browser — docs      (3)  ‖   +┄┄┄┄┄┄┄┄┄┄┄┄┄┄+|
+|  |   (live thumbnail)    |        ‖   (live thumbnail)             ‖   ┆ Document     ┆|
+|  |                    [✕]|        ‖                             [✕]‖   ┆ Viewer —     ┆|
+|  +-----------------------+        +================================+   ┆ invoice.pdf  ┆|
+|                                     selected: 2 px accent outline      +┄┄┄┄┄┄┄┄┄┄┄┄┄┄+|
+|  ┌E Disks · elevated┐                                              (4)                 |
+|  +━━━━━━━━━━━━━━━━━━━+     ┌V VM: work-debian┐                                         |
+|  ┃ Disks             ┃     +═════════════════+        minimised:                       |
+|  ┃ (live thumbnail)  ┃     ║ 🔒 secret (5)    ║        [▫ Notes] [▫ Music]   (6)        |
+|  +━━━━━━━━━━━━━━━━━━━+     +═════════════════+                                         |
+|                                                                                        |
+|[◉]|[1][2][3][4][+]| [▤]▁ [◍]▁ [D]▁ [⛁]▁ [V]▁                 |[net 1][🔔]| 14:32 |[▭]|(7)|
++----------------------------------------------------------------------------------------+
+```
+
+1. **Search field.** `lineEdit`, focused; typing filters across all workspaces (F090). The drop-down on the right switches scope: this workspace, all workspaces, this app.
+2. **Workspace strip.** `listView`, horizontal; each item is a miniature with the name, window miniatures, a route word or an instance colour band when the workspace is bound (F082, F083). The current one is marked `▲`. `[+]` adds a workspace.
+3. **Window tiles.** `gridView` with custom geometry (positions come from the layout algorithm, not a regular grid). Each tile: live thumbnail (`viewportWidget` showing a compositor texture by reference), a close `toolButton` on hover, and the label tab above it in the same colour, pattern, letter and word as on the real window.
+4. **Label patterns.** Solid (native `N`, sandboxed `S`), dashed (disposable `D`), thick (elevated `E`), double (VM `V`, in the VM's colour), dotted (foreign `F`).
+5. **Secret content.** Tile shows an icon and "secret" instead of pixels (F098).
+6. **Minimised windows.** Small dimmed tiles, `listView`.
+7. **Panel.** Stays visible; SH01's task entries show the same label bars.
+
+Sizes: workspace strip 96 px high; tiles keep aspect; minimum tile 160×100; at most 7×5 tiles before paging.
+
+States: empty workspace (F102); searching with no match ("No window matches 'x'. Press Tab to search apps."); thumbnails unavailable (icon tiles with titles); capture running (secret tiles forced); policy service restarting (the compositor's minimal switcher is shown instead of the overview); narrow output (< 640 px: strip becomes a `comboBox`, tiles in one column).
+
+### 5.3 Other views and dialogs
+#### 5.3.1 Window frame anatomy (compositor-drawn; a 640×360 suite app window, focused)
+```
+  ┌ S  Web Browser · Tor  ◉ ┐ (1)
+  +==================================================================+ (2)
+  ‖ [=] Web Browser — docs.example.org   [search ⌘K]   [net][▁][▢][✕] ‖ (3)
+  ‖------------------------------------------------------------------‖
+  ‖                                                                  ‖
+  ‖                        client surface                            ‖ (4)
+  ‖                                                                  ‖
+  +==================================================================+
+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░ shadow ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   (5)
+
+  Foreign or undecorated client, with a server-side title bar:
+  ┌ F  Linux: gimp ┐
+  +┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈+
+  ┊ (icon) image.xcf — GIMP                              [▁][▢][✕]   ┊ (6)
+  ┊------------------------------------------------------------------┊
+  ┊                        client surface                            ┊
+  +┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈+
+
+  Maximised: the tab folds into a 3 px label bar
+  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ (7)
+  | [=] Web Browser — docs.example.org   [search ⌘K]   [net][▁][▢][✕] |
+```
+1. **Label tab.** 18 px high, outside the surface: letter, kind word, verified app name, modifiers (route, capture). Click opens the label detail popover.
+2. **Border.** Label colour and pattern; 2 or 4 px.
+3. **App header bar.** Drawn by the app (FUSE chrome kit). The app reports the drag region and button rectangles (F005).
+4. **Client surface.** The app's own pixels. Nothing of the frame is inside it.
+5. **Shadow.** Elevation by focus.
+6. **Server-side title bar.** 28 px, compositor-drawn, for clients that ask for or need it.
+7. **Label bar.** For maximised, top-tiled and fullscreen windows; expands to the full tab on hover or `Super` hold.
+
+States: focused; unfocused (60% strength); attention (one pulse, then a steady `--warn` dot on the tab); not responding (dim plus bar); being captured (`--danger` outline outside the border); capturing (`◉` on the tab); modal child open (parent dimmed); moving or resizing (size readout "960 × 540" near the pointer).
+
+#### 5.3.2 Snap layout picker and snap assist (1440×900)
+```
++----------------------------------------------------------------------------------------+
+|                    +----------------------------------------------+                    |
+|                    | [▌▐] [▌▌▐] [▌▐▐] [▌│▐] [▚▞] [▌▐═] [▣]   (1) |                    |
+|                    +----------------------------------------------+                    |
+| +===========================================+ +---------------------------------------+|
+| ‖ ┌S Web Browser┐                           ‖ | Choose a window for this side    (3)  ||
+| ‖                                           ‖ | +-------------+  +-------------+      ||
+| ‖   snapped window (left half)         (2)  ‖ | |N Files      |  |N Terminal   |      ||
+| ‖                                           ‖ | | (thumb)     |  | (thumb)     |      ||
+| ‖                                           ‖ | +-------------+  +-------------+      ||
+| ‖                                           ‖ | +-------------+                       ||
+| ‖                                           ‖ | |D Disposable3|      [Skip  Esc]      ||
+| ‖                                           ‖ | +-------------+                       ||
+| +===========================================+ +---------------------------------------+|
+|[◉]|[1][2][3][4]| … panel …                                                             |
++----------------------------------------------------------------------------------------+
+```
+1. Layout picker: a row of `toolButton`s with zone diagrams (halves, 2/3 + 1/3, 1/3 + 2/3, thirds, quarters, focus + stack, maximise). Hovering a zone previews it; dropping or clicking applies. Opens under the top edge while dragging, under the maximise button on hover, or centred on `Super+Z` (arrow keys and `Enter`).
+2. Snapped window with its frame.
+3. Snap assist: `gridView` of candidate windows with label tabs; arrows and `Enter`, or click; `Esc` skips.
+
+#### 5.3.3 Window switcher (`Alt+Tab`; strip layout, centred, up to 1200 px wide)
+```
++----------------------------------------------------------------------------------------+
+|                                                                                        |
+|   +--------------------------------------------------------------------------------+   |
+|   | +------------+ +============+ +------------+ +┄┄┄┄┄┄┄┄┄┄┄┄+ +━━━━━━━━━━━━+     |   |
+|   | | (thumb)    | ‖ (thumb)    ‖ | (thumb)    | ┆ (thumb)    ┆ ┃ (thumb)    ┃     |   |
+|   | |            | ‖            ‖ |            | ┆            ┆ ┃            ┃     |   |
+|   | +------------+ +============+ +------------+ +┄┄┄┄┄┄┄┄┄┄┄┄+ +━━━━━━━━━━━━+     |   |
+|   |  N Files       S Web Browser   N Terminal     D Doc. Viewer   E Disks          |   |
+|   |  Documents    >docs.example…   ~/src          invoice.pdf     da1          (1) |   |
+|   +--------------------------------------------------------------------------------+   |
+|   Web Browser — docs.example.org · sandboxed · Tor · workspace 1                 (2)   |
+|                                                                                        |
++----------------------------------------------------------------------------------------+
+```
+1. Tiles, `gridView` in one row: thumbnail with the label border pattern, letter and app name, window title (elided in the middle). `>` marks the selection, which also gets the accent outline.
+2. Detail line, `label`: full title, label kind word, route, workspace.
+
+Variants: grid (more than 12 windows), compact list (`modelListView` with icon, title, label letter), app switcher (one tile per app with a count), workspace strip. The minimal built-in switcher is a single row of icons and titles drawn by the compositor.
+
+#### 5.3.4 Window menu and "Remember for this app…" sheet
+```
++--------------------------------+   +------------------------------------------------------+
+| Move                    Alt+F7 |   | Remember for Document Viewer                         |
+| Resize                  Alt+F8 |   | Applies to  (•) all its windows                      |
+| Minimise               Super+H |   |             ( ) windows titled like [invoice*      ] |
+| Maximise              Super+Up |   | [x] Open on workspace   [3 Research        v]        |
+| Tile ▸  Left Right Top-left …  |   | [x] Open on output      [DP-2 (Dell 27)    v]        |
+|--------------------------------|   | [x] Size and position   [960 × 1040 at 960,0]        |
+| [ ] Keep above                 |   | [ ] Open maximised      [ ] Keep above               |
+| [ ] Keep below                 |   | [ ] Float in tiling     [ ] Show on all workspaces   |
+| [ ] On all workspaces          |   | [ ] Do not take focus when opening                   |
+| Move to workspace ▸            |   | Apply  [At open v]                                   |
+| Move to output ▸               |   | Labels, frames and capture rules cannot be changed   |
+| Picture-in-picture Super+Ctrl+P|   | here.                                                |
+|--------------------------------|   | [All rules…]                    [Cancel]   [Save]    |
+| Remember for this app…         |   +------------------------------------------------------+
+| Show permissions               |
+| Close                   Alt+F4 |
+| Force stop…                    |
++--------------------------------+
+```
+The menu is a `popupMenu` drawn by SH05's shell surface host at the position the compositor gives. The sheet is a `dialog` with `radioButton`, `checkBox`, `comboBox`, `lineEdit`. "Force stop…" asks once ("Stop Document Viewer? Unsaved work in it will be lost.") and calls SY04's service.
+
+#### 5.3.5 Tiling: master and stack with gaps (1440×900), and the layout picker popover
+```
++----------------------------------------------------------------------------------------+
+| ┌S Web Browser┐                              ┌N Terminal┐                               |
+| +==========================================+ +---------------------------------------+ |
+| ‖                                          ‖ |                                       | |
+| ‖                                          ‖ |             stack 1                   | |
+| ‖              master                      ‖ +---------------------------------------+ |
+| ‖                                       ↔ (1) ┌N Files┐                                |
+| ‖                                          ‖ +---------------------------------------+ |
+| ‖                                          ‖ |             stack 2                   | |
+| +==========================================+ +---------------------------------------+ |
+|            +--------------------------------------------------------------+            |
+|            | Layout: [Master+stack] [Columns] [Rows] [Spiral] [Tree] [Grid] [Monocle] (2)|
+|            | Master ratio [=======|----] 60%   Masters [1 ^v]   Gaps [8 ^v]              |
+|            +--------------------------------------------------------------+            |
+|[◉]|[1][2][3][4]| … panel …                                          | tiling ▦ | 14:32 |
++----------------------------------------------------------------------------------------+
+```
+1. Shared edge: dragging resizes both sides (F041).
+2. Layout picker popover (`Super+Ctrl+Y`): `tabBar` of layouts, `slider`, two `spinBox`es. Dragging a window in tiling mode shows drop zones (compositor-drawn translucent rectangles: swap, split left, right, top, bottom, tab into).
+
+#### 5.3.6 Picture-in-picture, enlarged labels and the fullscreen hint
+```
+  PiP (320×180, bottom right)        Super held: enlarged labels            fullscreen hint
+  +━━━━━━━━━━━━━━━━━━━━━━━━+        +--------------------------+   +--------------------------------+
+  ┃ (video)                ┃        | 1  Web Browser           |   | Video is full screen.          |
+  ┃   [⤢] [⏯] [✕]     (1)  ┃        |    sandboxed · Tor       |   | Hold Esc or press Super to     |
+  +━━━━━━━━━━━━━━━━━━━━━━━━+        +--------------------------+   | leave.                         |
+   N Video                          (one card centred on each       +--------------------------------+
+                                     visible window; digit focuses)
+```
+1. Compositor-drawn controls on hover: return to the normal window, play or pause, close. The border keeps the label colour; the letter and app name sit under the PiP.
+
+#### 5.3.7 Window rules page (in SY01, 900×600 content area)
+```
++----------------------+---------------------------------------------------------------+
+| [🔍 Filter rules   ] | Rule: Document Viewer on Research                  [on ●]     |
+| > Document Viewer →3 | Match                                                         |
+|   Terminal float     |  App        [Document Viewer ✓        v] [Pick a window…]     |
+|   VM consoles →4     |  Title      [any v] [                 ]                       |
+|   Disposable centred |  Kind       [any label kind           v]  Type [Normal v]     |
+|   (policy) Kiosk  🔒 |  Output     [any                      v]                      |
+|                      | Do                                                            |
+|                      |  [x] Workspace     [3 Research v]        [At open        v]   |
+|                      |  [x] Output        [DP-2       v]        [At open        v]   |
+|                      |  [x] Geometry      [960×1040 at 960,0]   [Remember last  v]   |
+|                      |  [ ] Keep above   [ ] Float in tiling   [ ] Skip switcher     |
+|                      |  [ ] Allow shortcut inhibit   [ ] Allow tearing               |
+| [+] [−] [↑] [↓]      | Test: [Pick a window…]  → matches rules 1, 4                  |
+| [Import…] [Export…]  |                                   [Revert]   [Apply]          |
++----------------------+---------------------------------------------------------------+
+```
+`modelListView` of rules with drag reordering, a form of `comboBox`, `lineEdit`, `checkBox`, `toggleSwitch`. Policy rules show a padlock and are read-only. States: no rules ("No rules yet. Use a window's menu and choose 'Remember for this app…'"), a broken rule (`--warn` row with the reason).
+
+### 5.4 Menus
+No menu bar. Menus (`popupMenu`):
+
+| Menu | Items (shortcut) |
+|---|---|
+| Window menu | Move (`Alt+F7`) · Resize (`Alt+F8`) · Minimise (`Super+H`) · Maximise / Restore (`Super+Up` / `Super+Down`) · Tile ▸ (Left `Super+Left`, Right `Super+Right`, quarters `Super+Alt+arrows`, Layouts… `Super+Z`) · Keep above · Keep below · On all workspaces · Move to workspace ▸ (`Super+Shift+1..9`) · Move to output ▸ (`Super+Shift+Left/Right`) · Float (`Super+Shift+F`, tiling only) · Picture-in-picture (`Super+Ctrl+P`) · Remember for this app… · Show permissions · Close (`Alt+F4`) · Force stop… |
+| Label tab | Label details · Show permissions · Show in System Monitor · Stop capture (when capturing) · Copy app id |
+| Maximise button (right click) | Maximise vertically · Maximise horizontally · Snap layouts… |
+| Overview tile | Activate (`Enter`) · Close (`Delete`) · Move to workspace ▸ · Move to output ▸ · Minimise · Window menu ▸ |
+| Workspace miniature | Switch · Rename (`F2`) · New workspace after · Close (windows move left) · Bind to… (label kind or instance) · Set route… |
+| Empty desktop edge (zone editor) | Split horizontally · Split vertically · Merge · Set gap · Save layout as… |
+| Switcher tile | Activate · Close (`W`) · Minimise (`M`) |
+
+### 5.5 Keyboard and pointer
+All are in the global shortcut table (F133) and rebindable, except the reserved ones (F135).
+
+| Keys | Action |
+|---|---|
+| `Alt+Tab` / `Alt+Shift+Tab` / `Ctrl+Alt+Tab` | Switcher forward / back / sticky |
+| ``Alt+` `` | Windows of the current app |
+| `Super+Tab` / `Ctrl+Super+Tab` | Last workspace / workspace switcher |
+| `Super+W` / `Super+G` / `Super+Shift+W` | Overview / all workspaces / this app |
+| `Super+1..9` / `Super+Shift+1..9` | Go to workspace / move window there (the task bar's `Super+1..9` in SH01 applies only when `shortcuts.super_digits = taskbar`; default is workspaces when more than one exists) |
+| `Ctrl+Super+arrows` / `Ctrl+Super+Shift+arrows` | Neighbour workspace / move window and follow |
+| `Super+arrows`, `Super+Alt+arrows`, `Super+Z` | Snap halves and maximise, quarters, layout picker |
+| `Super+Shift+Left/Right` / `Super+O` | Move window to output / focus next output |
+| `Super+H` / `Super+D` | Minimise / show desktop |
+| `Super+C` | Centre |
+| `Alt+F3` / `Alt+F4` / `Alt+F7` / `Alt+F8` | Window menu / close / move / resize |
+| `Super+Y` / `Super+Shift+Y` / `Super+Ctrl+Y` | Tiling on or off / next layout / layout picker |
+| `Super+H/J/K/L` in tiling (`Super+H` minimise moves to `Super+N`) | Focus by direction |
+| `Super+Shift+H/J/K/L`, `Super+[`, `Super+]`, `Super+,`, `Super+.`, `Super+M`, `Super+Shift+F` | Swap, master ratio, master count, promote, float |
+| `Super+Ctrl+P` | Picture-in-picture |
+| `Super+Esc` | Release shortcut inhibit and pointer lock |
+| `Super` (hold 400 ms) / `Super+/` (hold) | Enlarged labels / shortcut help |
+| `F11` | Fullscreen (delivered to the app; `Super+F11` forces it from the compositor) |
+
+Pointer: header double, middle and right click (F007); `Super+drag` move, `Super+right-drag` resize, `Super+middle-click` lower; drag to edges and corners (snap); drag onto the layout picker; drag tiles in the overview to workspaces and outputs; drag shared edges. Every drag has a key path. Gestures as in F130–F132.
+
+### 5.6 States
+| State | Behaviour |
+|---|---|
+| Empty | No windows: overview shows the empty message; switcher does not open (a short "No other windows" toast on `Alt+Tab`) |
+| Loading | A launched app shows SH01's starting entry; no placeholder window. Thumbnails appear as textures become available |
+| Error | Broken rule skipped with a notification; policy service down: fallback policy (F169) |
+| Offline | No effect |
+| Locked | SH03's lock covers all outputs; SH05 shortcuts are inactive except the reserved ones |
+| Read-only / policy | Managed rules and settings show a padlock |
+| Trusted prompt up | Move, resize, switcher and overview are suspended; only the prompt takes input (SH03-F089) |
+| Capture running | Outline and marks shown; secret windows excluded |
+| Narrow output | Snap offers halves only (no quarters under 960 px width); the label tab shows the letter and app name without the kind word |
+| Low performance | Shadows, blur and glide are dropped in that order when the frame budget is missed for 1 s |
+
+### 5.7 Widgets
+| Region | FUSE widget |
+|---|---|
+| Overview and switcher tiles, snap assist | `gridView` (custom geometry), `viewportWidget` (external texture), `image`, `label`, `toolButton` |
+| Workspace strip, minimised row, compact switcher | `listView`, `modelListView` |
+| Search field | `lineEdit` |
+| Layout pickers | `toolButton`, `tabBar`, `slider`, `spinBox` |
+| Window menu and context menus | `popupMenu` |
+| Remember sheet, force-stop confirm | `dialog`, `radioButton`, `checkBox`, `comboBox`, `lineEdit` |
+| Rules page | `modelListView`, `comboBox`, `checkBox`, `toggleSwitch`, `splitter` |
+| Shortcut help sheet | `tableView` |
+| Label detail popover | `propertyGrid` (read-only), `button` |
+| Frames, tabs, previews, outlines, hints, PiP controls, fallback switcher | not FUSE widgets: compositor-drawn from theme data (FUSE draw list reused in the compositor is Proposed, SH05-GAP-3) |
+
+Missing:
+
+| Gap | What is missing | Where it lands |
+|---|---|---|
+| SH05-GAP-1 | Window policy protocol between compositor and policy service (events: map, unmap, hints, output change, shortcut; requests: place, state, stack, workspace, theme and zone data) | compositor |
+| SH01-GAP-1 | Toplevel management for other shell clients; SH05's protocol can serve SH01 too | compositor |
+| SH05-GAP-2 | Thumbnails as textures by reference for shell surfaces (same as SH01-GAP-2, SH04-GAP-3) | compositor; FUSE-WP-10.8 |
+| SH05-GAP-3 | Compositor-side frame painter: borders with patterns, label tabs with text, title bars, outlines. Needs text in the compositor (FUSE CPU rasteriser or draw list linked in) | compositor; FUSE-WP-23, FUSE-WP-25 |
+| SH05-GAP-4 | Verified client identity: app host sets security-context metadata; compositor maps it to bundle and domain through the launch service | compositor, G-07 |
+| SH05-GAP-5 | Gesture recognition in the native compositor. A pointer-gestures module exists only under `PBSD:pbsd/kde/kwin/wayland/pointer_gestures.cppm` | compositor |
+| SH05-GAP-6 | Header region reporting from the FUSE chrome kit (drag region, button rectangles) | FUSE-WP-29, FUSE-WP-07 |
+| SH05-GAP-7 | `gridView` with caller-supplied item geometry and animated moves | FUSE-WP-28, FUSE-WP-22 |
+| SH05-GAP-8 | Compositor global shortcut table with "modifier tap" and "hold" detection, and named-action delivery to apps | compositor |
+| SH05-GAP-9 | Cross-label drag and paste hook in the data device path | compositor |
+
+## 6. Architecture
+
+### 6.1 Components
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| Compositor mechanism | C++23 modules (`pbsd/compositor/`) | compositor | Surfaces, stacking, input routing, interactive move and resize, animation, frame painting, thumbnails, fallback policy, shortcut table |
+| Frame painter | C++23 | compositor | Paints borders, label tabs, title bars, outlines, previews, hints from a theme record and per-window label record |
+| Identity resolver | C++23 | compositor, asking the launch service | Maps a client connection to app id, domain id, label kind and modifiers |
+| Fallback policy | C++23 | compositor | Cascade placement, floating only, minimal switcher; used when the policy service is absent or late |
+| Window policy service | ForgeScript | SH05 app host, `shell.window-policy` | Placement, rules, snapping zones, tiling layouts, workspace logic, focus policy decisions, session restore |
+| Layout engine | ForgeScript (pure functions) with a C++23 mirror for the proof target | SH05 app host | Computes rectangles for tiling layouts, snap zones and overview tiles |
+| Shell surfaces | ForgeScript + FUSE UI | SH05 app host, `shell.layer` | Overview, switcher, pickers, window menu, sheets |
+| Rules store | ForgeScript | SH05 app host | Loads, validates and matches rules |
+| Settings pages | ForgeScript + FUSE UI | loaded by SY01 | Windows, Workspaces, Tiling, Edges and gestures, Window rules |
+
+Why the split: anything that must hold when a script crashes or is slow (frames, labels, input routing, close, lock, trusted layer) is compositor mechanism in C++23. Anything that is a preference (where a window goes, which layout) is policy in ForgeScript. Interactive drags never cross the process boundary per frame: the policy service sends zone rectangles and constraints ahead of time and the compositor tracks the pointer against them.
+
+```
+ clients (apps) ── xdg-shell, decoration, activation, security context ──▶ +------------------+
+                                                                           |   compositor     |
+ +-------------------------------+   policy protocol (SH05-GAP-1)          |  mechanism       |
+ | SH05 app host (ForgeScript)   |◀── map/unmap/hints/output/shortcut ─────|  frame painter   |
+ |  window policy service        |─── place/state/workspace/zones/theme ──▶|  identity        |
+ |  layout engine · rules store  |                                         |  resolver        |
+ |  shell surfaces (FUSE UI):    |─── layer surfaces; textures by ref ────▶|  fallback policy |
+ |  overview, switcher, pickers  |                                         |  shortcut table  |
+ +----+-------------+------------+                                         +----+--------+----+
+      | bus         | bus                                                       |        |
+ +----v-----+  +----v-----------+   SH01: ext_workspace, toplevel list     launch service  DRM,
+ | settings |  | SH02 Osd1,     |   SH03: trusted layer, lock              (bundle, domain) input
+ | audit    |  | Indicators1    |   SH04: system strip, tether, chips
+ +----------+  +----------------+
+```
+
+### 6.2 Data model
+Settings in `svc.settings` namespace `org.pbsd.window-management`; state in `~/.local/share/org.pbsd.window-management/state.db` (SQLite).
+
+| Entity | Fields |
+|---|---|
+| `WindowInfo` (from the compositor, memory) | `id: u64`, `app_id: string` (verified), `domain_id: string`, `tag: string?`, `title: string`, `type: enum{normal,dialog,utility,splash,popup}`, `parent: u64?`, `geometry: rect`, `min_size`, `max_size`, `aspect?`, `state: flags{maximised_h,maximised_v,fullscreen,minimised,tiled,sticky,above,below,pip,shaded,attention,unresponsive}`, `workspace: u32`, `output: string`, `label: Label` |
+| `Label` | `kind: enum{native,sandboxed,disposable,vm,foreign,elevated,system}`, `instance: string?`, `colour_index: u8?`, `modifiers: flags{unverified,tampered,net,capturing,captured,secret,remote}`, `route: enum{none,clear,vpn,tor}` |
+| `FrameTheme` (sent to the compositor) | `border_px: [u8; per kind]`, `pattern: [enum{solid,dashed,dotted,double,thick}; per kind]`, `colours: [rgba; per kind and vm index]`, `tab_height: u8`, `tab_size: enum{small,normal,large}`, `radius: u8`, `shadow: [elevation params]`, `button_order: string`, `font_size: u8` |
+| `Workspace` | `id: u32`, `name: string`, `icon: string?`, `index: u16`, `bound_kind: Label.kind?`, `bound_instance: string?`, `route: enum?`, `layout_by_output: map<output_key, LayoutState>` |
+| `LayoutState` | `mode: enum{floating,master_stack,columns,rows,spiral,tree,grid,monocle,centred_master,scrolling}`, `master_ratio: f32`, `master_count: u8`, `gap_inner: u8`, `gap_outer: u8`, `order: [window ref]`, `tree: json?` |
+| `Rule` (JSON) | `id: uuid`, `name`, `enabled`, `source: enum{user,policy,manifest}`, `match: {app_id?, tag?, title?: {op: enum{is,contains,pattern}, value}, type?, kind?, instance?, output?}`, `actions: [{prop: enum, value, apply: enum{at_open,force,remember}}]` |
+| `saved_geometry` (SQLite) | `app_id TEXT`, `tag TEXT`, `output_set TEXT`, `x,y,w,h INTEGER`, `state INTEGER`, `workspace INTEGER`, `output TEXT`, `updated_at INTEGER` |
+| `ZoneLayout` (settings) | `name`, `output_key`, `zones: [{x,y,w,h: f32 (fractions of the work area)}]`, `gap: u8` |
+| `Shortcut` (compositor table, from settings) | `action_id: string`, `keys: [chord]`, `kind: enum{press,tap,hold}`, `hold_ms: u16?`, `owner: enum{sh01..sh05,ax,app}`, `reserved: bool` |
+| `EdgeConfig` (settings) | `corners: {tl,tr,bl,br: action}`, `edges: {top,bottom,left,right: action}`, `pressure_px: u16`, `dwell_ms: u16` |
+| `SessionWindows` (for restore) | `[{app_id, session_token, tag, workspace, output, geometry, state}]` |
+
+Rule and layout documents carry `schema: u32`; migration is forward only with a `.bak.<version>` copy.
+
+### 6.3 File formats and protocols
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| xdg-shell, xdg-decoration, xdg-activation, xdg-dialog, toplevel tag, toplevel icon | server | server | compositor modules in `pbsd/compositor/` | compositor |
+| Window policy protocol (Proposed, SH05-GAP-1) | both | both | new compositor module; client side in `fuse_app_shell` or a small C++23 binding | compositor validates every request; policy service is the client |
+| `ext_workspace_v1`, `ext_foreign_toplevel_list_v1` | server | server | compositor modules | compositor |
+| Rule files and zone layouts (JSON) | yes | yes | ForgeScript JSON with schema | SH05 app host |
+| Policy rule file (JSON, signed) | yes | no | same, after signature check by the app host | SH05 app host |
+| Frame theme record | — | yes | typed record over the policy protocol | compositor (bounds-checked) |
+| Window titles and client icons (untrusted text and pixels) | yes | — | titles: length-limited, control characters stripped, direction isolated; client icons only for foreign apps, fixed sizes, raw buffers | compositor |
+| Saved geometry (SQLite) | yes | yes | SQLite | SH05 app host |
+
+### 6.4 Integration
+- Intents: none. MIME types: none.
+- Interfaces offered: `org.pbsd.wm.Windows1` (for SH01: `activate`, `minimise`, `close`, `move_to_workspace`, `move_to_output`, `set_above`, list with labels), `org.pbsd.wm.Workspaces1` (`add`, `remove`, `rename`, `bind`), `org.pbsd.wm.Shortcuts1` (register shell actions; read and write bindings for SY01), `org.pbsd.wm.Labels1` (read-only label vocabulary and per-window labels for SH01, SH02, SH04), `org.pbsd.wm.Rules1` (for the SY01 page), `org.pbsd.wm.Chips1` (SH04 request chips on a window header).
+- Services used: `svc.settings`, `svc.audit`, `svc.media` (PiP play or pause), `svc.a11y`, the launch service (identity), SH02 `Osd1` and `Indicators1`, SY04's stop service.
+- Other apps: SH01 (task bar, pager, launcher hand-off from overview search, `Super` tap), SH02 (workspace OSD, capture outline, input-capture mark), SH03 (trusted layer, lock, reserved keys, session restore choice), SH04 (system strip, tether, chips, screen picker labels), SY01 (settings pages, display hand-off), SY04 (force stop, "Show in System Monitor"), AD05 (permissions, VM and sandbox colours, cross-label rules), VM01 and VM03 (instance names and colours), VM04 (remote modifier, shortcut inhibit), SE03 (route words, workspace routes), AX02 (zoom follows focus), AX03 and AX04 (input panels), ME05 (capture).
+- Compositor (module files Verified present in `PBSD:pbsd/compositor/`; headers read, server completeness Unverified):
+
+| Module | Used for |
+|---|---|
+| `…wayland.xdg.cppm`, `…wayland.xdg_dialog_v1.cppm` | Toplevels, popups, modal dialogs (F145) |
+| `…wayland.xdg_decoration.cppm` (`zxdg_decoration_manager_v1`, modes `ClientSide`, `ServerSide`) | F003, F004 |
+| `…wayland.server_decoration.cppm` (`org_kde_kwin_server_decoration`) | KDE-era protocol; kept only for foreign clients that use it |
+| `…wayland.xdg_activation.cppm` | Focus policy (F050, F051) |
+| `…wayland.ext_workspace_v1.cppm` | F071 |
+| `…wayland.foreign_toplevel.cppm` (`ext_foreign_toplevel_list_v1`) | Listing for SH01 |
+| `…wayland.xdgtopleveltag_v1.cppm` | Stable window tags for rules and restore (F048, F116) |
+| `…wayland.xdg_toplevel_icon_v1.cppm` | F013 |
+| `…wayland.security_context.cppm` | Identity (F019) |
+| `…wayland.cursor_shape.cppm` | Resize and move cursors (F010) |
+| `…wayland.fractional_scale.cppm`, `…wayland.viewporter.cppm`, `…wayland.output.cppm` | Mixed scale and outputs (4.11) |
+| `…wayland.keyboard_shortcuts_inhibit.cppm`, `…wayland.pointer_constraints.cppm`, `…wayland.relative_pointer.cppm` | F136, F137 |
+| `…wayland.color_management_v1.cppm`, `…wayland.content_type.cppm`, `…wayland.tearing_control_v1.cppm`, `…wayland.presentation.cppm` | F150, F160 |
+| `…wayland.blur_contrast.cppm`, `pbsd.compositor.aero.cppm` | Blur parameters and the Aero theme hooks (tint, blur, shadow, snap animation flags per `pbsd/compositor/README.md`); the frame theme here would replace the KWin-metadata bridge |
+| `pbsd.compositor.frame.pacing.cppm` | Frame budget for effects |
+| `pbsd.compositor.kde.bridge.cppm`, `pbsd.compositor.theme.sync.cppm` | Interim KWin and Plasma bridge; retired at roadmap milestone M2 |
+
+Not found in `pbsd/compositor/`: a policy or management protocol, gestures, capture, idle notify, session lock (gaps above and in SH01, SH03).
+
+## 7. Security and privacy
+
+Capabilities requested:
+
+| Capability | Why |
+|---|---|
+| `fs.app` | Saved geometry, caches |
+| `net.none` | No network use |
+| `svc.settings`, `svc.audit`, `svc.media`, `svc.a11y` | As in 6.4 |
+| `bg.run`, `bg.autostart` | Session component |
+| `shell.layer` (Proposed) | Overview, switcher and picker surfaces |
+| `shell.window-policy` (Proposed) | Bind the policy protocol: place and manage windows |
+| `shell.toplevels`, `shell.workspaces` (Proposed) | Window and workspace lists |
+| `shell.shortcuts` (Proposed) | Register and edit the global shortcut table |
+
+Not requested: `fs.portal`, any `net.*`, `proc.*`, `dev.*` (no screen capture: thumbnails are textures the shell surfaces cannot read back), `svc.keyring`, `svc.clipboard`.
+
+Threat model:
+
+| Asset | Adversary | Attack | Mitigation |
+|---|---|---|---|
+| The label's truth | Hostile app | Draws a fake label, border or title bar inside its surface to look like a trusted or different app | The real label is outside the surface in a region no client can draw in (F001); `Super` hold shows compositor-drawn labels over everything (F032); users are taught that the tab above the window is the only label |
+| The label's truth | Hostile app | Lies about its app id | Identity from the connection and the launch service, not from `set_app_id` (F019); unknown identity gets the warning label (F031) |
+| The label's truth | Compromised policy service | Sends a theme that hides labels | The compositor enforces minimum border widths, tab presence and contrast; the theme can restyle but not remove; label kind is computed in the compositor, not by the policy service |
+| Trusted prompts | Hostile app | Covers, imitates or outlasts them | Stacking order is compositor mechanism: trusted layer above everything; fullscreen hint; no client can request "always on top" without the user or a rule |
+| Focus and typed secrets | Hostile app | Steals focus as the user types a password | Activation tokens required; strict mode while a password field has focus (F051) |
+| Input | Hostile app | Grabs the keyboard or pointer for good | Inhibit and lock only by grant; `Super+Esc` and reserved keys always work (F135–F137) |
+| Window contents | Shell script bug or hostile applet | Reads thumbnails | Textures by reference, no read-back path (F100); secret windows excluded |
+| Data crossing domains | User error | Pastes a secret into a disposable or VM window | Cross-label confirm chip (F029) |
+| Availability | Hostile app | Opens thousands of windows or resizes in a loop | Per-client limits (200 toplevels, configure-rate cap), not-responding handling, force stop |
+| Window titles | Hostile app | Control characters or right-to-left override to disguise a title in the switcher | Titles sanitised in the compositor; app name shown separately from verified identity |
+| Rules | Malicious rule file | A rule that hides or mislabels | Rules cannot touch labels, frames or capture (F122); schema-checked |
+| Policy protocol | Any client | Binds the protocol and moves other windows | Global is visible only to a client whose security context carries `shell.window-policy` |
+
+Stored: rules, layouts, saved geometry, workspace names, shortcut bindings. Window titles are not stored. Leaves the machine: nothing.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `frame.button_order` | string | `"min,max,close"` right | F006 |
+| `frame.double_click` | enum{maximise,shade,minimise,nothing} | maximise | F007 |
+| `frame.middle_click` | enum{lower,minimise,nothing} | lower | F007 |
+| `frame.shadows` | bool | true | F009 |
+| `label.tab_size` | enum{small,normal,large} | normal | F033 |
+| `label.vm_colours` | map<instance, u8> | assigned in order | F025 |
+| `label.super_hold_ms` | u16 | 400 | F032 |
+| `focus.mode` | enum{click,follows_pointer,sloppy} | click | F050 |
+| `focus.raise_on_click` | bool | true | F050 |
+| `focus.stealing_prevention` | enum{strict,normal,off} | strict | F051 |
+| `focus.dim_unfocused` | u8 (0–40) | 0 | F166 |
+| `snap.edges` | bool | true | F037 |
+| `snap.assist` | bool | true | F039 |
+| `snap.layout_picker` | bool | true | F038 |
+| `snap.threshold_px` | u8 | 8 | F045 |
+| `snap.groups` | bool | false | F040 |
+| `place.new_windows` | enum{smart,cascade,centre,pointer} | smart | F047 |
+| `place.remember` | bool | true | F048 |
+| `place.new_window_output` | enum{pointer,focused,primary} | pointer | F157 |
+| `tiling.default_mode` | enum (LayoutState.mode) | floating | F055 |
+| `tiling.gap_inner`, `tiling.gap_outer` | u8 | 8, 8 | F062 |
+| `tiling.smart_gaps` | bool | true | F062 |
+| `tiling.new_window` | enum{master,after_focused,end} | after_focused | F065 |
+| `workspaces.mode` | enum{fixed,dynamic} | fixed | F072 |
+| `workspaces.count` | u8 (1–36) | 4 | F072 |
+| `workspaces.rows` | u8 | 1 | F074 |
+| `workspaces.per_output` | enum{span,separate,primary_only} | span | F077 |
+| `workspaces.wrap` | bool | false | F079 |
+| `workspaces.activate_switches` | bool | true | F081 |
+| `overview.hide_secret` | bool | true | F098 |
+| `overview.group_by_label` | bool | false | F099 |
+| `switcher.scope_workspace` | enum{current,all} | current | F107 |
+| `switcher.scope_output` | enum{current,all} | all | F107 |
+| `switcher.include_minimised` | bool | true | F107 |
+| `switcher.group_by_app` | bool | false | F106 |
+| `switcher.layout` | enum{strip,grid,list} | strip | F110 |
+| `edges.config` | json | top-left overview | `EdgeConfig` |
+| `gestures.touchpad` | bool | true | F130 |
+| `shortcuts.modifier` | enum{super,alt} | super | F138 |
+| `shortcuts.super_digits` | enum{workspaces,taskbar} | workspaces | 5.5 |
+| `shortcuts.bindings` | map<action_id, [chord]> | defaults in 5.5 | F133 |
+| `pip.size` | enum{small,medium,large} | medium | F140 |
+| `pip.dodge` | bool | false | F144 |
+| `effects.enabled` | bool | true | F163 |
+| `effects.blur` | bool | true | F164 |
+| `rules` | json | [] | `Rule` list |
+
+## 9. Accessibility and languages
+
+- Labels use colour, pattern, letter and word together; the high-contrast theme thickens borders to 4 and 6 px and enlarges the tab one step.
+- The screen reader announces on focus change: app name, window title, label kind word ("disposable"), then state ("maximised"). Moving between label kinds adds an earcon (setting).
+- Move and resize modes announce position and size every 500 ms while changing; snap targets are announced by name ("left half").
+- The overview and switcher are full a11y trees; tiles are named by title and app, never "thumbnail".
+- Sticky switcher (F111), sticky modifier keys from AX settings, and dwell activation of hot corners support one-handed and switch use. Hot corners can be turned off entirely.
+- Focus aids (F166) help low-vision users find the active window.
+- Right-to-left locales mirror button order, snap left and right naming in menus (the keys keep their physical direction), and put the label tab at the top-right.
+- Window titles are shown as given by the app, bidi-isolated; the kind word and menus follow the system language.
+
+## 10. Performance budgets
+
+| Item | Budget |
+|---|---|
+| Interactive move and resize | Every frame at the output's refresh rate; no policy-service round trip during a drag |
+| Policy decision on window map | ≤ 5 ms typical; hard limit 50 ms then fallback (F170) |
+| `Alt+Tab` press to switcher frame | ≤ 50 ms; quick tap switches in ≤ 1 frame after release |
+| Overview open | First frame ≤ 50 ms; animation holds frame rate with 40 windows on the GPU path; cross-fade on the CPU path |
+| Frame painting cost | ≤ 0.3 ms per window per frame on the CPU path; label tabs cached as textures and repainted only on change |
+| Workspace switch | ≤ 200 ms animation, input accepted at once |
+| Idle | Policy service: 0 wake-ups with no window events. No timers except pending animations |
+| Memory | SH05 app host ≤ 60 MB; compositor additions ≤ 2 MB plus 16 kB per window for frame caches |
+| Limits | 2,000 windows, 36 workspaces, 16 outputs, 1,000 rules (matched in ≤ 1 ms per window) |
+
+## 11. Testing and proof
+
+Test plan (targets; nothing has run):
+
+- Unit (ForgeScript and the C++ mirror): every layout as a pure function (inputs: work area, windows with hints, parameters; outputs: rectangles) with properties: no overlap, inside the work area, hints honoured or window floated; snap zone maths; rule matching and ordering; placement; workspace add, remove and renumber; output-set keying.
+- Golden renders: frames and tabs for each label kind, modifier and state at 100, 125, 150, 200 and 300% scale; overview, switcher variants, pickers, window menu; all themes; RTL.
+- Protocol tests under the headless compositor: scripted clients that map, resize, set hints, request states, die, hang; output hot-plug; activation with and without tokens.
+- Scripted UI through the a11y tree: tasks T1–T14.
+- Spoofing tests: a client draws a look-alike tab inside its surface and requests no decoration (the real tab must still be present above it); a client sets another app's id (label must show the real one); a client tries to bind the policy protocol, to stay above a trusted prompt, to keep an inhibitor through `Super+Esc`.
+- Fault injection: kill the policy service during a drag, during overview, during a workspace switch; delay its answers; feed it a broken rule file.
+- Fuzz: policy protocol decoder in the compositor, theme record, rule and zone files, window titles (random Unicode), configure storms.
+- Performance: frame-time traces for drag, overview and switch with 1, 40 and 500 windows on CPU and GPU paths.
+- Differential: tiling results against a small reference implementation written independently for the same layouts.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Stacking invariant (compositor) | Trusted layer > lock > overlay > top > windows; no request sequence from any non-shell client changes its layer; PiP and "above" never exceed the top layer | T1 | PRISM model of the stacking state machine | Compositor stacking code must be written against the model |
+| Label computation (compositor) | Label kind is a function of verified identity only; every mapped toplevel has a label and a border of at least the minimum width | T1 | Proof over the resolver and painter preconditions | Launch service interface (G-07) |
+| Policy protocol decoder (compositor) | No runtime error on any message; all geometry clamped to output bounds | T2 | PRISM; fuzz | — |
+| Fallback policy | Always places a window fully inside some output's work area | T2 | Proof over integer geometry | — |
+| Layout engine (C++ mirror) | For each layout: rectangles are disjoint, cover at most the work area, and respect minimum sizes or report "float" | T1 for master-stack, columns, rows, grid; T2 for spiral, tree | PRISM proofs on the mirror; differential tests tie the ForgeScript version to it | ForgeScript itself has no prover (FORGE-WP-15) |
+| Rule matcher | Deterministic; a broken rule never aborts matching | T3 | Unit and fuzz | Interpreted code |
+| Title sanitiser | Output has no control or direction-override characters; bounded length | T2 | PRISM; fuzz | — |
+| Shortcut table | Reserved chords cannot be bound or inhibited | T2 | Proof over the table update function | — |
+| Shell surfaces (ForgeScript) | No runtime error in tests | T3/T4 | Scripted UI | Interpreted code |
+
+## 12. Build plan
+
+Phase 1 — usable core:
+
+| Item | Work | Depends on |
+|---|---|---|
+| SH05-W01 | Policy protocol design and compositor module; fallback policy | SH05-GAP-1 |
+| SH05-W02 | Identity resolver and label computation | SH05-GAP-4, G-07 |
+| SH05-W03 | Frame painter: borders, patterns, label tab and bar, shadows, server-side title bar | SH05-GAP-3 |
+| SH05-W04 | Header region reporting from the FUSE chrome kit; uniform header actions | SH05-GAP-6, FUSE-WP-29 |
+| SH05-W05 | Policy service skeleton: placement, focus policy with activation tokens, minimise, maximise, fullscreen, above, sticky | SH05-W01, G-07 |
+| SH05-W06 | Pointer and keyboard move and resize; edge snap with preview; snap keys | SH05-W01 |
+| SH05-W07 | Workspaces through `ext_workspace_v1`: fixed and dynamic, switch, move window, show desktop | SH05-W05 |
+| SH05-W08 | Global shortcut table with tap and hold; reserved keys | SH05-GAP-8, SH03 |
+| SH05-W09 | Window menu; close and not-responding handling; force stop | SH05-W03, SY04 |
+| SH05-W10 | Window switcher (strip) with thumbnails; minimal built-in switcher | SH05-GAP-2, FUSE-WP-10 |
+| SH05-W11 | Overview: grid, workspace strip, keyboard, drag between workspaces | SH05-GAP-2, SH05-GAP-7 |
+| SH05-W12 | `Windows1`, `Workspaces1`, `Labels1` interfaces for SH01, SH02, SH04 | SH05-W05 |
+| SH05-W13 | Multi-monitor basics: output add and remove, move between outputs, display hand-off | SY01, FUSE-WP-11 |
+| SH05-W14 | Effects set, reduced motion, frame budget fallbacks | `frame.pacing` module |
+| SH05-W15 | Settings schema and SY01 pages (Windows, Workspaces); a11y announcements | SY01, G-04 |
+
+Phase 2 — full feature:
+
+| Item | Work | Depends on |
+|---|---|---|
+| SH05-W16 | Label modifiers, VM colours, label detail popover, enlarged labels | SH02 `Indicators1`, AD05, VM01 |
+| SH05-W17 | Snap layout picker, snap assist, linked resize, window-to-window snap | SH05-W06 |
+| SH05-W18 | Tiling layouts, keys, gaps, float exceptions, drop zones, persistence | SH05-W05, layout engine |
+| SH05-W19 | Rules engine, "Remember for this app…", rules page, window picker | SH05-W05, SY01 |
+| SH05-W20 | Remembered positions and session restore | SH03-W18, app session tokens |
+| SH05-W21 | Overview search, all-workspaces grid, per-app mode, secret tiles | SH05-W11, SH01 |
+| SH05-W22 | Switcher variants, keys while open, workspace and output switchers | SH05-W10 |
+| SH05-W23 | Hot corners, edge actions, touchpad gestures | SH05-GAP-5 |
+| SH05-W24 | Picture-in-picture | `svc.media` |
+| SH05-W25 | Shortcut inhibit and pointer lock grants with marks; fullscreen hint | SH02-W26, SH04 |
+| SH05-W26 | System strip, tether and request chips for SH04; capture outline | SH04-W23, SH02 |
+| SH05-W27 | Output sets, mixed scale polish, confirm-display-change guarantee | SY01 |
+| SH05-W28 | Workspace names, grid, per-output workspaces; audit records | SH05-W07 |
+
+Phase 3 — advanced:
+
+| Item | Work | Depends on |
+|---|---|---|
+| SH05-W29 | Tabbed windows, shade, snap groups, tabs in tiles | SH05-W03 |
+| SH05-W30 | Scrolling columns layout, zone editor, per-rule layouts | SH05-W18 |
+| SH05-W31 | Workspace security profiles and routes | SE03, AD05 |
+| SH05-W32 | Cross-label drag and paste chips | SH05-GAP-9, AD05 |
+| SH05-W33 | App named-action shortcuts | SH05-W08 |
+| SH05-W34 | Touch-screen gestures, pinch, PiP of any window, dodge | SH05-W23 |
+| SH05-W35 | HDR mark, tearing rules, spanning, presentation outputs | SY01, colour management |
+| SH05-W36 | Policy rules, per-kind default rules, debug overlay | SH05-W19 |
+
+## 13. Open questions and risks
+
+1. **Policy in a separate process.** The plan puts policy in a ForgeScript service behind a new protocol (SH05-GAP-1) with a C++ fallback in the compositor. The alternative is policy as C++23 modules inside the compositor: simpler and faster, but a policy bug then crashes the compositor and the rule "app logic is ForgeScript" is broken. Needs an early prototype to measure map-time latency.
+2. **Where the label tab goes.** A tab above the window costs 18 px of vertical space per floating window and must fold away when maximised. Users may miss the 3 px bar. The `Super`-hold overlay is the backstop; whether that is enough needs user testing.
+3. **Client-side header bars and label trust.** Suite apps draw their own header inside the surface (DESIGN_SYSTEM.md section 3). A hostile app can draw a header that looks like another app's. Only the compositor-drawn tab is authoritative; this must be taught (AD01 tour) and may still confuse.
+4. **Text in the compositor (SH05-GAP-3).** Painting app names in label tabs needs a text rasteriser in the compositor process. Linking FUSE's CPU rasteriser there enlarges the most trusted process; pre-rendering tab textures in a helper is the alternative.
+5. **Identity for foreign and VM windows.** VM01 and VM03 proxy many guest windows through one host client. The label can name the VM or personality, not the guest app, unless the proxy is trusted to pass names (shown as untrusted text).
+6. **`Super+digit` conflict** between workspaces (here) and task entries (SH01-F061). The setting `shortcuts.super_digits` chooses; the default needs one owner decision across SH01 and SH05.
+7. **Key conflicts in tiling mode** (`Super+H` minimise versus focus-left). The plan remaps minimise to `Super+N` only while tiling is on; that is a mode and may confuse.
+8. **Gestures** are not in the native compositor tree yet (SH05-GAP-5); 1:1 tracking needs them in the mechanism, not the policy.
+9. **Aero theme hooks** in `pbsd/compositor/` (tint, blur, glass per its README) reflect the interim Plasma look. The suite's design system is flat with blur only on shell surfaces; which parts of the Aero path survive is an owner decision.
+10. **CPU rendering path.** Overview with 40 live thumbnails on a software renderer will not hold frame rate; the fallbacks (static thumbnails, cross-fade) must be designed in from the start. GPU status on HardenedBSD is Unverified (G-18).
+11. Risk: T1 targets on compositor stacking and label computation depend on compositor code that is still a scaffold (`pbsd/compositor/README.md` calls the native compositor a façade at this stage).
