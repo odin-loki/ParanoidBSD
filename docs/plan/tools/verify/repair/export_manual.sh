@@ -32,11 +32,17 @@ for prio in main low; do
      { if ($1 != cur) { if (nf >= per || pk == "") { flush(); n++; pk = sprintf("%s%04d", (prio == "low" ? "L" : "P"), n); nrec = 0; nf = 0 } cur = $1; nrec++ }
        nf++; print $0 "\t" pk > (dir "/../work/assign_" prio ".tsv") } END { flush() }' "$M/work/f_$prio.tsv"
   cat "$M/index.tsv.part" >> "$M/index.tsv" 2>/dev/null; rm -f "$M/index.tsv.part"
+  [ $prio = low ] && [ -z "$LOW" ] && { echo "low priority (never attempted, driver-glue): assignments listed in functions.tsv, packets not written (LOW=1 writes them)"; continue; }
   # write the packets
-  cut -f1,7,8,9,13 "$M/work/assign_$prio.tsv" | sort -u -s -t "$T" -k5,5 -k1,1 | while IFS="$T" read -r key file s e pk; do
-    src=$(sed -n "${s},${e}p" "$file" 2>/dev/null | jq -Rs .)
-    awk -F'\t' -v k="$key" '$1 == k' "$M/work/assign_$prio.tsv" |
-      jq -R -s -c --arg key "$key" --arg file "$file" --argjson s "$s" --argjson e "$e" --argjson src "$src" '{key:$key, file:$file, start:$s, end:$e, source:$src, functions: (split("\n") | map(select(. != "") | split("\t") | {i:(.[1]|tonumber), name:.[2], kind:.[3], status:.[4], prose:.[9], contract:.[10], reasons:.[11], history:.[4]}))}' >> "$dir/packet-$pk.jsonl"
+  rm -rf "$M/work/pk_$prio"; mkdir -p "$M/work/pk_$prio"
+  awk -F'\t' -v d="$M/work/pk_$prio" '{ f = d "/" $13 ".tsv"; print > f; close(f) }' "$M/work/assign_$prio.tsv"
+  for pkf in "$M/work/pk_$prio"/*.tsv; do
+    pk=$(basename "$pkf" .tsv); : > "$dir/packet-$pk.jsonl"
+    cut -f1,7,8,9 "$pkf" | uniq | while IFS="$T" read -r key file s e; do
+      src=$(sed -n "${s},${e}p" "$file" 2>/dev/null | jq -Rs .)
+      awk -F'\t' -v k="$key" '$1 == k' "$pkf" |
+        jq -R -s -c --arg key "$key" --arg file "$file" --argjson s "$s" --argjson e "$e" --argjson src "$src" '{key:$key, file:$file, start:$s, end:$e, source:$src, functions: (split("\n") | map(select(. != "") | split("\t") | {i:(.[1]|tonumber), name:.[2], kind:.[3], status:.[4], prose:.[9], contract:.[10], reasons:.[11]}))}' >> "$dir/packet-$pk.jsonl"
+    done
   done
 done
 cut -f1,2,3,4,5,13 "$M/work/assign_main.tsv" "$M/work/assign_low.tsv" > "$M/functions.tsv" 2>/dev/null
