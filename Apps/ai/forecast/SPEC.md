@@ -370,10 +370,10 @@ Shown at 1360×840 on the Forecast stage, one series selected.
 +------------------------------------------------------------------------------------------+
 | [=] Forecast — shop-sales.fcproj        [ Search / commands  Ctrl+K ]          [▁][▢][✕] |(1)
 +----------------+--------------------------------------------------------+----------------+
-| DATA           | Data › Prepare › Explore › Model › Backtest ›[Forecast]› Report      (3)| Forecast #7    |
+| DATA           | Data › Prepare › Explore › Model › Backtest ›[Forecast]›… (3)| Forecast #7 (8)|
 |   sales.csv    +--------------------------------------------------------+ origin 31 Oct  |
 | SERIES    (12) | [v Weekly sales — Shop A] [v ETS(A,Ad,A) ▾] H [ 13 ] wk | horizon 13 wk  |
-| > Shop A       | [Forecast]  [Compare versions] [Scenarios ▾] [Export ▾] | model ETS(A,Ad,A)|
+| > Shop A       | [Forecast]  [Compare versions] [Scenarios ▾] [Export ▾] | ETS(A,Ad,A)    |
 |   Shop B       +--------------------------------------------------------+ intervals      |
 |   Shop C  …    |  1600 ┤                                    ░░░░░░░░    |  simulation,   |
 | MODELS         |       │                                ░░▒▒▒▒▒▒▒▒░░░   |  1 000 draws,  |
@@ -407,7 +407,7 @@ The figures in this wireframe are placeholders that show layout, not results.
 5. **Forecast table.** `tableView`, tabular figures, copy and export.
 6. **Plain-language line.** Fixed-template text (F141).
 7. **Status bar.** Counts, selection range, jobs (click opens Jobs), schedules, deterministic mark.
-8. (Inspector, right, 280 px.) Run record summary, backtest evidence for the model in use, and the limits panel that cannot be hidden while a forecast is shown.
+8. **Inspector, 280 px.** Run record summary, backtest evidence for the model in use, and the limits panel that cannot be hidden while a forecast is shown.
 
 States: empty project ("Import a table of dated numbers to begin." and an Import button), importing (row counter), series too short (forecast allowed with baselines only, reason shown), fitting (progress on the chart area, Cancel), stale (banner "Data changed since this forecast" with Refresh), failed fit (the engine's reason and "Open log"), sealed project locked (unlock prompt), read-only (linked source missing or project opened from a read-only location), narrow (sidebar overlay; table moves under the chart; inspector as a sheet).
 
@@ -637,3 +637,262 @@ Missing:
 - `AI03-GAP-1`: a time-series chart. `chart` takes plain value arrays per series (`chartSetSeries`, `FUSE:Source/FUSE/UI/Widgets/include/fuse/ui/widgets/widgets.hpp:244-246`); it has no time axis, bands, zoom, pan, brush, markers, shared axes or secondary axis. Wanted by SY04, OF05 and AI04 as well.
 - `AI02-GAP-1` (editable cells in `tableView`) is also needed here for column mapping.
 - G-16 for PDF reports; G-10 only if reports gain rich text editing.
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App logic (`main.fs`, `src/*.fs`) | ForgeScript | app host | Project model, stages, recipes, job orchestration, run records, report templates |
+| UI (`ui/*.fuseui`, `style/*.css`) | FUSE UI | app host | Windows, stages, dialogs, charts |
+| Import helper `import-helper` | C++23 | disposable helper per import, capability mode | Parses CSV, TSV, SQLite and Parquet from a file handle; writes typed columns to a shared-memory handle (PLATFORM.md section 2 reason a) |
+| Forecast engine helper `forecast-engine` | C++23; links Cypha `cypha_core` | helper, capability mode, no network | Preparation steps, decomposition, classical models, Cypha regressors, backtests, scoring, simulation (reasons b and d) |
+| Schedule agent `forecast-agent` | ForgeScript on the app host, no window | app host instance under `bg.run` | Runs schedules and monitors; starts the engine helper; posts notifications |
+| Project store | SQLite | app host (through `SqliteModel`), engine helper for bulk writes via a passed handle | The `.fcproj` file |
+| Optional: Cypha REST adapter (Phase 3) | C++23 (`cypha_rest`, modified) | helper on an inherited Unix socket only | Reuse of Cypha's REST contract; never TCP (section 2.2) |
+
+```
+ Sheets / Data Studio ──share (CSV handle)──┐        other apps ──Forecast/1──┐
+                                            ▼                                 ▼
+ ┌──────────────────── app host: org.pbsd.forecast ───────────────────────────────┐
+ │ FUSE UI ◄─ view models ─ ForgeScript: project, recipe, jobs, records, reports   │
+ └──────┬──────────────────────┬───────────────────────────┬─────────────────────┘
+        │ file handle          │ shm columns + job spec    │ SQLite handle
+   import-helper          forecast-engine ────────────────►│ .fcproj (project store)
+   (hostile bytes)        ├ own code: prep, STL, ETS, ARIMA, scores
+                          └ cypha_core: Cypha regressors, anomaly, drift
+ forecast-agent (bg.run) ─ same engine, no window ─ svc.notify
+ svc.model (optional): registered plugin models (FORGE-WP-31.9), report summary text
+```
+
+The engine's interface enforces the origin rule by shape: `fit(history) → model`, `predict(model, history, horizon, regressors_future) → draws`, `score(draws, truth) → metrics`. `history` is a view cut at the origin by the caller; no engine call accepts both history and truth.
+
+### 6.2 Data model
+
+Project file `*.fcproj`: SQLite, `application_id` set, `schema_version` 1, forward-only migrations with a copy kept. Large arrays are stored as little-endian f64 blobs with a length and a BLAKE3.
+
+| Entity | Fields |
+|---|---|
+| `dataset` | `id` uuid, `name` text, `source_kind` enum(csv, tsv, sqlite, parquet, share, paste), `source_name` text, `source_size` i64, `blake3` blob(32), `sha256` blob(32), `import_options` json, `linked` bool, `grant_token` text?, `imported_at` i64, `row_count` i64 |
+| `column` | `id`, `dataset_id`, `name`, `role` enum(time, value, group, regressor_known, regressor_observed, ignore), `dtype` enum(i64, f64, text, date, timestamp), `unit` text? |
+| `series` | `id`, `dataset_id`, `key` json (group values), `display_name`, `unit`, `frequency` text (ISO 8601 duration), `tz` text, `start` i64, `end` i64, `n_obs` i64, `values_ref` blob id, `flags_ref` blob id (bit per point: filled, outlier, excluded), `data_hash` blob(32) |
+| `recipe` | `id`, `series_scope` json, `steps` json [{`kind`, `params`, `enabled`}], `hash` blob(32) |
+| `range_split` | `recipe_id`, `train_end` i64, `validation_end` i64, `test_end` i64, `test_opened_at` i64? |
+| `annotation` | `id`, `series_id`?, `at` i64, `text`, `kind` enum(note, known_event) |
+| `model_spec` | `id`, `family` enum(naive, snaive, drift, mean, ets, theta, arima, croston, regression, cypha_lags, cypha_quantile, ensemble), `params` json, `constraints` json, `hash` blob(32) |
+| `fit` | `id`, `model_spec_id`, `series_id`, `recipe_hash`, `origin` i64, `state_ref` blob id (fitted parameters or a `.cypha` blob), `state_hash`, `info` json (AICc, iterations, warnings), `run_id` |
+| `backtest` | `id`, `name`, `window` enum(expanding, sliding), `folds` i32, `step` i32, `horizon` i32, `run_id` |
+| `fold_result` | `backtest_id`, `model_spec_id`, `series_id`, `fold` i32, `origin` i64, `errors_ref` blob id, `draws_summary_ref` blob id |
+| `metric` | `backtest_id`, `model_spec_id`, `series_id`?, `name` text, `horizon` i32?, `value` f64, `ci_low` f64, `ci_high` f64, `n` i32 |
+| `forecast` | `id`, `fit_id`, `origin` i64, `horizon` i32, `interval_method` enum(analytic, simulation, quantile, conformal), `n_draws` i32, `quantiles_ref` blob id, `draws_ref` blob id?, `scenario_id`?, `sealed_hash` blob?, `run_id` |
+| `scenario` | `id`, `name`, `assumptions` json, `regressors_future_ref` blob id |
+| `monitor` | `id`, `series_id`, `method` enum(interval, remainder, cypha), `level` f64, `false_alarm_target` f64, `threshold` f64, `enabled` bool |
+| `anomaly` | `id`, `monitor_id`, `at` i64, `value` f64, `expected_low` f64, `expected_high` f64, `score` f64, `state` enum(open, confirmed, dismissed, known_event), `note` |
+| `schedule` | `id`, `rule` text (RFC 5545 RRULE), `steps` json, `output_grant` text?, `rules` json (mains, threads), `enabled` bool, `last_run_id`? |
+| `run` | `id`, `kind` enum(import, prepare, fit, backtest, forecast, monitor, report), `seed` u64, `threads` i32, `deterministic` bool, `engine_version` text, `cypha_commit` text, `inputs` json (hashes), `result_hash` blob(32), `started_at`, `ended_at`, `status`, `log_ref` |
+| `report` | `id`, `title`, `blocks` json, `last_export_hash` blob? |
+
+Application data outside projects (`~/.local/share/org.pbsd.forecast/`): model library (`model_spec` rows), calendars, schedule registry (project grant tokens and next run times).
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| `.fcproj` (SQLite, own schema) | yes | yes | SQLite (public domain; platform store engine, V8) | app host for own files; a project from an untrusted source is first checked in import-helper (integrity check, schema check) |
+| CSV, TSV | yes | yes | own strict reader (fails closed) | import-helper |
+| SQLite database (as a data source) | yes | — | SQLite, opened read-only, no extensions | import-helper |
+| Parquet (flat subset) | yes | yes | own reader and writer; Zstandard (BSD licence, in the FreeBSD base system) and own Snappy decoder | import-helper |
+| ICS (holiday calendars) | yes | — | own | import-helper |
+| `.cypha` model blob | yes | yes | Cypha `Cypha::save` / `load` | forecast-engine |
+| Cypha forecast bundle `<name>.forecast/` (planned by Cypha FC11; does not exist yet) | yes | — | Cypha | forecast-engine |
+| `.fpk` with Cypha sections (export for `svc.model`) | — | yes | FORGE `modelfile::writer` | forecast-engine |
+| Forecast request and result JSON (`Forecast/1`) | yes | yes | FORGE JSON | app host (bounded size, schema-checked) |
+| PNG, SVG | — | yes | FUSE draw-list export (Proposed) or own SVG writer | app host |
+| PDF report | — | yes | print pipeline (G-16) | print service |
+| Markdown, static HTML | — | yes | own | app host |
+| Session bus records | yes | yes | schema compiler (FORGE-WP-26) | app host |
+
+Third-party code that comes with Cypha: cpp-httplib and nlohmann/json are vendored in `CYPHA:native/third_party/` (both MIT upstream; licences to be confirmed from the vendored files before packaging). httplib is needed only by `cypha_rest`, so the Phase 1 engine does not link it. Cypha fetches a SQLite amalgamation from the network at configure time when `CYPHA_BUILD_EXPERIMENT_DB` is on (`CYPHA:native/CMakeLists.txt:1081-1087`); that option stays off, and the offline build uses the system SQLite. Cypha's licence is AGPL-3.0-or-later or commercial (`CYPHA:LICENSE`, `CYPHA:COMMERCIAL-LICENCE.md`).
+
+### 6.4 Integration
+
+- **Intents handled:** `open` and `edit` for `.fcproj`; `open` for CSV, TSV, Parquet (as "Import into Forecast"); `share` from OF05 and OF09 (`text/csv`); `new` with `application/vnd.pbsd.forecast.request+json`.
+- **Intents emitted:** `share` (CSV to OF05, charts), `print`, `open` (source file in Files), `new` (key in SE04 for signing).
+- **Services:** `svc.settings`, `svc.notify`, `svc.intent`, `svc.portal.file`, `svc.portal.print`, `svc.power`, `svc.backup`, `svc.keyring` (sealed projects, result signing), `svc.thumbnail` (project thumbnails: the last chart), `svc.model` (optional, Phase 3).
+- **Interface offered:** `org.pbsd.forecast.Forecast/1` — `forecast(series: handle, horizon: i32, options) → result handle`, `models() → list`, `status(job) → state`. Callers pass data by handle; Forecast returns a file handle with quantiles. First use per calling app is prompted.
+- **Other apps:** OF05 (range hand-off both ways), OF09 (query results), AI04 (`forecast::` module), AI02 (plugin model registration), SE04 (signing keys), AD05 (background and autostart grants), SY02 (open with).
+- **Cypha, Verified:** everything in section 2.1. **Proposed:** linking `cypha_core` into `forecast-engine`; moving `TimeSeriesEncoder` into a public Cypha module; the `Forecaster` and `History` interface from Cypha's plan (FC5, FC7, FC15) as the common shape for learned forecasters; the event workspace on FC11's bundle.
+- **FORGE, Verified:** the plugin session kind and the Cypha example (`FORGE:examples/integrations/cypha_classifier.cpp`), `.fpk` named sections. **Proposed:** FORGE-WP-31.9 service wrapper so a registered forecast model can be called through `svc.model`.
+
+## 7. Security and privacy
+
+### 7.1 Capabilities
+
+| Capability | Why |
+|---|---|
+| `fs.app` | Model library, calendars, schedule registry, caches |
+| `fs.portal` | Open data files and projects; save projects, exports and reports; remembered grants for linked sources and schedule output folders |
+| `net.none` | The app never uses the network. No other `net.*` is requested |
+| `proc.helper:import-helper`, `proc.helper:forecast-engine` | Section 6.1 |
+| `svc.settings`, `svc.notify`, `svc.intent`, `svc.portal.file`, `svc.portal.print`, `svc.power`, `svc.backup`, `svc.thumbnail` | Section 6.4 |
+| `svc.keyring` | Sealed projects; signing results |
+| `bg.run` | Scheduled re-forecasts and monitors; requested when the first schedule is saved |
+| `bg.autostart` | So schedules survive a reboot; requested with `bg.run`; both removed when the last schedule is deleted |
+| `ai.local`, `svc.model` | Optional, Phase 3: report summary text and serving registered models; off by default |
+
+Not requested: any `net.*` beyond `net.none`, any device, `proc.exec`, `fs.path`, `svc.search` (project contents are not indexed), `svc.accounts`.
+
+### 7.2 Threat model
+
+Assets: the user's data (often commercially sensitive), fitted models (which encode that data), forecasts that drive decisions, the integrity of scores and run records, remembered folder grants.
+
+| Adversary | Attack | Mitigation |
+|---|---|---|
+| Malicious data file | Parser exploit in CSV, SQLite or Parquet; decompression bomb | import-helper in capability mode with only the input handle and an output memory handle; size, row and expansion-ratio limits; SQLite opened read-only with extensions and triggers off; fuzzed parsers |
+| Malicious project file | Crafted SQLite project that exploits the app host on open | Integrity and schema check in import-helper before the app host opens it; fixed queries only, no SQL from the file is executed |
+| Poisoned data | Rows crafted to bend a forecast or hide an anomaly | Data hashes and Refresh diffs make changes visible; outlier and leakage checks; robust methods offered; backtests show sensitivity. This risk cannot be removed, only made visible |
+| Other local process | Calls a loopback REST server to retrain, read results or read a directory | No TCP server is ever started; engine is in-process in a helper; optional REST adapter only on an inherited Unix socket (section 2.2) |
+| Another app using `Forecast/1` | Floods jobs, or reads another app's results | Shell prompt on first use; per-caller quotas; results returned only to the caller's handle; no listing of other callers' jobs |
+| Background agent misuse | Schedule writes to unexpected places, or runs for ever | Output only to folders granted when the schedule was made; wall-clock and thread caps; "Pause all"; grants visible in AD05 |
+| Result tampering | Someone edits a forecast table after the fact | Result hashes in run records; re-run and verify (F134); optional signatures (F136); sealed prospective forecasts (F096) |
+| The user's own optimism | Tuning on the test set, reading in-sample fit as accuracy | Test range locked and opening recorded (F081); no in-sample headline (F082); baselines beside every number |
+| Shoulder surfer | Reads values in notifications | Notifications carry names and dates, not values, on the lock screen |
+
+Stored: projects where the user saves them; app data under `fs.app`. Nothing leaves the machine. There is no telemetry and no network code in the app host or the Phase 1 helpers.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `import.day_first` | enum(ask, yes, no) | ask | Ambiguous dates |
+| `import.embed_data` | bool | true | Copy rows into the project instead of linking |
+| `import.max_rows` | int | 50 000 000 | Row limit per import |
+| `prepare.default_fill` | enum(none, forward, linear, seasonal) | none | Missing-value default |
+| `model.auto_families` | list | baselines, ets, theta, arima | Families "Auto" may fit |
+| `model.include_cypha_in_auto` | bool | false | Add Cypha lag regressors to "Auto" |
+| `backtest.folds` | int | 6 | Default number of folds |
+| `backtest.window` | enum(expanding, sliding) | expanding | Default window |
+| `forecast.draws` | int | 1 000 | Sample paths per forecast |
+| `forecast.levels` | list of float | 0.5, 0.8, 0.95 | Interval levels shown |
+| `forecast.conformal` | bool | true | Calibrate intervals from backtest residuals |
+| `forecast.keep_draws` | bool | false | Store full sample paths in the project |
+| `run.deterministic_final` | bool | true | Final forecasts use deterministic mode |
+| `run.default_seed` | u64 | 1 | Seed when none is set |
+| `run.threads` | int | 0 | 0 = all performance cores |
+| `run.memory_cap_mb` | int | 4 096 | Engine helper memory cap |
+| `schedule.only_on_mains` | bool | true | Default power rule |
+| `schedule.catch_up_missed` | bool | true | Run a missed schedule at next login |
+| `notify.values_on_lock_screen` | bool | false | Show numbers in notifications when locked |
+| `report.include_limits` | bool | true | Limits block in every report (cannot be turned off for PDF) |
+
+## 9. Accessibility and languages
+
+- Every chart has a table view (`Ctrl+Alt+T`) and a text summary in the a11y tree: range, last value, trend direction, forecast median and interval for the focused period.
+- The cross-hair moves by keyboard and announces date and values; bands are named by level, not colour. Series use shape and dash as well as colour; the palette is checked for colour-vision deficiencies.
+- Optional sonification of a series (pitch for value) through `svc.media` is a Phase 3 idea, not a commitment.
+- Numbers, dates, week numbering (ISO or locale) and first day of week follow the locale; metric names stay in their standard abbreviations with a translated description.
+- Formulae in Help are text with a spoken form.
+
+## 10. Performance budgets
+
+| Measure | Budget |
+|---|---|
+| Cold start to first frame | under 400 ms |
+| CSV import | 1 million rows in under 2 s; 50 million rows streamed without loading the file into memory |
+| Chart pan and zoom | under 8 ms per frame with 1 million points (min–max decimation per pixel column) |
+| STL on 10 000 points | under 100 ms |
+| ETS and Theta fit, 1 000 points | under 50 ms each |
+| ARIMA stepwise search, 1 000 points | under 3 s |
+| Backtest, 6 folds × 6 models × 1 series | under 10 s |
+| Batch: 1 000 series, Auto, 6 folds | under 10 min on 8 cores |
+| Forecast with 1 000 draws, horizon 104 | under 200 ms |
+| App host memory | under 200 MB; engine helper within `run.memory_cap_mb` |
+| Idle, and agent between runs | zero wake-ups; the agent sleeps until the next schedule time |
+
+Cypha model timings are not budgeted until measured; the engine reports them per run.
+
+## 11. Testing and proof
+
+- **Unit:** time parsing, frequency detection, resampling and fill rules, recipe hashing, split logic, run-record building, report templates.
+- **Reference values:** every metric against values computed offline with a published implementation, to 1e-9 (the method Cypha's FC6 sets for itself); every classical model against a reference implementation on public series, with tolerances stated per model.
+- **Property tests:** the origin rule (a model never reads beyond its origin: checked by poisoning future values with NaN and requiring unchanged output); quantiles are monotone; intervals nest; scores of a perfect forecast are zero; deterministic mode gives identical bytes on re-run.
+- **Planted tests:** a planted seasonal series must be recovered; a planted level shift must be flagged; a planted leak must trip the leakage check; a constant series must fail the fit.
+- **Golden renders:** all stages and dialogs, three themes, 200% scale, narrow.
+- **Scripted UI:** tasks T1–T14 on the sample data.
+- **Fuzz:** CSV, Parquet, ICS readers; the project integrity checker; the `Forecast/1` request decoder.
+- **Differential:** Cypha regressors called through the engine against Cypha's own golden fixtures (`CYPHA:fixtures/`, CTest `native_*`).
+- **Fault:** kill the engine mid-backtest (no partial rows committed); remove a linked source; fill the disk during save.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Split and origin logic | No fit or predict call receives data after its origin | T1 | PRISM proof over the engine interface types | — |
+| Scoring library | CRPS, pinball, coverage formulas match their definitions; no runtime errors | T2 (T1 for sample CRPS on sorted input) | PRISM plus reference fixtures | Floating-point reasoning |
+| CSV reader | Memory safety; every error names row and column | T2 | Absence of runtime errors; fuzzing | — |
+| Parquet reader | Memory safety | T3 | Safe subset, sanitisers, fuzzing | Format size |
+| Recipe engine | Deterministic: same input and recipe hash give the same output hash | T2 | Proof of no hidden state; replay tests | — |
+| Classical models | Numerical agreement with references | T3 | Reference tests | Iterative optimisers |
+| Cypha core | Parity with its fixtures | T3 at best | Cypha's CTest suite; safe-subset status of Cypha is Unverified | Large existing C++ code base not written to the safe subset |
+| Schedule agent | Writes only to granted handles | T2 | PRISM on the agent's handle use | — |
+| Forecast accuracy | — | T4 | Not provable; measured by backtest | Statistical |
+
+Nothing above has been run.
+
+## 12. Build plan
+
+### Phase 1 — import, look, baseline and smoothing forecasts, honest backtest
+
+| ID | Work item | Depends on |
+|---|---|---|
+| AI03-W01 | Project store schema, run records, hashing | G-07, G-08 |
+| AI03-W02 | `import-helper`: strict CSV and TSV, time parsing, mapping wizard | G-06, FORGE-WP-27, FORGE-WP-28, AI02-GAP-1 |
+| AI03-W03 | Time-series chart widget with bands, zoom, brush, markers | AI03-GAP-1 (FUSE work), G-01, G-02 |
+| AI03-W04 | Main window, project tree, stage bar, data table | W01, W03, FORGE-WP-13 |
+| AI03-W05 | Preparation: frequency, resample, fill, duplicates, ranges, recipe | W01 |
+| AI03-W06 | Exploration: time plot, seasonal plot, STL, ACF and PACF, distribution | W03, W05 |
+| AI03-W07 | `forecast-engine` skeleton with the origin-safe interface; baselines, ETS, Theta | W05 |
+| AI03-W08 | Scoring library with reference fixtures; rolling-origin backtest; leaderboard | W07 |
+| AI03-W09 | Forecast with simulated intervals, fan chart, table, versions, limits panel | W07, W08 |
+| AI03-W10 | Export CSV, JSON, PNG, SVG; deterministic mode; undo; crash recovery; tour | W04 |
+
+### Phase 2 — full classical set, Cypha regressors, scenarios, monitoring, schedules
+
+| ID | Work item | Depends on |
+|---|---|---|
+| AI03-W11 | ARIMA, intermittent methods, regression with calendar terms, ensembles | W07 |
+| AI03-W12 | Link `cypha_core` into the engine on HardenedBSD; offline build; Cypha lag regressor | G-18-style port check for Cypha (section 13), Cypha encoder move |
+| AI03-W13 | Outliers, transforms, regressors, calendars, leakage check | W05 |
+| AI03-W14 | Residual diagnostics, calibration, conformal intervals, test-range lock | W08 |
+| AI03-W15 | Scenarios: editor, comparison, labels | W09 |
+| AI03-W16 | Anomalies and monitors; drift and staleness warnings | W09 |
+| AI03-W17 | Schedules and the background agent | `bg.run`, AD05, schedule service (section 13) |
+| AI03-W18 | SQLite and Parquet import; hand-off from OF05 and OF09; send to Sheets | OF05, OF09, `svc.intent` |
+| AI03-W19 | Report builder with PDF | G-16 |
+| AI03-W20 | Many-series batch, overview grid, sealed projects, snapshots, project export | W08, `svc.keyring` |
+| AI03-W21 | Component view, plain-language panel, re-run and verify | W09 |
+
+### Phase 3 — advanced
+
+| ID | Work item | Depends on |
+|---|---|---|
+| AI03-W22 | Cypha quantile forecaster, online updating, global models, Cypha anomaly and drift scores | W12 |
+| AI03-W23 | Hierarchies and reconciliation; change points; hyper-parameter search | W11 |
+| AI03-W24 | `Forecast/1` interface, `forecast::` ForgeScript module, intent `new` request | FORGE-WP-24, intent reply channel (section 13), AI04 |
+| AI03-W25 | Export fitted Cypha models as signed `.fpk`; register in AI02; serve through `svc.model` | FORGE-WP-31.9, AI02 |
+| AI03-W26 | Event workspace: bundle load, distributions, tree view, monitor replay | Cypha FC4–FC12 delivered |
+| AI03-W27 | Optional REST adapter: `cypha_rest` on an inherited Unix socket, TCP compiled out, `/forecast/run` removed | Cypha change (Proposed); section 2.2 |
+| AI03-W28 | Prospective register, result signing, lineage graph, explanation of change, feature importance | SE04, W21 |
+| AI03-W29 | Local-model report summary | AI02, FORGE-WP-30 |
+
+## 13. Open questions and risks
+
+1. **The backing module is not what the catalogue line implies.** Cypha's forecast module is an event-forecasting scaffold under repair, not a time-series library. This spec therefore plans the classical methods as new code and uses Cypha where it has working parts (regressors, uncertainty, anomaly scores). The owner may prefer to rename the catalogue line or to grow Cypha's module toward general series; either way Phase 1 does not depend on Cypha.
+2. **Cypha on HardenedBSD is Unverified.** Its documented builds are Linux, Windows and macOS (`CYPHA:README.md`). No FreeBSD build was read. A port check like G-18 is needed for Cypha before AI03-W12.
+3. **Cypha and the safe C++ subset.** Cypha is a large existing code base; whether it passes the MathScript subset checker is unknown. It is confined to the engine helper under PLATFORM.md section 2 reason d.
+4. **Quality of Cypha regressors for forecasting is unmeasured.** Cypha's own plan predicts its estimator will be close to logistic regression on lagged features (P-FC2 in `CYPHA:docs/FORECAST_PLAN.md`). The leaderboard will show whatever is true; "Auto" excludes Cypha models by default until backtests justify including them.
+5. **`cypha_rest` exposure.** Loopback TCP without authentication, a request-supplied server path, and retraining per call (section 2.2) must not reach a desktop install. Until fixed upstream, the binary is not packaged.
+6. **No time-series chart in FUSE.** AI03-GAP-1 is the largest dependency; without it the app cannot show a fan chart.
+7. **New platform needs found here:** a scheduled-job service (timed background runs without each app holding `bg.autostart`); a reply channel on intents so a request can return a result handle; a change notice on linked file grants.
+8. **Parquet scope.** A full Parquet reader is large. The flat subset may reject files users have; the error must say which feature is unsupported.
+9. **Reference implementations for differential tests** are needed at build time only; they must not become run-time dependencies, and tests must run offline from recorded fixtures.
+10. **Misuse.** A forecasting tool invites over-trust. The limits panel, baselines and locked test range are the design answer; they add friction on purpose.

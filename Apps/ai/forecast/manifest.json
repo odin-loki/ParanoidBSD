@@ -1,0 +1,64 @@
+{
+  "id": "org.pbsd.forecast",
+  "name": "Forecast",
+  "version": "0.1.0",
+  "category": "ai",
+  "entry": "main.fs",
+  "single_instance": false,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:import-helper",
+    "proc.helper:forecast-engine",
+    "svc.settings",
+    "svc.notify",
+    "svc.intent",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.power",
+    "svc.backup",
+    "svc.thumbnail",
+    "svc.keyring",
+    "ai.local",
+    "svc.model",
+    "bg.run",
+    "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "import-helper", "language": "c++23", "capabilities": []},
+    {"name": "forecast-engine", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/vnd.pbsd.forecast.project"],
+    "edit": ["application/vnd.pbsd.forecast.project"],
+    "import": [
+      "text/csv",
+      "text/tab-separated-values",
+      "application/vnd.sqlite3",
+      "application/vnd.apache.parquet",
+      "text/calendar",
+      "application/vnd.pbsd.forecast.request+json"
+    ],
+    "export": [
+      "text/csv",
+      "application/json",
+      "application/vnd.apache.parquet",
+      "image/png",
+      "image/svg+xml",
+      "application/pdf",
+      "text/markdown",
+      "text/html"
+    ]
+  },
+  "intents": {
+    "handles": ["open", "edit", "share", "new"],
+    "emits": ["share", "print", "open", "new"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.forecast.Forecast/1"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["odin-loki/Cypha", "odin-loki/FORGE"],
+  "priority": "P2"
+}

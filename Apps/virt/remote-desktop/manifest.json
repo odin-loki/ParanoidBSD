@@ -1,0 +1,78 @@
+{
+  "id": "org.pbsd.remote-desktop",
+  "name": "Remote Desktop",
+  "version": "0.1.0",
+  "category": "virt",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.user",
+    "net.route:clear",
+    "net.route:vpn",
+    "net.route:tor",
+    "proc.helper:rdp-helper",
+    "proc.helper:rfb-helper",
+    "proc.helper:spice-helper",
+    "proc.helper:tunnel-helper",
+    "proc.helper:import-helper",
+    "dev.screen",
+    "dev.mic",
+    "dev.camera",
+    "dev.usb:*",
+    "dev.print",
+    "svc.remote",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.screen",
+    "svc.portal.mic",
+    "svc.portal.camera",
+    "svc.portal.usb",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.clipboard",
+    "svc.media",
+    "svc.power",
+    "svc.audit"
+  ],
+  "helpers": [
+    {"name": "rdp-helper", "language": "c++23", "capabilities": []},
+    {"name": "rfb-helper", "language": "c++23", "capabilities": []},
+    {"name": "spice-helper", "language": "c++23", "capabilities": []},
+    {"name": "tunnel-helper", "language": "c++23", "capabilities": ["svc.keyring"]},
+    {"name": "import-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": ["application/x-pbsd-remote-connections+toml"],
+    "import": [
+      "application/x-rdp",
+      "application/x-vnc",
+      "application/x-remmina",
+      "application/x-virt-viewer",
+      "text/csv"
+    ],
+    "export": [
+      "application/x-rdp",
+      "application/x-vnc",
+      "application/x-pbsd-remote-connections+toml",
+      "application/pdf",
+      "text/csv"
+    ]
+  },
+  "intents": {"handles": ["open", "view"], "emits": ["open", "share"]},
+  "url_schemes": ["rdp", "vnc", "spice"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.passwords >= 0.1",
+    "org.pbsd.terminal >= 0.1"
+  ],
+  "backing_repos": [],
+  "priority": "P2"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "org.pbsd.screen-capture",
+  "name": "Screen Capture",
+  "version": "0.1.0",
+  "category": "media",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal", "net.none",
+    "dev.screen", "dev.mic", "dev.camera", "dev.gpu.compute", "ai.local",
+    "proc.helper:flatten-helper", "proc.helper:image-codec-helper", "proc.helper:encode-helper",
+    "proc.helper:stitch-helper", "proc.helper:demux-helper", "proc.helper:decode-helper",
+    "proc.helper:frame-analysis-helper",
+    "bg.run",
+    "svc.settings", "svc.notify", "svc.portal.file", "svc.portal.screen", "svc.portal.mic",
+    "svc.portal.camera", "svc.intent", "svc.search", "svc.clipboard", "svc.media", "svc.power",
+    "svc.model", "svc.undo-trash", "svc.audit", "svc.a11y"
+  ],
+  "helpers": [
+    {"name": "flatten-helper", "language": "c++23", "capabilities": []},
+    {"name": "image-codec-helper", "language": "c++23", "capabilities": []},
+    {"name": "encode-helper", "language": "c++23", "capabilities": []},
+    {"name": "stitch-helper", "language": "c++23", "capabilities": []},
+    {"name": "demux-helper", "language": "c++23", "capabilities": []},
+    {"name": "decode-helper", "language": "c++23", "capabilities": []},
+    {"name": "frame-analysis-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/x-pbshot"],
+    "edit": ["application/x-pbshot", "image/png", "image/jpeg", "image/webp", "image/avif", "image/jxl"],
+    "import": ["image/png", "image/jpeg", "image/webp", "image/avif", "image/jxl"],
+    "export": ["image/png", "image/jpeg", "image/webp", "image/avif", "image/jxl", "image/gif",
+               "video/webm", "video/x-matroska", "video/mp4", "text/plain"]
+  },
+  "intents": {"handles": ["pick", "edit", "open"], "emits": ["share", "edit", "open", "compose", "print"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.screencapture.Capture1"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.media-pipeline >= 0.1"],
+  "backing_repos": ["odin-loki/FUSE"],
+  "priority": "P1"
+}
