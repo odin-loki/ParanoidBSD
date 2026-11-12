@@ -21,6 +21,8 @@ Studio is the FUSE editor shipped as an app: a workbench for building 2D, 3D and
 
 ## 2. Scope
 
+**Decision (owner).** Studio is FUSE's existing Qt-free C++ editor shell, `fuse_editor_fuse` on `EditorController`, shipped directly as the app. It is not a ForgeScript front end over an engine helper. This makes Studio a documented native-app exception to PLATFORM.md section 2. The grounds: it is a wrapped existing engine; it runs confined by its manifest like any app; its bundle is signed; and its code must pass the safe-subset and PRISM gates that the FUSE build plan sets for FUSE code. ForgeScript remains the language for project scripts and editor extensions.
+
 **In scope:** project hub; viewports; scene hierarchy; inspector; asset browser and import; materials; SDF sculpt; terrain; navigation; animation and cinematics; physics set-up; VFX; audio placement; scripting with an embedded quick editor; visual scripting; play mode in a sandbox; profiler and debugger; build and export; simulation runs; templates and samples.
 
 **Out of scope:**

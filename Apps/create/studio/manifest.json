@@ -3,21 +3,28 @@
   "name": "Studio",
   "version": "0.1.0",
   "category": "create",
-  "entry": "main.fs",
+  "entry": "bin/fuse_editor_fuse",
+  "entry_kind": "native",
+  "native_exception": {
+    "reason": "Wrapped existing engine: FUSE's Qt-free C++ editor shell shipped directly (owner decision, CR04 SPEC section 13).",
+    "language": "c++23",
+    "requires": ["signed bundle", "manifest-derived confinement", "no JIT, no W+X", "safe-subset check", "PRISM gates of the FUSE build plan"],
+    "platform_gap": "CR04-GAP-5"
+  },
   "single_instance": false,
   "capabilities": [
     "fs.app", "fs.portal", "net.none",
-    "proc.helper:studio-engine", "proc.helper:cook", "proc.helper:export",
+    "proc.helper:cook", "proc.helper:export",
     "dev.gpu.compute",
     "svc.settings", "svc.notify", "svc.portal.file", "svc.intent", "svc.keyring",
     "svc.thumbnail", "svc.power", "svc.clipboard", "svc.backup", "svc.search",
     "svc.audit", "svc.a11y"
   ],
   "helpers": [
-    {"name": "studio-engine", "language": "c++23", "capabilities": ["fs.portal", "dev.gpu.compute"]},
     {"name": "cook", "language": "c++23", "capabilities": []},
     {"name": "export", "language": "c++23", "capabilities": ["svc.keyring"]}
   ],
+  "extensions": {"language": "forgescript", "signed": true, "policy": "editor-api-only"},
   "mime": {
     "view": ["application/x-fuse-level"],
     "edit": ["application/x-fuse-project+json", "application/x-fuse-level"],
