@@ -452,7 +452,7 @@ HUD menu [⋯] and indicator menu
 | `Super+H` | Dictation on, off; hold for push to talk |
 | `Super+Alt+H` | Voice control on, off (Off means no capture) |
 | `Super+Alt+N` | Number overlay |
-| `Super+Alt+G` is taken by AX02; grid is `Super+Alt+Y` | Grid overlay |
+| `Super+Alt+Y` | Grid overlay (`Super+Alt+G` belongs to AX02) |
 | `Super+Alt+W` | What can I say |
 | `Esc` | Hide overlays, cancel correction, cancel an armed confirmation |
 

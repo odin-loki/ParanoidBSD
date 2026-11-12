@@ -50,7 +50,7 @@ Personas: **Wei**, types Chinese with pinyin and switches to English many times 
 | 8 | See and delete what the system has learned from typing | 3 (open app, Dictionary, delete) |
 | 9 | Erase everything learned in the last hour | 3 |
 | 10 | Add a language with its engine | 4 (Add source, language, engine, Add) |
-| 11 | See which key gives which character | 1 (`Super+Alt+L` layout viewer) |
+| 11 | See which key gives which character | 1 (`Super+Alt+B` layout viewer) |
 | 12 | Type a Unicode code point | `Ctrl+Shift+U`, hex, `Space` |
 | 13 | Have each app remember its own input source | 0 (default per window) |
 | 14 | Convert typed kana to kanji and fix a segment boundary | `Space`, `Shift+Left/Right`, `Enter` |
@@ -145,7 +145,7 @@ Personas: **Wei**, types Chinese with pinyin and switches to English many times 
 | AX04-F067 | Input source | A source is a layout plus an optional engine: "English (US)", "Chinese (Pinyin) on US", "Japanese (kana-kanji) on JIS". | M | 1 |
 | AX04-F068 | Hand-off to SY01 | "Manage input sources…" opens SY01's Keyboard page; SY01's page calls this app's Add-source dialog and layout viewer. One list, stored in `svc.settings` `system.input.sources`. | M | 1 |
 | AX04-F069 | Source switcher | `Super+Space` next, `Super+Shift+Space` previous; holding `Super` shows a popup list; release selects. Most-recently-used order option. | M | 1 |
-| AX04-F070 | Direct source keys | `Super+Alt+1…9` jump to a source. | S | 2 |
+| AX04-F070 | Direct source keys | `Super+Ctrl+Alt+1…9` jump to a source. | S | 2 |
 | AX04-F071 | Panel indicator | SH02 shows the source code ("EN", "拼", "あ") and engine mode; click lists sources and engine actions. | M | 1 |
 | AX04-F072 | Layout viewer | Shows the keyboard with all levels (plain, Shift, AltGr, Shift+AltGr), dead keys marked; follows held modifiers live; physical shapes ANSI, ISO, JIS, ABNT. | M | 1 |
 | AX04-F073 | Print layout | Print the viewer through `svc.portal.print`. | C | 3 |
@@ -422,7 +422,7 @@ Main window [=] (F10)
 ├─ File ▸ Import dictionary… · Export dictionary… · Import snippets… · Export snippets…
 │        · Close Ctrl+W · Quit window Ctrl+Q (the broker keeps running)
 ├─ Edit ▸ Undo Ctrl+Z · Redo Ctrl+Shift+Z · Delete Delete · Select all Ctrl+A · Find Ctrl+F
-├─ View ▸ Layout viewer Super+Alt+L · Emoji picker Super+. · Debug view
+├─ View ▸ Layout viewer Super+Alt+B · Emoji picker Super+. · Debug view
 ├─ Sources ▸ Add input source… Ctrl+N · Manage in Settings… · Per-app sources…
 ├─ Engines ▸ Restart engine · Disable · Engine help F1 · Show in Permissions…
 ├─ Privacy ▸ Incognito typing · Erase learned data… · Never-learn apps…
@@ -434,7 +434,7 @@ Indicator menu (SH02)
 ├─ Incognito typing                         toggle
 ├─ Emoji and symbols…                       Super+.
 ├─ Snippets…                                Super+Alt+;
-├─ Layout viewer                            Super+Alt+L
+├─ Layout viewer                            Super+Alt+B
 └─ Input method settings…
 
 Candidate context menu
@@ -448,9 +448,9 @@ Candidate context menu
 
 | Keys | Action | Keys | Action |
 |---|---|---|---|
-| `Super+Space` / `Super+Shift+Space` | next, previous source | `Super+Alt+1…9` | source by number |
+| `Super+Space` / `Super+Shift+Space` | next, previous source | `Super+Ctrl+Alt+1…9` | source by number |
 | `Super+.` or `Super+;` | emoji and symbol picker | `Super+Alt+;` | snippet picker |
-| `Super+Alt+L` | layout viewer | `Ctrl+Shift+U` | Unicode hex input |
+| `Super+Alt+B` | layout viewer | `Ctrl+Shift+U` | Unicode hex input |
 | `Compose` (chosen key) | start compose | `Super+Alt+Space` (2 s) | safe mode |
 | `Space` / `Enter` | convert or pick first; commit | `Esc` | cancel composition |
 | `1`–`9`, `0` | pick candidate | `PageUp/PageDown`, `-`/`=` | page |

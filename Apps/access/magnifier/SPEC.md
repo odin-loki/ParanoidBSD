@@ -170,7 +170,7 @@ Personas: **Asha**, low vision, works at 4× full-screen all day with inverted c
 | AX02-F080 | Focus highlight | A rectangle around the keyboard focus, drawn as an overlay; thickness 2–12 px; colour; solid or dashed; optional glow. | M | 1 |
 | AX02-F081 | Focus flash | The rectangle animates from large to exact on each focus move. | S | 2 |
 | AX02-F082 | Caret highlight | A thick bar, a triangle marker above and below, or a circle at the caret. | M | 2 |
-| AX02-F083 | Caret locate | `Super+Alt+K` flashes the caret position. | S | 2 |
+| AX02-F083 | Caret locate | `Super+Alt+A` flashes the caret position. | S | 2 |
 | AX02-F084 | Review cursor highlight | Draws the AX01 review cursor in a second colour. | S | 2 |
 | AX02-F085 | Contrast-safe colour | Highlight uses a double line (light and dark) so it shows on any background. | M | 1 |
 | AX02-F086 | Hide while typing | Pointer halo hides while keys are typed. | C | 2 |
@@ -433,7 +433,7 @@ Indicator menu (SH02 panel icon)
 | `Super+Alt+Home` | view to pointer | `Super+Alt+O` (hold) | peek overview |
 | `Super+Alt+Z` (hold) | temporary zoom | `Super+Alt+1…5` | presets |
 | `Super+Alt+I / G / C` | invert, greyscale, next filter | `Super+Alt+P` | locate pointer |
-| `Super+Alt+K` | locate caret | `Super+Alt+R / X` | ruler, crosshair |
+| `Super+Alt+A` | locate caret | `Super+Alt+R / X` | ruler, crosshair |
 | `Super+Alt+T` (hold) | text lens | `Super+Alt+Backspace` | reset everything |
 
 These chords are registered with the shell as global actions of an accessibility tool; SH05 must not reuse them. The app receives action events, not key events: it never sees other keys.
