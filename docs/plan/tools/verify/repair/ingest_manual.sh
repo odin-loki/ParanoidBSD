@@ -6,14 +6,16 @@
 # Afterwards: export_manual.sh again removes what now passes; tag_final.sh re-tags everything. Manual results are listed in repair<K>/manual-notes.jsonl (the notes).
 RES=${1:?result.jsonl}; VB=${2:-5}; VPAR=${3:-100}
 export NAME_WHOLE_FILE=1   # manual results: the function name may be found anywhere in the source file (the slice often cuts off the head); recorded as note "name outside slice"
-HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data
+HERE=$(cd "$(dirname "$0")" && pwd); D=/mnt/c/ParanoidBSD/mined-data; . "$HERE/lc.sh"
 [ -s "$RES" ] || { echo "empty or missing $RES"; exit 1; }
 jq -e -s 'all(.[]; has("key") and has("i") and (.action == "fix" or .action == "drop"))' "$RES" > /dev/null || { echo "bad result file: every line needs key, i, action fix|drop"; exit 1; }
 K=2; while [ -d "$D/repair$K" ] || [ -d "$D/verify-repair$K" ]; do K=$((K+1)); done
+# state.sh stops at the first round without repair-tags.jsonl: a stale/aborted round directory below K would hide this round (and every later one) from the status table
+for ((j=2; j<K; j++)); do [ -s "$D/verify-repair$j/repair-tags.jsonl" ] || { echo "round $j is incomplete (no verify-repair$j/repair-tags.jsonl): move repair$j and verify-repair$j away (or finish it) before ingesting"; exit 1; }; done
 RP=$D/repair$K; mkdir -p "$RP"; cp "$RES" "$RP/manual-notes.jsonl"
 # record boundaries (file, start, end) from the original rows
 jq -r '.key' "$RES" | sort -u > "$RP/keys.txt"
-awk -F'\t' 'FILENAME == ARGV[1] { k[$1] = 1; next } ($1 in k) && !($1 in seen) { seen[$1] = 1; print $1 "\t" $2 "\t" $3 "\t" $4 }' "$RP/keys.txt" "$D/verify/rows.tsv" > "$RP/bounds.tsv"
+awk -F'\t' 'FILENAME == ARGV[1] { k[$1] = 1; next } ($1 in k) && !($1 in seen) { seen[$1] = 1; print $1 "\t" $2 "\t" $3 "\t" $4 }' "$RP/keys.txt" "$(lc "$D/verify/rows.tsv")" > "$RP/bounds.tsv"
 jq -c -s --rawfile b "$RP/bounds.tsv" '($b | split("\n") | map(select(. != "") | split("\t") | {(.[0]): {file: .[1], start: (.[2]|tonumber), end: (.[3]|tonumber)}}) | add) as $B
    | group_by(.key) | map({key: .[0].key, file: $B[.[0].key].file, start: $B[.[0].key].start, end: $B[.[0].key].end,
        result: {functions: map({idx: .i, name: (.name // ""), action: .action, prose_contract: (.prose // ""), contract: (.contract // "")})}}) | .[]' "$RES" > "$RP/repair.jsonl"

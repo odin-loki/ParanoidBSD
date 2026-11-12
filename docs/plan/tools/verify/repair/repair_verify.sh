@@ -5,13 +5,13 @@
 #   {"key","i","name","action","after":{"mech","syntax","fuzz"},"status":"fixed|still-rejected|dropped|unchecked"}
 #   fixed = every check that applies passes (mechanical pass; a formal contract parses in Frama-C and the stub grammar; no step 3 counterexample)
 # The step 4 cross-check is not re-run here (it is paid); repaired functions that were rejected only by DeepSeek are "unchecked" until it is.
-H=$(cd "$(dirname "$0")/.." && pwd); V=/mnt/c/ParanoidBSD/mined-data/verify; W=${W:-/mnt/c/ParanoidBSD/mined-data/verify-repair}; RJ=${RJ:-$V/repair/repair.jsonl}; SFX=${SFX:-repair}   # W: output dir, RJ: repair.jsonl to verify, SFX: scratch name
+. "$(dirname "$0")/lc.sh"; H=$(cd "$(dirname "$0")/.." && pwd); V=/mnt/c/ParanoidBSD/mined-data/verify; W=${W:-/mnt/c/ParanoidBSD/mined-data/verify-repair}; RJ=${RJ:-$V/repair/repair.jsonl}; SFX=${SFX:-repair}   # W: output dir, RJ: repair.jsonl to verify, SFX: scratch name
 [ -n "$TAGS_ONLY" ] || rm -rf "$W"; mkdir -p "$W"   # TAGS_ONLY=1: skip the checks, recompute only t_*.tsv and repair-tags.jsonl from the results already in $W
 if [ -z "$TAGS_ONLY" ]; then
 # rows in the verify12 format: key file start end idx name kind contract prose  (kind taken from the original row)
 jq -r '. as $r | $r.result.functions[] | select(.action == "fix") | [$r.key, $r.file, ($r.start|tostring), ($r.end|tostring), (.idx|tostring),
        (.name // "" | gsub("[\t\n\r]";" ")), "", (.contract // "" | gsub("[\t\n\r]";" ")), (.prose_contract // "" | gsub("[\t\n\r]";" "))] | join("\t")' "$RJ" |
-  awk -F'\t' -v OFS='\t' 'FILENAME == ARGV[1] { kind[$1 SUBSEP $5] = $7; next } { $7 = kind[$1 SUBSEP $5]; print }' "$V/rows.tsv" - > "$W/rows.tsv"
+  awk -F'\t' -v OFS='\t' 'FILENAME == ARGV[1] { kind[$1 SUBSEP $5] = $7; next } { $7 = kind[$1 SUBSEP $5]; print }' "$(lc "$V/rows.tsv")" - > "$W/rows.tsv"
 jq -r '. as $r | $r.result.functions[] | select(.action == "drop") | "\($r.key)\t\(.idx)\t\(.name // "")"' "$RJ" > "$W/dropped.tsv"
 echo "repaired rows: $(wc -l < "$W/rows.tsv"), dropped: $(wc -l < "$W/dropped.tsv")"
 VERIFY_DIR=$W bash "$H/run_verify12.sh" > /dev/null 2>&1

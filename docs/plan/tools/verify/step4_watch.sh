@@ -1,5 +1,5 @@
 #!/bin/bash
-# step4_watch.sh <budget-usd> [parallel]   Starts and supervises step4_all.sh: checks every 60 s for the first hour, then every 10 minutes.
+# step4_watch.sh <budget-usd> [parallel]   Starts and supervises step4_all.sh: checks every 15 s for 5 minutes, then every 60 s until the hour is over, then every 10 minutes.
 # Restarts it if it died or stalled (it resumes), at most 6 times an hour; stops everything on a credit/auth error (writes STOP).
 # Log: /mnt/c/ParanoidBSD/mined-data/verify/xcheck/watch.log ; status.json beside it.
 HERE=$(cd "$(dirname "$0")" && pwd); X=${S4_X:-/mnt/c/ParanoidBSD/mined-data/verify/xcheck}; mkdir -p "$X"
@@ -14,7 +14,7 @@ say "watcher started"; start
 while true; do
   [ -f "$X/STOP" ] && { say "STOP file: watcher ends"; break; }
   if [ -f "$X/DONE-batch" ] && ! alive; then say "finished: $(wc -l < "$X/xcheck.jsonl") records, spent \$$(spent)"; break; fi
-  n=$((n+1)); interval=60; [ $n -gt 60 ] && interval=600
+  n=$((n+1)); interval=60; [ $n -le 20 ] && interval=15; [ $n -gt 75 ] && interval=600   # 15 s for the first 5 minutes: a small round (a few hundred records) is over in 1-3 minutes and used to wait for the next 60 s tick
   [ $(( $(date +%s) - t0 )) -gt 3600 ] && { restarts=0; t0=$(date +%s); }
   cur=$(wc -l < "$X/xcheck.jsonl" 2>/dev/null || echo 0); e=$(wc -l < "$X/errors.log" 2>/dev/null || echo 0)
   if [ $((e - laste)) -gt 0 ] && tail -n $((e - laste)) "$X/errors.log" | grep -i '"error"' | grep -qiE 'insufficient|credit|payment|billing|quota exceeded|"code":"?40[123]|unauthorized|invalid api key|forbidden'; then
@@ -24,7 +24,7 @@ while true; do
   if alive; then
     if [ -f "$X/BUILDING" ]; then stall=0                       # building the todo list: nothing is expected to finish
     elif [ "$cur" -eq "$last" ]; then stall=$((stall+1)); else stall=0; fi
-    [ $stall -ge 6 ] && { say "ALERT stall: nothing finished in $stall checks; restarting"; pkill -f step4_all.sh; pkill -f step4_chunk.sh; sleep 5; restarts=$((restarts+1)); start; stall=0; }
+    [ $((stall * interval)) -ge 360 ] && { say "ALERT stall: nothing finished in $stall checks; restarting"; pkill -f step4_all.sh; pkill -f step4_chunk.sh; sleep 5; restarts=$((restarts+1)); start; stall=0; }
   elif [ ! -f "$X/DONE-batch" ]; then
     say "ALERT step 4 is not running: restarting ($((restarts+1)) this hour)"; restarts=$((restarts+1)); start
   fi

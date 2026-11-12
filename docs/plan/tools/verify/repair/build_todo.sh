@@ -6,9 +6,9 @@
 # The annotation shown to the repair model is the CURRENT one (latest round that rewrote it, else the original).
 # Output: mined-data/repair<N>/todo.tsv in the repair_chunk.sh format (key, file, start, end, "idx ¦ name ¦ prose ¦ contract ¦ problems" joined by " ¶ "),
 # records ordered by their best tier, formal-contract records first inside a tier.
-N=${1:?round}; D=/mnt/c/ParanoidBSD/mined-data; F=$D/final; RP=$D/repair$N; mkdir -p "$RP"
-ROWS="$D/verify/rows.tsv"; for k in $(seq 1 $((N-1))); do if [ $k -eq 1 ]; then W=$D/verify-repair; else W=$D/verify-repair$k; fi; [ -s "$W/rows.tsv" ] && ROWS="$ROWS $W/rows.tsv"; done
-awk -F'\t' '$5 == "fixed-disagree" || $5 == "still-rejected" || $5 == "rejected-unrepaired" { t = ($5 == "rejected-unrepaired") ? (($4 == "driver-glue") ? 2 : 1) : 0; print $1 "\t" $2 "\t" t "\t" $7 }' "$F/state.tsv" > "$RP/items.tsv"
+. "$(dirname "$0")/lc.sh"; N=${1:?round}; D=/mnt/c/ParanoidBSD/mined-data; F=$D/final; RP=$D/repair$N; mkdir -p "$RP"
+ROWS="$(lc "$D/verify/rows.tsv")"; for k in $(seq 1 $((N-1))); do if [ $k -eq 1 ]; then W=$D/verify-repair; else W=$D/verify-repair$k; fi; [ -s "$W/rows.tsv" ] && ROWS="$ROWS $(lc "$W/rows.tsv")"; done
+awk -F'\t' '$5 == "fixed-disagree" || $5 == "still-rejected" || $5 == "rejected-unrepaired" { t = ($5 == "rejected-unrepaired") ? (($4 == "driver-glue") ? 2 : 1) : 0; print $1 "\t" $2 "\t" t "\t" $7 }' "$(state_tsv)" > "$RP/items.tsv"
 awk -F'\t' -v OFS='\t' 'FILENAME == ARGV[1] { it[$1 SUBSEP $2] = $3 "\t" $4; next }
      { q = $1 SUBSEP $5; if (q in it) { row[q] = $0 } }
      END { for (q in row) { split(row[q], r, "\t"); split(it[q], t, "\t"); gsub(/[\t\n]/, " ", t[2]); gsub(/ ¦ | ¶ /, " ", t[2]); gsub(/ ¦ | ¶ /, " ", r[8]); gsub(/ ¦ | ¶ /, " ", r[9])
