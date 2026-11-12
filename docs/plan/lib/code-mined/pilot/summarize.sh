@@ -11,11 +11,13 @@ for d in "$U"/u*; do
   # label per SELLABLE_PLAN section 1: PROVED needs nothing assumed beyond the stated contract; names resolved from other headers or a pointer precondition make it PROVED-ASSUMING
   label="not-proved"; real=$(grep -c . "$d/fn.c" 2>/dev/null)
   sigptr=$(head -3 "$d/fn.c" 2>/dev/null | tr '\n' ' ' | sed -E 's/\{.*//' | grep -c '\*')
+  callees=$(grep -o "specification for function '[^']*'" "$d/wp.A.log" "$d/wp.B.log" 2>/dev/null | sed "s/.*function '//; s/'//" | sort -u | grep -v -x "$name" | wc -l)
   if [ "$st" = PROVED ]; then
-    if [ "${nres:-0}" -gt 0 ] || [ "$cls" = ptr ] || [ "$sigptr" -gt 0 ]; then label=PROVED-ASSUMING; else label=PROVED; fi
+    if [ "${nres:-0}" -gt 0 ] || [ "$cls" = ptr ] || [ "$sigptr" -gt 0 ] || [ "$callees" -gt 0 ]; then label=PROVED-ASSUMING; else label=PROVED; fi
   fi
-  [ "$(cut -f2 "$d/annot.tsv" 2>/dev/null)" != "" ] || true
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$N" "$name" "$kind" "$cls" "$label" "$st" "$level" "${nres:-0}" "$ap/$at" "$bp/$bt" "$vac" "$secs" "$cause" "$resolved" "$an" "$tot" "$sigptr" >>"$R"
+  ps="-	-	-"; [ -f "$d/prism.tsv" ] && ps=$(cut -f3-5 "$d/prism.tsv")
+  ens=$(sed -E 's/.*ensures//' "$d/contract.acsl" 2>/dev/null); if ! grep -qF 'result' <<<"$ens"; then strength=trivial; elif grep -qE 'result[ ]*(==|<==>)[^;]*[A-Za-z_]' <<<"$ens"; then strength=functional; else strength=range; fi
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$N" "$name" "$kind" "$cls" "$label" "$st" "$level" "${nres:-0}" "$ap/$at" "$bp/$bt" "$vac" "$secs" "$cause" "$resolved" "$an" "$tot" "$sigptr" "$strength" "$ps" >>"$R"
 done
 sort -n -o "$R" "$R"
 stats() { sort -n | awk '{a[NR]=$1; s+=$1} END{ if(NR==0){print "n=0"; exit} m=(NR%2? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2); printf "n=%d mean=%.4f median=%.4f p90=%.4f max=%.4f", NR, s/NR, m, a[int(0.9*NR+0.9999)], a[NR] }'; }
@@ -34,8 +36,16 @@ awk -F'\t' '{t[$3]++; if ($5 ~ /^PROVED/) p[$3]++} END{for (k in t) printf "%-16
 echo '```'
 echo "## By class (contract mentions pointers/fields = ptr)"; echo '```'
 awk -F'\t' '{t[$4]++; if ($5 ~ /^PROVED/) p[$4]++} END{for (k in t) printf "%-8s %d / %d proved\n", k, p[k]+0, t[k]}' "$R" | sort; echo '```'
+echo "## Strength of the contract among proved functions (S5 risk: a true but weak contract)"; echo '```'
+awk -F'\t' '$5 ~ /^PROVED/{s[$23 $24]++} END{}' "$R" >/dev/null
+awk -F'\t' '$5 ~ /^PROVED/{s[$24]++} END{for (k in s) printf "%-12s %d\n", k, s[k]}' "$R" | sort
+echo "(trivial = the ensures says nothing about the result; range = result only compared with constants; functional = result equated to an expression of the inputs)"; echo '```'
+echo "## Second engine: PRISM (contracts + wp + pir) on the units Frama-C could parse (cross-check; PRISM reads the contract with machine integers, so its verdict is NOT counted as a proof)"; echo '```'
+echo "Frama-C WP proved and PRISM wp stage says:"; awk -F'\t' '$5 ~ /^PROVED/{print "  " $25}' "$R" | sort | uniq -c
+echo "Frama-C WP did not prove (but built) and PRISM wp stage says:"; awk -F'\t' '$5=="not-proved" && $7!="none" {print "  " $25}' "$R" | sort | uniq -c
+echo '```'
 echo "## Why not proved (cause of the final status)"; echo '```'
-awk -F'\t' '$5=="not-proved"{c=$13; gsub(/[0-9]+/,"N",c); sub(/unresolved symbol: .*/,"unresolved symbol (macro/enum/variable from a header not found, or ambiguous)",c); print $6 ": " c}' "$R" | sort | uniq -c | sort -rn | head -30
+awk -F'\t' '$5=="not-proved"{c=$13; gsub(/[0-9]+/,"N",c); sub(/unresolved symbol: [A-Za-z_0-9]+ \(macro with N different.*/,"unresolved symbol: macro with several definitions in the headers (arch/config variants)",c); sub(/unresolved symbol: [A-Za-z_0-9]+ \(not a one-line.*/,"unresolved symbol: enum constant / variable / function / multi-line macro from a header",c); sub(/missing struct type.*/,"missing struct type (kernel header not available)",c); print $6 ": " c}' "$R" | sort | uniq -c | sort -rn | head -30
 echo '```'
 echo "## Wall time per function, seconds (Frama-C WP phases + annotation attempts)"; echo '```'
 echo "all:         $(cut -f22 "$R" | stats)"

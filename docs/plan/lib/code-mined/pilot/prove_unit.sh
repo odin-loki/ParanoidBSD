@@ -27,10 +27,10 @@ assemble() { # assemble <withtypes 0|1>  -> unit.cur.c
 }
 fcrun() { # fcrun <file> <extra args...>   -> $OUT
   f=$1; shift
-  OUT=$(timeout 600 frama-c -kernel-warn-key annot-error=active -machdep x86_64 -wp-timeout "${TOUT:-$TO}" -wp-prover "$PROVERS" -wp-fct "$name" "$@" "$f" 2>&1); RC=$?
+  OUT=$(timeout 600 frama-c -kernel-warn-key annot-error=active -machdep gcc_x86_64 -wp-timeout "${TOUT:-$TO}" -wp-prover "$PROVERS" -wp-fct "$name" "$@" "$f" 2>&1); RC=$?
 }
 parse_ok() { # parse only, same flags
-  OUT=$(timeout 120 frama-c -kernel-warn-key annot-error=active -machdep x86_64 unit.cur.c 2>&1); RC=$?
+  OUT=$(timeout 120 frama-c -kernel-warn-key annot-error=active -machdep gcc_x86_64 unit.cur.c 2>&1); RC=$?
   [ $RC -eq 0 ] && ! echo "$OUT" | grep -q -E 'annot-error|User Error'
 }
 level=none
@@ -39,11 +39,11 @@ for wt in 1 0; do
   for round in 1 2 3 4 5 6 7 8; do
     assemble $wt
     if parse_ok; then level=$([ $wt = 1 ] && echo L2 || echo L1); break 2; fi
-    ids=$(echo "$OUT" | grep -oE '(Cannot resolve variable|unbound logic variable|undeclared identifier|Unbound logic variable) [A-Za-z_][A-Za-z0-9_]*' | awk '{print $NF}' | sort -u)
+    ids=$(echo "$OUT" | grep -oE '(Cannot resolve variable|unbound logic variable|unbound logic function|undeclared identifier|Unbound logic variable) [A-Za-z_][A-Za-z0-9_]*' | awk '{print $NF}' | sort -u)
     new=0
     for id in $ids; do
       grep -qx "$id" resolved.names && continue
-      line=$(LC_ALL=C grep -m1 -- "^$id"$'\t' "$IDX" | cut -f2)
+      line=$(LC_ALL=C grep -m1 -- "^$id"$'\t' "$IDX" | cut -f2-)
       [ -z "$line" ] && continue
       { echo "#undef $id"; echo "$line"; } >>resolved.h; echo "$id" >>resolved.names; new=$((new+1)); nres=$((nres+1))
     done
@@ -51,14 +51,25 @@ for wt in 1 0; do
   done
 done
 if [ "$level" = none ]; then
-  cause=$(echo "$OUT" | grep -v -E '^\[kernel\] (Parsing|Warning: end)' | grep -m1 -A1 -E "Cannot resolve variable|Cannot find field|syntax error|annot-error|unbound logic|User Error|rror" | tr '\t\n' '  ' | sed -E 's/ +/ /g' | cut -c1-110)
+  cause=""
+  for pat in "Cannot resolve variable" "unbound logic variable" "unbound logic function" "Cannot find field" "syntax error" "annot-error" "User Error" "rror"; do
+    cause=$(echo "$OUT" | grep -v -E '^\[kernel\] (Parsing|Warning: end)' | grep -m1 -A1 -E "$pat" | tr '\t\n' '  ' | sed -E 's/ +/ /g; s/ +$//' | cut -c1-110)
+    [ -n "$cause" ] && break
+  done
   case "$cause" in
-    *"Cannot resolve variable"*|*"unbound logic"*) c="unresolved symbol: ${cause##* }" ;;
+    *"Cannot resolve variable"*|*"unbound logic"*)
+      sym=$(echo "$cause" | sed -E 's/.*(Cannot resolve variable|unbound logic variable|unbound logic function) ([A-Za-z0-9_]+).*/\2/')
+      k=$(LC_ALL=C grep -c -- "^$sym"$'\t' "${IDX%uniq.tsv}all.tsv" 2>/dev/null)
+      if [ "${k:-0}" -gt 1 ]; then c="unresolved symbol: $sym (macro with $k different definitions in the headers)"
+      else c="unresolved symbol: $sym (not a one-line #define: enum constant, variable or function from a header)"; fi ;;
     *"Cannot find field"*) c="missing struct type (field)" ;;
     *"syntax error"*) c="syntax error (macro or kernel syntax not parsed)" ;;
     *annot-error*) c="contract not valid ACSL: $(echo "$OUT" | grep -m1 -A1 'annot-error' | tr '\n' ' ' | sed -E 's/.*Warning: *//' | cut -c1-80)" ;;
     *) c="$cause" ;;
   esac
+  cxx=0; case "$file" in *.cc|*.cpp|*.cxx|*.hpp|*.hh|*.C) cxx=1 ;; esac
+  grep -qE 'template[ ]*<|[A-Za-z_]::[A-Za-z_]|constexpr|namespace|\bclass\b' "$FN" && cxx=1
+  [ $cxx = 1 ] && c="C++ source (Frama-C reads C only)"
   emit UNBUILT none "$c"
 fi
 cp unit.cur.c unit.final.c

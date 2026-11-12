@@ -7,13 +7,13 @@ HERE=$(cd "$(dirname "$0")" && pwd); D=${PILOT_DATA:-/mnt/c/ParanoidBSD/mined-da
 U=$1; cd "$U" || exit 2
 IFS=$'\t' read -r N name kind cls file lines hc hf hp mstat <meta.tsv
 [ -f "$D/STOP" ] && exit 0
-cp result.tsv result.base.tsv; cp wp.A.log wp.A.base.log 2>/dev/null
+cp result.tsv result.base.tsv; cp wp.A.log wp.A.base.log 2>/dev/null; cp unit.final.c unit.final.base.c 2>/dev/null
 SYS='You add ACSL annotations so that Frama-C WP can PROVE the given function contract. You may add ONLY: loop invariant, loop assigns, loop variant, and assert (inside the function body, before the loop or statement they refer to). You must return the COMPLETE function exactly as given (same C code, same order, same names) with those annotations inserted, and nothing else: no explanation, no markdown fence, no contract (the contract above the function is added by the tool). Do NOT write requires, ensures, assigns outside a loop, lemma, axiom, assume, behavior, ghost code or predicates. ACSL integers are mathematical; C unsigned types wrap, so invariants must say what is true of the C values (for example (unsigned)(x + 1) when wrap-around matters). Give invariants that are inductive: true before the loop, preserved by one iteration, and strong enough to imply the contract at exit. If the contract is false for some input, still do your best; the tool will report failure.'
 t0=$(date +%s); tin=0; tout=0; usd=0; usdl=0; att=0; final=FAILED
 prev=$(tail -25 wp.A.log | cut -c1-300)
 for k in 1 2 3; do
   [ -f "$D/STOP" ] && break
-  att=$k; eff=low; mt=8000; [ $k -ge 3 ] && { eff=high; mt=14000; }
+  att=$k; eff=low; mt=14000; [ $k -ge 3 ] && { eff=high; mt=20000; }
   USER="Contract (do not change, do not repeat it):
 $(cat contract.acsl)
 
@@ -41,5 +41,5 @@ $(tail -25 wp.A.log | cut -c1-300)"
   cp wp.A.log att$k.wp.A.log
 done
 secs=$(( $(date +%s) - t0 ))
-[ "$final" != PROVED ] && cp result.base.tsv result.tsv
+[ "$final" != PROVED ] && { cp result.base.tsv result.tsv; cp unit.final.base.c unit.final.c 2>/dev/null; }
 printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$N" "$att" "$final" "$tin" "$tout" "$usd" "$usdl" "$secs" >annot.tsv

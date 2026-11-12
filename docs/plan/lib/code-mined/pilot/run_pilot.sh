@@ -24,4 +24,11 @@ for d in "$U"/u*; do [ -f "$d/annot.tsv" ] && continue; [ "$(cut -f5 "$d/result.
 say "phase 2: $(wc -l <"$D/todo.annot") units to annotate"
 [ -f "$D/STOP" ] || xargs -a "$D/todo.annot" -P "$PA" -I{} bash -c '[ -f "'"$D"'/STOP" ] || bash "'"$HERE"'/annotate_unit.sh" "$0"' {}
 say "phase 2 done; spent $(awk -F'\t' '{s+=$8} END{printf "%.4f", s}' "$D/morph_ledger.tsv" 2>/dev/null) USD (conservative price)"
+# phase 3: PRISM (independent engine) on every unit that Frama-C could parse (cross-check, see prism_check.sh)
+if [ ! -f "$D/STOP" ]; then
+  for d in "$U"/u*; do [ -f "$d/unit.final.c" ] && [ ! -f "$d/prism.tsv" ] && echo "$d"; done >"$D/todo.prism"
+  say "phase 3: PRISM cross-check on $(wc -l <"$D/todo.prism") units"
+  xargs -a "$D/todo.prism" -P "$PP" -I{} bash "$HERE/prism_check.sh" {}
+  say "phase 3 done"
+fi
 [ -f "$D/STOP" ] && say "STOP file present: $(cat "$D/STOP")" || touch "$D/DONE"

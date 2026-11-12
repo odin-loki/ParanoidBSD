@@ -1,4 +1,6 @@
-# extract_defs.awk  Print every #define of the file (line continuations joined), each preceded by #undef, skipping the macro called `skip`.
+# extract_defs.awk  Print the #defines of the file (line continuations joined, comments removed), each preceded by #undef, skipping the macro called `skip`.
+# A macro that is defined MORE THAN ONCE in the file (typically in different #if/#else arms) is dropped: taking the last definition would silently pick a configuration variant.
+# Such a name then stays undefined and the unit fails to build with "unresolved symbol" (an honest failure, not a guessed proof).
 # Usage: awk -v skip=foo -f extract_defs.awk file.c
 { sub(/\r$/, "") }
 /^[ \t]*#[ \t]*define[ \t]/ {
@@ -9,5 +11,8 @@
   if (nm == "" || nm == skip) next
   gsub(/\/\*[^*]*\*\//, "", line)
   sub(/\/\/.*$/, "", line)
-  print "#undef " nm; print line
+  cnt[nm]++; order[++n] = nm; text[n] = line
+}
+END {
+  for (i = 1; i <= n; i++) if (cnt[order[i]] == 1) { print "#undef " order[i]; print text[i] }
 }

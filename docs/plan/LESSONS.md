@@ -130,3 +130,13 @@ Mistakes made while running the verification plan, and the rule from each:
 6. **The reviewer's rule differed from the checker's rule.** DeepSeek was told "weaker than the prose = DISAGREE", the tiebreak reviewers "weak but true = OVERTURN", so 12 of 16 overturns were the rule, not DeepSeek. Give every judge the same definition of a defect.
 7. **"Small inputs" must be non-negative:** -5 in an unsigned parameter is 4294967291. The first rerun of the counterexamples on small inputs was wrong for that reason.
 8. **Precedence bugs are real defects, not type noise:** `result == (x >> 18) & 3` compares first, then masks a boolean. Frama-C reports it as "unexpected 𝔹 and ℤ"; such contracts are false.
+
+## G. S4 pilot (12 Nov 2026): tooling mistakes that cost time
+
+- **The Bash tool halves backslashes in heredocs** (`\result` arrived as `\result`, i.e. a carriage return; `\` in awk regexes became `\`). Write any file with backslashes (ACSL `\result`, `\valid`, regexes, awk) with the Write tool, never `cat <<EOF`; check with `od -c`.
+- **MSYS rewrites `/mnt/c/...` arguments of `wsl -- bash /mnt/c/x.sh`** into `C:/Program Files/Git/mnt/...`. Set `MSYS_NO_PATHCONV=1` in the Bash tool, or write a script file and run it.
+- **Never `tail -F` (or `grep <(tail -F ...)`) a log file that a run will create or rename:** the open handle left a "delete pending" name and the runner's `>>run.log` failed with "No such file or directory" for 20 minutes. Poll with `grep`/`ls` in a loop instead.
+- **A `cmd /k` window started from PowerShell `Start-Process` did not keep the WATCHER alive** (the runner survived under `setsid`, the watcher died). Hold the session with a background `wsl -- bash pilot_watch.sh` (run_in_background) and make the watcher adopt a runner that is already alive (run.pid).
+- **bash reads a running script incrementally:** lines appended to `run_pilot.sh` while it ran were executed. Edit scripts only between runs (or write a new file and `mv` it, which gives a new inode).
+- **`reasoning_effort: low` still burns 8,000 to 14,000 tokens on a bit-vector or loop-invariant task and returns an empty answer** when `max_tokens` is below that; cap at 14,000 (20,000 for the `high` attempt) and expect about $0.003-0.013 per attempt.
+- **Frama-C from apt (`frama-c-base` 25.0-beta) has no WP.** WP needs the opam build: `tools`: `docs/plan/lib/code-mined/pilot/install_framac_wp.sh` (private opam root `~/.opam-pbsd`, switch `wp`, OCaml 4.14.2, Frama-C 33.0, Why3 1.8.2, Alt-Ergo 2.6.4; about 25 minutes; z3 4.8.12 and cvc5 1.1.2 from apt). `source pilot/env.sh` first.

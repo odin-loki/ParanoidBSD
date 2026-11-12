@@ -37,6 +37,9 @@ END {
   for (c = 0; c < 4 && b > 1; c++) {
     pl = L[b - 1]
     if (pl ~ /^[ \t]*$/ || pl ~ /;[ \t]*$/ || pl ~ /\}[ \t]*$/ || pl ~ /\*\/[ \t]*$/ || pl ~ /^[ \t]*#/ || pl ~ /^[ \t]*\/[\/*]/) break
+    # a return-type line is only identifiers, '*' and blanks (or an attribute): anything with parentheses, '=', '{', a trailing backslash or leading blanks is the tail of something else (a macro body, a call)
+    if (pl ~ /[()={}\\]/ && pl !~ /^(static|extern|inline|__attribute__)/) break
+    if (pl ~ /\\[ \t]*$/ || pl ~ /^[ \t]/) break
     b--
   }
   depth = 0; started = 0; incom = 0; pd = 0; seenp = 0; e = 0; out = ""
