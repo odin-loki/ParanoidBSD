@@ -1,0 +1,66 @@
+{
+  "id": "org.pbsd.devices",
+  "name": "Devices",
+  "version": "0.1.0",
+  "category": "virt",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:decode-helper",
+    "dev.camera",
+    "dev.print",
+    "svc.device",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.portal.camera",
+    "svc.intent",
+    "svc.search",
+    "svc.keyring",
+    "svc.update",
+    "svc.power",
+    "svc.audit",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "decode-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "application/x-pbsd-hardware-report+json",
+      "application/x-pbsd-device-policy+toml"
+    ],
+    "edit": ["application/x-pbsd-device-policy+toml"],
+    "import": [
+      "application/x-pbsd-hardware-report+json",
+      "application/x-pbsd-device-policy+toml"
+    ],
+    "export": [
+      "application/x-pbsd-hardware-report+json",
+      "application/x-pbsd-device-policy+toml",
+      "text/markdown",
+      "application/pdf",
+      "text/plain",
+      "text/csv"
+    ]
+  },
+  "intents": {"handles": ["open", "view"], "emits": ["open", "share", "print"]},
+  "url_schemes": ["device"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.service.device >= 0.1",
+    "org.pbsd.software >= 0.1"
+  ],
+  "backing_repos": [
+    "odin-loki/ParanoidBSD:pbsd/uda",
+    "odin-loki/ParanoidBSD:hbsd/src/usr.sbin/fwget"
+  ],
+  "priority": "P1"
+}

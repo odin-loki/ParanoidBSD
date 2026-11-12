@@ -1,0 +1,68 @@
+{
+  "id": "org.pbsd.writer",
+  "name": "Writer",
+  "version": "0.1.0",
+  "category": "office",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:convert-helper",
+    "proc.helper:math-helper",
+    "dev.print",
+    "ai.local",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.notify",
+    "svc.keyring",
+    "svc.thumbnail",
+    "svc.search",
+    "svc.backup",
+    "svc.audit",
+    "svc.a11y",
+    "svc.model",
+    "svc.spell"
+  ],
+  "capability_notes": {
+    "ai.local": "Off by default. Optional writing aids and model-based grammar through svc.model.",
+    "svc.search": "Off by default. Offers opened documents to system search only if enabled."
+  },
+  "helpers": [
+    {"name": "convert-helper", "language": "c++23", "capabilities": []},
+    {"name": "math-helper", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [
+      "application/vnd.oasis.opendocument.text",
+      "application/vnd.oasis.opendocument.text-template",
+      "application/vnd.oasis.opendocument.text-flat-xml",
+      "application/vnd.oasis.opendocument.text-master",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+      "application/msword",
+      "application/rtf"
+    ],
+    "edit": [
+      "application/vnd.oasis.opendocument.text",
+      "application/vnd.oasis.opendocument.text-template",
+      "application/vnd.oasis.opendocument.text-flat-xml",
+      "application/vnd.oasis.opendocument.text-master",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/rtf"
+    ],
+    "import": ["application/msword", "text/html", "text/markdown", "text/plain", "application/pdf", "application/x-bibtex", "application/x-research-info-systems", "application/vnd.citationstyles.csl+json", "text/csv", "text/vcard"],
+    "export": ["application/pdf", "application/epub+zip", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/rtf", "text/html", "text/markdown", "text/plain", "application/x-bibtex"]
+  },
+  "intents": {"handles": ["open", "edit", "view", "new", "print", "compose"], "emits": ["open", "edit", "share", "print", "scan"]},
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.writer.Convert", "svc.thumbnail:provider"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": ["FUSE", "FORGE", "MathScript"],
+  "priority": "P1"
+}

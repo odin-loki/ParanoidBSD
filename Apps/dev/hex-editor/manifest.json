@@ -1,0 +1,45 @@
+{
+  "id": "org.pbsd.hex-editor",
+  "name": "Hex Editor",
+  "version": "0.1.0",
+  "category": "dev",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "proc.helper:byte-engine",
+    "proc.helper:template-engine",
+    "svc.settings",
+    "svc.portal.file",
+    "svc.portal.print",
+    "svc.intent",
+    "svc.clipboard",
+    "svc.notify",
+    "svc.audit",
+    "svc.backup",
+    "svc.model",
+    "ai.local"
+  ],
+  "helpers": [
+    {"name": "byte-engine", "language": "c++23", "capabilities": ["fs.portal", "fs.app"]},
+    {"name": "template-engine", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": ["application/octet-stream", "application/x-pbsd-bintpl", "application/x-pbsd-bpatch", "application/x-pbsd-hexnotes+json"],
+    "edit": ["application/octet-stream", "application/x-pbsd-bintpl"],
+    "import": ["application/x-ips-patch", "application/x-bps-patch", "application/vcdiff", "application/x-bsdiff"],
+    "export": ["application/x-pbsd-bpatch", "application/x-ips-patch", "application/x-bps-patch", "application/vcdiff", "text/plain", "text/csv", "text/markdown", "application/json"]
+  },
+  "intents": {
+    "handles": ["open", "view", "edit"],
+    "emits": ["open", "share", "print"]
+  },
+  "url_schemes": [],
+  "services_provided": ["org.pbsd.hex-editor.Templates"],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1"],
+  "backing_repos": [],
+  "priority": "P2"
+}

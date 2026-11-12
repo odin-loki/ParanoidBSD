@@ -127,7 +127,7 @@ Priority: M must, S should, C could. Phase 1, 2, 3 as in section 12.
 
 ### 4.4 Structure templates
 
-The language is defined in section 6.5.
+The language is defined in section 6.3.
 
 | ID | Feature | Detail | Pri | Ph |
 |---|---|---|---|---|
@@ -292,3 +292,557 @@ The language is defined in section 6.5.
 | DV04-F197 | Open in other apps | Text Editor (OF01), Archives (UT01), Reverse Engineering (DV07), Disks (AD02), for the whole source or a selection saved to a temporary handle. | S | 2 |
 | DV04-F198 | Calculator strip | A small expression evaluator for offsets (hex, decimal, binary, bit operations) in the go-to field and the inspector. | S | 2 |
 | DV04-F199 | Explain bytes (local AI) | Opt-in: sends the selected bytes (up to 4 KiB) and inspector values to `svc.model` for a guess at what they are. Output is labelled as a guess. | C | 3 |
+
+## 5. GUI
+
+### 5.1 Window map
+
+```
+Hex Editor
+├─ Main window
+│  ├─ Header bar, toolbar (mode, base, bytes per row, encoding, endianness, go to)
+│  ├─ Sidebar: Sources · Bookmarks and Annotations · Templates · Scripts
+│  ├─ Content: source tabs → hex view panes (splits) │ Compare view │ Memory map view
+│  ├─ Inspector (right): Data inspector · Template tree · Selection hashes
+│  └─ Bottom dock: Search results · Strings · Entropy · Histogram · Changes · Disassembly · Carve results · Console
+├─ Dialogs: Go to, Find and Replace, Open Device, Open Process Memory, Apply Template, Compare, Fill,
+│           Paste Special, Operations, Create Patch, Apply Patch, Carve, Write to Device, Preferences
+├─ Popovers: annotation card, field card, bytes-per-row, encoding picker, checksum verify
+└─ Sheets (narrow): inspector, search results
+```
+
+### 5.2 Main window
+
+Shown at 1440×900 with a file open and a template applied.
+
+```
++------------------------------------------------------------------------------------------+
+| [=] Hex Editor — firmware.bin           [ Search or run a command  Ctrl+K ]    [▁][▢][✕] | (1)
++------------------------------------------------------------------------------------------+
+| [OVR] [Hex v] [16/row v] [UTF-8 v] [LE|BE]  Go to [0x_________]  [Find] [Template v]     | (2)
++----------------+--------------------------------------------------+----------------------+
+| SOURCES        | firmware.bin ×   compare: a.bin ↔ b.bin          | INSPECTOR       [F4] |
+| > firmware.bin | Offset    00 01 02 03 04 05 06 07  08 09 0A 0B … |  u8      127         |
+|   a.bin        | 00000000  7F 45 4C 46 02 01 01 00  00 00 00 00 … |  i8      127         |
+| -------------- | 00000010  03 00 3E 00 01 00 00 00  40 10 00 00 … |  u16 LE  17791       |
+| ANNOTATIONS    | 00000020 [40 00 00 00 00 00 00 00] 98 31 00 00 … |  u32 LE  1179403647  |
+|  ■ ELF header  | 00000030  00 00 00 00 40 00 38 00  0D 00 40 00 … |  u64 LE  …           |
+|  ■ .text       |    (4)                        (5)  .ELF........ |  f32 LE  1.3e4       |
+|  ■ key blob ⚑  | 00000040  06 00 00 00 04 00 00 00  …         (6) |  UTF-8   "\x7FELF"   |
+| -------------- |                                                ▐ |  Unix    —       (7) |
+| TEMPLATES      +--------------------------------------------------+ -------------------- |
+|  ELF ✓ applied | TEMPLATE  SEARCH  STRINGS  ENTROPY  HISTOGRAM    | TEMPLATE TREE        |
+|  PNG           | 8.0┤      ▄▄▄▄████████▄                      (9) | v ElfHeader          |
+|  ZIP       (3) | 4.0┤▂▃▄▅▆▇              ▇▅▃▂▁▁▁                  |   magic  7F 45 4C 46 |
+|                | 0.0┼────────────────────────────── 0 … 4.2 MiB   | > e_phoff 0x40   (8) |
++----------------+--------------------------------------------------+----------------------+
+| 0x00000020 (32) · sel 8 bytes · OVR · LE · UTF-8 · 4.2 MiB · file · modified ● · 1 job   | (10)
++------------------------------------------------------------------------------------------+
+```
+
+1. Header bar. The app has no network capability; no `[net]` badge.
+2. Toolbar: mode `toolButton`, base, bytes-per-row and encoding `comboBox`es, endianness toggle, go-to `lineEdit`.
+3. Sidebar (220 px): sources `listView`, annotations `listView` with colour chips, templates `listView`.
+4. Offset column. 5. Byte columns with the selection `[…]` and field colouring. 6. Text column. All three are the hex view widget (FUSE-WP-41) reading a `ByteSource` served by the byte engine.
+7. Data inspector (`tableView`, 280 px): editable value cells.
+8. Template tree (`treeView`): the selected field matches the selected bytes.
+9. Bottom dock (`tabWidget`, 200 px): entropy `chart` shown; a click jumps.
+10. Status bar; each chip is a button (mode, endianness, encoding).
+
+States: empty (no source: "Open File", "Open Device", "New", recent list); loading (first screen is immediate; background scans show in the status bar); error (read error on a range: hatched cells with the error in a hover card; source unreadable: banner with the reason); offline (not applicable); locked (session lock: process-memory and device sources close their handles and must be re-granted); read-only (lock chip in the tab and status bar; typing shows a toast "Read-only — Enable editing").
+
+### 5.3 Other views and dialogs
+
+#### Compare view (1440×900)
+
+```
++------------------------------------------------------------------------------------------+
+| Compare  a.bin (4.20 MiB)  ↔  b.bin (4.21 MiB)   [Positional|Aligned]  [◀ F7] [▶]  3/17  |
++--------------------------------------------+---------------------------------------------+
+| 00001000  48 89 E5 41 57 41 56 41  H..AWAVA | 00001000  48 89 E5 41 57 41 56 41  H..AWAVA |
+| 00001008 [90 90]53 48 83 EC 28 48  ..SH..(H | 00001008 [EB 12]53 48 83 EC 28 48  ..SH..(H |
+| 00001010  ░░░░░░░░ only in right ░░░░░░░░   | 00001010 [DE AD BE EF 00 00 00 01] ........ |
+| 00001010  8B 05 22 2F 00 00 …               | 00001018  8B 05 22 2F 00 00 …               |
++--------------------------------------------+---------------------------------------------+
+| DIFFERENCES                                               equal 99.98% · changed 2 ·     |
+| ~ changed   0x1008  0x1008   2 bytes                      inserted 8 · deleted 0         |
+| + inserted  —       0x1010   8 bytes          [Copy → left] [Create patch…] [Annotate]   |
++------------------------------------------------------------------------------------------+
+```
+
+Two hex views with linked scrolling and a difference `tableView`. Changed, inserted and deleted ranges use colour plus a gutter sign (`~ + −`). States: computing (aligned mode shows progress; positional results are shown meanwhile), too large for aligned mode (message with the limit and "Compare selections").
+
+#### Find and replace (docked bar, expanded)
+
+```
++------------------------------------------------------------------------------------------+
+| Find   (•) Bytes ( ) Text ( ) Regex ( ) Number      [DE AD ?? E? .{0,16} (00|FF)       ] |
+| In     [Whole source v]   Align [1 ]   [x] Wrap   [ ] Backward       [Find all] [◀] [▶]  |
+| Replace [__________________________] (•) Overwrite ( ) Insert   [Replace] [Replace all]  |
+| ✓ pattern is 5+ bytes, variable length · 1 204 matches so far · 62% · 1.8 GiB/s [Cancel] |
++------------------------------------------------------------------------------------------+
+```
+
+Number mode replaces the field with value, type and endianness controls; Text mode adds encoding and case options. An invalid pattern shows the parser's message under the field.
+
+#### Apply template and template editor (bottom dock, split)
+
+```
++---------------------------------------------+--------------------------------------------+
+| png.bintpl                        [Run F5]  | Result at 0x0                              |
+|  1 template Png {                           | v Png                         0x0   4.1 KiB |
+|  2   endian big;                            |   signature  89 50 4E 47 …    0x0   8   ✓  |
+|  3   magic signature = 89 50 4E 47 0D 0A…;  |   v chunks [0..11]            0x8          |
+|  4   Chunk chunks[] until eof;              |     v [0] Chunk  "IHDR"       0x8   25     |
+|  5 }                                        |         length  13                         |
+|  6 struct Chunk {                           |         type    "IHDR"                     |
+|  7   u32 length;                            |       > data    Ihdr {…}                   |
+|  8   char type[4];                          |         crc     0x5A3C… ✓ crc32(type,data) |
+|  9   match type { "IHDR" => Ihdr data; …    |     > [1] Chunk  "IDAT"       0x21  8204   |
+| ✕ line 9: unknown type 'Ihdrr'          (1) | fuel 1 204 / 50 000 000 · 0.4 ms       (2) |
++---------------------------------------------+--------------------------------------------+
+```
+
+1. Compiler diagnostics inline. 2. Resource use of the last evaluation.
+
+#### Open process memory (dialog 640×480) and memory map
+
+```
++----------------------------------------------------------------------+
+| Open process memory (read-only)                                       |
+| [filter________]                                                      |
+| PID    Name            App                    User                    |
+| 2291   notes           org.pbsd.notes         odin                    |
+| 2304   archive-helper  org.pbsd.archives      odin                    |
+| 1180   keyring         system                 —  not inspectable      |
+| After you choose, the system asks you to confirm.   [Cancel] [Open…]  |
++----------------------------------------------------------------------+
+
+ MEMORY MAP — notes (2291)                      [r v] [filter____] [⟳ 2 s v]
+ Start              End                Size     Prot  Backing
+ 0x0000000001021000 0x0000000001043000 136 KiB  r-x   app host
+ 0x0000000801200000 0x0000000801a00000 8 MiB    rw-   heap             → open
+ 0x00007fffdfffc000 0x00007ffffffff000 512 MiB  rw-   stack (guard…)
+```
+
+The process list comes from the broker and already excludes other users' processes. The shell draws the confirmation. Map is a `tableView`; double click opens the region in the hex view with virtual addresses in the offset column.
+
+#### Carve (dialog 760×520 → results panel)
+
+```
++--------------------------------------------------------------------------+
+| Carve files from firmware.bin                                             |
+| Range   (•) Whole source ( ) Selection ( ) From caret                     |
+| Types   [x] Images [x] Archives [x] Executables [ ] Media [x] Keys  [All] |
+| Align   [1 v] bytes          Max size per file [256 MiB]                  |
+|                                              [Cancel]  [Scan]             |
++--------------------------------------------------------------------------+
+ CARVE RESULTS  41 hits                                   [Extract selected…]
+ [x] PNG     0x0004A000   18.2 KiB   footer found      valid ✓
+ [x] ZIP     0x00120000   1.4 MiB    end record found  valid ✓
+ [ ] gzip    0x002F0010   ≤ 256 MiB  no length; max    unknown ?
+ [x] SSH key 0x003A1F00   411 B      footer found      —
+```
+
+Validity uses the type's template. Extraction writes through a folder handle from the portal.
+
+#### Write to device (confirmation dialog 560×320)
+
+```
++------------------------------------------------------------+
+| Write 2 ranges to ada1 (Samsung 500 GB)?                    |
+| This cannot be undone.                                      |
+|   sector 0      512 bytes   (MBR)                           |
+|   sector 2048   4096 bytes                                  |
+| Device is not mounted · not part of the boot pool           |
+| Type the device name to confirm: [_______]                  |
+|                         [Keep read-only]  [Write 2 ranges]  |
++------------------------------------------------------------+
+```
+
+The destructive button is outlined `--danger`, disabled until the name matches; Esc keeps read-only.
+
+### 5.4 Menus
+
+| Menu | Items |
+|---|---|
+| File | New (`Ctrl+N`) · Open File… (`Ctrl+O`) · Open Device… · Open Process Memory… · Open Recent ▸ · Enable Editing · Save (`Ctrl+S`) · Save As… (`Ctrl+Shift+S`) · Save Selection As… · Insert File… · Revert · Create Patch… · Apply Patch… · Export Hex Dump… · Print… (`Ctrl+P`) · Close (`Ctrl+W`) · Quit (`Ctrl+Q`) |
+| Edit | Undo (`Ctrl+Z`) · Redo (`Ctrl+Shift+Z`) · Cut, Copy, Paste (`Ctrl+X/C/V`) · Copy As ▸ (`Ctrl+Shift+C`) · Paste Special… (`Ctrl+Shift+V`) · Delete · Select All (`Ctrl+A`) · Select Range… (`Ctrl+Shift+A`) · Fill… (`Ctrl+Shift+I`) · Operations ▸ XOR…, AND…, OR…, NOT, Shift…, Rotate…, Add…, Byte Swap, Reverse · Transform ▸ · Resize… · Insert/Overwrite (`Insert`) · Preferences (`Ctrl+,`) |
+| Search | Find… (`Ctrl+F`) · Find Next, Previous (`Ctrl+G`, `Ctrl+Shift+G`) · Replace… (`Ctrl+H`) · Find All · Go To… (`Ctrl+L`) · Follow Pointer (`Ctrl+Enter`) · Back, Forward (`Alt+Left/Right`) · Next, Previous Change (`F7`, `Shift+F7`) · Next Non-Zero (`Ctrl+.`) · Find Pointers to Selection |
+| View | Command Palette (`Ctrl+K`) · Base ▸ Hex, Decimal, Octal, Binary · Bytes per Row ▸ · Group Size ▸ · Text Encoding ▸ · Offset Format ▸ · Endianness (`Ctrl+E`) · Byte Colours ▸ · Split Right (`Ctrl+\`) · Split Down · Minimap · Bitmap View · Sidebar (`F9`) · Inspector (`F4`) · Panels ▸ · Refresh (`F5`) · Zoom (`Ctrl++/-/0`) · Full Screen (`F11`) |
+| Marks | Toggle Bookmark (`Ctrl+F2`) · Next, Previous Bookmark (`F2`, `Shift+F2` in the hex view) · Set Mark (`Ctrl+M`) · Select to Mark · Annotate Selection… (`Ctrl+Shift+N`) · Annotations List · Import, Export Notes… |
+| Analyse | Apply Template… (`Ctrl+T`) · Edit Templates · Checksums and Hashes… (`Ctrl+Shift+H`) · Verify Digest… · Entropy · Histogram · Statistics · Strings… (`Ctrl+Alt+S`) · Detect Type · Carve Files… · Compare… (`Ctrl+D`) · Disassemble Selection · Open in Reverse Engineering |
+| Tools | Script Console (`` Ctrl+` ``) · Run Script ▸ · Record Macro · Batch Run… · Calculator |
+| Help | Handbook (`F1`) · Template Language Reference · Keyboard Shortcuts · About |
+
+### 5.5 Keyboard and pointer
+
+- Hex view: arrows move by byte and row; `Ctrl+Left/Right` by group; `Home/End` row; `Ctrl+Home/End` source; `PageUp/Down`; `Tab` switches between byte and text columns; typing edits; `Backspace` in overwrite mode restores the original byte.
+- Context menu on bytes: Cut, Copy, Copy As ▸, Paste, Paste Special, Fill, Operations ▸, Annotate, Bookmark, Follow Pointer, Select Field (template), Hash Selection, Search for Selection, Find Pointers Here, Disassemble, Open in Reverse Engineering, Save Selection As.
+- Context menu on annotations: Go To, Select, Edit, Colour ▸, Hash, Export Bytes, Delete. On template fields: Select Bytes, Copy Value, Copy Path, Annotate, Follow (pointer fields), Export Subtree.
+- Drag and drop: a file from Files onto the window (open) or onto a hex view with `Ctrl` (insert at the drop offset in insert mode); a selection dragged to Files (saves the bytes, through the portal); a selection onto another tab (paste); a `.bintpl` onto the window (add template); a `.bpatch` (apply preview); two files dropped together (compare).
+- Pointer: double click selects the field or annotation under the pointer; `Alt+click` adds a disjoint selection; wheel scrolls rows, `Shift+wheel` pages, `Ctrl+wheel` zooms; dragging the minimap scrolls.
+
+### 5.6 States
+
+| State | Behaviour |
+|---|---|
+| Empty | Open File, Open Device, New, recent list. |
+| Loading | First screen at once; "indexing strings…", "computing entropy…" as jobs. |
+| Error | Per-range read errors hatched; helper crash: "Byte engine restarted" banner, buffers reopen from the edit journal. |
+| Offline | Not applicable. |
+| Locked | On session lock, device and process handles are dropped; their tabs show "Grant again to continue". File buffers stay. |
+| Read-only | Default for devices, memory, snapshots, untrusted and handed-over sources; all analysis works; edits refused with a toast. |
+| Source changed underneath | Buffer frozen; banner: Reload, Save edits as patch, Compare with new content. |
+| Narrow (< 640 px) | Bytes per row drops to fit (8 or 4); text column can hide; sidebar overlay; inspector and bottom dock become sheets. |
+
+### 5.7 Widgets
+
+| Region | FUSE widget |
+|---|---|
+| Hex view, compare panes | hex view (FUSE-WP-41: `ByteSource`, 64-bit offsets, annotation layers, comparison) |
+| Inspector, annotations, results, memory map, differences | `tableView` (FUSE-WP-28 for 64-bit row counts) |
+| Template tree | `treeView` with lazy children |
+| Template editor, script console | code editor (FUSE-WP-37) |
+| Entropy, histogram | `chart` |
+| Digram plot, bitmap view, minimap | `viewportWidget` with app drawing (DV04-GAP-1) |
+| Disassembly | `tableView` with monospace delegate |
+| Toolbar, dialogs | `toolButton`, `comboBox`, `lineEdit`, `spinBox`, `radioButton`, `checkBox`, `dialog`, `progressBar`, `colorPicker` (annotation colour) |
+| Notes | `markdownView` |
+| Docks | `dockArea`, `dockWidget`, `tabWidget`, `splitter` |
+
+| ID | Missing | Note |
+|---|---|---|
+| DV04-GAP-1 | Raster plot surface for bitmap, digram and minimap views with pixel-exact zoom | App drawing on `viewportWidget` is enough; a shared widget is optional |
+| DV04-GAP-2 | Hex view features beyond FUSE-WP-41's stated design: UTF-8 multi-byte overlay in the text column, disjoint selections, value-grid mode, per-byte change marks | Requirements on FUSE-WP-41 |
+| DV04-GAP-3 | Device portal: pick a block device and get a rights-limited handle (read-only by default) | Platform; not in PLATFORM.md section 8. AD02 needs it too |
+| DV04-GAP-4 | Debug broker: pick a process and get a read-only memory handle and its map | Platform; same service as DV01-GAP-2 |
+
+## 6. Architecture
+
+### 6.1 Components
+
+| Component | Language | Process | Responsibility |
+|---|---|---|---|
+| App shell and view models | ForgeScript + FUSE UI | app host | Windows, tabs, panels, commands, annotations store, session, settings |
+| Byte engine `byte-engine` | C++23 | bundle helper; holds the source handles passed to it (file, device, memory); no network | Piece-tree buffers, edit journal, `ByteSource` service for the hex view, save, search (bytes, text, regex, numeric), hashes and checksums, entropy, histogram, statistics, strings, positional and aligned diff, signature scan |
+| Template engine `template-engine` | C++23 | bundle helper; no capabilities; reads bytes only through a read window the byte engine serves | Compiles and evaluates structure templates under fuel, depth and memory limits; lazy tree |
+| Patch codec | C++23, in `template-engine` process | same | Parses and writes `.bpatch`, IPS, BPS, VCDIFF, `bsdiff` |
+| Script engines | ForgeScript | separate engine instances in the app host with an empty policy | User scripts and macros through `hex::` |
+| Disassembly client | ForgeScript | app host | Talks to DV07's disassembly service over the session bus |
+| Decompress hand-off | — | UT01's archive helper | Decompression of selections with output caps |
+
+```
+ user ─ FUSE UI ─ [ app host: shell · annotations · session · script engines · disassembly client ]
+                      │ ByteSource (shared memory windows)      │ session bus
+                      ▼                                         ▼
+               [ byte-engine ] ── read window ──▶ [ template-engine + patch codec ]   DV07 disassembly service
+                 file / device / memory handles        (no capabilities)             UT01 archive helper
+                 edit journal in fs.app
+```
+
+The byte engine is the only process that holds source handles. The template engine, which interprets hostile data under a user-supplied grammar, holds none.
+
+### 6.2 Data model
+
+In the byte engine:
+
+| Entity | Fields |
+|---|---|
+| `Source` | `id: u32`, `kind: file\|device\|memory\|shared`, `size: u64`, `sector: u32`, `writable: bool`, `identity: {dev, ino, mtime_ns}` or `{pid, start_time}` |
+| `Piece` | `origin: original\|add`, `start: u64`, `length: u64` (nodes of a balanced tree with subtree length sums) |
+| `EditRecord` | `seq: u64`, `kind: overwrite\|insert\|erase`, `offset: u64`, `old_len: u64`, `new_len: u64`, `add_start: u64`, `name: string` |
+| `Job` | `id`, `kind`, `range`, `progress: u64`, `state` |
+
+App store `~/.local/share/org.pbsd.hex-editor/hex.db` (SQLite, `user_version` = schema):
+
+| Table | Fields |
+|---|---|
+| `source_key` | `id`, `content_key BLOB(32)` (BLAKE3 of size ‖ first MiB ‖ last MiB), `size INT`, `label TEXT`, `last_opened INT` |
+| `annotation` | `id`, `source_id`, `start INT`, `length INT`, `name`, `colour`, `type_hint`, `note` |
+| `bookmark` | `id`, `source_id`, `offset INT`, `name`, `colour` |
+| `applied_template` | `source_id`, `template_name`, `offset INT` |
+| `view_state` | `source_id`, `caret INT`, `sel_start`, `sel_len`, `bytes_per_row`, `base`, `encoding`, `endian` |
+| `search_history` | `kind`, `pattern`, `options`, `ts` |
+| `custody` | `source_id`, `ts`, `event`, `hash BLOB`, `detail` |
+
+Journal `~/.local/share/org.pbsd.hex-editor/journal/<source>.ej`: append-only edit records plus the add buffer, checksummed per record. Templates: `templates/*.bintpl`. Scripts: `scripts/*.fs`. Signatures for carving: `signatures.json`.
+
+Sidecar `<name>.hexnotes` (JSON, `schema: 1`): `{source: {size, content_key}, annotations[], bookmarks[], templates[]}`.
+
+Patch format `.bpatch` (UTF-8 text, line-based):
+
+```
+bpatch 1
+source size=4404224 blake3=9f2c…e1
+target size=4404232 blake3=71aa…04
+@ 0x1008 old=9090 new=EB12
+@ 0x1010 old= new=DEADBEEF00000001
+end
+```
+
+Each `@` line is offset in the source, old bytes (empty for an insert), new bytes (empty for a delete), in ascending offset order. Long runs may use `old=@file:offset:length` forms only in the binary variants (VCDIFF); `.bpatch` is for small, reviewable patches (limit 16 MiB of text).
+
+### 6.3 File formats and protocols
+
+| Format or protocol | Read | Write | Library or own code | Parser runs in |
+|---|---|---|---|---|
+| Any file, device or memory as bytes | yes | yes (by grant) | own | `byte-engine` (no interpretation) |
+| Structure templates `.bintpl` | yes | yes | own compiler and evaluator | `template-engine` |
+| Data under a template | yes | field edits | own | `template-engine` |
+| `.hexnotes`, signatures, settings (JSON) | yes | yes | own strict JSON | app host (capped) |
+| `.bpatch`, IPS, BPS, VCDIFF, `bsdiff` | yes | `.bpatch`, IPS, BPS, VCDIFF | own | `template-engine` process (patch codec) |
+| Byte regex | yes | — | own linear-time automaton | `byte-engine` |
+| Compressed streams (decompress selection) | yes | no | UT01 archive helper | that helper |
+| Machine code | yes | no | DV07 disassembly engine | DV07's helper |
+| Hash and checksum algorithms | — | — | platform crypto (FORGE) plus own CRC tables | `byte-engine` |
+| Hex dump text, CSV, Markdown | no | yes | own | app host |
+
+#### Structure template language
+
+A declarative grammar for binary layouts. A template describes; it does not compute freely. There are no loops, no recursion without progress, no assignments and no I/O. Every array has a count, a byte size or an `until` condition, and every element must consume at least one byte, so evaluation terminates on any input; fuel and depth limits bound the cost.
+
+Grammar (EBNF):
+
+```
+file        = { import | const | enum | bitfield | struct | union | template } ;
+import      = "import" string ";" ;
+const       = "const" ident "=" expr ";" ;
+template    = "template" ident "{" { option } { member } "}" ;       (* a root: can be applied *)
+struct      = "struct" ident [ "(" params ")" ] "{" { option } { member } "}" ;
+union       = "union" ident "{" { member } "}" ;                      (* members overlap *)
+enum        = "enum" ident ":" inttype "{" ident "=" expr { "," ident "=" expr } "}" ;
+bitfield    = "bitfield" ident ":" inttype "{" { ident ":" number ";" } "}" ;   (* widths sum to the type *)
+option      = "endian" ( "little" | "big" ) ";" | "align" expr ";" ;
+member      = field | magic | cond | match | at | assert | let | pad ;
+field       = type ident [ array ] [ attrs ] ";" ;
+array       = "[" expr "]" | "[" "]" "until" ( "eof" | expr ) | "[" "]" "size" expr ;
+magic       = "magic" ident "=" bytes ";" ;                          (* fixed bytes; also used for auto-detect *)
+cond        = "if" "(" expr ")" "{" { member } "}" [ "else" "{" { member } "}" ] ;
+match       = "match" expr "{" { pattern "=>" member } [ "_" "=>" member ] "}" ;
+at          = "at" "(" expr ")" member ;                              (* parse at an absolute offset; cursor unchanged *)
+assert      = "assert" expr [ ":" string ] ";" ;
+let         = "let" ident "=" expr ";" ;                              (* named value, no storage *)
+pad         = "pad" expr ";" | "align" expr ";" ;
+type        = inttype | "f16" | "f32" | "f64" | "char" | "bool"
+            | "cstring" [ "(" encoding ")" ] | "string" "(" expr [ "," encoding ] ")"
+            | "uleb128" | "sleb128" | "bytes" "(" expr ")" | ident [ "(" args ")" ] ;
+inttype     = ( "u" | "i" ) ( "8" | "16" | "24" | "32" | "64" ) [ "le" | "be" ] ;
+attrs       = "@" attr { "," attr } ;
+attr        = "hex" | "dec" | "bin" | "hidden" | "time" "(" ident ")" | "colour" "(" string ")"
+            | "comment" "(" string ")" | "checksum" "(" ident "," range ")" | "max" "(" expr ")" ;
+expr        = integer arithmetic, comparison, logic, bit operations, "?:", field paths (a.b[i].c),
+              built-ins: sizeof(x), offsetof(x), here, base, eof, length(x), parent.x ;
+```
+
+Rules:
+
+- Expressions are pure and use checked 64-bit integers; overflow or division by zero makes the field an error.
+- A field path may refer only to fields already parsed (earlier in document order) or to `parent` fields. This keeps evaluation single-pass.
+- `at` reads elsewhere without moving the cursor; the engine tracks visited `(type, offset)` pairs and refuses a repeat, which stops pointer cycles.
+- `checksum(alg, range)` names a built-in algorithm (the list of F134); it is checked, never executed as code.
+- Limits per evaluation: fuel, depth 256, array `max` (default 2^32 elements, lazily materialised), string length 16 MiB.
+- Templates cannot name files other than `import` of other templates from the same library directory.
+
+Example (ELF64 header, abridged):
+
+```
+enum ElfType : u16 { NONE = 0, REL = 1, EXEC = 2, DYN = 3, CORE = 4 }
+
+template Elf64 {
+  endian little;
+  magic ident = 7F 45 4C 46;
+  u8  class   @comment("1 = 32-bit, 2 = 64-bit");
+  u8  data;
+  assert class == 2 : "not ELF64";
+  pad 10;
+  ElfType e_type;
+  u16 e_machine @hex;
+  u32 e_version;
+  u64 e_entry  @hex;
+  u64 e_phoff  @hex;
+  u64 e_shoff  @hex;
+  u32 e_flags  @hex;
+  u16 e_ehsize; u16 e_phentsize; u16 e_phnum; u16 e_shentsize; u16 e_shnum; u16 e_shstrndx;
+  at (e_phoff) ProgramHeader phdr[e_phnum];
+  at (e_shoff) SectionHeader shdr[e_shnum];
+}
+```
+
+### 6.4 Integration
+
+- Intents handled: `open`, `view`, `edit` for any type as bytes; `open` with a byte-range payload from DV05, DV07, DV01, UT01; `view` with two handles (compare) from DV03 and DV01. Emitted: `open` to DV07 (range, base, architecture), OF01, UT01, AD02; `share`; `print`.
+- Services: `svc.settings`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.clipboard`, `svc.notify` (long jobs), `svc.audit` (device and memory access, writes), `svc.backup` (optional checkpoint), `svc.model` (optional).
+- IPC offered: `org.pbsd.hex-editor.Templates/1` — evaluate a named template over a byte buffer and return the tree (used by DV05 for payload decoding and DV07 for headers).
+- IPC used: DV07 disassembly service (Proposed; DV07's spec defines it). The RetDec fork was not read for this spec; which decoder it carries is Unverified.
+- Backing repos: none. All Proposed. The hex view widget is FUSE-WP-41 (Verified as a planned work package in `FUSE_BUILD_PLAN.md`, not as code).
+
+## 7. Security and privacy
+
+| Capability | Reason |
+|---|---|
+| `fs.app` | Annotation store, edit journals, templates, scripts |
+| `fs.portal` | Files the user opens or saves; folder for carved files |
+| `proc.helper:byte-engine`, `proc.helper:template-engine` | Bundle helpers |
+| `net.none` | No network use |
+| `svc.settings`, `svc.portal.file`, `svc.portal.print`, `svc.intent`, `svc.clipboard`, `svc.notify`, `svc.audit`, `svc.backup` | As in 6.4 |
+| `svc.model`, `ai.local` | Optional local explanations and template drafts; off by default |
+
+Not expressible in PLATFORM.md section 6 today, requested as gaps: a block-device handle from a device portal (DV04-GAP-3) and a process-memory handle from a debug broker (DV04-GAP-4). The app declares no `dev.*` or `fs.path` capability; without those portals the device and memory features are absent.
+
+Assets: the bytes being examined (may be secrets: disk images, memory, keys); the integrity of devices and running processes; the user's other files.
+
+Adversaries: a hostile file crafted to exploit a parser; a hostile template or script from another person; malware in a carved file; a user mistake that overwrites a disk; another process's secrets exposed through the memory view.
+
+| Threat | Mitigation |
+|---|---|
+| Exploit in format decoding | The byte engine does not interpret formats. Templates are interpreted in `template-engine`, which has no capabilities, fuel and memory limits, and a read window only |
+| Hostile template (exponential nesting, pointer cycles, huge arrays) | Language is total by construction; `at` cycle check; lazy arrays; fuel, depth and node limits |
+| Hostile script | Own engine with an empty policy; only `hex::`; step, heap and time limits; writes obey the lock and are undoable |
+| Regex denial of service | Linear-time automaton; no backreferences |
+| Accidental write to a disk | Devices are read-only; write needs a separate grant, an unmounted non-boot device and a typed confirmation; writes are verified by read-back |
+| Reading another process's secrets | Broker decides which processes are offered (same user, inspectable only); shell prompt per process; handle dropped on lock; every access in `svc.audit` |
+| Carved malware runs | Extraction only writes files with an "untrusted, carved" provenance tag; nothing is opened or executed |
+| Decompression bomb | Decompression in UT01's helper with an output cap |
+| Secrets left behind | Edit journals and annotation notes may contain sensitive bytes; they live in `fs.app`, are removed when the buffer is closed without restore, and a "private session" keeps them in memory only |
+| Clipboard exposure | "Copy" of more than 1 MiB asks first; a "sensitive" flag can be set so the clipboard service expires the entry |
+| Annotation or patch path tricks | Sidecar and patch files carry no paths that are followed; `import` in templates is limited to the library directory |
+
+Stored: section 6.2. Leaves the machine: nothing.
+
+## 8. Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `view.bytes_per_row` | int or `fit` | 16 | Bytes per row |
+| `view.group` | int | 1 | Group size |
+| `view.base` | enum | `hex` | `hex`, `dec`, `oct`, `bin` |
+| `view.hex_upper` | bool | true | Upper-case hex digits |
+| `view.encoding` | string | `UTF-8` | Text column encoding |
+| `view.offset_base` | enum | `hex` | Offset column base |
+| `view.colour_scheme` | enum | `class` | Byte colouring |
+| `view.minimap` | bool | true | Minimap strip |
+| `edit.default_mode` | enum | `overwrite` | `overwrite`, `insert` |
+| `edit.open_read_only` | bool | true | Files open read-only until "Enable editing" |
+| `edit.keep_backup` | bool | false | Keep `.bak` on rewrite saves |
+| `inspector.endian` | enum | `little` | Default endianness |
+| `inspector.rows` | string[] | standard set | Rows shown |
+| `search.max_results` | int | 1 000 000 | Find-all cap |
+| `template.fuel` | int | 50 000 000 | Evaluation steps |
+| `template.auto_suggest` | bool | true | Offer templates by magic |
+| `diff.aligned_limit_bytes` | int | 4 GiB | Per side |
+| `strings.min_length` | int | 4 | Minimum string length |
+| `entropy.block` | int or `auto` | `auto` | Block size |
+| `carve.max_size_bytes` | int | 256 MiB | Per carved file without a length |
+| `memory.refresh_ms` | int | 0 | 0 = manual |
+| `script.max_steps`, `script.heap_bytes`, `script.timeout_ms` | int | 10^9, 256 MiB, 60 000 | Script limits |
+| `session.private` | bool | false | Keep journals in memory only |
+| `clipboard.confirm_bytes` | int | 1 MiB | Ask before copying more |
+| `ai.enabled` | bool | false | Local explanations |
+
+## 9. Accessibility and languages
+
+- The hex view exposes rows as a table in the a11y tree: offset, then each byte as a cell with its value read as hex or decimal (setting), then the text. A "read row" command and a "read selection as type" command (uses the inspector) exist.
+- Changed bytes, diff states and annotations are announced by word ("changed", "inserted", "annotation: ELF header"), not only shown by colour; colour schemes have a high-contrast and a colour-blind-safe variant, and diff uses gutter signs.
+- Entropy and histogram have a table alternative.
+- Digits are always ASCII digits regardless of locale; thousands separators appear only in decimal sizes in the status bar. Offsets are left-to-right in right-to-left UIs.
+- Every panel and dialog is keyboard reachable; the hex view never traps `Tab` (it switches columns once, then leaves on the second press; `Shift+Tab` reverses).
+
+## 10. Performance budgets
+
+| Metric | Budget |
+|---|---|
+| Cold start to first frame | ≤ 150 ms |
+| Open any file to first screen | ≤ 50 ms, independent of size |
+| Scroll | 60 Hz at any offset in a 1 TiB source; zero steady-state allocation in the view |
+| Edit (insert one byte at offset 0 of a 100 GiB file) | ≤ 1 ms |
+| Byte search (literal, NVMe, warm cache) | ≥ 1.5 GiB/s; with wildcards ≥ 500 MiB/s |
+| SHA-256 / BLAKE3 | ≥ 400 MiB/s / ≥ 1.5 GiB/s on one core |
+| Entropy of a 10 GiB file | ≤ 15 s; progressive display from the first second |
+| Template: ELF with 5 000 section headers | ≤ 20 ms; 10 million array elements stay lazy with ≤ 50 MiB |
+| Aligned diff of two 1 GiB files | ≤ 30 s |
+| Memory | app host ≤ 150 MiB; byte engine ≤ 256 MiB plus page cache; template engine ≤ 512 MiB cap |
+| Save, overwrite-only edits | time proportional to changed bytes |
+| Idle | zero frames and wake-ups (memory auto-refresh excepted when on) |
+
+## 11. Testing and proof
+
+Test plan:
+
+- Unit: piece-tree operations against a naive byte-vector model (property tests: random edit sequences give identical content and identical undo results); go-to expression parser; pattern compiler; inspector encoders and decoders with round trips for every type; `.bpatch` round trip.
+- Template language: conformance suite (each construct), termination suite (adversarial templates and data), goldens of shipped templates against known files, differential against an independent decoder for ELF, PNG and ZIP on a corpus.
+- Fuzz: template compiler; template evaluator over (template, data) pairs; patch parsers; byte regex compiler; `.hexnotes` loader; signature file loader; `ByteSource` protocol.
+- Search and hash: results equal reference tools on a corpus; huge-source tests on sparse 1 TiB files.
+- Diff: aligned diff output applied as a patch reproduces the other side (always).
+- Device and memory: tests against a memory disk and a test process; write protection tests (every write path refused without the grant).
+- Golden renders of the hex view in each base, encoding and colour scheme; scripted UI for the 14 top tasks.
+- Crash: kill the byte engine mid-save and mid-edit; the original file is intact or fully updated, and the journal restores edits.
+
+| Module | Property | Target tier | How it would be checked | What blocks a higher tier |
+|---|---|---|---|---|
+| Piece tree | Content equals the model after any edit sequence; undo is exact; offsets never overflow | T1 | PRISM proof of the tree invariants (length sums, balance) and refinement to a sequence model | Proof effort; falls back to T2 |
+| Save path | After a crash at any point the file is the old or the new content | T2 | PRISM for runtime errors; model of the rename protocol; fault-injection tests | Depends on file-system guarantees |
+| Template evaluator | Terminates within fuel on all inputs; never reads outside the window; no runtime errors | T1 (termination and bounds), T2 (rest) | Lean statement of the fuel argument; PRISM on the code; fuzz | — |
+| Template compiler | No runtime errors on any text | T2 | PRISM + fuzz | — |
+| Byte regex | Linear time in input; no runtime errors | T2 | PRISM; complexity by construction and benchmark | — |
+| Search, hash, entropy, strings, diff | Safe subset; results equal references | T3 | Subset plugin, sanitizers, differential tests | Volume of code |
+| Patch codec | No runtime errors; apply(create(a, b), a) = b | T2 (safety), T3 (round trip by test) | PRISM + property tests | — |
+| Device write gate | No write is issued without the write grant flag set by the broker | T2 | PRISM on the gate | Broker is outside the module |
+| App ForgeScript | Engine safety only | T4 | Tests | — |
+
+Nothing here has been run.
+
+## 12. Build plan
+
+Phase 1: usable core.
+
+| ID | Work item | Depends on |
+|---|---|---|
+| DV04-W01 | Shell: tabs, docks, toolbar, status bar, command palette | G-01, G-02, G-07 |
+| DV04-W02 | Byte engine: sources, piece tree, edit journal, `ByteSource` service | FORGE-WP-28.1, G-08 |
+| DV04-W03 | Hex view integration: bases, rows, encodings, splits, selection | FUSE-WP-41, DV04-GAP-2 |
+| DV04-W04 | Editing: overwrite, insert, paste special, copy as, fill, undo, change marks | DV04-W02, DV04-W03 |
+| DV04-W05 | Save paths (in place, rewrite), external change detection, crash recovery | DV04-W02 |
+| DV04-W06 | Data inspector with edit-through | DV04-W03 |
+| DV04-W07 | Go to, navigation history, bookmarks, annotations and their store | DV04-W03 |
+| DV04-W08 | Search: bytes with wildcards, text, find all | DV04-W02 |
+| DV04-W09 | Checksums and hashes, verify | DV04-W02 |
+
+Phase 2: full feature.
+
+| ID | Work item | Depends on |
+|---|---|---|
+| DV04-W20 | Template language: compiler, evaluator, limits | FORGE-WP-28.1 |
+| DV04-W21 | Template tree, field colouring, editor, edit-through, shipped templates (first 15) | DV04-W20, FUSE-WP-37 |
+| DV04-W22 | Regex and numeric search, replace, alignment | DV04-W08 |
+| DV04-W23 | Compare view: positional and aligned diff | DV04-W03 |
+| DV04-W24 | Entropy, histogram, statistics, minimap | DV04-W02, DV04-GAP-1 |
+| DV04-W25 | Strings extraction, type detection | DV04-W02 |
+| DV04-W26 | Patch files: `.bpatch`, IPS, BPS, VCDIFF | DV04-W04 |
+| DV04-W27 | Operations and transforms; decompress through UT01 | UT01 |
+| DV04-W28 | Block devices read-only, partition templates | DV04-GAP-3, AD02 |
+| DV04-W29 | Intents: byte ranges in, hand-off to DV07, compare by intent; Templates IPC | DV07, DV03, DV01, DV05 |
+
+Phase 3: advanced.
+
+| ID | Work item | Depends on |
+|---|---|---|
+| DV04-W40 | Process memory view and map | DV04-GAP-4 |
+| DV04-W41 | Disassembly pane | DV07 disassembly service |
+| DV04-W42 | File carving, custom signatures, sub-buffers | DV04-W20, DV04-W25 |
+| DV04-W43 | Scripting console, library, macros, batch | FORGE-WP-16, FORGE-WP-20 (`bytes`) |
+| DV04-W44 | Device write unlock and memory write | DV04-W28, DV04-W40 |
+| DV04-W45 | Remaining shipped templates, checksum fields, structured compare, three-way | DV04-W21, DV04-W23 |
+| DV04-W46 | Bitmap and digram views, pointer search, custody log | DV04-W24 |
+| DV04-W47 | Local AI explain and template draft | G-15 |
+
+## 13. Open questions and risks
+
+1. **Device portal (DV04-GAP-3).** No portal in PLATFORM.md section 8 hands out block-device handles. AD02 Disks needs the same thing. It should be one platform service with read-only as the default right.
+2. **Debug broker (DV04-GAP-4).** Process memory needs a platform decision on who may inspect what; HardenedBSD restricts this by default. Shared with DV01-GAP-2.
+3. **Template language scope.** The language is deliberately not Turing-complete. Some formats (compressed streams, formats needing backward references or look-ahead) cannot be described fully; those fields stay `bytes` and the user decompresses separately. Whether to add a bounded `repeat … while` with mandatory progress is open.
+4. **Disassembly engine.** Depends on DV07 offering a helper service. The RetDec fork was not read here; what it can decode is Unverified.
+5. **`bytes` in ForgeScript.** Scripting large ranges is impractical until FORGE-R-041 lands.
+6. **Aligned diff at scale.** A 4 GiB per side limit is a guess; content-defined anchoring may allow more, to be measured.
+7. **Hex view requirements.** FUSE-WP-41's stated design covers grouped hex, text column, editing, annotation layers and comparison; multi-byte overlay, value grid and disjoint selection (DV04-GAP-2) are additions.
+8. **Sensitive data in journals.** Crash recovery and secrecy pull in opposite directions; the private-session switch is the compromise. Encrypting journals with a per-session key from `svc.keyring` is an option.

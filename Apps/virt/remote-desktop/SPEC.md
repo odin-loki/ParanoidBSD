@@ -491,7 +491,7 @@ File       New connection… Ctrl+N · New folder Ctrl+Shift+N · Quick connect 
            Import… Ctrl+I · Export… Ctrl+E · Preferences Ctrl+, · Close Ctrl+W · Quit Ctrl+Q
 Edit       Undo Ctrl+Z · Redo Ctrl+Shift+Z · Rename F2 · Duplicate Ctrl+D · Edit… Ctrl+Enter ·
            Find Ctrl+F · Delete Delete
-View       List Ctrl+1 · Grid Ctrl+2 · Sidebar F9 · Inspector F4 · Server Ctrl+Shift+S ·
+View       List Ctrl+1 · Grid Ctrl+2 · Sidebar F9 · Inspector F4 · Server Ctrl+Shift+R ·
            Trust store · Recordings · Refresh F5
 Session    Connect Enter · Connect view-only Shift+Enter · Disconnect Host+Q ·
            Reconnect Host+N · Send key ▸ · Full screen Host+F · All monitors Host+M ·

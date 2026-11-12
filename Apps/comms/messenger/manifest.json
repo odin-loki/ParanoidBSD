@@ -1,0 +1,50 @@
+{
+  "id": "org.pbsd.messenger",
+  "name": "Messenger",
+  "version": "0.1.0",
+  "category": "comms",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app", "fs.portal",
+    "net.user", "net.route:clear", "net.route:vpn", "net.route:tor",
+    "proc.helper:matrix", "proc.helper:xmpp", "proc.helper:irc", "proc.helper:e2ee",
+    "proc.helper:msg-safe", "proc.helper:media", "proc.helper:rtc", "proc.helper:fetch",
+    "dev.mic", "dev.camera", "dev.screen",
+    "svc.accounts", "svc.keyring", "svc.notify", "svc.settings", "svc.intent",
+    "svc.portal.file", "svc.portal.mic", "svc.portal.camera", "svc.portal.screen",
+    "svc.media", "svc.power", "svc.search", "svc.thumbnail", "svc.backup", "svc.audit",
+    "svc.clipboard", "svc.undo-trash", "svc.a11y", "svc.model", "ai.local",
+    "bg.run", "bg.autostart"
+  ],
+  "helpers": [
+    {"name": "matrix", "language": "c++23", "capabilities": []},
+    {"name": "xmpp", "language": "c++23", "capabilities": []},
+    {"name": "irc", "language": "c++23", "capabilities": []},
+    {"name": "e2ee", "language": "undecided: c++23 or rust (SPEC section 6.5)", "capabilities": ["svc.keyring"]},
+    {"name": "msg-safe", "language": "c++23", "capabilities": []},
+    {"name": "media", "language": "c++23", "capabilities": []},
+    {"name": "rtc", "language": "undecided: c++23 or rust (SPEC section 6.5)", "capabilities": ["dev.mic", "dev.camera", "dev.screen"]},
+    {"name": "fetch", "language": "c++23", "capabilities": []}
+  ],
+  "mime": {
+    "view": [],
+    "edit": [],
+    "import": ["application/x-megolm-keys"],
+    "export": ["text/html", "text/plain", "application/json", "application/x-megolm-keys"]
+  },
+  "intents": {
+    "handles": ["compose", "share", "open", "view"],
+    "emits": ["open", "view", "share", "pick", "scan", "compose"]
+  },
+  "url_schemes": ["matrix", "xmpp", "irc", "ircs"],
+  "services_provided": ["org.pbsd.messenger.share", "org.pbsd.messenger.call"],
+  "background": {"autostart": false, "run": true},
+  "depends_on": [
+    "org.pbsd.platform >= 0.1",
+    "org.pbsd.contacts >= 0.1",
+    "org.pbsd.passwords >= 0.1"
+  ],
+  "backing_repos": ["FUSE", "FORGE", "ANONYMOUS"],
+  "priority": "P1"
+}

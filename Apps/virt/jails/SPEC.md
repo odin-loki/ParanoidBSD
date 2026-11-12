@@ -68,7 +68,7 @@ Personas:
 | T6 | Publish a port | 3 steps: Network tab, "Publish port", numbers |
 | T7 | Limit memory and CPU | 2 steps: Limits tab, move sliders (applies live) |
 | T8 | Mount a folder read-only | 3 steps: Mounts tab, "Add folder", pick |
-| T9 | Snapshot before an upgrade, roll back after | 1 step each: `Ctrl+T`, `Ctrl+Shift+Z` on the snapshot row |
+| T9 | Snapshot before an upgrade, roll back after | `Ctrl+T` (1 step); "Roll back" on the snapshot row and confirm (2 steps) |
 | T10 | Bring up a compose stack | 2 steps: drop `compose.yaml`, "Up" |
 | T11 | Update a container to a newer image | 3 steps: "Check for newer image", review digest change, "Recreate" |
 | T12 | See what a container can reach | 1 step: Capabilities tab |

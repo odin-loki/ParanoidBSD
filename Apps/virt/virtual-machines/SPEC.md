@@ -565,8 +565,8 @@ File      New VM… Ctrl+N · Import… Ctrl+I · Export… Ctrl+E · New networ
 Edit      Undo Ctrl+Z · Redo Ctrl+Shift+Z · Rename F2 · Duplicate (linked clone) Ctrl+D ·
           Full clone… Ctrl+Shift+D · Select all Ctrl+A · Find Ctrl+F · Delete Delete ·
           Delete for ever Shift+Delete
-View      List Ctrl+1 · Grid Ctrl+2 · Sidebar F9 · Inspector F4 · Hardware Ctrl+H ·
-          Snapshots Ctrl+Shift+S · Graphs Ctrl+G · Jobs Ctrl+J · Refresh F5 · Full screen F11
+View      List Ctrl+1 · Grid Ctrl+2 · Sidebar F9 · Inspector F4 · Hardware Ctrl+Shift+H ·
+          Snapshots Ctrl+Alt+S · Graphs Ctrl+Shift+G · Jobs Ctrl+J · Refresh F5 · Full screen F11
 Machine   Start Ctrl+R · Start headless Ctrl+Shift+R · Open console Enter · Pause Ctrl+. ·
           Shut down Ctrl+Shift+Q · Reboot · Reset · Force off… · Suspend to disk ·
           Boot once from ▸ · Take snapshot Ctrl+T · Revert to last… Ctrl+Shift+T ·

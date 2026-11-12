@@ -1,0 +1,36 @@
+{
+  "id": "org.pbsd.permissions",
+  "name": "Permissions",
+  "version": "0.1.0",
+  "category": "admin",
+  "entry": "main.fs",
+  "single_instance": true,
+  "capabilities": [
+    "fs.app",
+    "fs.portal",
+    "net.none",
+    "svc.policy",
+    "svc.audit",
+    "svc.settings",
+    "svc.notify",
+    "svc.portal.file",
+    "svc.portal.print",
+    "dev.print",
+    "ai.local",
+    "svc.model"
+  ],
+  "helpers": [],
+  "mime": {
+    "view": ["application/vnd.pbsd.policy+json"],
+    "edit": [],
+    "import": ["application/vnd.pbsd.policy+json"],
+    "export": ["application/vnd.pbsd.policy+json", "text/markdown", "application/json", "application/pdf", "text/vnd.graphviz"]
+  },
+  "intents": {"handles": ["open", "view", "search"], "emits": ["open", "share", "print"]},
+  "url_schemes": ["pbsd-permissions"],
+  "services_provided": [],
+  "background": {"autostart": false, "run": false},
+  "depends_on": ["org.pbsd.platform >= 0.1", "org.pbsd.portals >= 0.1"],
+  "backing_repos": ["ParanoidBSD", "FORGE", "FUSE"],
+  "priority": "P0"
+}
