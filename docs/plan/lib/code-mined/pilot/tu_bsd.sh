@@ -31,7 +31,10 @@ for round in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   bn=$(basename "$miss")
   case "$bn" in
     opt_*.h|offset.inc|*.inc) : >"$D/$bn"; echo "empty:$bn" >>"$o.stubs" ;;
-    *_if.h)  m=$(find "$S/sys" "$S" -maxdepth 6 -name "${bn%.h}.m" 2>/dev/null | head -1)
+    *_if.h)  # 13 Nov 2026: one cached index of every .m file (a find over the whole tree on the Windows file share, run per unit, took up to 30 minutes each under load)
+             IDX=$HOME/kb/bsd_m_index.txt
+             if [ ! -s "$IDX" ]; then ( flock 8; [ -s "$IDX" ] || { find "$S/sys" "$S" -maxdepth 6 -name '*.m' 2>/dev/null >"$IDX.part.$$" && mv "$IDX.part.$$" "$IDX"; } ) 8>"$IDX.lock"; fi
+             m=$(grep -m1 "/${bn%.h}\.m\$" "$IDX" 2>/dev/null)
              if [ -n "$m" ]; then (cd "$D" && awk -f "$S/sys/tools/makeobjops.awk" -- -h "$m" >/dev/null 2>&1); echo "generated:$bn from ${m#$S/}" >>"$o.stubs"; [ -f "$D/$bn" ] || { echo "makeobjops failed for $bn" >>"$o.err"; break; }
              else break; fi ;;
     *)  # a header the real build would find in an installed include directory (userland: /usr/include = include/ + sys/sys/ + libc private ...): alias by basename
