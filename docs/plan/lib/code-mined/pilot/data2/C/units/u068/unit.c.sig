@@ -1,0 +1,2 @@
+int
+struct adapter *	sc

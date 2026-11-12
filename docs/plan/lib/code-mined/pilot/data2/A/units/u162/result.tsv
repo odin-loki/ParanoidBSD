@@ -1,1 +1,1 @@
-162	gve_tx_have_enough_qpl_bufs	ring-buffer	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/bus.h:893:10: fatal error: device_if.h: No such file or directory	
+162	gve_tx_have_enough_qpl_bufs	ring-buffer	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:1220: Warning: unbound logic variable available. Ignoring logic specification of function gve_tx_have_enough_qpl_bufs	callees-without-spec:atomic_load_acq_int;stub-headers-EMPTY(option-headers-assumed-off):opt_inet6.h,offset.inc;

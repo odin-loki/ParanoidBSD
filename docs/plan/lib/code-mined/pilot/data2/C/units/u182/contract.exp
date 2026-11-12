@@ -1,0 +1,1 @@
+/*@ requires \valid(dest); ensures *dest == \old(*dest) + 1; */

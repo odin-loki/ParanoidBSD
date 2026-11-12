@@ -1,0 +1,1 @@
+114	chklck	lock-or-sync	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sendmail/libsmutil/t-lockfile.c:11:10: fatal error: sm/gen.h: No such file or dir	

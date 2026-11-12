@@ -1,1 +1,1 @@
-81	drm_agp_info	error-path	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/bus.h:893:10: fatal error: device_if.h: No such file or directory	
+81	drm_agp_info	error-path	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /home/odin/kb/bsdstub/2386024ef1a6/asm/ioctl.h:41:2: error: #error "Don't #include ioctl.h in the kernel.  Include xxxio.h instead."	

@@ -1,0 +1,1 @@
+171	get_dma_buf_unless_doomed	refcount	scalar	CONTRACT-ONLY	linux	2	2	2	3	no	25.0	contract proved; run-time-error guards not all proved (2/3)	callees-without-spec:file_ref_get;pointer-or-memory-precondition;

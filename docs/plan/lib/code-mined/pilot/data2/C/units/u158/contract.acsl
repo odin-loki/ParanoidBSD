@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == outbox1_wptr; */

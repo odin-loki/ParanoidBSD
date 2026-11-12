@@ -1,0 +1,1 @@
+67	rt712_sdca_dmic_io_init	init-teardown	ptr	/home/odin/pbsd-ref/linux/sound/soc/codecs/rt712-sdca-dmic.c	linux	ok	flexarrays=15 ok items=13674 kept=1168 protos=48 rewrites=0 attrs=18315 auto=190 bitfields=2 

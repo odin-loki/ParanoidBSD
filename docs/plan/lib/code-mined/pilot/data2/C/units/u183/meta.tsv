@@ -1,0 +1,1 @@
+183	i40e_add_flex_offset	list-op	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/intel/i40e/i40e_ethtool.c	linux	ok	flexarrays=86 ok items=22310 kept=1991 protos=71 rewrites=0 attrs=26766 auto=383 bitfields=2 

@@ -1,0 +1,1 @@
+150	kvm_dr7_valid	bitmap	scalar	/home/odin/pbsd-ref/linux/arch/x86/kvm/x86.h	linux	ok	flexarrays=0 ok items=18910 kept=5 protos=0 rewrites=0 attrs=22118 auto=330 bitfields=0 

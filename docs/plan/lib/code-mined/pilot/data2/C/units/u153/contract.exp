@@ -1,0 +1,1 @@
+/*@ requires \valid_read(big) && \valid_read(little); ensures \result == ((big->cr_rights[0] & little->cr_rights[0]) == little->cr_rights[0] && (big->cr_rights[1] & little->cr_rights[1]) == little->cr_rights[1]); */

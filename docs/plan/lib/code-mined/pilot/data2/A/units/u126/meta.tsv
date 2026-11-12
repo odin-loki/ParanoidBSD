@@ -1,1 +1,1 @@
-126	sqlite3_release_memory	allocator	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c:354:10: fatal error: stdarg.h: No such file or directory
+126	sqlite3_release_memory	allocator	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c	bsd-user	ok	flexarrays=0 ok items=5821 kept=2 protos=0 rewrites=0 attrs=260 auto=0 bitfields=0 

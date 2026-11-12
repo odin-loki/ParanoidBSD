@@ -1,0 +1,2 @@
+flags_from=drivers/scsi/scsi_proc.c mode=c probe=0
+cfg=x86

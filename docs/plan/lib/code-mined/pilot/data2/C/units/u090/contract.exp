@@ -1,0 +1,1 @@
+/*@ requires true; ensures (nopin_response_timeout > 60 || nopin_response_timeout < 3) ? \result == -22 : (\result == 0 && a->nopin_response_timeout == nopin_response_timeout); */

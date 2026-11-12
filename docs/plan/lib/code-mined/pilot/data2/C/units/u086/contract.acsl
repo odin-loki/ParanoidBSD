@@ -1,0 +1,1 @@
+/*@ requires error >= 0; ensures \result == error || (error == 0 && ((\result == 0) == (rap->r_result == 0))); */

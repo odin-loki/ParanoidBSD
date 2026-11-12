@@ -1,0 +1,1 @@
+/*@ requires flags >= 0; ensures (\result & ~(( gfp_t)((((1UL))) << (___GFP_NOFAIL_BIT)))) == \result && (!(flags & (( gfp_t)((((1UL))) << (___GFP_RETRY_MAYFAIL_BIT)))) ==> (\result & (( gfp_t)((((1UL))) << (___GFP_DIRECT_RECLAIM_BIT)))) == 0) && ((flags & (( gfp_t)((((1UL))) << (___GFP_RETRY_MAYFAIL_BIT)))) ==> \result == flags); */

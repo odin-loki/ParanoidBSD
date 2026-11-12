@@ -1,0 +1,1 @@
+60	loongson_nand_controller_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/mtd/nand/raw/loongson-nand-controller.c	linux	ok	flexarrays=12 ok items=12259 kept=999 protos=49 rewrites=0 attrs=17367 auto=199 bitfields=2 

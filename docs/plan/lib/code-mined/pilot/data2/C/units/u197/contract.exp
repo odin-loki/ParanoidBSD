@@ -1,0 +1,1 @@
+/*@ requires true; ensures wcaps == 0 ? \result == -1 : \result == ((wcaps & (0xf<<20)) >> 20); */

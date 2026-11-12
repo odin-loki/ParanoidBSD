@@ -1,0 +1,2 @@
+flags_from=sound/soc/codecs/rt712-sdca-dmic.c mode=c probe=0
+cfg=x86

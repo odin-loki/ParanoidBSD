@@ -1,0 +1,1 @@
+/*@ requires hw != ((void *)0) && io != ((void *)0); ensures \result == 0 || \result != 0; */

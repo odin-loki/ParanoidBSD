@@ -1,0 +1,2 @@
+flags_from=samples/kfifo/bytestream-example.c mode=c probe=0
+cfg=x86

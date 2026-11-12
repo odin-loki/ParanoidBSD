@@ -1,0 +1,1 @@
+81	sqlite3NomemError	error-path	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c	bsd-user	nofunc	notfound: no definition of sqlite3NomemError in the preprocessed unit [cfg=-]

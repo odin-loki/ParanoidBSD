@@ -1,1 +1,1 @@
-187	ref_join_lines	list-op	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/pbsd/bin/ed/b0193/oracle.c:9:10: fatal error: errno.h: No such file or directory	
+187	ref_join_lines	list-op	scalar	CONTRACT-ONLY	bsd-user	2	2	21	33	no	80.6	contract proved; run-time-error guards not all proved (21/33)	callees-without-spec:ref_delete_lines,ref_get_addressed_line_node,ref_get_sbuf_line,ref_handle_hup,ref_handle_int,ref_push_undo_stack,ref_put_sbuf_line;

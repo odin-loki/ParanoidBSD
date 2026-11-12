@@ -1,1 +1,1 @@
-47	cond11	arith-helper	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/bus.h:893:10: fatal error: device_if.h: No such file or directory	
+47	cond11	arith-helper	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/qlnx/qlnxe/bcm_osal.h:36:10: fatal error: linux/bitmap.h: No such file or directo	

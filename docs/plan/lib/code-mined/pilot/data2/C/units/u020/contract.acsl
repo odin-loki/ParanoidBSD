@@ -1,0 +1,1 @@
+/*@ requires blocklen >= sizeof(xfs_bmdr_block_t); ensures leaf != 0 ==> \result == (blocklen - sizeof(xfs_bmdr_block_t)) / sizeof(xfs_bmdr_rec_t); ensures leaf == 0 ==> \result == (blocklen - sizeof(xfs_bmdr_block_t)) / (sizeof(xfs_bmdr_key_t) + sizeof(xfs_bmdr_ptr_t)); */

@@ -1,0 +1,1 @@
+/*@ requires internal_offset <= SDMA0_HYP_DEC_REG_END || internal_offset > SDMA0_HYP_DEC_REG_START; ensures \result >= internal_offset; */

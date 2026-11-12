@@ -1,0 +1,1 @@
+/*@ requires trans != NULL; ensures \result == 0 || \result == 1; */

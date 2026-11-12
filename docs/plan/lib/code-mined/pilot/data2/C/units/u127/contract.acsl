@@ -1,0 +1,1 @@
+/*@ requires hw != NULL && io != NULL; ensures \result == 0 || \result != 0; */

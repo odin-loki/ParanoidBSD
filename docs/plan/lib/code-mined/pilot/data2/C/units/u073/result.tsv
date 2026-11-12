@@ -1,0 +1,1 @@
+73	hte_enable_ts	error-path	scalar	PROVED	linux	2	2	2	2	no	9.9		config:x86-defconfig(function-only-in-option-off-arm-of-allyesconfig);header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

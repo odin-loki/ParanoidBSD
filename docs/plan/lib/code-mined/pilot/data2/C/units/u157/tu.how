@@ -1,0 +1,2 @@
+flags_from=drivers/infiniband/hw/ocrdma/ocrdma_verbs.c mode=c probe=0
+cfg=x86

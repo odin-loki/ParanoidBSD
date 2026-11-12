@@ -1,0 +1,1 @@
+/*@ requires cycle_time > 0; ensures \result >= now && \result == base_time + n * cycle_time && n >= 0 && (base_time >= now ==> \result == base_time); */

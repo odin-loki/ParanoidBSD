@@ -1,0 +1,1 @@
+/*@ requires buf != NULL ==> length <= PAGE_SIZE; ensures \result >= 0 || \result == -EINVAL || \result == -ENOMEM || \result == -EFAULT || \result == -ENXIO; */

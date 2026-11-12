@@ -1,0 +1,1 @@
+76	aq_rule_is_not_support	error-path	scalar	CONTRACT-ONLY	linux	2	2	8	13	no	27.1	contract proved; run-time-error guards not all proved (8/13)	callees-without-spec:aq_rule_is_approve;

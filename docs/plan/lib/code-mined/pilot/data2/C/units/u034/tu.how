@@ -1,0 +1,2 @@
+flags_from=drivers/media/platform/qcom/venus/hfi_plat_bufs_v6.c mode=c probe=0
+cfg=x86

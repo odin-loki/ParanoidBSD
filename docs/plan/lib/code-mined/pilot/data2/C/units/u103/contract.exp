@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (\result == true) <==> (!ctx_away_valid || new_queue || (ctx_to_valid && switch_detail == 0)); */

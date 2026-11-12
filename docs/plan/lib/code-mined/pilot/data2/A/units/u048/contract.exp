@@ -1,0 +1,1 @@
+/*@ requires v >= 0; ensures \result == v * 62 + v / 2; */

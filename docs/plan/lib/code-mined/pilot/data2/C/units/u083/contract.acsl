@@ -1,0 +1,1 @@
+/*@ requires 0 <= type < DRBD_FAULT_MAX; ensures \result == 0 || (drbd_fault_rate != 0 && (drbd_enable_faults & (1<<type)) != 0); */

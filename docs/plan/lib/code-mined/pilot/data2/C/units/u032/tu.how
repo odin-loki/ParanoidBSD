@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/amd/amdgpu/sdma_v7_0.c mode=c probe=0
+cfg=x86

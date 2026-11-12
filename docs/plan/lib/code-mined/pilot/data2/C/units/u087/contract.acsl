@@ -1,0 +1,1 @@
+/*@ requires num > 0; assigns *nodata; ensures (\result == secure || \result == insecure) ==> *nodata == 1; ensures \result != secure && \result != insecure && \result != unchecked ==> *nodata == 0; */

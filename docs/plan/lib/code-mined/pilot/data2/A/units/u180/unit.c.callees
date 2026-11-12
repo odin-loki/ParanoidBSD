@@ -1,0 +1,4 @@
+GPIOBUS_PIN_SETNAME
+gpiobus_acquire_pin
+gpiobus_free_ivars
+gpiobus_release_pin

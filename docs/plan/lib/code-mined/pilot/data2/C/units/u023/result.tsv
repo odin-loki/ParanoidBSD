@@ -1,0 +1,1 @@
+23	ntp_update_offset_fll	arith-helper	scalar	UNBUILT	linux	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:28: Warning: unbound logic variable time_status. Ignoring logic specification of function ntp_update_offset_fll	callees-without-spec:div64_s64;

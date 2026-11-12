@@ -1,0 +1,1 @@
+/*@ requires nr_irqs > 0; ensures \result == 0 || \result < 0; */

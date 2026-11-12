@@ -1,0 +1,1 @@
+46	snd_hdac_get_wcaps_channels	arith-helper	ptr	FAILED	linux	1	2	-	-	-	12.5	contract not proved; solver timeout	pointer-or-memory-precondition;header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

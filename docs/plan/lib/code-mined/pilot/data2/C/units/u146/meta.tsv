@@ -1,0 +1,1 @@
+146	ehea_vlan_rx_kill_vid	bitmap	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/ibm/ehea/ehea_main.c	linux	notu	preprocess failed: kbuild produced no flags for drivers/net/ethernet/ibm/ehea/ehea_main.c (see /home/odin/kb/tu/f96c5463b8bc581a-ehea_main.c.s390.i.make.log)

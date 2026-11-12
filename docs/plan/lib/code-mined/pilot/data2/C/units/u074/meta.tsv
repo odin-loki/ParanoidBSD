@@ -1,0 +1,1 @@
+74	fsl_edma3_attach_pd	error-path	scalar	/home/odin/pbsd-ref/linux/drivers/dma/fsl-edma-main.c	linux	ok	flexarrays=14 ok items=12675 kept=875 protos=19 rewrites=0 attrs=18054 auto=208 bitfields=2 

@@ -1,0 +1,1 @@
+160	vchiq_bulk_xfer_queue_msg_killable	ring-buffer	scalar	/home/odin/pbsd-ref/linux/drivers/staging/vc04_services/interface/vchiq_arm/vchiq_core.c	linux	ok	flexarrays=11 ok items=11731 kept=824 protos=23 rewrites=0 attrs=17416 auto=238 bitfields=2 

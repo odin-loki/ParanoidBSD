@@ -1,0 +1,1 @@
+79	rpmsg_sendto	error-path	scalar	/home/odin/pbsd-ref/linux/include/linux/rpmsg.h	linux	ok	flexarrays=5 ok items=9461 kept=677 protos=9 rewrites=1 attrs=14356 auto=105 bitfields=0 

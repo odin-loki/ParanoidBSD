@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (((wcaps & (7<<13)) >> 13) + 1) * 2; */

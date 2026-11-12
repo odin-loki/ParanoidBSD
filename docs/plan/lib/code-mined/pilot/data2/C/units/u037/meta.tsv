@@ -1,0 +1,1 @@
+37	get_nss_from_chainmask	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/net/wireless/ath/ath10k/mac.c	linux	ok	flexarrays=0 ok items=22205 kept=6 protos=0 rewrites=0 attrs=24476 auto=484 bitfields=0 

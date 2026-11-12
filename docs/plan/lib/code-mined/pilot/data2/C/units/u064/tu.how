@@ -1,0 +1,2 @@
+flags_from=drivers/net/wan/hdlc_ppp.c mode=c probe=0
+cfg=x86

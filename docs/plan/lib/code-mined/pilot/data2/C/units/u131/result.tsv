@@ -1,0 +1,1 @@
+131	brcm_irq_domain_alloc	allocator	scalar	CONTRACT-ONLY	linux	2	2	2	5	no	24.3	contract proved; run-time-error guards not all proved (2/5)	callees-without-spec:brcm_irq_domain_free,brcm_msi_alloc;

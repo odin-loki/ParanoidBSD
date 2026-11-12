@@ -1,1 +1,1 @@
-48	chan_rate	arith-helper	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/bus.h:893:10: fatal error: device_if.h: No such file or directory	
+48	chan_rate	arith-helper	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:2719: Warning: unbound logic variable v. Ignoring logic specification of function chan_rate	pointer-or-memory-precondition;stub-headers-EMPTY(option-headers-assumed-off):opt_inet.h,offset.inc;

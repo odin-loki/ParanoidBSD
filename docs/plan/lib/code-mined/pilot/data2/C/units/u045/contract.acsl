@@ -1,0 +1,1 @@
+/*@ requires \valid(tc); ensures tc->nsec == \old(tc->nsec) + delta; */

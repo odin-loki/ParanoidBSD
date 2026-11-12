@@ -1,0 +1,6 @@
+empty:offset.inc
+generated:device_if.h from sys/kern/device_if.m
+generated:bus_if.h from sys/kern/bus_if.m
+empty:opt_platform.h
+generated:gpio_if.h from sys/dev/gpio/gpio_if.m
+generated:gpiobus_if.h from sys/dev/gpio/gpiobus_if.m

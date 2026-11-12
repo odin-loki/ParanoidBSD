@@ -1,0 +1,1 @@
+33	kvm_get_parange_max	arith-helper	scalar	UNBUILT	linux	-	-	-	-	-	0.2	[kernel] unit.c:13: User Error: Cannot resolve variable ID_AA64MMFR0_EL1_PARANGE_52	config:arm64-allyesconfig-modelled-with-machdep-gcc_x86_64(endianness-and-ABI-not-arm64);header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

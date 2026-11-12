@@ -1,0 +1,1 @@
+76	aq_rule_is_not_support	error-path	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/aquantia/atlantic/aq_filters.c	linux	ok	flexarrays=57 ok items=18646 kept=1693 protos=28 rewrites=0 attrs=23196 auto=314 bitfields=2 

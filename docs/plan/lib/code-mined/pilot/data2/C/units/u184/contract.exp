@@ -1,0 +1,1 @@
+/*@ requires first_block < nb_blocks; ensures 1 <= \result <= nb_blocks; */

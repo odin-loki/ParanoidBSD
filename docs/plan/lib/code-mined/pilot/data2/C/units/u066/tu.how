@@ -1,0 +1,2 @@
+flags_from=drivers/usb/gadget/udc/renesas_usbf.c mode=c probe=0
+cfg=x86

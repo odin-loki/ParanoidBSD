@@ -1,0 +1,1 @@
+147	cpu_has_vmx_intel_pt	bitmap	scalar	/home/odin/pbsd-ref/linux/arch/x86/kvm/vmx/capabilities.h	linux	ok	flexarrays=0 ok items=21090 kept=10 protos=0 rewrites=0 attrs=26419 auto=451 bitfields=0 

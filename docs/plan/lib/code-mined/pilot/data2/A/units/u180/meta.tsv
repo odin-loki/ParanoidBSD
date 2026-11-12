@@ -1,1 +1,1 @@
-180	gpiobus_acquire_child_pins	refcount	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/gpio/gpiobus.c	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/bus.h:893:10: fatal error: device_if.h: No such file or directory
+180	gpiobus_acquire_child_pins	refcount	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/gpio/gpiobus.c	bsd-kernel	ok	flexarrays=0 ok items=2051 kept=27 protos=4 rewrites=0 attrs=114 auto=0 bitfields=0 

@@ -1,0 +1,1 @@
+85	test_alloc_fence	error-path	scalar	FAILED	linux-tools	1	2	-	-	-	12.3	contract not proved; solver timeout	callees-without-spec:ksft_print_msg;

@@ -1,0 +1,1 @@
+/*@ requires requested >= 0 && rgd->rd_length > 0; ensures \result == (requested < rgd->rd_length ? requested + 1 : rgd->rd_length); */

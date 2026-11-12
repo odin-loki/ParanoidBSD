@@ -1,0 +1,1 @@
+/*@ requires base != NULL && op != NULL && ent != NULL; ensures \result == 0 && (read ==> ent->read_pos_plus1 == 0) && (!read ==> ent->write_pos_plus1 == 0); */

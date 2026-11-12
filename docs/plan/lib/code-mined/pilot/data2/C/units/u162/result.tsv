@@ -1,0 +1,1 @@
+162	dwc3_prepare_last_sg	ring-buffer	scalar	UNBUILT	linux	-	-	-	-	-	0.6	[kernel:annot-error] unit.c:10561: Warning: unbound logic variable maxp. Ignoring logic specification of function dwc3_prepare_last_sg	callees-without-spec:dwc3_calc_trbs_left,dwc3_needs_extra_trb,dwc3_prepare_one_trb,usb_endpoint_maxp;

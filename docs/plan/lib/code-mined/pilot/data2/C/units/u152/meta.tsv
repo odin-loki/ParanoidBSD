@@ -1,0 +1,1 @@
+152	display_platforms_num_bits	bitmap	ptr	/home/odin/pbsd-ref/linux/drivers/gpu/drm/i915/display/intel_display_device.c	linux	ok	flexarrays=0 ok items=18912 kept=3 protos=0 rewrites=0 attrs=21557 auto=269 bitfields=0 

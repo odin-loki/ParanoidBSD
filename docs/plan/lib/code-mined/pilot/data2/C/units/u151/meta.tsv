@@ -1,0 +1,1 @@
+151	il4965_is_tx_success	bitmap	scalar	/home/odin/pbsd-ref/linux/drivers/net/wireless/intel/iwlegacy/4965-mac.c	linux	ok	flexarrays=0 ok items=19447 kept=7 protos=0 rewrites=0 attrs=23830 auto=376 bitfields=0 

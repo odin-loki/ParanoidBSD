@@ -1,0 +1,2 @@
+flags_from=drivers/infiniband/core/cm.c mode=c probe=0
+cfg=x86

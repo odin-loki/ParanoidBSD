@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/aquantia/atlantic/aq_filters.c mode=c probe=0
+cfg=x86

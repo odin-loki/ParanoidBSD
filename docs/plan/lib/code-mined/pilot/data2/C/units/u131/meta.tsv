@@ -1,0 +1,1 @@
+131	brcm_irq_domain_alloc	allocator	scalar	/home/odin/pbsd-ref/linux/drivers/pci/controller/pcie-brcmstb.c	linux	ok	flexarrays=19 ok items=14995 kept=1128 protos=23 rewrites=0 attrs=19940 auto=246 bitfields=2 

@@ -1,0 +1,2 @@
+flags_from=drivers/infiniband/hw/mlx5/macsec.c mode=includer:drivers/infiniband/hw/mlx5/macsec.c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+/*@ requires wq->ring.desc_avail < wq->ring.desc_count; ensures \result == wq->ring.desc_count - wq->ring.desc_avail - 1; */

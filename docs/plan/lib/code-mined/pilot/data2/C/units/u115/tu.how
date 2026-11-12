@@ -1,0 +1,2 @@
+flags_from=drivers/gpio/gpio-max7360.c mode=c probe=0
+cfg=x86

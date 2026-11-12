@@ -1,0 +1,2 @@
+flags_from=net/ethtool/coalesce.c mode=c probe=0
+cfg=x86

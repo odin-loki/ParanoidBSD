@@ -1,0 +1,1 @@
+3	lan969x_dsm_cal_get_speed	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/microchip/sparx5/lan969x/lan969x_calendar.c	linux	ok	flexarrays=0 ok items=19057 kept=3 protos=0 rewrites=0 attrs=23188 auto=327 bitfields=0 

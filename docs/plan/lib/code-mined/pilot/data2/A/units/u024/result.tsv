@@ -1,1 +1,1 @@
-24	isu8cont	arith-helper	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/usr.sbin/ypldap/aldap.c:22:10: fatal error: errno.h: No such file or directory	
+24	isu8cont	arith-helper	scalar	PROVED	bsd-user	2	2	2	2	no	10.3		

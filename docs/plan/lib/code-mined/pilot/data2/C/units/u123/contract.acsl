@@ -1,0 +1,1 @@
+/*@ requires \valid_read(base) && \valid(oldvalp); ensures (\result == -1) || (\result == 0 && *oldvalp == oldval) || (\result == 1 && *oldvalp != oldval); */

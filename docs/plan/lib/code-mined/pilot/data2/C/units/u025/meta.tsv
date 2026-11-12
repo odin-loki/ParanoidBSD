@@ -1,0 +1,1 @@
+25	stm32_dma_is_burst_possible	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/dma/stm32/stm32-dma.c	linux	ok	flexarrays=0 ok items=12391 kept=5 protos=0 rewrites=0 attrs=18018 auto=200 bitfields=0 

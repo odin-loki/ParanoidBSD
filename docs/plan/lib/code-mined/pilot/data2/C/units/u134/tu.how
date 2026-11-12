@@ -1,0 +1,2 @@
+flags_from=drivers/md/dm-vdo/action-manager.c mode=includer:drivers/md/dm-vdo/action-manager.c probe=0
+cfg=x86

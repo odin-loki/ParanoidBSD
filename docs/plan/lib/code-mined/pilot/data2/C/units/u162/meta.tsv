@@ -1,0 +1,1 @@
+162	dwc3_prepare_last_sg	ring-buffer	scalar	/home/odin/pbsd-ref/linux/drivers/usb/dwc3/gadget.c	linux	ok	flexarrays=18 ok items=14859 kept=1178 protos=23 rewrites=0 attrs=20101 auto=279 bitfields=2 

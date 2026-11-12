@@ -1,0 +1,1 @@
+78	coalesce_put_u32	error-path	scalar	PROVED	linux	2	2	2	2	no	12.8		callees-without-spec:attr_to_mask,nla_put_u32;

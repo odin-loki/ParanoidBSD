@@ -1,0 +1,1 @@
+/*@ requires ddata != ((void *)0) && v != ((void *)0); ensures \result == 1 || \result == 0; */

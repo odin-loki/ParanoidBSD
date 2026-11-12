@@ -1,0 +1,1 @@
+/*@ requires dmabuf != ((void *)0); ensures \result == 0 || \result == 1; */

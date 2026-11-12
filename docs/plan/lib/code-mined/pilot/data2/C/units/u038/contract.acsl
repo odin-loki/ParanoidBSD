@@ -1,0 +1,1 @@
+/*@ requires cid <= 0xFFFFFFFF / QED_PF_DEMS_SIZE; ensures \result == (DEMS << DB_LEGACY_ADDR_DEMS_SHIFT) + cid * QED_PF_DEMS_SIZE; */

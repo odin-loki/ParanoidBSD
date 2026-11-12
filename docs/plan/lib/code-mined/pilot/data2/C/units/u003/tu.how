@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/microchip/sparx5/lan969x/lan969x_calendar.c mode=c probe=0
+cfg=x86

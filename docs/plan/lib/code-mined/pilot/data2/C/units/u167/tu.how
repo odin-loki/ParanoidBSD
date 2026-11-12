@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/amd/amdgpu/vcn_v1_0.c mode=c probe=0
+cfg=x86

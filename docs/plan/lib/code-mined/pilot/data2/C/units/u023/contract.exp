@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (\result == 0) <==> (secs < 256 || (!(time_status & 0x0008) && secs <= 2048)); */

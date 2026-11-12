@@ -1,0 +1,1 @@
+25	stm32_dma_is_burst_possible	arith-helper	BV-CONTRACT-ONLY	0.2	undefined behaviour possible: stm32_dma_is_burst_possible.division-by-zero.1 

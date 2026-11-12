@@ -1,0 +1,1 @@
+88	__do_cpuid_func_emulated	error-path	ptr	/home/odin/pbsd-ref/linux/arch/x86/kvm/cpuid.c	linux	ok	flexarrays=0 ok items=19950 kept=9 protos=1 rewrites=0 attrs=24718 auto=390 bitfields=0 

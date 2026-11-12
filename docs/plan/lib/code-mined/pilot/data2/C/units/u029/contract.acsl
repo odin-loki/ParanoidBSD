@@ -1,0 +1,1 @@
+/*@ requires vmax > 0; ensures 0 <= \result < vmax && \result % vmax == v % vmax; */

@@ -1,0 +1,1 @@
+/*@ requires rate > 0; ensures \result == -EINVAL <==> rate == 0; ensures \result == 0 ==> apad_ck->div == 2 || apad_ck->div == 3; */

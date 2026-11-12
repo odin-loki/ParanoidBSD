@@ -1,0 +1,1 @@
+/*@ requires true; ensures (nopin_response_timeout > NA_NOPIN_RESPONSE_TIMEOUT_MAX || nopin_response_timeout < NA_NOPIN_RESPONSE_TIMEOUT_MIN) ? \result == -EINVAL : (\result == 0 && a->nopin_response_timeout == nopin_response_timeout); */

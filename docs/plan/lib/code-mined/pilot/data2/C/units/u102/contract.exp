@@ -1,0 +1,1 @@
+/*@ requires csio != ((void *)0); ensures \result == -1 || \result == 0; */

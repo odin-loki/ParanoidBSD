@@ -1,0 +1,1 @@
+142	ethtool_adv_to_mii_ctrl1000_t	bitmap	scalar	/home/odin/pbsd-ref/linux/include/linux/mii.h	linux	ok	flexarrays=0 ok items=15554 kept=5 protos=0 rewrites=0 attrs=20447 auto=286 bitfields=0 

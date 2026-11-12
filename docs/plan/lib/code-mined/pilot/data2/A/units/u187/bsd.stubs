@@ -1,0 +1,1 @@
+alias:errno.h->sys/sys/errno.h

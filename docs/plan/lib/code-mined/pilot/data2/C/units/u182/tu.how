@@ -1,0 +1,2 @@
+flags_from=drivers/scsi/qla2xxx/qla_target.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+/*@ requires 0 <= off && 0 <= count; ensures \result <= count && (off > size ==> \result == 0) && (off + count <= size ==> \result == count) && (off <= size && off + count > size ==> \result == size - off); */

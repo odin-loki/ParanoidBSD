@@ -1,0 +1,1 @@
+127	ocs_hw_io_register_sgl	allocator	scalar	CONTRACT-ONLY	bsd-kernel	2	2	2	6	no	24.3	contract proved; run-time-error guards not all proved (2/6)	callees-without-spec:sli_get_sgl_preregister;pointer-or-memory-precondition;stub-headers-EMPTY(option-headers-assumed-off):opt_stack.h,offset.inc,opt_cam.h;

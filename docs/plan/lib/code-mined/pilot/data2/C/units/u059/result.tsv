@@ -1,0 +1,1 @@
+59	ftm_clocksource_init	init-teardown	scalar	FAILED	linux	1	2	-	-	-	12.2	contract not proved; solver timeout	callees-without-spec:ftm_counter_enable,ftm_read_sched_clock,ftm_reset_counter,ftm_writel,sched_clock_register;

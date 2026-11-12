@@ -1,0 +1,1 @@
+111	console_trylock	lock-or-sync	scalar	PROVED	bsd-kernel	2	2	2	2	no	13.3		stub-headers-EMPTY(option-headers-assumed-off):offset.inc;

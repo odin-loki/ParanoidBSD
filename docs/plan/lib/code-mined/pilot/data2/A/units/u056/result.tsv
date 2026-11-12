@@ -1,1 +1,1 @@
-56	aes_mod_fini	init-teardown	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/contrib/openzfs/include/sys/zfs_context.h:90:10: fatal error: stdio.h: No such file o	
+56	aes_mod_fini	init-teardown	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /home/odin/kb/bsdstub/178a590f290a/strings.h:71:10: fatal error: xlocale/_strings.h: No such file or directory	

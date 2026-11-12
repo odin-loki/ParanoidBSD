@@ -1,0 +1,1 @@
+89	check_expr_operands	error-path	ptr	/home/odin/pbsd-ref/linux/kernel/trace/trace_events_hist.c	linux	ok	flexarrays=23 ok items=16338 kept=1342 protos=26 rewrites=0 attrs=19845 auto=303 bitfields=2 

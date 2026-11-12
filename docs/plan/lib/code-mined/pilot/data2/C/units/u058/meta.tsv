@@ -1,0 +1,1 @@
+58	xilinx_pl_dma_pcie_setup_irq	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/pci/controller/pcie-xilinx-dma-pl.c	linux	ok	flexarrays=14 ok items=13109 kept=1013 protos=46 rewrites=0 attrs=17788 auto=196 bitfields=2 

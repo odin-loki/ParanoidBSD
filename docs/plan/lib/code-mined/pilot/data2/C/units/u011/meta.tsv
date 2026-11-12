@@ -1,0 +1,1 @@
+11	smc_llc_active_link_count	arith-helper	scalar	/home/odin/pbsd-ref/linux/net/smc/smc_llc.c	linux	ok	flexarrays=91 ok items=22664 kept=2098 protos=49 rewrites=0 attrs=27183 auto=402 bitfields=2 

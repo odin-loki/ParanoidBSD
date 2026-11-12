@@ -1,0 +1,1 @@
+101	inst_trap_return	parser	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/arm/include/db_machdep.h	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/arm/include/db_machdep.h:34:10: fatal error: machine/armreg.h: No such file or direct

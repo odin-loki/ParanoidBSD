@@ -1,0 +1,5 @@
+ftm_counter_enable
+ftm_read_sched_clock
+ftm_reset_counter
+ftm_writel
+sched_clock_register

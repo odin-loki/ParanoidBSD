@@ -1,1 +1,1 @@
-95	LZ4_compress64kCtx	parser	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/contrib/openzfs/include/sys/zfs_context.h:90:10: fatal error: stdio.h: No such file o	
+95	LZ4_compress64kCtx	parser	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /home/odin/kb/bsdstub/f504cb8e84aa/strings.h:71:10: fatal error: xlocale/_strings.h: No such file or directory	

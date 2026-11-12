@@ -1,0 +1,1 @@
+/*@ requires true; ensures mock_calloc_fail == 0 ==> \result != 0; */

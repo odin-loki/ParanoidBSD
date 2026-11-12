@@ -1,0 +1,1 @@
+90	iscsit_na_nopin_response_timeout	error-path	ptr	UNBUILT	linux	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:1002: Warning: unbound logic variable a. Ignoring logic specification of function iscsit_na_nopin_response_timeout	callees-without-spec:arch_static_branch,arch_static_branch_jump,iscsit_na_get_initiatorname,static_key_false,static_key_true;pointer-or-memory-precondition;

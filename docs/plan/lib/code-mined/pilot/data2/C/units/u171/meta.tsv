@@ -1,0 +1,1 @@
+171	get_dma_buf_unless_doomed	refcount	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/vmwgfx/ttm_object.c	linux	ok	flexarrays=16 ok items=14636 kept=1057 protos=20 rewrites=0 attrs=19114 auto=260 bitfields=2 

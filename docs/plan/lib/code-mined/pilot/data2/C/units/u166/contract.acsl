@@ -1,0 +1,1 @@
+/*@ requires 0 <= slot && (ebuf != 0 || ecount >= 0); ensures \result >= 0 || (-4096 < \result < 0); */

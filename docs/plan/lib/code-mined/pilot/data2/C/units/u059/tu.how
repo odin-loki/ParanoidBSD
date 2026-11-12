@@ -1,0 +1,2 @@
+flags_from=drivers/clocksource/timer-fsl-ftm.c mode=c probe=0
+cfg=x86

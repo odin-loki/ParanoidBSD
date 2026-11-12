@@ -1,0 +1,2 @@
+flags_from=drivers/pci/controller/pcie-brcmstb.c mode=c probe=0
+cfg=x86

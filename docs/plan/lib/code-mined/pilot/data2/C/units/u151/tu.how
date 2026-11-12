@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/intel/iwlegacy/4965-mac.c mode=c probe=0
+cfg=x86

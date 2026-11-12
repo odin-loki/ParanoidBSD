@@ -1,0 +1,1 @@
+168	NEXT_CP_CONS_V	ring-buffer	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/bnxt/bnxt_en/bnxt_auxbus_compat.h:32:10: fatal error: linux/device.h: No such fil	

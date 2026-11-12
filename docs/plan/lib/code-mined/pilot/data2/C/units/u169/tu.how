@@ -1,0 +1,2 @@
+flags_from=sound/pci/lola/lola.c mode=c probe=0
+cfg=x86

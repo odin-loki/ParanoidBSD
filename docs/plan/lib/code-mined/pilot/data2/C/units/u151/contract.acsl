@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((status & TX_STATUS_MSK) == TX_STATUS_SUCCESS || (status & TX_STATUS_MSK) == TX_STATUS_DIRECT_DONE); */

@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result == MT_HIF_REMAP_BASE_L1; */

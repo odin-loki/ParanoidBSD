@@ -1,0 +1,1 @@
+/*@ requires to != \null && from != \null; ensures \result == 0 || \result < 0; */

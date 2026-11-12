@@ -1,0 +1,1 @@
+/*@ requires 1; ensures (vector > 0 ==> \result == 0) && (vector == 0 ==> \result == (1LL << 16) - 1); */

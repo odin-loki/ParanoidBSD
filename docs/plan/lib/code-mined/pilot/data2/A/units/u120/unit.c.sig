@@ -1,0 +1,2 @@
+long
+volatile long *	lck

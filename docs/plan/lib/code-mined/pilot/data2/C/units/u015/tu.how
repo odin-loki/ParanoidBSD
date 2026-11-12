@@ -1,0 +1,2 @@
+flags_from=drivers/usb/chipidea/udc.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+149	kvm_pte_mkyoung	bitmap	scalar	/home/odin/pbsd-ref/linux/arch/loongarch/include/asm/kvm_mmu.h	linux	notu	architecture without a configured kernel tree (arch/loongarch/include/asm/kvm_mmu.h)

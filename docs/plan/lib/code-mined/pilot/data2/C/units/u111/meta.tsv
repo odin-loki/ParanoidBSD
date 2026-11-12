@@ -1,0 +1,1 @@
+111	console_trylock	lock-or-sync	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/compat/linuxkpi/common/include/linux/console.h	bsd-kernel	ok	flexarrays=0 ok items=950 kept=1 protos=0 rewrites=0 attrs=50 auto=0 bitfields=0 

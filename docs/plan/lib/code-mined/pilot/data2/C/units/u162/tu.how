@@ -1,0 +1,2 @@
+flags_from=drivers/usb/dwc3/gadget.c mode=c probe=0
+cfg=x86

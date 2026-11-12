@@ -140,3 +140,10 @@ Mistakes made while running the verification plan, and the rule from each:
 - **bash reads a running script incrementally:** lines appended to `run_pilot.sh` while it ran were executed. Edit scripts only between runs (or write a new file and `mv` it, which gives a new inode).
 - **`reasoning_effort: low` still burns 8,000 to 14,000 tokens on a bit-vector or loop-invariant task and returns an empty answer** when `max_tokens` is below that; cap at 14,000 (20,000 for the `high` attempt) and expect about $0.003-0.013 per attempt.
 - **Frama-C from apt (`frama-c-base` 25.0-beta) has no WP.** WP needs the opam build: `tools`: `docs/plan/lib/code-mined/pilot/install_framac_wp.sh` (private opam root `~/.opam-pbsd`, switch `wp`, OCaml 4.14.2, Frama-C 33.0, Why3 1.8.2, Alt-Ergo 2.6.4; about 25 minutes; z3 4.8.12 and cvc5 1.1.2 from apt). `source pilot/env.sh` first.
+
+## H. S4 round 2 tooling notes (12 Nov 2026)
+
+- `wsl -- bash -c` strings and heredocs lose `$` and backslashes through the Bash tool and MSYS: write scripts with the Write tool, run `MSYS_NO_PATHCONV=1 wsl -- bash /mnt/c/.../x.sh`.
+- Waiting: Monitor `sleep` returns early here; block with `wsl -- timeout 110 tail -f /dev/null` instead.
+- Kernel preprocessing needs no full build: `make O=~/kb/x86 allyesconfig prepare` plus libelf headers unpacked from the `.deb` (no root); then `make <file>.i` gives the exact flags in `.<file>.i.cmd`. Serialise kbuild with flock.
+- Frama-C rejects: `__auto_type`, `asm inline`, bit-field widths with `__builtin_*`, nested flexible/zero-length arrays, GNU `?:` in attributes. `scripts/config --file` with an empty variable silently edits nothing.

@@ -1,0 +1,2 @@
+alias:libsys.h->lib/libsys/libsys.h
+alias:_libsys.h->lib/libsys/_libsys.h

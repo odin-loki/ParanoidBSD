@@ -1,0 +1,1 @@
+27	cpufreq_power2state	arith-helper	scalar	CONTRACT-ONLY	linux	2	2	4	9	no	22.5	contract proved; run-time-error guards not all proved (4/9)	callees-without-spec:cpu_power_to_freq,get_level,trace_thermal_power_cpu_limit;

@@ -1,0 +1,1 @@
+116	ref__pthread_single_np	lock-or-sync	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:4: Warning: unbound logic variable true. Ignoring logic specification of function ref__pthread_single_np	callees-without-spec:_pthread_suspend_all_np;

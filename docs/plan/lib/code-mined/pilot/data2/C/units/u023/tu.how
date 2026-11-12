@@ -1,0 +1,2 @@
+flags_from=kernel/time/ntp.c mode=c probe=0
+cfg=x86

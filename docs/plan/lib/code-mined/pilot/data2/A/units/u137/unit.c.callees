@@ -1,0 +1,6 @@
+disableLookaside
+sqlite3DbMallocSize
+sqlite3DbRealloc
+sqlite3Realloc
+sqlite3StrAccumSetError
+sqlite3_str_reset

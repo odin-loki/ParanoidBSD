@@ -1,0 +1,4 @@
+name=x86d arch=x86_64 target=defconfig args=
+config_sha256=42edc51aeff3805e
+prepare_rc=0
+kernel=6.18.60

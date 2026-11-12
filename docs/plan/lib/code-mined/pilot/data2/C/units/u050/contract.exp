@@ -1,0 +1,1 @@
+/*@ requires start <= end; ensures \result == 1 <==> (pvr_heap->base <= start && end < pvr_heap->base + pvr_heap->size); */

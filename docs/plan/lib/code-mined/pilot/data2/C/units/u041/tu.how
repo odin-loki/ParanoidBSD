@@ -1,0 +1,2 @@
+flags_from=drivers/net/wireless/realtek/rtw89/phy.c mode=c probe=0
+cfg=x86

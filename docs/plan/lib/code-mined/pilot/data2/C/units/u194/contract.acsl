@@ -1,0 +1,1 @@
+/*@ requires fields >= 0; ensures \result == (((fields & 1) != 0 ? KNL_CHA_MSR_PMON_BOX_FILTER_TID : 0) | ((fields & 2) != 0 ? KNL_CHA_MSR_PMON_BOX_FILTER_STATE : 0) | ((fields & 4) != 0 ? KNL_CHA_MSR_PMON_BOX_FILTER_OP : 0)); */

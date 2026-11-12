@@ -1,0 +1,1 @@
+/*@ requires nByte>=0 && iOff>=0; ensures (\result==0) || (\result==SQLITE_IOERR_UNLOCK); */

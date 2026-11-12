@@ -1,0 +1,1 @@
+86	smb_rap_error	error-path	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/smbfs/lib/smb/rap.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/smbfs/lib/smb/rap.c:49:10: fatal error: netsmb/smb_lib.h: No such file or directo

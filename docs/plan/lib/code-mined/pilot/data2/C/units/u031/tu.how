@@ -1,0 +1,2 @@
+flags_from=drivers/media/common/siano/smsdvb-main.c mode=c probe=0
+cfg=x86

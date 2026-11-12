@@ -1,0 +1,1 @@
+/*@ requires true; ensures (is_demod_locked != 0) ? \result == (FE_HAS_SIGNAL | FE_HAS_CARRIER | FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK) : ((is_rf_locked != 0) ? \result == (FE_HAS_SIGNAL | FE_HAS_CARRIER) : \result == 0); */

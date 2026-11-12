@@ -1,0 +1,2 @@
+flags_from=drivers/media/dvb-core/dvb_ca_en50221.c mode=c probe=0
+cfg=x86

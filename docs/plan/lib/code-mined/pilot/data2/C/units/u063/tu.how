@@ -1,0 +1,2 @@
+flags_from=fs/btrfs/bio.c mode=includer:fs/btrfs/bio.c probe=0
+cfg=x86d

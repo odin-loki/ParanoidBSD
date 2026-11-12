@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (parent->start <= child->start && child->end <= parent->end); */

@@ -1,0 +1,1 @@
+/*@ requires \valid_read(list + (*head)) || *head == TX_LINK_NONE; ensures \result == \old(*head) && (\result != TX_LINK_NONE ==> (*head == \old(list[\result]) && list[\result] == TX_LINK_NONE)); */

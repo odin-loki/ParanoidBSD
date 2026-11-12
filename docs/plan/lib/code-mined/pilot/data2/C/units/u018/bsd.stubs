@@ -1,0 +1,8 @@
+empty:opt_ddb.h
+empty:opt_kstack_pages.h
+empty:opt_pax.h
+empty:opt_pmap.h
+empty:opt_vm.h
+empty:offset.inc
+generated:device_if.h from sys/kern/device_if.m
+generated:bus_if.h from sys/kern/bus_if.m

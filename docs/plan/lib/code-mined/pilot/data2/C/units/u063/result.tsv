@@ -1,0 +1,1 @@
+63	btrfs_load_block_group_zone_info	init-teardown	scalar	PROVED	linux	2	2	2	2	no	11.0		config:x86-defconfig(function-only-in-option-off-arm-of-allyesconfig);

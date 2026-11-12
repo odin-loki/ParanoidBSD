@@ -1,0 +1,1 @@
+136	__wrap_calloc	allocator	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:6: Warning: unbound logic variable true. Ignoring logic specification of function __wrap_calloc	

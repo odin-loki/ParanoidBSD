@@ -1,0 +1,1 @@
+153	cap_rights_contains_transient	bitmap	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/capsicum.h	bsd-kernel	ok	flexarrays=0 ok items=1212 kept=10 protos=0 rewrites=0 attrs=56 auto=0 bitfields=0 

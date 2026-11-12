@@ -1,0 +1,1 @@
+/*@ requires fifo->head <= fifo->size; ensures (fifo->head + bytes < fifo->size) ? \result == 0 : \result == fifo->size - fifo->head; */

@@ -1,0 +1,4 @@
+empty:offset.inc
+generated:device_if.h from sys/kern/device_if.m
+generated:bus_if.h from sys/kern/bus_if.m
+generated:pci_if.h from sys/dev/pci/pci_if.m

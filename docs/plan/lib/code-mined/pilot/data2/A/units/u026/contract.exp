@@ -1,0 +1,1 @@
+/*@ requires 1; ensures iic_status == 0x0 ? \result == 0 : (iic_status & (-0x7fffffff - 1)) == 0 ? \result == 5 : ((iic_status & 0xFFFF0000) != 0 ? \result == iic_status : \result == (iic_status & ~(-0x7fffffff - 1))); */

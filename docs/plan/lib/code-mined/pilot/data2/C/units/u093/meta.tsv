@@ -1,0 +1,1 @@
+93	proc_scsi_write	parser	scalar	/home/odin/pbsd-ref/linux/drivers/scsi/scsi_proc.c	linux	ok	flexarrays=12 ok items=12309 kept=930 protos=19 rewrites=0 attrs=17873 auto=221 bitfields=2 

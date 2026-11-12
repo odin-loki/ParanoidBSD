@@ -1,0 +1,1 @@
+/*@ requires length >= 8; ensures (\result == -EINVAL) || (\result == length); */

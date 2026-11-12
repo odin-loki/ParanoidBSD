@@ -1,0 +1,1 @@
+44	gk104_pll_calc_hiclk	arith-helper	ptr	/home/odin/pbsd-ref/linux/drivers/gpu/drm/nouveau/nvkm/subdev/fb/ramgk104.c	linux	ok	flexarrays=0 ok items=16977 kept=8 protos=1 rewrites=0 attrs=20612 auto=250 bitfields=0 

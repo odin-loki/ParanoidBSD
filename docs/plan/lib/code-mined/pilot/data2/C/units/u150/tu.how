@@ -1,0 +1,2 @@
+flags_from=arch/x86/kvm/emulate.c mode=includer:arch/x86/kvm/emulate.c probe=0
+cfg=x86

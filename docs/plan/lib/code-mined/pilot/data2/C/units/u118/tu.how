@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/amd/xgbe/xgbe-phy-v2.c mode=c probe=0
+cfg=x86

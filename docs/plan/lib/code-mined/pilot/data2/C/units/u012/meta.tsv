@@ -1,0 +1,1 @@
+12	kprobe_recursed_target	arith-helper	scalar	/home/odin/pbsd-ref/linux/lib/tests/test_kprobes.c	linux	ok	flexarrays=0 ok items=11227 kept=3 protos=0 rewrites=0 attrs=16614 auto=187 bitfields=0 

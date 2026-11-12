@@ -1,0 +1,1 @@
+/*@ requires 0 <= cr && cr <= CR_MAX; ensures \result == (cr >= CR_GOAL_LEN_SLOW); */

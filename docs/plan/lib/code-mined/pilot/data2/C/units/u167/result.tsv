@@ -1,0 +1,1 @@
+167	vcn_v1_0_enc_ring_get_rptr	ring-buffer	ptr	UNBUILT	linux	-	-	-	-	-	0.4	[kernel] unit.c:1327: User Error: bitfield width is not a valid integer constant [kernel] Frama-C aborted: invalid user input.	pointer-or-memory-precondition;

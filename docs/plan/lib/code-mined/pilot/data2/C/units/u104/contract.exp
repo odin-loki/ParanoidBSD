@@ -1,0 +1,1 @@
+/*@ requires length >= 8; ensures (\result == -22) || (\result == length); */

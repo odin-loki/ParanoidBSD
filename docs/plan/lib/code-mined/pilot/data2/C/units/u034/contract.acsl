@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result <= VPP_CMD_MAX_SIZE; */

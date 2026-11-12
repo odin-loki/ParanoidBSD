@@ -1,0 +1,1 @@
+/*@ requires dirtytime_expire_interval >= 0; ensures \result == 0; */

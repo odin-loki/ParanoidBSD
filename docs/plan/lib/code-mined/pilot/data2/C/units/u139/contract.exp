@@ -1,0 +1,1 @@
+/*@ requires nents == \null || \true; ensures \result == 0 ==> *sgl != \null && *nents > 0; ensures \result == -12 ==> *sgl == \null; */

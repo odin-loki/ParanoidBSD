@@ -1,0 +1,1 @@
+48	future_base_time	arith-helper	ptr	UNBUILT	linux	-	-	-	-	-	0.1	[kernel:annot-error] unit.c:7: Warning: unbound logic variable n. Ignoring logic specification of function future_base_time	callees-without-spec:div_s64;pointer-or-memory-precondition;header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

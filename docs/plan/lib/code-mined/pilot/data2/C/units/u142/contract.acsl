@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result & ~(ADVERTISE_1000HALF | ADVERTISE_1000FULL)) == 0 && ((ethadv & ADVERTISED_1000baseT_Half) != 0 <==> (\result & ADVERTISE_1000HALF) != 0) && ((ethadv & ADVERTISED_1000baseT_Full) != 0 <==> (\result & ADVERTISE_1000FULL) != 0); */

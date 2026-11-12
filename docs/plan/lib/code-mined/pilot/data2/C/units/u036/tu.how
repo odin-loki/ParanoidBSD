@@ -1,0 +1,2 @@
+flags_from=drivers/media/pci/cx88/cx88-alsa.c mode=includer:drivers/media/pci/cx88/cx88-alsa.c probe=0
+cfg=x86

@@ -1,1 +1,1 @@
-187	ref_join_lines	list-op	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/pbsd/bin/ed/b0193/oracle.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/pbsd/bin/ed/b0193/oracle.c:9:10: fatal error: errno.h: No such file or directory
+187	ref_join_lines	list-op	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/pbsd/bin/ed/b0193/oracle.c	bsd-user	ok	flexarrays=0 ok items=806 kept=44 protos=7 rewrites=0 attrs=48 auto=0 bitfields=0 

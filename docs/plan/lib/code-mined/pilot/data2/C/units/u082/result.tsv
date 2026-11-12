@@ -1,0 +1,1 @@
+82	validate_ops	error-path	scalar	UNBUILT	linux	-	-	-	-	-	0.6	[kernel] unit.c:1398: User Error: bitfield width is not a valid integer constant [kernel] Frama-C aborted: invalid user input.	callees-without-spec:bpf_capable,fnhe_genid,nla_len,nla_type,nlmsg_len,nlmsg_seq,scx_exit,subprog_info;

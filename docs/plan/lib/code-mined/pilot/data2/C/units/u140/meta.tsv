@@ -1,0 +1,1 @@
+140	oxu_buf_alloc	allocator	ptr	/home/odin/pbsd-ref/linux/drivers/usb/host/oxu210hp-hcd.c	linux	ok	flexarrays=15 ok items=12909 kept=857 protos=19 rewrites=0 attrs=18043 auto=203 bitfields=2 

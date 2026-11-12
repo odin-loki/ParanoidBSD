@@ -1,0 +1,1 @@
+/*@ requires mask_buf >> MAX7360_MAX_GPIO == 0; ensures \result == 0 || \result < 0; */

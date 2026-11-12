@@ -1,0 +1,2 @@
+__curthread
+atomic_fcmpset_long

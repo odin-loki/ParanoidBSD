@@ -1,0 +1,1 @@
+75	at91_twi_probe_slave	error-path	scalar	PROVED	linux	2	2	2	2	no	11.6		config:x86-defconfig(function-only-in-option-off-arm-of-allyesconfig);

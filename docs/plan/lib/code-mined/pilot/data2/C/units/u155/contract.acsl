@@ -1,0 +1,1 @@
+/*@ requires feature != 0; ensures \result == ((MMU_FTRS_ALWAYS & feature) != 0 || (MMU_FTRS_POSSIBLE & cur_cpu_spec->mmu_features & feature) != 0); */

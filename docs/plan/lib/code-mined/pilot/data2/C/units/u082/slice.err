@@ -1,0 +1,3 @@
+bitfield width not evaluated:  ( __builtin_constant_p(5) ? ( ((5) == 0 || (5) == 1) ? 1 : 
+bitfield width not evaluated:  ( __builtin_constant_p((1L << 10)) ? ( (((1L << 10)) == 0 |
+flexarrays=50 ok items=19085 kept=1656 protos=32 rewrites=0 attrs=23826 auto=391 bitfields=0

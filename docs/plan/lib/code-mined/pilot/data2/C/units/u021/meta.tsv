@@ -1,0 +1,1 @@
+21	crypto_generichash_bytes	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_generichash/crypto_generichash.c	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_generichash/crypto_generichash.c:2:10: fatal e

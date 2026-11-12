@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == 52 || \result == 48; */

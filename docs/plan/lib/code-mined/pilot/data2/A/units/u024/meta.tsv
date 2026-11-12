@@ -1,1 +1,1 @@
-24	isu8cont	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/usr.sbin/ypldap/aldap.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/usr.sbin/ypldap/aldap.c:22:10: fatal error: errno.h: No such file or directory
+24	isu8cont	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/usr.sbin/ypldap/aldap.c	bsd-user	ok	flexarrays=0 ok items=932 kept=2 protos=0 rewrites=0 attrs=80 auto=0 bitfields=0 

@@ -1,0 +1,1 @@
+/*@ requires \valid_read(list + (*head)) || *head == 0xffff; ensures \result == \old(*head) && (\result != 0xffff ==> (*head == \old(list[\result]) && list[\result] == 0xffff)); */

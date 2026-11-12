@@ -1,0 +1,2 @@
+void
+struct lola *	chip

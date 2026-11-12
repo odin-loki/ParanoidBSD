@@ -1,0 +1,1 @@
+6	team_get_num_rx_queues	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/net/team/team_core.c	linux	ok	flexarrays=0 ok items=17727 kept=2 protos=0 rewrites=0 attrs=22751 auto=328 bitfields=0 

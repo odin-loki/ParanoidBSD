@@ -1,0 +1,1 @@
+/*@ requires sz >= 0; ensures sz < 0x80 ? \result == 1 : \result >= 2 && \result <= sizeof(size_t) + 1; */

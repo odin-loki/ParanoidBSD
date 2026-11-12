@@ -1,0 +1,6 @@
+empty:offset.inc
+generated:device_if.h from sys/kern/device_if.m
+generated:bus_if.h from sys/kern/bus_if.m
+generated:mmcbr_if.h from sys/dev/mmc/mmcbr_if.m
+generated:ofw_bus_if.h from sys/dev/ofw/ofw_bus_if.m
+generated:spibus_if.h from sys/dev/spibus/spibus_if.m

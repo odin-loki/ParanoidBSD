@@ -1,0 +1,1 @@
+/*@ requires spec != \null; ensures \result == 0 || \result == -1; */

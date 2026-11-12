@@ -1,0 +1,1 @@
+59	ftm_clocksource_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/clocksource/timer-fsl-ftm.c	linux	ok	flexarrays=0 ok items=7660 kept=37 protos=5 rewrites=0 attrs=12146 auto=124 bitfields=0 

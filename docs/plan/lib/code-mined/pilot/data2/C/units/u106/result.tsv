@@ -1,0 +1,1 @@
+106	chap_check_algorithm	parser	ptr	FAILED	linux	1	2	-	-	-	13.6	contract not proved; solver timeout	callees-without-spec:arch_static_branch,arch_static_branch_jump,chap_get_digest_name,chap_test_algorithm,kstrtol,static_key_false,static_key_true;pointer-or-memory-precondition;

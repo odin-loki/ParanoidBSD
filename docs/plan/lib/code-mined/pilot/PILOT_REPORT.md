@@ -151,3 +151,7 @@ wsl -- bash pilot_watch.sh 8 14        # unit build, WP, annotate, PRISM (resuma
 bash replay_proved.sh; bash mutate_proved.sh; bash run_lean.sh 6; bash export_data.sh
 ```
 Spend cap and credit-error handling: `morph_call.sh` (cap 40 USD from `morph_ledger.tsv`, credit/auth error text matched only on the API error object, STOP file). No key is stored anywhere in the repository or the data.
+
+## 10. Round 2 (12 Nov 2026)
+
+Real headers per translation unit, bit-vector path and repair list: see [STEP1_REPORT.md](STEP1_REPORT.md). Sample A 29 -> 38 proved, fresh sample C 25 -> 47, extrapolation about 6,700-7,200 of 32,000.

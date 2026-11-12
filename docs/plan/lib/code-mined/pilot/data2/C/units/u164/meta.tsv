@@ -1,0 +1,1 @@
+164	tty_buffer_request_room	ring-buffer	scalar	/home/odin/pbsd-ref/linux/drivers/tty/tty_buffer.c	linux	ok	flexarrays=14 ok items=10270 kept=772 protos=16 rewrites=0 attrs=14992 auto=175 bitfields=2 

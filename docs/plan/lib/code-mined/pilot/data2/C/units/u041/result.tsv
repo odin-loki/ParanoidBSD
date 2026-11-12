@@ -1,0 +1,1 @@
+41	rtw89_nhm_weighted_avg	arith-helper	ptr	UNBUILT	linux	-	-	-	-	-	1.0	[kernel:annot-error] unit.c:23077: Warning: unbound logic variable env. Ignoring logic specification of function rtw89_nhm_weighted_avg	callees-without-spec:_rfk_delay,_rfk_write32_clr,_rfk_write32_mask,_rfk_write32_set,_rfk_write_rf;pointer-or-memory-precondition;

@@ -1,0 +1,1 @@
+/*@ requires skb != NULL && dev != NULL; ensures \result == -2 || \result >= 0; */

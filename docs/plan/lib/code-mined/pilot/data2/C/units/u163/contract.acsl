@@ -1,0 +1,1 @@
+/*@ requires curidx < TX_DESC_COUNT; ensures \result == (curidx + 1) % TX_DESC_COUNT; */

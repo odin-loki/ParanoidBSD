@@ -1,0 +1,1 @@
+/*@ requires env->nhm_sum > 0; ensures \result <= U8_MAX; */

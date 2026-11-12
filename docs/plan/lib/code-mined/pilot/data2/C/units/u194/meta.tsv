@@ -1,0 +1,1 @@
+194	knl_cha_filter_mask	bitmask	scalar	/home/odin/pbsd-ref/linux/arch/x86/events/intel/uncore_snbep.c	linux	ok	flexarrays=0 ok items=16572 kept=3 protos=0 rewrites=0 attrs=19953 auto=257 bitfields=0 

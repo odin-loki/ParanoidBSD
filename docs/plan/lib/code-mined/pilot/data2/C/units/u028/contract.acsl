@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == ((irq == 2) ? 9 : irq); */

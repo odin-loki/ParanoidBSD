@@ -1,0 +1,3 @@
+bitfield width not evaluated: 40 __attribute__((__packed__))
+bitfield width not evaluated: 64 __attribute__((__packed__))
+flexarrays=0 ok items=5947 kept=545 protos=2 rewrites=0 attrs=233 auto=0 bitfields=0

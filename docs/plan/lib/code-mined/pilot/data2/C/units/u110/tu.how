@@ -1,0 +1,2 @@
+flags_from=drivers/video/fbdev/platinumfb.c mode=c probe=0
+cfg=x86

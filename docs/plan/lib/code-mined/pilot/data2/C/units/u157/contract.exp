@@ -1,0 +1,1 @@
+/*@ requires num_entries >= 0; ensures 0 <= \result <= num_entries; */

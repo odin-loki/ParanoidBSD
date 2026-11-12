@@ -1,0 +1,1 @@
+143	g_eli_cpu_is_disabled	bitmap	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/geom/eli/g_eli.c	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/vnode.h:629:10: fatal error: vnode_if.h: No such file or directory

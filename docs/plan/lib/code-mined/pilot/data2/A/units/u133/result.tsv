@@ -1,1 +1,1 @@
-133	sqlite3_memory_highwater	allocator	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c:354:10: fatal error: stdarg.h: No such file or directory	
+133	sqlite3_memory_highwater	allocator	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.2	[kernel:annot-error] unit.c:16: Warning: unbound logic variable true. Ignoring logic specification of function sqlite3_memory_highwater	callees-without-spec:sqlite3_status64;

@@ -1,0 +1,1 @@
+/*@ requires bit_no < QLOG_EVENT_TYPE_NUM; ensures \result == ((p[bit_no / BITS_PER_WORD] >> (bit_no % BITS_PER_WORD)) & 1); */

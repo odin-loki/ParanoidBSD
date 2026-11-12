@@ -1,0 +1,5 @@
+arch_static_branch
+arch_static_branch_jump
+iscsit_na_get_initiatorname
+static_key_false
+static_key_true

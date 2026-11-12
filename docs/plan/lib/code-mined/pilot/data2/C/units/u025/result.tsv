@@ -1,0 +1,1 @@
+25	stm32_dma_is_burst_possible	arith-helper	scalar	CONTRACT-ONLY	linux	2	2	2	3	no	20.7	contract proved; run-time-error guards not all proved (2/3)	

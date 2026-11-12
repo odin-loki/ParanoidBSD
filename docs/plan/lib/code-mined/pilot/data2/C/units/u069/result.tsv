@@ -1,0 +1,1 @@
+69	ga100_devinit_new	init-teardown	ptr	FAILED	linux	1	2	-	-	-	12.9	contract not proved; solver timeout	callees-without-spec:nvkm_gsp_rm;pointer-or-memory-precondition;

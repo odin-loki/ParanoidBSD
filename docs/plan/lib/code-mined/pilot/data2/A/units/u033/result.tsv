@@ -1,1 +1,1 @@
-33	hostapd_get_nr_chan_width	arith-helper	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/src/utils/includes.h:23:10: fatal error: stdarg.h: No such file or directory	
+33	hostapd_get_nr_chan_width	arith-helper	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/wpa/src/ap/ap_config.h:14:10: fatal error: ip_addr.h: No such file or directory	

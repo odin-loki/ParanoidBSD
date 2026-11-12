@@ -1,0 +1,2 @@
+flags_from=drivers/usb/host/oxu210hp-hcd.c mode=c probe=0
+cfg=x86

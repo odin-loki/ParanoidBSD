@@ -1,0 +1,2 @@
+bool
+enum criteria	cr

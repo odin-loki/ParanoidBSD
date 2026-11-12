@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == sizeof(((struct intel_display_platforms *)0)->bitmap) * BITS_PER_BYTE; */

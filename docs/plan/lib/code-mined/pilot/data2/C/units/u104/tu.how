@@ -1,0 +1,2 @@
+flags_from=drivers/scsi/aha152x.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+153	cap_rights_contains_transient	bitmap	ptr	PROVED	bsd-kernel	2	2	8	8	no	13.4		pointer-or-memory-precondition;stub-headers-EMPTY(option-headers-assumed-off):offset.inc;

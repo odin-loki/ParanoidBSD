@@ -1,0 +1,1 @@
+/*@ requires 0 <= quadlet <= 4294967295; ensures \result == (quadlet % 2 == 1); */

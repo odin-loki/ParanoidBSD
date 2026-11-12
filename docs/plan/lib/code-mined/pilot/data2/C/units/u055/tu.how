@@ -1,0 +1,2 @@
+flags_from=drivers/mmc/core/sdio.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (data >> 32 == 0); */

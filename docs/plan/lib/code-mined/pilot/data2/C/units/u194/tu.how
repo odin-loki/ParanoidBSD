@@ -1,0 +1,2 @@
+flags_from=arch/x86/events/intel/uncore_snbep.c mode=c probe=0
+cfg=x86

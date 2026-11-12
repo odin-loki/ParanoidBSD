@@ -1,0 +1,2 @@
+int
+YYSTACKDATA *	data

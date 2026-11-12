@@ -1,0 +1,1 @@
+30	pmap_pml1e_index	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/powerpc/aim/mmu_radix.c	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/powerpc/aim/mmu_radix.c:76:10: fatal error: machine/platform.h: No such file or direc

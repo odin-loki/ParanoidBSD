@@ -1,0 +1,5 @@
+acpi_status
+acpi_adr_space_type	space_id
+acpi_physical_address	address
+u32	length
+struct acpi_namespace_node *	region_node

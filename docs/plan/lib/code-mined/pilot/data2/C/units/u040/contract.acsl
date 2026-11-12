@@ -1,0 +1,1 @@
+/*@ requires idt_cpu_freq > 0 && HZ > 0; ensures \result == (idt_cpu_freq * IDT_CLOCK_MULT / 2) / HZ; */

@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/i915/display/intel_display_device.c mode=c probe=0
+cfg=x86

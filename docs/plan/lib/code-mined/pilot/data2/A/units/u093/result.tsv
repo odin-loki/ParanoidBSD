@@ -1,1 +1,1 @@
-93	cpp_demangle_push_type_qualifier	parser	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/libcxxrt/libelftc_dem_gnu3.c:30:10: fatal error: errno.h: No such file or directo	
+93	cpp_demangle_push_type_qualifier	parser	scalar	FAILED	bsd-user	12	24	-	-	-	42.0	contract not proved; solver timeout	callees-without-spec:cpp_demangle_push_str,cpp_demangle_push_subst_v,vector_str_dest,vector_str_init,vector_str_push;pointer-or-memory-precondition;

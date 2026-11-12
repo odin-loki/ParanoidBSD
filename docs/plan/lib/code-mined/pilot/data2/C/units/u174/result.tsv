@@ -1,0 +1,1 @@
+174	v4l2_pipeline_pm_get	refcount	scalar	PROVED	linux	2	2	2	2	no	12.7		config:x86-defconfig(function-only-in-option-off-arm-of-allyesconfig);header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

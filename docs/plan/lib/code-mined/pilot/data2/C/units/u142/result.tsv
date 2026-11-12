@@ -1,0 +1,1 @@
+142	ethtool_adv_to_mii_ctrl1000_t	bitmap	scalar	FAILED	linux	1	2	-	-	-	12.9	contract not proved; solver timeout	header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

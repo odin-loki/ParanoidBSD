@@ -1,0 +1,1 @@
+115	max7360_handle_mask_sync	lock-or-sync	scalar	FAILED	linux	1	2	-	-	-	14.7	contract not proved; solver timeout	callees-without-spec:regmap_assign_bits;

@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == TEAM_DEFAULT_NUM_RX_QUEUES; */

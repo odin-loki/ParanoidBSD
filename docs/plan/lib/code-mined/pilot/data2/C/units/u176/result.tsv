@@ -1,0 +1,1 @@
+176	nvme_ns_head_chr_release	refcount	scalar	CONTRACT-ONLY	linux	2	2	2	3	no	23.9	contract proved; run-time-error guards not all proved (2/3)	callees-without-spec:cdev_to_ns_head;

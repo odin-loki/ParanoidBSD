@@ -1,0 +1,1 @@
+132	ocs_max_dma_alloc	allocator	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/ocs_fc/ocs_os.h	bsd-kernel	ok	flexarrays=0 ok items=4722 kept=8 protos=0 rewrites=0 attrs=232 auto=0 bitfields=0 

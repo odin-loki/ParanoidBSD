@@ -1,0 +1,1 @@
+64	hdlc_ppp_init	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/net/wan/hdlc_ppp.c	linux	ok	flexarrays=45 ok items=16612 kept=1465 protos=30 rewrites=0 attrs=21433 auto=293 bitfields=2 

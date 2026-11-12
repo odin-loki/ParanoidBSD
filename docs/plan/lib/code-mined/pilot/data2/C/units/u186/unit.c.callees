@@ -1,0 +1,4 @@
+arch_irqs_disabled_flags
+arch_local_save_flags
+kmalloc_noprof
+mem_alloc_profiling_enabled

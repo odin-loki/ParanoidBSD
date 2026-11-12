@@ -1,0 +1,1 @@
+27	cpufreq_power2state	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/thermal/cpufreq_cooling.c	linux	ok	flexarrays=9 ok items=11111 kept=795 protos=17 rewrites=0 attrs=15694 auto=181 bitfields=2 

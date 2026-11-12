@@ -1,0 +1,1 @@
+197	snd_hdac_get_wcaps_type	bitmask	scalar	/home/odin/pbsd-ref/linux/include/sound/hdaudio.h	linux	ok	flexarrays=0 ok items=12647 kept=2 protos=0 rewrites=0 attrs=17577 auto=195 bitfields=0 

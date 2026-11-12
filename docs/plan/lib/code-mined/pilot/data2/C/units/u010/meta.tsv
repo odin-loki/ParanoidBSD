@@ -1,0 +1,1 @@
+10	be32_gt	arith-helper	scalar	/home/odin/pbsd-ref/linux/drivers/infiniband/core/cm.c	linux	ok	flexarrays=0 ok items=20757 kept=5 protos=0 rewrites=0 attrs=27323 auto=446 bitfields=0 

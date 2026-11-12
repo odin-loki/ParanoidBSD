@@ -1,0 +1,2 @@
+flags_from=lib/tests/test_kprobes.c mode=c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+156	amdgpu_umsch_mm_submit_pkt	ring-buffer	scalar	UNBUILT	linux	-	-	-	-	-	0.6	[kernel] unit.c:1323: User Error: bitfield width is not a valid integer constant [kernel] Frama-C aborted: invalid user input.	callees-without-spec:amdgpu_ring_write_multiple;

@@ -1,0 +1,1 @@
+/*@ requires block_count >= 0; ensures 0 <= \result && \result <= block_count; */

@@ -1,0 +1,1 @@
+195	phy_packet_self_id_zero_get_scode	bitmask	scalar	/home/odin/pbsd-ref/linux/drivers/firewire/phy-packet-definitions.h	linux	ok	flexarrays=0 ok items=12184 kept=3 protos=0 rewrites=0 attrs=18183 auto=237 bitfields=0 

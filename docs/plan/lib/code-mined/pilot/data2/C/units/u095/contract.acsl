@@ -1,0 +1,1 @@
+/*@ requires 0 <= fd; ensures (\result == 0) || (\result == SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX) || (\result == SDP_ERROR_CODE_INVALID_SERVICE_RECORD_HANDLE); */

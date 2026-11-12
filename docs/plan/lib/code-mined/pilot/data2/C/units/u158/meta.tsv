@@ -1,0 +1,1 @@
+158	dmub_dcn31_get_outbox1_wptr	ring-buffer	scalar	/home/odin/pbsd-ref/linux/drivers/gpu/drm/amd/display/dmub/src/dmub_dcn31.c	linux	notu	preprocess failed: kbuild produced no flags for drivers/gpu/drm/amd/display/dmub/src/dmub_dcn31.c (see /home/odin/kb/tu/5b2008171731ff2a-dmub_dcn31.c.s390.i.ma

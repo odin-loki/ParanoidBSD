@@ -1,0 +1,1 @@
+96	arcnet_header	parser	scalar	FAILED	linux	0	2	-	-	-	19.2	contract not proved; solver timeout	callees-without-spec:arch_static_branch,arch_static_branch_jump,netdev_priv,null_build_header,null_prepare_tx,null_rx,static_key_false,static_key_true;pointer-or-memory-precondition;

@@ -1,0 +1,1 @@
+62	numa_init_sysfs	init-teardown	scalar	FAILED	linux	1	2	-	-	-	12.8	contract not proved; solver timeout	

@@ -1,0 +1,1 @@
+40	cal_r4koff	arith-helper	ptr	/home/odin/pbsd-ref/linux/arch/mips/rb532/time.c	linux	notu	preprocess failed: kbuild produced no flags for arch/mips/rb532/time.c (see /home/odin/kb/tu/96c1227e726f647a-time.c.mips.i.make.log)

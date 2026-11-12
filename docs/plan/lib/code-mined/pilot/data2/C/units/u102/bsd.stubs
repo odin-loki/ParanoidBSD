@@ -1,0 +1,2 @@
+alias:stdarg.h->sys/sys/stdarg.h
+alias:fcntl.h->sys/sys/fcntl.h

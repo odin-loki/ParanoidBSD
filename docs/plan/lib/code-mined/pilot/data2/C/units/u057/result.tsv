@@ -1,0 +1,1 @@
+57	acpi_cascade_irqdomain_init	init-teardown	scalar	PROVED	linux	2	2	2	2	no	11.7		callees-without-spec:pch_msi_parse_madt,pch_pic_parse_madt;

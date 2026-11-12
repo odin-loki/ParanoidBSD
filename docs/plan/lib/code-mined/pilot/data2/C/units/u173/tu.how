@@ -1,0 +1,2 @@
+flags_from=drivers/vfio/vfio_iommu_type1.c mode=c probe=0
+cfg=x86

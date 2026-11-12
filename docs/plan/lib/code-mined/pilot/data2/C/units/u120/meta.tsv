@@ -1,0 +1,1 @@
+120	srcu_scale_read_lock	lock-or-sync	scalar	/home/odin/pbsd-ref/linux/kernel/rcu/rcuscale.c	linux	ok	flexarrays=10 ok items=12144 kept=793 protos=16 rewrites=0 attrs=17673 auto=225 bitfields=2 

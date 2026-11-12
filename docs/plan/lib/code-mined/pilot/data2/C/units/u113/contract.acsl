@@ -1,0 +1,1 @@
+/*@ requires operation == HDB_RLOCK || operation == HDB_WLOCK; ensures \result == 0 || \result == HDB_ERR_DB_INUSE || \result == HDB_ERR_CANT_LOCK_DB; */

@@ -1,0 +1,1 @@
+/*@ requires \valid_read(a_str); ensures 0 <= \result <= 8; */

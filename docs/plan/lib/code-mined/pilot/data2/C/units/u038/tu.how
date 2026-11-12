@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/qlogic/qed/qed_cxt.c mode=includer:drivers/net/ethernet/qlogic/qed/qed_cxt.c probe=0
+cfg=x86

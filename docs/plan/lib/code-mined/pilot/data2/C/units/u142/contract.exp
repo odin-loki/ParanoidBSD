@@ -1,0 +1,1 @@
+/*@ requires true; ensures (\result & ~(0x0100 | 0x0200)) == 0 && ((ethadv & (1UL << (ETHTOOL_LINK_MODE_1000baseT_Half_BIT))) != 0 <==> (\result & 0x0100) != 0) && ((ethadv & (1UL << (ETHTOOL_LINK_MODE_1000baseT_Full_BIT))) != 0 <==> (\result & 0x0200) != 0); */

@@ -1,0 +1,1 @@
+/*@ requires options == \null || \valid_read(options); ensures \result == 0; */

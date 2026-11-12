@@ -1,0 +1,1 @@
+/*@ requires \valid_read(rng); ensures 0 <= \result <= 255; */

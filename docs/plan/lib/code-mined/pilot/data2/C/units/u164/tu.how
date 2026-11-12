@@ -1,0 +1,2 @@
+flags_from=drivers/tty/tty_buffer.c mode=c probe=0
+cfg=x86

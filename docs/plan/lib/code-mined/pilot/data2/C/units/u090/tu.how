@@ -1,0 +1,2 @@
+flags_from=drivers/target/iscsi/iscsi_target_nodeattrib.c mode=c probe=0
+cfg=x86

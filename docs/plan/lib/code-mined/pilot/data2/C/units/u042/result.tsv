@@ -1,0 +1,1 @@
+42	pcg_mcg_16_xsh_rr_8_random_r	arith-helper	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.2	 syntax error: Location: "unit.c", line 1, before or at token: pcg_output_xsh_rr_16_8	callees-without-spec:pcg_mcg_16_step_r,pcg_output_xsh_rr_16_8;pointer-or-memory-precondition;

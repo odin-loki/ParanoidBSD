@@ -1,0 +1,1 @@
+193	hdspe_port_first	bitmask	scalar	FAILED	bsd-kernel	1	2	-	-	-	12.1	contract not proved; solver timeout	stub-headers-EMPTY(option-headers-assumed-off):offset.inc;

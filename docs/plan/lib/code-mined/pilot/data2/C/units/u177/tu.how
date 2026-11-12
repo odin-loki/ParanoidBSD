@@ -1,0 +1,2 @@
+flags_from=fs/btrfs/extent-tree.c mode=c probe=0
+cfg=x86

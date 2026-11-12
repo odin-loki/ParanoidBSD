@@ -1,0 +1,1 @@
+/*@ requires value <= 0xffffffffUL; ensures \result == (value <= 0x10ffffUL && !(0xd800UL <= value && value <= 0xdfffUL)); */

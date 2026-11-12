@@ -1,0 +1,1 @@
+39	clk_audio_pll_pad_set_rate	arith-helper	ptr	UNBUILT	linux	-	-	-	-	-	0.4	[kernel:annot-error] unit.c:2678: Warning: unbound logic variable apad_ck. Ignoring logic specification of function clk_audio_pll_pad_set_rate	callees-without-spec:arch_static_branch,arch_static_branch_jump,static_key_false,static_key_true;pointer-or-memory-precondition;

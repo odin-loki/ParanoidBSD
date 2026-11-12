@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (num <= 65535); */

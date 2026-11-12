@@ -1,0 +1,2 @@
+flags_from=drivers/platform/x86/intel/pmt/class.c mode=c probe=0
+cfg=x86

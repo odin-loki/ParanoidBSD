@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (config | P4_CONFIG_HT); */

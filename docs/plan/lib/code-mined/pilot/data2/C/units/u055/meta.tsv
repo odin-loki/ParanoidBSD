@@ -1,0 +1,1 @@
+55	mmc_sdio_init_uhs_card	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/mmc/core/sdio.c	linux	ok	flexarrays=14 ok items=12604 kept=990 protos=18 rewrites=0 attrs=18046 auto=222 bitfields=2 

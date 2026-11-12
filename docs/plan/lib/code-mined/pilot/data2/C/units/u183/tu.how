@@ -1,0 +1,2 @@
+flags_from=drivers/net/ethernet/intel/i40e/i40e_ethtool.c mode=c probe=0
+cfg=x86

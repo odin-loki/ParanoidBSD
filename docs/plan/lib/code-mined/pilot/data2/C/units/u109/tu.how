@@ -1,0 +1,2 @@
+flags_from=kernel/dma/contiguous.c mode=c probe=0
+cfg=x86

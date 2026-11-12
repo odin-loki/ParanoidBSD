@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (\result == 0 ==> dev->private != \null) && (\result == -ENOMEM ==> dev->private == \null); */

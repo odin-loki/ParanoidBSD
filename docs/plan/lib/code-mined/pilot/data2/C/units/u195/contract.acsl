@@ -1,0 +1,1 @@
+/*@ requires 0 <= quadlet <= 4294967295; ensures 0 <= \result <= 3 && \result == (quadlet / 16384) % 4; */

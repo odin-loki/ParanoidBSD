@@ -1,0 +1,4 @@
+alias:math.h->lib/msun/src/math.h
+alias:stdarg.h->sys/sys/stdarg.h
+alias:fcntl.h->sys/sys/fcntl.h
+alias:errno.h->sys/sys/errno.h

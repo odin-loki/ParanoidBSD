@@ -1,0 +1,1 @@
+18	bootaddr_rwx	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/amd64/amd64/pmap.c	bsd-kernel	ok	flexarrays=0 ok items=4423 kept=16 protos=0 rewrites=0 attrs=319 auto=0 bitfields=0 

@@ -1,0 +1,1 @@
+155	early_mmu_has_feature	bitmap	ptr	/home/odin/pbsd-ref/linux/arch/powerpc/include/asm/mmu.h	linux	notu	preprocess failed: /home/odin/pbsd-ref/linux/arch/powerpc/include/asm/mmu.h:8:10: fatal error: asm/asm-const.h: No such file or directory

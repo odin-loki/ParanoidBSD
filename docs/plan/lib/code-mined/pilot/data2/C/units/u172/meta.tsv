@@ -1,0 +1,1 @@
+172	x86_reserve_hardware	refcount	scalar	/home/odin/pbsd-ref/linux/arch/x86/events/core.c	linux	ok	flexarrays=21 ok items=15913 kept=1413 protos=76 rewrites=0 attrs=20297 auto=277 bitfields=2 

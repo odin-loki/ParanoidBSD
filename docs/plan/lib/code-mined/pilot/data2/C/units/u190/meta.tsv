@@ -1,0 +1,1 @@
+190	dal_vector_insert_at	list-op	ptr	/home/odin/pbsd-ref/linux/drivers/gpu/drm/amd/display/dc/basics/vector.c	linux	notu	preprocess failed: kbuild produced no flags for drivers/gpu/drm/amd/display/dc/basics/vector.c (see /home/odin/kb/tu/e6732b810a2dd207-vector.c.s390.i.make.log)

@@ -1,0 +1,1 @@
+117	um_set_signals_trace	lock-or-sync	scalar	UNBUILT	linux	-	-	-	-	-	0.0	architecture without a configured kernel tree (arch/um/os-Linux/signal.c)	

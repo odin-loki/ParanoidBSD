@@ -1,0 +1,2 @@
+flags_from=drivers/usb/gadget/function/f_mass_storage.c mode=c probe=0
+cfg=x86

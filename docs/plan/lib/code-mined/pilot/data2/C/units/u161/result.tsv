@@ -1,0 +1,1 @@
+161	testfunc	ring-buffer	scalar	UNBUILT	linux	-	-	-	-	-	0.5	[kernel] unit.c:1379: User Error: bitfield width is not a valid integer constant [kernel] Frama-C aborted: invalid user input.	callees-without-spec:__kfifo_uint_must_check_helper;

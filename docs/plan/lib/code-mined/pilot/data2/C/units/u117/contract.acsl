@@ -1,0 +1,1 @@
+/*@ requires enable == 0 || enable == 1; ensures \old(signals_enabled) == \result || signals_enabled == enable; */

@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result == ((vmcs_config.misc & ((((1ULL))) << (14))) != 0 && (vmcs_config.cpu_based_2nd_exec_ctrl & ((((1UL))) << (( 2*32+ 24) & 0x1f))) != 0 && (vmcs_config.vmentry_ctrl & 0x00040000) != 0); */

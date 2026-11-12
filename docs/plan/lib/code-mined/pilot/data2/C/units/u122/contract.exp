@@ -1,0 +1,1 @@
+/*@ requires \valid(p); ensures *p == val; */

@@ -1,0 +1,1 @@
+/*@ requires fields >= 0; ensures \result == (((fields & 1) != 0 ? 0x1ff : 0) | ((fields & 2) != 0 ? (7 << 18) : 0) | ((fields & 4) != 0 ? (0xfffffe2aULL << 32) : 0)); */

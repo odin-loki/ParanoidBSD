@@ -1,0 +1,1 @@
+54	new_tmpfile	init-teardown	scalar	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/lib/libc/tests/secure/fortify_select_test.c:28:10: fatal error: atf-c.h: No such file or 	

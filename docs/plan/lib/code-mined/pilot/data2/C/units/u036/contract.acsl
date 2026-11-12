@@ -1,0 +1,1 @@
+/*@ requires true; ensures (norm & V4L2_STD_525_60) ? \result == 480 : \result == 576; */

@@ -1,0 +1,1 @@
+/*@ requires new >= start && end_data >= start_data; ensures \result == 0 || \result == -ENOSPC; ensures \result == -ENOSPC <==> (rlim < RLIM_INFINITY && (new - start) + (end_data - start_data) > rlim); */

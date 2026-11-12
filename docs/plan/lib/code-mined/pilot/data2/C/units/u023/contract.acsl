@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (\result == 0) <==> (secs < MINSEC || (!(time_status & STA_FLL) && secs <= MAXSEC)); */

@@ -1,0 +1,1 @@
+/*@ requires data->stacksize <= 10000; ensures \result == 0 || \result == (-2); */

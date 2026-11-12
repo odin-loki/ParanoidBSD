@@ -1,0 +1,1 @@
+/*@ requires \true; ensures \result == (capability & MTK_VCODEC_INNER_RACING); */

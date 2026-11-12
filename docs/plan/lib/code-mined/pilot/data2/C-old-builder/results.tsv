@@ -1,0 +1,200 @@
+1	crypto_generichash_blake2b_keybytes_min	arith-helper	scalar	PROVED	L2	1	3	3	3	3	no	21.7		crypto_generichash_blake2b_KEYBYTES_MIN,
+2	is_unicode_valid	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	syntax error (macro or kernel syntax not parsed)	
+3	lan969x_dsm_cal_get_speed	arith-helper	scalar	PROVED	L2	0	3	3	3	3	no	12.7		
+4	bcl_irand_helper	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+5	tda9855_bass	arith-helper	scalar	PROVED	L1	0	3	3	4	4	no	14.2		
+6	team_get_num_rx_queues	arith-helper	scalar	PROVED	L1	1	3	3	3	3	no	29.3		TEAM_DEFAULT_NUM_RX_QUEUES,
+7	encoding_next	arith-helper	scalar	FAILED	L1	4	2	3	-	-	-	58.3	contract not proved; solver timeout	Op2_mask,CRm_mask,CRn_mask,Op1_mask,
+8	is_unum_decimal	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	34.3	unresolved symbol: U16_MAX (macro with 2 different definitions in the headers)	
+9	mt7925_reg_map_l2	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	56.5	unresolved symbol: MT_HIF_REMAP_BASE_L2 (macro with 3 different definitions in the headers)	
+10	be32_gt	arith-helper	scalar	PROVED	L1	0	3	3	3	3	no	12.9		
+11	smc_llc_active_link_count	arith-helper	scalar	UNBUILT	none	1	-	-	-	-	-	10.9	missing struct type (field)	SMC_LINKS_PER_LGR_MAX,
+12	kprobe_recursed_target	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.3	syntax error (macro or kernel syntax not parsed)	
+13	w1_f2d_fix_count	arith-helper	scalar	FAILED	L2	0	2	3	-	-	-	13.4	contract not proved; solver timeout	
+14	GET_HDR_OFFSET_2_0	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+15	hw_ep_bit	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	56.5	unresolved symbol: TX (macro with 6 different definitions in the headers)	
+16	IS_VDEC_INNER_RACING	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+17	mlx5_to_sw_pkey_sz	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	27.2	unresolved symbol: MLX5_MAX_LOG_PKEY_TABLE (not a one-line #define: enum constant, variable or function from a header)	
+18	bootaddr_rwx	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.6	syntax error (macro or kernel syntax not parsed)	
+19	rnd_below	arith-helper	scalar	PROVED	L2	0	3	3	4	4	no	14.4		
+20	xfs_bmdr_maxrecs	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	33.8	unresolved symbol: xfs_bmdr_block_t (not a one-line #define: enum constant, variable or function from a header)	
+21	crypto_generichash_bytes	arith-helper	scalar	PROVED	L2	2	3	3	3	3	no	30.2		crypto_generichash_BYTES,crypto_generichash_blake2b_BYTES,
+22	ref_int32_to_float64	arith-helper	scalar	FAILED	L2	0	2	3	-	-	-	13.1	contract not proved; solver timeout	
+23	ntp_update_offset_fll	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	missing struct type (field)	
+24	libder_size_length	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+25	stm32_dma_is_burst_possible	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	35.0	unresolved symbol: STM32_DMA_FIFO_THRESHOLD_NONE (not a one-line #define: enum constant, variable or function from a header)	
+26	current_nsec	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+27	cpufreq_power2state	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+28	irq_canonicalize	arith-helper	scalar	PROVED	L2	0	3	3	3	3	no	11.9		
+29	canonicalize	arith-helper	scalar	FAILED	L1	0	2	3	-	-	-	13.7	contract not proved; solver timeout	
+30	pmap_pml1e_index	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+31	sms_to_status	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	36.0	unresolved symbol: FE_HAS_SIGNAL (not a one-line #define: enum constant, variable or function from a header)	
+32	sdma_v7_0_get_reg_offset	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	missing struct type (field)	
+33	kvm_get_parange_max	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	36.4	unresolved symbol: ID_AA64MMFR0_EL1_PARANGE_52 (not a one-line #define: enum constant, variable or function from a header)	
+34	size_h264d_vpp_cmd_buf	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+35	ext4_mb_cr_expensive	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	36.5	unresolved symbol: CR_GOAL_LEN_SLOW (not a one-line #define: enum constant, variable or function from a header)	
+36	norm_maxh	arith-helper	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+37	get_nss_from_chainmask	arith-helper	scalar	FAILED	L1	0	2	3	-	-	-	14.2	contract not proved; solver timeout	
+38	qed_db_addr	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	36.6	unresolved symbol: DB_LEGACY_ADDR_DEMS (not a one-line #define: enum constant, variable or function from a header)	
+39	clk_audio_pll_pad_set_rate	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+40	cal_r4koff	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	59.2	unresolved symbol: mips_hpt_frequency (not a one-line #define: enum constant, variable or function from a header)	
+41	rtw89_nhm_weighted_avg	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+42	pcg_mcg_16_xsh_rr_8_random_r	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	1.0	missing struct type (field)	
+43	range_included	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	1.1	missing struct type (field)	
+44	gk104_pll_calc_hiclk	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	36.8	unresolved symbol: best_err (not a one-line #define: enum constant, variable or function from a header)	
+45	timecounter_adjtime	arith-helper	ptr	FAILED	L2	0	2	3	-	-	-	13.6	contract not proved; solver timeout	
+46	snd_hdac_get_wcaps_channels	arith-helper	ptr	FAILED	L1	1	2	3	-	-	-	14.7	contract not proved; solver timeout	AC_WCAP_CHAN_CNT_EXT,
+47	gfs2_rg_blocks	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	37.4	unresolved symbol: rgd (not a one-line #define: enum constant, variable or function from a header)	
+48	future_base_time	arith-helper	ptr	UNBUILT	none	1	-	-	-	-	-	37.6	unresolved symbol: n (not a one-line #define: enum constant, variable or function from a header)	n,
+49	ccu_nm_calc_rate	arith-helper	ptr	FAILED	L2	0	2	3	-	-	-	13.3	contract not proved; solver timeout	
+50	pvr_heap_contains_range	arith-helper	ptr	UNBUILT	none	0	-	-	-	-	-	1.1	missing struct type (field)	
+51	gigantic_pages_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	37.1	unresolved symbol: PUD_SHIFT (macro with 10 different definitions in the headers)	
+52	mlx5r_macsec_init_gids_and_devlist	init-teardown	scalar	PROVED	L2	0	3	3	3	3	no	12.1		
+53	pmt_class_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	26.3	unresolved symbol: intel_pmt_class (not a one-line #define: enum constant, variable or function from a header)	
+54	new_tmpfile	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	36.2	unresolved symbol: O_RDWR (macro with 9 different definitions in the headers)	
+55	mmc_sdio_init_uhs_card	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	missing struct type (field)	
+56	start_dirtytime_writeback	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	35.9	unresolved symbol: dirtytime_expire_interval (not a one-line #define: enum constant, variable or function from a header)	
+57	acpi_cascade_irqdomain_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	26.1	unresolved symbol: pch_pic_parse_madt (not a one-line #define: enum constant, variable or function from a header)	
+58	xilinx_pl_dma_pcie_setup_irq	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	missing struct type (field)	
+59	ftm_clocksource_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	35.0	unresolved symbol: priv (macro with 2 different definitions in the headers)	
+60	loongson_nand_controller_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+61	__rec_close	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	C++ source (Frama-C reads C only)	
+62	numa_init_sysfs	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	25.8	unresolved symbol: mm_kobj (not a one-line #define: enum constant, variable or function from a header)	
+63	btrfs_load_block_group_zone_info	init-teardown	scalar	PROVED	L1	0	3	3	3	3	no	15.1		
+64	hdlc_ppp_init	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	25.6	unresolved symbol: tx_queue (not a one-line #define: enum constant, variable or function from a header)	
+65	test_keylog_no_master_key	init-teardown	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+66	usbf_probe	init-teardown	ptr	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+67	rt712_sdca_dmic_io_init	init-teardown	ptr	UNBUILT	none	0	-	-	-	-	-	34.3	unresolved symbol: rt712 (not a one-line #define: enum constant, variable or function from a header)	
+68	alloc_fwq	init-teardown	ptr	UNBUILT	none	0	-	-	-	-	-	33.6	unresolved symbol: fwq (not a one-line #define: enum constant, variable or function from a header)	
+69	ga100_devinit_new	init-teardown	ptr	UNBUILT	none	0	-	-	-	-	-	33.0	unresolved symbol: ga100_devinit (not a one-line #define: enum constant, variable or function from a header)	
+70	ni_alloc_private	init-teardown	ptr	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+71	check_data_rlimit	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	22.6	unresolved symbol: RLIM_INFINITY (macro with 6 different definitions in the headers)	
+72	sifive_serial_verify_port	error-path	scalar	PROVED	L1	0	3	3	3	3	no	12.0		
+73	hte_enable_ts	error-path	scalar	PROVED	L1	0	3	3	3	3	no	11.6		
+74	fsl_edma3_attach_pd	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	missing struct type (field)	
+75	at91_twi_probe_slave	error-path	scalar	PROVED	L1	0	3	3	3	3	no	11.4		
+76	aq_rule_is_not_support	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+77	tls_dump_gets	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	syntax error (macro or kernel syntax not parsed)	
+78	coalesce_put_u32	error-path	scalar	PROVED	L1	0	3	3	3	3	no	11.8		
+79	rpmsg_sendto	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	41.9	unresolved symbol: ENXIO (macro with 4 different definitions in the headers)	
+80	hf_pop_err	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+81	sqlite3NomemError	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	25.3	unresolved symbol: sqlite3GlobalConfig (not a one-line #define: enum constant, variable or function from a header)	
+82	validate_ops	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	40.5	unresolved symbol: SCX_EXIT_ERROR (not a one-line #define: enum constant, variable or function from a header)	
+83	drbd_insert_fault	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	23.7	unresolved symbol: DRBD_FAULT_MAX (not a one-line #define: enum constant, variable or function from a header)	
+84	test_kdf_kbkdf_empty_key	error-path	scalar	UNBUILT	none	0	-	-	-	-	-	34.9	unresolved symbol: EVP_KDF_CTX (not a one-line #define: enum constant, variable or function from a header)	
+85	test_alloc_fence	error-path	scalar	PROVED	L2	0	3	3	3	3	no	11.0		
+86	smb_rap_error	error-path	ptr	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+87	nsec3_prove_nxornodata	error-path	ptr	UNBUILT	none	0	-	-	-	-	-	55.5	unresolved symbol: sec_status_bogus (not a one-line #define: enum constant, variable or function from a header)	
+88	__do_cpuid_func_emulated	error-path	ptr	UNBUILT	none	0	-	-	-	-	-	10.9	missing struct type (field)	
+89	check_expr_operands	error-path	ptr	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+90	iscsit_na_nopin_response_timeout	error-path	ptr	UNBUILT	none	2	-	-	-	-	-	64.4	unresolved symbol: a (not a one-line #define: enum constant, variable or function from a header)	NA_NOPIN_RESPONSE_TIMEOUT_MIN,NA_NOPIN_RESPONSE_TIMEOUT_MAX,
+91	test_PACKET_end	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+92	test_proc_pid_maps	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+93	proc_scsi_write	parser	scalar	UNBUILT	none	0	-	-	-	-	-	34.8	unresolved symbol: PAGE_SIZE (macro with 14 different definitions in the headers)	
+94	yylex	parser	scalar	UNBUILT	none	0	-	-	-	-	-	25.9	unresolved symbol: calc_code_default_lval (not a one-line #define: enum constant, variable or function from a header)	
+95	server_prepare_service_unregister_response	parser	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+96	arcnet_header	parser	scalar	UNBUILT	none	1	-	-	-	-	-	11.8	missing struct type (field)	D_DURING,
+97	__parse_ca_info_file	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+98	parse_server_match_testspec	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+99	bhyve_parse_config_option	parser	scalar	CONTRACT-ONLY	L2	0	3	3	3	4	no	22.8	contract proved; run-time-error guards not all proved (3/4)	
+100	check_root_ref	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+101	inst_trap_return	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+102	csio_encode	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.8	syntax error (macro or kernel syntax not parsed)	
+103	__gen12_csb_parse	parser	scalar	FAILED	L1	0	2	3	-	-	-	24.4	contract not proved; solver timeout	
+104	aha152x_set_info	parser	scalar	PROVED	L1	0	3	3	3	3	no	12.2		
+105	stm32_usart_receive_chars_pio	parser	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+106	chap_check_algorithm	parser	ptr	UNBUILT	none	2	-	-	-	-	-	49.4	unresolved symbol: GFP_KERNEL (macro with 4 different definitions in the headers)	CHAP_DIGEST_SHA3_256,CHAP_DIGEST_UNKNOWN,
+107	DecodeInstruction	parser	ptr	UNBUILT	none	0	-	-	-	-	-	0.9	C++ source (Frama-C reads C only)	
+108	gdbstub_read_wait	parser	ptr	UNBUILT	none	0	-	-	-	-	-	34.8	unresolved symbol: remcom_in_buffer (not a one-line #define: enum constant, variable or function from a header)	
+109	early_numa_cma	parser	ptr	UNBUILT	none	1	-	-	-	-	-	50.5	unresolved symbol: NODES_SHIFT (macro with 2 different definitions in the headers)	MAX_NUMNODES,
+110	platinumfb_setup	parser	ptr	UNBUILT	none	0	-	-	-	-	-	35.0	unresolved symbol: default_vmode (not a one-line #define: enum constant, variable or function from a header)	
+111	console_trylock	lock-or-sync	scalar	PROVED	L2	0	3	3	3	3	no	11.2		
+112	bpf_map_lock_test	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	23.4	unresolved symbol: hash_map (not a one-line #define: enum constant, variable or function from a header)	
+113	hdb_lock	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	syntax error (macro or kernel syntax not parsed)	
+114	chklck	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+115	max7360_handle_mask_sync	lock-or-sync	scalar	FAILED	L2	2	2	4	-	-	-	25.3	contract not proved (function has a loop; needs loop invariants); solver timeout	MAX7360_MAX_GPIO,MAX7360_PORT_CFG_INTERRUPT_MASK,
+116	ref__pthread_single_np	lock-or-sync	scalar	PROVED	L2	0	3	3	3	3	no	10.8		
+117	um_set_signals_trace	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	38.1	unresolved symbol: signals_enabled (not a one-line #define: enum constant, variable or function from a header)	
+118	xgbe_phy_mii_write_c22	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	0.9	missing struct type (field)	
+119	ficlLockDictionary	lock-or-sync	scalar	PROVED	L2	0	3	3	3	3	no	11.1		
+120	srcu_scale_read_lock	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	0.8	syntax error (macro or kernel syntax not parsed)	
+121	winHandleUnlock	lock-or-sync	scalar	UNBUILT	none	0	-	-	-	-	-	1.5	syntax error (macro or kernel syntax not parsed)	
+122	atomic_store_rel_32	lock-or-sync	ptr	FAILED	L2	0	2	3	-	-	-	13.4	contract not proved; solver timeout	
+123	casueword	lock-or-sync	ptr	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+124	atomic_fetchadd_64	lock-or-sync	ptr	FAILED	L2	0	2	3	-	-	-	13.3	contract not proved; solver timeout	
+125	bl_down_write	lock-or-sync	ptr	UNBUILT	none	0	-	-	-	-	-	1.3	missing struct type (field)	
+126	scm_alloc_rqs	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	29.3	unresolved symbol: aidaw_pool (not a one-line #define: enum constant, variable or function from a header)	
+127	ocs_hw_io_register_sgl	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	1.3	syntax error (macro or kernel syntax not parsed)	
+128	kmalloc_gfp_adjust	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+129	fsg_common_set_num_buffers	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	29.5	unresolved symbol: GFP_KERNEL (macro with 4 different definitions in the headers)	
+130	udf_prealloc_blocks	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	1.4	[kernel] unit.cur.c:16: User Error: expecting a pointer to a struct	
+131	brcm_irq_domain_alloc	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	syntax error (macro or kernel syntax not parsed)	
+132	ocs_max_dma_alloc	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	syntax error (macro or kernel syntax not parsed)	
+133	alloc_system_page	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	14.5	missing struct type (field)	
+134	vdo_allocate_cache_aligned	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	44.8	unresolved symbol: L1_CACHE_BYTES (macro with 11 different definitions in the headers)	
+135	preallocate_image_highmem	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	45.2	unresolved symbol: GFP_KERNEL (macro with 4 different definitions in the headers)	
+136	__wrap_calloc	allocator	scalar	UNBUILT	none	0	-	-	-	-	-	30.4	unresolved symbol: mock_calloc_fail (not a one-line #define: enum constant, variable or function from a header)	
+137	gve_tx_fifo_pad_alloc_one_frag	allocator	ptr	UNBUILT	none	0	-	-	-	-	-	1.4	missing struct type (field)	
+138	yygrowstack	allocator	ptr	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+139	target_alloc_sgl	allocator	ptr	UNBUILT	none	0	-	-	-	-	-	44.5	unresolved symbol: GFP_KERNEL (macro with 4 different definitions in the headers)	
+140	oxu_buf_alloc	allocator	ptr	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+141	_mm512_kortestz	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+142	ethtool_adv_to_mii_ctrl1000_t	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	67.1	unresolved symbol: ADVERTISE_1000HALF (macro with 2 different definitions in the headers)	
+143	g_eli_cpu_is_disabled	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	44.3	unresolved symbol: CPU_SETSIZE (macro with 3 different definitions in the headers)	
+144	check_feature	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	43.9	unresolved symbol: amd_iommu_efr (not a one-line #define: enum constant, variable or function from a header)	
+145	__ffsl	bitmap	scalar	FAILED	L2	0	2	3	-	-	-	14.6	contract not proved; solver timeout	
+146	ehea_vlan_rx_kill_vid	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	2.3	missing struct type (field)	
+147	cpu_has_vmx_intel_pt	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	43.4	unresolved symbol: vmcs_config (not a one-line #define: enum constant, variable or function from a header)	
+148	br_port_flag_is_set	bitmap	scalar	PROVED	L1	0	3	3	3	3	no	12.8		
+149	kvm_pte_mkyoung	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	13.8	syntax error (macro or kernel syntax not parsed)	
+150	kvm_dr7_valid	bitmap	scalar	PROVED	L2	0	3	3	3	3	no	12.5		
+151	il4965_is_tx_success	bitmap	scalar	UNBUILT	none	0	-	-	-	-	-	42.3	unresolved symbol: TX_STATUS_MSK (not a one-line #define: enum constant, variable or function from a header)	
+152	display_platforms_num_bits	bitmap	ptr	UNBUILT	none	0	-	-	-	-	-	1.2	missing struct type (field)	
+153	cap_rights_contains_transient	bitmap	ptr	UNBUILT	none	0	-	-	-	-	-	1.3	syntax error (macro or kernel syntax not parsed)	
+154	bit_get	bitmap	ptr	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+155	early_mmu_has_feature	bitmap	ptr	UNBUILT	none	0	-	-	-	-	-	30.5	unresolved symbol: MMU_FTRS_ALWAYS (macro with 7 different definitions in the headers)	
+156	amdgpu_umsch_mm_submit_pkt	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	missing struct type (field)	
+157	ocrdma_add_err_cqe	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	missing struct type (field)	
+158	dmub_dcn31_get_outbox1_wptr	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	54.8	unresolved symbol: DMCUB_OUTBOX1_WPTR (not a one-line #define: enum constant, variable or function from a header)	
+159	saa7164_bus_setup	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	1.4	missing struct type (field)	
+160	vchiq_bulk_xfer_queue_msg_killable	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	41.2	unresolved symbol: EINTR (macro with 5 different definitions in the headers)	
+161	testfunc	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+162	dwc3_prepare_last_sg	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	40.7	unresolved symbol: maxp (not a one-line #define: enum constant, variable or function from a header)	
+163	next_txidx	ring-buffer	scalar	PROVED	L2	1	3	3	3	3	no	26.1		TX_DESC_COUNT,
+164	tty_buffer_request_room	ring-buffer	scalar	FAILED	L2	0	2	3	-	-	-	13.5	contract not proved; solver timeout	
+165	qede_rx_int	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	missing struct type (field)	
+166	dvb_ca_en50221_read_data	ring-buffer	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	syntax error (macro or kernel syntax not parsed)	
+167	vcn_v1_0_enc_ring_get_rptr	ring-buffer	ptr	UNBUILT	none	0	-	-	-	-	-	1.0	missing struct type (field)	
+168	NEXT_CP_CONS_V	ring-buffer	ptr	UNBUILT	none	0	-	-	-	-	-	0.0	function definition not found in the file	
+169	lola_update_rirb	ring-buffer	ptr	UNBUILT	none	0	-	-	-	-	-	1.2	missing struct type (field)	
+170	vnic_wq_desc_used	ring-buffer	ptr	UNBUILT	none	0	-	-	-	-	-	1.1	missing struct type (field)	
+171	get_dma_buf_unless_doomed	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	missing struct type (field)	
+172	x86_reserve_hardware	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	32.3	unresolved symbol: pmc_reserve_mutex (not a one-line #define: enum constant, variable or function from a header)	
+173	vfio_unpin_pages_remote	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	missing struct type (field)	
+174	v4l2_pipeline_pm_get	refcount	scalar	PROVED	L2	0	3	3	3	3	no	12.1		
+175	folio_free_raw_hwp	refcount	scalar	PROVED	L1	0	3	3	3	3	no	13.0		
+176	nvme_ns_head_chr_release	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	1.0	missing struct type (field)	
+177	check_ref_cleanup	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+178	vm_wire_count	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	24.4	unresolved symbol: vm_cnt (not a one-line #define: enum constant, variable or function from a header)	
+179	tcf_mirred_nest_level_inc_return	refcount	scalar	UNBUILT	none	0	-	-	-	-	-	30.8	unresolved symbol: softnet_data (not a one-line #define: enum constant, variable or function from a header)	
+180	atomic_inc	refcount	ptr	FAILED	L2	0	2	5	-	-	-	13.7	contract not proved; solver timeout	
+181	__mem_info__zput	refcount	ptr	CONTRACT-ONLY	L2	0	3	3	3	5	no	24.8	contract proved; run-time-error guards not all proved (3/5)	
+182	qlt_do_generation_tick	refcount	ptr	UNBUILT	none	0	-	-	-	-	-	1.2	syntax error (macro or kernel syntax not parsed)	
+183	i40e_add_flex_offset	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	1.1	syntax error (macro or kernel syntax not parsed)	
+184	calc_chain_length	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	24.9	unresolved symbol: nb_blocks (not a one-line #define: enum constant, variable or function from a header)	
+185	addElem	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	1.3	C++ source (Frama-C reads C only)	
+186	acpi_ut_add_address_range	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	1.2	C++ source (Frama-C reads C only)	
+187	m_dup_pkthdr	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	1.4	missing struct type (field)	
+188	test_fizzbuzz	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	1.3	syntax error (macro or kernel syntax not parsed)	
+189	where_history	list-op	scalar	UNBUILT	none	0	-	-	-	-	-	22.2	unresolved symbol: history_offset (not a one-line #define: enum constant, variable or function from a header)	
+190	dal_vector_insert_at	list-op	ptr	UNBUILT	none	0	-	-	-	-	-	1.5	missing struct type (field)	
+191	get_id_from_list	list-op	ptr	FAILED	L1	0	2	3	-	-	-	14.6	contract not proved; solver timeout	
+192	do_fd_clear	list-op	ptr	UNBUILT	none	0	-	-	-	-	-	1.5	syntax error (macro or kernel syntax not parsed)	
+193	hdspe_port_first	bitmask	scalar	FAILED	L2	0	2	3	-	-	-	14.1	contract not proved; solver timeout	
+194	knl_cha_filter_mask	bitmask	scalar	FAILED	L2	0	2	3	-	-	-	14.0	contract not proved; solver timeout	
+195	phy_packet_self_id_zero_get_scode	bitmask	scalar	FAILED	L2	0	2	3	-	-	-	14.1	contract not proved; solver timeout	
+196	acpi_ex_write_with_update_rule	bitmask	scalar	UNBUILT	none	0	-	-	-	-	-	1.5	syntax error (macro or kernel syntax not parsed)	
+197	snd_hdac_get_wcaps_type	bitmask	scalar	FAILED	L1	2	2	3	-	-	-	16.1	contract not proved; solver timeout	AC_WCAP_TYPE,AC_WCAP_TYPE_SHIFT,
+198	phy_packet_phy_config_get_gap_count_optimization	bitmask	scalar	FAILED	L2	0	2	3	-	-	-	14.0	contract not proved; solver timeout	
+199	phy_packet_self_id_get_more_packets	bitmask	scalar	FAILED	L2	0	2	3	-	-	-	14.3	contract not proved; solver timeout	
+200	p4_set_ht_bit	bitmask	scalar	PROVED	L2	0	3	3	3	3	no	11.7		

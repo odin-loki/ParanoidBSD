@@ -1,0 +1,2 @@
+flags_from=drivers/thermal/cpufreq_cooling.c mode=c probe=0
+cfg=x86

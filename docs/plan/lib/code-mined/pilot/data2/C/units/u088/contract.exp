@@ -1,0 +1,1 @@
+/*@ requires \valid_read(array) && array->nent <= array->maxnent; ensures (\old(array->nent) < array->maxnent ==> \result == 0 && array->nent == \old(array->nent)+1) && (\old(array->nent) >= array->maxnent ==> \result == -7 && array->nent == \old(array->nent)); */

@@ -1,0 +1,1 @@
+/*@ requires 0 <= len <= BUFFER_SIZE * BUFFER_NUM; ensures \result == 0 || \result == -ENOMEM; */

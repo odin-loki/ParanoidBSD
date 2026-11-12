@@ -1,0 +1,1 @@
+/*@ requires target_khz > 0 && crystal > 0; ensures \result == best_err && 0 <= \result <= target_khz && 5 <= *P1 <= 7 && 0x25 <= *N1 <= 0x2b && *M1 == 1 && *M2 == 1 && *P2 == 1; */

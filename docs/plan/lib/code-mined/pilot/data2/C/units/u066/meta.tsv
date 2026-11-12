@@ -1,0 +1,1 @@
+66	usbf_probe	init-teardown	ptr	/home/odin/pbsd-ref/linux/drivers/usb/gadget/udc/renesas_usbf.c	linux	ok	flexarrays=10 ok items=11983 kept=939 protos=71 rewrites=0 attrs=17573 auto=198 bitfields=2 

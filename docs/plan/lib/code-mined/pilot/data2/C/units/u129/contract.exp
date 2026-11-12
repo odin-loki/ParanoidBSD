@@ -1,0 +1,1 @@
+/*@ requires n >= 0; ensures (n < 2 ==> \result == -22) && (n >= 2 ==> (\result == 0 || \result == -12)); */

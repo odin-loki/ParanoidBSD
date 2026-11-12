@@ -1,0 +1,1 @@
+33	kvm_get_parange_max	arith-helper	scalar	/home/odin/pbsd-ref/linux/arch/arm64/include/asm/kvm_pgtable.h	linux	ok	flexarrays=0 ok items=17577 kept=4 protos=0 rewrites=0 attrs=21019 auto=266 bitfields=0 

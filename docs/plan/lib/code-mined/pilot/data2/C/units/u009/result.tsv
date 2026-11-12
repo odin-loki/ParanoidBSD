@@ -1,0 +1,1 @@
+9	mt7925_reg_map_l2	arith-helper	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/contrib/dev/mediatek/mt76/mt7925/pci.c:10:10: fatal error: linux/pci.h: No such file 	

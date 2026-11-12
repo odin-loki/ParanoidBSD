@@ -1,0 +1,1 @@
+/*@ requires \valid(vector); ensures \result == true ==> vector->count == \old(vector->count) + 1; */

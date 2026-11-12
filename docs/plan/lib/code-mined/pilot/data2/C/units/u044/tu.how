@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/nouveau/nvkm/subdev/fb/ramgk104.c mode=c probe=0
+cfg=x86

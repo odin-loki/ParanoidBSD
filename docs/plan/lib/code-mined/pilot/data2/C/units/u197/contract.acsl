@@ -1,0 +1,1 @@
+/*@ requires true; ensures wcaps == 0 ? \result == -1 : \result == ((wcaps & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT); */

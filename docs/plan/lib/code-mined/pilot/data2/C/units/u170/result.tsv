@@ -1,0 +1,1 @@
+170	vnic_wq_desc_used	ring-buffer	ptr	UNBUILT	bsd-kernel	-	-	-	-	-	0.1	 syntax error: Location: "unit.c", lines 22-23, before or at token: iflib_dma_info_t	pointer-or-memory-precondition;stub-headers-EMPTY(option-headers-assumed-off):offset.inc;

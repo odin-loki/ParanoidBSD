@@ -1,0 +1,1 @@
+70	ni_alloc_private	init-teardown	ptr	UNBUILT	linux	-	-	-	-	-	0.1	[kernel] unit.c:159: User Error: Cannot find field private in type struct comedi_device	callees-without-spec:spinlock_check;pointer-or-memory-precondition;

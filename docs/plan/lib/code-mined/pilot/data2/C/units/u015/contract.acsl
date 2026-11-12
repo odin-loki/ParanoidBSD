@@ -1,0 +1,1 @@
+/*@ requires 0 <= num && num < 16 && (dir == TX || dir == RX); ensures \result == num + (dir == TX ? 16 : 0); */

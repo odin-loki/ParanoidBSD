@@ -1,0 +1,1 @@
+147	cpu_has_vmx_intel_pt	bitmap	scalar	PROVED	linux	2	2	2	2	no	11.6		pointer-or-memory-precondition;

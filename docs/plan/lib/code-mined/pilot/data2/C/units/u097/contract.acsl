@@ -1,0 +1,1 @@
+/*@ requires idx < 10; ensures \result == 0 || \result == 1; */

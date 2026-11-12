@@ -1,0 +1,1 @@
+/*@ requires curidx < 1024; ensures \result == (curidx + 1) % 1024; */

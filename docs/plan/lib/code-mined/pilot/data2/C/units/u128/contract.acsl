@@ -1,0 +1,1 @@
+/*@ requires flags >= 0; ensures (\result & ~__GFP_NOFAIL) == \result && (!(flags & __GFP_RETRY_MAYFAIL) ==> (\result & __GFP_DIRECT_RECLAIM) == 0) && ((flags & __GFP_RETRY_MAYFAIL) ==> \result == flags); */

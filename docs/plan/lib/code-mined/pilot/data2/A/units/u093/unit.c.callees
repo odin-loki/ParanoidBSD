@@ -1,0 +1,5 @@
+cpp_demangle_push_str
+cpp_demangle_push_subst_v
+vector_str_dest
+vector_str_init
+vector_str_push

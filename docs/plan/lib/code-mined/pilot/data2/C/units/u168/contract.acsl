@@ -1,0 +1,1 @@
+/*@ requires cons < ring->ring_size; ensures cons < ring->ring_size && (v_bit != \old(v_bit) <==> \old(cons) + 1 == ring->ring_size); */

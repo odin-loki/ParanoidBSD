@@ -1,0 +1,2 @@
+flags_from=fs/xfs/libxfs/xfs_bmap_btree.c mode=c probe=0
+cfg=x86

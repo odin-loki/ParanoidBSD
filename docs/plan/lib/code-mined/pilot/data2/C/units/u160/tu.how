@@ -1,0 +1,2 @@
+flags_from=drivers/staging/vc04_services/interface/vchiq_arm/vchiq_core.c mode=c probe=0
+cfg=x86

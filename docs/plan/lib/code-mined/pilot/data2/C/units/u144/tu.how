@@ -1,0 +1,2 @@
+flags_from=drivers/iommu/amd/debugfs.c mode=includer:drivers/iommu/amd/debugfs.c probe=0
+cfg=x86

@@ -1,1 +1,1 @@
-128	empty	allocator	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/llvm-project/compiler-rt/lib/scudo/standalone/allocator_common.h	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/llvm-project/compiler-rt/lib/scudo/standalone/platform.h:13:10: fatal error: stdi
+128	empty	allocator	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/llvm-project/compiler-rt/lib/scudo/standalone/allocator_common.h	bsd-user	nofunc	notfound: no definition of empty in the preprocessed unit [cfg=-]

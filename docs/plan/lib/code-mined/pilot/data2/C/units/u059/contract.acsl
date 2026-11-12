@@ -1,0 +1,1 @@
+/*@ requires 0 < freq; ensures \result == 0 || \result < 0; */

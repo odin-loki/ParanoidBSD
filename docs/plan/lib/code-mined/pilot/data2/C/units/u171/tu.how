@@ -1,0 +1,2 @@
+flags_from=drivers/gpu/drm/vmwgfx/ttm_object.c mode=c probe=0
+cfg=x86

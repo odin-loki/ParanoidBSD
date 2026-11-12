@@ -1,0 +1,1 @@
+175	folio_free_raw_hwp	refcount	scalar	/home/odin/pbsd-ref/linux/mm/memory-failure.c	linux	ok	flexarrays=20 ok items=16655 kept=1224 protos=25 rewrites=0 attrs=21174 auto=375 bitfields=2 

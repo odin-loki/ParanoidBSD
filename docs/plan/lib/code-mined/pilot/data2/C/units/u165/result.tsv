@@ -1,0 +1,1 @@
+165	qede_rx_int	ring-buffer	scalar	FAILED	linux	1	2	-	-	-	13.7	contract not proved; solver timeout	callees-without-spec:qed_chain_get_cons_idx,qed_chain_recycle_consumed,qede_alloc_rx_buffer,qede_rx_process_cqe,qede_update_rx_prod;

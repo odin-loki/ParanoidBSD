@@ -1,1 +1,1 @@
-97	do_meta_command	parser	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/shell.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/shell.c:120:10: fatal error: math.h: No such file or directory
+97	do_meta_command	parser	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/shell.c	bsd-user	ok	flexarrays=0 ok items=2356 kept=208 protos=64 rewrites=0 attrs=118 auto=0 bitfields=0 

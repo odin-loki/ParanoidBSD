@@ -1,0 +1,1 @@
+197	snd_hdac_get_wcaps_type	bitmask	scalar	FAILED	linux	1	2	-	-	-	12.7	contract not proved; solver timeout	header-function-in-probe-unit;probe-adds-module.h-kernel.h-slab.h-device.h;

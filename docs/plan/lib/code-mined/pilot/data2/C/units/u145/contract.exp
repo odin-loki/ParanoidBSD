@@ -1,0 +1,1 @@
+/*@ requires mask != 0; ensures 0 <= \result && \result < 64 && (mask & (1L << \result)) != 0 && ((mask & ((1L << \result) - 1)) == 0); */

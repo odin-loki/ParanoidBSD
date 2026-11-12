@@ -1,0 +1,1 @@
+45	timecounter_adjtime	arith-helper	ptr	/home/odin/pbsd-ref/linux/include/linux/timecounter.h	linux	ok	flexarrays=0 ok items=9820 kept=9 protos=0 rewrites=0 attrs=14702 auto=166 bitfields=0 

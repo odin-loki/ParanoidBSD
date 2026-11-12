@@ -1,0 +1,1 @@
+170	vnic_wq_desc_used	ring-buffer	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/enic/vnic_wq.h	bsd-kernel	ok	flexarrays=0 ok items=1777 kept=12 protos=1 rewrites=0 attrs=61 auto=0 bitfields=0 

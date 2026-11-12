@@ -1,0 +1,1 @@
+64	hdlc_ppp_init	init-teardown	scalar	PROVED	linux	2	2	2	2	no	11.4		callees-without-spec:skb_queue_head_init;

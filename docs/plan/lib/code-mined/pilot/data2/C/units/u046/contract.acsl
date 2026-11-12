@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (((wcaps & AC_WCAP_CHAN_CNT_EXT) >> 13) + 1) * 2; */

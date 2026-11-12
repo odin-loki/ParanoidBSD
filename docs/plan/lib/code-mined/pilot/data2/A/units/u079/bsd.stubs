@@ -1,0 +1,3 @@
+alias:stdarg.h->sys/sys/stdarg.h
+alias:errno.h->sys/sys/errno.h
+alias:stdint.h->sys/sys/stdint.h

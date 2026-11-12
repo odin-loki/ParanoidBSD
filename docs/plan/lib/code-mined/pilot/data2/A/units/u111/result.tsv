@@ -1,1 +1,1 @@
-111	mmcspi_acquire_host	lock-or-sync	scalar	UNBUILT	bsd-kernel	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/sys/bus.h:893:10: fatal error: device_if.h: No such file or directory	
+111	mmcspi_acquire_host	lock-or-sync	scalar	FAILED	bsd-kernel	1	2	-	-	-	14.1	contract not proved; solver timeout	callees-without-spec:__curthread,atomic_fcmpset_long;stub-headers-EMPTY(option-headers-assumed-off):offset.inc;

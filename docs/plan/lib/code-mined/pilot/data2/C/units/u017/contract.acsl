@@ -1,0 +1,1 @@
+/*@ requires 0 <= pkey_sz; ensures (pkey_sz > MLX5_MAX_LOG_PKEY_TABLE) ==> \result == 0; ensures (pkey_sz <= MLX5_MAX_LOG_PKEY_TABLE) ==> \result == MLX5_MIN_PKEY_TABLE_SIZE << pkey_sz; */

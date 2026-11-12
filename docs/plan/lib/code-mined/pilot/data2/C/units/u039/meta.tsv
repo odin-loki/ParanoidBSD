@@ -1,0 +1,1 @@
+39	clk_audio_pll_pad_set_rate	arith-helper	ptr	/home/odin/pbsd-ref/linux/drivers/clk/at91/clk-audio-pll.c	linux	ok	flexarrays=3 ok items=7304 kept=351 protos=32 rewrites=0 attrs=11481 auto=122 bitfields=2 

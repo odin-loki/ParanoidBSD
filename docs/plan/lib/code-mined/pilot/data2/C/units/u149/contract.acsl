@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (pte | _PAGE_ACCESSED); */

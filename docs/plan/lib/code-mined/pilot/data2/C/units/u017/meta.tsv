@@ -1,0 +1,1 @@
+17	mlx5_to_sw_pkey_sz	arith-helper	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/mlx5/device.h	bsd-kernel	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/sys/dev/mlx5/device.h:30:10: fatal error: rdma/ib_verbs.h: No such file or directory

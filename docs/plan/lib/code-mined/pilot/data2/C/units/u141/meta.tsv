@@ -1,0 +1,1 @@
+141	_mm512_kortestz	bitmap	scalar	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/llvm-project/clang/lib/Headers/avx512fintrin.h	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/llvm-project/clang/lib/Headers/avx512fintrin.h:10:2: error: #error "Never use <av

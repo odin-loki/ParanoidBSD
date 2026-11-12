@@ -1,0 +1,1 @@
+/*@ requires new >= start && end_data >= start_data; ensures \result == 0 || \result == -28; ensures \result == -28 <==> (rlim < (~0UL) && (new - start) + (end_data - start_data) > rlim); */

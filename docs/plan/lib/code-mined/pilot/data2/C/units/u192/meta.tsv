@@ -1,0 +1,1 @@
+192	do_fd_clear	list-op	ptr	/mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/libevent/win32select.c	bsd-user	notu	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/libevent/win32select.c:28:10: fatal error: event2/event-config.h: No such file or

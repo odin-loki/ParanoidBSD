@@ -1,0 +1,3 @@
+flags_from=lib/bitmap.c mode=probe probe=1
+extra=+
+cfg=arm64

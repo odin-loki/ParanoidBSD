@@ -1,0 +1,1 @@
+/*@ requires \valid_read(a_str); ensures CHAP_DIGEST_UNKNOWN <= \result <= CHAP_DIGEST_SHA3_256; */

@@ -1,0 +1,2 @@
+flags_from=drivers/acpi/acpica/exfldio.c mode=c probe=0
+cfg=x86

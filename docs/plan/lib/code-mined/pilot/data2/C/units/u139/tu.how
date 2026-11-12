@@ -1,0 +1,2 @@
+flags_from=drivers/target/target_core_transport.c mode=c probe=0
+cfg=x86

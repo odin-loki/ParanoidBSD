@@ -1,0 +1,1 @@
+52	mlx5r_macsec_init_gids_and_devlist	init-teardown	scalar	/home/odin/pbsd-ref/linux/drivers/infiniband/hw/mlx5/macsec.h	linux	ok	flexarrays=82 ok items=23035 kept=2283 protos=71 rewrites=0 attrs=26092 auto=369 bitfields=2 

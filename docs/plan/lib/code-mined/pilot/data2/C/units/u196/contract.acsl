@@ -1,0 +1,1 @@
+/*@ requires mask <= ACPI_UINT64_MAX; ensures \result == 0 || \result == AE_AML_OPERAND_VALUE || \result == AE_OK; */

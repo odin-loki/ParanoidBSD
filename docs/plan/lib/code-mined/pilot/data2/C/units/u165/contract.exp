@@ -1,0 +1,1 @@
+/*@ requires budget >= 0; ensures 0 <= \result && \result <= budget; */

@@ -1,1 +1,1 @@
-137	sqlite3StrAccumEnlarge	allocator	ptr	UNBUILT	bsd-user	-	-	-	-	-	0.0	preprocess failed: /mnt/c/ParanoidBSD/dreamy-mahavira-7e0e79/hbsd/src/contrib/sqlite3/sqlite3.c:354:10: fatal error: stdarg.h: No such file or directory	
+137	sqlite3StrAccumEnlarge	allocator	ptr	FAILED	bsd-user	1	2	-	-	-	15.9	contract not proved; solver timeout	callees-without-spec:disableLookaside,sqlite3DbMallocSize,sqlite3DbRealloc,sqlite3Realloc,sqlite3StrAccumSetError,sqlite3_str_reset;pointer-or-memory-precondition;

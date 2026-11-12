@@ -1,0 +1,1 @@
+140	oxu_buf_alloc	allocator	ptr	CONTRACT-ONLY	linux	2	2	8	28	no	32.4	contract proved; run-time-error guards not all proved (8/28)	callees-without-spec:oxu_to_hcd,spin_lock,spin_unlock,virt_to_phys;pointer-or-memory-precondition;

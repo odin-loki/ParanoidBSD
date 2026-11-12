@@ -1,0 +1,1 @@
+186	acpi_ut_add_address_range	list-op	scalar	CONTRACT-ONLY	linux	2	2	6	11	no	41.0	contract proved; run-time-error guards not all proved (6/11)	callees-without-spec:arch_irqs_disabled_flags,arch_local_save_flags,kmalloc_noprof,mem_alloc_profiling_enabled;

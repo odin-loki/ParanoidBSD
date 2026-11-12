@@ -1,0 +1,1 @@
+/*@ requires 0 <= vid <= 4095; ensures \result == 0 || \result < 0; */

@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == (va & PG_FRAME) >> L1_PAGE_SIZE_SHIFT; */

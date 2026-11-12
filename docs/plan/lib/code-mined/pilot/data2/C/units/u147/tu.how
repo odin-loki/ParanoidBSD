@@ -1,0 +1,2 @@
+flags_from=arch/x86/kvm/vmx/tdx.c mode=includer:arch/x86/kvm/vmx/tdx.c probe=0
+cfg=x86

@@ -1,0 +1,1 @@
+132	ocs_max_dma_alloc	allocator	scalar	PROVED	bsd-kernel	2	2	2	2	no	11.9		stub-headers-EMPTY(option-headers-assumed-off):opt_stack.h,offset.inc,opt_cam.h;

@@ -1,0 +1,1 @@
+74	fsl_edma3_attach_pd	error-path	scalar	CONTRACT-ONLY	linux	2	2	8	12	no	26.1	contract proved; run-time-error guards not all proved (8/12)	callees-without-spec:IS_ERR_OR_NULL,fsl_edma3_detach_pd,pm_runtime_set_active,pm_runtime_use_autosuspend;

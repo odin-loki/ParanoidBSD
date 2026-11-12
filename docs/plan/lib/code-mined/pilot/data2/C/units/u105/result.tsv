@@ -1,0 +1,1 @@
+105	stm32_usart_receive_chars_pio	parser	scalar	CONTRACT-ONLY	linux	2	2	8	17	no	35.1	contract proved; run-time-error guards not all proved (8/17)	callees-without-spec:__writel,stm32_usart_get_char_pio,stm32_usart_pending_rx_pio,to_stm32_port,uart_handle_break,uart_prepare_sysrq_char;

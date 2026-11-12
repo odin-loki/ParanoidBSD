@@ -1,0 +1,1 @@
+/*@ requires true; ensures (dev == DSM_CAL_DEV_10G ==> \result == 10000) && (dev == DSM_CAL_DEV_5G ==> \result == 5000) && (dev == DSM_CAL_DEV_2G5 ==> \result == 2500) && (dev == DSM_CAL_DEV_OTHER ==> \result == 1000); */

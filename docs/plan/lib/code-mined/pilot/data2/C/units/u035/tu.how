@@ -1,0 +1,2 @@
+flags_from=fs/ext4/acl.c mode=includer:fs/ext4/acl.c probe=0
+cfg=x86

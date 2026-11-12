@@ -1,0 +1,2 @@
+int
+unsigned int	wcaps

@@ -1,0 +1,1 @@
+/*@ requires \true; ensures (\result == 0 ==> fwq->flags & (IQ_SW_ALLOCATED | IQ_HW_ALLOCATED)) && (\result != 0 ==> !(fwq->flags & IQ_HW_ALLOCATED)); */

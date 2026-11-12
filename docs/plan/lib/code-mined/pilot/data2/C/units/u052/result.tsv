@@ -1,0 +1,1 @@
+52	mlx5r_macsec_init_gids_and_devlist	init-teardown	scalar	FAILED	linux	1	2	-	-	-	14.2	contract not proved; solver timeout	callees-without-spec:INIT_LIST_HEAD,arch_static_branch,arch_static_branch_jump,get_current,kmalloc_array_noprof,mem_alloc_profiling_enabled,mlx5_is_macsec_roce_supported,static_key_false,static_key_true;

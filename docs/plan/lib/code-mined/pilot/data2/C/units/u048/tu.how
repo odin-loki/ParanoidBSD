@@ -1,0 +1,3 @@
+flags_from=drivers/net/dsa/sja1105/sja1105_clocking.c mode=probe probe=1
+extra=+
+cfg=x86

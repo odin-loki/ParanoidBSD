@@ -1,0 +1,1 @@
+60	loongson_nand_controller_init	init-teardown	scalar	UNBUILT	linux	-	-	-	-	-	0.5	[kernel] unit.c:7631: User Error: failed to evaluate constant expression in static assertion:	callees-without-spec:IS_ERR,PTR_ERR,dma_set_mask_and_coherent,dmaengine_slave_config,init_completion,loongson_nand_driver_init,regmap_update_bits,variable__ffs;

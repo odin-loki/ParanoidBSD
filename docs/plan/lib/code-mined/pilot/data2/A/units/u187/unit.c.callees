@@ -1,0 +1,7 @@
+ref_delete_lines
+ref_get_addressed_line_node
+ref_get_sbuf_line
+ref_handle_hup
+ref_handle_int
+ref_push_undo_stack
+ref_put_sbuf_line

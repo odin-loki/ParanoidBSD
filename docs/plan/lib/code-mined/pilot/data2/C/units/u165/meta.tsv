@@ -1,0 +1,1 @@
+165	qede_rx_int	ring-buffer	scalar	/home/odin/pbsd-ref/linux/drivers/net/ethernet/qlogic/qede/qede_fp.c	linux	ok	flexarrays=95 ok items=23332 kept=2093 protos=55 rewrites=0 attrs=28352 auto=398 bitfields=2 

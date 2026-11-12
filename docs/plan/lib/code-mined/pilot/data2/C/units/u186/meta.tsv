@@ -1,0 +1,1 @@
+186	acpi_ut_add_address_range	list-op	scalar	/home/odin/pbsd-ref/linux/drivers/acpi/acpica/utaddress.c	linux	ok	flexarrays=0 ok items=6996 kept=130 protos=4 rewrites=0 attrs=10302 auto=101 bitfields=0 

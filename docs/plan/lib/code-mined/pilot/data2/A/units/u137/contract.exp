@@ -1,0 +1,1 @@
+/*@ requires N >= 0; ensures (\result == 0 && p->accError != 0) || (\result == N && p->nAlloc >= p->nChar + N + 1); */

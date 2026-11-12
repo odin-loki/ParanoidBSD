@@ -1,0 +1,1 @@
+/*@ requires true; ensures \result == \old(softnet_data.xmit.sched_mirred_nest) + 1 && \result <= 255; */

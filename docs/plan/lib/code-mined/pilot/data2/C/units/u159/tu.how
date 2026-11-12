@@ -1,0 +1,2 @@
+flags_from=drivers/media/pci/saa7164/saa7164-bus.c mode=c probe=0
+cfg=x86
