@@ -36,8 +36,8 @@ collect() {
     jq -c 'select(.t == "succeeded")' "$b/flat.jsonl" | while IFS= read -r line; do
       cid=$(printf '%s' "$line" | jq -r .id); N=${cid#r}
       printf '%s' "$line" | jq -r .text > "$b/txt/$N"
-      JL=$(cl_handle "$KIND" "$IN" "$N" "$b/txt/$N" "${MODEL#claude-}" "$(printf '%s' "$line" | jq -r .in)" "$(printf '%s' "$line" | jq -r .out)")
-      KEY=$(cl_key "$KIND" "$IN" "$N")
+      JL=$(cl_handle "$KIND" "$b/in.jsonl" "$N" "$b/txt/$N" "${MODEL#claude-}" "$(printf '%s' "$line" | jq -r .in)" "$(printf '%s' "$line" | jq -r .out)")
+      KEY=$(cl_key "$KIND" "$b/in.jsonl" "$N")
       if [ -n "$JL" ]; then printf '%s\n' "$JL" >> "$JD/res.jsonl"; printf '%s\n' "$KEY" >> "$b/ok.keys"; else printf '%s\n' "$KEY" >> "$b/bad.keys"; fi
     done
     # keys that got no usable reply (errored, expired, unusable text): attempt count; second failure = gave up
@@ -68,7 +68,9 @@ submit() {
   if [ "$flush" -eq 0 ] && [ "$(wc -l < "$JD/next.tsv")" -lt "${MINB:-1}" ]; then return; fi
   [ -s "$JD/next.tsv" ] || { [ "$infl" -eq 0 ] && [ "$flush" -eq 1 ] && { touch "$JD/DONE"; log "no candidates left"; }; return; }
   mkdir -p "$b/req"; cp "$JD/next.tsv" "$b/keys.tsv"
-  cut -f2 "$b/keys.tsv" | xargs -P 8 -I{} bash -c '. "$0/cl_lib.sh"; cl_build "$1" "$2" "$3" "$4" > "$5/req/$3.json" || rm -f "$5/req/$3.json"' "$HERE" "$KIND" "$IN" "{}" "$MODEL" "$b" 2> "$b/build.err"
+  # one pass over the (big) input: the selected records go to the batch's own in.jsonl, keys.tsv becomes "key<TAB>line in in.jsonl" (the batch's custom_id is r<line in in.jsonl>)
+  awk -F'\t' -v inf="$b/in.jsonl" -v need="$(wc -l < "$JD/next.tsv")" 'FILENAME == ARGV[1] { k[$2] = $1; next } (FNR in k) { print k[FNR] "\t" (++i); print $0 > inf; if (i >= need) exit }' "$JD/next.tsv" "$IN" > "$b/keys.tsv"
+  cut -f2 "$b/keys.tsv" | xargs -P 8 -I{} bash -c '. "$0/cl_lib.sh"; cl_build "$1" "$2" "$3" "$4" > "$5/req/$3.json" || rm -f "$5/req/$3.json"' "$HERE" "$KIND" "$b/in.jsonl" "{}" "$MODEL" "$b" 2> "$b/build.err"
   : > "$b/req.jsonl"
   # last look at the DeepSeek stage's done.keys (it advanced while the requests were built): those records are not submitted
   sort -u /mnt/c/ParanoidBSD/mined-data/dsv/done.keys > "$b/dsvdone"
