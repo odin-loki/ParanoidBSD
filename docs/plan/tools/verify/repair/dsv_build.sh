@@ -9,5 +9,5 @@ for p in "$M"/packets/packet-P*.jsonl; do
   case " $SKIP " in *" $id "*) continue;; esac
   cat "$p" >> "$DW/work.jsonl"
 done
-jq -r '[.key, ([.functions[] | select(.status != "dropped")] | length)] | @tsv' "$DW/work.jsonl" | awk -F'\t' -v OFS='\t' '{ print $1, NR, ($2 > 0 ? 0 : 1) }' | sort -s -t "$(printf '\t')" -k3,3n -k2,2n | cut -f1,2 > "$DW/order.tsv"
+jq -r '[.key, ([.functions[].status | if .=="still-rejected" then 0 elif .=="fixed-disagree" then 1 elif .=="fixed-unreviewed" then 2 elif .=="rejected-unrepaired" then 3 else 4 end] | min)] | @tsv' "$DW/work.jsonl" | awk -F'\t' -v OFS='\t' '{ print $1, NR, $2 }' | sort -s -t "$(printf '\t')" -k3,3n -k2,2n | cut -f1,2 > "$DW/order.tsv"
 echo "records $(wc -l < "$DW/work.jsonl"), functions $(jq '.functions|length' "$DW/work.jsonl" | awk '{s+=$1} END{print s}')"
