@@ -10,3 +10,13 @@ round 2: items 120228, functions with a current annotation 120228, records 77446
 2026-11-12 16:55:07 [round 2] pass 3: 44 records failed (API overload or empty reply); retrying them
 2026-11-12 16:55:08 [round 2] repair stage over: 31856 records repaired, spent $18.0325
 2026-11-12 16:55:08 [round 2] re-verify
+2026-11-12 16:59:16 [round 2] re-verified: {"functions":56178,"status":{"dropped":1043,"fixed":50934,"still-rejected":4201},"still_rejected_because":{"fuzz":43,"mech":4045,"syntax":119}}
+records: 28779  functions: 50934
+2026-11-12 17:37:56 [round 2] review stage over: 11754 records, spent $24.1847, failed keys 97
+2026-11-12 17:39:33 [round 2] round done
+2026-11-12 17:50:13 [round 2] start: repair budget $32, review budget $58
+2026-11-12 17:50:15 [round 2] repair stage over: 31856 records repaired, spent $18.0325
+2026-11-12 17:50:15 [round 2] re-verified: {"functions":56178,"status":{"dropped":1043,"fixed":50934,"still-rejected":4201},"still_rejected_because":{"fuzz":43,"mech":4045,"syntax":119}}
+records: 28779  functions: 50934
+2026-11-12 18:45:42 [round 2] review stage over: 26905 records, spent $58.3846, failed keys 172
+2026-11-12 18:47:03 [round 2] round done

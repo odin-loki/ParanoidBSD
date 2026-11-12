@@ -1,0 +1,13 @@
+{
+  "round": 2,
+  "bad_at_start": 120228,
+  "attempted": 55983,
+  "still-rejected": 4200,
+  "dropped": 1036,
+  "fixed-agree": 37988,
+  "fixed-unreviewed": 3626,
+  "fixed-disagree": 9133,
+  "fixed": 37988,
+  "fixed_pct_of_attempted": 67.85631352374828,
+  "fixed_pct_of_bad_at_start": 31.59663306384536
+}
